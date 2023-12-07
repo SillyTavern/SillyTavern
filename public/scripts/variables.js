@@ -28,12 +28,33 @@ function getLocalVariable(name, args = {}) {
     return (localVariable === '' || isNaN(Number(localVariable))) ? (localVariable || '') : Number(localVariable);
 }
 
-function setLocalVariable(name, value) {
+function setLocalVariable(name, value, args = {}) {
     if (!chat_metadata.variables) {
         chat_metadata.variables = {};
     }
 
-    chat_metadata.variables[name] = value;
+    if (args.index !== undefined) {
+        try {
+            let localVariable = JSON.parse(chat_metadata.variables[name] ?? 'null');
+            const numIndex = Number(args.index);
+            if (Number.isNaN(numIndex)) {
+                if (localVariable === null) {
+                    localVariable = {};
+                }
+                localVariable[args.index] = value;
+            } else {
+                if (localVariable === null) {
+                    localVariable = [];
+                }
+                localVariable[numIndex] = value;
+            }
+            chat_metadata.variables[name] = JSON.stringify(localVariable);
+        } catch {
+            // that didn't work
+        }
+    } else {
+        chat_metadata.variables[name] = value;
+    }
     saveMetadataDebounced();
     return value;
 }
@@ -60,13 +81,44 @@ function getGlobalVariable(name, args = {}) {
     return (globalVariable === '' || isNaN(Number(globalVariable))) ? (globalVariable || '') : Number(globalVariable);
 }
 
-function setGlobalVariable(name, value) {
-    extension_settings.variables.global[name] = value;
+function setGlobalVariable(name, value, args = {}) {
+    if (args.index !== undefined) {
+        try {
+            let globalVariable = JSON.parse(extension_settings.variables.global[name] ?? 'null');
+            const numIndex = Number(args.index);
+            if (Number.isNaN(numIndex)) {
+                if (globalVariable === null) {
+                    globalVariable = {};
+                }
+                globalVariable[args.index] = value;
+            } else {
+                if (globalVariable === null) {
+                    globalVariable = [];
+                }
+                globalVariable[numIndex] = value;
+            }
+            extension_settings.variables.global[name] = JSON.stringify(globalVariable);
+        } catch {
+            // that didn't work
+        }
+    } else {
+        extension_settings.variables.global[name] = value;
+    }
     saveSettingsDebounced();
 }
 
 function addLocalVariable(name, value) {
     const currentValue = getLocalVariable(name) || 0;
+    try {
+        const parsedValue = JSON.parse(currentValue);
+        if (Array.isArray(parsedValue)) {
+            parsedValue.push(value);
+            setGlobalVariable(name, JSON.stringify(parsedValue));
+            return parsedValue;
+        }
+    } catch {
+        // ignore non-array values
+    }
     const increment = Number(value);
 
     if (isNaN(increment) || isNaN(Number(currentValue))) {
@@ -87,6 +139,16 @@ function addLocalVariable(name, value) {
 
 function addGlobalVariable(name, value) {
     const currentValue = getGlobalVariable(name) || 0;
+    try {
+        const parsedValue = JSON.parse(currentValue);
+        if (Array.isArray(parsedValue)) {
+            parsedValue.push(value);
+            setGlobalVariable(name, JSON.stringify(parsedValue));
+            return parsedValue;
+        }
+    } catch {
+        // ignore non-array values
+    }
     const increment = Number(value);
 
     if (isNaN(increment) || isNaN(Number(currentValue))) {
@@ -577,10 +639,10 @@ function lenValuesCallback(value) {
 
 export function registerVariableCommands() {
     registerSlashCommand('listvar', listVariablesCallback, [], ' – list registered chat variables', true, true);
-    registerSlashCommand('setvar', (args, value) => setLocalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (value)</span> – set a local variable value and pass it down the pipe, e.g. <tt>/setvar key=color green</tt>', true, true);
+    registerSlashCommand('setvar', (args, value) => setLocalVariable(args.key || args.name, value, args), [], '<span class="monospace">key=varname index=listIndex (value)</span> – set a local variable value and pass it down the pipe, index is optional, e.g. <tt>/setvar key=color green</tt>', true, true);
     registerSlashCommand('getvar', (args, value) => getLocalVariable(value, args), [], '<span class="monospace">index=listIndex (key)</span> – get a local variable value and pass it down the pipe, index is optional, e.g. <tt>/getvar height</tt> or <tt>/getvar index=3 costumes</tt>', true, true);
     registerSlashCommand('addvar', (args, value) => addLocalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (increment)</span> – add a value to a local variable and pass the result down the pipe, e.g. <tt>/addvar score 10</tt>', true, true);
-    registerSlashCommand('setglobalvar', (args, value) => setGlobalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (value)</span> – set a global variable value and pass it down the pipe, e.g. <tt>/setglobalvar key=color green</tt>', true, true);
+    registerSlashCommand('setglobalvar', (args, value) => setGlobalVariable(args.key || args.name, value, args), [], '<span class="monospace">key=varname index=listIndex (value)</span> – set a global variable value and pass it down the pipe, index is optional, e.g. <tt>/setglobalvar key=color green</tt>', true, true);
     registerSlashCommand('getglobalvar', (args, value) => getGlobalVariable(value, args), [], '<span class="monospace">index=listIndex (key)</span> – get a global variable value and pass it down the pipe, index is optional, e.g. <tt>/getglobalvar height</tt> or <tt>/getglobalvar index=3 costumes</tt>', true, true);
     registerSlashCommand('addglobalvar', (args, value) => addGlobalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (increment)</span> – add a value to a global variable and pass the result down the pipe, e.g. <tt>/addglobalvar score 10</tt>', true, true);
     registerSlashCommand('incvar', (_, value) => incrementLocalVariable(value), [], '<span class="monospace">(key)</span> – increment a local variable by 1 and pass the result down the pipe, e.g. <tt>/incvar score</tt>', true, true);
