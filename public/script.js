@@ -2916,6 +2916,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         abortController = new AbortController();
     }
 
+    // Set empty promise resolution functions
+    if (typeof resolve !== 'function') {
+        resolve = () => { };
+    }
+    if (typeof reject !== 'function') {
+        reject = () => { };
+    }
+
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == 'impersonate';
@@ -2927,12 +2935,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     if (interruptedByCommand) {
         //$("#send_textarea").val('').trigger('input');
         unblockGeneration();
+        resolve();
         return;
     }
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
         toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration();
+        resolve();
         return;
     }
 
@@ -2942,25 +2952,19 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         textgen_settings.type !== MANCER) {
         toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use --extensions openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration();
+        resolve();
         return;
     }
 
     if (isHordeGenerationNotAllowed()) {
         unblockGeneration();
+        resolve();
         return;
     }
 
     // Hide swipes if not in a dry run.
     if (!dryRun) {
         hideSwipeButtons();
-    }
-
-    // Set empty promise resolution functions
-    if (typeof resolve !== 'function') {
-        resolve = () => { };
-    }
-    if (typeof reject !== 'function') {
-        reject = () => { };
     }
 
     if (selected_group && !is_group_generating && !dryRun) {
@@ -2987,6 +2991,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         } else {
             console.log('No enabled members found');
             unblockGeneration();
+            resolve();
             return;
         }
     }
@@ -3151,6 +3156,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (aborted) {
                 console.debug('Generation aborted by extension interceptors');
                 unblockGeneration();
+                resolve();
                 return;
             }
         } else {
@@ -3206,6 +3212,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             catch {
                 unblockGeneration();
+                resolve();
                 return;
             }
             if (horde_settings.auto_adjust_context_length) {
@@ -3925,6 +3932,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             console.debug('swiping right automatically');
                             is_send_press = false;
                             swipe_right();
+                            // TODO: do we want to resolve after an auto-swipe?
+                            resolve();
                             return;
                         }
                     }
@@ -3950,8 +3959,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 if (type !== 'quiet') {
                     triggerAutoContinue(messageChunk, isImpersonate);
-                    resolve();
                 }
+                resolve();
             }
 
             function onError(exception) {

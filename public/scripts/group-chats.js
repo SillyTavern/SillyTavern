@@ -8,7 +8,6 @@ import {
     extractAllWords,
     saveBase64AsFile,
     PAGINATION_TEMPLATE,
-    waitUntilCondition,
     getBase64Async,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
@@ -46,7 +45,6 @@ import {
     updateChatMetadata,
     isStreamingEnabled,
     getThumbnailUrl,
-    streamingProcessor,
     getRequestHeaders,
     setMenuType,
     menu_type,
@@ -653,41 +651,20 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         // id of this specific batch for regeneration purposes
         group_generation_id = Date.now();
         const lastMessage = chat[chat.length - 1];
-        let messagesBefore = chat.length;
-        let lastMessageText = lastMessage?.mes || '';
         let activationText = '';
         let isUserInput = false;
-        let isGenerationDone = false;
 
         if (userInput?.length && !by_auto_mode) {
             isUserInput = true;
             activationText = userInput;
-            messagesBefore++;
         } else {
             if (lastMessage && !lastMessage.is_system) {
                 activationText = lastMessage.mes;
             }
         }
 
-        const resolveOriginal = params.resolve;
-        const rejectOriginal = params.reject;
-
         if (params.signal instanceof AbortSignal && params.signal.aborted) {
-                throw new Error('Already aborted signal passed. Group generation stopped');
-        }
-
-        if (typeof params.resolve === 'function') {
-            params.resolve = function () {
-                isGenerationDone = true;
-                resolveOriginal.apply(this, arguments);
-            };
-        }
-
-        if (typeof params.reject === 'function') {
-            params.reject = function () {
-                isGenerationDone = true;
-                rejectOriginal.apply(this, arguments);
-            };
+            throw new Error('Already aborted signal passed. Group generation stopped');
         }
 
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
@@ -735,90 +712,37 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         // now the real generation begins: cycle through every activated character
         for (const chId of activatedMembers) {
             deactivateSendButtons();
-            isGenerationDone = false;
             const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
             setCharacterName(characters[chId].name);
 
-            await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
+            // Wait for generation to finish
+            await new Promise(async (resolve, reject) => {
+                await Generate(generateType, {
+                    automatic_trigger: by_auto_mode,
+                    ...(params || {}),
+                    resolve: function(...args) {
+                        if (typeof params.resolve === 'function') {
+                            params.resolve(...args);
+                        }
+                        resolve();
+                    },
+                    reject: function(...args) {
+                        if (typeof params.reject === 'function') {
+                            params.reject(...args);
+                        }
+                        reject();
+                    },
+                });
 
-            if (type !== 'swipe' && type !== 'impersonate' && !isStreamingEnabled()) {
-                // update indicator and scroll down
-                typingIndicator
-                    .find('.typing_indicator_name')
-                    .text(characters[chId].name);
-                typingIndicator.show();
-            }
-
-            // TODO: This is awful. Refactor this
-            while (true) {
-                deactivateSendButtons();
-                if (params.signal instanceof AbortSignal && params.signal.aborted) {
-                    throw new Error('Group generation aborted');
+                if (type !== 'swipe' && type !== 'impersonate' && !isStreamingEnabled()) {
+                    // update indicator and scroll down
+                    typingIndicator
+                        .find('.typing_indicator_name')
+                        .text(characters[chId].name);
+                    typingIndicator.show();
                 }
-
-                // if not swipe - check if message generated already
-                if (generateType === 'group_chat' && chat.length == messagesBefore) {
-                    await delay(100);
-                }
-                // if swipe - see if message changed
-                else if (type === 'swipe') {
-                    if (isStreamingEnabled()) {
-                        if (streamingProcessor && !streamingProcessor.isFinished) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    else {
-                        if (lastMessageText === chat[chat.length - 1].mes) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                }
-                else if (type === 'impersonate') {
-                    if (isStreamingEnabled()) {
-                        if (streamingProcessor && !streamingProcessor.isFinished) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    else {
-                        if (!$('#send_textarea').val() || $('#send_textarea').val() == userInput) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                }
-                else if (type === 'quiet') {
-                    if (isGenerationDone) {
-                        break;
-                    } else {
-                        await delay(100);
-                    }
-                }
-                else if (isStreamingEnabled()) {
-                    if (streamingProcessor && !streamingProcessor.isFinished) {
-                        await delay(100);
-                    } else {
-                        await waitUntilCondition(() => streamingProcessor == null, 1000, 10);
-                        messagesBefore++;
-                        break;
-                    }
-                }
-                else {
-                    messagesBefore++;
-                    break;
-                }
-            }
+            });
         }
     } finally {
         typingIndicator.hide();
