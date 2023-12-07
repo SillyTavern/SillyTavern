@@ -378,7 +378,7 @@ jQuery(function () {
     });
 
     $(document).on('click', '.editor_maximize', function () {
-        const broId = $(this).data('for');
+        const broId = $(this).attr('data-for');
         const bro = $(`#${broId}`);
 
         if (!bro.length) {

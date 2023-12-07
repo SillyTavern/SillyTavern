@@ -691,7 +691,7 @@ function saveQROrder() {
         $(this).find('input').attr('id', `quickReply${i}Label`);
         $(this).find('textarea').attr('id', `quickReply${i}Mes`);
         $(this).find(`#quickReply${oldOrder}CtxButton`).attr('id', `quickReply${i}CtxButton`);
-        $(this).find(`#quickReply${oldOrder}ExpandButton`).attr('id', `quickReply${i}ExpandButton`);
+        $(this).find(`#quickReply${oldOrder}ExpandButton`).attr({ 'data-for': `quickReply${i}Mes`, 'id': `quickReply${i}ExpandButton` });
         i++;
     });
 
