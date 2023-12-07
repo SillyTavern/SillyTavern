@@ -597,7 +597,7 @@ async function generateCallback(args, value) {
 }
 
 async function echoCallback(args, value) {
-    const safeValue = DOMPurify.sanitize(value || '');
+    const safeValue = DOMPurify.sanitize(String(value) || '');
     if (safeValue === '') {
         console.warn('WARN: No argument provided for /echo command');
         return;
@@ -619,6 +619,7 @@ async function echoCallback(args, value) {
             toastr.info(safeValue, title);
             break;
     }
+    return value;
 }
 
 async function addSwipeCallback(_, arg) {
