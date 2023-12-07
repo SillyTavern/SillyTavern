@@ -336,6 +336,15 @@ function removeOldBackups(prefix) {
     }
 }
 
+function getImages(path) {
+    return fs
+        .readdirSync(path)
+        .filter(file => {
+            const type = mime.lookup(file);
+            return type && type.startsWith('image/');
+        })
+        .sort(Intl.Collator().compare);
+}
 
 module.exports = {
     getConfig,
@@ -355,4 +364,5 @@ module.exports = {
     removeFileExtension,
     generateTimestamp,
     removeOldBackups,
+    getImages,
 };
