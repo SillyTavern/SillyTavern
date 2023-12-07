@@ -295,7 +295,7 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        const entry = entries.find(x => x.uid === uid);
+        const entry = entries.find(x => String(x.uid) === String(uid));
 
         if (!entry) {
             toastr.warning('Valid UID is required');
