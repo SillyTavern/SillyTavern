@@ -189,6 +189,8 @@ async function onQuickReplyCtxButtonClick(id) {
         saveSettingsDebounced();
     });
 
+    $('#quickReply_ui_title').val(qr.title ?? '');
+
     if (await popupResult) {
         qr.contextMenu = Array.from(document.querySelectorAll('#quickReply_contextMenuEditor_content > .quickReplyContextMenuEditor_item'))
             .map(item => ({
@@ -197,6 +199,8 @@ async function onQuickReplyCtxButtonClick(id) {
             }))
             .filter(item => item.preset);
         $(`#quickReplyContainer[data-order="${id}"]`).attr('data-contextMenu', JSON.stringify(qr.contextMenu));
+        qr.title = $('#quickReply_ui_title').val();
+        saveSettingsDebounced();
         updateQuickReplyPreset();
         onQuickReplyLabelInput(id);
     }
@@ -436,7 +440,7 @@ function addQuickReplyBar() {
         if (extension_settings.quickReply.quickReplySlots[i]?.contextMenu?.length) {
             expander = '<span class="ctx-expander" title="Open context menu">⋮</span>';
         }
-        quickReplyButtonHtml += `<div title="${escapeHtml(quickReplyMes)}" class="quickReplyButton ${hidden ? 'displayNone' : ''}" data-index="${i}" id="quickReply${i + 1}">${DOMPurify.sanitize(quickReplyLabel)}${expander}</div>`;
+        quickReplyButtonHtml += `<div title="${escapeHtml(qr.title || quickReplyMes)}" class="quickReplyButton ${hidden ? 'displayNone' : ''}" data-index="${i}" id="quickReply${i + 1}">${DOMPurify.sanitize(quickReplyLabel)}${expander}</div>`;
     }
 
     const quickReplyBarFullHtml = `
@@ -691,7 +695,7 @@ function saveQROrder() {
         $(this).find('input').attr('id', `quickReply${i}Label`);
         $(this).find('textarea').attr('id', `quickReply${i}Mes`);
         $(this).find(`#quickReply${oldOrder}CtxButton`).attr('id', `quickReply${i}CtxButton`);
-        $(this).find(`#quickReply${oldOrder}ExpandButton`).attr('id', `quickReply${i}ExpandButton`);
+        $(this).find(`#quickReply${oldOrder}ExpandButton`).attr({ 'data-for': `quickReply${i}Mes`, 'id': `quickReply${i}ExpandButton` });
         i++;
     });
 
