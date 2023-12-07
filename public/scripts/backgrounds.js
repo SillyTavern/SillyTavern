@@ -238,7 +238,7 @@ async function onRenameBackgroundClick(e) {
     }
 
     const data = { old_bg: bgNames.oldBg, new_bg: bgNames.newBg };
-    const response = await fetch('/renamebackground', {
+    const response = await fetch('/api/backgrounds/rename', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(data),
@@ -326,7 +326,7 @@ async function autoBackgroundCommand() {
 }
 
 export async function getBackgrounds() {
-    const response = await fetch('/getbackgrounds', {
+    const response = await fetch('/api/backgrounds/all', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -378,7 +378,7 @@ function getBackgroundFromTemplate(bg, isCustom) {
 async function setBackground(bg) {
     jQuery.ajax({
         type: 'POST', //
-        url: '/setbackground', //
+        url: '/api/backgrounds/set', //
         data: JSON.stringify({
             bg: bg,
         }),
@@ -398,7 +398,7 @@ async function setBackground(bg) {
 }
 
 async function delBackground(bg) {
-    await fetch('/delbackground', {
+    await fetch('/api/backgrounds/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -427,7 +427,7 @@ function onBackgroundUploadSelected() {
 function uploadBackground(formData) {
     jQuery.ajax({
         type: 'POST',
-        url: '/downloadbackground',
+        url: '/api/backgrounds/upload',
         data: formData,
         beforeSend: function () {
         },

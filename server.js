@@ -35,7 +35,6 @@ const ipMatching = require('ip-matching');
 
 // image processing related library imports
 const jimp = require('jimp');
-const mime = require('mime-types');
 
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
@@ -46,8 +45,8 @@ const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
 const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/endpoints/secrets');
-const { delay, getVersion, getConfigValue, color, uuidv4, tryParse, clientRelativePath, removeFileExtension, generateTimestamp, removeOldBackups } = require('./src/util');
-const { invalidateThumbnail, ensureThumbnailCache } = require('./src/endpoints/thumbnails');
+const { delay, getVersion, getConfigValue, color, uuidv4, tryParse, clientRelativePath, removeFileExtension, generateTimestamp, removeOldBackups, getImages } = require('./src/util');
+const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
 const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS, getSentencepiceTokenizer, sentencepieceTokenizers } = require('./src/endpoints/tokenizers');
 const { convertClaudePrompt } = require('./src/chat-completion');
 
@@ -119,8 +118,6 @@ const listen = getConfigValue('listen', false);
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
-
-let response_dw_bg;
 
 function getMancerHeaders() {
     const apiKey = readSecret(SECRET_KEYS.MANCER);
@@ -776,13 +773,6 @@ app.post('/getstatus', jsonParser, async function (request, response) {
 });
 
 
-
-app.post('/getbackgrounds', jsonParser, function (request, response) {
-    var images = getImages('public/backgrounds');
-    response.send(JSON.stringify(images));
-
-});
-
 app.post('/getuseravatars', jsonParser, function (request, response) {
     var images = getImages('public/User Avatars');
     response.send(JSON.stringify(images));
@@ -807,75 +797,6 @@ app.post('/deleteuseravatar', jsonParser, function (request, response) {
     return response.sendStatus(404);
 });
 
-app.post('/setbackground', jsonParser, function (request, response) {
-    try {
-        const bg = `#bg1 {background-image: url('../backgrounds/${request.body.bg}');}`;
-        writeFileAtomicSync('public/css/bg_load.css', bg, 'utf8');
-        response.send({ result: 'ok' });
-    } catch (err) {
-        console.log(err);
-        response.send(err);
-    }
-});
-
-app.post('/delbackground', jsonParser, function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-
-    if (request.body.bg !== sanitize(request.body.bg)) {
-        console.error('Malicious bg name prevented');
-        return response.sendStatus(403);
-    }
-
-    const fileName = path.join('public/backgrounds/', sanitize(request.body.bg));
-
-    if (!fs.existsSync(fileName)) {
-        console.log('BG file not found');
-        return response.sendStatus(400);
-    }
-
-    fs.rmSync(fileName);
-    invalidateThumbnail('bg', request.body.bg);
-    return response.send('ok');
-});
-
-app.post('/renamebackground', jsonParser, function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-
-    const oldFileName = path.join(DIRECTORIES.backgrounds, sanitize(request.body.old_bg));
-    const newFileName = path.join(DIRECTORIES.backgrounds, sanitize(request.body.new_bg));
-
-    if (!fs.existsSync(oldFileName)) {
-        console.log('BG file not found');
-        return response.sendStatus(400);
-    }
-
-    if (fs.existsSync(newFileName)) {
-        console.log('New BG file already exists');
-        return response.sendStatus(400);
-    }
-
-    fs.renameSync(oldFileName, newFileName);
-    invalidateThumbnail('bg', request.body.old_bg);
-    return response.send('ok');
-});
-
-app.post('/downloadbackground', urlencodedParser, function (request, response) {
-    response_dw_bg = response;
-    if (!request.body || !request.file) return response.sendStatus(400);
-
-    const img_path = path.join(UPLOADS_PATH, request.file.filename);
-    const filename = request.file.originalname;
-
-    try {
-        fs.copyFileSync(img_path, path.join('public/backgrounds/', filename));
-        invalidateThumbnail('bg', filename);
-        response_dw_bg.send(filename);
-        fs.unlinkSync(img_path);
-    } catch (err) {
-        console.error(err);
-        response_dw_bg.sendStatus(500);
-    }
-});
 
 app.post('/savesettings', jsonParser, function (request, response) {
     try {
@@ -1038,16 +959,6 @@ app.post('/savequickreply', jsonParser, (request, response) => {
     return response.sendStatus(200);
 });
 
-
-function getImages(path) {
-    return fs
-        .readdirSync(path)
-        .filter(file => {
-            const type = mime.lookup(file);
-            return type && type.startsWith('image/');
-        })
-        .sort(Intl.Collator().compare);
-}
 
 app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
     if (!request.file) return response.sendStatus(400);
@@ -2002,6 +1913,13 @@ redirect('/getstats', '/api/stats/get');
 redirect('/recreatestats', '/api/stats/recreate');
 redirect('/updatestats', '/api/stats/update');
 
+// Redirect deprecated backgrounds API endpoints
+redirect('/getbackgrounds', '/api/backgrounds/all');
+redirect('/setbackground', '/api/backgrounds/set');
+redirect('/delbackground', '/api/backgrounds/delete');
+redirect('/renamebackground', '/api/backgrounds/rename');
+redirect('/downloadbackground', '/api/backgrounds/upload'); // yes, the downloadbackground endpoint actually uploads one
+
 // ** REST CLIENT ASYNC WRAPPERS **
 
 /**
@@ -2065,6 +1983,9 @@ app.use('/api/worldinfo', require('./src/endpoints/worldinfo').router);
 // Stats calculation
 const statsEndpoint = require('./src/endpoints/stats');
 app.use('/api/stats', statsEndpoint.router);
+
+// Background management
+app.use('/api/backgrounds', require('./src/endpoints/backgrounds').router);
 
 // Character sprite management
 app.use('/api/sprites', require('./src/endpoints/sprites').router);
