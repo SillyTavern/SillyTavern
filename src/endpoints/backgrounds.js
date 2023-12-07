@@ -9,8 +9,6 @@ const { DIRECTORIES, UPLOADS_PATH } = require('../constants');
 const { invalidateThumbnail } = require('./thumbnails');
 const { getImages } = require('../util');
 
-let response_dw_bg;
-
 const router = new express.Router();
 
 router.post('/all', jsonParser, function (request, response) {
@@ -72,7 +70,6 @@ router.post('/rename', jsonParser, function (request, response) {
 });
 
 router.post('/upload', urlencodedParser, function (request, response) {
-    response_dw_bg = response;
     if (!request.body || !request.file) return response.sendStatus(400);
 
     const img_path = path.join(UPLOADS_PATH, request.file.filename);
@@ -81,11 +78,11 @@ router.post('/upload', urlencodedParser, function (request, response) {
     try {
         fs.copyFileSync(img_path, path.join('public/backgrounds/', filename));
         invalidateThumbnail('bg', filename);
-        response_dw_bg.send(filename);
+        response.send(filename);
         fs.unlinkSync(img_path);
     } catch (err) {
         console.error(err);
-        response_dw_bg.sendStatus(500);
+        response.sendStatus(500);
     }
 });
 
