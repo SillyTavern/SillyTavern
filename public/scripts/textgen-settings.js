@@ -476,6 +476,12 @@ async function generateTextGenWithStreaming(generate_data, signal) {
         method: 'POST',
         signal: signal,
     });
+
+    if (!response.ok) {
+        tryParseStreamingError(response, await response.body.text());
+        throw new Error(`Got response status ${response.status}`);
+    }
+
     const eventStream = new EventSourceStream();
     response.body.pipeThrough(eventStream);
     const reader = eventStream.readable.getReader();

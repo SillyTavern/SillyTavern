@@ -154,6 +154,24 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
     return generate_data;
 }
 
+function tryParseStreamingError(response, decoded) {
+    try {
+        const data = JSON.parse(decoded);
+
+        if (!data) {
+            return;
+        }
+
+        if (data.error) {
+            toastr.error(data.error.message || response.statusText, 'API returned an error');
+            throw new Error(data);
+        }
+    }
+    catch {
+        // No JSON. Do nothing.
+    }
+}
+
 export async function generateKoboldWithStreaming(generate_data, signal) {
     const response = await fetch('/generate', {
         headers: getRequestHeaders(),
@@ -161,6 +179,10 @@ export async function generateKoboldWithStreaming(generate_data, signal) {
         method: 'POST',
         signal: signal,
     });
+    if (!response.ok) {
+        tryParseStreamingError(response, await response.body.text());
+        throw new Error(`Got response status ${response.status}`);
+    }
     const eventStream = new EventSourceStream();
     response.body.pipeThrough(eventStream);
     const reader = eventStream.readable.getReader();

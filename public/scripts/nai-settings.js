@@ -664,6 +664,24 @@ export function adjustNovelInstructionPrompt(prompt) {
     return stripedPrompt;
 }
 
+function tryParseStreamingError(response, decoded) {
+    try {
+        const data = JSON.parse(decoded);
+
+        if (!data) {
+            return;
+        }
+
+        if (data.error) {
+            toastr.error(data.error.message || response.statusText, 'API returned an error');
+            throw new Error(data);
+        }
+    }
+    catch {
+        // No JSON. Do nothing.
+    }
+}
+
 export async function generateNovelWithStreaming(generate_data, signal) {
     generate_data.streaming = nai_settings.streaming_novel;
 
@@ -673,6 +691,10 @@ export async function generateNovelWithStreaming(generate_data, signal) {
         method: 'POST',
         signal: signal,
     });
+    if (!response.ok) {
+        tryParseStreamingError(response, await response.body.text());
+        throw new Error(`Got response status ${response.status}`);
+    }
     const eventStream = new EventSourceStream();
     response.body.pipeThrough(eventStream);
     const reader = eventStream.readable.getReader();
@@ -684,10 +706,6 @@ export async function generateNovelWithStreaming(generate_data, signal) {
             if (done) return;
 
             const data = JSON.parse(value.data);
-            if (data.message && data.statusCode >= 400) {
-                toastr.error(data.message, 'Error');
-                throw new Error(data);
-            }
 
             if (data.token) {
                 text += data.token;

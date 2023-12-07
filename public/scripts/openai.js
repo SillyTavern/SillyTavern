@@ -1565,6 +1565,11 @@ async function sendOpenAIRequest(type, messages, signal) {
         signal: signal,
     });
 
+    if (!response.ok) {
+        tryParseStreamingError(response, await response.body.text());
+        throw new Error(`Got response status ${response.status}`);
+    }
+
     if (stream) {
         const eventStream = new EventSourceStream();
         response.body.pipeThrough(eventStream);
