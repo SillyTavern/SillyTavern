@@ -163,7 +163,7 @@ function tryParseStreamingError(response, decoded) {
         }
 
         if (data.error) {
-            toastr.error(data.error.message || response.statusText, 'API returned an error');
+            toastr.error(data.error.message || response.statusText, 'KoboldAI API');
             throw new Error(data);
         }
     }
@@ -180,7 +180,7 @@ export async function generateKoboldWithStreaming(generate_data, signal) {
         signal: signal,
     });
     if (!response.ok) {
-        tryParseStreamingError(response, await response.body.text());
+        tryParseStreamingError(response, await response.text());
         throw new Error(`Got response status ${response.status}`);
     }
     const eventStream = new EventSourceStream();

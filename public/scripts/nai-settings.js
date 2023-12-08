@@ -672,8 +672,8 @@ function tryParseStreamingError(response, decoded) {
             return;
         }
 
-        if (data.error) {
-            toastr.error(data.error.message || response.statusText, 'API returned an error');
+        if (data.message || data.error) {
+            toastr.error(data.message || data.error?.message || response.statusText, 'NovelAI API');
             throw new Error(data);
         }
     }
@@ -692,7 +692,7 @@ export async function generateNovelWithStreaming(generate_data, signal) {
         signal: signal,
     });
     if (!response.ok) {
-        tryParseStreamingError(response, await response.body.text());
+        tryParseStreamingError(response, await response.text());
         throw new Error(`Got response status ${response.status}`);
     }
     const eventStream = new EventSourceStream();

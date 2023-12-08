@@ -1618,16 +1618,17 @@ app.post('/generate_openai', jsonParser, function (request, response_generate_op
         try {
             const fetchResponse = await fetch(endpointUrl, config);
 
+            if (request.body.stream) {
+                console.log('Streaming request in progress');
+                forwardFetchResponse(fetchResponse, response_generate_openai);
+                return;
+            }
+
             if (fetchResponse.ok) {
-                if (request.body.stream) {
-                    console.log('Streaming request in progress');
-                    forwardFetchResponse(fetchResponse, response_generate_openai);
-                } else {
-                    let json = await fetchResponse.json();
-                    response_generate_openai.send(json);
-                    console.log(json);
-                    console.log(json?.choices[0]?.message);
-                }
+                let json = await fetchResponse.json();
+                response_generate_openai.send(json);
+                console.log(json);
+                console.log(json?.choices[0]?.message);
             } else if (fetchResponse.status === 429 && retries > 0) {
                 console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {

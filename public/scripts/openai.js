@@ -1123,7 +1123,7 @@ function tryParseStreamingError(response, decoded) {
         checkQuotaError(data);
 
         if (data.error) {
-            toastr.error(data.error.message || response.statusText, 'API returned an error');
+            toastr.error(data.error.message || response.statusText, 'Chat Completion API');
             throw new Error(data);
         }
     }
@@ -1564,7 +1564,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     });
 
     if (!response.ok) {
-        tryParseStreamingError(response, await response.body.text());
+        tryParseStreamingError(response, await response.text());
         throw new Error(`Got response status ${response.status}`);
     }
 

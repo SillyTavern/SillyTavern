@@ -478,7 +478,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
     });
 
     if (!response.ok) {
-        tryParseStreamingError(response, await response.body.text());
+        tryParseStreamingError(response, await response.text());
         throw new Error(`Got response status ${response.status}`);
     }
 
@@ -512,14 +512,15 @@ async function generateTextGenWithStreaming(generate_data, signal) {
 
 /**
  * Parses errors in streaming responses and displays them in toastr.
- * @param {string} response - Response from the server.
+ * @param {Response} response - Response from the server.
+ * @param {string} decoded - Decoded response body.
  * @returns {void} Nothing.
  */
-function tryParseStreamingError(response) {
+function tryParseStreamingError(response, decoded) {
     let data = {};
 
     try {
-        data = JSON.parse(response);
+        data = JSON.parse(decoded);
     } catch {
         // No JSON. Do nothing.
     }
@@ -527,7 +528,7 @@ function tryParseStreamingError(response) {
     const message = data?.error?.message || data?.message;
 
     if (message) {
-        toastr.error(message, 'API Error');
+        toastr.error(message, 'Text Completion API');
         throw new Error(message);
     }
 }
