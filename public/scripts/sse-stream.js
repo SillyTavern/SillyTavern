@@ -3,7 +3,7 @@
  */
 class EventSourceStream {
     constructor() {
-        const decoder = new TextDecoderStream('utf-8', { ignoreBOM: true });
+        const decoder = new TextDecoderStream('utf-8');
 
         let streamBuffer = '';
 
