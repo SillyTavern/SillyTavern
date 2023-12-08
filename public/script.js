@@ -2730,10 +2730,6 @@ class StreamingProcessor {
         this.onErrorStreaming();
     }
 
-    hook(generatorFn) {
-        this.generator = generatorFn;
-    }
-
     *nullStreamingGeneration() {
         throw new Error('Generation function for streaming is not hooked up');
     }
@@ -3727,13 +3723,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
             /** @type {Promise<any>} */
-            let streamingHookPromise = Promise.resolve();
+            let streamingGeneratorPromise = Promise.resolve();
 
             if (main_api == 'openai') {
                 if (isStreamingEnabled() && type !== 'quiet') {
-                    streamingHookPromise = sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal)
-                        .then(fn => streamingProcessor.hook(fn))
-                        .catch(onError);
+                    streamingGeneratorPromise = sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
                 }
                 else {
                     sendOpenAIRequest(type, generate_data.prompt, abortController.signal).then(onSuccess).catch(onError);
@@ -3743,19 +3737,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generateHorde(finalPrompt, generate_data, abortController.signal, true).then(onSuccess).catch(onError);
             }
             else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
-                streamingHookPromise = generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal)
-                    .then(fn => streamingProcessor.hook(fn))
-                    .catch(onError);
+                streamingGeneratorPromise = generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else if (main_api == 'novel' && isStreamingEnabled() && type !== 'quiet') {
-                streamingHookPromise = generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal)
-                    .then(fn => streamingProcessor.hook(fn))
-                    .catch(onError);
+                streamingGeneratorPromise = generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else if (main_api == 'kobold' && isStreamingEnabled() && type !== 'quiet') {
-                streamingHookPromise = generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal)
-                    .then(fn => streamingProcessor.hook(fn))
-                    .catch(onError);
+                streamingGeneratorPromise = generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
                 try {
@@ -3780,20 +3768,27 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             if (isStreamingEnabled() && type !== 'quiet') {
-                hideSwipeButtons();
-                await streamingHookPromise;
-                let getMessage = await streamingProcessor.generate();
-                let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+                try {
+                    const streamingGenerator = await streamingGeneratorPromise;
+                    streamingProcessor.generator = streamingGenerator;
+                    hideSwipeButtons();
+                    let getMessage = await streamingProcessor.generate();
+                    let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
 
-                if (isContinue) {
-                    getMessage = continue_mag + getMessage;
+                    if (isContinue) {
+                        getMessage = continue_mag + getMessage;
+                    }
+
+                    if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
+                        await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
+                        streamingProcessor = null;
+                        triggerAutoContinue(messageChunk, isImpersonate);
+                    }
+                    resolve();
+                } catch (err) {
+                    onError(err);
                 }
 
-                if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
-                    await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
-                    streamingProcessor = null;
-                    triggerAutoContinue(messageChunk, isImpersonate);
-                }
             }
 
             async function onSuccess(data) {
