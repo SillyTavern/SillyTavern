@@ -7,9 +7,9 @@ import {
     event_types,
     eventSource,
     getCharacters,
+    getPastCharacterChats,
     getRequestHeaders,
     printCharacters,
-    this_chid,
 } from '../script.js';
 
 import { favsToHotswap } from './RossAscends-mods.js';
@@ -123,27 +123,16 @@ class CharacterContextMenu {
             cache: 'no-cache',
         }).then(response => {
             if (response.ok) {
-                deleteCharacter(character.name, character.avatar).then(() => {
-                    if (deleteChats) {
-                        fetch('/api/characters/chats', {
-                            method: 'POST',
-                            body: JSON.stringify({ avatar_url: character.avatar }),
-                            headers: getRequestHeaders(),
-                        }).then((response) => {
-                            let data = response.json();
-                            data = Object.values(data);
-                            const pastChats = data.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
-
-                            for (const chat of pastChats) {
-                                const name = chat.file_name.replace('.jsonl', '');
-                                eventSource.emit(event_types.CHAT_DELETED, name);
-                            }
-                        });
-                    }
+                return deleteCharacter(character.name, character.avatar, false).then(() => {
+                    eventSource.emit('characterDeleted', { id: characterId, character: characters[characterId] });
+                    if (deleteChats) getPastCharacterChats(characterId).then(pastChats => {
+                        for (const chat of pastChats) {
+                            const name = chat.file_name.replace('.jsonl', '');
+                            eventSource.emit(event_types.CHAT_DELETED, name);
+                        }
+                    });
                 });
             }
-
-            eventSource.emit('characterDeleted', { id: this_chid, character: characters[this_chid] });
         });
     };
 
@@ -626,12 +615,11 @@ class BulkEditOverlay {
 
                 showLoader();
                 toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
-                Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
+                Promise.allSettled(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
                     .then(() => getCharacters())
                     .then(() => this.browseState())
                     .finally(() => hideLoader());
-            },
-            );
+            });
     };
 
     /**

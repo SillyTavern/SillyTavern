@@ -5921,20 +5921,23 @@ export async function getChatsFromFiles(data, isGroupChat) {
  * The function sends a POST request to the server to retrieve all chats for the character. It then
  * processes the received data, sorts it by the file name, and returns the sorted data.
  *
+ * @param {null|number} [characterId=null] - When set, the function will use this character id instead of this_chid.
+ *
  * @returns {Promise<Array>} - An array containing metadata of all past chats of the character, sorted
  * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
  */
-async function getPastCharacterChats() {
-    if (!characters[this_chid]) return;
+export async function getPastCharacterChats(characterId = null) {
+    characterId = characterId ?? this_chid;
+    if (!characters[characterId]) return [];
 
     const response = await fetch('/api/characters/chats', {
         method: 'POST',
-        body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
+        body: JSON.stringify({ avatar_url: characters[characterId].avatar }),
         headers: getRequestHeaders(),
     });
 
     if (!response.ok) {
-        return;
+        return [];
     }
 
     let data = await response.json();
@@ -7652,8 +7655,9 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
  *
  * @param {string} name - The name of the character to be deleted.
  * @param {string} avatar - The avatar URL of the character to be deleted.
+ * @param {boolean} reloadCharacters - Whether the character list should be refreshed after deletion.
  */
-export async function deleteCharacter(name, avatar) {
+export async function deleteCharacter(name, avatar, reloadCharacters = true) {
     await clearChat();
     $('#character_cross').click();
     this_chid = 'invalid-safety-id';
@@ -7664,7 +7668,7 @@ export async function deleteCharacter(name, avatar) {
     $(document.getElementById('rm_button_selected_ch')).children('h2').text('');
     this_chid = undefined;
     delete tag_map[avatar];
-    await getCharacters();
+    if (reloadCharacters) await getCharacters();
     select_rm_info('char_delete', name);
     await printMessages();
     saveSettingsDebounced();
