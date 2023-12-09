@@ -241,7 +241,15 @@ async function executeQuickReplyByName(name) {
         throw new Error('Quick Reply is disabled');
     }
 
-    const qr = extension_settings.quickReply.quickReplySlots.find(x => x.label == name);
+    let qr = extension_settings.quickReply.quickReplySlots.find(x => x.label == name);
+
+    if (!qr && name.includes('.')) {
+        const [presetName, qrName] = name.split('.');
+        const preset = presets.find(x => x.name == presetName);
+        if (preset) {
+            qr = preset.quickReplySlots.find(x => x.label == qrName);
+        }
+    }
 
     if (!qr) {
         throw new Error(`Quick Reply "${name}" not found`);
