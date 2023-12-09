@@ -5927,7 +5927,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
  * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
  */
 export async function getPastCharacterChats(characterId = null) {
-    characterId = characterId || this_chid;
+    characterId = characterId ?? this_chid;
     if (!characters[characterId]) return [];
 
     const response = await fetch('/api/characters/chats', {
