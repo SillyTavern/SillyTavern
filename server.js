@@ -186,40 +186,6 @@ function setAdditionalHeaders(request, args, server) {
 const SETTINGS_FILE = './public/settings.json';
 const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY, TEXTGEN_TYPES, CHAT_COMPLETION_SOURCES, AVATAR_WIDTH, AVATAR_HEIGHT } = require('./src/constants');
 
-// CSRF Protection //
-if (!cliArguments.disableCsrf) {
-    const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
-    const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
-
-    const { generateToken, doubleCsrfProtection } = doubleCsrf({
-        getSecret: () => CSRF_SECRET,
-        cookieName: 'X-CSRF-Token',
-        cookieOptions: {
-            httpOnly: true,
-            sameSite: 'strict',
-            secure: false,
-        },
-        size: 64,
-        getTokenFromRequest: (req) => req.headers['x-csrf-token'],
-    });
-
-    app.get('/csrf-token', (req, res) => {
-        res.json({
-            'token': generateToken(res, req),
-        });
-    });
-
-    app.use(cookieParser(COOKIES_SECRET));
-    app.use(doubleCsrfProtection);
-} else {
-    console.warn('\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n');
-    app.get('/csrf-token', (req, res) => {
-        res.json({
-            'token': 'disabled',
-        });
-    });
-}
-
 // CORS Settings //
 const CORS = cors({
     origin: 'null',
@@ -272,6 +238,40 @@ app.use(function (req, res, next) {
     }
     next();
 });
+
+// CSRF Protection //
+if (!cliArguments.disableCsrf) {
+    const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
+    const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
+
+    const { generateToken, doubleCsrfProtection } = doubleCsrf({
+        getSecret: () => CSRF_SECRET,
+        cookieName: 'X-CSRF-Token',
+        cookieOptions: {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: false,
+        },
+        size: 64,
+        getTokenFromRequest: (req) => req.headers['x-csrf-token'],
+    });
+
+    app.get('/csrf-token', (req, res) => {
+        res.json({
+            'token': generateToken(res, req),
+        });
+    });
+
+    app.use(cookieParser(COOKIES_SECRET));
+    app.use(doubleCsrfProtection);
+} else {
+    console.warn('\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n');
+    app.get('/csrf-token', (req, res) => {
+        res.json({
+            'token': 'disabled',
+        });
+    });
+}
 
 if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
     const bodyParser = require('body-parser');
