@@ -21,7 +21,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (!key) {
             console.log('No key found for API', request.body.api);
-            return response.sendStatus(401);
+            return response.sendStatus(400);
         }
 
         const body = {
@@ -91,7 +91,7 @@ router.post('/transcribe-audio', urlencodedParser, async (request, response) => 
 
         if (!key) {
             console.log('No OpenAI key found');
-            return response.sendStatus(401);
+            return response.sendStatus(400);
         }
 
         if (!request.file) {
@@ -139,7 +139,7 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
 
         if (!key) {
             console.log('No OpenAI key found');
-            return response.sendStatus(401);
+            return response.sendStatus(400);
         }
 
         const result = await fetch('https://api.openai.com/v1/audio/speech', {
@@ -178,7 +178,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
 
         if (!key) {
             console.log('No OpenAI key found');
-            return response.sendStatus(401);
+            return response.sendStatus(400);
         }
 
         console.log('OpenAI request', request.body);

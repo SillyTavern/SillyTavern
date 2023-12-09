@@ -16,7 +16,7 @@ router.post('/libre', jsonParser, async (request, response) => {
 
     if (!url) {
         console.log('LibreTranslate URL is not configured.');
-        return response.sendStatus(401);
+        return response.sendStatus(400);
     }
 
     const text = request.body.text;
@@ -102,7 +102,8 @@ router.post('/deepl', jsonParser, async (request, response) => {
     const key = readSecret(SECRET_KEYS.DEEPL);
 
     if (!key) {
-        return response.sendStatus(401);
+        console.log('DeepL key is not configured.');
+        return response.sendStatus(400);
     }
 
     const text = request.body.text;
@@ -158,7 +159,7 @@ router.post('/onering', jsonParser, async (request, response) => {
 
     if (!url) {
         console.log('OneRing URL is not configured.');
-        return response.sendStatus(401);
+        return response.sendStatus(400);
     }
 
     if (!secretUrl && url === ONERING_URL_DEFAULT) {
@@ -211,7 +212,7 @@ router.post('/deeplx', jsonParser, async (request, response) => {
 
     if (!url) {
         console.log('DeepLX URL is not configured.');
-        return response.sendStatus(401);
+        return response.sendStatus(400);
     }
 
     if (!secretUrl && url === DEEPLX_URL_DEFAULT) {

@@ -69,7 +69,8 @@ router.post('/status', jsonParser, async function (req, res) {
     const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
 
     if (!api_key_novel) {
-        return res.sendStatus(401);
+        console.log('NovelAI Access Token is missing.');
+        return res.sendStatus(400);
     }
 
     try {
@@ -104,7 +105,8 @@ router.post('/generate', jsonParser, async function (req, res) {
     const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
 
     if (!api_key_novel) {
-        return res.sendStatus(401);
+        console.log('NovelAI Access Token is missing.');
+        return res.sendStatus(400);
     }
 
     const controller = new AbortController();
@@ -233,7 +235,8 @@ router.post('/generate-image', jsonParser, async (request, response) => {
     const key = readSecret(SECRET_KEYS.NOVEL);
 
     if (!key) {
-        return response.sendStatus(401);
+        console.log('NovelAI Access Token is missing.');
+        return response.sendStatus(400);
     }
 
     try {
@@ -327,7 +330,8 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
     const token = readSecret(SECRET_KEYS.NOVEL);
 
     if (!token) {
-        return response.sendStatus(401);
+        console.log('NovelAI Access Token is missing.');
+        return response.sendStatus(400);
     }
 
     const text = request.body.text;

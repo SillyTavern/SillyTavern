@@ -1108,7 +1108,8 @@ app.post('/getstatus_openai', jsonParser, async function (request, response_gets
     }
 
     if (!api_key_openai && !request.body.reverse_proxy) {
-        return response_getstatus_openai.status(401).send({ error: true });
+        console.log('OpenAI API key is missing.');
+        return response_getstatus_openai.status(400).send({ error: true });
     }
 
     try {
@@ -1262,7 +1263,8 @@ async function sendScaleRequest(request, response) {
     const api_key_scale = readSecret(SECRET_KEYS.SCALE);
 
     if (!api_key_scale) {
-        return response.status(401).send({ error: true });
+        console.log('Scale API key is missing.');
+        return response.status(400).send({ error: true });
     }
 
     const requestPrompt = convertChatMLPrompt(request.body.messages);
@@ -1379,7 +1381,8 @@ async function sendClaudeRequest(request, response) {
     const api_key_claude = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
 
     if (!api_key_claude) {
-        return response.status(401).send({ error: true });
+        console.log('Claude API key is missing.');
+        return response.status(400).send({ error: true });
     }
 
     try {
@@ -1468,7 +1471,8 @@ async function sendPalmRequest(request, response) {
     const api_key_palm = readSecret(SECRET_KEYS.PALM);
 
     if (!api_key_palm) {
-        return response.status(401).send({ error: true });
+        console.log('Palm API key is missing.');
+        return response.status(400).send({ error: true });
     }
 
     const body = {
@@ -1573,7 +1577,8 @@ app.post('/generate_openai', jsonParser, function (request, response_generate_op
     }
 
     if (!api_key_openai && !request.body.reverse_proxy) {
-        return response_generate_openai.status(401).send({ error: true });
+        console.log('OpenAI API key is missing.');
+        return response_generate_openai.status(400).send({ error: true });
     }
 
     // Add custom stop sequences

@@ -11,7 +11,7 @@ router.post('/search', jsonParser, async (request, response) => {
 
         if (!key) {
             console.log('No SerpApi key found');
-            return response.sendStatus(401);
+            return response.sendStatus(400);
         }
 
         const { query } = request.body;
