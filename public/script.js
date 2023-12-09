@@ -968,6 +968,22 @@ async function getStatusTextgen() {
     return resultCheckStatus();
 }
 
+async function getStatusNovel() {
+    try {
+        const result = await loadNovelSubscriptionData();
+
+        if (!result) {
+            throw new Error('Could not load subscription data');
+        }
+
+        online_status = getNovelTier();
+    } catch {
+        online_status = 'no_connection';
+    }
+
+    resultCheckStatus();
+}
+
 export function startStatusLoading() {
     $('.api_loading').show();
     $('.api_button').addClass('disabled');
@@ -6072,22 +6088,6 @@ export async function displayPastChats() {
     });
 }
 
-async function getStatusNovel() {
-    try {
-        const result = await loadNovelSubscriptionData();
-
-        if (!result) {
-            throw new Error('Could not load subscription data');
-        }
-
-        online_status = getNovelTier();
-    } catch {
-        online_status = 'no_connection';
-    }
-
-    resultCheckStatus();
-}
-
 function selectRightMenuWithAnimation(selectedMenuId) {
     const displayModes = {
         'rm_group_chats_block': 'flex',
@@ -8348,6 +8348,24 @@ jQuery(async function () {
         getStatusTextgen();
     });
 
+    $('#api_button_novel').on('click', async function (e) {
+        e.stopPropagation();
+        const api_key_novel = String($('#api_key_novel').val()).trim();
+
+        if (api_key_novel.length) {
+            await writeSecret(SECRET_KEYS.NOVEL, api_key_novel);
+        }
+
+        if (!secret_state[SECRET_KEYS.NOVEL]) {
+            console.log('No secret key saved for NovelAI');
+            return;
+        }
+
+        startStatusLoading();
+        // Check near immediately rather than waiting for up to 90s
+        await getStatusNovel();
+    });
+
     var button = $('#options_button');
     var menu = $('#options');
 
@@ -9033,24 +9051,6 @@ jQuery(async function () {
         await reloadCurrentChat();
     });
     //Select chat
-
-    $('#api_button_novel').on('click', async function (e) {
-        e.stopPropagation();
-        const api_key_novel = String($('#api_key_novel').val()).trim();
-
-        if (api_key_novel.length) {
-            await writeSecret(SECRET_KEYS.NOVEL, api_key_novel);
-        }
-
-        if (!secret_state[SECRET_KEYS.NOVEL]) {
-            console.log('No secret key saved for NovelAI');
-            return;
-        }
-
-        startStatusLoading();
-        // Check near immediately rather than waiting for up to 90s
-        await getStatusNovel();
-    });
 
     //**************************CHARACTER IMPORT EXPORT*************************//
     $('#character_import_button').click(function () {
