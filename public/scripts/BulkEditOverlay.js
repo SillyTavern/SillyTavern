@@ -6,7 +6,7 @@ import {
     deleteCharacter,
     event_types,
     eventSource,
-    getCharacters,
+    getCharacters, getPastCharacterChats,
     getRequestHeaders,
     printCharacters,
     this_chid,
@@ -119,31 +119,20 @@ class CharacterContextMenu {
         return fetch('/api/characters/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ avatar_url: character.avatar, delete_chats: deleteChats }),
+            body: JSON.stringify({avatar_url: character.avatar, delete_chats: deleteChats}),
             cache: 'no-cache',
         }).then(response => {
             if (response.ok) {
                 return deleteCharacter(character.name, character.avatar, false).then(() => {
-                    if (deleteChats) {
-                        return fetch('/api/characters/chats', {
-                            method: 'POST',
-                            body: JSON.stringify({ avatar_url: character.avatar }),
-                            headers: getRequestHeaders(),
-                        }).then((response) => {
-                            let data = response.json();
-                            data = Object.values(data);
-                            const pastChats = data.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
-
-                            for (const chat of pastChats) {
-                                const name = chat.file_name.replace('.jsonl', '');
-                                eventSource.emit(event_types.CHAT_DELETED, name);
-                            }
-                        });
-                    }
+                    eventSource.emit('characterDeleted', {id: characterId, character: characters[characterId]});
+                    if (deleteChats) getPastCharacterChats(characterId).then(pastChats => {
+                        for (const chat of pastChats) {
+                            const name = chat.file_name.replace('.jsonl', '');
+                            eventSource.emit(event_types.CHAT_DELETED, name);
+                        }
+                    });
                 });
             }
-
-            eventSource.emit('characterDeleted', { id: this_chid, character: characters[this_chid] });
         });
     };
 
@@ -473,18 +462,18 @@ class BulkEditOverlay {
         this.isLongPress = true;
 
         setTimeout(() => {
-            if (this.isLongPress && !cancel) {
-                if (this.state === BulkEditOverlayState.browse) {
-                    this.selectState();
-                } else if (this.state === BulkEditOverlayState.select) {
-                    this.#contextMenuOpen = true;
-                    CharacterContextMenu.show(...this.#getContextMenuPosition(event));
+                if (this.isLongPress && !cancel) {
+                    if (this.state === BulkEditOverlayState.browse) {
+                        this.selectState();
+                    } else if (this.state === BulkEditOverlayState.select) {
+                        this.#contextMenuOpen = true;
+                        CharacterContextMenu.show(...this.#getContextMenuPosition(event));
+                    }
                 }
-            }
 
-            this.container.removeEventListener('mouseup', cancelHold);
-            this.container.removeEventListener('touchend', cancelHold);
-        },
+                this.container.removeEventListener('mouseup', cancelHold);
+                this.container.removeEventListener('touchend', cancelHold);
+            },
             BulkEditOverlay.longPressDelay);
     };
 
@@ -626,12 +615,11 @@ class BulkEditOverlay {
 
                 showLoader();
                 toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
-                Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
+                Promise.allSettled(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
                     .then(() => getCharacters())
                     .then(() => this.browseState())
                     .finally(() => hideLoader());
-            },
-            );
+            });
     };
 
     /**
