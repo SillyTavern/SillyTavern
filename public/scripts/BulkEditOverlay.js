@@ -123,9 +123,9 @@ class CharacterContextMenu {
             cache: 'no-cache',
         }).then(response => {
             if (response.ok) {
-                deleteCharacter(character.name, character.avatar).then(() => {
+                return deleteCharacter(character.name, character.avatar, false).then(() => {
                     if (deleteChats) {
-                        fetch('/api/characters/chats', {
+                        return fetch('/api/characters/chats', {
                             method: 'POST',
                             body: JSON.stringify({ avatar_url: character.avatar }),
                             headers: getRequestHeaders(),

@@ -7652,8 +7652,9 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
  *
  * @param {string} name - The name of the character to be deleted.
  * @param {string} avatar - The avatar URL of the character to be deleted.
+ * @param {boolean} reloadCharacters - Whether the character list should be refreshed after deletion.
  */
-export async function deleteCharacter(name, avatar) {
+export async function deleteCharacter(name, avatar, reloadCharacters = true) {
     await clearChat();
     $('#character_cross').click();
     this_chid = 'invalid-safety-id';
@@ -7664,7 +7665,7 @@ export async function deleteCharacter(name, avatar) {
     $(document.getElementById('rm_button_selected_ch')).children('h2').text('');
     this_chid = undefined;
     delete tag_map[avatar];
-    await getCharacters();
+    if (reloadCharacters) await getCharacters();
     select_rm_info('char_delete', name);
     await printMessages();
     saveSettingsDebounced();
