@@ -639,7 +639,7 @@ function generateQuickReplyElements() {
             <span class="drag-handle ui-sortable-handle">☰</span>
             <input class="text_pole wide30p" id="quickReply${i}Label" placeholder="(Button label)">
             <span class="menu_button menu_button_icon" id="quickReply${i}CtxButton" title="Additional options: context menu, auto-execution">⋮</span>
-            <span class="menu_button menu_button_icon editor_maximize fa-solid fa-maximize" data-for="quickReply${i}Mes" id="quickReply${i}ExpandButton" title="Expand the editor"></span>
+            <span class="menu_button menu_button_icon editor_maximize_with_tab fa-solid fa-maximize" data-for="quickReply${i}Mes" id="quickReply${i}ExpandButton" title="Expand the editor"></span>
             <textarea id="quickReply${i}Mes" placeholder="(Custom message or /command)" class="text_pole widthUnset flex1" rows="2"></textarea>
         </div>
         `;
@@ -887,6 +887,57 @@ jQuery(async () => {
         extension_settings.quickReplyPreset = quickReplyPresetSelected;
         applyQuickReplyPreset(quickReplyPresetSelected);
         saveSettingsDebounced();
+    });
+
+    // taken and adjusted from chats.js (.editor_maximize)
+    $(document).on('click', '.editor_maximize_with_tab', function () {
+        const broId = $(this).attr('data-for');
+        const bro = $(`#${broId}`);
+
+        if (!bro.length) {
+            console.error('Could not find editor with id', broId);
+            return;
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('height100p', 'wide100p', 'flex-container');
+        wrapper.classList.add('flexFlowColumn', 'justifyCenter', 'alignitemscenter');
+        const textarea = document.createElement('textarea');
+        textarea.value = String(bro.val());
+        textarea.classList.add('height100p', 'wide100p');
+        textarea.addEventListener('keydown', (evt) => {
+            if (evt.key == 'Tab' && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
+                evt.preventDefault();
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                if (end - start > 0 && textarea.value.substring(start, end).includes('\n')) {
+                    const lineStart = textarea.value.lastIndexOf('\n', start);
+                    const count = textarea.value.substring(lineStart, end).split('\n').length - 1;
+                    textarea.value = `${textarea.value.substring(0, lineStart)}${textarea.value.substring(lineStart, end).replace(/\n/g, '\n\t')}${textarea.value.substring(end)}`;
+                    textarea.selectionStart = start + 1;
+                    textarea.selectionEnd = end + count;
+                } else {
+                    textarea.value = `${textarea.value.substring(0, start)}\t${textarea.value.substring(end)}`;
+                    textarea.selectionStart = start + 1;
+                    textarea.selectionEnd = end + 1;
+                }
+            } else if (evt.key == 'Tab' && evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
+                evt.preventDefault();
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const lineStart = textarea.value.lastIndexOf('\n', start);
+                const count = textarea.value.substring(lineStart, end).split('\n\t').length - 1;
+                textarea.value = `${textarea.value.substring(0, lineStart)}${textarea.value.substring(lineStart, end).replace(/\n\t/g, '\n')}${textarea.value.substring(end)}`;
+                textarea.selectionStart = start - 1;
+                textarea.selectionEnd = end - count;
+            }
+        });
+        textarea.addEventListener('inpupt', () => {
+            bro.val(textarea.value).trigger('input');
+        });
+        wrapper.appendChild(textarea);
+
+        callPopup(wrapper, 'text', '', { wide: true, large: true });
     });
 
     await loadSettings('init');
