@@ -14,11 +14,11 @@ import {
     setUserName,
     this_chid,
     user_avatar,
-} from "../script.js";
-import { getContext } from "./extensions.js";
-import { persona_description_positions, power_user } from "./power-user.js";
-import { getTokenCount } from "./tokenizers.js";
-import { debounce, delay, download, parseJsonFile } from "./utils.js";
+} from '../script.js';
+import { getContext } from './extensions.js';
+import { persona_description_positions, power_user } from './power-user.js';
+import { getTokenCount } from './tokenizers.js';
+import { debounce, delay, download, parseJsonFile } from './utils.js';
 
 /**
  * Uploads an avatar file to the server
@@ -29,17 +29,17 @@ import { debounce, delay, download, parseJsonFile } from "./utils.js";
 async function uploadUserAvatar(url, name) {
     const fetchResult = await fetch(url);
     const blob = await fetchResult.blob();
-    const file = new File([blob], "avatar.png", { type: "image/png" });
+    const file = new File([blob], 'avatar.png', { type: 'image/png' });
     const formData = new FormData();
-    formData.append("avatar", file);
+    formData.append('avatar', file);
 
     if (name) {
-        formData.append("overwrite_name", name);
+        formData.append('overwrite_name', name);
     }
 
     return jQuery.ajax({
-        type: "POST",
-        url: "/uploaduseravatar",
+        type: 'POST',
+        url: '/uploaduseravatar',
         data: formData,
         beforeSend: () => { },
         cache: false,
@@ -109,7 +109,7 @@ export async function convertCharacterToPersona(characterId = null) {
 
     const avatarUrl = characters[characterId]?.avatar;
     if (!avatarUrl) {
-        console.log("No avatar found for this character");
+        console.log('No avatar found for this character');
         return;
     }
 
@@ -118,17 +118,17 @@ export async function convertCharacterToPersona(characterId = null) {
     const overwriteName = `${name} (Persona).png`;
 
     if (overwriteName in power_user.personas) {
-        const confirmation = await callPopup("This character exists as a persona already. Are you sure want to overwrite it?", "confirm", "", { okButton: 'Yes' });
+        const confirmation = await callPopup('This character exists as a persona already. Are you sure want to overwrite it?', 'confirm', '', { okButton: 'Yes' });
 
         if (confirmation === false) {
-            console.log("User cancelled the overwrite of the persona");
+            console.log('User cancelled the overwrite of the persona');
             return;
         }
     }
 
     if (description.includes('{{char}}') || description.includes('{{user}}')) {
         await delay(500);
-        const confirmation = await callPopup("This character has a description that uses {{char}} or {{user}} macros. Do you want to swap them in the persona description?", "confirm", "", { okButton: 'Yes' });
+        const confirmation = await callPopup('This character has a description that uses {{char}} or {{user}} macros. Do you want to swap them in the persona description?', 'confirm', '', { okButton: 'Yes' });
 
         if (confirmation) {
             description = description.replace(/{{char}}/gi, '{{personaChar}}').replace(/{{user}}/gi, '{{personaUser}}');
@@ -152,7 +152,7 @@ export async function convertCharacterToPersona(characterId = null) {
 
     saveSettingsDebounced();
 
-    console.log("Persona for character created");
+    console.log('Persona for character created');
     toastr.success(`You can now select ${name} as a persona in the Persona Management menu.`, 'Persona Created');
 
     // Refresh the persona selector
@@ -165,9 +165,9 @@ export async function convertCharacterToPersona(characterId = null) {
  * Counts the number of tokens in a persona description.
  */
 const countPersonaDescriptionTokens = debounce(() => {
-    const description = String($("#persona_description").val());
+    const description = String($('#persona_description').val());
     const count = getTokenCount(description);
-    $("#persona_description_token_count").text(String(count));
+    $('#persona_description_token_count').text(String(count));
 }, 1000);
 
 export function setPersonaDescription() {
@@ -175,11 +175,11 @@ export function setPersonaDescription() {
         power_user.persona_description_position = persona_description_positions.IN_PROMPT;
     }
 
-    $("#persona_description").val(power_user.persona_description);
-    $("#persona_description_position")
+    $('#persona_description').val(power_user.persona_description);
+    $('#persona_description_position')
         .val(power_user.persona_description_position)
         .find(`option[value='${power_user.persona_description_position}']`)
-        .attr("selected", String(true));
+        .attr('selected', String(true));
     countPersonaDescriptionTokens();
 }
 
@@ -250,7 +250,7 @@ export function selectCurrentPersona() {
             toastr.info(
                 `To permanently set "${personaName}" as the selected persona, unlock and relock it using the "Lock" button. Otherwise, the selection resets upon reloading the chat.`,
                 `This chat is locked to a different persona (${power_user.personas[lockedPersona]}).`,
-                { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true }
+                { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true },
             );
         }
 
@@ -275,7 +275,7 @@ export function selectCurrentPersona() {
         // force firstMes {{user}} update on persona switch
         const context = getContext();
         if (context.characterId >= 0 && !context.groupId && context.chat.length === 1) {
-            $("#firstmessage_textarea").trigger('input')
+            $('#firstmessage_textarea').trigger('input');
         }
     }
 }
@@ -298,7 +298,7 @@ async function lockUserNameToChat() {
             toastr.info(
                 'Creating a new persona for currently selected user name and avatar...',
                 'Persona not set for this avatar',
-                { timeOut: 10000, extendedTimeOut: 20000, },
+                { timeOut: 10000, extendedTimeOut: 20000 },
             );
         }
         power_user.personas[user_avatar] = name1;
@@ -336,11 +336,11 @@ async function deleteUserAvatar() {
         return;
     }
 
-    const request = await fetch("/deleteuseravatar", {
-        method: "POST",
+    const request = await fetch('/deleteuseravatar', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
-            "avatar": avatarId,
+            'avatar': avatarId,
         }),
     });
 
@@ -367,7 +367,7 @@ async function deleteUserAvatar() {
 }
 
 function onPersonaDescriptionInput() {
-    power_user.persona_description = String($("#persona_description").val());
+    power_user.persona_description = String($('#persona_description').val());
     countPersonaDescriptionTokens();
 
     if (power_user.personas[user_avatar]) {
@@ -376,7 +376,7 @@ function onPersonaDescriptionInput() {
         if (!object) {
             object = {
                 description: power_user.persona_description,
-                position: Number($("#persona_description_position").find(":selected").val()),
+                position: Number($('#persona_description_position').find(':selected').val()),
             };
             power_user.persona_descriptions[user_avatar] = object;
         }
@@ -389,7 +389,7 @@ function onPersonaDescriptionInput() {
 
 function onPersonaDescriptionPositionInput() {
     power_user.persona_description_position = Number(
-        $("#persona_description_position").find(":selected").val()
+        $('#persona_description_position').find(':selected').val(),
     );
 
     if (power_user.personas[user_avatar]) {
@@ -437,7 +437,7 @@ async function setDefaultPersona() {
 
         console.log(`Removing default persona ${avatarId}`);
         if (power_user.persona_show_notifications) {
-            toastr.info('This persona will no longer be used by default when you open a new chat.', `Default persona removed`);
+            toastr.info('This persona will no longer be used by default when you open a new chat.', 'Default persona removed');
         }
         delete power_user.default_persona;
     } else {
@@ -513,9 +513,9 @@ function onBackupPersonas() {
     const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '');
     const filename = `personas_${timestamp}.json`;
     const data = JSON.stringify({
-        "personas": power_user.personas,
-        "persona_descriptions": power_user.persona_descriptions,
-        "default_persona": power_user.default_persona,
+        'personas': power_user.personas,
+        'persona_descriptions': power_user.persona_descriptions,
+        'default_persona': power_user.default_persona,
     }, null, 2);
 
     const blob = new Blob([data], { type: 'application/json' });
@@ -604,14 +604,14 @@ export function initPersonas() {
     $(document).on('click', '.set_default_persona', setDefaultPersona);
     $(document).on('click', '.delete_avatar', deleteUserAvatar);
     $('#lock_user_name').on('click', lockUserNameToChat);
-    $("#create_dummy_persona").on('click', createDummyPersona);
+    $('#create_dummy_persona').on('click', createDummyPersona);
     $('#persona_description').on('input', onPersonaDescriptionInput);
     $('#persona_description_position').on('input', onPersonaDescriptionPositionInput);
     $('#personas_backup').on('click', onBackupPersonas);
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);
 
-    eventSource.on("charManagementDropdown", (target) => {
+    eventSource.on('charManagementDropdown', (target) => {
         if (target === 'convert_to_persona') {
             convertCharacterToPersona();
         }

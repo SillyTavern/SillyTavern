@@ -1,73 +1,73 @@
-import { getRequestHeaders } from "../../../script.js"
-import { getApiUrl } from "../../extensions.js"
-import { doExtrasFetch, modules } from "../../extensions.js"
-import { getPreviewString } from "./index.js"
-import { saveTtsProviderSettings } from "./index.js"
+import { getRequestHeaders } from '../../../script.js';
+import { getApiUrl } from '../../extensions.js';
+import { doExtrasFetch, modules } from '../../extensions.js';
+import { getPreviewString } from './index.js';
+import { saveTtsProviderSettings } from './index.js';
 
-export { EdgeTtsProvider }
+export { EdgeTtsProvider };
 
 class EdgeTtsProvider {
     //########//
     // Config //
     //########//
 
-    settings
-    voices = []
-    separator = ' . '
-    audioElement = document.createElement('audio')
+    settings;
+    voices = [];
+    separator = ' . ';
+    audioElement = document.createElement('audio');
 
     defaultSettings = {
         voiceMap: {},
         rate: 0,
-    }
+    };
 
     get settingsHtml() {
         let html = `Microsoft Edge TTS Provider<br>
         <label for="edge_tts_rate">Rate: <span id="edge_tts_rate_output"></span></label>
-        <input id="edge_tts_rate" type="range" value="${this.defaultSettings.rate}" min="-100" max="100" step="1" />`
-        return html
+        <input id="edge_tts_rate" type="range" value="${this.defaultSettings.rate}" min="-100" max="100" step="1" />`;
+        return html;
     }
 
     onSettingsChange() {
         this.settings.rate = Number($('#edge_tts_rate').val());
         $('#edge_tts_rate_output').text(this.settings.rate);
-        saveTtsProviderSettings()
+        saveTtsProviderSettings();
     }
 
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings")
+            console.info('Using default TTS Provider settings');
         }
 
         // Only accept keys defined in defaultSettings
-        this.settings = this.defaultSettings
+        this.settings = this.defaultSettings;
 
         for (const key in settings) {
             if (key in this.settings) {
-                this.settings[key] = settings[key]
+                this.settings[key] = settings[key];
             } else {
-                throw `Invalid setting passed to TTS Provider: ${key}`
+                throw `Invalid setting passed to TTS Provider: ${key}`;
             }
         }
 
         $('#edge_tts_rate').val(this.settings.rate || 0);
         $('#edge_tts_rate_output').text(this.settings.rate || 0);
-        $('#edge_tts_rate').on("input", () => {this.onSettingsChange()})
-        await this.checkReady()
+        $('#edge_tts_rate').on('input', () => {this.onSettingsChange();});
+        await this.checkReady();
 
-        console.debug("EdgeTTS: Settings loaded")
+        console.debug('EdgeTTS: Settings loaded');
     }
 
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady(){
-        throwIfModuleMissing()
-        await this.fetchTtsVoiceObjects()
+        throwIfModuleMissing();
+        await this.fetchTtsVoiceObjects();
     }
 
     async onRefreshClick() {
-        return
+        return;
     }
 
     //#################//
@@ -76,39 +76,39 @@ class EdgeTtsProvider {
 
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
-            this.voices = await this.fetchTtsVoiceObjects()
+            this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
-            voice => voice.name == voiceName
-        )[0]
+            voice => voice.name == voiceName,
+        )[0];
         if (!match) {
-            throw `TTS Voice name ${voiceName} not found`
+            throw `TTS Voice name ${voiceName} not found`;
         }
-        return match
+        return match;
     }
 
     async generateTts(text, voiceId) {
-        const response = await this.fetchTtsGeneration(text, voiceId)
-        return response
+        const response = await this.fetchTtsGeneration(text, voiceId);
+        return response;
     }
 
     //###########//
     // API CALLS //
     //###########//
     async fetchTtsVoiceObjects() {
-        throwIfModuleMissing()
+        throwIfModuleMissing();
 
         const url = new URL(getApiUrl());
-        url.pathname = `/api/edge-tts/list`
-        const response = await doExtrasFetch(url)
+        url.pathname = '/api/edge-tts/list';
+        const response = await doExtrasFetch(url);
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`)
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
-        let responseJson = await response.json()
+        let responseJson = await response.json();
         responseJson = responseJson
             .sort((a, b) => a.Locale.localeCompare(b.Locale) || a.ShortName.localeCompare(b.ShortName))
             .map(x => ({ name: x.ShortName, voice_id: x.ShortName, preview_url: false, lang: x.Locale }));
-        return responseJson
+        return responseJson;
     }
 
 
@@ -117,9 +117,9 @@ class EdgeTtsProvider {
         this.audioElement.currentTime = 0;
         const voice = await this.getVoice(id);
         const text = getPreviewString(voice.lang);
-        const response = await this.fetchTtsGeneration(text, id)
+        const response = await this.fetchTtsGeneration(text, id);
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`)
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
 
         const audio = await response.blob();
@@ -129,34 +129,34 @@ class EdgeTtsProvider {
     }
 
     async fetchTtsGeneration(inputText, voiceId) {
-        throwIfModuleMissing()
+        throwIfModuleMissing();
 
-        console.info(`Generating new TTS for voice_id ${voiceId}`)
+        console.info(`Generating new TTS for voice_id ${voiceId}`);
         const url = new URL(getApiUrl());
-        url.pathname = `/api/edge-tts/generate`;
+        url.pathname = '/api/edge-tts/generate';
         const response = await doExtrasFetch(url,
             {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({
-                    "text": inputText,
-                    "voice": voiceId,
-                    "rate": Number(this.settings.rate),
-                })
-            }
-        )
+                    'text': inputText,
+                    'voice': voiceId,
+                    'rate': Number(this.settings.rate),
+                }),
+            },
+        );
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
-        return response
+        return response;
     }
 }
 function throwIfModuleMissing() {
     if (!modules.includes('edge-tts')) {
-        const message = `Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.`
+        const message = 'Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.';
         // toastr.error(message)
-        throw new Error(message)
+        throw new Error(message);
     }
 }
 

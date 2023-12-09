@@ -1,6 +1,6 @@
-import { saveSettingsDebounced } from "../script.js";
-import { power_user } from "./power-user.js";
-import { isValidUrl } from "./utils.js";
+import { saveSettingsDebounced } from '../script.js';
+import { power_user } from './power-user.js';
+import { isValidUrl } from './utils.js';
 
 /**
  * @param {{ term: string; }} request

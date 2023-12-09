@@ -1,6 +1,6 @@
-import { setGenerationParamsFromPreset } from "../script.js";
-import { getDeviceInfo } from "./RossAscends-mods.js";
-import { textgenerationwebui_settings } from "./textgen-settings.js";
+import { setGenerationParamsFromPreset } from '../script.js';
+import { getDeviceInfo } from './RossAscends-mods.js';
+import { textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
 
 let models = [];
 
@@ -17,14 +17,14 @@ export async function loadMancerModels(data) {
         const option = document.createElement('option');
         option.value = model.id;
         option.text = model.name;
-        option.selected = model.id === textgenerationwebui_settings.mancer_model;
+        option.selected = model.id === textgen_settings.mancer_model;
         $('#mancer_model').append(option);
     }
 }
 
 function onMancerModelSelect() {
     const modelId = String($('#mancer_model').val());
-    textgenerationwebui_settings.mancer_model = modelId;
+    textgen_settings.mancer_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
 
     const limits = models.find(x => x.id === modelId)?.limits;

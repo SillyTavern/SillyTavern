@@ -14,4 +14,4 @@ async function getTransformersVector(text) {
 
 module.exports = {
     getTransformersVector,
-}
+};

@@ -32,6 +32,6 @@ const basicAuthMiddleware = function (request, response, callback) {
     } else {
         return unauthorizedResponse(response);
     }
-}
+};
 
 module.exports = basicAuthMiddleware;

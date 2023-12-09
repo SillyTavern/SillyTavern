@@ -1,12 +1,12 @@
-"use strict";
+'use strict';
 
-import { saveSettingsDebounced, substituteParams } from "../script.js";
-import { selected_group } from "./group-chats.js";
+import { saveSettingsDebounced, substituteParams } from '../script.js';
+import { selected_group } from './group-chats.js';
 import {
     power_user,
     context_presets,
-} from "./power-user.js";
-import { resetScrollHeight } from "./utils.js";
+} from './power-user.js';
+import { resetScrollHeight } from './utils.js';
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -14,21 +14,21 @@ import { resetScrollHeight } from "./utils.js";
 export let instruct_presets = [];
 
 const controls = [
-    { id: "instruct_enabled", property: "enabled", isCheckbox: true },
-    { id: "instruct_wrap", property: "wrap", isCheckbox: true },
-    { id: "instruct_system_prompt", property: "system_prompt", isCheckbox: false },
-    { id: "instruct_system_sequence_prefix", property: "system_sequence_prefix", isCheckbox: false },
-    { id: "instruct_system_sequence_suffix", property: "system_sequence_suffix", isCheckbox: false },
-    { id: "instruct_separator_sequence", property: "separator_sequence", isCheckbox: false },
-    { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
-    { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
-    { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
-    { id: "instruct_names", property: "names", isCheckbox: true },
-    { id: "instruct_macro", property: "macro", isCheckbox: true },
-    { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
-    { id: "instruct_first_output_sequence", property: "first_output_sequence", isCheckbox: false },
-    { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
-    { id: "instruct_activation_regex", property: "activation_regex", isCheckbox: false },
+    { id: 'instruct_enabled', property: 'enabled', isCheckbox: true },
+    { id: 'instruct_wrap', property: 'wrap', isCheckbox: true },
+    { id: 'instruct_system_prompt', property: 'system_prompt', isCheckbox: false },
+    { id: 'instruct_system_sequence_prefix', property: 'system_sequence_prefix', isCheckbox: false },
+    { id: 'instruct_system_sequence_suffix', property: 'system_sequence_suffix', isCheckbox: false },
+    { id: 'instruct_separator_sequence', property: 'separator_sequence', isCheckbox: false },
+    { id: 'instruct_input_sequence', property: 'input_sequence', isCheckbox: false },
+    { id: 'instruct_output_sequence', property: 'output_sequence', isCheckbox: false },
+    { id: 'instruct_stop_sequence', property: 'stop_sequence', isCheckbox: false },
+    { id: 'instruct_names', property: 'names', isCheckbox: true },
+    { id: 'instruct_macro', property: 'macro', isCheckbox: true },
+    { id: 'instruct_names_force_groups', property: 'names_force_groups', isCheckbox: true },
+    { id: 'instruct_first_output_sequence', property: 'first_output_sequence', isCheckbox: false },
+    { id: 'instruct_last_output_sequence', property: 'last_output_sequence', isCheckbox: false },
+    { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
 ];
 
 /**
@@ -93,7 +93,7 @@ function selectContextPreset(preset) {
     if (!power_user.instruct.enabled && preset !== power_user.default_context) {
         power_user.instruct.enabled = true;
         $('#instruct_enabled').prop('checked', true).trigger('change');
-        toastr.info(`Instruct Mode enabled`);
+        toastr.info('Instruct Mode enabled');
     }
 
     saveSettingsDebounced();
@@ -114,7 +114,7 @@ export function selectInstructPreset(preset) {
     if (!power_user.instruct.enabled) {
         power_user.instruct.enabled = true;
         $('#instruct_enabled').prop('checked', true).trigger('change');
-        toastr.info(`Instruct Mode enabled`);
+        toastr.info('Instruct Mode enabled');
     }
 
     saveSettingsDebounced();
@@ -214,13 +214,23 @@ export function getInstructStoppingSequences() {
         combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
     }
 
+    if (power_user.context.use_stop_strings) {
+        if (power_user.context.chat_start) {
+            result.push(`\n${substituteParams(power_user.context.chat_start)}`);
+        }
+
+        if (power_user.context.example_separator) {
+            result.push(`\n${substituteParams(power_user.context.example_separator)}`);
+        }
+    }
+
     return result;
 }
 
 export const force_output_sequence = {
     FIRST: 1,
     LAST: 2,
-}
+};
 
 /**
  * Formats instruct mode chat message.
@@ -304,8 +314,8 @@ export function formatInstructModeExamples(mesExamples, name1, name2) {
     const separator = power_user.instruct.wrap ? '\n' : '';
     const separatorSequence = power_user.instruct.separator_sequence ? power_user.instruct.separator_sequence : separator;
 
-    mesExamples = mesExamples.replace(new RegExp(`\n${name1}: `, "gm"), separatorSequence + inputSequence + separator + (includeNames ? `${name1}: ` : ''));
-    mesExamples = mesExamples.replace(new RegExp(`\n${name2}: `, "gm"), separator + outputSequence + separator + (includeNames ? `${name2}: ` : ''));
+    mesExamples = mesExamples.replace(new RegExp(`\n${name1}: `, 'gm'), separatorSequence + inputSequence + separator + (includeNames ? `${name1}: ` : ''));
+    mesExamples = mesExamples.replace(new RegExp(`\n${name2}: `, 'gm'), separator + outputSequence + separator + (includeNames ? `${name2}: ` : ''));
 
     return mesExamples;
 }

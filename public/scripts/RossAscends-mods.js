@@ -1,5 +1,3 @@
-esversion: 6
-
 import {
     Generate,
     characters,
@@ -20,47 +18,46 @@ import {
     eventSource,
     menu_type,
     substituteParams,
-} from "../script.js";
+} from '../script.js';
 
 import {
     power_user,
     send_on_enter_options,
-} from "./power-user.js";
+} from './power-user.js';
 
-import { LoadLocal, SaveLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
-import { selected_group, is_group_generating, getGroupAvatar, groups, openGroupById } from "./group-chats.js";
+import { LoadLocal, SaveLocal, LoadLocalBool } from './f-localStorage.js';
+import { selected_group, is_group_generating, getGroupAvatar, groups, openGroupById } from './group-chats.js';
 import {
     SECRET_KEYS,
     secret_state,
-} from "./secrets.js";
-import { debounce, delay, getStringHash, isValidUrl, waitUntilCondition } from "./utils.js";
-import { chat_completion_sources, oai_settings } from "./openai.js";
-import { getTokenCount } from "./tokenizers.js";
-import { isMancer } from "./textgen-settings.js";
+} from './secrets.js';
+import { debounce, delay, getStringHash, isValidUrl } from './utils.js';
+import { chat_completion_sources, oai_settings } from './openai.js';
+import { getTokenCount } from './tokenizers.js';
+import { textgen_types, textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
 
 
-var RPanelPin = document.getElementById("rm_button_panel_pin");
-var LPanelPin = document.getElementById("lm_button_panel_pin");
-var WIPanelPin = document.getElementById("WI_panel_pin");
+var RPanelPin = document.getElementById('rm_button_panel_pin');
+var LPanelPin = document.getElementById('lm_button_panel_pin');
+var WIPanelPin = document.getElementById('WI_panel_pin');
 
-var RightNavPanel = document.getElementById("right-nav-panel");
-var LeftNavPanel = document.getElementById("left-nav-panel");
-var WorldInfo = document.getElementById("WorldInfo");
+var RightNavPanel = document.getElementById('right-nav-panel');
+var LeftNavPanel = document.getElementById('left-nav-panel');
+var WorldInfo = document.getElementById('WorldInfo');
 
-var SelectedCharacterTab = document.getElementById("rm_button_selected_ch");
-var AutoConnectCheckbox = document.getElementById("auto-connect-checkbox");
-var AutoLoadChatCheckbox = document.getElementById("auto-load-chat-checkbox");
+var SelectedCharacterTab = document.getElementById('rm_button_selected_ch');
+var AutoConnectCheckbox = document.getElementById('auto-connect-checkbox');
+var AutoLoadChatCheckbox = document.getElementById('auto-load-chat-checkbox');
 
 var connection_made = false;
 var retry_delay = 500;
-var RA_AC_retries = 1;
 
 const observerConfig = { childList: true, subtree: true };
 const countTokensDebounced = debounce(RA_CountCharTokens, 1000);
 
 const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
-        if (mutation.target.classList.contains("online_status_text")) {
+        if (mutation.target.classList.contains('online_status_text')) {
             RA_checkOnlineStatus();
         } else if (mutation.target.parentNode === SelectedCharacterTab) {
             setTimeout(RA_CountCharTokens, 200);
@@ -93,7 +90,7 @@ export function humanizeGenTime(total_gen_time) {
     let hours = time_spent % 24;
     time_spent = Math.floor(time_spent / 24);
     let days = time_spent;
-    time_spent = "";
+    time_spent = '';
     if (days > 0) { time_spent += `${days} Days, `; }
     if (hours > 0) { time_spent += `${hours} Hours, `; }
     if (minutes > 0) { time_spent += `${minutes} Minutes, `; }
@@ -132,7 +129,7 @@ export function getDeviceInfo() {
                 deviceInfo = result;
             },
             error: function () {
-                console.log("Couldn't load device info. Defaulting to desktop");
+                console.log('Couldn\'t load device info. Defaulting to desktop');
                 deviceInfo = { device: { type: 'desktop' } };
             },
         });
@@ -164,15 +161,13 @@ export function humanizedDateTime() {
     let humanYear = baseDate.getFullYear();
     let humanMonth = baseDate.getMonth() + 1;
     let humanDate = baseDate.getDate();
-    let humanHour = (baseDate.getHours() < 10 ? "0" : "") + baseDate.getHours();
+    let humanHour = (baseDate.getHours() < 10 ? '0' : '') + baseDate.getHours();
     let humanMinute =
-        (baseDate.getMinutes() < 10 ? "0" : "") + baseDate.getMinutes();
+        (baseDate.getMinutes() < 10 ? '0' : '') + baseDate.getMinutes();
     let humanSecond =
-        (baseDate.getSeconds() < 10 ? "0" : "") + baseDate.getSeconds();
-    let humanMillisecond =
-        (baseDate.getMilliseconds() < 10 ? "0" : "") + baseDate.getMilliseconds();
+        (baseDate.getSeconds() < 10 ? '0' : '') + baseDate.getSeconds();
     let HumanizedDateTime =
-        humanYear + "-" + humanMonth + "-" + humanDate + "@" + humanHour + "h" + humanMinute + "m" + humanSecond + "s";
+        humanYear + '-' + humanMonth + '-' + humanDate + '@' + humanHour + 'h' + humanMinute + 'm' + humanSecond + 's';
     return HumanizedDateTime;
 }
 
@@ -201,13 +196,13 @@ export function getMessageTimeStamp() {
 
 
 // triggers:
-$("#rm_button_create").on("click", function () {                 //when "+New Character" is clicked
-    $(SelectedCharacterTab).children("h2").html('');        // empty nav's 3rd panel tab
+$('#rm_button_create').on('click', function () {                 //when "+New Character" is clicked
+    $(SelectedCharacterTab).children('h2').html('');        // empty nav's 3rd panel tab
 });
 //when any input is made to the create/edit character form textareas
-$("#rm_ch_create_block").on("input", function () { countTokensDebounced(); });
+$('#rm_ch_create_block').on('input', function () { countTokensDebounced(); });
 //when any input is made to the advanced editing popup textareas
-$("#character_popup").on("input", function () { countTokensDebounced(); });
+$('#character_popup').on('input', function () { countTokensDebounced(); });
 //function:
 export function RA_CountCharTokens() {
     let total_tokens = 0;
@@ -352,7 +347,7 @@ export async function favsToHotswap() {
 
     await Promise.allSettled(promises);
     //helpful instruction message if no characters are favorited
-    if (count === 0) { container.html(`<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>`) }
+    if (count === 0) { container.html('<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>'); }
     //otherwise replace with fav'd characters
     if (count > 0) {
         container.replaceWith(newContainer);
@@ -361,27 +356,26 @@ export async function favsToHotswap() {
 
 //changes input bar and send button display depending on connection status
 function RA_checkOnlineStatus() {
-    if (online_status == "no_connection") {
-        $("#send_textarea").attr("placeholder", "Not connected to API!"); //Input bar placeholder tells users they are not connected
-        $("#send_form").addClass('no-connection'); //entire input form area is red when not connected
-        $("#send_but").addClass("displayNone"); //send button is hidden when not connected;
-        $("#mes_continue").addClass("displayNone"); //continue button is hidden when not connected;
-        $("#API-status-top").removeClass("fa-plug");
-        $("#API-status-top").addClass("fa-plug-circle-exclamation redOverlayGlow");
+    if (online_status == 'no_connection') {
+        $('#send_textarea').attr('placeholder', 'Not connected to API!'); //Input bar placeholder tells users they are not connected
+        $('#send_form').addClass('no-connection'); //entire input form area is red when not connected
+        $('#send_but').addClass('displayNone'); //send button is hidden when not connected;
+        $('#mes_continue').addClass('displayNone'); //continue button is hidden when not connected;
+        $('#API-status-top').removeClass('fa-plug');
+        $('#API-status-top').addClass('fa-plug-circle-exclamation redOverlayGlow');
         connection_made = false;
     } else {
-        if (online_status !== undefined && online_status !== "no_connection") {
-            $("#send_textarea").attr("placeholder", `Type a message, or /? for help`); //on connect, placeholder tells user to type message
-            $('#send_form').removeClass("no-connection");
-            $("#API-status-top").removeClass("fa-plug-circle-exclamation redOverlayGlow");
-            $("#API-status-top").addClass("fa-plug");
+        if (online_status !== undefined && online_status !== 'no_connection') {
+            $('#send_textarea').attr('placeholder', 'Type a message, or /? for help'); //on connect, placeholder tells user to type message
+            $('#send_form').removeClass('no-connection');
+            $('#API-status-top').removeClass('fa-plug-circle-exclamation redOverlayGlow');
+            $('#API-status-top').addClass('fa-plug');
             connection_made = true;
             retry_delay = 100;
-            RA_AC_retries = 1;
 
             if (!is_send_press && !(selected_group && is_group_generating)) {
-                $("#send_but").removeClass("displayNone"); //on connect, send button shows
-                $("#mes_continue").removeClass("displayNone"); //continue button is shown when connected
+                $('#send_but').removeClass('displayNone'); //on connect, send button shows
+                $('#mes_continue').removeClass('displayNone'); //continue button is shown when connected
             }
         }
     }
@@ -394,24 +388,24 @@ function RA_autoconnect(PrevApi) {
         setTimeout(RA_autoconnect, 100);
         return;
     }
-    if (online_status === "no_connection" && LoadLocalBool('AutoConnectEnabled')) {
+    if (online_status === 'no_connection' && LoadLocalBool('AutoConnectEnabled')) {
         switch (main_api) {
             case 'kobold':
                 if (api_server && isValidUrl(api_server)) {
-                    $("#api_button").trigger('click');
+                    $('#api_button').trigger('click');
                 }
                 break;
             case 'novel':
                 if (secret_state[SECRET_KEYS.NOVEL]) {
-                    $("#api_button_novel").trigger('click');
+                    $('#api_button_novel').trigger('click');
                 }
                 break;
             case 'textgenerationwebui':
-                if (isMancer() && secret_state[SECRET_KEYS.MANCER]) {
-                    $("#api_button_textgenerationwebui").trigger('click');
+                if (textgen_settings.type === textgen_types.MANCER && secret_state[SECRET_KEYS.MANCER]) {
+                    $('#api_button_textgenerationwebui').trigger('click');
                 }
                 else if (api_server_textgenerationwebui && isValidUrl(api_server_textgenerationwebui)) {
-                    $("#api_button_textgenerationwebui").trigger('click');
+                    $('#api_button_textgenerationwebui').trigger('click');
                 }
                 break;
             case 'openai':
@@ -423,13 +417,12 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
                     || (secret_state[SECRET_KEYS.PALM] && oai_settings.chat_completion_source == chat_completion_sources.PALM)
                 ) {
-                    $("#api_button_openai").trigger('click');
+                    $('#api_button_openai').trigger('click');
                 }
                 break;
         }
 
         if (!connection_made) {
-            RA_AC_retries++;
             retry_delay = Math.min(retry_delay * 2, 30000); // double retry delay up to to 30 secs
             // console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
             // setTimeout(RA_autoconnect, retry_delay);
@@ -441,25 +434,41 @@ function OpenNavPanels() {
     const deviceInfo = getDeviceInfo();
     if (deviceInfo && deviceInfo.device.type === 'desktop') {
         //auto-open R nav if locked and previously open
-        if (LoadLocalBool("NavLockOn") == true && LoadLocalBool("NavOpened") == true) {
+        if (LoadLocalBool('NavLockOn') == true && LoadLocalBool('NavOpened') == true) {
             //console.log("RA -- clicking right nav to open");
-            $("#rightNavDrawerIcon").click();
+            $('#rightNavDrawerIcon').click();
         }
 
         //auto-open L nav if locked and previously open
-        if (LoadLocalBool("LNavLockOn") == true && LoadLocalBool("LNavOpened") == true) {
-            console.debug("RA -- clicking left nav to open");
-            $("#leftNavDrawerIcon").click();
+        if (LoadLocalBool('LNavLockOn') == true && LoadLocalBool('LNavOpened') == true) {
+            console.debug('RA -- clicking left nav to open');
+            $('#leftNavDrawerIcon').click();
         }
 
         //auto-open WI if locked and previously open
-        if (LoadLocalBool("WINavLockOn") == true && LoadLocalBool("WINavOpened") == true) {
-            console.debug("RA -- clicking WI to open");
-            $("#WIDrawerIcon").click();
+        if (LoadLocalBool('WINavLockOn') == true && LoadLocalBool('WINavOpened') == true) {
+            console.debug('RA -- clicking WI to open');
+            $('#WIDrawerIcon').click();
         }
     }
 }
 
+function restoreUserInput() {
+    if (!power_user.restore_user_input) {
+        console.debug('restoreUserInput disabled');
+        return;
+    }
+
+    const userInput = LoadLocal('userInput');
+    if (userInput) {
+        $('#send_textarea').val(userInput).trigger('input');
+    }
+}
+
+function saveUserInput() {
+    const userInput = String($('#send_textarea').val());
+    SaveLocal('userInput', userInput);
+}
 
 // Make the DIV element draggable:
 
@@ -472,7 +481,7 @@ export function dragElement(elmnt) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     var height, width, top, left, right, bottom,
         maxX, maxY, winHeight, winWidth,
-        topbar, topbarWidth, topBarFirstX, topBarLastX, topBarLastY, sheldWidth;
+        topbar, topBarFirstX, topBarLastY;
 
     var elmntName = elmnt.attr('id');
     console.debug(`dragElement called for ${elmntName}`);
@@ -482,14 +491,14 @@ export function dragElement(elmnt) {
 
     if (elmntHeader.length) {
         elmntHeader.off('mousedown').on('mousedown', (e) => {
-            hasBeenDraggedByUser = true
+            hasBeenDraggedByUser = true;
             observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
             dragMouseDown(e);
         });
         $(elmnt).off('mousedown').on('mousedown', () => {
-            isMouseDown = true
+            isMouseDown = true;
             observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
-        })
+        });
     }
 
     const observer = new MutationObserver((mutations) => {
@@ -501,8 +510,8 @@ export function dragElement(elmnt) {
             || power_user.movingUI === false
             || isMobile() === true
         ) {
-            console.debug('aborting mutator')
-            return
+            console.debug('aborting mutator');
+            return;
         }
         //console.debug(left + width, winWidth, hasBeenDraggedByUser, isMouseDown)
         const style = getComputedStyle(target); //use computed values because not all CSS are set by default
@@ -516,13 +525,10 @@ export function dragElement(elmnt) {
         maxY = parseInt(height + top);
         winWidth = window.innerWidth;
         winHeight = window.innerHeight;
-        sheldWidth = parseInt($('html').css('--sheldWidth').slice(0, -2));
 
-        topbar = document.getElementById("top-bar")
-        const topbarstyle = getComputedStyle(topbar)
-        topBarFirstX = parseInt(topbarstyle.marginInline)
-        topbarWidth = parseInt(topbarstyle.width);
-        topBarLastX = topBarFirstX + topbarWidth;
+        topbar = document.getElementById('top-bar');
+        const topbarstyle = getComputedStyle(topbar);
+        topBarFirstX = parseInt(topbarstyle.marginInline);
         topBarLastY = parseInt(topbarstyle.height);
 
         /*console.log(`
@@ -540,7 +546,7 @@ export function dragElement(elmnt) {
 
         //prepare an empty poweruser object for the item being altered if we don't have one already
         if (!power_user.movingUIState[elmntName]) {
-            console.debug(`adding config property for ${elmntName}`)
+            console.debug(`adding config property for ${elmntName}`);
             power_user.movingUIState[elmntName] = {};
         }
 
@@ -555,44 +561,44 @@ export function dragElement(elmnt) {
 
         //handle resizing
         if (!hasBeenDraggedByUser && isMouseDown) {
-            console.debug('saw resize, NOT header drag')
+            console.debug('saw resize, NOT header drag');
 
             //prevent resizing offscreen
             if (top + elmnt.height() >= winHeight) {
-                console.debug('resizing height to prevent offscreen')
-                elmnt.css('height', winHeight - top - 1 + "px");
+                console.debug('resizing height to prevent offscreen');
+                elmnt.css('height', winHeight - top - 1 + 'px');
             }
 
             if (left + elmnt.width() >= winWidth) {
-                console.debug('resizing width to prevent offscreen')
-                elmnt.css('width', winWidth - left - 1 + "px");
+                console.debug('resizing width to prevent offscreen');
+                elmnt.css('width', winWidth - left - 1 + 'px');
             }
 
             //prevent resizing from top left into the top bar
             if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX
             ) {
-                console.debug('prevent topbar underlap resize')
-                elmnt.css('width', width - 1 + "px");
+                console.debug('prevent topbar underlap resize');
+                elmnt.css('width', width - 1 + 'px');
             }
 
             //set css to prevent weird resize behavior (does not save)
-            elmnt.css('left', left)
-            elmnt.css('top', top)
+            elmnt.css('left', left);
+            elmnt.css('top', top);
 
             //set a listener for mouseup to save new width/height
             elmnt.off('mouseup').on('mouseup', () => {
-                console.debug(`Saving ${elmntName} Height/Width`)
+                console.debug(`Saving ${elmntName} Height/Width`);
                 // check if the height or width actually changed
                 if (power_user.movingUIState[elmntName].width === width && power_user.movingUIState[elmntName].height === height) {
-                    console.debug('no change detected, aborting save')
-                    return
+                    console.debug('no change detected, aborting save');
+                    return;
                 }
 
                 power_user.movingUIState[elmntName].width = width;
                 power_user.movingUIState[elmntName].height = height;
                 eventSource.emit('resizeUI', elmntName);
                 saveSettingsDebounced();
-            })
+            });
         }
 
         //handle dragging hit detection
@@ -601,13 +607,13 @@ export function dragElement(elmnt) {
             if (top <= 0) {
                 elmnt.css('top', '0px');
             } else if (maxY >= winHeight) {
-                elmnt.css('top', winHeight - maxY + top - 1 + "px");
+                elmnt.css('top', winHeight - maxY + top - 1 + 'px');
             }
 
             if (left <= 0) {
                 elmnt.css('left', '0px');
             } else if (maxX >= winWidth) {
-                elmnt.css('left', winWidth - maxX + left - 1 + "px");
+                elmnt.css('left', winWidth - maxX + left - 1 + 'px');
             }
 
             //prevent underlap with topbar div
@@ -626,7 +632,7 @@ export function dragElement(elmnt) {
         // Check if the element header exists and set the listener on the grabber
         if (elmntHeader.length) {
             elmntHeader.off('mousedown').on('mousedown', (e) => {
-                console.debug('listener started from header')
+                console.debug('listener started from header');
                 dragMouseDown(e);
             });
         } else {
@@ -662,21 +668,21 @@ export function dragElement(elmnt) {
         elmnt.attr('data-dragged', 'true');
 
         //first set css to computed values to avoid CSS NaN results from 'auto', etc
-        elmnt.css('left', (elmnt.offset().left) + "px");
-        elmnt.css("top", (elmnt.offset().top) + "px");
+        elmnt.css('left', (elmnt.offset().left) + 'px');
+        elmnt.css('top', (elmnt.offset().top) + 'px');
 
         //then update element position styles to account for drag changes
         elmnt.css('margin', 'unset');
-        elmnt.css('left', (elmnt.offset().left - pos1) + "px");
-        elmnt.css("top", (elmnt.offset().top - pos2) + "px");
-        elmnt.css("right", ((winWidth - maxX) + "px"));
-        elmnt.css("bottom", ((winHeight - maxY) + "px"));
+        elmnt.css('left', (elmnt.offset().left - pos1) + 'px');
+        elmnt.css('top', (elmnt.offset().top - pos2) + 'px');
+        elmnt.css('right', ((winWidth - maxX) + 'px'));
+        elmnt.css('bottom', ((winHeight - maxY) + 'px'));
 
         // Height/Width here are for visuals only, and are not saved to settings
         // required because some divs do hot have a set width/height..
         // and will defaults to shrink to min value of 100px set in CSS file
-        elmnt.css('height', height)
-        elmnt.css('width', width)
+        elmnt.css('height', height);
+        elmnt.css('width', width);
         /*
                 console.log(`
                              winWidth: ${winWidth}, winHeight: ${winHeight}
@@ -691,34 +697,34 @@ export function dragElement(elmnt) {
                              `);
                              */
 
-        return
+        return;
     }
 
     function closeDragElement() {
-        console.debug('drag finished')
+        console.debug('drag finished');
         hasBeenDraggedByUser = false;
         isMouseDown = false;
         $(document).off('mouseup', closeDragElement);
         $(document).off('mousemove', elementDrag);
-        $("body").css("overflow", "");
+        $('body').css('overflow', '');
         // Clear the "data-dragged" attribute
         elmnt.attr('data-dragged', 'false');
-        observer.disconnect()
-        console.debug(`Saving ${elmntName} UI position`)
+        observer.disconnect();
+        console.debug(`Saving ${elmntName} UI position`);
         saveSettingsDebounced();
     }
 }
 
 export async function initMovingUI() {
     if (isMobile() === false && power_user.movingUI === true) {
-        console.debug('START MOVING UI')
-        dragElement($("#sheld"));
-        dragElement($("#left-nav-panel"));
-        dragElement($("#right-nav-panel"));
-        dragElement($("#WorldInfo"));
-        await delay(1000)
-        console.debug('loading AN draggable function')
-        dragElement($("#floatingPrompt"))
+        console.debug('START MOVING UI');
+        dragElement($('#sheld'));
+        dragElement($('#left-nav-panel'));
+        dragElement($('#right-nav-panel'));
+        dragElement($('#WorldInfo'));
+        await delay(1000);
+        console.debug('loading AN draggable function');
+        dragElement($('#floatingPrompt'));
     }
 }
 
@@ -731,8 +737,8 @@ export function initRossMods() {
     }, 100);
 
     // read the state of AutoConnect and AutoLoadChat.
-    $(AutoConnectCheckbox).prop("checked", LoadLocalBool("AutoConnectEnabled"));
-    $(AutoLoadChatCheckbox).prop("checked", LoadLocalBool("AutoLoadChatEnabled"));
+    $(AutoConnectCheckbox).prop('checked', LoadLocalBool('AutoConnectEnabled'));
+    $(AutoLoadChatCheckbox).prop('checked', LoadLocalBool('AutoLoadChatEnabled'));
 
     setTimeout(function () {
         if (LoadLocalBool('AutoLoadChatEnabled') == true) { RA_autoloadchat(); }
@@ -740,17 +746,17 @@ export function initRossMods() {
 
 
     //Autoconnect on page load if enabled, or when api type is changed
-    if (LoadLocalBool("AutoConnectEnabled") == true) { RA_autoconnect(); }
-    $("#main_api").change(function () {
+    if (LoadLocalBool('AutoConnectEnabled') == true) { RA_autoconnect(); }
+    $('#main_api').change(function () {
         var PrevAPI = main_api;
         setTimeout(() => RA_autoconnect(PrevAPI), 100);
     });
-    $("#api_button").click(function () { setTimeout(RA_checkOnlineStatus, 100); });
+    $('#api_button').click(function () { setTimeout(RA_checkOnlineStatus, 100); });
 
     //toggle pin class when lock toggle clicked
-    $(RPanelPin).on("click", function () {
-        SaveLocal("NavLockOn", $(RPanelPin).prop("checked"));
-        if ($(RPanelPin).prop("checked") == true) {
+    $(RPanelPin).on('click', function () {
+        SaveLocal('NavLockOn', $(RPanelPin).prop('checked'));
+        if ($(RPanelPin).prop('checked') == true) {
             //console.log('adding pin class to right nav');
             $(RightNavPanel).addClass('pinnedOpen');
         } else {
@@ -758,15 +764,15 @@ export function initRossMods() {
             $(RightNavPanel).removeClass('pinnedOpen');
 
             if ($(RightNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
-                $(RightNavPanel).slideToggle(200, "swing");
+                $(RightNavPanel).slideToggle(200, 'swing');
                 //$(rightNavDrawerIcon).toggleClass('openIcon closedIcon');
                 $(RightNavPanel).toggleClass('openDrawer closedDrawer');
             }
         }
     });
-    $(LPanelPin).on("click", function () {
-        SaveLocal("LNavLockOn", $(LPanelPin).prop("checked"));
-        if ($(LPanelPin).prop("checked") == true) {
+    $(LPanelPin).on('click', function () {
+        SaveLocal('LNavLockOn', $(LPanelPin).prop('checked'));
+        if ($(LPanelPin).prop('checked') == true) {
             //console.log('adding pin class to Left nav');
             $(LeftNavPanel).addClass('pinnedOpen');
         } else {
@@ -774,16 +780,16 @@ export function initRossMods() {
             $(LeftNavPanel).removeClass('pinnedOpen');
 
             if ($(LeftNavPanel).hasClass('openDrawer') && $('.openDrawer').length > 1) {
-                $(LeftNavPanel).slideToggle(200, "swing");
+                $(LeftNavPanel).slideToggle(200, 'swing');
                 //$(leftNavDrawerIcon).toggleClass('openIcon closedIcon');
                 $(LeftNavPanel).toggleClass('openDrawer closedDrawer');
             }
         }
     });
 
-    $(WIPanelPin).on("click", function () {
-        SaveLocal("WINavLockOn", $(WIPanelPin).prop("checked"));
-        if ($(WIPanelPin).prop("checked") == true) {
+    $(WIPanelPin).on('click', function () {
+        SaveLocal('WINavLockOn', $(WIPanelPin).prop('checked'));
+        if ($(WIPanelPin).prop('checked') == true) {
             console.debug('adding pin class to WI');
             $(WorldInfo).addClass('pinnedOpen');
         } else {
@@ -792,7 +798,7 @@ export function initRossMods() {
 
             if ($(WorldInfo).hasClass('openDrawer') && $('.openDrawer').length > 1) {
                 console.debug('closing WI after lock removal');
-                $(WorldInfo).slideToggle(200, "swing");
+                $(WorldInfo).slideToggle(200, 'swing');
                 //$(WorldInfoDrawerIcon).toggleClass('openIcon closedIcon');
                 $(WorldInfo).toggleClass('openDrawer closedDrawer');
             }
@@ -800,55 +806,55 @@ export function initRossMods() {
     });
 
     // read the state of right Nav Lock and apply to rightnav classlist
-    $(RPanelPin).prop('checked', LoadLocalBool("NavLockOn"));
-    if (LoadLocalBool("NavLockOn") == true) {
+    $(RPanelPin).prop('checked', LoadLocalBool('NavLockOn'));
+    if (LoadLocalBool('NavLockOn') == true) {
         //console.log('setting pin class via local var');
         $(RightNavPanel).addClass('pinnedOpen');
     }
-    if (!!$(RPanelPin).prop('checked')) {
+    if ($(RPanelPin).prop('checked')) {
         console.debug('setting pin class via checkbox state');
         $(RightNavPanel).addClass('pinnedOpen');
     }
     // read the state of left Nav Lock and apply to leftnav classlist
-    $(LPanelPin).prop('checked', LoadLocalBool("LNavLockOn"));
-    if (LoadLocalBool("LNavLockOn") == true) {
+    $(LPanelPin).prop('checked', LoadLocalBool('LNavLockOn'));
+    if (LoadLocalBool('LNavLockOn') == true) {
         //console.log('setting pin class via local var');
         $(LeftNavPanel).addClass('pinnedOpen');
     }
-    if (!!$(LPanelPin).prop('checked')) {
+    if ($(LPanelPin).prop('checked')) {
         console.debug('setting pin class via checkbox state');
         $(LeftNavPanel).addClass('pinnedOpen');
     }
 
     // read the state of left Nav Lock and apply to leftnav classlist
-    $(WIPanelPin).prop('checked', LoadLocalBool("WINavLockOn"));
-    if (LoadLocalBool("WINavLockOn") == true) {
+    $(WIPanelPin).prop('checked', LoadLocalBool('WINavLockOn'));
+    if (LoadLocalBool('WINavLockOn') == true) {
         //console.log('setting pin class via local var');
         $(WorldInfo).addClass('pinnedOpen');
     }
 
-    if (!!$(WIPanelPin).prop('checked')) {
+    if ($(WIPanelPin).prop('checked')) {
         console.debug('setting pin class via checkbox state');
         $(WorldInfo).addClass('pinnedOpen');
     }
 
     //save state of Right nav being open or closed
-    $("#rightNavDrawerIcon").on("click", function () {
-        if (!$("#rightNavDrawerIcon").hasClass('openIcon')) {
+    $('#rightNavDrawerIcon').on('click', function () {
+        if (!$('#rightNavDrawerIcon').hasClass('openIcon')) {
             SaveLocal('NavOpened', 'true');
         } else { SaveLocal('NavOpened', 'false'); }
     });
 
     //save state of Left nav being open or closed
-    $("#leftNavDrawerIcon").on("click", function () {
-        if (!$("#leftNavDrawerIcon").hasClass('openIcon')) {
+    $('#leftNavDrawerIcon').on('click', function () {
+        if (!$('#leftNavDrawerIcon').hasClass('openIcon')) {
             SaveLocal('LNavOpened', 'true');
         } else { SaveLocal('LNavOpened', 'false'); }
     });
 
     //save state of Left nav being open or closed
-    $("#WorldInfo").on("click", function () {
-        if (!$("#WorldInfo").hasClass('openIcon')) {
+    $('#WorldInfo').on('click', function () {
+        if (!$('#WorldInfo').hasClass('openIcon')) {
             SaveLocal('WINavOpened', 'true');
         } else { SaveLocal('WINavOpened', 'false'); }
     });
@@ -867,23 +873,23 @@ export function initRossMods() {
     }, 300);
 
     //save AutoConnect and AutoLoadChat prefs
-    $(AutoConnectCheckbox).on("change", function () { SaveLocal("AutoConnectEnabled", $(AutoConnectCheckbox).prop("checked")); });
-    $(AutoLoadChatCheckbox).on("change", function () { SaveLocal("AutoLoadChatEnabled", $(AutoLoadChatCheckbox).prop("checked")); });
+    $(AutoConnectCheckbox).on('change', function () { SaveLocal('AutoConnectEnabled', $(AutoConnectCheckbox).prop('checked')); });
+    $(AutoLoadChatCheckbox).on('change', function () { SaveLocal('AutoLoadChatEnabled', $(AutoLoadChatCheckbox).prop('checked')); });
 
     $(SelectedCharacterTab).click(function () { SaveLocal('SelectedNavTab', 'rm_button_selected_ch'); });
-    $("#rm_button_characters").click(function () { SaveLocal('SelectedNavTab', 'rm_button_characters'); });
+    $('#rm_button_characters').click(function () { SaveLocal('SelectedNavTab', 'rm_button_characters'); });
 
     // when a char is selected from the list, save them as the auto-load character for next page load
 
     // when a char is selected from the list, save their name as the auto-load character for next page load
-    $(document).on("click", ".character_select", function () {
+    $(document).on('click', '.character_select', function () {
         const characterId = $(this).find('.avatar').attr('title') || $(this).attr('title');
         setActiveCharacter(characterId);
         setActiveGroup(null);
         saveSettingsDebounced();
     });
 
-    $(document).on("click", ".group_select", function () {
+    $(document).on('click', '.group_select', function () {
         const groupId = $(this).data('id') || $(this).attr('grid');
         setActiveCharacter(null);
         setActiveGroup(groupId);
@@ -892,22 +898,29 @@ export function initRossMods() {
 
     //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
+        const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
         const chatBlock = $('#chat');
         const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
         this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
-        this.style.height = (this.scrollHeight) + 'px';
-        const newScrollTop = Math.round(chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom));
-        chatBlock.scrollTop(newScrollTop);
+        this.style.height = this.scrollHeight + 0.1 + 'px';
+
+        if (!isFirefox) {
+            const newScrollTop = Math.round(chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom));
+            chatBlock.scrollTop(newScrollTop);
+        }
+        saveUserInput();
     });
+
+    restoreUserInput();
 
     //Regenerate if user swipes on the last mesage in chat
 
     document.addEventListener('swiped-left', function (e) {
         if (power_user.gestures === false) {
-            return
+            return;
         }
-        if ($(".mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt").is(":visible")) {
-            return
+        if ($('.mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt').is(':visible')) {
+            return;
         }
         var SwipeButR = $('.swipe_right:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
@@ -919,10 +932,10 @@ export function initRossMods() {
     });
     document.addEventListener('swiped-right', function (e) {
         if (power_user.gestures === false) {
-            return
+            return;
         }
-        if ($(".mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt").is(":visible")) {
-            return
+        if ($('.mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt').is(':visible')) {
+            return;
         }
         var SwipeButL = $('.swipe_left:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
@@ -958,55 +971,55 @@ export function initRossMods() {
         //Enter to send when send_textarea in focus
         if ($(':focus').attr('id') === 'send_textarea') {
             const sendOnEnter = shouldSendOnEnter();
-            if (!event.shiftKey && !event.ctrlKey && !event.altKey && event.key == "Enter" && is_send_press == false && sendOnEnter) {
+            if (!event.shiftKey && !event.ctrlKey && !event.altKey && event.key == 'Enter' && is_send_press == false && sendOnEnter) {
                 event.preventDefault();
                 Generate();
             }
         }
         if ($(':focus').attr('id') === 'dialogue_popup_input' && !isMobile()) {
-            if (!event.shiftKey && !event.ctrlKey && event.key == "Enter") {
+            if (!event.shiftKey && !event.ctrlKey && event.key == 'Enter') {
                 event.preventDefault();
                 $('#dialogue_popup_ok').trigger('click');
             }
         }
         //ctrl+shift+up to scroll to context line
-        if (event.shiftKey && event.ctrlKey && event.key == "ArrowUp") {
+        if (event.shiftKey && event.ctrlKey && event.key == 'ArrowUp') {
             event.preventDefault();
             let contextLine = $('.lastInContext');
             if (contextLine.length !== 0) {
                 $('#chat').animate({
-                    scrollTop: contextLine.offset().top - $('#chat').offset().top + $('#chat').scrollTop()
+                    scrollTop: contextLine.offset().top - $('#chat').offset().top + $('#chat').scrollTop(),
                 }, 300);
             } else { toastr.warning('Context line not found, send a message first!'); }
         }
         //ctrl+shift+down to scroll to bottom of chat
-        if (event.shiftKey && event.ctrlKey && event.key == "ArrowDown") {
+        if (event.shiftKey && event.ctrlKey && event.key == 'ArrowDown') {
             event.preventDefault();
             $('#chat').animate({
-                scrollTop: $('#chat').prop('scrollHeight')
+                scrollTop: $('#chat').prop('scrollHeight'),
             }, 300);
         }
 
         // Alt+Enter or AltGr+Enter to Continue
-        if ((event.altKey || (event.altKey && event.ctrlKey)) && event.key == "Enter") {
+        if ((event.altKey || (event.altKey && event.ctrlKey)) && event.key == 'Enter') {
             if (is_send_press == false) {
-                console.debug("Continuing with Alt+Enter");
+                console.debug('Continuing with Alt+Enter');
                 $('#option_continue').trigger('click');
             }
         }
 
         // Ctrl+Enter for Regeneration Last Response. If editing, accept the edits instead
-        if (event.ctrlKey && event.key == "Enter") {
-            const editMesDone = $(".mes_edit_done:visible");
+        if (event.ctrlKey && event.key == 'Enter') {
+            const editMesDone = $('.mes_edit_done:visible');
             if (editMesDone.length > 0) {
-                console.debug("Accepting edits with Ctrl+Enter");
+                console.debug('Accepting edits with Ctrl+Enter');
                 editMesDone.trigger('click');
             } else if (is_send_press == false) {
-                console.debug("Regenerating with Ctrl+Enter");
+                console.debug('Regenerating with Ctrl+Enter');
                 $('#option_regenerate').click();
                 $('#options').hide();
             } else {
-                console.debug("Ctrl+Enter ignored");
+                console.debug('Ctrl+Enter ignored');
             }
         }
 
@@ -1016,25 +1029,25 @@ export function initRossMods() {
             return $('body').hasClass('nGY2_body_scrollbar');
         }
 
-        if (event.key == "ArrowLeft") {        //swipes left
+        if (event.key == 'ArrowLeft') {        //swipes left
             if (
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $(".swipe_left:last").css('display') === 'flex' &&
-                $("#send_textarea").val() === '' &&
-                $("#character_popup").css("display") === "none" &&
-                $("#shadow_select_chat_popup").css("display") === "none" &&
+                $('.swipe_left:last').css('display') === 'flex' &&
+                $('#send_textarea').val() === '' &&
+                $('#character_popup').css('display') === 'none' &&
+                $('#shadow_select_chat_popup').css('display') === 'none' &&
                 !isInputElementInFocus()
             ) {
                 $('.swipe_left:last').click();
             }
         }
-        if (event.key == "ArrowRight") { //swipes right
+        if (event.key == 'ArrowRight') { //swipes right
             if (
                 !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
-                $(".swipe_right:last").css('display') === 'flex' &&
-                $("#send_textarea").val() === '' &&
-                $("#character_popup").css("display") === "none" &&
-                $("#shadow_select_chat_popup").css("display") === "none" &&
+                $('.swipe_right:last').css('display') === 'flex' &&
+                $('#send_textarea').val() === '' &&
+                $('#character_popup').css('display') === 'none' &&
+                $('#shadow_select_chat_popup').css('display') === 'none' &&
                 !isInputElementInFocus()
             ) {
                 $('.swipe_right:last').click();
@@ -1042,13 +1055,13 @@ export function initRossMods() {
         }
 
 
-        if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
+        if (event.ctrlKey && event.key == 'ArrowUp') { //edits last USER message if chatbar is empty and focused
             if (
-                $("#send_textarea").val() === '' &&
+                $('#send_textarea').val() === '' &&
                 chatbarInFocus === true &&
-                ($(".swipe_right:last").css('display') === 'flex' || $('.last_mes').attr('is_system') === 'true') &&
-                $("#character_popup").css("display") === "none" &&
-                $("#shadow_select_chat_popup").css("display") === "none"
+                ($('.swipe_right:last').css('display') === 'flex' || $('.last_mes').attr('is_system') === 'true') &&
+                $('#character_popup').css('display') === 'none' &&
+                $('#shadow_select_chat_popup').css('display') === 'none'
             ) {
                 const isUserMesList = document.querySelectorAll('div[is_user="true"]');
                 const lastIsUserMes = isUserMesList[isUserMesList.length - 1];
@@ -1059,14 +1072,14 @@ export function initRossMods() {
             }
         }
 
-        if (event.key == "ArrowUp") { //edits last message if chatbar is empty and focused
+        if (event.key == 'ArrowUp') { //edits last message if chatbar is empty and focused
             //console.log('got uparrow input');
             if (
-                $("#send_textarea").val() === '' &&
+                $('#send_textarea').val() === '' &&
                 chatbarInFocus === true &&
-                $(".swipe_right:last").css('display') === 'flex' &&
-                $("#character_popup").css("display") === "none" &&
-                $("#shadow_select_chat_popup").css("display") === "none"
+                $('.swipe_right:last').css('display') === 'flex' &&
+                $('#character_popup').css('display') === 'none' &&
+                $('#shadow_select_chat_popup').css('display') === 'none'
             ) {
                 const lastMes = document.querySelector('.last_mes');
                 const editMes = lastMes.querySelector('.mes_block .mes_edit');
@@ -1076,72 +1089,72 @@ export function initRossMods() {
             }
         }
 
-        if (event.key == "Escape") { //closes various panels
+        if (event.key == 'Escape') { //closes various panels
 
             //dont override Escape hotkey functions from script.js
             //"close edit box" and "cancel stream generation".
-            if ($("#curEditTextarea").is(":visible") || $("#mes_stop").is(":visible")) {
-                console.debug('escape key, but deferring to script.js routines')
-                return
+            if ($('#curEditTextarea').is(':visible') || $('#mes_stop').is(':visible')) {
+                console.debug('escape key, but deferring to script.js routines');
+                return;
             }
 
-            if ($("#dialogue_popup").is(":visible")) {
-                if ($("#dialogue_popup_cancel").is(":visible")) {
-                    $("#dialogue_popup_cancel").trigger('click');
-                    return
+            if ($('#dialogue_popup').is(':visible')) {
+                if ($('#dialogue_popup_cancel').is(':visible')) {
+                    $('#dialogue_popup_cancel').trigger('click');
+                    return;
                 } else {
-                    $("#dialogue_popup_ok").trigger('click')
-                    return
+                    $('#dialogue_popup_ok').trigger('click');
+                    return;
                 }
             }
 
-            if ($("#select_chat_popup").is(":visible")) {
-                $("#select_chat_cross").trigger('click');
-                return
+            if ($('#select_chat_popup').is(':visible')) {
+                $('#select_chat_cross').trigger('click');
+                return;
             }
 
-            if ($("#character_popup").is(":visible")) {
-                $("#character_cross").trigger('click');
-                return
+            if ($('#character_popup').is(':visible')) {
+                $('#character_cross').trigger('click');
+                return;
             }
 
-            if ($(".drawer-content")
+            if ($('.drawer-content')
                 .not('#WorldInfo')
                 .not('#left-nav-panel')
                 .not('#right-nav-panel')
                 .not('#floatingPrompt')
-                .is(":visible")) {
-                let visibleDrawerContent = $(".drawer-content:visible")
+                .is(':visible')) {
+                let visibleDrawerContent = $('.drawer-content:visible')
                     .not('#WorldInfo')
                     .not('#left-nav-panel')
                     .not('#right-nav-panel')
-                    .not('#floatingPrompt')
+                    .not('#floatingPrompt');
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
-                return
+                return;
             }
 
-            if ($("#floatingPrompt").is(":visible")) {
-                $("#ANClose").trigger('click');
-                return
+            if ($('#floatingPrompt').is(':visible')) {
+                $('#ANClose').trigger('click');
+                return;
             }
 
-            if ($("#WorldInfo").is(":visible")) {
-                $("#WIDrawerIcon").trigger('click');
-                return
+            if ($('#WorldInfo').is(':visible')) {
+                $('#WIDrawerIcon').trigger('click');
+                return;
             }
 
-            if ($("#left-nav-panel").is(":visible") &&
+            if ($('#left-nav-panel').is(':visible') &&
                 $(LPanelPin).prop('checked') === false) {
-                $("#leftNavDrawerIcon").trigger('click');
-                return
+                $('#leftNavDrawerIcon').trigger('click');
+                return;
             }
 
-            if ($("#right-nav-panel").is(":visible") &&
+            if ($('#right-nav-panel').is(':visible') &&
                 $(RPanelPin).prop('checked') === false) {
-                $("#rightNavDrawerIcon").trigger('click');
-                return
+                $('#rightNavDrawerIcon').trigger('click');
+                return;
             }
-            if ($(".draggable").is(":visible")) {
+            if ($('.draggable').is(':visible')) {
                 // Remove the first matched element
                 $('.draggable:first').remove();
                 return;
@@ -1154,7 +1167,7 @@ export function initRossMods() {
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {
             // This will eventually be to trigger quick replies
             event.preventDefault();
-            console.log("Ctrl +" + event.key + " pressed!");
+            console.log('Ctrl +' + event.key + ' pressed!');
         }
     }
 }

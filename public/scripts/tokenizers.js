@@ -1,10 +1,12 @@
-import { characters, getAPIServerUrl, main_api, nai_settings, online_status, this_chid } from "../script.js";
-import { power_user, registerDebugFunction } from "./power-user.js";
-import { chat_completion_sources, model_list, oai_settings } from "./openai.js";
-import { groups, selected_group } from "./group-chats.js";
-import { getStringHash } from "./utils.js";
-import { kai_flags } from "./kai-settings.js";
-import { isKoboldCpp, isMancer, isTabby, textgenerationwebui_settings } from "./textgen-settings.js";
+import { characters, getAPIServerUrl, main_api, nai_settings, online_status, this_chid } from '../script.js';
+import { power_user, registerDebugFunction } from './power-user.js';
+import { chat_completion_sources, model_list, oai_settings } from './openai.js';
+import { groups, selected_group } from './group-chats.js';
+import { getStringHash } from './utils.js';
+import { kai_flags } from './kai-settings.js';
+import { textgen_types, textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
+
+const { OOBA, TABBY, KOBOLDCPP, MANCER } = textgen_types;
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
@@ -31,7 +33,7 @@ export const SENTENCEPIECE_TOKENIZERS = [
     //tokenizers.NERD2,
 ];
 
-const objectStore = new localforage.createInstance({ name: "SillyTavern_ChatCompletions" });
+const objectStore = new localforage.createInstance({ name: 'SillyTavern_ChatCompletions' });
 
 let tokenCache = {};
 
@@ -46,7 +48,7 @@ export function guesstimate(str) {
 
 async function loadTokenCache() {
     try {
-        console.debug('Chat Completions: loading token cache')
+        console.debug('Chat Completions: loading token cache');
         tokenCache = await objectStore.getItem('tokenCache') || {};
     } catch (e) {
         console.log('Chat Completions: unable to load token cache, using default value', e);
@@ -56,7 +58,7 @@ async function loadTokenCache() {
 
 export async function saveTokenCache() {
     try {
-        console.debug('Chat Completions: saving token cache')
+        console.debug('Chat Completions: saving token cache');
         await objectStore.setItem('tokenCache', tokenCache);
     } catch (e) {
         console.log('Chat Completions: unable to save token cache', e);
@@ -84,7 +86,7 @@ export function getFriendlyTokenizerName(forApi) {
         forApi = main_api;
     }
 
-    const tokenizerOption = $("#tokenizer").find(':selected');
+    const tokenizerOption = $('#tokenizer').find(':selected');
     let tokenizerId = Number(tokenizerOption.val());
     let tokenizerName = tokenizerOption.text();
 
@@ -127,8 +129,18 @@ export function getTokenizerBestMatch(forApi) {
         // - API must be connected
         // - Kobold must pass a version check
         // - Tokenizer haven't reported an error previously
-        if (kai_flags.can_use_tokenization && !sessionStorage.getItem(TOKENIZER_WARNING_KEY) && online_status !== 'no_connection') {
-            return tokenizers.API;
+        const hasTokenizerError = sessionStorage.getItem(TOKENIZER_WARNING_KEY);
+        const isConnected = online_status !== 'no_connection';
+        const isTokenizerSupported = textgen_settings.type === OOBA || textgen_settings.type === TABBY || textgen_settings.type === KOBOLDCPP;
+
+        if (!hasTokenizerError && isConnected) {
+            if (forApi === 'kobold' && kai_flags.can_use_tokenization) {
+                return tokenizers.API;
+            }
+
+            if (forApi === 'textgenerationwebui' && isTokenizerSupported) {
+                return tokenizers.API;
+            }
         }
 
         return tokenizers.LLAMA;
@@ -149,21 +161,21 @@ function callTokenizer(type, str, padding) {
         case tokenizers.NONE:
             return guesstimate(str) + padding;
         case tokenizers.GPT2:
-            return countTokensRemote('/api/tokenize/gpt2', str, padding);
+            return countTokensRemote('/api/tokenizers/gpt2/encode', str, padding);
         case tokenizers.LLAMA:
-            return countTokensRemote('/api/tokenize/llama', str, padding);
+            return countTokensRemote('/api/tokenizers/llama/encode', str, padding);
         case tokenizers.NERD:
-            return countTokensRemote('/api/tokenize/nerdstash', str, padding);
+            return countTokensRemote('/api/tokenizers/nerdstash/encode', str, padding);
         case tokenizers.NERD2:
-            return countTokensRemote('/api/tokenize/nerdstash_v2', str, padding);
+            return countTokensRemote('/api/tokenizers/nerdstash_v2/encode', str, padding);
         case tokenizers.MISTRAL:
-            return countTokensRemote('/api/tokenize/mistral', str, padding);
+            return countTokensRemote('/api/tokenizers/mistral/encode', str, padding);
         case tokenizers.YI:
-            return countTokensRemote('/api/tokenize/yi', str, padding);
+            return countTokensRemote('/api/tokenizers/yi/encode', str, padding);
         case tokenizers.API:
             return countTokensRemote('/tokenize_via_api', str, padding);
         default:
-            console.warn("Unknown tokenizer type", type);
+            console.warn('Unknown tokenizer type', type);
             return callTokenizer(tokenizers.NONE, str, padding);
     }
 }
@@ -210,7 +222,7 @@ export function getTokenCount(str, padding = undefined) {
     const result = callTokenizer(tokenizerType, str, padding);
 
     if (isNaN(result)) {
-        console.warn("Token count calculation returned NaN");
+        console.warn('Token count calculation returned NaN');
         return 0;
     }
 
@@ -337,14 +349,14 @@ export function countTokensOpenAI(messages, full = false) {
             jQuery.ajax({
                 async: false,
                 type: 'POST', //
-                url: shouldTokenizeAI21 ? '/api/tokenize/ai21' : `/api/tokenize/openai?model=${model}`,
+                url: shouldTokenizeAI21 ? '/api/tokenizers/ai21/count' : `/api/tokenizers/openai/count?model=${model}`,
                 data: JSON.stringify([message]),
-                dataType: "json",
-                contentType: "application/json",
+                dataType: 'json',
+                contentType: 'application/json',
                 success: function (data) {
                     token_count += Number(data.token_count);
                     cacheObject[cacheKey] = Number(data.token_count);
-                }
+                },
             });
         }
     }
@@ -382,11 +394,12 @@ function getTokenCacheObject() {
 function getRemoteTokenizationParams(str) {
     return {
         text: str,
-        api: main_api,
+        main_api,
+        api_type: textgen_settings.type,
         url: getAPIServerUrl(),
-        legacy_api: main_api === 'textgenerationwebui' && textgenerationwebui_settings.legacy_api && !isMancer(),
-        use_tabby: main_api === 'textgenerationwebui' && isTabby(),
-        use_koboldcpp: main_api === 'textgenerationwebui' && isKoboldCpp(),
+        legacy_api: main_api === 'textgenerationwebui' &&
+            textgen_settings.legacy_api &&
+            textgen_settings.type !== MANCER,
     };
 }
 
@@ -405,26 +418,26 @@ function countTokensRemote(endpoint, str, padding) {
         type: 'POST',
         url: endpoint,
         data: JSON.stringify(getRemoteTokenizationParams(str)),
-        dataType: "json",
-        contentType: "application/json",
+        dataType: 'json',
+        contentType: 'application/json',
         success: function (data) {
             if (typeof data.count === 'number') {
                 tokenCount = data.count;
             } else {
                 tokenCount = guesstimate(str);
-                console.error("Error counting tokens");
+                console.error('Error counting tokens');
 
                 if (!sessionStorage.getItem(TOKENIZER_WARNING_KEY)) {
                     toastr.warning(
-                        "Your selected API doesn't support the tokenization endpoint. Using estimated counts.",
-                        "Error counting tokens",
+                        'Your selected API doesn\'t support the tokenization endpoint. Using estimated counts.',
+                        'Error counting tokens',
                         { timeOut: 10000, preventDuplicates: true },
                     );
 
                     sessionStorage.setItem(TOKENIZER_WARNING_KEY, String(true));
                 }
             }
-        }
+        },
     });
 
     return tokenCount + padding;
@@ -448,8 +461,8 @@ function getTextTokensRemote(endpoint, str, model = '') {
         type: 'POST',
         url: endpoint,
         data: JSON.stringify(getRemoteTokenizationParams(str)),
-        dataType: "json",
-        contentType: "application/json",
+        dataType: 'json',
+        contentType: 'application/json',
         success: function (data) {
             ids = data.ids;
 
@@ -457,7 +470,7 @@ function getTextTokensRemote(endpoint, str, model = '') {
             if (Array.isArray(data.chunks)) {
                 Object.defineProperty(ids, 'chunks', { value: data.chunks });
             }
-        }
+        },
     });
     return ids;
 }
@@ -478,11 +491,11 @@ function decodeTextTokensRemote(endpoint, ids, model = '') {
         type: 'POST',
         url: endpoint,
         data: JSON.stringify({ ids: ids }),
-        dataType: "json",
-        contentType: "application/json",
+        dataType: 'json',
+        contentType: 'application/json',
         success: function (data) {
             text = data.text;
-        }
+        },
     });
     return text;
 }
@@ -496,24 +509,25 @@ function decodeTextTokensRemote(endpoint, ids, model = '') {
 export function getTextTokens(tokenizerType, str) {
     switch (tokenizerType) {
         case tokenizers.GPT2:
-            return getTextTokensRemote('/api/tokenize/gpt2', str);
+            return getTextTokensRemote('/api/tokenizers/gpt2/encode', str);
         case tokenizers.LLAMA:
-            return getTextTokensRemote('/api/tokenize/llama', str);
+            return getTextTokensRemote('/api/tokenizers/llama/encode', str);
         case tokenizers.NERD:
-            return getTextTokensRemote('/api/tokenize/nerdstash', str);
+            return getTextTokensRemote('/api/tokenizers/nerdstash/encode', str);
         case tokenizers.NERD2:
-            return getTextTokensRemote('/api/tokenize/nerdstash_v2', str);
+            return getTextTokensRemote('/api/tokenizers/nerdstash_v2/encode', str);
         case tokenizers.MISTRAL:
-            return getTextTokensRemote('/api/tokenize/mistral', str);
+            return getTextTokensRemote('/api/tokenizers/mistral/encode', str);
         case tokenizers.YI:
-            return getTextTokensRemote('/api/tokenize/yi', str);
-        case tokenizers.OPENAI:
+            return getTextTokensRemote('/api/tokenizers/yi/encode', str);
+        case tokenizers.OPENAI: {
             const model = getTokenizerModel();
-            return getTextTokensRemote('/api/tokenize/openai-encode', str, model);
+            return getTextTokensRemote('/api/tokenizers/openai/encode', str, model);
+        }
         case tokenizers.API:
             return getTextTokensRemote('/tokenize_via_api', str);
         default:
-            console.warn("Calling getTextTokens with unsupported tokenizer type", tokenizerType);
+            console.warn('Calling getTextTokens with unsupported tokenizer type', tokenizerType);
             return [];
     }
 }
@@ -526,22 +540,23 @@ export function getTextTokens(tokenizerType, str) {
 export function decodeTextTokens(tokenizerType, ids) {
     switch (tokenizerType) {
         case tokenizers.GPT2:
-            return decodeTextTokensRemote('/api/decode/gpt2', ids);
+            return decodeTextTokensRemote('/api/tokenizers/gpt2/decode', ids);
         case tokenizers.LLAMA:
-            return decodeTextTokensRemote('/api/decode/llama', ids);
+            return decodeTextTokensRemote('/api/tokenizers/llama/decode', ids);
         case tokenizers.NERD:
-            return decodeTextTokensRemote('/api/decode/nerdstash', ids);
+            return decodeTextTokensRemote('/api/tokenizers/nerdstash/decode', ids);
         case tokenizers.NERD2:
-            return decodeTextTokensRemote('/api/decode/nerdstash_v2', ids);
+            return decodeTextTokensRemote('/api/tokenizers/nerdstash_v2/decode', ids);
         case tokenizers.MISTRAL:
-            return decodeTextTokensRemote('/api/decode/mistral', ids);
+            return decodeTextTokensRemote('/api/tokenizers/mistral/decode', ids);
         case tokenizers.YI:
-            return decodeTextTokensRemote('/api/decode/yi', ids);
-        case tokenizers.OPENAI:
+            return decodeTextTokensRemote('/api/tokenizers/yi/decode', ids);
+        case tokenizers.OPENAI: {
             const model = getTokenizerModel();
-            return decodeTextTokensRemote('/api/decode/openai', ids, model);
+            return decodeTextTokensRemote('/api/tokenizers/openai/decode', ids, model);
+        }
         default:
-            console.warn("Calling decodeTextTokens with unsupported tokenizer type", tokenizerType);
+            console.warn('Calling decodeTextTokens with unsupported tokenizer type', tokenizerType);
             return '';
     }
 }

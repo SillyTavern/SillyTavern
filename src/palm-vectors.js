@@ -1,5 +1,5 @@
 const fetch = require('node-fetch').default;
-const { SECRET_KEYS, readSecret } = require('./secrets');
+const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
 
 /**
  * Gets the vector for the given text from PaLM gecko model
@@ -21,7 +21,7 @@ async function getPaLMVector(text) {
         },
         body: JSON.stringify({
             text: text,
-        })
+        }),
     });
 
     if (!response.ok) {

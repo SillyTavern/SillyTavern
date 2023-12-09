@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 import {
     callPopup,
@@ -7,15 +7,15 @@ import {
     event_types,
     eventSource,
     getCharacters,
+    getPastCharacterChats,
     getRequestHeaders,
     printCharacters,
-    this_chid
-} from "../script.js";
+} from '../script.js';
 
-import { favsToHotswap } from "./RossAscends-mods.js";
-import { hideLoader, showLoader } from "./loader.js";
-import { convertCharacterToPersona } from "./personas.js";
-import { createTagInput, getTagKeyForCharacter, tag_map } from "./tags.js";
+import { favsToHotswap } from './RossAscends-mods.js';
+import { hideLoader, showLoader } from './loader.js';
+import { convertCharacterToPersona } from './personas.js';
+import { createTagInput, getTagKeyForCharacter, tag_map } from './tags.js';
 
 // Utility object for popup messages.
 const popupMessage = {
@@ -27,7 +27,7 @@ const popupMessage = {
                     <span>Also delete the chat files</span>
                 </label><br></b>`;
     },
-}
+};
 
 /**
  * Static object representing the actions of the
@@ -42,7 +42,7 @@ class CharacterContextMenu {
      */
     static tag = (selectedCharacters) => {
         BulkTagPopupHandler.show(selectedCharacters);
-    }
+    };
 
     /**
      * Duplicate one or more characters
@@ -53,12 +53,12 @@ class CharacterContextMenu {
     static duplicate = async (characterId) => {
         const character = CharacterContextMenu.#getCharacter(characterId);
 
-        return fetch('/dupecharacter', {
+        return fetch('/api/characters/duplicate', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ avatar_url: character.avatar }),
         });
-    }
+    };
 
     /**
      * Favorite a character
@@ -69,31 +69,32 @@ class CharacterContextMenu {
      */
     static favorite = async (characterId) => {
         const character = CharacterContextMenu.#getCharacter(characterId);
+        const newFavState = !character.data.extensions.fav;
 
-        // Only set fav for V2 spec
         const data = {
             name: character.name,
             avatar: character.avatar,
             data: {
                 extensions: {
-                    fav: !character.data.extensions.fav
-                }
-            }
+                    fav: newFavState,
+                },
+            },
+            fav: newFavState,
         };
 
-        return fetch('/v2/editcharacterattribute', {
-            method: "POST",
+        const mergeResponse = await fetch('/api/characters/merge-attributes', {
+            method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(data),
-        }).then((response) => {
-            if (response.ok) {
-                const element = document.getElementById(`CharID${characterId}`);
-                element.classList.toggle('is_fav');
-            } else {
-                response.json().then(json => toastr.error('Character not saved. Error: ' + json.message + '. Field: ' + json.error));
-            }
         });
-    }
+
+        if (!mergeResponse.ok) {
+            mergeResponse.json().then(json => toastr.error(`Character not saved. Error: ${json.message}. Field: ${json.error}`));
+        }
+
+        const element = document.getElementById(`CharID${characterId}`);
+        element.classList.toggle('is_fav');
+    };
 
     /**
      * Convert one or more characters to persona,
@@ -115,36 +116,25 @@ class CharacterContextMenu {
     static delete = async (characterId, deleteChats = false) => {
         const character = CharacterContextMenu.#getCharacter(characterId);
 
-        return fetch('/deletecharacter', {
+        return fetch('/api/characters/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ avatar_url: character.avatar, delete_chats: deleteChats }),
             cache: 'no-cache',
         }).then(response => {
             if (response.ok) {
-                deleteCharacter(character.name, character.avatar).then(() => {
-                    if (deleteChats) {
-                        fetch("/getallchatsofcharacter", {
-                            method: 'POST',
-                            body: JSON.stringify({ avatar_url: character.avatar }),
-                            headers: getRequestHeaders(),
-                        }).then((response) => {
-                            let data = response.json();
-                            data = Object.values(data);
-                            const pastChats = data.sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
-
-                            for (const chat of pastChats) {
-                                const name = chat.file_name.replace('.jsonl', '');
-                                eventSource.emit(event_types.CHAT_DELETED, name);
-                            }
-                        });
-                    }
-                })
+                return deleteCharacter(character.name, character.avatar, false).then(() => {
+                    eventSource.emit('characterDeleted', { id: characterId, character: characters[characterId] });
+                    if (deleteChats) getPastCharacterChats(characterId).then(pastChats => {
+                        for (const chat of pastChats) {
+                            const name = chat.file_name.replace('.jsonl', '');
+                            eventSource.emit(event_types.CHAT_DELETED, name);
+                        }
+                    });
+                });
             }
-
-            eventSource.emit('characterDeleted', { id: this_chid, character: characters[this_chid] });
         });
-    }
+    };
 
     static #getCharacter = (characterId) => characters[characterId] ?? null;
 
@@ -169,7 +159,7 @@ class CharacterContextMenu {
         if (boundingRect.bottom > window.innerHeight) {
             contextMenu.style.top = `${positionY - (boundingRect.bottom - window.innerHeight)}px`;
         }
-    }
+    };
 
     /**
      * Hide the context menu
@@ -187,10 +177,10 @@ class CharacterContextMenu {
             { id: 'character_context_menu_duplicate', callback: characterGroupOverlay.handleContextMenuDuplicate },
             { id: 'character_context_menu_delete', callback: characterGroupOverlay.handleContextMenuDelete },
             { id: 'character_context_menu_persona', callback: characterGroupOverlay.handleContextMenuPersona },
-            { id: 'character_context_menu_tag', callback: characterGroupOverlay.handleContextMenuTag }
+            { id: 'character_context_menu_tag', callback: characterGroupOverlay.handleContextMenuTag },
         ];
 
-        contextMenuItems.forEach(contextMenuItem => document.getElementById(contextMenuItem.id).addEventListener('click', contextMenuItem.callback))
+        contextMenuItems.forEach(contextMenuItem => document.getElementById(contextMenuItem.id).addEventListener('click', contextMenuItem.callback));
     }
 }
 
@@ -219,7 +209,7 @@ class BulkTagPopupHandler {
                 </div>
             </div>
         </div>
-    `
+    `;
     };
 
     /**
@@ -329,7 +319,7 @@ class BulkEditOverlay {
         eventSource.emit(event_types.CHARACTER_GROUP_OVERLAY_STATE_CHANGE_BEFORE, newState)
             .then(() => {
                 this.#state = newState;
-                eventSource.emit(event_types.CHARACTER_GROUP_OVERLAY_STATE_CHANGE_AFTER, this.state)
+                eventSource.emit(event_types.CHARACTER_GROUP_OVERLAY_STATE_CHANGE_AFTER, this.state);
             });
     }
 
@@ -355,7 +345,7 @@ class BulkEditOverlay {
 
     constructor() {
         if (bulkEditOverlayInstance instanceof BulkEditOverlay)
-            return bulkEditOverlayInstance
+            return bulkEditOverlayInstance;
 
         this.container = document.getElementById(BulkEditOverlay.containerId);
 
@@ -392,7 +382,7 @@ class BulkEditOverlay {
         // Cohee: It only triggers when clicking on a margin between the elements?
         // Feel free to fix or remove this, I'm not sure how to.
         //this.container.addEventListener('click', this.handleCancelClick);
-    }
+    };
 
     /**
      * Handle state changes
@@ -421,7 +411,7 @@ class BulkEditOverlay {
         }
 
         this.stateChangeCallbacks.forEach(callback => callback(this.state));
-    }
+    };
 
     /**
      * Block the browsers native context menu and
@@ -430,7 +420,7 @@ class BulkEditOverlay {
     enableContextMenu = () => {
         this.container.addEventListener('contextmenu', this.handleContextMenuShow);
         document.addEventListener('click', this.handleContextMenuHide);
-    }
+    };
 
     /**
      * Remove event listeners, allowing the native browser context
@@ -439,7 +429,7 @@ class BulkEditOverlay {
     disableContextMenu = () => {
         this.container.removeEventListener('contextmenu', this.handleContextMenuShow);
         document.removeEventListener('click', this.handleContextMenuHide);
-    }
+    };
 
     handleDefaultContextMenu = (event) => {
         if (this.isLongPress) {
@@ -447,7 +437,7 @@ class BulkEditOverlay {
             event.stopPropagation();
             return false;
         }
-    }
+    };
 
     /**
      * Opens menu on long-press.
@@ -472,30 +462,30 @@ class BulkEditOverlay {
         this.isLongPress = true;
 
         setTimeout(() => {
-                if (this.isLongPress && !cancel) {
-                    if (this.state === BulkEditOverlayState.browse) {
-                        this.selectState();
-                    } else if (this.state === BulkEditOverlayState.select) {
-                        this.#contextMenuOpen = true;
-                        CharacterContextMenu.show(...this.#getContextMenuPosition(event));
-                    }
+            if (this.isLongPress && !cancel) {
+                if (this.state === BulkEditOverlayState.browse) {
+                    this.selectState();
+                } else if (this.state === BulkEditOverlayState.select) {
+                    this.#contextMenuOpen = true;
+                    CharacterContextMenu.show(...this.#getContextMenuPosition(event));
                 }
+            }
 
-                this.container.removeEventListener('mouseup', cancelHold);
-                this.container.removeEventListener('touchend', cancelHold);
-            },
+            this.container.removeEventListener('mouseup', cancelHold);
+            this.container.removeEventListener('touchend', cancelHold);
+        },
             BulkEditOverlay.longPressDelay);
-    }
+    };
 
     handleLongPressEnd = (event) => {
         this.isLongPress = false;
         if (this.#contextMenuOpen) event.stopPropagation();
-    }
+    };
 
     handleCancelClick = () => {
         if (false === this.#contextMenuOpen) this.state = BulkEditOverlayState.browse;
         this.#contextMenuOpen = false;
-    }
+    };
 
     /**
      * Returns the position of the mouse/touch location
@@ -513,7 +503,7 @@ class BulkEditOverlay {
             this.handleContextMenuHide(event);
         }
         event.stopPropagation();
-    }
+    };
 
     #enableClickEventsForGroups = () => this.#getDisabledElements().forEach((element) => element.removeEventListener('click', this.#stopEventPropagation));
 
@@ -529,7 +519,7 @@ class BulkEditOverlay {
 
     #getEnabledElements = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)];
 
-    #getDisabledElements = () =>[...this.container.getElementsByClassName(BulkEditOverlay.groupClass), ...this.container.getElementsByClassName(BulkEditOverlay.bogusFolderClass)];
+    #getDisabledElements = () => [...this.container.getElementsByClassName(BulkEditOverlay.groupClass), ...this.container.getElementsByClassName(BulkEditOverlay.bogusFolderClass)];
 
     toggleCharacterSelected = event => {
         event.stopPropagation();
@@ -537,7 +527,7 @@ class BulkEditOverlay {
         const character = event.currentTarget;
         const characterId = character.getAttribute('chid');
 
-        const alreadySelected = this.selectedCharacters.includes(characterId)
+        const alreadySelected = this.selectedCharacters.includes(characterId);
 
         const legacyBulkEditCheckbox = character.querySelector('.' + BulkEditOverlay.legacySelectedClass);
 
@@ -548,36 +538,44 @@ class BulkEditOverlay {
                 if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
                 this.dismissCharacter(characterId);
             } else {
-                character.classList.add(BulkEditOverlay.selectedClass)
+                character.classList.add(BulkEditOverlay.selectedClass);
                 if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = true;
                 this.selectCharacter(characterId);
             }
 
         this.#cancelNextToggle = false;
-    }
+    };
 
     handleContextMenuShow = (event) => {
         event.preventDefault();
         CharacterContextMenu.show(...this.#getContextMenuPosition(event));
         this.#contextMenuOpen = true;
-    }
+    };
 
     handleContextMenuHide = (event) => {
         let contextMenu = document.getElementById(BulkEditOverlay.contextMenuId);
         if (false === contextMenu.contains(event.target)) {
             CharacterContextMenu.hide();
         }
-    }
+    };
 
     /**
      * Concurrently handle character favorite requests.
      *
-     * @returns {Promise<number>}
+     * @returns {Promise<void>}
      */
-    handleContextMenuFavorite = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.favorite(characterId)))
-        .then(() => getCharacters())
-        .then(() => favsToHotswap())
-        .then(() => this.browseState())
+    handleContextMenuFavorite = async () => {
+        const promises = [];
+
+        for (const characterId of this.selectedCharacters) {
+            promises.push(CharacterContextMenu.favorite(characterId));
+        }
+
+        await Promise.allSettled(promises);
+        await getCharacters();
+        await favsToHotswap();
+        this.browseState();
+    };
 
     /**
      * Concurrently handle character duplicate requests.
@@ -586,7 +584,7 @@ class BulkEditOverlay {
      */
     handleContextMenuDuplicate = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.duplicate(characterId)))
         .then(() => getCharacters())
-        .then(() => this.browseState())
+        .then(() => this.browseState());
 
     /**
      * Sequentially handle all character-to-persona conversions.
@@ -595,11 +593,11 @@ class BulkEditOverlay {
      */
     handleContextMenuPersona = async () => {
         for (const characterId of this.selectedCharacters) {
-            await CharacterContextMenu.persona(characterId)
+            await CharacterContextMenu.persona(characterId);
         }
 
         this.browseState();
-    }
+    };
 
     /**
      * Request user input before concurrently handle deletion
@@ -616,21 +614,20 @@ class BulkEditOverlay {
                 const deleteChats = document.getElementById('del_char_checkbox').checked ?? false;
 
                 showLoader();
-                toastr.info("We're deleting your characters, please wait...", 'Working on it');
-                Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
+                toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
+                Promise.allSettled(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
                     .then(() => getCharacters())
                     .then(() => this.browseState())
                     .finally(() => hideLoader());
-            }
-            );
-    }
+            });
+    };
 
     /**
      * Attaches and opens the tag menu
      */
     handleContextMenuTag = () => {
         CharacterContextMenu.tag(this.selectedCharacters);
-    }
+    };
 
     addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
 
@@ -646,7 +643,7 @@ class BulkEditOverlay {
         document.querySelectorAll('#' + BulkEditOverlay.containerId + ' .' + BulkEditOverlay.selectedClass)
             .forEach(element => element.classList.remove(BulkEditOverlay.selectedClass));
         this.selectedCharacters.length = 0;
-    }
+    };
 }
 
 export { BulkEditOverlayState, CharacterContextMenu, BulkEditOverlay };

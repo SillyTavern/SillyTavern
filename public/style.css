@@ -135,7 +135,7 @@ body {
 }
 
 .scrollY {
-    overflow-y: auto;
+    overflow-y: auto !important;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -415,12 +415,12 @@ hr {
 
 #bg1 {
     background-image: url('backgrounds/tavern day.jpg');
-    z-index: -2;
+    z-index: -3;
 }
 
 #bg_custom {
     background-image: none;
-    z-index: -1;
+    z-index: -2;
 }
 
 /*TOPPER margin*/
@@ -548,7 +548,7 @@ hr {
 /* special case for desktop Safari to allow #sheld resizing */
 @media only screen and (min-width: 1024px) and (-webkit-min-device-pixel-ratio: 2) and (pointer: fine) {
     #form_sheld {
-        margin-bottom: 5px;
+        margin-bottom: 4px;
     }
 }
 
@@ -688,6 +688,7 @@ hr {
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: none;
 }
 
 .options-content hr {
@@ -1144,7 +1145,6 @@ input[type="file"] {
     display: block;
     cursor: pointer;
     text-align: center;
-    padding-right: 20px;
     margin-top: 0;
     filter: grayscale(1) brightness(75%);
     -webkit-transition: all 0.5s ease-in-out;
@@ -1250,10 +1250,6 @@ input[type="file"] {
 
 .bulk_select_checkbox {
     align-self: center;
-}
-
-#rm_print_characters_block.bulk_select .wide100pLess70px {
-    width: calc(100% - 85px);
 }
 
 #rm_print_characters_block .empty_block {
@@ -1545,6 +1541,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     padding: 5px;
     border-radius: 10px;
     cursor: pointer;
+    margin-bottom: 1px;
 }
 
 /*applies to char list and mes_text char display name*/
@@ -1965,6 +1962,7 @@ grammarly-extension {
 .wide_dialogue_popup {
     aspect-ratio: 1 / 1;
     width: unset !important;
+    min-width: var(--sheldWidth);
 }
 
 #bulk_tag_popup_holder,
@@ -2509,7 +2507,7 @@ input[type="range"]::-webkit-slider-thumb {
     cursor: pointer;
     transition: 0.3s ease-in-out;
     filter: drop-shadow(0px 0px 2px black);
-    opacity: 0.2;
+    opacity: 0.3;
 }
 
 .mes_buttons .mes_edit:hover,
@@ -3584,10 +3582,18 @@ a {
 }
 
 .zoomed_avatar {
+    /* Max height with 2/3 aspect ratio */
+    --maxWidth: calc(90vh * 0.666);
+    /* Left gap between the left corner and chat */
+    --leftGapWidth: calc((100vw - var(--sheldWidth)) / 2);
+    /* Left position of the avatar (half of the gap minus half of the avatar width) */
+    --leftPosition: max(0px, calc((var(--leftGapWidth) - var(--maxWidth)) / 2));
     aspect-ratio: 2 / 3;
     padding: 0;
     border: 0;
     background-color: transparent;
+    max-width: var(--maxWidth);
+    left: var(--leftPosition);
 }
 
 .zoomed_avatar img {

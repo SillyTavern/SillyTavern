@@ -22,7 +22,8 @@
             "droll",
             "handlebars",
             "highlight.js",
-            "localforage"
+            "localforage",
+            "pdfjs-dist"
         ]
     }
 }
