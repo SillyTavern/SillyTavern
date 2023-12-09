@@ -6,10 +6,10 @@ import {
     deleteCharacter,
     event_types,
     eventSource,
-    getCharacters, getPastCharacterChats,
+    getCharacters,
+    getPastCharacterChats,
     getRequestHeaders,
     printCharacters,
-    this_chid,
 } from '../script.js';
 
 import { favsToHotswap } from './RossAscends-mods.js';
@@ -119,12 +119,12 @@ class CharacterContextMenu {
         return fetch('/api/characters/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({avatar_url: character.avatar, delete_chats: deleteChats}),
+            body: JSON.stringify({ avatar_url: character.avatar, delete_chats: deleteChats }),
             cache: 'no-cache',
         }).then(response => {
             if (response.ok) {
                 return deleteCharacter(character.name, character.avatar, false).then(() => {
-                    eventSource.emit('characterDeleted', {id: characterId, character: characters[characterId]});
+                    eventSource.emit('characterDeleted', { id: characterId, character: characters[characterId] });
                     if (deleteChats) getPastCharacterChats(characterId).then(pastChats => {
                         for (const chat of pastChats) {
                             const name = chat.file_name.replace('.jsonl', '');
@@ -462,18 +462,18 @@ class BulkEditOverlay {
         this.isLongPress = true;
 
         setTimeout(() => {
-                if (this.isLongPress && !cancel) {
-                    if (this.state === BulkEditOverlayState.browse) {
-                        this.selectState();
-                    } else if (this.state === BulkEditOverlayState.select) {
-                        this.#contextMenuOpen = true;
-                        CharacterContextMenu.show(...this.#getContextMenuPosition(event));
-                    }
+            if (this.isLongPress && !cancel) {
+                if (this.state === BulkEditOverlayState.browse) {
+                    this.selectState();
+                } else if (this.state === BulkEditOverlayState.select) {
+                    this.#contextMenuOpen = true;
+                    CharacterContextMenu.show(...this.#getContextMenuPosition(event));
                 }
+            }
 
-                this.container.removeEventListener('mouseup', cancelHold);
-                this.container.removeEventListener('touchend', cancelHold);
-            },
+            this.container.removeEventListener('mouseup', cancelHold);
+            this.container.removeEventListener('touchend', cancelHold);
+        },
             BulkEditOverlay.longPressDelay);
     };
 
