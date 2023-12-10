@@ -139,7 +139,18 @@ export function getFriendlyTokenizerName(forApi) {
 
     if (forApi !== 'openai' && tokenizerId === tokenizers.BEST_MATCH) {
         tokenizerId = getTokenizerBestMatch(forApi);
-        tokenizerName = $(`#tokenizer option[value="${tokenizerId}"]`).text();
+
+        switch (tokenizerId) {
+            case tokenizers.API_KOBOLD:
+                tokenizerName = 'API (KoboldAI Classic)';
+                break;
+            case tokenizers.API_TEXTGENERATIONWEBUI:
+                tokenizerName = 'API (Text Completion)';
+                break;
+            default:
+                tokenizerName = $(`#tokenizer option[value="${tokenizerId}"]`).text();
+                break;
+        }
     }
 
     tokenizerName = forApi == 'openai'
