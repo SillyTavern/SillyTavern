@@ -1494,7 +1494,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), '$1');
     }
 
-    mes = DOMPurify.sanitize(mes);
+    mes = DOMPurify.sanitize(mes, { FORBID_TAGS: ['style'] });
 
     return mes;
 }
