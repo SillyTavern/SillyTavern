@@ -693,7 +693,6 @@ let abortController;
 //css
 var css_mes_bg = $('<div class="mes"></div>').css('background');
 var css_send_form_display = $('<div id=send_form></div>').css('display');
-let generate_loop_counter = 0;
 const MAX_GENERATION_LOOPS = 5;
 
 var kobold_horde_model = '';
@@ -2889,7 +2888,7 @@ export async function generateRaw(prompt, api, instructOverride) {
 }
 
 // Returns a promise that resolves when the text is done generating.
-async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage } = {}, dryRun = false) {
+async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops } = {}, dryRun = false) {
     console.log('Generate entered');
     setGenerationProgress(0);
     generation_started = new Date();
@@ -2939,8 +2938,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     }
 
     if (selected_group && !is_group_generating && !dryRun) {
-        // TODO: await here!
-        return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage });
+        // Returns the promise that generateGroupWrapper returns; resolves when generation is done
+        return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, maxLoops });
     } else if (selected_group && !is_group_generating && dryRun) {
         const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
         const group = groups.find((x) => x.id === selected_group);
@@ -3862,23 +3861,25 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                             if (type !== 'quiet') {
                                 playMessageSound();
                             }
-
-                            generate_loop_counter = 0;
                         } else {
-                            ++generate_loop_counter;
+                            // If maxLoops is not passed in (e.g. first time generating), set it to MAX_GENERATION_LOOPS
+                            maxLoops ??= MAX_GENERATION_LOOPS;
 
-                            if (generate_loop_counter > MAX_GENERATION_LOOPS) {
+                            if (maxLoops === 0) {
                                 reject(new Error('Generate circuit breaker interruption'));
                                 if (type !== 'quiet') {
                                     throwCircuitBreakerError();
                                 }
+                                return;
                             }
 
                             // regenerate with character speech reenforced
                             // to make sure we leave on swipe type while also adding the name2 appendage
-                            setTimeout(() => {
-                                Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid });
-                            }, 1000);
+                            delay(1000).then(async () => {
+                                // The first await is for waiting for the generate to start. The second one is waiting for it to finish
+                                const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
+                                resolve(result);
+                            });
                         }
 
                         if (power_user.auto_swipe) {
@@ -4414,7 +4415,6 @@ function getGenerateUrl(api) {
 
 function throwCircuitBreakerError() {
     callPopup(`Could not extract reply in ${MAX_GENERATION_LOOPS} attempts. Try generating again`, 'text');
-    generate_loop_counter = 0;
     unblockGeneration();
     throw new Error('Generate circuit breaker interruption');
 }
