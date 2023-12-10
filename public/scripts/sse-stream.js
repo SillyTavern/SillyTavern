@@ -18,7 +18,7 @@ class EventSourceStream {
             streamBuffer = events.pop();
 
             for (const eventChunk of events) {
-                let eventType = 'message';
+                let eventType = '';
                 // Split up by single newlines.
                 const lines = eventChunk.split(/\n|\r|\r\n/g);
                 let eventData = '';
@@ -55,7 +55,7 @@ class EventSourceStream {
                 }
 
                 // Trim the *last* trailing newline only.
-                const event = new MessageEvent(eventType, { data: eventData, lastEventId });
+                const event = new MessageEvent(eventType || 'message', { data: eventData, lastEventId });
                 controller.enqueue(event);
             }
         }
