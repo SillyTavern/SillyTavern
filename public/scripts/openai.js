@@ -44,6 +44,7 @@ import {
 import { getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
+import EventSourceStream from './sse-stream.js';
 import {
     delay,
     download,
@@ -215,7 +216,6 @@ const default_settings = {
     openrouter_sort_models: 'alphabetically',
     jailbreak_system: false,
     reverse_proxy: '',
-    legacy_streaming: false,
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
     api_url_scale: '',
@@ -269,7 +269,6 @@ const oai_settings = {
     openrouter_sort_models: 'alphabetically',
     jailbreak_system: false,
     reverse_proxy: '',
-    legacy_streaming: false,
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
     api_url_scale: '',
@@ -1124,7 +1123,7 @@ function tryParseStreamingError(response, decoded) {
         checkQuotaError(data);
 
         if (data.error) {
-            toastr.error(data.error.message || response.statusText, 'API returned an error');
+            toastr.error(data.error.message || response.statusText, 'Chat Completion API');
             throw new Error(data);
         }
     }
@@ -1564,58 +1563,28 @@ async function sendOpenAIRequest(type, messages, signal) {
         signal: signal,
     });
 
+    if (!response.ok) {
+        tryParseStreamingError(response, await response.text());
+        throw new Error(`Got response status ${response.status}`);
+    }
+
     if (stream) {
+        const eventStream = new EventSourceStream();
+        response.body.pipeThrough(eventStream);
+        const reader = eventStream.readable.getReader();
         return async function* streamData() {
-            const decoder = new TextDecoder();
-            const reader = response.body.getReader();
-            let getMessage = '';
-            let messageBuffer = '';
+            let text = '';
             while (true) {
                 const { done, value } = await reader.read();
-                let decoded = decoder.decode(value);
+                if (done) return;
+                if (value.data === '[DONE]') return;
 
-                // Claude's streaming SSE messages are separated by \r
-                if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-                    decoded = decoded.replace(/\r/g, '');
-                }
+                tryParseStreamingError(response, value.data);
 
-                tryParseStreamingError(response, decoded);
+                // the first and last messages are undefined, protect against that
+                text += getStreamingReply(JSON.parse(value.data));
 
-                let eventList = [];
-
-                // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
-                // We need to buffer chunks until we have one or more full messages (separated by double newlines)
-                if (!oai_settings.legacy_streaming) {
-                    messageBuffer += decoded;
-                    eventList = messageBuffer.split('\n\n');
-                    // Last element will be an empty string or a leftover partial message
-                    messageBuffer = eventList.pop();
-                } else {
-                    eventList = decoded.split('\n');
-                }
-
-                for (let event of eventList) {
-                    if (event.startsWith('event: completion')) {
-                        event = event.split('\n')[1];
-                    }
-
-                    if (typeof event !== 'string' || !event.length)
-                        continue;
-
-                    if (!event.startsWith('data'))
-                        continue;
-                    if (event == 'data: [DONE]') {
-                        return;
-                    }
-                    let data = JSON.parse(event.substring(6));
-                    // the first and last messages are undefined, protect against that
-                    getMessage = getStreamingReply(getMessage, data);
-                    yield { text: getMessage, swipes: [] };
-                }
-
-                if (done) {
-                    return;
-                }
+                yield { text, swipes: [] };
             }
         };
     }
@@ -1633,13 +1602,12 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 }
 
-function getStreamingReply(getMessage, data) {
+function getStreamingReply(data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        getMessage += data?.completion || '';
+        return data?.completion || '';
     } else {
-        getMessage += data.choices[0]?.delta?.content || data.choices[0]?.message?.content || data.choices[0]?.text || '';
+        return data.choices[0]?.delta?.content || data.choices[0]?.message?.content || data.choices[0]?.text || '';
     }
-    return getMessage;
 }
 
 function handleWindowError(err) {
@@ -2307,7 +2275,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
     oai_settings.bias_preset_selected = settings.bias_preset_selected ?? default_settings.bias_preset_selected;
     oai_settings.bias_presets = settings.bias_presets ?? default_settings.bias_presets;
-    oai_settings.legacy_streaming = settings.legacy_streaming ?? default_settings.legacy_streaming;
     oai_settings.max_context_unlocked = settings.max_context_unlocked ?? default_settings.max_context_unlocked;
     oai_settings.send_if_empty = settings.send_if_empty ?? default_settings.send_if_empty;
     oai_settings.wi_format = settings.wi_format ?? default_settings.wi_format;
@@ -2370,7 +2337,6 @@ function loadOpenAISettings(data, settings) {
     $('#wrap_in_quotes').prop('checked', oai_settings.wrap_in_quotes);
     $('#names_in_completion').prop('checked', oai_settings.names_in_completion);
     $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
-    $('#legacy_streaming').prop('checked', oai_settings.legacy_streaming);
     $('#openai_show_external_models').prop('checked', oai_settings.show_external_models);
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#use_ai21_tokenizer').prop('checked', oai_settings.use_ai21_tokenizer);
@@ -2575,7 +2541,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         bias_preset_selected: settings.bias_preset_selected,
         reverse_proxy: settings.reverse_proxy,
         proxy_password: settings.proxy_password,
-        legacy_streaming: settings.legacy_streaming,
         max_context_unlocked: settings.max_context_unlocked,
         wi_format: settings.wi_format,
         scenario_format: settings.scenario_format,
@@ -2936,7 +2901,6 @@ function onSettingsPresetChange() {
         continue_nudge_prompt: ['#continue_nudge_prompt_textarea', 'continue_nudge_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
         reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
-        legacy_streaming: ['#legacy_streaming', 'legacy_streaming', true],
         wi_format: ['#wi_format_textarea', 'wi_format', false],
         scenario_format: ['#scenario_format_textarea', 'scenario_format', false],
         personality_format: ['#personality_format_textarea', 'personality_format', false],
@@ -3689,11 +3653,6 @@ $(document).ready(async function () {
     $('#group_nudge_prompt_restore').on('click', function () {
         oai_settings.group_nudge_prompt = default_group_nudge_prompt;
         $('#group_nudge_prompt_textarea').val(oai_settings.group_nudge_prompt);
-        saveSettingsDebounced();
-    });
-
-    $('#legacy_streaming').on('input', function () {
-        oai_settings.legacy_streaming = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

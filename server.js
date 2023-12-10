@@ -7,7 +7,6 @@ const http = require('http');
 const https = require('https');
 const path = require('path');
 const util = require('util');
-const { Readable } = require('stream');
 
 // cli/fs related library imports
 const open = require('open');
@@ -45,7 +44,20 @@ const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
 const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/endpoints/secrets');
-const { delay, getVersion, getConfigValue, color, uuidv4, tryParse, clientRelativePath, removeFileExtension, generateTimestamp, removeOldBackups, getImages } = require('./src/util');
+const {
+    delay,
+    getVersion,
+    getConfigValue,
+    color,
+    uuidv4,
+    tryParse,
+    clientRelativePath,
+    removeFileExtension,
+    generateTimestamp,
+    removeOldBackups,
+    getImages,
+    forwardFetchResponse,
+} = require('./src/util');
 const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
 const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS, getSentencepiceTokenizer, sentencepieceTokenizers } = require('./src/endpoints/tokenizers');
 const { convertClaudePrompt } = require('./src/chat-completion');
@@ -244,9 +256,7 @@ if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
             });
 
             // Copy over relevant response params to the proxy response
-            res.statusCode = response.status;
-            res.statusMessage = response.statusText;
-            response.body.pipe(res);
+            forwardFetchResponse(response, res);
 
         } catch (error) {
             res.status(500).send('Error occurred while trying to proxy to: ' + url + ' ' + error);
@@ -394,18 +404,9 @@ app.post('/generate', jsonParser, async function (request, response_generate) {
             const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
             if (request.body.streaming) {
-                request.socket.on('close', function () {
-                    if (response.body instanceof Readable) response.body.destroy(); // Close the remote stream
-                    response_generate.end(); // End the Express response
-                });
-
-                response.body.on('end', function () {
-                    console.log('Streaming request finished');
-                    response_generate.end();
-                });
-
                 // Pipe remote SSE stream to Express response
-                return response.body.pipe(response_generate);
+                forwardFetchResponse(response, response_generate);
+                return;
             } else {
                 if (!response.ok) {
                     const errorText = await response.text();
@@ -603,17 +604,7 @@ app.post('/api/textgenerationwebui/generate', jsonParser, async function (reques
         if (request.body.stream) {
             const completionsStream = await fetch(url, args);
             // Pipe remote SSE stream to Express response
-            completionsStream.body.pipe(response_generate);
-
-            request.socket.on('close', function () {
-                if (completionsStream.body instanceof Readable) completionsStream.body.destroy(); // Close the remote stream
-                response_generate.end(); // End the Express response
-            });
-
-            completionsStream.body.on('end', function () {
-                console.log('Streaming request finished');
-                response_generate.end();
-            });
+            forwardFetchResponse(completionsStream, response_generate);
         }
         else {
             const completionsReply = await fetch(url, args);
@@ -1367,17 +1358,7 @@ async function sendClaudeRequest(request, response) {
 
         if (request.body.stream) {
             // Pipe remote SSE stream to Express response
-            generateResponse.body.pipe(response);
-
-            request.socket.on('close', function () {
-                if (generateResponse.body instanceof Readable) generateResponse.body.destroy(); // Close the remote stream
-                response.end(); // End the Express response
-            });
-
-            generateResponse.body.on('end', function () {
-                console.log('Streaming request finished');
-                response.end();
-            });
+            forwardFetchResponse(generateResponse, response);
         } else {
             if (!generateResponse.ok) {
                 console.log(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
@@ -1579,20 +1560,17 @@ app.post('/generate_openai', jsonParser, function (request, response_generate_op
         try {
             const fetchResponse = await fetch(endpointUrl, config);
 
+            if (request.body.stream) {
+                console.log('Streaming request in progress');
+                forwardFetchResponse(fetchResponse, response_generate_openai);
+                return;
+            }
+
             if (fetchResponse.ok) {
-                if (request.body.stream) {
-                    console.log('Streaming request in progress');
-                    fetchResponse.body.pipe(response_generate_openai);
-                    fetchResponse.body.on('end', () => {
-                        console.log('Streaming request finished');
-                        response_generate_openai.end();
-                    });
-                } else {
-                    let json = await fetchResponse.json();
-                    response_generate_openai.send(json);
-                    console.log(json);
-                    console.log(json?.choices[0]?.message);
-                }
+                let json = await fetchResponse.json();
+                response_generate_openai.send(json);
+                console.log(json);
+                console.log(json?.choices[0]?.message);
             } else if (fetchResponse.status === 429 && retries > 0) {
                 console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {

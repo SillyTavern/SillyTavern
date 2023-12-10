@@ -3767,10 +3767,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
+            /** @type {Promise<any>} */
+            let streamingGeneratorPromise = Promise.resolve();
 
             if (main_api == 'openai') {
                 if (isStreamingEnabled() && type !== 'quiet') {
-                    streamingProcessor.generator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
+                    streamingGeneratorPromise = sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
                 }
                 else {
                     sendOpenAIRequest(type, generate_data.prompt, abortController.signal).then(onSuccess).catch(onError);
@@ -3780,13 +3782,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generateHorde(finalPrompt, generate_data, abortController.signal, true).then(onSuccess).catch(onError);
             }
             else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
-                streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                streamingGeneratorPromise = generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else if (main_api == 'novel' && isStreamingEnabled() && type !== 'quiet') {
-                streamingProcessor.generator = await generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                streamingGeneratorPromise = generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else if (main_api == 'kobold' && isStreamingEnabled() && type !== 'quiet') {
-                streamingProcessor.generator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                streamingGeneratorPromise = generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
                 try {
@@ -3811,19 +3813,27 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             if (isStreamingEnabled() && type !== 'quiet') {
-                hideSwipeButtons();
-                let getMessage = await streamingProcessor.generate();
-                let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+                try {
+                    const streamingGenerator = await streamingGeneratorPromise;
+                    streamingProcessor.generator = streamingGenerator;
+                    hideSwipeButtons();
+                    let getMessage = await streamingProcessor.generate();
+                    let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
 
-                if (isContinue) {
-                    getMessage = continue_mag + getMessage;
+                    if (isContinue) {
+                        getMessage = continue_mag + getMessage;
+                    }
+
+                    if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
+                        await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
+                        streamingProcessor = null;
+                        triggerAutoContinue(messageChunk, isImpersonate);
+                    }
+                    resolve();
+                } catch (err) {
+                    onError(err);
                 }
 
-                if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
-                    await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
-                    streamingProcessor = null;
-                    triggerAutoContinue(messageChunk, isImpersonate);
-                }
             }
 
             async function onSuccess(data) {
