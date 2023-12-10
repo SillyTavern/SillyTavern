@@ -353,8 +353,24 @@ function getImages(path) {
  * @param {Express.Response} to The Express response to pipe to.
  */
 function forwardFetchResponse(from, to) {
-    to.statusCode = from.status;
-    to.statusMessage = from.statusText;
+    let statusCode = from.status;
+    let statusText = from.statusText;
+
+    if (!from.ok) {
+        console.log(`Streaming request failed with status ${statusCode} ${statusText}`);
+    }
+
+    // Avoid sending 401 responses as they reset the client Basic auth.
+    // This can produce an interesting artifact as "400 Unauthorized", but it's not out of spec.
+    // https://www.rfc-editor.org/rfc/rfc9110.html#name-overview-of-status-codes
+    // "The reason phrases listed here are only recommendations -- they can be replaced by local
+    //  equivalents or left out altogether without affecting the protocol."
+    if (statusCode === 401) {
+        statusCode = 400;
+    }
+
+    to.statusCode = statusCode;
+    to.statusMessage = statusText;
     from.body.pipe(to);
 
     to.socket.on('close', function () {
