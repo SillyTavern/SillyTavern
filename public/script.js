@@ -874,7 +874,7 @@ async function getStatusKobold() {
 
     const url = '/getstatus';
 
-    let endpoint = getAPIServerUrl();
+    let endpoint = api_server;
 
     if (!endpoint) {
         console.warn('No endpoint for status check');
@@ -922,7 +922,9 @@ async function getStatusKobold() {
 async function getStatusTextgen() {
     const url = '/api/textgenerationwebui/status';
 
-    let endpoint = getAPIServerUrl();
+    let endpoint = textgen_settings.type === MANCER ?
+        MANCER_SERVER :
+        api_server_textgenerationwebui;
 
     if (!endpoint) {
         console.warn('No endpoint for status check');
@@ -1000,23 +1002,6 @@ export function stopStatusLoading() {
 export function resultCheckStatus() {
     displayOnlineStatus();
     stopStatusLoading();
-}
-
-// TODO(valadaptive): remove the usage of this function in the tokenizers code, then remove the function entirely
-export function getAPIServerUrl() {
-    if (main_api == 'textgenerationwebui') {
-        if (textgen_settings.type === MANCER) {
-            return MANCER_SERVER;
-        }
-
-        return api_server_textgenerationwebui;
-    }
-
-    if (main_api == 'kobold') {
-        return api_server;
-    }
-
-    return '';
 }
 
 export async function selectCharacterById(id) {
