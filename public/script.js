@@ -3868,13 +3868,16 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                             ++generate_loop_counter;
 
                             if (generate_loop_counter > MAX_GENERATION_LOOPS) {
-                                throwCircuitBreakerError();
+                                reject(new Error('Generate circuit breaker interruption'));
+                                if (type !== 'quiet') {
+                                    throwCircuitBreakerError();
+                                }
                             }
 
                             // regenerate with character speech reenforced
                             // to make sure we leave on swipe type while also adding the name2 appendage
                             setTimeout(() => {
-                                Generate(type, { automatic_trigger, force_name2: true, resolve, reject, quiet_prompt, skipWIAN, force_chid });
+                                Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid });
                             }, generate_loop_counter * 1000);
                         }
 
