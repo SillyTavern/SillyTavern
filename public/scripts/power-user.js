@@ -19,6 +19,8 @@ import {
     showMoreMessages,
     saveSettings,
     saveChatConditional,
+    setAnimationDuration,
+    ANIMATION_DURATION_DEFAULT,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -228,6 +230,7 @@ let power_user = {
     bogus_folders: false,
     aux_field: 'character_version',
     restore_user_input: true,
+    reduced_motion: false,
 };
 
 let themes = [];
@@ -268,6 +271,7 @@ const storage_keys = {
     expand_message_actions: 'ExpandMessageActions',
     enableZenSliders: 'enableZenSliders',
     enableLabMode: 'enableLabMode',
+    reduced_motion: 'reduced_motion',
 };
 
 const contextControls = [
@@ -434,6 +438,15 @@ function switchMessageActions() {
     $('body').toggleClass('expandMessageActions', power_user.expand_message_actions);
     $('#expandMessageActions').prop('checked', power_user.expand_message_actions);
     $('.extraMesButtons, .extraMesButtonsHint').removeAttr('style');
+}
+
+function switchReducedMotion() {
+    const value = localStorage.getItem(storage_keys.reduced_motion);
+    power_user.reduced_motion = value === null ? false : value == 'true';
+    jQuery.fx.off = power_user.reduced_motion;
+    const overrideDuration = power_user.reduced_motion ? 0 : ANIMATION_DURATION_DEFAULT;
+    setAnimationDuration(overrideDuration);
+    $('#reduced_motion').prop('checked', power_user.reduced_motion);
 }
 
 var originalSliderValues = [];
@@ -1227,6 +1240,13 @@ async function applyTheme(name) {
                 await printCharacters(true);
             },
         },
+        {
+            key: 'reduced_motion',
+            action: async () => {
+                localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
+                $('#reduced_motion').prop('checked', power_user.reduced_motion);
+            },
+        },
     ];
 
     for (const { key, selector, type, action } of themeProperties) {
@@ -1459,6 +1479,7 @@ function loadPowerUserSettings(settings, data) {
     $('#shadow-color-picker').attr('color', power_user.shadow_color);
     $('#border-color-picker').attr('color', power_user.border_color);
     $('#ui_mode_select').val(power_user.ui_mode).find(`option[value="${power_user.ui_mode}"]`).attr('selected', true);
+    $('#reduced_motion').prop('checked', power_user.reduced_motion);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -1478,6 +1499,7 @@ function loadPowerUserSettings(settings, data) {
 
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop('selected', true);
+    switchReducedMotion();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode(data);
     loadContextSettings();
@@ -3109,6 +3131,13 @@ $(document).ready(() => {
 
     $('#restore_user_input').on('input', function () {
         power_user.restore_user_input = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#reduced_motion').on('input', function() {
+        power_user.reduced_motion = !!$(this).prop('checked');
+        localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
+        switchReducedMotion();
         saveSettingsDebounced();
     });
 

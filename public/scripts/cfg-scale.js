@@ -5,6 +5,7 @@ import {
     eventSource,
     event_types,
     saveSettingsDebounced,
+    animation_duration,
 } from '../script.js';
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
 import { selected_group } from './group-chats.js';
@@ -120,7 +121,7 @@ function onCfgMenuItemClick() {
             $('#cfgConfig').css('opacity', 0.0);
             $('#cfgConfig').transition({
                 opacity: 1.0,
-                duration: 250,
+                duration: animation_duration,
             }, async function () {
                 await delay(50);
                 $('#cfgConfig').removeClass('resizing');
@@ -138,7 +139,7 @@ function onCfgMenuItemClick() {
             $('#cfgConfig').addClass('resizing');
             $('#cfgConfig').transition({
                 opacity: 0.0,
-                duration: 250,
+                duration: animation_duration,
             },
             async function () {
                 await delay(50);
@@ -146,12 +147,12 @@ function onCfgMenuItemClick() {
             });
             setTimeout(function () {
                 $('#cfgConfig').hide();
-            }, 250);
+            }, animation_duration);
 
         }
         //duplicate options menu close handler from script.js
         //because this listener takes priority
-        $('#options').stop().fadeOut(250);
+        $('#options').stop().fadeOut(animation_duration);
     } else {
         toastr.warning('Select a character before trying to configure CFG', '', { timeOut: 2000 });
     }
@@ -281,10 +282,10 @@ export function initCfg() {
     $('#CFGClose').on('click', function () {
         $('#cfgConfig').transition({
             opacity: 0,
-            duration: 200,
+            duration: animation_duration,
             easing: 'ease-in-out',
         });
-        setTimeout(function () { $('#cfgConfig').hide(); }, 200);
+        setTimeout(function () { $('#cfgConfig').hide(); }, animation_duration);
     });
 
     $('#chat_cfg_guidance_scale').on('input', function() {

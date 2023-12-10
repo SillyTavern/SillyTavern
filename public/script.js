@@ -651,7 +651,8 @@ let create_save = {
 };
 
 //animation right menu
-export let animation_duration = 125;
+export const ANIMATION_DURATION_DEFAULT = 125;
+export let animation_duration = ANIMATION_DURATION_DEFAULT;
 let animation_easing = 'ease-in-out';
 let popup_type = '';
 let chat_file_for_del = '';
@@ -763,6 +764,14 @@ function displayOnlineStatus() {
         $('.online_status_indicator').addClass('success');
         $('.online_status_text').text(online_status);
     }
+}
+
+/**
+ * Sets the duration of JS animations.
+ * @param {number} ms Duration in milliseconds. Resets to default if null.
+ */
+export function setAnimationDuration(ms = null) {
+    animation_duration = ms ?? ANIMATION_DURATION_DEFAULT;
 }
 
 export function setActiveCharacter(character) {
@@ -6494,7 +6503,7 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } 
     }
     $('#shadow_popup').transition({
         opacity: 1,
-        duration: 200,
+        duration: animation_duration,
         easing: animation_easing,
     });
 
@@ -7988,10 +7997,10 @@ jQuery(async function () {
         is_advanced_char_open = false;
         $('#character_popup').transition({
             opacity: 0,
-            duration: 200,
+            duration: animation_duration,
             easing: animation_easing,
         });
-        setTimeout(function () { $('#character_popup').css('display', 'none'); }, 200);
+        setTimeout(function () { $('#character_popup').css('display', 'none'); }, animation_duration);
     });
 
     $('#character_popup_ok').click(function () {
@@ -8003,7 +8012,7 @@ jQuery(async function () {
         dialogueCloseStop = false;
         $('#shadow_popup').transition({
             opacity: 0,
-            duration: 200,
+            duration: animation_duration,
             easing: animation_easing,
         });
         setTimeout(function () {
@@ -8011,7 +8020,7 @@ jQuery(async function () {
             $('#shadow_popup').css('display', 'none');
             $('#dialogue_popup').removeClass('large_dialogue_popup');
             $('#dialogue_popup').removeClass('wide_dialogue_popup');
-        }, 200);
+        }, animation_duration);
 
         //      $("#shadow_popup").css("opacity:", 0.0);
 
@@ -8098,14 +8107,14 @@ jQuery(async function () {
         dialogueCloseStop = false;
         $('#shadow_popup').transition({
             opacity: 0,
-            duration: 200,
+            duration: animation_duration,
             easing: animation_easing,
         });
         setTimeout(function () {
             if (dialogueCloseStop) return;
             $('#shadow_popup').css('display', 'none');
             $('#dialogue_popup').removeClass('large_dialogue_popup');
-        }, 200);
+        }, animation_duration);
 
         //$("#shadow_popup").css("opacity:", 0.0);
         popup_type = '';
@@ -8681,10 +8690,10 @@ jQuery(async function () {
     $('#select_chat_cross').click(function () {
         $('#shadow_select_chat_popup').transition({
             opacity: 0,
-            duration: 200,
+            duration: animation_duration,
             easing: animation_easing,
         });
-        setTimeout(function () { $('#shadow_select_chat_popup').css('display', 'none'); }, 200);
+        setTimeout(function () { $('#shadow_select_chat_popup').css('display', 'none'); }, animation_duration);
         //$("#shadow_select_chat_popup").css("display", "none");
         $('#load_select_chat_div').css('display', 'block');
     });
@@ -8831,7 +8840,7 @@ jQuery(async function () {
         const elmnt = e.target;
         $(elmnt).transition({
             opacity: 0,
-            duration: 150,
+            duration: animation_duration,
             easing: 'ease-in-out',
         });
         setTimeout(function () {
@@ -8840,10 +8849,10 @@ jQuery(async function () {
             $(elmnt).siblings('.extraMesButtons').css('display', 'flex');
             $(elmnt).siblings('.extraMesButtons').transition({
                 opacity: 1,
-                duration: 150,
+                duration: animation_duration,
                 easing: 'ease-in-out',
             });
-        }, 150);
+        }, animation_duration);
     });
 
     $(document).on('click', function (e) {
@@ -8857,7 +8866,7 @@ jQuery(async function () {
             // Transition out the .extraMesButtons first
             $('.extraMesButtons:visible').transition({
                 opacity: 0,
-                duration: 150,
+                duration: animation_duration,
                 easing: 'ease-in-out',
                 complete: function () {
                     $(this).hide(); // Hide the .extraMesButtons after the transition
@@ -8865,7 +8874,7 @@ jQuery(async function () {
                     // Transition the .extraMesButtonsHint back in
                     $('.extraMesButtonsHint:not(:visible)').show().transition({
                         opacity: .3,
-                        duration: 150,
+                        duration: animation_duration,
                         easing: 'ease-in-out',
                         complete: function () {
                             $(this).css('opacity', '');
