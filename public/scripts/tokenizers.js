@@ -211,7 +211,6 @@ export function getTokenizerBestMatch(forApi) {
 function currentRemoteTokenizerAPI() {
     switch (main_api) {
         case 'kobold':
-        case 'koboldhorde':
             return tokenizers.API_KOBOLD;
         case 'textgenerationwebui':
             return tokenizers.API_TEXTGENERATIONWEBUI;
@@ -240,7 +239,7 @@ function callTokenizer(type, str) {
             const endpointUrl = TOKENIZER_URLS[type]?.count;
             if (!endpointUrl) {
                 console.warn('Unknown tokenizer type', type);
-                return callTokenizer(tokenizers.NONE, str);
+                return apiFailureTokenCount(str);
             }
             return countTokensFromServer(endpointUrl, str);
         }
@@ -654,11 +653,13 @@ export function getTextTokens(tokenizerType, str) {
         default: {
             const tokenizerEndpoints = TOKENIZER_URLS[tokenizerType];
             if (!tokenizerEndpoints) {
+                apiFailureTokenCount(str);
                 console.warn('Unknown tokenizer type', tokenizerType);
                 return [];
             }
             let endpointUrl = tokenizerEndpoints.encode;
             if (!endpointUrl) {
+                apiFailureTokenCount(str);
                 console.warn('This tokenizer type does not support encoding', tokenizerType);
                 return [];
             }
