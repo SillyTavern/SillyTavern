@@ -18,9 +18,10 @@ export const tokenizers = {
     LLAMA: 3,
     NERD: 4,
     NERD2: 5,
-    API: 6,
+    API_KOBOLD: 6,
     MISTRAL: 7,
     YI: 8,
+    API_TEXTGENERATIONWEBUI: 9,
     BEST_MATCH: 99,
 };
 
@@ -135,11 +136,11 @@ export function getTokenizerBestMatch(forApi) {
 
         if (!hasTokenizerError && isConnected) {
             if (forApi === 'kobold' && kai_flags.can_use_tokenization) {
-                return tokenizers.API;
+                return tokenizers.API_KOBOLD;
             }
 
             if (forApi === 'textgenerationwebui' && isTokenizerSupported) {
-                return tokenizers.API;
+                return tokenizers.API_TEXTGENERATIONWEBUI;
             }
         }
 
@@ -172,8 +173,10 @@ function callTokenizer(type, str, padding) {
             return countTokensFromServer('/api/tokenizers/mistral/encode', str, padding);
         case tokenizers.YI:
             return countTokensFromServer('/api/tokenizers/yi/encode', str, padding);
-        case tokenizers.API:
-            return countTokensFromRemoteAPI('/api/tokenizers/remote/encode', str, padding);
+        case tokenizers.API_KOBOLD:
+            return countTokensFromKoboldAPI('/api/tokenizers/remote/encode', str, padding);
+        case tokenizers.API_TEXTGENERATIONWEBUI:
+            return countTokensFromTextgenAPI('/api/tokenizers/remote/encode', str, padding);
         default:
             console.warn('Unknown tokenizer type', type);
             return callTokenizer(tokenizers.NONE, str, padding);
@@ -397,13 +400,21 @@ function getServerTokenizationParams(str) {
     };
 }
 
-function getRemoteAPITokenizationParams(str) {
+function getKoboldAPITokenizationParams(str) {
     return {
         text: str,
-        main_api,
+        main_api: 'kobold',
+        url: getAPIServerUrl(),
+    };
+}
+
+function getTextgenAPITokenizationParams(str) {
+    return {
+        text: str,
+        main_api: 'textgenerationwebui',
         api_type: textgen_settings.type,
         url: getAPIServerUrl(),
-        legacy_api: main_api === 'textgenerationwebui' &&
+        legacy_api:
             textgen_settings.legacy_api &&
             textgen_settings.type !== MANCER,
     };
@@ -445,14 +456,43 @@ function countTokensFromServer(endpoint, str, padding) {
  * @param {number} padding Number of padding tokens.
  * @returns {number} Token count with padding.
  */
-function countTokensFromRemoteAPI(endpoint, str, padding) {
+function countTokensFromKoboldAPI(endpoint, str, padding) {
     let tokenCount = 0;
 
     jQuery.ajax({
         async: false,
         type: 'POST',
         url: endpoint,
-        data: JSON.stringify(getRemoteAPITokenizationParams(str)),
+        data: JSON.stringify(getKoboldAPITokenizationParams(str)),
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function (data) {
+            if (typeof data.count === 'number') {
+                tokenCount = data.count;
+            } else {
+                tokenCount = apiFailureTokenCount(str);
+            }
+        },
+    });
+
+    return tokenCount + padding;
+}
+
+/**
+ * Count tokens using the AI provider's API.
+ * @param {string} endpoint API endpoint.
+ * @param {string} str String to tokenize.
+ * @param {number} padding Number of padding tokens.
+ * @returns {number} Token count with padding.
+ */
+function countTokensFromTextgenAPI(endpoint, str, padding) {
+    let tokenCount = 0;
+
+    jQuery.ajax({
+        async: false,
+        type: 'POST',
+        url: endpoint,
+        data: JSON.stringify(getTextgenAPITokenizationParams(str)),
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
@@ -519,16 +559,15 @@ function getTextTokensFromServer(endpoint, str, model = '') {
  * Calls the AI provider's tokenize API to encode a string to tokens.
  * @param {string} endpoint API endpoint.
  * @param {string} str String to tokenize.
- * @param {string} model Tokenizer model.
  * @returns {number[]} Array of token ids.
  */
-function getTextTokensFromRemoteAPI(endpoint, str, model = '') {
+function getTextTokensFromTextgenAPI(endpoint, str) {
     let ids = [];
     jQuery.ajax({
         async: false,
         type: 'POST',
         url: endpoint,
-        data: JSON.stringify(getRemoteAPITokenizationParams(str)),
+        data: JSON.stringify(getTextgenAPITokenizationParams(str)),
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
@@ -587,8 +626,8 @@ export function getTextTokens(tokenizerType, str) {
             const model = getTokenizerModel();
             return getTextTokensFromServer('/api/tokenizers/openai/encode', str, model);
         }
-        case tokenizers.API:
-            return getTextTokensFromRemoteAPI('/api/tokenizers/remote/encode', str);
+        case tokenizers.API_TEXTGENERATIONWEBUI:
+            return getTextTokensFromTextgenAPI('/api/tokenizers/remote/encode', str);
         default:
             console.warn('Calling getTextTokens with unsupported tokenizer type', tokenizerType);
             return [];
