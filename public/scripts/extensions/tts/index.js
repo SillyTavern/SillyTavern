@@ -1,6 +1,6 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js';
-import { escapeRegex, getStringHash } from '../../utils.js';
+import { delay, escapeRegex, getStringHash } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
@@ -698,7 +698,8 @@ export function saveTtsProviderSettings() {
 
 async function onChatChanged() {
     await resetTtsPlayback();
-    await initVoiceMap();
+    const voiceMapInit = initVoiceMap();
+    await Promise.race([voiceMapInit, await delay(1000)]);
     ttsLastMessage = null;
 }
 
