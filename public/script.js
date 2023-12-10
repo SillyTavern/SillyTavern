@@ -2308,7 +2308,7 @@ function getStoppingStrings(isImpersonate, isContinue) {
 export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null) {
     console.log('got into genQuietPrompt');
     const generateFinished = await Generate('quiet', { quiet_prompt, quietToLoud, skipWIAN: skipWIAN, force_name2: true, quietImage: quietImage });
-    await generateFinished;
+    return generateFinished;
 }
 
 async function processCommands(message, type, dryRun) {
