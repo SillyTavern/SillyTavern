@@ -316,6 +316,11 @@ table.responsiveTable {
     padding: 1em;
 }
 
+.mes_text img:not(.mes_img) {
+    max-width: 100%;
+    max-height: var(--doc-height);
+}
+
 .mes .mes_timer,
 .mes .mesIDDisplay,
 .mes .tokenCounterDisplay {
