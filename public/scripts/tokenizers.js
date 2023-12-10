@@ -648,7 +648,7 @@ function decodeTextTokensFromServer(endpoint, ids) {
 export function getTextTokens(tokenizerType, str) {
     switch (tokenizerType) {
         case tokenizers.API_CURRENT:
-            return callTokenizer(currentRemoteTokenizerAPI(), str);
+            return getTextTokens(currentRemoteTokenizerAPI(), str);
         case tokenizers.API_TEXTGENERATIONWEBUI:
             return getTextTokensFromTextgenAPI(str);
         default: {
@@ -678,7 +678,7 @@ export function getTextTokens(tokenizerType, str) {
 export function decodeTextTokens(tokenizerType, ids) {
     // Currently, neither remote API can decode, but this may change in the future. Put this guard here to be safe
     if (tokenizerType === tokenizers.API_CURRENT) {
-        return decodeTextTokens(tokenizers.NONE);
+        return decodeTextTokens(tokenizers.NONE, ids);
     }
     const tokenizerEndpoints = TOKENIZER_URLS[tokenizerType];
     if (!tokenizerEndpoints) {
