@@ -1444,9 +1444,7 @@ select option:not(:checked) {
     display: block;
 }
 
-#api_button:hover,
-#api_button_novel:hover,
-#api_button_textgenerationwebui:hover {
+.menu_button.api_button:hover {
     background-color: var(--active);
 }
 

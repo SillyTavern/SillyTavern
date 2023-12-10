@@ -232,7 +232,6 @@ export {
     isStreamingEnabled,
     getThumbnailUrl,
     getStoppingStrings,
-    getStatus,
     reloadMarkdownProcessor,
     getCurrentChatId,
     chat,
@@ -860,7 +859,7 @@ export async function clearItemizedPrompts() {
     }
 }
 
-async function getStatus() {
+async function getStatusKobold() {
     if (main_api == 'koboldhorde') {
         try {
             const hordeStatus = await checkHordeStatus();
@@ -873,7 +872,7 @@ async function getStatus() {
         return resultCheckStatus();
     }
 
-    const url = main_api == 'textgenerationwebui' ? '/api/textgenerationwebui/status' : '/getstatus';
+    const url = '/getstatus';
 
     let endpoint = getAPIServerUrl();
 
@@ -889,18 +888,64 @@ async function getStatus() {
             body: JSON.stringify({
                 main_api,
                 api_server: endpoint,
-                api_type: textgen_settings.type,
-                legacy_api: main_api == 'textgenerationwebui' ?
-                    textgen_settings.legacy_api &&
-                    textgen_settings.type !== MANCER :
-                    false,
             }),
             signal: abortStatusCheck.signal,
         });
 
         const data = await response.json();
 
-        if (main_api == 'textgenerationwebui' && textgen_settings.type === MANCER) {
+
+        online_status = data?.result;
+
+        if (!online_status) {
+            online_status = 'no_connection';
+        }
+
+        // Determine instruct mode preset
+        autoSelectInstructPreset(online_status);
+
+        // determine if we can use stop sequence and streaming
+        setKoboldFlags(data.version, data.koboldVersion);
+
+        // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
+        if (online_status === 'no_connection' && data.response) {
+            toastr.error(data.response, 'API Error', { timeOut: 5000, preventDuplicates: true });
+        }
+    } catch (err) {
+        console.error('Error getting status', err);
+        online_status = 'no_connection';
+    }
+
+    return resultCheckStatus();
+}
+
+async function getStatusTextgen() {
+    const url = '/api/textgenerationwebui/status';
+
+    let endpoint = getAPIServerUrl();
+
+    if (!endpoint) {
+        console.warn('No endpoint for status check');
+        return;
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                api_server: endpoint,
+                api_type: textgen_settings.type,
+                legacy_api:
+                    textgen_settings.legacy_api &&
+                    textgen_settings.type !== MANCER,
+            }),
+            signal: abortStatusCheck.signal,
+        });
+
+        const data = await response.json();
+
+        if (textgen_settings.type === MANCER) {
             online_status = textgen_settings.mancer_model;
             loadMancerModels(data?.data);
         } else {
@@ -914,11 +959,6 @@ async function getStatus() {
         // Determine instruct mode preset
         autoSelectInstructPreset(online_status);
 
-        // determine if we can use stop sequence and streaming
-        if (main_api === 'kobold' || main_api === 'koboldhorde') {
-            setKoboldFlags(data.version, data.koboldVersion);
-        }
-
         // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
         if (online_status === 'no_connection' && data.response) {
             toastr.error(data.response, 'API Error', { timeOut: 5000, preventDuplicates: true });
@@ -929,6 +969,22 @@ async function getStatus() {
     }
 
     return resultCheckStatus();
+}
+
+async function getStatusNovel() {
+    try {
+        const result = await loadNovelSubscriptionData();
+
+        if (!result) {
+            throw new Error('Could not load subscription data');
+        }
+
+        online_status = getNovelTier();
+    } catch {
+        online_status = 'no_connection';
+    }
+
+    resultCheckStatus();
 }
 
 export function startStatusLoading() {
@@ -946,6 +1002,7 @@ export function resultCheckStatus() {
     stopStatusLoading();
 }
 
+// TODO(valadaptive): remove the usage of this function in the tokenizers code, then remove the function entirely
 export function getAPIServerUrl() {
     if (main_api == 'textgenerationwebui') {
         if (textgen_settings.type === MANCER) {
@@ -5317,7 +5374,7 @@ function changeMainAPI() {
     }
 
     if (main_api == 'koboldhorde') {
-        getStatus();
+        getStatusKobold();
         getHordeModels();
     }
 
@@ -6032,22 +6089,6 @@ export async function displayPastChats() {
         const searchQuery = $(this).val();
         debouncedDisplay(searchQuery);
     });
-}
-
-async function getStatusNovel() {
-    try {
-        const result = await loadNovelSubscriptionData();
-
-        if (!result) {
-            throw new Error('Could not load subscription data');
-        }
-
-        online_status = getNovelTier();
-    } catch {
-        online_status = 'no_connection';
-    }
-
-    resultCheckStatus();
 }
 
 function selectRightMenuWithAnimation(selectedMenuId) {
@@ -8271,7 +8312,7 @@ jQuery(async function () {
 
             main_api = 'kobold';
             saveSettingsDebounced();
-            getStatus();
+            getStatusKobold();
         }
     });
 
@@ -8307,7 +8348,25 @@ jQuery(async function () {
         startStatusLoading();
         main_api = 'textgenerationwebui';
         saveSettingsDebounced();
-        getStatus();
+        getStatusTextgen();
+    });
+
+    $('#api_button_novel').on('click', async function (e) {
+        e.stopPropagation();
+        const api_key_novel = String($('#api_key_novel').val()).trim();
+
+        if (api_key_novel.length) {
+            await writeSecret(SECRET_KEYS.NOVEL, api_key_novel);
+        }
+
+        if (!secret_state[SECRET_KEYS.NOVEL]) {
+            console.log('No secret key saved for NovelAI');
+            return;
+        }
+
+        startStatusLoading();
+        // Check near immediately rather than waiting for up to 90s
+        await getStatusNovel();
     });
 
     var button = $('#options_button');
@@ -8995,24 +9054,6 @@ jQuery(async function () {
         await reloadCurrentChat();
     });
     //Select chat
-
-    $('#api_button_novel').on('click', async function (e) {
-        e.stopPropagation();
-        const api_key_novel = String($('#api_key_novel').val()).trim();
-
-        if (api_key_novel.length) {
-            await writeSecret(SECRET_KEYS.NOVEL, api_key_novel);
-        }
-
-        if (!secret_state[SECRET_KEYS.NOVEL]) {
-            console.log('No secret key saved for NovelAI');
-            return;
-        }
-
-        startStatusLoading();
-        // Check near immediately rather than waiting for up to 90s
-        await getStatusNovel();
-    });
 
     //**************************CHARACTER IMPORT EXPORT*************************//
     $('#character_import_button').click(function () {
