@@ -1,4 +1,4 @@
-import { characters, getAPIServerUrl, main_api, nai_settings, online_status, this_chid } from '../script.js';
+import { characters, main_api, api_server, api_server_textgenerationwebui, nai_settings, online_status, this_chid } from '../script.js';
 import { power_user, registerDebugFunction } from './power-user.js';
 import { chat_completion_sources, model_list, oai_settings } from './openai.js';
 import { groups, selected_group } from './group-chats.js';
@@ -174,9 +174,9 @@ function callTokenizer(type, str, padding) {
         case tokenizers.YI:
             return countTokensFromServer('/api/tokenizers/yi/encode', str, padding);
         case tokenizers.API_KOBOLD:
-            return countTokensFromKoboldAPI('/api/tokenizers/remote/encode', str, padding);
+            return countTokensFromKoboldAPI('/api/tokenizers/remote/kobold/count', str, padding);
         case tokenizers.API_TEXTGENERATIONWEBUI:
-            return countTokensFromTextgenAPI('/api/tokenizers/remote/encode', str, padding);
+            return countTokensFromTextgenAPI('/api/tokenizers/remote/textgenerationwebui/encode', str, padding);
         default:
             console.warn('Unknown tokenizer type', type);
             return callTokenizer(tokenizers.NONE, str, padding);
@@ -403,17 +403,15 @@ function getServerTokenizationParams(str) {
 function getKoboldAPITokenizationParams(str) {
     return {
         text: str,
-        main_api: 'kobold',
-        url: getAPIServerUrl(),
+        url: api_server,
     };
 }
 
 function getTextgenAPITokenizationParams(str) {
     return {
         text: str,
-        main_api: 'textgenerationwebui',
         api_type: textgen_settings.type,
-        url: getAPIServerUrl(),
+        url: api_server_textgenerationwebui,
         legacy_api:
             textgen_settings.legacy_api &&
             textgen_settings.type !== MANCER,
@@ -627,7 +625,7 @@ export function getTextTokens(tokenizerType, str) {
             return getTextTokensFromServer('/api/tokenizers/openai/encode', str, model);
         }
         case tokenizers.API_TEXTGENERATIONWEBUI:
-            return getTextTokensFromTextgenAPI('/api/tokenizers/remote/encode', str);
+            return getTextTokensFromTextgenAPI('/api/tokenizers/textgenerationwebui/encode', str);
         default:
             console.warn('Calling getTextTokens with unsupported tokenizer type', tokenizerType);
             return [];
