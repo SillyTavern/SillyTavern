@@ -394,30 +394,6 @@ function getTokenCacheObject() {
     return tokenCache[String(chatId)];
 }
 
-function getServerTokenizationParams(str) {
-    return {
-        text: str,
-    };
-}
-
-function getKoboldAPITokenizationParams(str) {
-    return {
-        text: str,
-        url: api_server,
-    };
-}
-
-function getTextgenAPITokenizationParams(str) {
-    return {
-        text: str,
-        api_type: textgen_settings.type,
-        url: api_server_textgenerationwebui,
-        legacy_api:
-            textgen_settings.legacy_api &&
-            textgen_settings.type !== MANCER,
-    };
-}
-
 /**
  * Count tokens using the server API.
  * @param {string} endpoint API endpoint.
@@ -432,7 +408,7 @@ function countTokensFromServer(endpoint, str, padding) {
         async: false,
         type: 'POST',
         url: endpoint,
-        data: JSON.stringify(getServerTokenizationParams(str)),
+        data: JSON.stringify({ text: str }),
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
@@ -461,7 +437,10 @@ function countTokensFromKoboldAPI(endpoint, str, padding) {
         async: false,
         type: 'POST',
         url: endpoint,
-        data: JSON.stringify(getKoboldAPITokenizationParams(str)),
+        data: JSON.stringify({
+            text: str,
+            url: api_server,
+        }),
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
@@ -474,6 +453,17 @@ function countTokensFromKoboldAPI(endpoint, str, padding) {
     });
 
     return tokenCount + padding;
+}
+
+function getTextgenAPITokenizationParams(str) {
+    return {
+        text: str,
+        api_type: textgen_settings.type,
+        url: api_server_textgenerationwebui,
+        legacy_api:
+            textgen_settings.legacy_api &&
+            textgen_settings.type !== MANCER,
+    };
 }
 
 /**
@@ -538,7 +528,7 @@ function getTextTokensFromServer(endpoint, str, model = '') {
         async: false,
         type: 'POST',
         url: endpoint,
-        data: JSON.stringify(getServerTokenizationParams(str)),
+        data: JSON.stringify({ text: str }),
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
