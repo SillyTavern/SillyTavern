@@ -161,19 +161,19 @@ function callTokenizer(type, str, padding) {
         case tokenizers.NONE:
             return guesstimate(str) + padding;
         case tokenizers.GPT2:
-            return countTokensRemote('/api/tokenizers/gpt2/encode', str, padding);
+            return countTokensFromServer('/api/tokenizers/gpt2/encode', str, padding);
         case tokenizers.LLAMA:
-            return countTokensRemote('/api/tokenizers/llama/encode', str, padding);
+            return countTokensFromServer('/api/tokenizers/llama/encode', str, padding);
         case tokenizers.NERD:
-            return countTokensRemote('/api/tokenizers/nerdstash/encode', str, padding);
+            return countTokensFromServer('/api/tokenizers/nerdstash/encode', str, padding);
         case tokenizers.NERD2:
-            return countTokensRemote('/api/tokenizers/nerdstash_v2/encode', str, padding);
+            return countTokensFromServer('/api/tokenizers/nerdstash_v2/encode', str, padding);
         case tokenizers.MISTRAL:
-            return countTokensRemote('/api/tokenizers/mistral/encode', str, padding);
+            return countTokensFromServer('/api/tokenizers/mistral/encode', str, padding);
         case tokenizers.YI:
-            return countTokensRemote('/api/tokenizers/yi/encode', str, padding);
+            return countTokensFromServer('/api/tokenizers/yi/encode', str, padding);
         case tokenizers.API:
-            return countTokensRemote('/api/tokenizers/remote/encode', str, padding);
+            return countTokensFromServer('/api/tokenizers/remote/encode', str, padding);
         default:
             console.warn('Unknown tokenizer type', type);
             return callTokenizer(tokenizers.NONE, str, padding);
@@ -391,7 +391,7 @@ function getTokenCacheObject() {
     return tokenCache[String(chatId)];
 }
 
-function getRemoteTokenizationParams(str) {
+function getServerTokenizationParams(str) {
     return {
         text: str,
         main_api,
@@ -404,20 +404,20 @@ function getRemoteTokenizationParams(str) {
 }
 
 /**
- * Counts token using the remote server API.
+ * Counts token using the server API.
  * @param {string} endpoint API endpoint.
  * @param {string} str String to tokenize.
  * @param {number} padding Number of padding tokens.
  * @returns {number} Token count with padding.
  */
-function countTokensRemote(endpoint, str, padding) {
+function countTokensFromServer(endpoint, str, padding) {
     let tokenCount = 0;
 
     jQuery.ajax({
         async: false,
         type: 'POST',
         url: endpoint,
-        data: JSON.stringify(getRemoteTokenizationParams(str)),
+        data: JSON.stringify(getServerTokenizationParams(str)),
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
@@ -450,7 +450,7 @@ function countTokensRemote(endpoint, str, padding) {
  * @param {string} model Tokenizer model.
  * @returns {number[]} Array of token ids.
  */
-function getTextTokensRemote(endpoint, str, model = '') {
+function getTextTokensFromServer(endpoint, str, model = '') {
     if (model) {
         endpoint += `?model=${model}`;
     }
@@ -460,7 +460,7 @@ function getTextTokensRemote(endpoint, str, model = '') {
         async: false,
         type: 'POST',
         url: endpoint,
-        data: JSON.stringify(getRemoteTokenizationParams(str)),
+        data: JSON.stringify(getServerTokenizationParams(str)),
         dataType: 'json',
         contentType: 'application/json',
         success: function (data) {
@@ -480,7 +480,7 @@ function getTextTokensRemote(endpoint, str, model = '') {
  * @param {string} endpoint API endpoint.
  * @param {number[]} ids Array of token ids
  */
-function decodeTextTokensRemote(endpoint, ids, model = '') {
+function decodeTextTokensFromServer(endpoint, ids, model = '') {
     if (model) {
         endpoint += `?model=${model}`;
     }
@@ -501,7 +501,7 @@ function decodeTextTokensRemote(endpoint, ids, model = '') {
 }
 
 /**
- * Encodes a string to tokens using the remote server API.
+ * Encodes a string to tokens using the server API.
  * @param {number} tokenizerType Tokenizer type.
  * @param {string} str String to tokenize.
  * @returns {number[]} Array of token ids.
@@ -509,23 +509,23 @@ function decodeTextTokensRemote(endpoint, ids, model = '') {
 export function getTextTokens(tokenizerType, str) {
     switch (tokenizerType) {
         case tokenizers.GPT2:
-            return getTextTokensRemote('/api/tokenizers/gpt2/encode', str);
+            return getTextTokensFromServer('/api/tokenizers/gpt2/encode', str);
         case tokenizers.LLAMA:
-            return getTextTokensRemote('/api/tokenizers/llama/encode', str);
+            return getTextTokensFromServer('/api/tokenizers/llama/encode', str);
         case tokenizers.NERD:
-            return getTextTokensRemote('/api/tokenizers/nerdstash/encode', str);
+            return getTextTokensFromServer('/api/tokenizers/nerdstash/encode', str);
         case tokenizers.NERD2:
-            return getTextTokensRemote('/api/tokenizers/nerdstash_v2/encode', str);
+            return getTextTokensFromServer('/api/tokenizers/nerdstash_v2/encode', str);
         case tokenizers.MISTRAL:
-            return getTextTokensRemote('/api/tokenizers/mistral/encode', str);
+            return getTextTokensFromServer('/api/tokenizers/mistral/encode', str);
         case tokenizers.YI:
-            return getTextTokensRemote('/api/tokenizers/yi/encode', str);
+            return getTextTokensFromServer('/api/tokenizers/yi/encode', str);
         case tokenizers.OPENAI: {
             const model = getTokenizerModel();
-            return getTextTokensRemote('/api/tokenizers/openai/encode', str, model);
+            return getTextTokensFromServer('/api/tokenizers/openai/encode', str, model);
         }
         case tokenizers.API:
-            return getTextTokensRemote('/api/tokenizers/remote/encode', str);
+            return getTextTokensFromServer('/api/tokenizers/remote/encode', str);
         default:
             console.warn('Calling getTextTokens with unsupported tokenizer type', tokenizerType);
             return [];
@@ -533,27 +533,27 @@ export function getTextTokens(tokenizerType, str) {
 }
 
 /**
- * Decodes token ids to text using the remote server API.
+ * Decodes token ids to text using the server API.
  * @param {number} tokenizerType Tokenizer type.
  * @param {number[]} ids Array of token ids
  */
 export function decodeTextTokens(tokenizerType, ids) {
     switch (tokenizerType) {
         case tokenizers.GPT2:
-            return decodeTextTokensRemote('/api/tokenizers/gpt2/decode', ids);
+            return decodeTextTokensFromServer('/api/tokenizers/gpt2/decode', ids);
         case tokenizers.LLAMA:
-            return decodeTextTokensRemote('/api/tokenizers/llama/decode', ids);
+            return decodeTextTokensFromServer('/api/tokenizers/llama/decode', ids);
         case tokenizers.NERD:
-            return decodeTextTokensRemote('/api/tokenizers/nerdstash/decode', ids);
+            return decodeTextTokensFromServer('/api/tokenizers/nerdstash/decode', ids);
         case tokenizers.NERD2:
-            return decodeTextTokensRemote('/api/tokenizers/nerdstash_v2/decode', ids);
+            return decodeTextTokensFromServer('/api/tokenizers/nerdstash_v2/decode', ids);
         case tokenizers.MISTRAL:
-            return decodeTextTokensRemote('/api/tokenizers/mistral/decode', ids);
+            return decodeTextTokensFromServer('/api/tokenizers/mistral/decode', ids);
         case tokenizers.YI:
-            return decodeTextTokensRemote('/api/tokenizers/yi/decode', ids);
+            return decodeTextTokensFromServer('/api/tokenizers/yi/decode', ids);
         case tokenizers.OPENAI: {
             const model = getTokenizerModel();
-            return decodeTextTokensRemote('/api/tokenizers/openai/decode', ids, model);
+            return decodeTextTokensFromServer('/api/tokenizers/openai/decode', ids, model);
         }
         default:
             console.warn('Calling decodeTextTokens with unsupported tokenizer type', tokenizerType);
