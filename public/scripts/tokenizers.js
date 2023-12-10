@@ -22,6 +22,7 @@ export const tokenizers = {
     MISTRAL: 7,
     YI: 8,
     API_TEXTGENERATIONWEBUI: 9,
+    API_CURRENT: 98,
     BEST_MATCH: 99,
 };
 
@@ -195,6 +196,19 @@ export function getTokenizerBestMatch(forApi) {
     return tokenizers.NONE;
 }
 
+// Get the current remote tokenizer API based on the current text generation API.
+function currentRemoteTokenizerAPI() {
+    switch (main_api) {
+        case 'kobold':
+        case 'koboldhorde':
+            return tokenizers.API_KOBOLD;
+        case 'textgenerationwebui':
+            return tokenizers.API_TEXTGENERATIONWEBUI;
+        default:
+            return tokenizers.NONE;
+    }
+}
+
 /**
  * Calls the underlying tokenizer model to the token count for a string.
  * @param {number} type Tokenizer type.
@@ -205,6 +219,8 @@ function callTokenizer(type, str) {
     if (type === tokenizers.NONE) return guesstimate(str);
 
     switch (type) {
+        case tokenizers.API_CURRENT:
+            return callTokenizer(currentRemoteTokenizerAPI(), str);
         case tokenizers.API_KOBOLD:
             return countTokensFromKoboldAPI(str);
         case tokenizers.API_TEXTGENERATIONWEBUI:
@@ -620,6 +636,8 @@ function decodeTextTokensFromServer(endpoint, ids) {
  */
 export function getTextTokens(tokenizerType, str) {
     switch (tokenizerType) {
+        case tokenizers.API_CURRENT:
+            return callTokenizer(currentRemoteTokenizerAPI(), str);
         case tokenizers.API_TEXTGENERATIONWEBUI:
             return getTextTokensFromTextgenAPI(str);
         default: {
@@ -647,6 +665,10 @@ export function getTextTokens(tokenizerType, str) {
  * @param {number[]} ids Array of token ids
  */
 export function decodeTextTokens(tokenizerType, ids) {
+    // Currently, neither remote API can decode, but this may change in the future. Put this guard here to be safe
+    if (tokenizerType === tokenizers.API_CURRENT) {
+        return decodeTextTokens(tokenizers.NONE);
+    }
     const tokenizerEndpoints = TOKENIZER_URLS[tokenizerType];
     if (!tokenizerEndpoints) {
         console.warn('Unknown tokenizer type', tokenizerType);
