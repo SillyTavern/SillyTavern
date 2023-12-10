@@ -525,14 +525,17 @@ function getUrlSync(url, cache = true) {
     }).responseText;
 }
 
-const templateCache = {};
+const templateCache = new Map();
 
 export function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true, fullPath = false) {
     try {
         const pathToTemplate = fullPath ? templateId : `/scripts/templates/${templateId}.html`;
-        const templateContent = (pathToTemplate in templateCache) ? templateCache[pathToTemplate] : getUrlSync(pathToTemplate);
-        templateCache[pathToTemplate] = templateContent;
-        const template = Handlebars.compile(templateContent);
+        let template = templateCache.get(pathToTemplate);
+        if (!template) {
+            const templateContent = getUrlSync(pathToTemplate);
+            template = Handlebars.compile(templateContent);
+            templateCache.set(pathToTemplate, template);
+        }
         let result = template(templateData);
 
         if (sanitize) {
@@ -1536,7 +1539,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), '$1');
     }
 
-    mes = DOMPurify.sanitize(mes);
+    mes = DOMPurify.sanitize(mes, { FORBID_TAGS: ['style'] });
 
     return mes;
 }
