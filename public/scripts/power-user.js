@@ -35,7 +35,7 @@ import { registerSlashCommand } from './slash-commands.js';
 import { tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 
-import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 
 export {
     loadPowerUserSettings,
@@ -1818,10 +1818,6 @@ export function renderStoryString(params) {
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
 const compareFunc = (first, second) => {
-    if (power_user.sort_order == 'random') {
-        return Math.random() > 0.5 ? 1 : -1;
-    }
-
     const a = first[power_user.sort_field];
     const b = second[power_user.sort_field];
 
@@ -1850,6 +1846,11 @@ const compareFunc = (first, second) => {
  */
 function sortEntitiesList(entities) {
     if (power_user.sort_field == undefined || entities.length === 0) {
+        return;
+    }
+
+    if (power_user.sort_order === 'random') {
+        shuffle(entities);
         return;
     }
 

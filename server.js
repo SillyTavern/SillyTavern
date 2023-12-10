@@ -49,6 +49,7 @@ const { delay, getVersion, getConfigValue, color, uuidv4, tryParse, clientRelati
 const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
 const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS, getSentencepiceTokenizer, sentencepieceTokenizers } = require('./src/endpoints/tokenizers');
 const { convertClaudePrompt } = require('./src/chat-completion');
+const { getOverrideHeaders, setAdditionalHeaders } = require('./src/additional-headers');
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
 // https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
@@ -119,106 +120,8 @@ const listen = getConfigValue('listen', false);
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
 
-function getMancerHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.MANCER);
-
-    return apiKey ? ({
-        'X-API-KEY': apiKey,
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
-}
-
-function getAphroditeHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.APHRODITE);
-
-    return apiKey ? ({
-        'X-API-KEY': apiKey,
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
-}
-
-function getTabbyHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.TABBY);
-
-    return apiKey ? ({
-        'x-api-key': apiKey,
-        'Authorization': `Bearer ${apiKey}`,
-    }) : {};
-}
-
-function getOverrideHeaders(urlHost) {
-    const requestOverrides = getConfigValue('requestOverrides', []);
-    const overrideHeaders = requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
-    if (overrideHeaders && urlHost) {
-        return overrideHeaders;
-    } else {
-        return {};
-    }
-}
-
-/**
- * Sets additional headers for the request.
- * @param {object} request Original request body
- * @param {object} args New request arguments
- * @param {string|null} server API server for new request
- */
-function setAdditionalHeaders(request, args, server) {
-    let headers;
-
-    switch (request.body.api_type) {
-        case TEXTGEN_TYPES.MANCER:
-            headers = getMancerHeaders();
-            break;
-        case TEXTGEN_TYPES.APHRODITE:
-            headers = getAphroditeHeaders();
-            break;
-        case TEXTGEN_TYPES.TABBY:
-            headers = getTabbyHeaders();
-            break;
-        default:
-            headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
-            break;
-    }
-
-    Object.assign(args.headers, headers);
-}
-
 const SETTINGS_FILE = './public/settings.json';
 const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY, TEXTGEN_TYPES, CHAT_COMPLETION_SOURCES, AVATAR_WIDTH, AVATAR_HEIGHT } = require('./src/constants');
-
-// CSRF Protection //
-if (!cliArguments.disableCsrf) {
-    const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
-    const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
-
-    const { generateToken, doubleCsrfProtection } = doubleCsrf({
-        getSecret: () => CSRF_SECRET,
-        cookieName: 'X-CSRF-Token',
-        cookieOptions: {
-            httpOnly: true,
-            sameSite: 'strict',
-            secure: false,
-        },
-        size: 64,
-        getTokenFromRequest: (req) => req.headers['x-csrf-token'],
-    });
-
-    app.get('/csrf-token', (req, res) => {
-        res.json({
-            'token': generateToken(res, req),
-        });
-    });
-
-    app.use(cookieParser(COOKIES_SECRET));
-    app.use(doubleCsrfProtection);
-} else {
-    console.warn('\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n');
-    app.get('/csrf-token', (req, res) => {
-        res.json({
-            'token': 'disabled',
-        });
-    });
-}
 
 // CORS Settings //
 const CORS = cors({
@@ -272,6 +175,40 @@ app.use(function (req, res, next) {
     }
     next();
 });
+
+// CSRF Protection //
+if (!cliArguments.disableCsrf) {
+    const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
+    const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
+
+    const { generateToken, doubleCsrfProtection } = doubleCsrf({
+        getSecret: () => CSRF_SECRET,
+        cookieName: 'X-CSRF-Token',
+        cookieOptions: {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: false,
+        },
+        size: 64,
+        getTokenFromRequest: (req) => req.headers['x-csrf-token'],
+    });
+
+    app.get('/csrf-token', (req, res) => {
+        res.json({
+            'token': generateToken(res, req),
+        });
+    });
+
+    app.use(cookieParser(COOKIES_SECRET));
+    app.use(doubleCsrfProtection);
+} else {
+    console.warn('\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n');
+    app.get('/csrf-token', (req, res) => {
+        res.json({
+            'token': 'disabled',
+        });
+    });
+}
 
 if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
     const bodyParser = require('body-parser');
@@ -1773,93 +1710,6 @@ async function sendAI21Request(request, response) {
         });
 
 }
-
-app.post('/tokenize_via_api', jsonParser, async function (request, response) {
-    if (!request.body) {
-        return response.sendStatus(400);
-    }
-    const text = String(request.body.text) || '';
-    const api = String(request.body.main_api);
-    const baseUrl = String(request.body.url);
-    const legacyApi = Boolean(request.body.legacy_api);
-
-    try {
-        if (api == 'textgenerationwebui') {
-            const args = {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            };
-
-            setAdditionalHeaders(request, args, null);
-
-            // Convert to string + remove trailing slash + /v1 suffix
-            let url = String(baseUrl).replace(/\/$/, '').replace(/\/v1$/, '');
-
-            if (legacyApi) {
-                url += '/v1/token-count';
-                args.body = JSON.stringify({ 'prompt': text });
-            } else {
-                switch (request.body.api_type) {
-                    case TEXTGEN_TYPES.TABBY:
-                        url += '/v1/token/encode';
-                        args.body = JSON.stringify({ 'text': text });
-                        break;
-                    case TEXTGEN_TYPES.KOBOLDCPP:
-                        url += '/api/extra/tokencount';
-                        args.body = JSON.stringify({ 'prompt': text });
-                        break;
-                    default:
-                        url += '/v1/internal/encode';
-                        args.body = JSON.stringify({ 'text': text });
-                        break;
-                }
-            }
-
-            const result = await fetch(url, args);
-
-            if (!result.ok) {
-                console.log(`API returned error: ${result.status} ${result.statusText}`);
-                return response.send({ error: true });
-            }
-
-            const data = await result.json();
-            const count = legacyApi ? data?.results[0]?.tokens : (data?.length ?? data?.value);
-            const ids = legacyApi ? [] : (data?.tokens ?? []);
-
-            return response.send({ count, ids });
-        }
-
-        else if (api == 'kobold') {
-            const args = {
-                method: 'POST',
-                body: JSON.stringify({ 'prompt': text }),
-                headers: { 'Content-Type': 'application/json' },
-            };
-
-            let url = String(baseUrl).replace(/\/$/, '');
-            url += '/extra/tokencount';
-
-            const result = await fetch(url, args);
-
-            if (!result.ok) {
-                console.log(`API returned error: ${result.status} ${result.statusText}`);
-                return response.send({ error: true });
-            }
-
-            const data = await result.json();
-            const count = data['value'];
-            return response.send({ count: count, ids: [] });
-        }
-
-        else {
-            console.log('Unknown API', api);
-            return response.send({ error: true });
-        }
-    } catch (error) {
-        console.log(error);
-        return response.send({ error: true });
-    }
-});
 
 /**
  * Redirect a deprecated API endpoint URL to its replacement. Because fetch, form submissions, and $.ajax follow
