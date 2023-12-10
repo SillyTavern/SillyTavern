@@ -18,11 +18,11 @@ export const tokenizers = {
     LLAMA: 3,
     NERD: 4,
     NERD2: 5,
-    API_KOBOLD: 6,
+    API_CURRENT: 6,
     MISTRAL: 7,
     YI: 8,
     API_TEXTGENERATIONWEBUI: 9,
-    API_CURRENT: 98,
+    API_KOBOLD: 10,
     BEST_MATCH: 99,
 };
 
