@@ -699,7 +699,7 @@ export function saveTtsProviderSettings() {
 async function onChatChanged() {
     await resetTtsPlayback();
     const voiceMapInit = initVoiceMap();
-    await Promise.race([voiceMapInit, await delay(1000)]);
+    await Promise.race([voiceMapInit, delay(1000)]);
     ttsLastMessage = null;
 }
 
