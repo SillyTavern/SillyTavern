@@ -860,8 +860,30 @@ function activateImpersonate(members) {
     return memberIds;
 }
 
+/**
+ * Activates a group member based on the last message.
+ * @param {string[]} members Array of group member avatar ids
+ * @returns {number[]} Array of character ids
+ */
 function activateSwipe(members) {
     let activatedNames = [];
+
+    if (chat[chat.length - 1].is_user) {
+        for (const message of chat.slice().reverse()) {
+            if (message.is_system || message.is_user) {
+                continue;
+            }
+
+            if (message.original_avatar) {
+                activatedNames.push(message.original_avatar);
+                break;
+            }
+        }
+
+        if (activatedNames.length === 0) {
+            activatedNames.push(shuffle(members.slice())[0]);
+        }
+    }
 
     // pre-update group chat swipe
     if (!chat[chat.length - 1].original_avatar) {
