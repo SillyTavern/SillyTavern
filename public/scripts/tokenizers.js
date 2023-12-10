@@ -173,7 +173,7 @@ function callTokenizer(type, str, padding) {
         case tokenizers.YI:
             return countTokensRemote('/api/tokenizers/yi/encode', str, padding);
         case tokenizers.API:
-            return countTokensRemote('/tokenize_via_api', str, padding);
+            return countTokensRemote('/api/tokenizers/remote/encode', str, padding);
         default:
             console.warn('Unknown tokenizer type', type);
             return callTokenizer(tokenizers.NONE, str, padding);
@@ -525,7 +525,7 @@ export function getTextTokens(tokenizerType, str) {
             return getTextTokensRemote('/api/tokenizers/openai/encode', str, model);
         }
         case tokenizers.API:
-            return getTextTokensRemote('/tokenize_via_api', str);
+            return getTextTokensRemote('/api/tokenizers/remote/encode', str);
         default:
             console.warn('Calling getTextTokens with unsupported tokenizer type', tokenizerType);
             return [];

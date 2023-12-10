@@ -1774,7 +1774,7 @@ async function sendAI21Request(request, response) {
 
 }
 
-app.post('/tokenize_via_api', jsonParser, async function (request, response) {
+app.post('/api/tokenizers/remote/encode', jsonParser, async function (request, response) {
     if (!request.body) {
         return response.sendStatus(400);
     }
