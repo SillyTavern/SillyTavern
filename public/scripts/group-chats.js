@@ -867,10 +867,11 @@ function activateImpersonate(members) {
  */
 function activateSwipe(members) {
     let activatedNames = [];
+    const lastMessage = chat[chat.length - 1];
 
-    if (chat[chat.length - 1].is_user) {
+    if (lastMessage.is_user || lastMessage.is_system || lastMessage.extra?.type === system_message_types.NARRATOR) {
         for (const message of chat.slice().reverse()) {
-            if (message.is_system || message.is_user) {
+            if (message.is_user || message.is_system || message.extra?.type === system_message_types.NARRATOR) {
                 continue;
             }
 
@@ -886,8 +887,8 @@ function activateSwipe(members) {
     }
 
     // pre-update group chat swipe
-    if (!chat[chat.length - 1].original_avatar) {
-        const matches = characters.filter(x => x.name == chat[chat.length - 1].name);
+    if (!lastMessage.original_avatar) {
+        const matches = characters.filter(x => x.name == lastMessage.name);
 
         for (const match of matches) {
             if (members.includes(match.avatar)) {
@@ -897,7 +898,7 @@ function activateSwipe(members) {
         }
     }
     else {
-        activatedNames.push(chat[chat.length - 1].original_avatar);
+        activatedNames.push(lastMessage.original_avatar);
     }
 
     const memberIds = activatedNames
