@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams, eventSource, event_types } from '../../../script.js';
+import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams, eventSource, event_types, animation_duration } from '../../../script.js';
 import { getContext, extension_settings } from '../../extensions.js';
 import { getSortableDelay, escapeHtml } from '../../utils.js';
 import { executeSlashCommands, registerSlashCommand } from '../../slash-commands.js';
@@ -388,7 +388,7 @@ async function doQuickReplyBarPopout() {
         });
 
         loadMovingUIState();
-        $('#quickReplyBarPopout').fadeIn(250);
+        $('#quickReplyBarPopout').fadeIn(animation_duration);
         dragElement(newElement);
 
         $('#quickReplyBarPopoutClose').off('click').on('click', function () {
@@ -396,8 +396,8 @@ async function doQuickReplyBarPopout() {
             let quickRepliesClone = $('#quickReplies').html();
             $('#quickReplyBar').append(newQuickRepliesDiv);
             $('#quickReplies').prepend(quickRepliesClone);
-            $('#quickReplyBar').append(popoutButtonClone).fadeIn(250);
-            $('#quickReplyBarPopout').fadeOut(250, () => { $('#quickReplyBarPopout').remove(); });
+            $('#quickReplyBar').append(popoutButtonClone).fadeIn(animation_duration);
+            $('#quickReplyBarPopout').fadeOut(animation_duration, () => { $('#quickReplyBarPopout').remove(); });
             $('.quickReplyButton').on('click', function () {
                 let index = $(this).data('index');
                 sendQuickReply(index);

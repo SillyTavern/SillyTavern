@@ -1,6 +1,6 @@
 import { getStringHash, debounce, waitUntilCondition, extractAllWords } from '../../utils.js';
 import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules } from '../../extensions.js';
-import { eventSource, event_types, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { animation_duration, eventSource, event_types, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { is_group_generating, selected_group } from '../../group-chats.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { loadMovingUIState } from '../../power-user.js';
@@ -589,14 +589,14 @@ function doPopout(e) {
         loadSettings();
         loadMovingUIState();
 
-        $('#summaryExtensionPopout').fadeIn(250);
+        $('#summaryExtensionPopout').fadeIn(animation_duration);
         dragElement(newElement);
 
         //setup listener for close button to restore extensions menu
         $('#summaryExtensionPopoutClose').off('click').on('click', function () {
             $('#summaryExtensionDrawerContents').removeClass('scrollableInnerFull');
             const summaryPopoutHTML = $('#summaryExtensionDrawerContents');
-            $('#summaryExtensionPopout').fadeOut(250, () => {
+            $('#summaryExtensionPopout').fadeOut(animation_duration, () => {
                 originalElement.empty();
                 originalElement.html(summaryPopoutHTML);
                 $('#summaryExtensionPopout').remove();
@@ -605,7 +605,7 @@ function doPopout(e) {
         });
     } else {
         console.debug('saw existing popout, removing');
-        $('#summaryExtensionPopout').fadeOut(250, () => { $('#summaryExtensionPopoutClose').trigger('click'); });
+        $('#summaryExtensionPopout').fadeOut(animation_duration, () => { $('#summaryExtensionPopoutClose').trigger('click'); });
     }
 }
 

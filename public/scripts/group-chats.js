@@ -69,6 +69,7 @@ import {
     baseChatReplace,
     depth_prompt_depth_default,
     loadItemizedPrompts,
+    animation_duration,
 } from '../script.js';
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -1791,17 +1792,17 @@ function doCurMemberListPopout() {
 
         $('body').append(newElement);
         loadMovingUIState();
-        $('#groupMemberListPopout').fadeIn(250);
+        $('#groupMemberListPopout').fadeIn(animation_duration);
         dragElement(newElement);
         $('#groupMemberListPopoutClose').off('click').on('click', function () {
-            $('#groupMemberListPopout').fadeOut(250, () => { $('#groupMemberListPopout').remove(); });
+            $('#groupMemberListPopout').fadeOut(animation_duration, () => { $('#groupMemberListPopout').remove(); });
         });
 
         // Re-add pagination not working in popout
         printGroupMembers();
     } else {
         console.debug('saw existing popout, removing');
-        $('#groupMemberListPopout').fadeOut(250, () => { $('#groupMemberListPopout').remove(); });
+        $('#groupMemberListPopout').fadeOut(animation_duration, () => { $('#groupMemberListPopout').remove(); });
     }
 }
 
