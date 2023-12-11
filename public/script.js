@@ -2447,7 +2447,7 @@ function addPersonaDescriptionExtensionPrompt() {
             ? `${power_user.persona_description}\n${originalAN}`
             : `${originalAN}\n${power_user.persona_description}`;
 
-        setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
+        setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan);
     }
 }
 
@@ -3064,12 +3064,12 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
         if (selected_group && Array.isArray(groupDepthPrompts) && groupDepthPrompts.length > 0) {
             groupDepthPrompts.forEach((value, index) => {
-                setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth);
+                setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan);
             });
         } else {
             const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
             const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
-            setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth);
+            setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan);
         }
 
         // Parse example messages
@@ -6348,9 +6348,10 @@ function select_rm_characters() {
  * @param {string} value Prompt injection value.
  * @param {number} position Insertion position. 0 is after story string, 1 is in-chat with custom depth.
  * @param {number} depth Insertion depth. 0 represets the last message in context. Expected values up to MAX_INJECTION_DEPTH.
+ * @param {boolean} scan Should the prompt be included in the world info scan.
  */
-export function setExtensionPrompt(key, value, position, depth) {
-    extension_prompts[key] = { value: String(value), position: Number(position), depth: Number(depth) };
+export function setExtensionPrompt(key, value, position, depth, scan = false) {
+    extension_prompts[key] = { value: String(value), position: Number(position), depth: Number(depth), scan: !!scan };
 }
 
 /**
