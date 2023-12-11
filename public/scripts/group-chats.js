@@ -627,6 +627,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
     const group = groups.find((x) => x.id === selected_group);
     let typingIndicator = $('#chat .typing_indicator');
+    let textResult = '';
 
     if (!group || !Array.isArray(group.members) || !group.members.length) {
         sendSystemMessage(system_message_types.EMPTY, '', { isSmallSys: true });
@@ -726,7 +727,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
             // Wait for generation to finish
             const generateFinished = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
-            await generateFinished;
+            textResult = await generateFinished;
         }
     } finally {
         typingIndicator.hide();
@@ -740,7 +741,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         showSwipeButtons();
     }
 
-    return Promise.resolve();
+    return Promise.resolve(textResult);
 }
 
 function getLastMessageGenerationId() {
