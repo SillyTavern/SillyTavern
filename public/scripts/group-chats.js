@@ -609,6 +609,12 @@ function getGroupChatNames(groupId) {
 }
 
 async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
+    function throwIfAborted() {
+        if (params.signal instanceof AbortSignal && params.signal.aborted) {
+            throw new Error('AbortSignal was fired. Group generation stopped');
+        }
+    }
+
     if (online_status === 'no_connection') {
         is_group_generating = false;
         setSendButtonState(false);
@@ -635,6 +641,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
     }
 
     try {
+        throwIfAborted();
         hideSwipeButtons();
         is_group_generating = true;
         setCharacterName('');
@@ -662,10 +669,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             if (lastMessage && !lastMessage.is_system) {
                 activationText = lastMessage.mes;
             }
-        }
-
-        if (params.signal instanceof AbortSignal && params.signal.aborted) {
-            throw new Error('Already aborted signal passed. Group generation stopped');
         }
 
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
@@ -712,6 +715,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
         // now the real generation begins: cycle through every activated character
         for (const chId of activatedMembers) {
+            throwIfAborted();
             deactivateSendButtons();
             const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
