@@ -901,17 +901,17 @@ async function getStatusKobold() {
 
         const data = await response.json();
 
-        online_status = data?.result;
+        online_status = data?.model ?? 'no_connection';
 
-        if (!online_status) {
-            online_status = 'no_connection';
+        if (!data.koboldUnitedVersion) {
+            throw new Error('Missing mandatory Kobold version in data:', data);
         }
 
         // Determine instruct mode preset
         autoSelectInstructPreset(online_status);
 
         // determine if we can use stop sequence and streaming
-        setKoboldFlags(data.version, data.koboldVersion);
+        setKoboldFlags(data.koboldUnitedVersion, data.koboldCppVersion);
 
         // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
         if (online_status === 'no_connection' && data.response) {

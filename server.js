@@ -657,41 +657,36 @@ app.post('/getstatus', jsonParser, async function (request, response) {
 
     setAdditionalHeaders(request, args, api_server);
 
-    const url = api_server + '/v1/model';
-    let version = '';
-    let koboldVersion = {};
+    const result = {};
 
-    try {
-        version = (await fetchJSON(api_server + '/v1/info/version')).result;
-    }
-    catch {
-        version = '0.0.0';
-    }
-    try {
-        koboldVersion = (await fetchJSON(api_server + '/extra/version'));
-    }
-    catch {
-        koboldVersion = {
-            result: 'Kobold',
-            version: '0.0',
-        };
+    const [koboldUnitedResponse, koboldExtraResponse] = await Promise.allSettled([
+        fetchJSON(api_server + '/v1/info/version'),
+        fetchJSON(api_server + '/extra/version'),
+    ]);
+
+    if (koboldUnitedResponse.status === 'fulfilled') {
+        // Version number string
+        result.koboldUnitedVersion = koboldUnitedResponse.value.result;
+    } else {
+        result.koboldUnitedVersion = '0.0.0';
     }
 
-    try {
-        let data = await fetchJSON(url, args);
+    if (koboldExtraResponse.status === 'fulfilled') {
+        result.koboldCppVersion = koboldExtraResponse.value.version;
+    } else {
+        result.koboldCppVersion = null;
+    }
 
-        if (!data || typeof data !== 'object') {
-            data = {};
+    try {
+        let data = await fetchJSON(api_server + '/v1/model', args);
+
+        if (!data || typeof data !== 'object' || data.result === 'ReadOnly') {
+            result.model = 'no_connection';
+        } else {
+            result.model = data.result;
         }
 
-        if (data.result == 'ReadOnly') {
-            data.result = 'no_connection';
-        }
-
-        data.version = version;
-        data.koboldVersion = koboldVersion;
-
-        return response.send(data);
+        return response.send(result);
     } catch (error) {
         console.log(error);
         return response.send({ result: 'no_connection' });
