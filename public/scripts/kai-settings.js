@@ -334,7 +334,7 @@ export function setKoboldFlags(koboldUnitedVersion, koboldCppVersion) {
  * @returns {boolean} True if srcVersion >= minVersion, false if not
  */
 function versionCompare(srcVersion, minVersion) {
-    return srcVersion.localeCompare(minVersion, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+    return (srcVersion || '0.0.0').localeCompare(minVersion, undefined, { numeric: true, sensitivity: 'base' }) > -1;
 }
 
 /**
