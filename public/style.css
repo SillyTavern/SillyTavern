@@ -2633,7 +2633,7 @@ input[type="range"]::-webkit-slider-thumb {
     max-height: calc(100vh - 84px);
     max-height: calc(100svh - 84px);
     position: absolute;
-    z-index: 3002;
+    z-index: 3000;
     margin-left: auto;
     margin-right: auto;
     left: 0;

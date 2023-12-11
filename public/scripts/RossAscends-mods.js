@@ -1123,12 +1123,14 @@ export function initRossMods() {
                 .not('#left-nav-panel')
                 .not('#right-nav-panel')
                 .not('#floatingPrompt')
+                .not('#cfgConfig')
                 .is(':visible')) {
                 let visibleDrawerContent = $('.drawer-content:visible')
                     .not('#WorldInfo')
                     .not('#left-nav-panel')
                     .not('#right-nav-panel')
-                    .not('#floatingPrompt');
+                    .not('#floatingPrompt')
+                    .not('#cfgConfig');
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
                 return;
             }
@@ -1140,6 +1142,11 @@ export function initRossMods() {
 
             if ($('#WorldInfo').is(':visible')) {
                 $('#WIDrawerIcon').trigger('click');
+                return;
+            }
+
+            if ($('#cfgConfig').is(':visible')) {
+                $('#CFGClose').trigger('click');
                 return;
             }
 
