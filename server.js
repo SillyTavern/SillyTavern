@@ -661,22 +661,20 @@ app.post('/getstatus', jsonParser, async function (request, response) {
     let version = '';
     let koboldVersion = {};
 
-    if (request.body.main_api == 'kobold') {
-        try {
-            version = (await fetchJSON(api_server + '/v1/info/version')).result;
-        }
-        catch {
-            version = '0.0.0';
-        }
-        try {
-            koboldVersion = (await fetchJSON(api_server + '/extra/version'));
-        }
-        catch {
-            koboldVersion = {
-                result: 'Kobold',
-                version: '0.0',
-            };
-        }
+    try {
+        version = (await fetchJSON(api_server + '/v1/info/version')).result;
+    }
+    catch {
+        version = '0.0.0';
+    }
+    try {
+        koboldVersion = (await fetchJSON(api_server + '/extra/version'));
+    }
+    catch {
+        koboldVersion = {
+            result: 'Kobold',
+            version: '0.0',
+        };
     }
 
     try {

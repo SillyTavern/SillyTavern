@@ -868,21 +868,19 @@ export async function clearItemizedPrompts() {
     }
 }
 
-async function getStatusKobold() {
-    if (main_api == 'koboldhorde') {
-        try {
-            const hordeStatus = await checkHordeStatus();
-            online_status = hordeStatus ? 'Connected' : 'no_connection';
-        }
-        catch {
-            online_status = 'no_connection';
-        }
-
-        return resultCheckStatus();
+async function getStatusHorde() {
+    try {
+        const hordeStatus = await checkHordeStatus();
+        online_status = hordeStatus ? 'Connected' : 'no_connection';
+    }
+    catch {
+        online_status = 'no_connection';
     }
 
-    const url = '/getstatus';
+    return resultCheckStatus();
+}
 
+async function getStatusKobold() {
     let endpoint = api_server;
 
     if (!endpoint) {
@@ -891,7 +889,7 @@ async function getStatusKobold() {
     }
 
     try {
-        const response = await fetch(url, {
+        const response = await fetch('/getstatus', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -902,7 +900,6 @@ async function getStatusKobold() {
         });
 
         const data = await response.json();
-
 
         online_status = data?.result;
 
@@ -5378,7 +5375,7 @@ function changeMainAPI() {
     }
 
     if (main_api == 'koboldhorde') {
-        getStatusKobold();
+        getStatusHorde();
         getHordeModels();
     }
 
