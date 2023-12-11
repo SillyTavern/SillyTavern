@@ -317,87 +317,24 @@ const sliders = [
     },
 ];
 
-export function setKoboldFlags(version, koboldVersion) {
-    kai_flags.can_use_stop_sequence = canUseKoboldStopSequence(version);
-    kai_flags.can_use_streaming = canUseKoboldStreaming(koboldVersion);
-    kai_flags.can_use_tokenization = canUseKoboldTokenization(koboldVersion);
-    kai_flags.can_use_default_badwordsids = canUseDefaultBadwordIds(version);
-    kai_flags.can_use_mirostat = canUseMirostat(koboldVersion);
-    kai_flags.can_use_grammar = canUseGrammar(koboldVersion);
-    kai_flags.can_use_min_p = canUseMinP(koboldVersion);
+export function setKoboldFlags(koboldUnitedVersion, koboldCppVersion) {
+    kai_flags.can_use_stop_sequence = versionCompare(koboldUnitedVersion, MIN_STOP_SEQUENCE_VERSION);
+    kai_flags.can_use_streaming = versionCompare(koboldCppVersion, MIN_STREAMING_KCPPVERSION);
+    kai_flags.can_use_tokenization = versionCompare(koboldCppVersion, MIN_TOKENIZATION_KCPPVERSION);
+    kai_flags.can_use_default_badwordsids = versionCompare(koboldUnitedVersion, MIN_UNBAN_VERSION);
+    kai_flags.can_use_mirostat = versionCompare(koboldCppVersion, MIN_MIROSTAT_KCPPVERSION);
+    kai_flags.can_use_grammar = versionCompare(koboldCppVersion, MIN_GRAMMAR_KCPPVERSION);
+    kai_flags.can_use_min_p = versionCompare(koboldCppVersion, MIN_MIN_P_KCPPVERSION);
 }
 
 /**
- * Determines if the Kobold stop sequence can be used with the given version.
- * @param {string} version KoboldAI version to check.
- * @returns {boolean} True if the Kobold stop sequence can be used, false otherwise.
+ * Compares two version numbers, returning true if srcVersion >= minVersion
+ * @param {string} srcVersion The current version.
+ * @param {string} minVersion The target version number to test against
+ * @returns {boolean} True if srcVersion >= minVersion, false if not
  */
-function canUseKoboldStopSequence(version) {
-    return (version || '0.0.0').localeCompare(MIN_STOP_SEQUENCE_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-}
-
-/**
- * Determines if the Kobold default badword ids can be used with the given version.
- * @param {string} version KoboldAI version to check.
- * @returns {boolean} True if the Kobold default badword ids can be used, false otherwise.
- */
-function canUseDefaultBadwordIds(version) {
-    return (version || '0.0.0').localeCompare(MIN_UNBAN_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-}
-
-/**
- * Determines if the Kobold streaming API can be used with the given version.
- * @param {{ result: string; version: string; }} koboldVersion KoboldAI version object.
- * @returns {boolean} True if the Kobold streaming API can be used, false otherwise.
- */
-function canUseKoboldStreaming(koboldVersion) {
-    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
-        return (koboldVersion.version || '0.0').localeCompare(MIN_STREAMING_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-    } else return false;
-}
-
-/**
- * Determines if the Kobold tokenization API can be used with the given version.
- * @param {{ result: string; version: string; }} koboldVersion KoboldAI version object.
- * @returns {boolean} True if the Kobold tokenization API can be used, false otherwise.
- */
-function canUseKoboldTokenization(koboldVersion) {
-    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
-        return (koboldVersion.version || '0.0').localeCompare(MIN_TOKENIZATION_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-    } else return false;
-}
-
-/**
- * Determines if the Kobold mirostat can be used with the given version.
- * @param {{result: string; version: string;}} koboldVersion KoboldAI version object.
- * @returns {boolean} True if the Kobold mirostat API can be used, false otherwise.
- */
-function canUseMirostat(koboldVersion) {
-    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
-        return (koboldVersion.version || '0.0').localeCompare(MIN_MIROSTAT_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-    } else return false;
-}
-
-/**
- * Determines if the Kobold grammar can be used with the given version.
- * @param {{result: string; version:string;}} koboldVersion KoboldAI version object.
- * @returns {boolean} True if the Kobold grammar can be used, false otherwise.
- */
-function canUseGrammar(koboldVersion) {
-    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
-        return (koboldVersion.version || '0.0').localeCompare(MIN_GRAMMAR_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-    } else return false;
-}
-
-/**
- * Determines if the Kobold min_p can be used with the given version.
- * @param {{result:string, version:string;}} koboldVersion KoboldAI version object.
- * @returns {boolean} True if the Kobold min_p can be used, false otherwise.
- */
-function canUseMinP(koboldVersion) {
-    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
-        return (koboldVersion.version || '0.0').localeCompare(MIN_MIN_P_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-    } else return false;
+function versionCompare(srcVersion, minVersion) {
+    return (srcVersion || '0.0.0').localeCompare(minVersion, undefined, { numeric: true, sensitivity: 'base' }) > -1;
 }
 
 /**

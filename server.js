@@ -657,47 +657,37 @@ app.post('/getstatus', jsonParser, async function (request, response) {
 
     setAdditionalHeaders(request, args, api_server);
 
-    const url = api_server + '/v1/model';
-    let version = '';
-    let koboldVersion = {};
+    const result = {};
 
-    if (request.body.main_api == 'kobold') {
-        try {
-            version = (await fetchJSON(api_server + '/v1/info/version')).result;
-        }
-        catch {
-            version = '0.0.0';
-        }
-        try {
-            koboldVersion = (await fetchJSON(api_server + '/extra/version'));
-        }
-        catch {
-            koboldVersion = {
-                result: 'Kobold',
-                version: '0.0',
-            };
-        }
-    }
+    const [koboldUnitedResponse, koboldExtraResponse, koboldModelResponse] = await Promise.all([
+        // We catch errors both from the response not having a successful HTTP status and from JSON parsing failing
 
-    try {
-        let data = await fetchJSON(url, args);
+        // Kobold United API version
+        fetch(`${api_server}/v1/info/version`).then(response => {
+            if (!response.ok) throw new Error(`Kobold API error: ${response.status, response.statusText}`);
+            return response.json();
+        }).catch(() => ({ result: '0.0.0' })),
 
-        if (!data || typeof data !== 'object') {
-            data = {};
-        }
+        // KoboldCpp version
+        fetch(`${api_server}/extra/version`).then(response => {
+            if (!response.ok) throw new Error(`Kobold API error: ${response.status, response.statusText}`);
+            return response.json();
+        }).catch(() => ({ version: '0.0' })),
 
-        if (data.result == 'ReadOnly') {
-            data.result = 'no_connection';
-        }
+        // Current model
+        fetch(`${api_server}/v1/model`).then(response => {
+            if (!response.ok) throw new Error(`Kobold API error: ${response.status, response.statusText}`);
+            return response.json();
+        }).catch(() => null),
+    ]);
 
-        data.version = version;
-        data.koboldVersion = koboldVersion;
+    result.koboldUnitedVersion = koboldUnitedResponse.result;
+    result.koboldCppVersion = koboldExtraResponse.result;
+    result.model = !koboldModelResponse || koboldModelResponse.result === 'ReadOnly' ?
+        'no_connection' :
+        koboldModelResponse.result;
 
-        return response.send(data);
-    } catch (error) {
-        console.log(error);
-        return response.send({ result: 'no_connection' });
-    }
+    response.send(result);
 });
 
 
@@ -1752,27 +1742,6 @@ redirect('/setbackground', '/api/backgrounds/set');
 redirect('/delbackground', '/api/backgrounds/delete');
 redirect('/renamebackground', '/api/backgrounds/rename');
 redirect('/downloadbackground', '/api/backgrounds/upload'); // yes, the downloadbackground endpoint actually uploads one
-
-// ** REST CLIENT ASYNC WRAPPERS **
-
-/**
- * Convenience function for fetch requests (default GET) returning as JSON.
- * @param {string} url
- * @param {import('node-fetch').RequestInit} args
- */
-async function fetchJSON(url, args = {}) {
-    if (args.method === undefined) args.method = 'GET';
-    const response = await fetch(url, args);
-
-    if (response.ok) {
-        const data = await response.json();
-        return data;
-    }
-
-    throw response;
-}
-
-// ** END **
 
 // OpenAI API
 app.use('/api/openai', require('./src/endpoints/openai').router);
