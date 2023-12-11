@@ -9606,7 +9606,7 @@ jQuery(async function () {
             <li>JanitorAI character (direct link or id)<br>Example: <tt>https://janitorai.com/characters/ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
             <li>More coming soon...</li>
         <ul>`;
-        const input = await callPopup(html, 'input');
+        const input = await callPopup(html, 'input', '', { okButton: 'Import', rows: 4 });
 
         if (!input) {
             console.debug('Custom content import cancelled');
