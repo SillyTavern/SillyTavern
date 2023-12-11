@@ -1781,7 +1781,14 @@ async function generateMultimodalPrompt(generationType, quietPrompt) {
  */
 async function generatePrompt(quietPrompt) {
     const reply = await generateQuietPrompt(quietPrompt, false, false);
-    return processReply(reply);
+    const processedReply = processReply(reply);
+
+    if (!processedReply) {
+        toastr.error('Prompt generation produced no text. Make sure you\'re using a valid instruct template and try again', 'Image Generation');
+        throw new Error('Prompt generation failed.');
+    }
+
+    return processedReply;
 }
 
 async function sendGenerationRequest(generationType, prompt, characterName = null, callback) {

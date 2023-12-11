@@ -8,7 +8,6 @@ import {
     extractAllWords,
     saveBase64AsFile,
     PAGINATION_TEMPLATE,
-    waitUntilCondition,
     getBase64Async,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
@@ -46,7 +45,6 @@ import {
     updateChatMetadata,
     isStreamingEnabled,
     getThumbnailUrl,
-    streamingProcessor,
     getRequestHeaders,
     setMenuType,
     menu_type,
@@ -612,14 +610,20 @@ function getGroupChatNames(groupId) {
 }
 
 async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
+    function throwIfAborted() {
+        if (params.signal instanceof AbortSignal && params.signal.aborted) {
+            throw new Error('AbortSignal was fired. Group generation stopped');
+        }
+    }
+
     if (online_status === 'no_connection') {
         is_group_generating = false;
         setSendButtonState(false);
-        return;
+        return Promise.resolve();
     }
 
     if (is_group_generating) {
-        return false;
+        return Promise.resolve();
     }
 
     // Auto-navigate back to group menu
@@ -630,13 +634,15 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
     const group = groups.find((x) => x.id === selected_group);
     let typingIndicator = $('#chat .typing_indicator');
+    let textResult = '';
 
     if (!group || !Array.isArray(group.members) || !group.members.length) {
         sendSystemMessage(system_message_types.EMPTY, '', { isSmallSys: true });
-        return;
+        return Promise.resolve();
     }
 
     try {
+        throwIfAborted();
         hideSwipeButtons();
         is_group_generating = true;
         setCharacterName('');
@@ -654,48 +660,16 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         // id of this specific batch for regeneration purposes
         group_generation_id = Date.now();
         const lastMessage = chat[chat.length - 1];
-        let messagesBefore = chat.length;
-        let lastMessageText = lastMessage?.mes || '';
         let activationText = '';
         let isUserInput = false;
-        let isGenerationDone = false;
-        let isGenerationAborted = false;
 
         if (userInput?.length && !by_auto_mode) {
             isUserInput = true;
             activationText = userInput;
-            messagesBefore++;
         } else {
             if (lastMessage && !lastMessage.is_system) {
                 activationText = lastMessage.mes;
             }
-        }
-
-        const resolveOriginal = params.resolve;
-        const rejectOriginal = params.reject;
-
-        if (params.signal instanceof AbortSignal) {
-            if (params.signal.aborted) {
-                throw new Error('Already aborted signal passed. Group generation stopped');
-            }
-
-            params.signal.onabort = () => {
-                isGenerationAborted = true;
-            };
-        }
-
-        if (typeof params.resolve === 'function') {
-            params.resolve = function () {
-                isGenerationDone = true;
-                resolveOriginal.apply(this, arguments);
-            };
-        }
-
-        if (typeof params.reject === 'function') {
-            params.reject = function () {
-                isGenerationDone = true;
-                rejectOriginal.apply(this, arguments);
-            };
         }
 
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
@@ -742,13 +716,11 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
         // now the real generation begins: cycle through every activated character
         for (const chId of activatedMembers) {
+            throwIfAborted();
             deactivateSendButtons();
-            isGenerationDone = false;
             const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
             setCharacterName(characters[chId].name);
-
-            await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
             if (type !== 'swipe' && type !== 'impersonate' && !isStreamingEnabled()) {
                 // update indicator and scroll down
@@ -758,75 +730,9 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 typingIndicator.show();
             }
 
-            // TODO: This is awful. Refactor this
-            while (true) {
-                deactivateSendButtons();
-                if (isGenerationAborted) {
-                    throw new Error('Group generation aborted');
-                }
-
-                // if not swipe - check if message generated already
-                if (generateType === 'group_chat' && chat.length == messagesBefore) {
-                    await delay(100);
-                }
-                // if swipe - see if message changed
-                else if (type === 'swipe') {
-                    if (isStreamingEnabled()) {
-                        if (streamingProcessor && !streamingProcessor.isFinished) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    else {
-                        if (lastMessageText === chat[chat.length - 1].mes) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                }
-                else if (type === 'impersonate') {
-                    if (isStreamingEnabled()) {
-                        if (streamingProcessor && !streamingProcessor.isFinished) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    else {
-                        if (!$('#send_textarea').val() || $('#send_textarea').val() == userInput) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                }
-                else if (type === 'quiet') {
-                    if (isGenerationDone) {
-                        break;
-                    } else {
-                        await delay(100);
-                    }
-                }
-                else if (isStreamingEnabled()) {
-                    if (streamingProcessor && !streamingProcessor.isFinished) {
-                        await delay(100);
-                    } else {
-                        await waitUntilCondition(() => streamingProcessor == null, 1000, 10);
-                        messagesBefore++;
-                        break;
-                    }
-                }
-                else {
-                    messagesBefore++;
-                    break;
-                }
-            }
+            // Wait for generation to finish
+            const generateFinished = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
+            textResult = await generateFinished;
         }
     } finally {
         typingIndicator.hide();
@@ -839,6 +745,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         activateSendButtons();
         showSwipeButtons();
     }
+
+    return Promise.resolve(textResult);
 }
 
 function getLastMessageGenerationId() {
