@@ -716,10 +716,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             setCharacterId(chId);
             setCharacterName(characters[chId].name);
 
-            // Wait for generation to finish
-            const generateFinished = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
-            await generateFinished;
-
             if (type !== 'swipe' && type !== 'impersonate' && !isStreamingEnabled()) {
                 // update indicator and scroll down
                 typingIndicator
@@ -727,6 +723,10 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     .text(characters[chId].name);
                 typingIndicator.show();
             }
+
+            // Wait for generation to finish
+            const generateFinished = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
+            await generateFinished;
         }
     } finally {
         typingIndicator.hide();
