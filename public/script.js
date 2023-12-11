@@ -6527,7 +6527,7 @@ function showSwipeButtons() {
     const swipeId = chat[chat.length - 1].swipe_id;
     var swipesCounterHTML = (`${(swipeId + 1)}/${(chat[chat.length - 1].swipes.length)}`);
 
-    if (swipeId !== undefined && chat[chat.length - 1].swipes.length > 1) {
+    if (swipeId !== undefined && (chat[chat.length - 1].swipes.length > 1 || swipeId > 0)) {
         currentMessage.children('.swipe_left').css('display', 'flex');
     }
     //only show right when generate is off, or when next right swipe would not make a generate happen
