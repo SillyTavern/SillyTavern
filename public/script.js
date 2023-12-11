@@ -2018,6 +2018,20 @@ function getLastMessageId() {
 }
 
 /**
+ * Returns the ID of the first message included in the context.
+ * @returns {string} The ID of the first message in the context.
+ */
+function getFirstIncludedMessageId() {
+    const index = document.querySelector('.lastInContext')?.getAttribute('mesid');
+
+    if (!isNaN(index) && index >= 0) {
+        return String(index);
+    }
+
+    return '';
+}
+
+/**
  * Returns the last message in the chat.
  * @returns {string} The last message in the chat.
  */
@@ -2119,6 +2133,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     content = content.replace(/{{group}}/gi, _group);
     content = content.replace(/{{lastMessage}}/gi, getLastMessage());
     content = content.replace(/{{lastMessageId}}/gi, getLastMessageId());
+    content = content.replace(/{{firstIncludedMessageId}}/gi, getFirstIncludedMessageId());
     content = content.replace(/{{lastSwipeId}}/gi, getLastSwipeId());
     content = content.replace(/{{currentSwipeId}}/gi, getCurrentSwipeId());
 
