@@ -190,7 +190,7 @@ import { getBackgrounds, initBackgrounds } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels } from './scripts/mancer-settings.js';
-import { getFileAttachment, hasPendingFileAttachment, populateFileAttachment } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment } from './scripts/chats.js';
 import { replaceVariableMacros } from './scripts/variables.js';
 
 //exporting functions and vars for mods
@@ -3098,26 +3098,18 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             coreChat.pop();
         }
 
-        coreChat = await Promise.all(coreChat.map(async (chatItem) => {
+        coreChat = await Promise.all(coreChat.map(async (chatItem, index) => {
             let message = chatItem.mes;
             let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
             let options = { isPrompt: true };
 
             let regexedMessage = getRegexedString(message, regexType, options);
-
-            if (chatItem.extra?.file) {
-                const fileText = chatItem.extra.file.text || (await getFileAttachment(chatItem.extra.file.url));
-
-                if (fileText) {
-                    const fileWrapped = `\`\`\`\n${fileText}\n\`\`\`\n\n`;
-                    chatItem.extra.fileLength = fileWrapped.length;
-                    regexedMessage = fileWrapped + regexedMessage;
-                }
-            }
+            regexedMessage = await appendFileContent(chatItem, regexedMessage);
 
             return {
                 ...chatItem,
                 mes: regexedMessage,
+                index,
             };
         }));
 

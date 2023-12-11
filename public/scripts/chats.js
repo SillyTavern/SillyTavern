@@ -341,6 +341,25 @@ function embedMessageFile(messageId, messageBlock) {
     }
 }
 
+/**
+ * Appends file content to the message text.
+ * @param {object} message Message object
+ * @param {string} messageText Message text
+ * @returns {Promise<string>} Message text with file content appended.
+ */
+export async function appendFileContent(message, messageText) {
+    if (message.extra?.file) {
+        const fileText = message.extra.file.text || (await getFileAttachment(message.extra.file.url));
+
+        if (fileText) {
+            const fileWrapped = `\`\`\`\n${fileText}\n\`\`\`\n\n`;
+            message.extra.fileLength = fileWrapped.length;
+            messageText = fileWrapped + messageText;
+        }
+    }
+    return messageText;
+}
+
 jQuery(function () {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');

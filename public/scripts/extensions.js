@@ -879,7 +879,7 @@ async function runGenerationInterceptors(chat, contextSize) {
         exitImmediately = immediately;
     };
 
-    for (const manifest of Object.values(manifests)) {
+    for (const manifest of Object.values(manifests).sort((a, b) => a.loading_order - b.loading_order)) {
         const interceptorKey = manifest.generate_interceptor;
         if (typeof window[interceptorKey] === 'function') {
             try {

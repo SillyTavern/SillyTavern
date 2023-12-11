@@ -1143,11 +1143,13 @@ export async function extractTextFromPDF(blob) {
  * @param {Blob} blob HTML content blob
  * @returns {Promise<string>} A promise that resolves to the parsed text.
  */
-export async function extractTextFromHTML(blob) {
+export async function extractTextFromHTML(blob, textSelector = 'body') {
     const html = await blob.text();
     const domParser = new DOMParser();
     const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
-    const text = postProcessText(document.body.textContent);
+    const elements = document.querySelectorAll(textSelector);
+    const rawText = Array.from(elements).map(e => e.textContent).join('\n');
+    const text = postProcessText(rawText);
     return text;
 }
 

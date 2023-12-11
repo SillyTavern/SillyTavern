@@ -5,6 +5,23 @@ const { jsonParser } = require('../express-common');
 
 const router = express.Router();
 
+// Cosplay as Firefox
+const visitHeaders = {
+    'Accept': '*/*',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+    'TE': 'trailers',
+    'DNT': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+};
+
 router.post('/search', jsonParser, async (request, response) => {
     try {
         const key = readSecret(SECRET_KEYS.SERPAPI);
@@ -25,6 +42,30 @@ router.post('/search', jsonParser, async (request, response) => {
 
         const data = await result.json();
         return response.json(data);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/visit', jsonParser, async (request, response) => {
+    try {
+        const url = request.body.url;
+
+        if (!url) {
+            console.log('No url provided for /visit');
+            return response.sendStatus(400);
+        }
+
+        const result = await fetch(url, { headers: visitHeaders });
+
+        if (!result.ok) {
+            console.log(`Visit failed ${result.status} ${result.statusText}`);
+            return response.sendStatus(500);
+        }
+
+        const text = await result.text();
+        return response.send(text);
     } catch (error) {
         console.log(error);
         return response.sendStatus(500);
