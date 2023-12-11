@@ -17,6 +17,7 @@
     <li><tt>&lcub;&lcub;char&rcub;&rcub;</tt> – the Character's name</li>
     <li><tt>&lcub;&lcub;lastMessage&rcub;&rcub;</tt> - the text of the latest chat message.</li>
     <li><tt>&lcub;&lcub;lastMessageId&rcub;&rcub;</tt> – index # of the latest chat message. Useful for slash command batching.</li>
+    <li><tt>&lcub;&lcub;firstIncludedMessageId&rcub;&rcub;</tt> - the ID of the first message included in the context. Requires generation to be ran at least once in the current session.</li>
     <li><tt>&lcub;&lcub;currentSwipeId&rcub;&rcub;</tt> – the 1-based ID of the current swipe in the last chat message. Empty string if the last message is user or prompt-hidden.</li>
     <li><tt>&lcub;&lcub;lastSwipeId&rcub;&rcub;</tt> – the number of swipes in the last chat message. Empty string if the last message is user or prompt-hidden.</li>
     <li><tt>&lcub;&lcub;// (note)&rcub;&rcub;</tt> – you can leave a note here, and the macro will be replaced with blank content. Not visible for the AI.</li>
