@@ -7281,7 +7281,7 @@ const swipe_right = () => {
     }
 
     if (isHordeGenerationNotAllowed()) {
-        return;
+        return unblockGeneration();
     }
 
     const swipe_duration = 200;
