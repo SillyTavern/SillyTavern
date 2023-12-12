@@ -620,7 +620,7 @@ function cleanUploads() {
     }
 }
 
-app.post('/generate_altscale', jsonParser, function (request, response_generate_scale) {
+app.post('/api/backends/scale-alt/generate', jsonParser, function (request, response_generate_scale) {
     if (!request.body) return response_generate_scale.sendStatus(400);
 
     fetch('https://dashboard.scale.com/spellbook/api/trpc/v2.variant.run', {
