@@ -313,7 +313,7 @@ app.get('/version', async function (_, response) {
 });
 
 //**************Kobold api
-app.post('/generate', jsonParser, async function (request, response_generate) {
+app.post('/api/backends/kobold/generate', jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
 
     if (request.body.api_server.indexOf('localhost') != -1) {
@@ -447,7 +447,7 @@ app.post('/generate', jsonParser, async function (request, response_generate) {
 });
 
 // Only called for kobold
-app.post('/getstatus', jsonParser, async function (request, response) {
+app.post('/api/backends/kobold/status', jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
     let api_server = request.body.api_server;
     if (api_server.indexOf('localhost') != -1) {
