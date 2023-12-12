@@ -2805,6 +2805,8 @@ class StreamingProcessor {
             scrollLock = false;
         }
 
+        // Stopping strings are expensive to calculate, especially with macros enabled. To remove stopping strings
+        // when streaming, we cache the result of getStoppingStrings instead of calling it once per token.
         const isImpersonate = this.type == 'impersonate';
         const isContinue = this.type == 'continue';
         this.stoppingStrings = getStoppingStrings(isImpersonate, isContinue);
