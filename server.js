@@ -447,7 +447,7 @@ app.post('/generate', jsonParser, async function (request, response_generate) {
 });
 
 //************** Text generation web UI
-app.post('/api/textgenerationwebui/status', jsonParser, async function (request, response) {
+app.post('/api/backends/text-completions/status', jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     try {
@@ -555,7 +555,7 @@ app.post('/api/textgenerationwebui/status', jsonParser, async function (request,
     }
 });
 
-app.post('/api/textgenerationwebui/generate', jsonParser, async function (request, response_generate) {
+app.post('/api/backends/text-completions/generate', jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
 
     try {
