@@ -2629,12 +2629,12 @@ class StreamingProcessor {
 
         if (!isImpersonate && !isContinue && Array.isArray(this.swipes) && this.swipes.length > 0) {
             for (let i = 0; i < this.swipes.length; i++) {
-                this.swipes[i] = cleanUpMessage(this.removePrefix(this.swipes[i]), false, false, true);
+                this.swipes[i] = cleanUpMessage(this.removePrefix(this.swipes[i]), false, false, true, !isFinal);
             }
         }
 
         text = this.removePrefix(text);
-        let processedText = cleanUpMessage(text, isImpersonate, isContinue, !isFinal);
+        let processedText = cleanUpMessage(text, isImpersonate, isContinue, !isFinal, !isFinal);
 
         // Predict unbalanced asterisks / quotes during streaming
         const charsToBalance = ['*', '"', '```'];
@@ -2907,7 +2907,7 @@ export async function generateRaw(prompt, api, instructOverride) {
         throw new Error(data.error);
     }
 
-    const message = cleanUpMessage(extractMessageFromData(data), false, false, true);
+    const message = cleanUpMessage(extractMessageFromData(data), false, false, true, false);
 
     if (!message) {
         throw new Error('No message generated');
@@ -3814,7 +3814,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                         streamingProcessor.generator = streamingGenerator;
                         hideSwipeButtons();
                         let getMessage = await streamingProcessor.generate();
-                        let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+                        let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false, false);
 
                         if (isContinue) {
                             getMessage = continue_mag + getMessage;
@@ -3849,7 +3849,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
                         const swipes = extractMultiSwipes(data, type);
 
-                        messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+                        messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false, false);
 
                         if (isContinue) {
                             getMessage = continue_mag + getMessage;
@@ -3857,7 +3857,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
                         //Formating
                         const displayIncomplete = type === 'quiet' && !quietToLoud;
-                        getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
+                        getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete, false);
 
                         if (getMessage.length > 0) {
                             if (isImpersonate) {
@@ -4487,7 +4487,7 @@ function extractMultiSwipes(data, type) {
         }
 
         for (let i = 1; i < data.choices.length; i++) {
-            const text = cleanUpMessage(data.choices[i].text, false, false, false);
+            const text = cleanUpMessage(data.choices[i].text, false, false, false, false);
             swipes.push(text);
         }
     }
@@ -4495,7 +4495,7 @@ function extractMultiSwipes(data, type) {
     return swipes;
 }
 
-function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncompleteSentences = false) {
+function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncompleteSentences = false, skipStopStringCleanup = false) {
     if (!getMessage) {
         return '';
     }
@@ -4510,14 +4510,16 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
         getMessage = substituteParams(power_user.user_prompt_bias) + getMessage;
     }
 
-    const stoppingStrings = getStoppingStrings(isImpersonate, isContinue);
+    if (!skipStopStringCleanup) {
+        const stoppingStrings = getStoppingStrings(isImpersonate, isContinue);
 
-    for (const stoppingString of stoppingStrings) {
-        if (stoppingString.length) {
-            for (let j = stoppingString.length; j > 0; j--) {
-                if (getMessage.slice(-j) === stoppingString.slice(0, j)) {
-                    getMessage = getMessage.slice(0, -j);
-                    break;
+        for (const stoppingString of stoppingStrings) {
+            if (stoppingString.length) {
+                for (let j = stoppingString.length; j > 0; j--) {
+                    if (getMessage.slice(-j) === stoppingString.slice(0, j)) {
+                        getMessage = getMessage.slice(0, -j);
+                        break;
+                    }
                 }
             }
         }
