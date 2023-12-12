@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Cosplay as Firefox
 const visitHeaders = {
-    'Accept': '*/*',
+    'Accept': 'text/html',
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0',
     'Accept-Language': 'en-US,en;q=0.5',
     'Accept-Encoding': 'gzip, deflate, br',
@@ -57,10 +57,43 @@ router.post('/visit', jsonParser, async (request, response) => {
             return response.sendStatus(400);
         }
 
+        try {
+            const urlObj = new URL(url);
+
+            // Reject relative URLs
+            if (urlObj.protocol === null || urlObj.host === null) {
+                throw new Error('Invalid URL format');
+            }
+
+            // Reject non-HTTP URLs
+            if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+                throw new Error('Invalid protocol');
+            }
+
+            // Reject URLs with a non-standard port
+            if (urlObj.port !== '') {
+                throw new Error('Invalid port');
+            }
+
+            // Reject IP addresses
+            if (urlObj.hostname.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+                throw new Error('Invalid hostname');
+            }
+        } catch (error) {
+            console.log('Invalid url provided for /visit', url);
+            return response.sendStatus(400);
+        }
+
         const result = await fetch(url, { headers: visitHeaders });
 
         if (!result.ok) {
             console.log(`Visit failed ${result.status} ${result.statusText}`);
+            return response.sendStatus(500);
+        }
+
+        const contentType = String(result.headers.get('content-type'));
+        if (!contentType.includes('text/html')) {
+            console.log(`Visit failed, content-type is ${contentType}, expected text/html`);
             return response.sendStatus(500);
         }
 
