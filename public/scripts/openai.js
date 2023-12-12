@@ -913,6 +913,7 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
     const scenarioText = Scenario && oai_settings.scenario_format ? substituteParams(oai_settings.scenario_format) : '';
     const charPersonalityText = charPersonality && oai_settings.personality_format ? substituteParams(oai_settings.personality_format) : '';
     const groupNudge = substituteParams(oai_settings.group_nudge_prompt);
+    const impersonationPrompt = oai_settings.impersonation_prompt ? substituteParams(oai_settings.impersonation_prompt) : '';
 
     // Create entries for system prompts
     const systemPrompts = [
@@ -924,7 +925,7 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
         { role: 'system', content: scenarioText, identifier: 'scenario' },
         { role: 'system', content: personaDescription, identifier: 'personaDescription' },
         // Unordered prompts without marker
-        { role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate' },
+        { role: 'system', content: impersonationPrompt, identifier: 'impersonate' },
         { role: 'system', content: quietPrompt, identifier: 'quietPrompt' },
         { role: 'system', content: bias, identifier: 'bias' },
         { role: 'system', content: groupNudge, identifier: 'groupNudge' },
