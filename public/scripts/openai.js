@@ -2478,28 +2478,6 @@ function showWindowExtensionError() {
     });
 }
 
-function trySelectPresetByName(name) {
-    let preset_found = null;
-    for (const key in openai_setting_names) {
-        if (name.trim() == key.trim()) {
-            preset_found = key;
-            break;
-        }
-    }
-
-    // Don't change if the current preset is the same
-    if (preset_found && preset_found === oai_settings.preset_settings_openai) {
-        return;
-    }
-
-    if (preset_found) {
-        oai_settings.preset_settings_openai = preset_found;
-        const value = openai_setting_names[preset_found];
-        $(`#settings_preset_openai option[value="${value}"]`).attr('selected', true);
-        $('#settings_preset_openai').val(value).trigger('change');
-    }
-}
-
 /**
  * Persist a settings preset with the given name
  *
@@ -3571,29 +3549,6 @@ $(document).ready(async function () {
     $('#group_nudge_prompt_textarea').on('input', function () {
         oai_settings.group_nudge_prompt = String($('#group_nudge_prompt_textarea').val());
         saveSettingsDebounced();
-    });
-
-    // auto-select a preset based on character/group name
-    $(document).on('click', '.character_select', function () {
-        const chid = $(this).attr('chid');
-        const name = characters[chid]?.name;
-
-        if (!name) {
-            return;
-        }
-
-        trySelectPresetByName(name);
-    });
-
-    $(document).on('click', '.group_select', function () {
-        const grid = $(this).data('id');
-        const name = groups.find(x => x.id === grid)?.name;
-
-        if (!name) {
-            return;
-        }
-
-        trySelectPresetByName(name);
     });
 
     $('#update_oai_preset').on('click', async function () {

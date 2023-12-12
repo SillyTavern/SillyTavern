@@ -192,6 +192,7 @@ import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay
 import { loadMancerModels } from './scripts/mancer-settings.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment } from './scripts/chats.js';
 import { replaceVariableMacros } from './scripts/variables.js';
+import { initPresetManager } from './scripts/preset-manager.js';
 
 //exporting functions and vars for mods
 export {
@@ -738,6 +739,7 @@ async function firstLoadInit() {
     await getCharacters();
     await getBackgrounds();
     await initTokenizers();
+    await initPresetManager();
     initBackgrounds();
     initAuthorsNote();
     initPersonas();
@@ -7446,7 +7448,10 @@ const swipe_right = () => {
     }
 };
 
-function connectAPISlash(_, text) {
+/**
+ * @param {string} text API name
+ */
+async function connectAPISlash(_, text) {
     if (!text) return;
 
     const apiMap = {
@@ -7460,7 +7465,29 @@ function connectAPISlash(_, text) {
             button: '#api_button_novel',
         },
         'ooba': {
+            selected: 'textgenerationwebui',
             button: '#api_button_textgenerationwebui',
+            type: textgen_types.OOBA,
+        },
+        'tabby': {
+            selected: 'textgenerationwebui',
+            button: '#api_button_textgenerationwebui',
+            type: textgen_types.TABBY,
+        },
+        'mancer': {
+            selected: 'textgenerationwebui',
+            button: '#api_button_textgenerationwebui',
+            type: textgen_types.MANCER,
+        },
+        'aphrodite': {
+            selected: 'textgenerationwebui',
+            button: '#api_button_textgenerationwebui',
+            type: textgen_types.APHRODITE,
+        },
+        'kcpp': {
+            selected: 'textgenerationwebui',
+            button: '#api_button_textgenerationwebui',
+            type: textgen_types.KOBOLDCPP,
         },
         'oai': {
             selected: 'openai',
@@ -7499,7 +7526,7 @@ function connectAPISlash(_, text) {
         },
     };
 
-    const apiConfig = apiMap[text];
+    const apiConfig = apiMap[text.toLowerCase()];
     if (!apiConfig) {
         toastr.error(`Error: ${text} is not a valid API`);
         return;
@@ -7513,11 +7540,23 @@ function connectAPISlash(_, text) {
         $('#chat_completion_source').trigger('change');
     }
 
+    if (apiConfig.type) {
+        $(`#textgen_type option[value='${apiConfig.type}']`).prop('selected', true);
+        $('#textgen_type').trigger('change');
+    }
+
     if (apiConfig.button) {
         $(apiConfig.button).trigger('click');
     }
 
     toastr.info(`API set to ${text}, trying to connect..`);
+
+    try {
+        await waitUntilCondition(() => online_status !== 'no_connection', 5000, 100);
+        console.log('Connection successful');
+    } catch {
+        console.log('Could not connect after 5 seconds, skipping.');
+    }
 }
 
 export async function processDroppedFiles(files) {
@@ -7771,7 +7810,7 @@ jQuery(async function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
-    registerSlashCommand('api', connectAPISlash, [], '<span class="monospace">(kobold, horde, novel, ooba, oai, claude, windowai, openrouter, scale, ai21, palm)</span> – connect to an API', true, true);
+    registerSlashCommand('api', connectAPISlash, [], '<span class="monospace">(kobold, horde, novel, ooba, tabby, mancer, aphrodite, kcpp, oai, claude, windowai, openrouter, scale, ai21, palm)</span> – connect to an API', true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
