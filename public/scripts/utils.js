@@ -741,6 +741,38 @@ export function escapeRegex(string) {
     return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
+export class Stopwatch {
+    /**
+     * Initializes a Stopwatch class.
+     * @param {number} interval Update interval in milliseconds. Must be a finite number above zero.
+     */
+    constructor(interval) {
+        if (isNaN(interval) || !isFinite(interval) || interval <= 0) {
+            console.warn('Invalid interval for Stopwatch, setting to 1');
+            interval = 1;
+        }
+
+        this.interval = interval;
+        this.lastAction = Date.now();
+    }
+
+    /**
+     * Executes a function if the interval passed.
+     * @param {(arg0: any) => any} action Action function
+     * @returns Promise<void>
+     */
+    async tick(action) {
+        const passed = (Date.now() - this.lastAction);
+
+        if (passed < this.interval) {
+            return;
+        }
+
+        await action();
+        this.lastAction = Date.now();
+    }
+}
+
 /**
  * Provides an interface for rate limiting function calls.
  */

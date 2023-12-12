@@ -143,6 +143,7 @@ import {
     onlyUnique,
     getBase64Async,
     humanFileSize,
+    Stopwatch,
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
@@ -2805,7 +2806,10 @@ class StreamingProcessor {
         }
 
         try {
+            const sw = new Stopwatch(1000 / power_user.streaming_fps);
+            const timestamps = [];
             for await (const { text, swipes } of this.generator()) {
+                timestamps.push(Date.now());
                 if (this.isStopped) {
                     this.onStopStreaming();
                     return;
@@ -2813,8 +2817,10 @@ class StreamingProcessor {
 
                 this.result = text;
                 this.swipes = swipes;
-                this.onProgressStreaming(this.messageId, message_already_generated + text);
+                await sw.tick(() => this.onProgressStreaming(this.messageId, message_already_generated + text));
             }
+            const seconds = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
+            console.warn(`Stream stats: ${timestamps.length} tokens, ${seconds.toFixed(2)} seconds, rate: ${Number(timestamps.length / seconds).toFixed(2)} TPS`);
         }
         catch (err) {
             console.error(err);

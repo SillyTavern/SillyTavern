@@ -114,6 +114,7 @@ let power_user = {
     },
     markdown_escape_strings: '',
     chat_truncation: 100,
+    streaming_fps: 30,
 
     ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
@@ -1460,6 +1461,9 @@ function loadPowerUserSettings(settings, data) {
     $('#chat_truncation').val(power_user.chat_truncation);
     $('#chat_truncation_counter').val(power_user.chat_truncation);
 
+    $('#streaming_fps').val(power_user.streaming_fps);
+    $('#streaming_fps_counter').val(power_user.streaming_fps);
+
     $('#font_scale').val(power_user.font_scale);
     $('#font_scale_counter').val(power_user.font_scale);
 
@@ -2701,6 +2705,12 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#streaming_fps').on('input', function () {
+        power_user.streaming_fps = Number($('#streaming_fps').val());
+        $('#streaming_fps_counter').val(power_user.streaming_fps);
+        saveSettingsDebounced();
+    });
+
     $('input[name="font_scale"]').on('input', async function (e) {
         power_user.font_scale = Number(e.target.value);
         $('#font_scale_counter').val(power_user.font_scale);
@@ -3134,7 +3144,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#reduced_motion').on('input', function() {
+    $('#reduced_motion').on('input', function () {
         power_user.reduced_motion = !!$(this).prop('checked');
         localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
         switchReducedMotion();
