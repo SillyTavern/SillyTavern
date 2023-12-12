@@ -626,7 +626,7 @@ function cleanUploads() {
 }
 
 /* OpenAI */
-app.post('/getstatus_openai', jsonParser, async function (request, response_getstatus_openai) {
+app.post('/api/backends/chat-completions/status', jsonParser, async function (request, response_getstatus_openai) {
     if (!request.body) return response_getstatus_openai.sendStatus(400);
 
     let api_url;
@@ -702,7 +702,7 @@ app.post('/getstatus_openai', jsonParser, async function (request, response_gets
     }
 });
 
-app.post('/openai_bias', jsonParser, async function (request, response) {
+app.post('/api/backends/chat-completions/bias', jsonParser, async function (request, response) {
     if (!request.body || !Array.isArray(request.body))
         return response.sendStatus(400);
 
@@ -1067,7 +1067,7 @@ async function sendPalmRequest(request, response) {
     }
 }
 
-app.post('/generate_openai', jsonParser, function (request, response_generate_openai) {
+app.post('/api/backends/chat-completions/generate', jsonParser, function (request, response_generate_openai) {
     if (!request.body) return response_generate_openai.status(400).send({ error: true });
 
     switch (request.body.chat_completion_source) {
