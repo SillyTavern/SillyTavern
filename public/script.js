@@ -928,7 +928,7 @@ async function getStatusKobold() {
 }
 
 async function getStatusTextgen() {
-    const url = '/api/textgenerationwebui/status';
+    const url = '/api/backends/text-completions/status';
 
     let endpoint = textgen_settings.type === MANCER ?
         MANCER_SERVER :
@@ -4434,7 +4434,7 @@ function getGenerateUrl(api) {
     if (api == 'kobold') {
         generate_url = '/generate';
     } else if (api == 'textgenerationwebui') {
-        generate_url = '/api/textgenerationwebui/generate';
+        generate_url = '/api/backends/text-completions/generate';
     } else if (api == 'novel') {
         generate_url = '/api/novelai/generate';
     }
