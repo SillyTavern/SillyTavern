@@ -1438,7 +1438,7 @@ app.use('/api/serpapi', require('./src/endpoints/serpapi').router);
 // The different text generation APIs
 
 // Ooba/OpenAI text completions
-app.use('/api/backends/ooba', require('./src/endpoints/backends/ooba').router);
+app.use('/api/backends/text-completions', require('./src/endpoints/backends/text-completions').router);
 
 // KoboldAI
 app.use('/api/textgen/kobold', require('./src/endpoints/textgen/kobold').router);
