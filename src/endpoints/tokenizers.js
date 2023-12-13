@@ -562,7 +562,8 @@ router.post('/remote/kobold/count', jsonParser, async function (request, respons
 
         const data = await result.json();
         const count = data['value'];
-        return response.send({ count, ids: [] });
+        const ids = data['ids'] ?? [];
+        return response.send({ count, ids });
     } catch (error) {
         console.log(error);
         return response.send({ error: true });
@@ -617,7 +618,7 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
 
         const data = await result.json();
         const count = legacyApi ? data?.results[0]?.tokens : (data?.length ?? data?.value);
-        const ids = legacyApi ? [] : (data?.tokens ?? []);
+        const ids = legacyApi ? [] : (data?.tokens ?? data?.ids ?? []);
 
         return response.send({ count, ids });
     } catch (error) {
