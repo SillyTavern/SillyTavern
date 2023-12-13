@@ -1441,7 +1441,7 @@ app.use('/api/serpapi', require('./src/endpoints/serpapi').router);
 app.use('/api/backends/text-completions', require('./src/endpoints/backends/text-completions').router);
 
 // KoboldAI
-app.use('/api/textgen/kobold', require('./src/endpoints/textgen/kobold').router);
+app.use('/api/backends/kobold', require('./src/endpoints/backends/kobold').router);
 
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
