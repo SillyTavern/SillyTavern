@@ -1,4 +1,5 @@
 const express = require('express');
+const fetch = require('node-fetch').default;
 
 const { jsonParser } = require('../../express-common');
 const { forwardFetchResponse, delay } = require('../../util');
