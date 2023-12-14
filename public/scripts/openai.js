@@ -1382,7 +1382,7 @@ function openRouterGroupByVendor(array) {
 }
 
 async function sendAltScaleRequest(messages, logit_bias, signal, type) {
-    const generate_url = '/generate_altscale';
+    const generate_url = '/api/backends/scale-alt/generate';
 
     let firstSysMsgs = [];
     for (let msg of messages) {

@@ -43,7 +43,7 @@ util.inspect.defaultOptions.maxStringLength = null;
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
-const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/endpoints/secrets');
+const { migrateSecrets } = require('./src/endpoints/secrets');
 const {
     getVersion,
     getConfigValue,
@@ -622,72 +622,6 @@ function cleanUploads() {
     }
 }
 
-app.post('/generate_altscale', jsonParser, function (request, response_generate_scale) {
-    if (!request.body) return response_generate_scale.sendStatus(400);
-
-    fetch('https://dashboard.scale.com/spellbook/api/trpc/v2.variant.run', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'cookie': `_jwt=${readSecret(SECRET_KEYS.SCALE_COOKIE)}`,
-        },
-        body: JSON.stringify({
-            json: {
-                variant: {
-                    name: 'New Variant',
-                    appId: '',
-                    taxonomy: null,
-                },
-                prompt: {
-                    id: '',
-                    template: '{{input}}\n',
-                    exampleVariables: {},
-                    variablesSourceDataId: null,
-                    systemMessage: request.body.sysprompt,
-                },
-                modelParameters: {
-                    id: '',
-                    modelId: 'GPT4',
-                    modelType: 'OpenAi',
-                    maxTokens: request.body.max_tokens,
-                    temperature: request.body.temp,
-                    stop: 'user:',
-                    suffix: null,
-                    topP: request.body.top_p,
-                    logprobs: null,
-                    logitBias: request.body.logit_bias,
-                },
-                inputs: [
-                    {
-                        index: '-1',
-                        valueByName: {
-                            input: request.body.prompt,
-                        },
-                    },
-                ],
-            },
-            meta: {
-                values: {
-                    'variant.taxonomy': ['undefined'],
-                    'prompt.variablesSourceDataId': ['undefined'],
-                    'modelParameters.suffix': ['undefined'],
-                    'modelParameters.logprobs': ['undefined'],
-                },
-            },
-        }),
-    })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data.result.data.json.outputs[0]);
-            return response_generate_scale.send({ output: data.result.data.json.outputs[0] });
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            return response_generate_scale.send({ error: true });
-        });
-
-});
-
 /**
  * Redirect a deprecated API endpoint URL to its replacement. Because fetch, form submissions, and $.ajax follow
  * redirects, this is transparent to client-side code.
@@ -835,6 +769,9 @@ app.use('/api/backends/kobold', require('./src/endpoints/backends/kobold').route
 
 // OpenAI chat completions
 app.use('/api/backends/chat-completions', require('./src/endpoints/backends/chat-completions').router);
+
+// Scale (alt method)
+app.use('/api/backends/scale-alt', require('./src/endpoints/backends/scale-alt').router);
 
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
