@@ -96,6 +96,13 @@ function readSecretState() {
  * @returns {void}
  */
 function migrateSecrets(settingsFile) {
+    const palmKey = readSecret('api_key_palm');
+    if (palmKey) {
+        console.log('Migrating Palm key...');
+        writeSecret(SECRET_KEYS.MAKERSUITE, palmKey);
+        deleteSecret('api_key_palm');
+    }
+
     if (!fs.existsSync(settingsFile)) {
         console.log('Settings file does not exist');
         return;
@@ -127,14 +134,6 @@ function migrateSecrets(settingsFile) {
             console.log('Migrating Novel key...');
             writeSecret(SECRET_KEYS.NOVEL, novelKey);
             delete settings.api_key_novel;
-            modified = true;
-        }
-
-        const palmKey = readSecret('api_key_palm');
-        if (palmKey) {
-            console.log('Migrating Palm key...');
-            writeSecret(SECRET_KEYS.MAKERSUITE, palmKey);
-            deleteSecret('api_key_palm');
             modified = true;
         }
 
