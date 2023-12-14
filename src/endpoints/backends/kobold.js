@@ -46,8 +46,7 @@ router.post('/generate', jsonParser, async function (request, response_generate)
         max_length: request.body.max_length,
     };
 
-    if (request.body.gui_settings == false) {
-        const sampler_order = [request.body.s1, request.body.s2, request.body.s3, request.body.s4, request.body.s5, request.body.s6, request.body.s7];
+    if (!request.body.gui_settings) {
         this_settings = {
             prompt: request_prompt,
             use_story: false,
@@ -66,7 +65,7 @@ router.post('/generate', jsonParser, async function (request, response_generate)
             top_p: request.body.top_p,
             min_p: request.body.min_p,
             typical: request.body.typical,
-            sampler_order: sampler_order,
+            sampler_order: request.body.sampler_order,
             singleline: !!request.body.singleline,
             use_default_badwordsids: request.body.use_default_badwordsids,
             mirostat: request.body.mirostat,
