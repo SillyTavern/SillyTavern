@@ -44,6 +44,17 @@ function writeSecret(key, value) {
     writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets, null, 4), 'utf-8');
 }
 
+function deleteSecret(key) {
+    if (!fs.existsSync(SECRETS_FILE)) {
+        return;
+    }
+
+    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
+    const secrets = JSON.parse(fileContents);
+    delete secrets[key];
+    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets, null, 4), 'utf-8');
+}
+
 /**
  * Reads a secret from the secrets file
  * @param {string} key Secret key
@@ -116,6 +127,14 @@ function migrateSecrets(settingsFile) {
             console.log('Migrating Novel key...');
             writeSecret(SECRET_KEYS.NOVEL, novelKey);
             delete settings.api_key_novel;
+            modified = true;
+        }
+
+        const palmKey = readSecret('api_key_palm');
+        if (palmKey) {
+            console.log('Migrating Palm key...');
+            writeSecret(SECRET_KEYS.MAKERSUITE, palmKey);
+            deleteSecret('api_key_palm');
             modified = true;
         }
 
