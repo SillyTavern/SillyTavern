@@ -891,7 +891,7 @@ async function getStatusKobold() {
     }
 
     try {
-        const response = await fetch('/getstatus', {
+        const response = await fetch('/api/backends/kobold/status', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -4432,7 +4432,7 @@ function setInContextMessages(lastmsg, type) {
 function getGenerateUrl(api) {
     let generate_url = '';
     if (api == 'kobold') {
-        generate_url = '/generate';
+        generate_url = '/api/backends/kobold/generate';
     } else if (api == 'textgenerationwebui') {
         generate_url = '/api/backends/text-completions/generate';
     } else if (api == 'novel') {
