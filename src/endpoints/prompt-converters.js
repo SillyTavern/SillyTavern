@@ -79,6 +79,8 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, with
  * @returns {object[]} Prompt for Google MakerSuite models
  */
 function convertGooglePrompt(messages, model) {
+    // This is a 1x1 transparent PNG
+    const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
     const contents = [];
     let lastRole = '';
     let currentText = '';
@@ -91,14 +93,15 @@ function convertGooglePrompt(messages, model) {
             return role + message.content;
         }).join('\n\n').trim();
 
-        const imageEntry = messages.find((message) => message.content[1]?.image_url);
+        const imageEntry = messages.find((message) => message.content?.[1]?.image_url);
+        const imageData = imageEntry?.content?.[1]?.image_url?.data ?? PNG_PIXEL;
         contents.push({
             parts: [
                 { text: combinedText },
                 {
                     inlineData: {
                         mimeType: 'image/png',
-                        data: imageEntry.content[1].image_url.url ?? '',
+                        data: imageData,
                     },
                 },
             ],
