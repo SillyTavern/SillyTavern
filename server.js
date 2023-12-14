@@ -293,9 +293,6 @@ app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).
 app.get('/', function (request, response) {
     response.sendFile(process.cwd() + '/public/index.html');
 });
-app.get('/notes/*', function (request, response) {
-    response.sendFile(process.cwd() + '/public' + request.url + '.html');
-});
 app.get('/deviceinfo', function (request, response) {
     const userAgent = request.header('user-agent');
     const deviceDetector = new DeviceDetector();
