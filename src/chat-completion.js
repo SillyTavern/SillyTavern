@@ -72,31 +72,56 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, with
     return requestPrompt;
 }
 
-function convertGooglePrompt(messages) {
+function convertGooglePrompt(messages, type) {
     const contents = [];
     let lastRole = '';
     let currentText = '';
-    messages.forEach((message, index) => {
-        const role = message.role === 'assistant' ? 'model' : 'user';
-        if (lastRole === role) {
-            currentText += '\n\n' + message.content;
-        } else {
-            if (currentText !== '') {
+
+    const isMultimodal = type === 'gemini-pro-vision';
+
+    if (isMultimodal) {
+        const combinedText = messages.map((message) => {
+            const role = message.role === 'assistant' ? 'MODEL: ' : 'USER: ';
+            return role + message.content;
+        }).join('\n\n').trim();
+
+        const imageEntry = messages.find((message) => message.content[1]?.image_url);
+        contents.push({
+            parts: [
+                { text: combinedText },
+                {
+                    inlineData: {
+                        mimeType: 'image/png',
+                        data: imageEntry.content[1].image_url.url ?? '',
+                    },
+                },
+            ],
+            role: 'user',
+        });
+    } else {
+        messages.forEach((message, index) => {
+            const role = message.role === 'assistant' ? 'model' : 'user';
+            if (lastRole === role) {
+                currentText += '\n\n' + message.content;
+            } else {
+                if (currentText !== '') {
+                    contents.push({
+                        parts: [{ text: currentText.trim() }],
+                        role: lastRole,
+                    });
+                }
+                currentText = message.content;
+                lastRole = role;
+            }
+            if (index === messages.length - 1) {
                 contents.push({
                     parts: [{ text: currentText.trim() }],
                     role: lastRole,
                 });
             }
-            currentText = message.content;
-            lastRole = role;
-        }
-        if (index === messages.length - 1) {
-            contents.push({
-                parts: [{ text: currentText.trim() }],
-                role: lastRole,
-            });
-        }
-    });
+        });
+    }
+
     return contents;
 }
 

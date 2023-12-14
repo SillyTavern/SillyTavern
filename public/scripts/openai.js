@@ -31,18 +31,18 @@ import {
     system_message_types,
     this_chid,
 } from '../script.js';
-import { groups, selected_group } from './group-chats.js';
+import {groups, selected_group} from './group-chats.js';
 
 import {
     chatCompletionDefaultPrompts,
     INJECTION_POSITION,
     Prompt,
-    promptManagerDefaultPromptOrders,
     PromptManager,
+    promptManagerDefaultPromptOrders,
 } from './PromptManager.js';
 
-import { getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
-import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
+import {getCustomStoppingStrings, persona_description_positions, power_user} from './power-user.js';
+import {SECRET_KEYS, secret_state, writeSecret} from './secrets.js';
 
 import EventSourceStream from './sse-stream.js';
 import {
@@ -56,7 +56,7 @@ import {
     resetScrollHeight,
     stringFormat,
 } from './utils.js';
-import { countTokensOpenAI, getTokenizerModel } from './tokenizers.js';
+import {countTokensOpenAI, getTokenizerModel} from './tokenizers.js';
 import {
     formatInstructModeChat,
     formatInstructModeExamples,
@@ -1795,13 +1795,15 @@ class Message {
     async addImage(image) {
         const textContent = this.content;
         const isDataUrl = isDataURL(image);
-
         if (!isDataUrl) {
             try {
                 const response = await fetch(image, { method: 'GET', cache: 'force-cache' });
                 if (!response.ok) throw new Error('Failed to fetch image');
                 const blob = await response.blob();
                 image = await getBase64Async(blob);
+                if (oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE) {
+                    image = image.split(',')[1];
+                }
             } catch (error) {
                 console.error('Image adding skipped', error);
                 return;
@@ -3087,7 +3089,8 @@ async function onModelChange() {
         } else {
             $('#openai_max_context').attr('max', max_8k);
         }
-
+        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
     }
@@ -3435,7 +3438,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.OPENAI:
             return oai_settings.openai_model.includes(gpt4v);
         case chat_completion_sources.MAKERSUITE:
-            return oai_settings.openai_model.includes(geminiProV);
+            return oai_settings.google_model.includes(geminiProV);
         case chat_completion_sources.OPENROUTER:
             return oai_settings.openrouter_model.includes(gpt4v) || oai_settings.openrouter_model.includes(llava13b);
         default:

@@ -1002,6 +1002,9 @@ async function sendMakerSuiteRequest(request, response) {
         return response.status(400).send({ error: true });
     }
 
+    const google_model = request.body.model;
+    const should_stream = request.body.stream;
+
     const generationConfig = {
         stopSequences: request.body.stop,
         candidateCount: 1,
@@ -1012,13 +1015,11 @@ async function sendMakerSuiteRequest(request, response) {
     };
 
     const body = {
-        contents: convertGooglePrompt(request.body.messages),
+        contents: convertGooglePrompt(request.body.messages, google_model),
         safetySettings: MAKERSUITE_SAFETY,
         generationConfig: generationConfig,
     };
 
-    const google_model = request.body.model;
-    const should_stream = request.body.stream;
     try {
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
