@@ -332,7 +332,7 @@ app.post('/deleteuseravatar', jsonParser, function (request, response) {
 });
 
 
-app.post('/savesettings', jsonParser, function (request, response) {
+app.post('/api/settings/save', jsonParser, function (request, response) {
     try {
         writeFileAtomicSync('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8');
         response.send({ result: 'ok' });
@@ -394,7 +394,7 @@ function readPresetsFromDirectory(directoryPath, options = {}) {
 }
 
 // Wintermute's code
-app.post('/getsettings', jsonParser, (request, response) => {
+app.post('/api/settings/get', jsonParser, (request, response) => {
     let settings;
     try {
         settings = fs.readFileSync('public/settings.json', 'utf8');

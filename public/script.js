@@ -5566,7 +5566,7 @@ async function doOnboarding(avatarId) {
 //***************SETTINGS****************//
 ///////////////////////////////////////////
 async function getSettings() {
-    const response = await fetch('/getsettings', {
+    const response = await fetch('/api/settings/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
@@ -5759,7 +5759,7 @@ async function saveSettings(type) {
 
     return jQuery.ajax({
         type: 'POST',
-        url: '/savesettings',
+        url: '/api/settings/save',
         data: JSON.stringify({
             firstRun: firstRun,
             currentVersion: currentVersion,
