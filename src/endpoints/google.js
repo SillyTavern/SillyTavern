@@ -2,7 +2,7 @@ const { readSecret, SECRET_KEYS } = require('./secrets');
 const fetch = require('node-fetch').default;
 const express = require('express');
 const { jsonParser } = require('../express-common');
-const { MAKERSUITE_SAFETY } = require('../constants');
+const { GEMINI_SAFETY } = require('../constants');
 
 const router = express.Router();
 
@@ -22,7 +22,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
                         },
                     }],
             }],
-            safetySettings: MAKERSUITE_SAFETY,
+            safetySettings: GEMINI_SAFETY,
             generationConfig: { maxOutputTokens: 1000 },
         };
 

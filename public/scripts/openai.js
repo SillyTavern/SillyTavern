@@ -1452,7 +1452,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21;
+    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !(isGoogle && oai_settings.google_model.includes('bison'));
 
     if (isTextCompletion && isOpenRouter) {
         messages = convertChatCompletionToInstruct(messages, type);

@@ -3,7 +3,7 @@ const fetch = require('node-fetch').default;
 const { Readable } = require('stream');
 
 const { jsonParser } = require('../../express-common');
-const { CHAT_COMPLETION_SOURCES, MAKERSUITE_SAFETY } = require('../../constants');
+const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4 } = require('../../util');
 const { convertClaudePrompt, convertGooglePrompt, convertTextCompletionPrompt } = require('../prompt-converters');
 
@@ -160,8 +160,10 @@ async function sendMakerSuiteRequest(request, response) {
         return response.status(400).send({ error: true });
     }
 
-    const model = request.body.model;
-    const stream = request.body.stream;
+    const model = String(request.body.model);
+    const isGemini = model.includes('gemini');
+    const isText = model.includes('text');
+    const stream = Boolean(request.body.stream) && isGemini;
 
     const generationConfig = {
         stopSequences: request.body.stop,
@@ -172,11 +174,48 @@ async function sendMakerSuiteRequest(request, response) {
         topK: request.body.top_k || undefined,
     };
 
-    const body = {
-        contents: convertGooglePrompt(request.body.messages, model),
-        safetySettings: MAKERSUITE_SAFETY,
-        generationConfig: generationConfig,
-    };
+    function getGeminiBody() {
+        return {
+            contents: convertGooglePrompt(request.body.messages, model),
+            safetySettings: GEMINI_SAFETY,
+            generationConfig: generationConfig,
+        };
+    }
+
+    function getBisonBody() {
+        const prompt = isText
+            ? ({ text: convertTextCompletionPrompt(request.body.messages) })
+            : ({ messages: convertGooglePrompt(request.body.messages, model) });
+
+        /** @type {any} Shut the lint up */
+        const bisonBody = {
+            ...generationConfig,
+            safetySettings: BISON_SAFETY,
+            candidate_count: 1, // lewgacy spelling
+            prompt: prompt,
+        };
+
+        if (!isText) {
+            delete bisonBody.stopSequences;
+            delete bisonBody.maxOutputTokens;
+            delete bisonBody.safetySettings;
+
+            if (Array.isArray(prompt.messages)) {
+                for (const msg of prompt.messages) {
+                    msg.author = msg.role;
+                    msg.content = msg.parts[0].text;
+                    delete msg.parts;
+                    delete msg.role;
+                }
+            }
+        }
+
+        delete bisonBody.candidateCount;
+        return bisonBody;
+    }
+
+    const body = isGemini ? getGeminiBody() : getBisonBody();
+    console.log('MakerSuite request:', body);
 
     try {
         const controller = new AbortController();
@@ -185,7 +224,12 @@ async function sendMakerSuiteRequest(request, response) {
             controller.abort();
         });
 
-        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:${stream ? 'streamGenerateContent' : 'generateContent'}?key=${apiKey}`, {
+        const apiVersion = isGemini ? 'v1beta' : 'v1beta2';
+        const responseType = isGemini
+            ? (stream ? 'streamGenerateContent' : 'generateContent')
+            : (isText ? 'generateText' : 'generateMessage');
+
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${responseType}?key=${apiKey}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -251,8 +295,8 @@ async function sendMakerSuiteRequest(request, response) {
                 return response.send({ error: { message } });
             }
 
-            const responseContent = candidates[0].content;
-            const responseText = responseContent.parts[0].text;
+            const responseContent = candidates[0].content ?? candidates[0].output;
+            const responseText = typeof responseContent === 'string' ? responseContent : responseContent.parts?.[0]?.text;
             if (!responseText) {
                 let message = 'MakerSuite Candidate text empty';
                 console.log(message, generateResponseJson);
