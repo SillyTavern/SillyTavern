@@ -39,7 +39,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
             prefix = `${setHumanMsg}\n\nAssistant: `;
             //prefix = addSysHumanMsg ? '\n\nHuman: ' + addSysHumanMsg + '\n\nAssistant: ' : '\n\nHuman: Let\'s get started.\n\nAssistant: ';
             // Merge two messages with "\n\nHuman: " prefixes into one before the first Assistant's message. Fix messages order for default claude format when(messages > Context Size).
-        } else if (i > 0 && i === firstAssistantIndex - 1 && v.role === 'user' && (!withSyspromptSupport || (withSyspromptSupport && !useSystemPrompt))) {
+        } else if (i > 0 && i === firstAssistantIndex - 1 && v.role === 'user' && !(withSyspromptSupport && useSystemPrompt)) {
             prefix = '\n\nFirst message: ';
             //Define role prefixes(role : prefix). Set the correct prefix according to the role/name.
         } else {
