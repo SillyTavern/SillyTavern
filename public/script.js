@@ -891,7 +891,7 @@ async function getStatusKobold() {
     }
 
     try {
-        const response = await fetch('/getstatus', {
+        const response = await fetch('/api/backends/kobold/status', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -928,7 +928,7 @@ async function getStatusKobold() {
 }
 
 async function getStatusTextgen() {
-    const url = '/api/textgenerationwebui/status';
+    const url = '/api/backends/text-completions/status';
 
     let endpoint = textgen_settings.type === MANCER ?
         MANCER_SERVER :
@@ -4432,9 +4432,9 @@ function setInContextMessages(lastmsg, type) {
 function getGenerateUrl(api) {
     let generate_url = '';
     if (api == 'kobold') {
-        generate_url = '/generate';
+        generate_url = '/api/backends/kobold/generate';
     } else if (api == 'textgenerationwebui') {
-        generate_url = '/api/textgenerationwebui/generate';
+        generate_url = '/api/backends/text-completions/generate';
     } else if (api == 'novel') {
         generate_url = '/api/novelai/generate';
     }

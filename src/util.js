@@ -349,7 +349,7 @@ function getImages(path) {
 
 /**
  * Pipe a fetch() response to an Express.js Response, including status code.
- * @param {Response} from The Fetch API response to pipe from.
+ * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
  * @param {Express.Response} to The Express response to pipe to.
  */
 function forwardFetchResponse(from, to) {

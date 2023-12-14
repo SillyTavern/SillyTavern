@@ -129,13 +129,6 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         top_p: kai_settings.top_p,
         min_p: (kai_flags.can_use_min_p || isHorde) ? kai_settings.min_p : undefined,
         typical: kai_settings.typical,
-        s1: sampler_order[0],
-        s2: sampler_order[1],
-        s3: sampler_order[2],
-        s4: sampler_order[3],
-        s5: sampler_order[4],
-        s6: sampler_order[5],
-        s7: sampler_order[6],
         use_world_info: false,
         singleline: false,
         stop_sequence: (kai_flags.can_use_stop_sequence || isHorde) ? getStoppingStrings(isImpersonate, isContinue) : undefined,
@@ -173,7 +166,7 @@ function tryParseStreamingError(response, decoded) {
 }
 
 export async function generateKoboldWithStreaming(generate_data, signal) {
-    const response = await fetch('/generate', {
+    const response = await fetch('/api/backends/kobold/generate', {
         headers: getRequestHeaders(),
         body: JSON.stringify(generate_data),
         method: 'POST',

@@ -1386,7 +1386,7 @@ function openRouterGroupByVendor(array) {
 }
 
 async function sendAltScaleRequest(messages, logit_bias, signal, type) {
-    const generate_url = '/generate_altscale';
+    const generate_url = '/api/backends/scale-alt/generate';
 
     let firstSysMsgs = [];
     for (let msg of messages) {
@@ -1562,7 +1562,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['seed'] = oai_settings.seed;
     }
 
-    const generate_url = '/generate_openai';
+    const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
         method: 'POST',
         body: JSON.stringify(generate_data),
@@ -1652,7 +1652,7 @@ async function calculateLogitBias() {
     let result = {};
 
     try {
-        const reply = await fetch(`/openai_bias?model=${getTokenizerModel()}`, {
+        const reply = await fetch(`/api/backends/chat-completions/bias?model=${getTokenizerModel()}`, {
             method: 'POST',
             headers: getRequestHeaders(),
             body,
@@ -2449,7 +2449,7 @@ async function getStatusOpen() {
     }
 
     try {
-        const response = await fetch('/getstatus_openai', {
+        const response = await fetch('/api/backends/chat-completions/status', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(data),
