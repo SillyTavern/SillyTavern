@@ -72,6 +72,32 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, with
     return requestPrompt;
 }
 
+/**
+ * Convert a prompt from the ChatML objects to the format used by Text Completion API.
+ * @param {object[]} messages Array of messages
+ * @returns {string} Prompt for Text Completion API
+ */
+function convertTextCompletionPrompt(messages) {
+    if (typeof messages === 'string') {
+        return messages;
+    }
+
+    const messageStrings = [];
+    messages.forEach(m => {
+        if (m.role === 'system' && m.name === undefined) {
+            messageStrings.push('System: ' + m.content);
+        }
+        else if (m.role === 'system' && m.name !== undefined) {
+            messageStrings.push(m.name + ': ' + m.content);
+        }
+        else {
+            messageStrings.push(m.role + ': ' + m.content);
+        }
+    });
+    return messageStrings.join('\n') + '\nassistant:';
+}
+
 module.exports = {
     convertClaudePrompt,
+    convertTextCompletionPrompt,
 };
