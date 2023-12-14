@@ -114,7 +114,6 @@ const max_128k = 128 * 1000;
 const max_200k = 200 * 1000;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
-const palm2_max = 7400; // The real context window is 8192, spare some for padding due to using turbo tokenizer
 const claude_100k_max = 99000;
 let ai21_max = 9200; //can easily fit 9k gpt tokens because j2's tokenizer is efficient af
 const unlocked_max = 100 * 1024;
@@ -207,6 +206,7 @@ const default_settings = {
     personality_format: default_personality_format,
     openai_model: 'gpt-3.5-turbo',
     claude_model: 'claude-instant-v1',
+    google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
@@ -260,6 +260,7 @@ const oai_settings = {
     personality_format: default_personality_format,
     openai_model: 'gpt-3.5-turbo',
     claude_model: 'claude-instant-v1',
+    google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
@@ -1252,8 +1253,8 @@ function getChatCompletionModel() {
             return oai_settings.windowai_model;
         case chat_completion_sources.SCALE:
             return '';
-        case chat_completion_sources.PALM:
-            return '';
+        case chat_completion_sources.MAKERSUITE:
+            return oai_settings.google_model;
         case chat_completion_sources.OPENROUTER:
             return oai_settings.openrouter_model !== openrouter_website_model ? oai_settings.openrouter_model : null;
         case chat_completion_sources.AI21:
@@ -1443,20 +1444,20 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isOpenRouter = oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
     const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
     const isAI21 = oai_settings.chat_completion_source == chat_completion_sources.AI21;
-    const isPalm = oai_settings.chat_completion_source == chat_completion_sources.PALM;
+    const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
     const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
     const isTextCompletion = (isOAI && textCompletionModels.includes(oai_settings.openai_model)) || (isOpenRouter && oai_settings.openrouter_force_instruct && power_user.instruct.enabled);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
-    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !isPalm;
+    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !isGoogle;
 
     if (isTextCompletion && isOpenRouter) {
         messages = convertChatCompletionToInstruct(messages, type);
         replaceItemizedPromptText(messageId, messages);
     }
 
-    if (isAI21 || isPalm) {
+    if (isAI21 || isGoogle) {
         const joinedMsgs = messages.reduce((acc, obj) => {
             const prefix = prefixMap[obj.role];
             return acc + (prefix ? (selected_group ? '\n' : prefix + ' ') : '') + obj.content + '\n';
@@ -1539,7 +1540,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['api_url_scale'] = oai_settings.api_url_scale;
     }
 
-    if (isPalm) {
+    if (isGoogle) {
         const nameStopString = isImpersonate ? `\n${name2}:` : `\n${name1}:`;
         const stopStringsLimit = 3; // 5 - 2 (nameStopString and new_chat_prompt)
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
@@ -2290,6 +2291,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openrouter_use_fallback = settings.openrouter_use_fallback ?? default_settings.openrouter_use_fallback;
     oai_settings.openrouter_force_instruct = settings.openrouter_force_instruct ?? default_settings.openrouter_force_instruct;
     oai_settings.ai21_model = settings.ai21_model ?? default_settings.ai21_model;
+    oai_settings.google_model = settings.google_model ?? default_settings.google_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
@@ -2326,6 +2328,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_claude_select option[value="${oai_settings.claude_model}"`).attr('selected', true);
     $('#model_windowai_select').val(oai_settings.windowai_model);
     $(`#model_windowai_select option[value="${oai_settings.windowai_model}"`).attr('selected', true);
+    $('#model_google_select').val(oai_settings.google_model);
+    $(`#model_google_select option[value="${oai_settings.google_model}"`).attr('selected', true);
     $('#model_ai21_select').val(oai_settings.ai21_model);
     $(`#model_ai21_select option[value="${oai_settings.ai21_model}"`).attr('selected', true);
     $('#openai_max_context').val(oai_settings.openai_max_context);
@@ -2416,7 +2420,7 @@ async function getStatusOpen() {
         return resultCheckStatus();
     }
 
-    const noValidateSources = [chat_completion_sources.SCALE, chat_completion_sources.CLAUDE, chat_completion_sources.AI21, chat_completion_sources.PALM];
+    const noValidateSources = [chat_completion_sources.SCALE, chat_completion_sources.CLAUDE, chat_completion_sources.AI21, chat_completion_sources.MAKERSUITE];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = 'Unable to verify key; press "Test Message" to validate.';
         setOnlineStatus(status);
@@ -2499,6 +2503,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         openrouter_group_models: settings.openrouter_group_models,
         openrouter_sort_models: settings.openrouter_sort_models,
         ai21_model: settings.ai21_model,
+        google_model: settings.google_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
@@ -2868,6 +2873,7 @@ function onSettingsPresetChange() {
         openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
         openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
         ai21_model: ['#model_ai21_select', 'ai21_model', false],
+        google_model: ['#model_google_select', 'google_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
         wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
@@ -3000,7 +3006,7 @@ function getMaxContextWindowAI(value) {
         return max_8k;
     }
     else if (value.includes('palm-2')) {
-        return palm2_max;
+        return max_8k;
     }
     else if (value.includes('GPT-NeoXT')) {
         return max_2k;
@@ -3045,6 +3051,11 @@ async function onModelChange() {
         oai_settings.ai21_model = value;
     }
 
+    if ($(this).is('#model_google_select')) {
+        console.log('Google model changed to', value);
+        oai_settings.google_model = value;
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
@@ -3055,11 +3066,15 @@ async function onModelChange() {
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.PALM) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
+        } else if (value === 'gemini-pro') {
+            $('#openai_max_context').attr('max', max_32k);
+        } else if (value === 'gemini-pro-vision') {
+            $('#openai_max_context').attr('max', max_16k);
         } else {
-            $('#openai_max_context').attr('max', palm2_max);
+            $('#openai_max_context').attr('max', max_8k);
         }
 
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
@@ -3254,15 +3269,15 @@ async function onConnectButtonClick(e) {
         }
     }
 
-    if (oai_settings.chat_completion_source == chat_completion_sources.PALM) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         const api_key_makersuite = String($('#api_key_makersuite').val()).trim();
 
         if (api_key_makersuite.length) {
-            await writeSecret(SECRET_KEYS.PALM, api_key_makersuite);
+            await writeSecret(SECRET_KEYS.MAKERSUITE, api_key_makersuite);
         }
 
-        if (!secret_state[SECRET_KEYS.PALM]) {
-            console.log('No secret key saved for PALM');
+        if (!secret_state[SECRET_KEYS.MAKERSUITE]) {
+            console.log('No secret key saved for MakerSuite');
             return;
         }
     }
@@ -3329,8 +3344,8 @@ function toggleChatCompletionForms() {
     else if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
         $('#model_scale_select').trigger('change');
     }
-    else if (oai_settings.chat_completion_source == chat_completion_sources.PALM) {
-        $('#model_palm_select').trigger('change');
+    else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
+        $('#model_google_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').trigger('change');
@@ -3702,7 +3717,7 @@ $(document).ready(async function () {
     $('#model_claude_select').on('change', onModelChange);
     $('#model_windowai_select').on('change', onModelChange);
     $('#model_scale_select').on('change', onModelChange);
-    $('#model_palm_select').on('change', onModelChange);
+    $('#model_google_select').on('change', onModelChange);
     $('#model_openrouter_select').on('change', onModelChange);
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
