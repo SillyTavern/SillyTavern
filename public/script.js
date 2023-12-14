@@ -2557,7 +2557,7 @@ function getCharacterCardFields() {
 }
 
 function isStreamingEnabled() {
-    const noStreamSources = [chat_completion_sources.SCALE, chat_completion_sources.AI21, chat_completion_sources.PALM];
+    const noStreamSources = [chat_completion_sources.SCALE, chat_completion_sources.AI21, chat_completion_sources.MAKERSUITE];
     return ((main_api == 'openai' && oai_settings.stream_openai && !noStreamSources.includes(oai_settings.chat_completion_source))
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
@@ -5395,7 +5395,7 @@ function changeMainAPI() {
         case chat_completion_sources.CLAUDE:
         case chat_completion_sources.OPENAI:
         case chat_completion_sources.AI21:
-        case chat_completion_sources.PALM:
+        case chat_completion_sources.MAKERSUITE:
         default:
             setupChatCompletionPromptManager(oai_settings);
             break;
@@ -7535,9 +7535,9 @@ async function connectAPISlash(_, text) {
             source: 'ai21',
             button: '#api_button_openai',
         },
-        'palm': {
+        'makersuite': {
             selected: 'openai',
-            source: 'palm',
+            source: 'makersuite',
             button: '#api_button_openai',
         },
     };

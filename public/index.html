@@ -444,7 +444,7 @@
                                             complete.</span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,palm">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -496,7 +496,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,ai21,palm">
+                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,ai21,makersuite">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -509,7 +509,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,palm">
+                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -1585,7 +1585,7 @@
                             <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
                             <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
                             <option value="textgenerationwebui"><span data-i18n="Text Completion">Text Completion (ooba, Mancer, Aphrodite, TabbyAPI, KoboldCpp)</span></option>
-                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale, AI21)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale, AI21, PaLM)</span></option>
+                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale, AI21)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale, AI21, Google MakerSuite)</span></option>
                         </select>
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
@@ -1833,7 +1833,7 @@
                             <option value="claude">Claude</option>
                             <option value="scale">Scale</option>
                             <option value="ai21">AI21</option>
-                            <option value="palm">Google PaLM 2</option>
+                            <option value="makersuite">Google MakerSuite</option>
                         </select>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4><span data-i18n="OpenAI API key">OpenAI API key</span></h4>
@@ -2100,13 +2100,22 @@
                             </div>
                         </form>
                         <form id="palm_form" data-source="palm" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4 data-i18n="PaLM API Key">PaLM API Key</h4>
+                            <h4 data-i18n="MakerSuite API Key">MakerSuite API Key</h4>
                             <div class="flex-container">
-                                <input id="api_key_palm" name="api_key_palm" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
-                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_palm"></div>
+                                <input id="api_key_makersuite" name="api_key_makersuite" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_makersuite"></div>
                             </div>
-                            <div data-for="api_key_palm" class="neutral_warning">
+                            <div data-for="api_key_makersuite" class="neutral_warning">
                                 For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <div>
+                                <h4 data-i18n="Google Model">Google Model</h4>
+                                <select id="model_google_select">
+                                    <option value="gemini-pro">Gemini Pro</option>
+                                    <option value="gemini-pro-vision">Gemini Pro Vision</option>
+                                    <option value="text-bison-001">Bison Text</option>
+                                    <option value="chat-bison-001">Bison Chat</option>
+                                </select>
                             </div>
                             <!-- Its only purpose is to trigger max context size check -->
                             <select id="model_palm_select" class="displayNone"></select>

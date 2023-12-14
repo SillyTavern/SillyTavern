@@ -995,9 +995,9 @@ async function sendClaudeRequest(request, response) {
  * @param {express.Response} response
  */
 async function sendPalmRequest(request, response) {
-    const api_key_palm = readSecret(SECRET_KEYS.PALM);
+    const api_key_makersuite = readSecret(SECRET_KEYS.PALM);
 
-    if (!api_key_palm) {
+    if (!api_key_makersuite) {
         console.log('Palm API key is missing.');
         return response.status(400).send({ error: true });
     }
@@ -1024,7 +1024,7 @@ async function sendPalmRequest(request, response) {
             controller.abort();
         });
 
-        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${api_key_palm}`, {
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${api_key_makersuite}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {

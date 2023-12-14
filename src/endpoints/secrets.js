@@ -23,7 +23,7 @@ const SECRET_KEYS = {
     SCALE_COOKIE: 'scale_cookie',
     ONERING_URL: 'oneringtranslator_url',
     DEEPLX_URL: 'deeplx_url',
-    PALM: 'api_key_palm',
+    PALM: 'api_key_makersuite',
     SERPAPI: 'api_key_serpapi',
 };
 

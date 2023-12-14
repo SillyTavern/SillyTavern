@@ -164,7 +164,7 @@ export const chat_completion_sources = {
     SCALE: 'scale',
     OPENROUTER: 'openrouter',
     AI21: 'ai21',
-    PALM: 'palm',
+    MAKERSUITE: 'makersuite',
 };
 
 const prefixMap = selected_group ? {
@@ -3255,10 +3255,10 @@ async function onConnectButtonClick(e) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.PALM) {
-        const api_key_palm = String($('#api_key_palm').val()).trim();
+        const api_key_makersuite = String($('#api_key_makersuite').val()).trim();
 
-        if (api_key_palm.length) {
-            await writeSecret(SECRET_KEYS.PALM, api_key_palm);
+        if (api_key_makersuite.length) {
+            await writeSecret(SECRET_KEYS.PALM, api_key_makersuite);
         }
 
         if (!secret_state[SECRET_KEYS.PALM]) {
