@@ -507,7 +507,7 @@ export function dragElement(elmnt) {
             || Number((String(target.height).replace('px', ''))) < 50
             || Number((String(target.width).replace('px', ''))) < 50
             || power_user.movingUI === false
-            || isMobile() === true
+            || isMobile()
         ) {
             console.debug('aborting mutator');
             return;
@@ -715,7 +715,7 @@ export function dragElement(elmnt) {
 }
 
 export async function initMovingUI() {
-    if (isMobile() === false && power_user.movingUI === true) {
+    if (!isMobile() && power_user.movingUI === true) {
         console.debug('START MOVING UI');
         dragElement($('#sheld'));
         dragElement($('#left-nav-panel'));
