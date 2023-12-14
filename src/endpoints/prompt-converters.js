@@ -72,12 +72,12 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, with
     return requestPrompt;
 }
 
-function convertGooglePrompt(messages, type) {
+function convertGooglePrompt(messages, model) {
     const contents = [];
     let lastRole = '';
     let currentText = '';
 
-    const isMultimodal = type === 'gemini-pro-vision';
+    const isMultimodal = model === 'gemini-pro-vision';
 
     if (isMultimodal) {
         const combinedText = messages.map((message) => {

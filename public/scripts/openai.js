@@ -56,7 +56,7 @@ import {
     resetScrollHeight,
     stringFormat,
 } from './utils.js';
-import {countTokensOpenAI, getTokenizerModel} from './tokenizers.js';
+import { countTokensOpenAI, getTokenizerModel } from './tokenizers.js';
 import {
     formatInstructModeChat,
     formatInstructModeExamples,
