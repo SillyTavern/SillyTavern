@@ -2411,6 +2411,11 @@ function loadOpenAISettings(data, settings) {
     }
     $('#openai_logit_bias_preset').trigger('change');
 
+    // Upgrade Palm to Makersuite
+    if (oai_settings.chat_completion_source === 'palm') {
+        oai_settings.chat_completion_source = chat_completion_sources.MAKERSUITE;
+    }
+
     $('#chat_completion_source').val(oai_settings.chat_completion_source).trigger('change');
     $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);
 }
