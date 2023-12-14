@@ -861,6 +861,26 @@ async function qrPresetAddCallback(args, name) {
     await updateQuickReplyPresetList();
 }
 
+async function qrPresetUpdateCallback(args, name) {
+    const preset = presets.find(it=>it.name==name);
+    const quickReplyPreset = {
+        name: preset.name,
+        quickReplyEnabled: JSON.parse(args.enabled ?? null) ?? preset.quickReplyEnabled,
+        quickActionEnabled: JSON.parse(args.nosend ?? null) ?? preset.quickActionEnabled,
+        placeBeforeInputEnabled: JSON.parse(args.before ?? null) ?? preset.placeBeforeInputEnabled,
+        quickReplySlots: preset.quickReplySlots,
+        numberOfSlots: Number(args.slots ?? preset.numberOfSlots),
+        AutoInputInject: JSON.parse(args.inject ?? 'null') ?? preset.AutoInputInject,
+    };
+    Object.assign(preset, quickReplyPreset);
+
+    const response = await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(quickReplyPreset),
+    });
+}
+
 let onMessageSentExecuting = false;
 let onMessageReceivedExecuting = false;
 let onChatChangedExecuting = false;
@@ -1073,4 +1093,5 @@ jQuery(() => {
     inject  - bool - inject user input automatically (if disabled use {{input}})
     `.trim();
     registerSlashCommand('qr-presetadd', qrPresetAddCallback, [], `<span class="monospace" style="white-space:pre;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – create a new preset (overrides existing ones), example: <tt>/qr-presetadd slots=3 MyNewPreset</tt>`, true, true);
+    registerSlashCommand('qr-presetupdate', qrPresetUpdateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – update an existing preset, example: <tt>/qr-presetupdate enabled=false MyPreset</tt>`, true, true);
 });
