@@ -974,7 +974,7 @@ jQuery(() => {
     title    - bool   - title / tooltip to be shown on button, e.g., title="My Fancy Button"
     `.trim();
     const qrUpdateArgs = `
-    newlabel - text - new text fort the button, e.g. newlabel=MyRenamedButton
+    newlabel - string - new text fort the button, e.g. newlabel=MyRenamedButton
     ${qrArgs}
     `.trim();
     registerSlashCommand('qr-create', qrCreateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments, [message])\n  arguments:\n    ${qrArgs}</span> – creates a new Quick Reply, example: <tt>/qr-create set=MyPreset label=MyButton /echo 123</tt>`, true, true);
