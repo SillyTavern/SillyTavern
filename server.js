@@ -1018,6 +1018,7 @@ async function sendMakerSuiteRequest(request, response) {
     };
 
     const google_model = request.body.model;
+    const should_stream = request.body.stream;
     try {
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
@@ -1025,7 +1026,7 @@ async function sendMakerSuiteRequest(request, response) {
             controller.abort();
         });
 
-        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${google_model}:generateContent?key=${api_key_makersuite}`, {
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${google_model}:${should_stream ? 'streamGenerateContent' : 'generateContent'}?key=${api_key_makersuite}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -1034,37 +1035,77 @@ async function sendMakerSuiteRequest(request, response) {
             signal: controller.signal,
             timeout: 0,
         });
+        // have to do this because of their busted ass streaming endpoint
+        if (should_stream) {
+            try {
+                let partialData = '';
+                generateResponse.body.on('data', (data) => {
+                    const chunk = data.toString();
+                    if (chunk.startsWith(',') || chunk.endsWith(',') || chunk.startsWith('[') || chunk.endsWith(']')) {
+                        partialData = chunk.slice(1);
+                    } else {
+                        partialData += chunk;
+                    }
+                    while (true) {
+                        let json;
+                        try {
+                            json = JSON.parse(partialData);
+                        } catch (e) {
+                            break;
+                        }
+                        response.write(JSON.stringify(json));
+                        partialData = '';
+                    }
+                });
 
-        if (!generateResponse.ok) {
-            console.log(`MakerSuite API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-            return response.status(generateResponse.status).send({ error: true });
-        }
+                request.socket.on('close', function () {
+                    generateResponse.body.destroy();
+                    response.end();
+                });
 
-        const generateResponseJson = await generateResponse.json();
+                generateResponse.body.on('end', () => {
+                    console.log('Streaming request finished');
+                    response.end();
+                });
 
-        const candidates = generateResponseJson?.candidates;
-        if (!candidates || candidates.length === 0) {
-            let message = 'MakerSuite API returned no candidate';
-            console.log(message, generateResponseJson);
-            if (generateResponseJson?.promptFeedback?.blockReason) {
-                message += `\nPrompt was blocked due to : ${generateResponseJson.promptFeedback.blockReason}`;
+            } catch (error) {
+                console.log('Error forwarding streaming response:', error);
+                if (!response.headersSent) {
+                    return response.status(500).send({ error: true });
+                }
             }
-            return response.send({ error: { message } });
+        } else {
+            if (!generateResponse.ok) {
+                console.log(`MakerSuite API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                return response.status(generateResponse.status).send({ error: true });
+            }
+
+            const generateResponseJson = await generateResponse.json();
+
+            const candidates = generateResponseJson?.candidates;
+            if (!candidates || candidates.length === 0) {
+                let message = 'MakerSuite API returned no candidate';
+                console.log(message, generateResponseJson);
+                if (generateResponseJson?.promptFeedback?.blockReason) {
+                    message += `\nPrompt was blocked due to : ${generateResponseJson.promptFeedback.blockReason}`;
+                }
+                return response.send({ error: { message } });
+            }
+
+            const responseContent = candidates[0].content;
+            const responseText = responseContent.parts[0].text;
+            if (!responseText) {
+                let message = 'MakerSuite Candidate text empty';
+                console.log(message, generateResponseJson);
+                return response.send({ error: { message } });
+            }
+
+            console.log('MakerSuite response:', responseText);
+
+            // Wrap it back to OAI format
+            const reply = { choices: [{ 'message': { 'content': responseText } }] };
+            return response.send(reply);
         }
-
-        const responseContent = candidates[0].content;
-        const responseText = responseContent.parts[0].text;
-        if (!responseText) {
-            let message = 'MakerSuite Candidate text empty';
-            console.log(message, generateResponseJson);
-            return response.send({ error: { message } });
-        }
-
-        console.log('MakerSuite response:', responseText);
-
-        // Wrap it back to OAI format
-        const reply = { choices: [{ 'message': { 'content': responseText } }] };
-        return response.send(reply);
     } catch (error) {
         console.log('Error communicating with MakerSuite API: ', error);
         if (!response.headersSent) {
