@@ -720,7 +720,11 @@ function saveQROrder() {
 async function qrCreateCallback(args, mes) {
     const qr = {
         label: args.label ?? '',
-        mes: mes,
+        mes: (mes ?? '')
+            .replace(/\\\|/g, '|')
+            .replace(/\\\{/g, '{')
+            .replace(/\\\}/g, '}')
+            ,
         title: args.title ?? '',
         autoExecute_chatLoad: JSON.parse(args.load ?? false),
         autoExecute_userMessage: JSON.parse(args.user ?? false),
@@ -746,7 +750,11 @@ async function qrUpdateCallback(args, mes) {
     const oqr = preset.quickReplySlots[idx];
     const qr = {
         label: args.newlabel ?? oqr.label ?? '',
-        mes: mes ?? oqr.mes,
+        mes: (mes ?? oqr.mes)
+            .replace('\\|', '|')
+            .replace('\\{', '{')
+            .replace('\\}', '}')
+            ,
         title: args.title ?? oqr.title ?? '',
         autoExecute_chatLoad: JSON.parse(args.load ?? oqr.autoExecute_chatLoad ?? false),
         autoExecute_userMessage: JSON.parse(args.user ?? oqr.autoExecute_userMessage ?? false),
