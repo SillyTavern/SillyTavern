@@ -14,7 +14,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
                 parts: [
                     { text: request.body.prompt },
                     { inlineData: {
-                        mimeType: 'image/png',
+                        mimeType: 'image/png', //jpg images seem to work fine even with this mimetype set?
                         data: request.body.image,
                     },
                     }],
@@ -40,8 +40,14 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         }
 
         const data = await result.json();
+        console.log('Multimodal captioning response', data);
 
-        const caption = data?.candidates[0].content.parts[0].text;
+        const candidates = data?.candidates;
+        if(!candidates) {
+            return response.status(500).send('No candidates found, image was most likely filtered.');
+        }
+
+        const caption = candidates[0].content.parts[0].text;
         if (!caption) {
             return response.status(500).send('No caption found');
         }

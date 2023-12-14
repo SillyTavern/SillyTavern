@@ -30,25 +30,21 @@ export async function getMultimodalCaption(base64Img, prompt) {
         base64Img = await createThumbnail(base64Img, maxSide, maxSide, 'image/jpeg');
     }
 
-    const apiResult = extension_settings.caption.multimodal_api === 'google' ?
-        await fetch('/api/google/caption-image', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-                image: base64Img,
-                prompt: prompt,
-            }),
-        })
-        : await fetch('/api/openai/caption-image', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-                image: base64Img,
-                prompt: prompt,
-                api: extension_settings.caption.multimodal_api || 'openai',
-                model: extension_settings.caption.multimodal_model || 'gpt-4-vision-preview',
-            }),
-        });
+    const isGoogle = extension_settings.caption.multimodal_api === 'google';
+    const apiResult = await fetch(`/api/${isGoogle ? 'google' : 'openai'}/caption-image`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            image: base64Img,
+            prompt: prompt,
+            ...(isGoogle
+                ? {}
+                : {
+                    api: extension_settings.caption.multimodal_api || 'openai',
+                    model: extension_settings.caption.multimodal_model || 'gpt-4-vision-preview',
+                }),
+        }),
+    });
 
     if (!apiResult.ok) {
         throw new Error('Failed to caption image via OpenAI.');
