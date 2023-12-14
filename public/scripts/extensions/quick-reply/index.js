@@ -842,6 +842,25 @@ async function qrContextClearCallback(args, label) {
     applyQuickReplyPreset(selected_preset);
 }
 
+async function qrPresetAddCallback(args, name) {
+    const quickReplyPreset = {
+        name: name,
+        quickReplyEnabled: JSON.parse(args.enabled ?? null) ?? true,
+        quickActionEnabled: JSON.parse(args.nosend ?? null) ?? false,
+        placeBeforeInputEnabled: JSON.parse(args.before ?? null) ?? false,
+        quickReplySlots: [],
+        numberOfSlots: Number(args.slots ?? '0'),
+        AutoInputInject: JSON.parse(args.inject ?? 'false'),
+    };
+
+    const response = await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(quickReplyPreset),
+    });
+    await updateQuickReplyPresetList();
+}
+
 let onMessageSentExecuting = false;
 let onMessageReceivedExecuting = false;
 let onChatChangedExecuting = false;
@@ -1046,4 +1065,12 @@ jQuery(() => {
     registerSlashCommand('qr-contextadd', qrContextAddCallback, [], `<span class="monospace">(set=string label=string chain=bool [preset name])</span> – add context menu preset to a QR, example: <tt>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset`, true, true);
     registerSlashCommand('qr-contextdel', qrContextDeleteCallback, [], `<span class="monospace">(set=string label=string [preset name])</span> – remove context menu preset from a QR, example: <tt>/qr-contextdel set=MyPreset label=MyButton MyOtherPreset`, true, true);
     registerSlashCommand('qr-contextclear', qrContextClearCallback, [], `<span class="monospace">(set=string [label])</span> – remove all context menu presets from a QR, example: <tt>/qr-contextclear set=MyPreset MyButton`, true, true);
+    const presetArgs = `
+    enabled - bool - enable or disable the preset
+    nosend  - bool - disable send / insert in user input (invalid for slash commands)
+    before  - bool - place QR before user input
+    slots   - int  - number of slots
+    inject  - bool - inject user input automatically (if disabled use {{input}})
+    `.trim();
+    registerSlashCommand('qr-presetadd', qrPresetAddCallback, [], `<span class="monospace" style="white-space:pre;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – remove all context menu presets from a QR, example: <tt>/qr-contextclear set=MyPreset MyButton`, true, true);
 });
