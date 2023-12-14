@@ -787,6 +787,61 @@ async function qrDeleteCallback(args, label) {
     applyQuickReplyPreset(selected_preset);
 }
 
+async function qrContextAddCallback(args, presetName) {
+    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const idx = preset.quickReplySlots.findIndex(x => x.label == args.label);
+    const oqr = preset.quickReplySlots[idx];
+    if (!oqr.contextMenu) {
+        oqr.contextMenu = [];
+    }
+    let item = oqr.contextMenu.find(it=>it.preset == presetName);
+    if (item) {
+        item.chain = JSON.parse(args.chain ?? 'null') ?? item.chain ?? false;
+    } else {
+        oqr.contextMenu.push({preset:presetName, chain: JSON.parse(args.chain ?? 'false')});
+    }
+    const response = await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+}
+async function qrContextDeleteCallback(args, presetName) {
+    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const idx = preset.quickReplySlots.findIndex(x => x.label == args.label);
+    const oqr = preset.quickReplySlots[idx];
+    if (!oqr.contextMenu) return;
+    const ctxIdx = oqr.contextMenu.findIndex(it=>it.preset == presetName);
+    if (ctxIdx > -1) {
+        oqr.contextMenu.splice(ctxIdx, 1);
+    }
+    const response = await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+}
+async function qrContextClearCallback(args, label) {
+    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const idx = preset.quickReplySlots.findIndex(x => x.label == label);
+    const oqr = preset.quickReplySlots[idx];
+    oqr.contextMenu = [];
+    const response = await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+}
+
 let onMessageSentExecuting = false;
 let onMessageReceivedExecuting = false;
 let onChatChangedExecuting = false;
@@ -988,4 +1043,7 @@ jQuery(() => {
     registerSlashCommand('qr-create', qrCreateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments, [message])\n  arguments:\n    ${qrArgs}</span> – creates a new Quick Reply, example: <tt>/qr-create set=MyPreset label=MyButton /echo 123</tt>`, true, true);
     registerSlashCommand('qr-update', qrUpdateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments, [message])\n  arguments:\n    ${qrUpdateArgs}</span> – updates Quick Reply, example: <tt>/qr-update set=MyPreset label=MyButton newlabel=MyRenamedButton /echo 123`, true, true);
     registerSlashCommand('qr-delete', qrDeleteCallback, [], `<span class="monospace">(set=string [label])</span> – deletes Quick Reply`, true, true);
+    registerSlashCommand('qr-contextadd', qrContextAddCallback, [], `<span class="monospace">(set=string label=string chain=bool [preset name])</span> – add context menu preset to a QR, example: <tt>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset`, true, true);
+    registerSlashCommand('qr-contextdel', qrContextDeleteCallback, [], `<span class="monospace">(set=string label=string [preset name])</span> – remove context menu preset from a QR, example: <tt>/qr-contextdel set=MyPreset label=MyButton MyOtherPreset`, true, true);
+    registerSlashCommand('qr-contextclear', qrContextClearCallback, [], `<span class="monospace">(set=string [label])</span> – remove all context menu presets from a QR, example: <tt>/qr-contextclear set=MyPreset MyButton`, true, true);
 });
