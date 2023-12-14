@@ -72,6 +72,12 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, with
     return requestPrompt;
 }
 
+/**
+ * Convert a prompt from the ChatML objects to the format used by Google MakerSuite models.
+ * @param {object[]} messages Array of messages
+ * @param {string} model Model name
+ * @returns {object[]} Prompt for Google MakerSuite models
+ */
 function convertGooglePrompt(messages, model) {
     const contents = [];
     let lastRole = '';

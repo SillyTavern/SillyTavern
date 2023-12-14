@@ -1,5 +1,6 @@
 const express = require('express');
 const fetch = require('node-fetch').default;
+const { Readable } = require('stream');
 
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, MAKERSUITE_SAFETY } = require('../../constants');
@@ -151,20 +152,16 @@ async function sendScaleRequest(request, response) {
  * @param {express.Request} request Express request
  * @param {express.Response} response Express response
  */
-/**
- * @param {express.Request} request
- * @param {express.Response} response
- */
 async function sendMakerSuiteRequest(request, response) {
-    const api_key_makersuite = readSecret(SECRET_KEYS.MAKERSUITE);
+    const apiKey = readSecret(SECRET_KEYS.MAKERSUITE);
 
-    if (!api_key_makersuite) {
+    if (!apiKey) {
         console.log('MakerSuite API key is missing.');
         return response.status(400).send({ error: true });
     }
 
-    const google_model = request.body.model;
-    const should_stream = request.body.stream;
+    const model = request.body.model;
+    const stream = request.body.stream;
 
     const generationConfig = {
         stopSequences: request.body.stop,
@@ -176,7 +173,7 @@ async function sendMakerSuiteRequest(request, response) {
     };
 
     const body = {
-        contents: convertGooglePrompt(request.body.messages, google_model),
+        contents: convertGooglePrompt(request.body.messages, model),
         safetySettings: MAKERSUITE_SAFETY,
         generationConfig: generationConfig,
     };
@@ -188,7 +185,7 @@ async function sendMakerSuiteRequest(request, response) {
             controller.abort();
         });
 
-        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${google_model}:${should_stream ? 'streamGenerateContent' : 'generateContent'}?key=${api_key_makersuite}`, {
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:${stream ? 'streamGenerateContent' : 'generateContent'}?key=${apiKey}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -198,7 +195,7 @@ async function sendMakerSuiteRequest(request, response) {
             timeout: 0,
         });
         // have to do this because of their busted ass streaming endpoint
-        if (should_stream) {
+        if (stream) {
             try {
                 let partialData = '';
                 generateResponse.body.on('data', (data) => {
@@ -221,7 +218,7 @@ async function sendMakerSuiteRequest(request, response) {
                 });
 
                 request.socket.on('close', function () {
-                    generateResponse.body.destroy();
+                    if (generateResponse.body instanceof Readable) generateResponse.body.destroy();
                     response.end();
                 });
 
