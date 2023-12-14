@@ -14,7 +14,7 @@ async function getPaLMVector(text) {
         throw new Error('No PaLM key found');
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta2/models/embedding-gecko-001:embedText?key=${key}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/embedding-gecko-001:embedText?key=${key}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

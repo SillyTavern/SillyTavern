@@ -72,6 +72,36 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, with
     return requestPrompt;
 }
 
+function convertGooglePrompt(messages) {
+    const contents = [];
+    let lastRole = '';
+    let currentText = '';
+
+    messages.forEach((message, index) => {
+        const role = message.role === 'assistant' ? 'model' : 'user';
+        if (lastRole === role) {
+            currentText += '\n\n' + message.content;
+        } else {
+            if (currentText !== '') {
+                contents.push({
+                    parts: [{ text: currentText.trim() }],
+                    role: lastRole,
+                });
+            }
+            currentText = message.content;
+            lastRole = role;
+        }
+        if (index === messages.length - 1) {
+            contents.push({
+                parts: [{ text: currentText.trim() }],
+                role: lastRole,
+            });
+        }
+    });
+    return contents;
+}
+
 module.exports = {
     convertClaudePrompt,
+    convertGooglePrompt,
 };

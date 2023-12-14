@@ -1457,7 +1457,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         replaceItemizedPromptText(messageId, messages);
     }
 
-    if (isAI21 || isGoogle) {
+    if (isAI21) {
         const joinedMsgs = messages.reduce((acc, obj) => {
             const prefix = prefixMap[obj.role];
             return acc + (prefix ? (selected_group ? '\n' : prefix + ' ') : '') + obj.content + '\n';

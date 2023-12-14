@@ -387,6 +387,27 @@ router.post('/ai21/count', jsonParser, async function (req, res) {
     }
 });
 
+router.post('/google/count', jsonParser, async function (req, res) {
+    if (!req.body) return res.sendStatus(400);
+    const options = {
+        method: 'POST',
+        headers: {
+            accept: 'application/json',
+            'content-type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: { text: req.body[0].content } }),
+    };
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${req.query.model}:countTextTokens?key=${readSecret(SECRET_KEYS.MAKERSUITE)}`, options);
+        const data = await response.json();
+        console.log(data)
+        return res.send({ 'token_count': data?.tokenCount || 0 });
+    } catch (err) {
+        console.error(err);
+        return res.send({ 'token_count': 0 });
+    }
+});
+
 router.post('/llama/encode', jsonParser, createSentencepieceEncodingHandler(spp_llama));
 router.post('/nerdstash/encode', jsonParser, createSentencepieceEncodingHandler(spp_nerd));
 router.post('/nerdstash_v2/encode', jsonParser, createSentencepieceEncodingHandler(spp_nerd_v2));

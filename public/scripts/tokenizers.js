@@ -376,6 +376,10 @@ export function getTokenizerModel() {
         }
     }
 
+    if(oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
+        return oai_settings.google_model;
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         return claudeTokenizer;
     }
@@ -389,6 +393,15 @@ export function getTokenizerModel() {
  */
 export function countTokensOpenAI(messages, full = false) {
     const shouldTokenizeAI21 = oai_settings.chat_completion_source === chat_completion_sources.AI21 && oai_settings.use_ai21_tokenizer;
+    const shouldTokenizeGoogle = oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE;
+    let tokenizerEndpoint = '';
+    if(shouldTokenizeAI21) {
+        tokenizerEndpoint = '/api/tokenizers/ai21/count';
+    } else if (shouldTokenizeGoogle) {
+        tokenizerEndpoint = `/api/tokenizers/google/count?model=${getTokenizerModel()}`;
+    } else {
+        tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
+    }
     const cacheObject = getTokenCacheObject();
 
     if (!Array.isArray(messages)) {
@@ -400,7 +413,7 @@ export function countTokensOpenAI(messages, full = false) {
     for (const message of messages) {
         const model = getTokenizerModel();
 
-        if (model === 'claude' || shouldTokenizeAI21) {
+        if (model === 'claude' || shouldTokenizeAI21 || shouldTokenizeGoogle) {
             full = true;
         }
 
@@ -416,7 +429,7 @@ export function countTokensOpenAI(messages, full = false) {
             jQuery.ajax({
                 async: false,
                 type: 'POST', //
-                url: shouldTokenizeAI21 ? '/api/tokenizers/ai21/count' : `/api/tokenizers/openai/count?model=${model}`,
+                url: tokenizerEndpoint,
                 data: JSON.stringify([message]),
                 dataType: 'json',
                 contentType: 'application/json',
