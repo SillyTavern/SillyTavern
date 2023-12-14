@@ -393,7 +393,7 @@ export function getTokenizerModel() {
  */
 export function countTokensOpenAI(messages, full = false) {
     const shouldTokenizeAI21 = oai_settings.chat_completion_source === chat_completion_sources.AI21 && oai_settings.use_ai21_tokenizer;
-    const shouldTokenizeGoogle = oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE;
+    const shouldTokenizeGoogle = oai_settings.chat_completion_source === chat_completion_sources.MAKERSUITE && oai_settings.use_google_tokenizer;
     let tokenizerEndpoint = '';
     if(shouldTokenizeAI21) {
         tokenizerEndpoint = '/api/tokenizers/ai21/count';

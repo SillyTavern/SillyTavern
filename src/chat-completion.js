@@ -76,7 +76,6 @@ function convertGooglePrompt(messages) {
     const contents = [];
     let lastRole = '';
     let currentText = '';
-
     messages.forEach((message, index) => {
         const role = message.role === 'assistant' ? 'model' : 'user';
         if (lastRole === role) {

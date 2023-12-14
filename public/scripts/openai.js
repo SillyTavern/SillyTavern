@@ -223,6 +223,7 @@ const default_settings = {
     proxy_password: '',
     assistant_prefill: '',
     use_ai21_tokenizer: false,
+    use_google_tokenizer: false,
     exclude_assistant: false,
     use_alt_scale: false,
     squash_system_messages: false,
@@ -277,6 +278,7 @@ const oai_settings = {
     proxy_password: '',
     assistant_prefill: '',
     use_ai21_tokenizer: false,
+    use_google_tokenizer: false,
     exclude_assistant: false,
     use_alt_scale: false,
     squash_system_messages: false,
@@ -2313,6 +2315,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.names_in_completion !== undefined) oai_settings.names_in_completion = !!settings.names_in_completion;
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
     if (settings.use_ai21_tokenizer !== undefined) { oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer; oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200; }
+    if (settings.use_google_tokenizer !== undefined) oai_settings.use_google_tokenizer = !!settings.use_google_tokenizer;
     if (settings.exclude_assistant !== undefined) oai_settings.exclude_assistant = !!settings.exclude_assistant;
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
@@ -2345,6 +2348,7 @@ function loadOpenAISettings(data, settings) {
     $('#openai_show_external_models').prop('checked', oai_settings.show_external_models);
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#use_ai21_tokenizer').prop('checked', oai_settings.use_ai21_tokenizer);
+    $('#use_google_tokenizer').prop('checked', oai_settings.use_google_tokenizer);
     $('#exclude_assistant').prop('checked', oai_settings.exclude_assistant);
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
@@ -2537,6 +2541,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         show_external_models: settings.show_external_models,
         assistant_prefill: settings.assistant_prefill,
         use_ai21_tokenizer: settings.use_ai21_tokenizer,
+        use_google_tokenizer: settings.use_google_tokenizer,
         exclude_assistant: settings.exclude_assistant,
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
@@ -2898,6 +2903,7 @@ function onSettingsPresetChange() {
         proxy_password: ['#openai_proxy_password', 'proxy_password', false],
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', true],
+        use_google_tokenizer: ['#use_google_tokenizer', 'use_google_tokenizer', true],
         exclude_assistant: ['#exclude_assistant', 'exclude_assistant', true],
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
@@ -3503,6 +3509,11 @@ $(document).ready(async function () {
         oai_settings.openai_max_context = Math.min(ai21_max, oai_settings.openai_max_context);
         $('#openai_max_context').attr('max', ai21_max).val(oai_settings.openai_max_context).trigger('input');
         $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
+        saveSettingsDebounced();
+    });
+
+    $('#use_google_tokenizer').on('change', function () {
+        oai_settings.use_google_tokenizer = !!$('#use_google_tokenizer').prop('checked');
         saveSettingsDebounced();
     });
 

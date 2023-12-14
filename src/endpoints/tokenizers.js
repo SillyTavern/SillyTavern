@@ -4,7 +4,7 @@ const express = require('express');
 const { SentencePieceProcessor } = require('@agnai/sentencepiece-js');
 const tiktoken = require('@dqbd/tiktoken');
 const { Tokenizer } = require('@agnai/web-tokenizers');
-const { convertClaudePrompt } = require('../chat-completion');
+const { convertClaudePrompt, convertGooglePrompt } = require('../chat-completion');
 const { readSecret, SECRET_KEYS } = require('./secrets');
 const { TEXTGEN_TYPES } = require('../constants');
 const { jsonParser } = require('../express-common');
@@ -395,13 +395,12 @@ router.post('/google/count', jsonParser, async function (req, res) {
             accept: 'application/json',
             'content-type': 'application/json',
         },
-        body: JSON.stringify({ prompt: { text: req.body[0].content } }),
+        body: JSON.stringify({ contents: convertGooglePrompt(req.body) }),
     };
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${req.query.model}:countTextTokens?key=${readSecret(SECRET_KEYS.MAKERSUITE)}`, options);
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${req.query.model}:countTokens?key=${readSecret(SECRET_KEYS.MAKERSUITE)}`, options);
         const data = await response.json();
-        console.log(data)
-        return res.send({ 'token_count': data?.tokenCount || 0 });
+        return res.send({ 'token_count': data?.totalTokens || 0 });
     } catch (err) {
         console.error(err);
         return res.send({ 'token_count': 0 });
