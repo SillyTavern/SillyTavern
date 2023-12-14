@@ -222,7 +222,9 @@ if (!cliArguments.disableCsrf) {
 
 if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
     const bodyParser = require('body-parser');
-    app.use(bodyParser.json());
+    app.use(bodyParser.json({
+        limit: '200mb',
+    }));
     console.log('Enabling CORS proxy');
 
     app.use('/proxy/:url(*)', async (req, res) => {
