@@ -1412,6 +1412,9 @@ redirect('/downloadbackground', '/api/backgrounds/upload'); // yes, the download
 // OpenAI API
 app.use('/api/openai', require('./src/endpoints/openai').router);
 
+//Google API
+app.use('/api/google', require('./src/endpoints/google').router);
+
 // Tokenizers
 app.use('/api/tokenizers', require('./src/endpoints/tokenizers').router);
 

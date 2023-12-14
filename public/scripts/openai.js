@@ -3424,6 +3424,7 @@ export function isImageInliningSupported() {
     }
 
     const gpt4v = 'gpt-4-vision';
+    const geminiProV = 'gemini-pro-vision';
     const llava13b = 'llava-13b';
 
     if (!oai_settings.image_inlining) {
@@ -3433,6 +3434,8 @@ export function isImageInliningSupported() {
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
             return oai_settings.openai_model.includes(gpt4v);
+        case chat_completion_sources.MAKERSUITE:
+            return oai_settings.openai_model.includes(geminiProV);
         case chat_completion_sources.OPENROUTER:
             return oai_settings.openrouter_model.includes(gpt4v) || oai_settings.openrouter_model.includes(llava13b);
         default:
