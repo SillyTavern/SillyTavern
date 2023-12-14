@@ -4,6 +4,7 @@ const fetch = require('node-fetch').default;
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, PALM_SAFETY } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4 } = require('../../util');
+const { convertClaudePrompt, convertTextCompletionPrompt } = require('../prompt-converters');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
 const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
@@ -12,89 +13,15 @@ const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
 
 /**
- * Convert a prompt from the ChatML objects to the format used by Claude.
- * @param {object[]} messages Array of messages
- * @param {boolean} addHumanPrefix Add Human prefix
- * @param {boolean} addAssistantPostfix Add Assistant postfix
- * @param {boolean} withSystemPrompt Build system prompt before "\n\nHuman: "
- * @returns {string} Prompt for Claude
- * @copyright Prompt Conversion script taken from RisuAI by kwaroran (GPLv3).
- */
-function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, withSystemPrompt) {
-    // Claude doesn't support message names, so we'll just add them to the message content.
-    for (const message of messages) {
-        if (message.name && message.role !== 'system') {
-            message.content = message.name + ': ' + message.content;
-            delete message.name;
-        }
-    }
-
-    let systemPrompt = '';
-    if (withSystemPrompt) {
-        let lastSystemIdx = -1;
-
-        for (let i = 0; i < messages.length - 1; i++) {
-            const message = messages[i];
-            if (message.role === 'system' && !message.name) {
-                systemPrompt += message.content + '\n\n';
-            } else {
-                lastSystemIdx = i - 1;
-                break;
-            }
-        }
-        if (lastSystemIdx >= 0) {
-            messages.splice(0, lastSystemIdx + 1);
-        }
-    }
-
-    let requestPrompt = messages.map((v) => {
-        let prefix = '';
-        switch (v.role) {
-            case 'assistant':
-                prefix = '\n\nAssistant: ';
-                break;
-            case 'user':
-                prefix = '\n\nHuman: ';
-                break;
-            case 'system':
-                // According to the Claude docs, H: and A: should be used for example conversations.
-                if (v.name === 'example_assistant') {
-                    prefix = '\n\nA: ';
-                } else if (v.name === 'example_user') {
-                    prefix = '\n\nH: ';
-                } else {
-                    prefix = '\n\n';
-                }
-                break;
-        }
-        return prefix + v.content;
-    }).join('');
-
-    if (addHumanPrefix) {
-        requestPrompt = '\n\nHuman: ' + requestPrompt;
-    }
-
-    if (addAssistantPostfix) {
-        requestPrompt = requestPrompt + '\n\nAssistant: ';
-    }
-
-    if (withSystemPrompt) {
-        requestPrompt = systemPrompt + requestPrompt;
-    }
-
-    return requestPrompt;
-}
-
-/**
- * @param {express.Request} request
- * @param {express.Response} response
+ * Sends a request to Claude API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
  */
 async function sendClaudeRequest(request, response) {
+    const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
 
-    const api_url = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
-    const api_key_claude = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
-
-    if (!api_key_claude) {
+    if (!apiKey) {
         console.log('Claude API key is missing.');
         return response.status(400).send({ error: true });
     }
@@ -121,7 +48,7 @@ async function sendClaudeRequest(request, response) {
             stop_sequences.push(...request.body.stop);
         }
 
-        const generateResponse = await fetch(api_url + '/complete', {
+        const generateResponse = await fetch(apiUrl + '/complete', {
             method: 'POST',
             signal: controller.signal,
             body: JSON.stringify({
@@ -137,7 +64,7 @@ async function sendClaudeRequest(request, response) {
             headers: {
                 'Content-Type': 'application/json',
                 'anthropic-version': '2023-06-01',
-                'x-api-key': api_key_claude,
+                'x-api-key': apiKey,
             },
             timeout: 0,
         });
@@ -167,37 +94,21 @@ async function sendClaudeRequest(request, response) {
     }
 }
 
-function convertChatMLPrompt(messages) {
-    if (typeof messages === 'string') {
-        return messages;
-    }
-
-    const messageStrings = [];
-    messages.forEach(m => {
-        if (m.role === 'system' && m.name === undefined) {
-            messageStrings.push('System: ' + m.content);
-        }
-        else if (m.role === 'system' && m.name !== undefined) {
-            messageStrings.push(m.name + ': ' + m.content);
-        }
-        else {
-            messageStrings.push(m.role + ': ' + m.content);
-        }
-    });
-    return messageStrings.join('\n') + '\nassistant:';
-}
-
+/**
+ * Sends a request to Scale Spellbook API.
+ * @param {import("express").Request} request Express request
+ * @param {import("express").Response} response Express response
+ */
 async function sendScaleRequest(request, response) {
+    const apiUrl = new URL(request.body.api_url_scale).toString();
+    const apiKey = readSecret(SECRET_KEYS.SCALE);
 
-    const api_url = new URL(request.body.api_url_scale).toString();
-    const api_key_scale = readSecret(SECRET_KEYS.SCALE);
-
-    if (!api_key_scale) {
+    if (!apiKey) {
         console.log('Scale API key is missing.');
         return response.status(400).send({ error: true });
     }
 
-    const requestPrompt = convertChatMLPrompt(request.body.messages);
+    const requestPrompt = convertTextCompletionPrompt(request.body.messages);
     console.log('Scale request:', requestPrompt);
 
     try {
@@ -207,12 +118,12 @@ async function sendScaleRequest(request, response) {
             controller.abort();
         });
 
-        const generateResponse = await fetch(api_url, {
+        const generateResponse = await fetch(apiUrl, {
             method: 'POST',
             body: JSON.stringify({ input: { input: requestPrompt } }),
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Basic ${api_key_scale}`,
+                'Authorization': `Basic ${apiKey}`,
             },
             timeout: 0,
         });
@@ -236,8 +147,9 @@ async function sendScaleRequest(request, response) {
 }
 
 /**
- * @param {express.Request} request
- * @param {express.Response} response
+ * Sends a request to Google AI API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
  */
 async function sendPalmRequest(request, response) {
     const api_key_palm = readSecret(SECRET_KEYS.PALM);
@@ -285,15 +197,15 @@ async function sendPalmRequest(request, response) {
         }
 
         const generateResponseJson = await generateResponse.json();
-        const responseText = generateResponseJson?.candidates[0]?.output;
+        const responseText = generateResponseJson?.candidates?.[0]?.output;
 
         if (!responseText) {
             console.log('Palm API returned no response', generateResponseJson);
             let message = `Palm API returned no response: ${JSON.stringify(generateResponseJson)}`;
 
             // Check for filters
-            if (generateResponseJson?.filters[0]?.message) {
-                message = `Palm filter triggered: ${generateResponseJson.filters[0].message}`;
+            if (generateResponseJson?.filters?.[0]?.reason) {
+                message = `Palm filter triggered: ${generateResponseJson.filters[0].reason}`;
             }
 
             return response.send({ error: { message } });
@@ -312,6 +224,11 @@ async function sendPalmRequest(request, response) {
     }
 }
 
+/**
+ * Sends a request to Google AI API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
 async function sendAI21Request(request, response) {
     if (!request.body) return response.sendStatus(400);
     const controller = new AbortController();
@@ -533,24 +450,24 @@ router.post('/bias', jsonParser, async function (request, response) {
 });
 
 
-router.post('/generate', jsonParser, function (request, response_generate_openai) {
-    if (!request.body) return response_generate_openai.status(400).send({ error: true });
+router.post('/generate', jsonParser, function (request, response) {
+    if (!request.body) return response.status(400).send({ error: true });
 
     switch (request.body.chat_completion_source) {
-        case CHAT_COMPLETION_SOURCES.CLAUDE: return sendClaudeRequest(request, response_generate_openai);
-        case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response_generate_openai);
-        case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response_generate_openai);
-        case CHAT_COMPLETION_SOURCES.PALM: return sendPalmRequest(request, response_generate_openai);
+        case CHAT_COMPLETION_SOURCES.CLAUDE: return sendClaudeRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
+        case CHAT_COMPLETION_SOURCES.PALM: return sendPalmRequest(request, response);
     }
 
-    let api_url;
-    let api_key_openai;
+    let apiUrl;
+    let apiKey;
     let headers;
     let bodyParams;
 
     if (request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.OPENROUTER) {
-        api_url = new URL(request.body.reverse_proxy || API_OPENAI).toString();
-        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
+        apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
         bodyParams = {};
 
@@ -558,8 +475,8 @@ router.post('/generate', jsonParser, function (request, response_generate_openai
             bodyParams['user'] = uuidv4();
         }
     } else {
-        api_url = 'https://openrouter.ai/api/v1';
-        api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
+        apiUrl = 'https://openrouter.ai/api/v1';
+        apiKey = readSecret(SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
         bodyParams = { 'transforms': ['middle-out'] };
@@ -569,9 +486,9 @@ router.post('/generate', jsonParser, function (request, response_generate_openai
         }
     }
 
-    if (!api_key_openai && !request.body.reverse_proxy) {
+    if (!apiKey && !request.body.reverse_proxy) {
         console.log('OpenAI API key is missing.');
-        return response_generate_openai.status(400).send({ error: true });
+        return response.status(400).send({ error: true });
     }
 
     // Add custom stop sequences
@@ -580,10 +497,10 @@ router.post('/generate', jsonParser, function (request, response_generate_openai
     }
 
     const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(request.body.model)) || typeof request.body.messages === 'string';
-    const textPrompt = isTextCompletion ? convertChatMLPrompt(request.body.messages) : '';
+    const textPrompt = isTextCompletion ? convertTextCompletionPrompt(request.body.messages) : '';
     const endpointUrl = isTextCompletion && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.OPENROUTER ?
-        `${api_url}/completions` :
-        `${api_url}/chat/completions`;
+        `${apiUrl}/completions` :
+        `${apiUrl}/chat/completions`;
 
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
@@ -596,7 +513,7 @@ router.post('/generate', jsonParser, function (request, response_generate_openai
         method: 'post',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + api_key_openai,
+            'Authorization': 'Bearer ' + apiKey,
             ...headers,
         },
         body: JSON.stringify({
@@ -621,52 +538,55 @@ router.post('/generate', jsonParser, function (request, response_generate_openai
 
     console.log(JSON.parse(String(config.body)));
 
-    makeRequest(config, response_generate_openai, request);
+    makeRequest(config, response, request);
 
     /**
-     *
-     * @param {*} config
-     * @param {express.Response} response_generate_openai
-     * @param {express.Request} request
-     * @param {Number} retries
-     * @param {Number} timeout
+     * Makes a fetch request to the OpenAI API endpoint.
+     * @param {import('node-fetch').RequestInit} config Fetch config
+     * @param {express.Response} response Express response
+     * @param {express.Request} request Express request
+     * @param {Number} retries Number of retries left
+     * @param {Number} timeout Request timeout in ms
      */
-    async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 5000) {
+    async function makeRequest(config, response, request, retries = 5, timeout = 5000) {
         try {
             const fetchResponse = await fetch(endpointUrl, config);
 
             if (request.body.stream) {
                 console.log('Streaming request in progress');
-                forwardFetchResponse(fetchResponse, response_generate_openai);
+                forwardFetchResponse(fetchResponse, response);
                 return;
             }
 
             if (fetchResponse.ok) {
                 let json = await fetchResponse.json();
-                response_generate_openai.send(json);
+                response.send(json);
                 console.log(json);
                 console.log(json?.choices[0]?.message);
             } else if (fetchResponse.status === 429 && retries > 0) {
                 console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {
                     timeout *= 2;
-                    makeRequest(config, response_generate_openai, request, retries - 1, timeout);
+                    makeRequest(config, response, request, retries - 1, timeout);
                 }, timeout);
             } else {
                 await handleErrorResponse(fetchResponse);
             }
         } catch (error) {
             console.log('Generation failed', error);
-            if (!response_generate_openai.headersSent) {
-                response_generate_openai.send({ error: true });
+            if (!response.headersSent) {
+                response.send({ error: true });
             } else {
-                response_generate_openai.end();
+                response.end();
             }
         }
     }
 
-    async function handleErrorResponse(response) {
-        const responseText = await response.text();
+    /**
+     * @param {import("node-fetch").Response} errorResponse
+     */
+    async function handleErrorResponse(errorResponse) {
+        const responseText = await errorResponse.text();
         const errorData = tryParse(responseText);
 
         const statusMessages = {
@@ -680,21 +600,20 @@ router.post('/generate', jsonParser, function (request, response_generate_openai
             502: 'Bad gateway',
         };
 
-        const message = errorData?.error?.message || statusMessages[response.status] || 'Unknown error occurred';
-        const quota_error = response.status === 429 && errorData?.error?.type === 'insufficient_quota';
+        const message = errorData?.error?.message || statusMessages[errorResponse.status] || 'Unknown error occurred';
+        const quota_error = errorResponse.status === 429 && errorData?.error?.type === 'insufficient_quota';
         console.log(message);
 
-        if (!response_generate_openai.headersSent) {
-            response_generate_openai.send({ error: { message }, quota_error: quota_error });
-        } else if (!response_generate_openai.writableEnded) {
-            response_generate_openai.write(response);
+        if (!response.headersSent) {
+            response.send({ error: { message }, quota_error: quota_error });
+        } else if (!response.writableEnded) {
+            response.write(errorResponse);
         } else {
-            response_generate_openai.end();
+            response.end();
         }
     }
 });
 
 module.exports = {
     router,
-    convertClaudePrompt,
 };
