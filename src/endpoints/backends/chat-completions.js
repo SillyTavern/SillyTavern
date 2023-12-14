@@ -20,11 +20,9 @@ const API_CLAUDE = 'https://api.anthropic.com/v1';
 async function sendClaudeRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
-    const chalk = require('chalk');
-    const divider = '-'.repeat(process.stdout.columns);
 
     if (!apiKey) {
-        console.log(chalk.red(`Claude API key is missing.\n${divider}`));
+        console.log('Claude API key is missing.');
         return response.status(400).send({ error: true });
     }
 
@@ -35,10 +33,14 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        let isSyspromptSupported = request.body.model === 'claude-2' || request.body.model === 'claude-2.1';
-        let requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSyspromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message);
+        let doSystemPrompt = request.body.model === 'claude-2' || request.body.model === 'claude-2.1';
+        let requestPrompt = convertClaudePrompt(request.body.messages, true, !request.body.exclude_assistant, doSystemPrompt);
 
-        console.log(chalk.green(`${divider}\nClaude request\n`) + chalk.cyan(`PROMPT\n${divider}\n${requestPrompt}\n${divider}`));
+        if (request.body.assistant_prefill && !request.body.exclude_assistant) {
+            requestPrompt += request.body.assistant_prefill;
+        }
+
+        console.log('Claude request:', requestPrompt);
         const stop_sequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
 
         // Add custom stop sequences
@@ -72,20 +74,150 @@ async function sendClaudeRequest(request, response) {
             forwardFetchResponse(generateResponse, response);
         } else {
             if (!generateResponse.ok) {
-                console.log(chalk.red(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText}\n${await generateResponse.text()}\n${divider}`));
+                console.log(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
                 return response.status(generateResponse.status).send({ error: true });
             }
 
             const generateResponseJson = await generateResponse.json();
             const responseText = generateResponseJson.completion;
-            console.log(chalk.green(`Claude response\n${divider}\n${responseText}\n${divider}`));
+            console.log('Claude response:', responseText);
 
             // Wrap it back to OAI format
             const reply = { choices: [{ 'message': { 'content': responseText } }] };
             return response.send(reply);
         }
     } catch (error) {
-        console.log(chalk.red(`Error communicating with Claude: ${error}\n${divider}`));
+        console.log('Error communicating with Claude: ', error);
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        }
+    }
+}
+
+/**
+ * Sends a request to Scale Spellbook API.
+ * @param {import("express").Request} request Express request
+ * @param {import("express").Response} response Express response
+ */
+async function sendScaleRequest(request, response) {
+    const apiUrl = new URL(request.body.api_url_scale).toString();
+    const apiKey = readSecret(SECRET_KEYS.SCALE);
+
+    if (!apiKey) {
+        console.log('Scale API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const requestPrompt = convertTextCompletionPrompt(request.body.messages);
+    console.log('Scale request:', requestPrompt);
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const generateResponse = await fetch(apiUrl, {
+            method: 'POST',
+            body: JSON.stringify({ input: { input: requestPrompt } }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${apiKey}`,
+            },
+            timeout: 0,
+        });
+
+        if (!generateResponse.ok) {
+            console.log(`Scale API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+            return response.status(generateResponse.status).send({ error: true });
+        }
+
+        const generateResponseJson = await generateResponse.json();
+        console.log('Scale response:', generateResponseJson);
+
+        const reply = { choices: [{ 'message': { 'content': generateResponseJson.output } }] };
+        return response.send(reply);
+    } catch (error) {
+        console.log(error);
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        }
+    }
+}
+
+/**
+ * Sends a request to Google AI API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendPalmRequest(request, response) {
+    const api_key_palm = readSecret(SECRET_KEYS.PALM);
+
+    if (!api_key_palm) {
+        console.log('Palm API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    const body = {
+        prompt: {
+            text: request.body.messages,
+        },
+        stopSequences: request.body.stop,
+        safetySettings: PALM_SAFETY,
+        temperature: request.body.temperature,
+        topP: request.body.top_p,
+        topK: request.body.top_k || undefined,
+        maxOutputTokens: request.body.max_tokens,
+        candidate_count: 1,
+    };
+
+    console.log('Palm request:', body);
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${api_key_palm}`, {
+            body: JSON.stringify(body),
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            signal: controller.signal,
+            timeout: 0,
+        });
+
+        if (!generateResponse.ok) {
+            console.log(`Palm API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+            return response.status(generateResponse.status).send({ error: true });
+        }
+
+        const generateResponseJson = await generateResponse.json();
+        const responseText = generateResponseJson?.candidates?.[0]?.output;
+
+        if (!responseText) {
+            console.log('Palm API returned no response', generateResponseJson);
+            let message = `Palm API returned no response: ${JSON.stringify(generateResponseJson)}`;
+
+            // Check for filters
+            if (generateResponseJson?.filters?.[0]?.reason) {
+                message = `Palm filter triggered: ${generateResponseJson.filters[0].reason}`;
+            }
+
+            return response.send({ error: { message } });
+        }
+
+        console.log('Palm response:', responseText);
+
+        // Wrap it back to OAI format
+        const reply = { choices: [{ 'message': { 'content': responseText } }] };
+        return response.send(reply);
+    } catch (error) {
+        console.log('Error communicating with Palm API: ', error);
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
         }
