@@ -197,15 +197,15 @@ async function sendPalmRequest(request, response) {
         }
 
         const generateResponseJson = await generateResponse.json();
-        const responseText = generateResponseJson?.candidates[0]?.output;
+        const responseText = generateResponseJson?.candidates?.[0]?.output;
 
         if (!responseText) {
             console.log('Palm API returned no response', generateResponseJson);
             let message = `Palm API returned no response: ${JSON.stringify(generateResponseJson)}`;
 
             // Check for filters
-            if (generateResponseJson?.filters[0]?.message) {
-                message = `Palm filter triggered: ${generateResponseJson.filters[0].message}`;
+            if (generateResponseJson?.filters?.[0]?.reason) {
+                message = `Palm filter triggered: ${generateResponseJson.filters[0].reason}`;
             }
 
             return response.send({ error: { message } });
