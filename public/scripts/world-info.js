@@ -3,7 +3,7 @@ import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile,
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { registerSlashCommand } from './slash-commands.js';
-import { getDeviceInfo } from './RossAscends-mods.js';
+import { isMobile } from './RossAscends-mods.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { getTokenCount } from './tokenizers.js';
 import { power_user } from './power-user.js';
@@ -896,8 +896,8 @@ function getWorldEntry(name, data, entry) {
 
     const characterFilter = template.find('select[name="characterFilter"]');
     characterFilter.data('uid', entry.uid);
-    const deviceInfo = getDeviceInfo();
-    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+
+    if (!isMobile()) {
         $(characterFilter).select2({
             width: '100%',
             placeholder: 'All characters will pull from this entry.',
@@ -2551,8 +2551,7 @@ jQuery(() => {
     $(document).on('click', '.chat_lorebook_button', assignLorebookToChat);
 
     // Not needed on mobile
-    const deviceInfo = getDeviceInfo();
-    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+    if (!isMobile()) {
         $('#world_info').select2({
             width: '100%',
             placeholder: 'No Worlds active. Click here to select.',

@@ -113,7 +113,7 @@ export function isMobile() {
  * Loads device info from the server. Caches the result in sessionStorage.
  * @returns {object} - The device info object.
  */
-export function getDeviceInfo() {
+function getDeviceInfo() {
     let deviceInfo = null;
 
     if (sessionStorage.getItem('deviceInfo')) {
@@ -431,8 +431,7 @@ function RA_autoconnect(PrevApi) {
 }
 
 function OpenNavPanels() {
-    const deviceInfo = getDeviceInfo();
-    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+    if (!isMobile()) {
         //auto-open R nav if locked and previously open
         if (LoadLocalBool('NavLockOn') == true && LoadLocalBool('NavOpened') == true) {
             //console.log("RA -- clicking right nav to open");
