@@ -43,7 +43,6 @@ util.inspect.defaultOptions.maxStringLength = null;
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
-const { migrateSecrets } = require('./src/endpoints/secrets');
 const {
     getVersion,
     getConfigValue,
@@ -51,8 +50,6 @@ const {
     tryParse,
     clientRelativePath,
     removeFileExtension,
-    generateTimestamp,
-    removeOldBackups,
     getImages,
     forwardFetchResponse,
 } = require('./src/util');
@@ -122,10 +119,8 @@ if (fs.existsSync(whitelistPath)) {
 
 const whitelistMode = getConfigValue('whitelistMode', true);
 const autorun = (getConfigValue('autorun', false) || cliArguments.autorun) && !cliArguments.ssl;
-const enableExtensions = getConfigValue('enableExtensions', true);
 const listen = getConfigValue('listen', false);
 
-const SETTINGS_FILE = './public/settings.json';
 const { DIRECTORIES, UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('./src/constants');
 
 // CORS Settings //
@@ -326,135 +321,6 @@ app.post('/deleteuseravatar', jsonParser, function (request, response) {
     }
 
     return response.sendStatus(404);
-});
-
-
-app.post('/savesettings', jsonParser, function (request, response) {
-    try {
-        writeFileAtomicSync('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8');
-        response.send({ result: 'ok' });
-    } catch (err) {
-        console.log(err);
-        response.send(err);
-    }
-});
-
-function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
-    const files = fs
-        .readdirSync(directoryPath)
-        .filter(x => path.parse(x).ext == fileExtension)
-        .sort();
-
-    const parsedFiles = [];
-
-    files.forEach(item => {
-        try {
-            const file = fs.readFileSync(path.join(directoryPath, item), 'utf-8');
-            parsedFiles.push(fileExtension == '.json' ? JSON.parse(file) : file);
-        }
-        catch {
-            // skip
-        }
-    });
-
-    return parsedFiles;
-}
-
-function sortByName(_) {
-    return (a, b) => a.localeCompare(b);
-}
-
-function readPresetsFromDirectory(directoryPath, options = {}) {
-    const {
-        sortFunction,
-        removeFileExtension = false,
-        fileExtension = '.json',
-    } = options;
-
-    const files = fs.readdirSync(directoryPath).sort(sortFunction).filter(x => path.parse(x).ext == fileExtension);
-    const fileContents = [];
-    const fileNames = [];
-
-    files.forEach(item => {
-        try {
-            const file = fs.readFileSync(path.join(directoryPath, item), 'utf8');
-            JSON.parse(file);
-            fileContents.push(file);
-            fileNames.push(removeFileExtension ? item.replace(/\.[^/.]+$/, '') : item);
-        } catch {
-            // skip
-            console.log(`${item} is not a valid JSON`);
-        }
-    });
-
-    return { fileContents, fileNames };
-}
-
-// Wintermute's code
-app.post('/getsettings', jsonParser, (request, response) => {
-    let settings;
-    try {
-        settings = fs.readFileSync('public/settings.json', 'utf8');
-    } catch (e) {
-        return response.sendStatus(500);
-    }
-
-    // NovelAI Settings
-    const { fileContents: novelai_settings, fileNames: novelai_setting_names }
-        = readPresetsFromDirectory(DIRECTORIES.novelAI_Settings, {
-            sortFunction: sortByName(DIRECTORIES.novelAI_Settings),
-            removeFileExtension: true,
-        });
-
-    // OpenAI Settings
-    const { fileContents: openai_settings, fileNames: openai_setting_names }
-        = readPresetsFromDirectory(DIRECTORIES.openAI_Settings, {
-            sortFunction: sortByName(DIRECTORIES.openAI_Settings), removeFileExtension: true,
-        });
-
-    // TextGenerationWebUI Settings
-    const { fileContents: textgenerationwebui_presets, fileNames: textgenerationwebui_preset_names }
-        = readPresetsFromDirectory(DIRECTORIES.textGen_Settings, {
-            sortFunction: sortByName(DIRECTORIES.textGen_Settings), removeFileExtension: true,
-        });
-
-    //Kobold
-    const { fileContents: koboldai_settings, fileNames: koboldai_setting_names }
-        = readPresetsFromDirectory(DIRECTORIES.koboldAI_Settings, {
-            sortFunction: sortByName(DIRECTORIES.koboldAI_Settings), removeFileExtension: true,
-        });
-
-    const worldFiles = fs
-        .readdirSync(DIRECTORIES.worlds)
-        .filter(file => path.extname(file).toLowerCase() === '.json')
-        .sort((a, b) => a.localeCompare(b));
-    const world_names = worldFiles.map(item => path.parse(item).name);
-
-    const themes = readAndParseFromDirectory(DIRECTORIES.themes);
-    const movingUIPresets = readAndParseFromDirectory(DIRECTORIES.movingUI);
-    const quickReplyPresets = readAndParseFromDirectory(DIRECTORIES.quickreplies);
-
-    const instruct = readAndParseFromDirectory(DIRECTORIES.instruct);
-    const context = readAndParseFromDirectory(DIRECTORIES.context);
-
-    response.send({
-        settings,
-        koboldai_settings,
-        koboldai_setting_names,
-        world_names,
-        novelai_settings,
-        novelai_setting_names,
-        openai_settings,
-        openai_setting_names,
-        textgenerationwebui_presets,
-        textgenerationwebui_preset_names,
-        themes,
-        movingUIPresets,
-        quickReplyPresets,
-        instruct,
-        context,
-        enable_extensions: enableExtensions,
-    });
 });
 
 app.post('/savetheme', jsonParser, (request, response) => {
@@ -738,6 +604,10 @@ app.use('/api/sprites', require('./src/endpoints/sprites').router);
 // Custom content management
 app.use('/api/content', require('./src/endpoints/content-manager').router);
 
+// Settings load/store
+const settingsEndpoint = require('./src/endpoints/settings');
+app.use('/api/settings', settingsEndpoint.router);
+
 // Stable Diffusion generation
 app.use('/api/sd', require('./src/endpoints/stable-diffusion').router);
 
@@ -790,8 +660,9 @@ const setupTasks = async function () {
 
     console.log(`SillyTavern ${version.pkgVersion}` + (version.gitBranch ? ` '${version.gitBranch}' (${version.gitRevision})` : ''));
 
-    backupSettings();
-    migrateSecrets(SETTINGS_FILE);
+    // TODO: do endpoint init functions depend on certain directories existing or not existing? They should be callable
+    // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
+    await settingsEndpoint.init();
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
     contentManager.checkForNewContent();
@@ -851,21 +722,6 @@ if (cliArguments.ssl) {
         tavernUrl.hostname,
         setupTasks,
     );
-}
-
-function backupSettings() {
-    try {
-        if (!fs.existsSync(DIRECTORIES.backups)) {
-            fs.mkdirSync(DIRECTORIES.backups);
-        }
-
-        const backupFile = path.join(DIRECTORIES.backups, `settings_${generateTimestamp()}.json`);
-        fs.copyFileSync(SETTINGS_FILE, backupFile);
-
-        removeOldBackups('settings_');
-    } catch (err) {
-        console.log('Could not backup settings file', err);
-    }
 }
 
 function ensurePublicDirectoriesExist() {
