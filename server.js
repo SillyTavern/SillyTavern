@@ -27,7 +27,6 @@ const responseTime = require('response-time');
 // net related library imports
 const net = require('net');
 const dns = require('dns');
-const DeviceDetector = require('device-detector-js');
 const fetch = require('node-fetch').default;
 const ipaddr = require('ipaddr.js');
 const ipMatching = require('ip-matching');
@@ -292,12 +291,6 @@ app.use('/characters', (req, res) => {
 app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
 app.get('/', function (request, response) {
     response.sendFile(process.cwd() + '/public/index.html');
-});
-app.get('/deviceinfo', function (request, response) {
-    const userAgent = request.header('user-agent');
-    const deviceDetector = new DeviceDetector();
-    const deviceInfo = deviceDetector.parse(userAgent || '');
-    return response.send(deviceInfo);
 });
 app.get('/version', async function (_, response) {
     const data = await getVersion();

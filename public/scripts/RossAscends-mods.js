@@ -36,6 +36,7 @@ import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCount } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
 
+import Bowser from '../lib/bowser.min.js';
 
 var RPanelPin = document.getElementById('rm_button_panel_pin');
 var LPanelPin = document.getElementById('lm_button_panel_pin');
@@ -98,43 +99,22 @@ export function humanizeGenTime(total_gen_time) {
     return time_spent;
 }
 
+let parsedUA = null;
+try {
+    parsedUA = Bowser.parse(navigator.userAgent);
+} catch {
+    // In case the user agent is an empty string or Bowser can't parse it for some other reason
+}
+
+
 /**
  * Checks if the device is a mobile device.
  * @returns {boolean} - True if the device is a mobile device, false otherwise.
  */
 export function isMobile() {
-    const mobileTypes = ['smartphone', 'tablet', 'phablet', 'feature phone', 'portable media player'];
-    const deviceInfo = getDeviceInfo();
+    const mobileTypes = ['mobile', 'tablet'];
 
-    return mobileTypes.includes(deviceInfo?.device?.type);
-}
-
-/**
- * Loads device info from the server. Caches the result in sessionStorage.
- * @returns {object} - The device info object.
- */
-function getDeviceInfo() {
-    let deviceInfo = null;
-
-    if (sessionStorage.getItem('deviceInfo')) {
-        deviceInfo = JSON.parse(sessionStorage.getItem('deviceInfo'));
-    } else {
-        $.ajax({
-            url: '/deviceinfo',
-            dataType: 'json',
-            async: false,
-            cache: true,
-            success: function (result) {
-                sessionStorage.setItem('deviceInfo', JSON.stringify(result));
-                deviceInfo = result;
-            },
-            error: function () {
-                console.log('Couldn\'t load device info. Defaulting to desktop');
-                deviceInfo = { device: { type: 'desktop' } };
-            },
-        });
-    }
-    return deviceInfo;
+    return mobileTypes.includes(parsedUA?.platform?.type);
 }
 
 function shouldSendOnEnter() {
