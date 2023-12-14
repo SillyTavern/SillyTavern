@@ -3665,12 +3665,13 @@ a {
 }
 
 .icon-svg {
-    fill: currentColor;
     /* Takes on the color of the surrounding text */
+    fill: currentColor;
     width: auto;
     height: 14px;
-    vertical-align: middle;
+    aspect-ratio: 1;
     /* To align with adjacent text */
+    place-self: center;
 }
 
 .paginationjs {
