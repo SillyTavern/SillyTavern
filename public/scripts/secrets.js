@@ -12,7 +12,7 @@ export const SECRET_KEYS = {
     SCALE: 'api_key_scale',
     AI21: 'api_key_ai21',
     SCALE_COOKIE: 'scale_cookie',
-    PALM: 'api_key_palm',
+    MAKERSUITE: 'api_key_makersuite',
     SERPAPI: 'api_key_serpapi',
 };
 
@@ -26,7 +26,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.SCALE]: '#api_key_scale',
     [SECRET_KEYS.AI21]: '#api_key_ai21',
     [SECRET_KEYS.SCALE_COOKIE]: '#scale_cookie',
-    [SECRET_KEYS.PALM]: '#api_key_palm',
+    [SECRET_KEYS.MAKERSUITE]: '#api_key_makersuite',
     [SECRET_KEYS.APHRODITE]: '#api_key_aphrodite',
     [SECRET_KEYS.TABBY]: '#api_key_tabby',
 };

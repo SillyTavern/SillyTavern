@@ -1030,6 +1030,11 @@ export function loadFileToDocument(url, type) {
  * @returns {Promise<string>} A promise that resolves to the thumbnail data URL.
  */
 export function createThumbnail(dataUrl, maxWidth, maxHeight, type = 'image/jpeg') {
+    // Someone might pass in a base64 encoded string without the data URL prefix
+    if (!dataUrl.includes('data:')) {
+        dataUrl = `data:image/jpeg;base64,${dataUrl}`;
+    }
+
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.src = dataUrl;
