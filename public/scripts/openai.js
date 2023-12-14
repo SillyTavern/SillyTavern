@@ -31,7 +31,7 @@ import {
     system_message_types,
     this_chid,
 } from '../script.js';
-import {groups, selected_group} from './group-chats.js';
+import { groups, selected_group } from './group-chats.js';
 
 import {
     chatCompletionDefaultPrompts,
@@ -41,8 +41,8 @@ import {
     promptManagerDefaultPromptOrders,
 } from './PromptManager.js';
 
-import {getCustomStoppingStrings, persona_description_positions, power_user} from './power-user.js';
-import {SECRET_KEYS, secret_state, writeSecret} from './secrets.js';
+import { getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
+import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 import EventSourceStream from './sse-stream.js';
 import {
