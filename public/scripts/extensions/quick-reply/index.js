@@ -1,6 +1,6 @@
 import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams, eventSource, event_types, animation_duration } from '../../../script.js';
 import { getContext, extension_settings } from '../../extensions.js';
-import { getSortableDelay, escapeHtml } from '../../utils.js';
+import { getSortableDelay, escapeHtml, delay } from '../../utils.js';
 import { executeSlashCommands, registerSlashCommand } from '../../slash-commands.js';
 import { ContextMenu } from './src/ContextMenu.js';
 import { MenuItem } from './src/MenuItem.js';
@@ -717,6 +717,68 @@ function saveQROrder() {
     });
 }
 
+async function qrCreateCallback(args, mes) {
+    const qr = {
+        label: args.label ?? '',
+        mes: mes,
+        title: args.title ?? '',
+        autoExecute_chatLoad: JSON.parse(args.load ?? false),
+        autoExecute_userMessage: JSON.parse(args.user ?? false),
+        autoExecute_botMessage: JSON.parse(args.bot ?? false),
+        autoExecute_appStartup: JSON.parse(args.startup ?? false),
+        hidden: JSON.parse(args.hidden ?? false),
+    };
+    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    preset.quickReplySlots.push(qr);
+    preset.numberOfSlots++;
+    const response = await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+}
+async function qrUpdateCallback(args, mes) {
+    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const idx = preset.quickReplySlots.findIndex(x => x.label == args.label);
+    const oqr = preset.quickReplySlots[idx];
+    const qr = {
+        label: args.newlabel ?? oqr.label ?? '',
+        mes: mes ?? oqr.mes,
+        title: args.title ?? oqr.title ?? '',
+        autoExecute_chatLoad: JSON.parse(args.load ?? oqr.autoExecute_chatLoad ?? false),
+        autoExecute_userMessage: JSON.parse(args.user ?? oqr.autoExecute_userMessage ?? false),
+        autoExecute_botMessage: JSON.parse(args.bot ?? oqr.autoExecute_botMessage ?? false),
+        autoExecute_appStartup: JSON.parse(args.startup ?? oqr.autoExecute_appStartup ?? false),
+        hidden: JSON.parse(args.hidden ?? oqr.hidden ?? false),
+    };
+    preset.quickReplySlots[idx] = qr;
+    const response = await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+}
+async function qrDeleteCallback(args, label) {
+    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const idx = preset.quickReplySlots.findIndex(x => x.label == label);
+    preset.quickReplySlots.splice(idx, 1);
+    preset.numberOfSlots--;
+    const response = await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+}
+
 let onMessageSentExecuting = false;
 let onMessageReceivedExecuting = false;
 let onChatChangedExecuting = false;
@@ -901,4 +963,21 @@ jQuery(async () => {
 jQuery(() => {
     registerSlashCommand('qr', doQR, [], '<span class="monospace">(number)</span> – activates the specified Quick Reply', true, true);
     registerSlashCommand('qrset', doQRPresetSwitch, [], '<span class="monospace">(name)</span> – swaps to the specified Quick Reply Preset', true, true);
+    const qrArgs = `
+    label    - string - text on the button, e.g., label=MyButton
+    set      - string - name of the QR set, e.g., set=PresetName1
+    hidden   - bool   - whether the button should be hidden, e.g., hidden=true
+    startup  - bool   - auto execute on app startup, e.g., startup=true
+    user     - bool   - auto execute on user message, e.g., user=true
+    bot      - bool   - auto execute on AI message, e.g., bot=true
+    load     - bool   - auto execute on chat load, e.g., load=true
+    title    - bool   - title / tooltip to be shown on button, e.g., title="My Fancy Button"
+    `.trim();
+    const qrUpdateArgs = `
+    newlabel - text - new text fort the button, e.g. newlabel=MyRenamedButton
+    ${qrArgs}
+    `.trim();
+    registerSlashCommand('qr-create', qrCreateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments, [message])\n  arguments:\n    ${qrArgs}</span> – creates a new Quick Reply, example: <tt>/qr-create set=MyPreset label=MyButton /echo 123</tt>`, true, true);
+    registerSlashCommand('qr-update', qrUpdateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments, [message])\n  arguments:\n    ${qrUpdateArgs}</span> – updates Quick Reply, example: <tt>/qr-update set=MyPreset label=MyButton newlabel=MyRenamedButton /echo 123`, true, true);
+    registerSlashCommand('qr-delete', qrDeleteCallback, [], `<span class="monospace">(set=string [label])</span> – deletes Quick Reply`, true, true);
 });
