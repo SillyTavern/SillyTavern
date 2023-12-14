@@ -724,7 +724,7 @@ async function qrCreateCallback(args, mes) {
             .replace(/\\\|/g, '|')
             .replace(/\\\{/g, '{')
             .replace(/\\\}/g, '}')
-            ,
+        ,
         title: args.title ?? '',
         autoExecute_chatLoad: JSON.parse(args.load ?? false),
         autoExecute_userMessage: JSON.parse(args.user ?? false),
@@ -732,10 +732,17 @@ async function qrCreateCallback(args, mes) {
         autoExecute_appStartup: JSON.parse(args.startup ?? false),
         hidden: JSON.parse(args.hidden ?? false),
     };
-    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
     preset.quickReplySlots.push(qr);
     preset.numberOfSlots++;
-    const response = await fetch('/savequickreply', {
+    await fetch('/savequickreply', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(preset),
@@ -743,9 +750,17 @@ async function qrCreateCallback(args, mes) {
     saveSettingsDebounced();
     await delay(400);
     applyQuickReplyPreset(selected_preset);
+    return '';
 }
 async function qrUpdateCallback(args, mes) {
-    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
     const idx = preset.quickReplySlots.findIndex(x => x.label == args.label);
     const oqr = preset.quickReplySlots[idx];
     const qr = {
@@ -754,7 +769,7 @@ async function qrUpdateCallback(args, mes) {
             .replace('\\|', '|')
             .replace('\\{', '{')
             .replace('\\}', '}')
-            ,
+        ,
         title: args.title ?? oqr.title ?? '',
         autoExecute_chatLoad: JSON.parse(args.load ?? oqr.autoExecute_chatLoad ?? false),
         autoExecute_userMessage: JSON.parse(args.user ?? oqr.autoExecute_userMessage ?? false),
@@ -763,7 +778,7 @@ async function qrUpdateCallback(args, mes) {
         hidden: JSON.parse(args.hidden ?? oqr.hidden ?? false),
     };
     preset.quickReplySlots[idx] = qr;
-    const response = await fetch('/savequickreply', {
+    await fetch('/savequickreply', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(preset),
@@ -771,13 +786,21 @@ async function qrUpdateCallback(args, mes) {
     saveSettingsDebounced();
     await delay(400);
     applyQuickReplyPreset(selected_preset);
+    return '';
 }
 async function qrDeleteCallback(args, label) {
-    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
     const idx = preset.quickReplySlots.findIndex(x => x.label == label);
     preset.quickReplySlots.splice(idx, 1);
     preset.numberOfSlots--;
-    const response = await fetch('/savequickreply', {
+    await fetch('/savequickreply', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(preset),
@@ -785,22 +808,30 @@ async function qrDeleteCallback(args, label) {
     saveSettingsDebounced();
     await delay(400);
     applyQuickReplyPreset(selected_preset);
+    return '';
 }
 
 async function qrContextAddCallback(args, presetName) {
-    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
     const idx = preset.quickReplySlots.findIndex(x => x.label == args.label);
     const oqr = preset.quickReplySlots[idx];
     if (!oqr.contextMenu) {
         oqr.contextMenu = [];
     }
-    let item = oqr.contextMenu.find(it=>it.preset == presetName);
+    let item = oqr.contextMenu.find(it => it.preset == presetName);
     if (item) {
         item.chain = JSON.parse(args.chain ?? 'null') ?? item.chain ?? false;
     } else {
-        oqr.contextMenu.push({preset:presetName, chain: JSON.parse(args.chain ?? 'false')});
+        oqr.contextMenu.push({ preset: presetName, chain: JSON.parse(args.chain ?? 'false') });
     }
-    const response = await fetch('/savequickreply', {
+    await fetch('/savequickreply', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(preset),
@@ -808,17 +839,25 @@ async function qrContextAddCallback(args, presetName) {
     saveSettingsDebounced();
     await delay(400);
     applyQuickReplyPreset(selected_preset);
+    return '';
 }
 async function qrContextDeleteCallback(args, presetName) {
-    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
     const idx = preset.quickReplySlots.findIndex(x => x.label == args.label);
     const oqr = preset.quickReplySlots[idx];
     if (!oqr.contextMenu) return;
-    const ctxIdx = oqr.contextMenu.findIndex(it=>it.preset == presetName);
+    const ctxIdx = oqr.contextMenu.findIndex(it => it.preset == presetName);
     if (ctxIdx > -1) {
         oqr.contextMenu.splice(ctxIdx, 1);
     }
-    const response = await fetch('/savequickreply', {
+    await fetch('/savequickreply', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(preset),
@@ -826,13 +865,21 @@ async function qrContextDeleteCallback(args, presetName) {
     saveSettingsDebounced();
     await delay(400);
     applyQuickReplyPreset(selected_preset);
+    return '';
 }
 async function qrContextClearCallback(args, label) {
-    const preset = presets.find(x => x.name == (args.set ?? selected_preset));
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
     const idx = preset.quickReplySlots.findIndex(x => x.label == label);
     const oqr = preset.quickReplySlots[idx];
     oqr.contextMenu = [];
-    const response = await fetch('/savequickreply', {
+    await fetch('/savequickreply', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(preset),
@@ -840,6 +887,7 @@ async function qrContextClearCallback(args, label) {
     saveSettingsDebounced();
     await delay(400);
     applyQuickReplyPreset(selected_preset);
+    return '';
 }
 
 async function qrPresetAddCallback(args, name) {
@@ -853,7 +901,7 @@ async function qrPresetAddCallback(args, name) {
         AutoInputInject: JSON.parse(args.inject ?? 'false'),
     };
 
-    const response = await fetch('/savequickreply', {
+    await fetch('/savequickreply', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(quickReplyPreset),
@@ -862,7 +910,7 @@ async function qrPresetAddCallback(args, name) {
 }
 
 async function qrPresetUpdateCallback(args, name) {
-    const preset = presets.find(it=>it.name==name);
+    const preset = presets.find(it => it.name == name);
     const quickReplyPreset = {
         name: preset.name,
         quickReplyEnabled: JSON.parse(args.enabled ?? null) ?? preset.quickReplyEnabled,
@@ -874,7 +922,7 @@ async function qrPresetUpdateCallback(args, name) {
     };
     Object.assign(preset, quickReplyPreset);
 
-    const response = await fetch('/savequickreply', {
+    await fetch('/savequickreply', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(quickReplyPreset),
@@ -1081,10 +1129,10 @@ jQuery(() => {
     `.trim();
     registerSlashCommand('qr-create', qrCreateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments [message])\n  arguments:\n    ${qrArgs}</span> – creates a new Quick Reply, example: <tt>/qr-create set=MyPreset label=MyButton /echo 123</tt>`, true, true);
     registerSlashCommand('qr-update', qrUpdateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments [message])\n  arguments:\n    ${qrUpdateArgs}</span> – updates Quick Reply, example: <tt>/qr-update set=MyPreset label=MyButton newlabel=MyRenamedButton /echo 123</tt>`, true, true);
-    registerSlashCommand('qr-delete', qrDeleteCallback, [], `<span class="monospace">(set=string [label])</span> – deletes Quick Reply`, true, true);
-    registerSlashCommand('qr-contextadd', qrContextAddCallback, [], `<span class="monospace">(set=string label=string chain=bool [preset name])</span> – add context menu preset to a QR, example: <tt>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset</tt>`, true, true);
-    registerSlashCommand('qr-contextdel', qrContextDeleteCallback, [], `<span class="monospace">(set=string label=string [preset name])</span> – remove context menu preset from a QR, example: <tt>/qr-contextdel set=MyPreset label=MyButton MyOtherPreset</tt>`, true, true);
-    registerSlashCommand('qr-contextclear', qrContextClearCallback, [], `<span class="monospace">(set=string [label])</span> – remove all context menu presets from a QR, example: <tt>/qr-contextclear set=MyPreset MyButton</tt>`, true, true);
+    registerSlashCommand('qr-delete', qrDeleteCallback, [], '<span class="monospace">(set=string [label])</span> – deletes Quick Reply', true, true);
+    registerSlashCommand('qr-contextadd', qrContextAddCallback, [], '<span class="monospace">(set=string label=string chain=bool [preset name])</span> – add context menu preset to a QR, example: <tt>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset</tt>', true, true);
+    registerSlashCommand('qr-contextdel', qrContextDeleteCallback, [], '<span class="monospace">(set=string label=string [preset name])</span> – remove context menu preset from a QR, example: <tt>/qr-contextdel set=MyPreset label=MyButton MyOtherPreset</tt>', true, true);
+    registerSlashCommand('qr-contextclear', qrContextClearCallback, [], '<span class="monospace">(set=string [label])</span> – remove all context menu presets from a QR, example: <tt>/qr-contextclear set=MyPreset MyButton</tt>', true, true);
     const presetArgs = `
     enabled - bool - enable or disable the preset
     nosend  - bool - disable send / insert in user input (invalid for slash commands)
