@@ -1,4 +1,4 @@
-export {translate};
+export { translate };
 
 import {
     callPopup,
@@ -9,9 +9,9 @@ import {
     saveSettingsDebounced,
     substituteParams,
     updateMessageBlock,
-} from "../../../script.js";
-import { extension_settings, getContext } from "../../extensions.js";
-import { secret_state, writeSecret } from "../../secrets.js";
+} from '../../../script.js';
+import { extension_settings, getContext } from '../../extensions.js';
+import { secret_state, writeSecret } from '../../secrets.js';
 
 export const autoModeOptions = {
     NONE: 'none',
@@ -143,15 +143,15 @@ const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx'];
 function showKeysButton() {
     const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
     const providerOptionalUrl = LOCAL_URL.includes(extension_settings.translate.provider);
-    $("#translate_key_button").toggle(providerRequiresKey);
-    $("#translate_key_button").toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
-    $("#translate_url_button").toggle(providerOptionalUrl);
-    $("#translate_url_button").toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + "_url"]));
+    $('#translate_key_button').toggle(providerRequiresKey);
+    $('#translate_key_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
+    $('#translate_url_button').toggle(providerOptionalUrl);
+    $('#translate_url_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + '_url']));
 }
 
 function loadSettings() {
     for (const key in defaultSettings) {
-        if (!extension_settings.translate.hasOwnProperty(key)) {
+        if (!Object.hasOwn(extension_settings.translate, key)) {
             extension_settings.translate[key] = defaultSettings[key];
         }
     }
@@ -164,7 +164,7 @@ function loadSettings() {
 
 async function translateImpersonate(text) {
     const translatedText = await translate(text, extension_settings.translate.target_language);
-    $("#send_textarea").val(translatedText);
+    $('#send_textarea').val(translatedText);
 }
 
 async function translateIncomingMessage(messageId) {
@@ -540,7 +540,7 @@ jQuery(() => {
 
         await writeSecret(extension_settings.translate.provider, key);
         toastr.success('API Key saved');
-        $("#translate_key_button").addClass('success');
+        $('#translate_key_button').addClass('success');
     });
     $('#translate_url_button').on('click', async () => {
         const optionText = $('#translation_provider option:selected').text();
@@ -556,9 +556,9 @@ jQuery(() => {
             return;
         }
 
-        await writeSecret(extension_settings.translate.provider + "_url", url);
+        await writeSecret(extension_settings.translate.provider + '_url', url);
         toastr.success('API URL saved');
-        $("#translate_url_button").addClass('success');
+        $('#translate_url_button').addClass('success');
     });
 
     loadSettings();

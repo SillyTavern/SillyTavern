@@ -1,7 +1,7 @@
-import { getRequestHeaders } from "../../../script.js"
-import { saveTtsProviderSettings } from "./index.js";
+import { getRequestHeaders } from '../../../script.js';
+import { saveTtsProviderSettings } from './index.js';
 
-export { OpenAITtsProvider }
+export { OpenAITtsProvider };
 
 class OpenAITtsProvider {
     static voices = [
@@ -13,17 +13,17 @@ class OpenAITtsProvider {
         { name: 'Shimmer', voice_id: 'shimmer', lang: 'en-US', preview_url: 'https://cdn.openai.com/API/docs/audio/shimmer.wav' },
     ];
 
-    settings
-    voices = []
-    separator = ' . '
-    audioElement = document.createElement('audio')
+    settings;
+    voices = [];
+    separator = ' . ';
+    audioElement = document.createElement('audio');
 
     defaultSettings = {
         voiceMap: {},
         customVoices: [],
         model: 'tts-1',
         speed: 1,
-    }
+    };
 
     get settingsHtml() {
         let html = `
@@ -52,7 +52,7 @@ class OpenAITtsProvider {
     async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings")
+            console.info('Using default TTS Provider settings');
         }
 
         // Only accept keys defined in defaultSettings
@@ -79,7 +79,7 @@ class OpenAITtsProvider {
         $('#openai-tts-speed-output').text(this.settings.speed);
 
         await this.checkReady();
-        console.debug("OpenAI TTS: Settings loaded");
+        console.debug('OpenAI TTS: Settings loaded');
     }
 
     onSettingsChange() {
@@ -100,21 +100,21 @@ class OpenAITtsProvider {
 
     async getVoice(voiceName) {
         if (!voiceName) {
-            throw `TTS Voice name not provided`
+            throw 'TTS Voice name not provided';
         }
 
         const voice = OpenAITtsProvider.voices.find(voice => voice.voice_id === voiceName || voice.name === voiceName);
 
         if (!voice) {
-            throw `TTS Voice not found: ${voiceName}`
+            throw `TTS Voice not found: ${voiceName}`;
         }
 
         return voice;
     }
 
     async generateTts(text, voiceId) {
-        const response = await this.fetchTtsGeneration(text, voiceId)
-        return response
+        const response = await this.fetchTtsGeneration(text, voiceId);
+        return response;
     }
 
     async fetchTtsVoiceObjects() {
@@ -126,15 +126,15 @@ class OpenAITtsProvider {
     }
 
     async fetchTtsGeneration(inputText, voiceId) {
-        console.info(`Generating new TTS for voice_id ${voiceId}`)
-        const response = await fetch(`/api/openai/generate-voice`, {
+        console.info(`Generating new TTS for voice_id ${voiceId}`);
+        const response = await fetch('/api/openai/generate-voice', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
-                "text": inputText,
-                "voice": voiceId,
-                "model": this.settings.model,
-                "speed": this.settings.speed,
+                'text': inputText,
+                'voice': voiceId,
+                'model': this.settings.model,
+                'speed': this.settings.speed,
             }),
         });
 

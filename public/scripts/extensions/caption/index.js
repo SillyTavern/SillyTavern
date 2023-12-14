@@ -1,9 +1,9 @@
-import { getBase64Async, saveBase64AsFile } from "../../utils.js";
-import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules } from "../../extensions.js";
-import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParams } from "../../../script.js";
-import { getMessageTimeStamp } from "../../RossAscends-mods.js";
-import { SECRET_KEYS, secret_state } from "../../secrets.js";
-import { getMultimodalCaption } from "../shared.js";
+import { getBase64Async, saveBase64AsFile } from '../../utils.js';
+import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules } from '../../extensions.js';
+import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { getMessageTimeStamp } from '../../RossAscends-mods.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { getMultimodalCaption } from '../shared.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -87,7 +87,7 @@ async function sendCaptionedMessage(caption, image) {
     let template = extension_settings.caption.template || TEMPLATE_DEFAULT;
 
     if (!/{{caption}}/i.test(template)) {
-        console.warn('Poka-yoke: Caption template does not contain {{caption}}. Appending it.')
+        console.warn('Poka-yoke: Caption template does not contain {{caption}}. Appending it.');
         template += ' {{caption}}';
     }
 
@@ -159,7 +159,7 @@ async function captionExtras(base64Img) {
             'Content-Type': 'application/json',
             'Bypass-Tunnel-Reminder': 'bypass',
         },
-        body: JSON.stringify({ image: base64Img })
+        body: JSON.stringify({ image: base64Img }),
     });
 
     if (!apiResult.ok) {
@@ -179,7 +179,7 @@ async function captionLocal(base64Img) {
     const apiResult = await fetch('/api/extra/caption', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ image: base64Img })
+        body: JSON.stringify({ image: base64Img }),
     });
 
     if (!apiResult.ok) {
@@ -199,7 +199,7 @@ async function captionHorde(base64Img) {
     const apiResult = await fetch('/api/horde/caption-image', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ image: base64Img })
+        body: JSON.stringify({ image: base64Img }),
     });
 
     if (!apiResult.ok) {
@@ -285,7 +285,7 @@ jQuery(function () {
         });
     }
     function addPictureSendForm() {
-        const inputHtml = `<input id="img_file" type="file" hidden accept="image/*">`;
+        const inputHtml = '<input id="img_file" type="file" hidden accept="image/*">';
         const imgForm = document.createElement('form');
         imgForm.id = 'img_form';
         $(imgForm).append(inputHtml);

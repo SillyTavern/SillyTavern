@@ -1,5 +1,5 @@
 const fetch = require('node-fetch').default;
-const { SECRET_KEYS, readSecret } = require('./secrets');
+const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
 
 /**
  * Gets the vector for the given text from OpenAI ada model
@@ -23,7 +23,7 @@ async function getOpenAIVector(text) {
         body: JSON.stringify({
             input: text,
             model: 'text-embedding-ada-002',
-        })
+        }),
     });
 
     if (!response.ok) {

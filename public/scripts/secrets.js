@@ -1,4 +1,4 @@
-import { callPopup, getRequestHeaders } from "../script.js";
+import { callPopup, getRequestHeaders } from '../script.js';
 
 export const SECRET_KEYS = {
     HORDE: 'api_key_horde',
@@ -14,7 +14,7 @@ export const SECRET_KEYS = {
     SCALE_COOKIE: 'scale_cookie',
     PALM: 'api_key_palm',
     SERPAPI: 'api_key_serpapi',
-}
+};
 
 const INPUT_MAP = {
     [SECRET_KEYS.HORDE]: '#horde_api_key',
@@ -28,8 +28,8 @@ const INPUT_MAP = {
     [SECRET_KEYS.SCALE_COOKIE]: '#scale_cookie',
     [SECRET_KEYS.PALM]: '#api_key_palm',
     [SECRET_KEYS.APHRODITE]: '#api_key_aphrodite',
-    [SECRET_KEYS.TABBY]: '#api_key_tabby'
-}
+    [SECRET_KEYS.TABBY]: '#api_key_tabby',
+};
 
 async function clearSecret() {
     const key = $(this).data('key');
@@ -49,7 +49,7 @@ function updateSecretDisplay() {
 }
 
 async function viewSecrets() {
-    const response = await fetch('/viewsecrets', {
+    const response = await fetch('/api/secrets/view', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -126,7 +126,7 @@ export async function findSecret(key) {
 
         if (response.ok) {
             const data = await response.json();
-            return data.value
+            return data.value;
         }
     } catch {
         console.error('Could not find secret value: ', key);
@@ -143,7 +143,7 @@ async function checkOpenRouterAuth() {
     if (params.has('code')) {
         const code = params.get('code');
         try {
-            const response = await fetch("https://openrouter.ai/api/v1/auth/keys", {
+            const response = await fetch('https://openrouter.ai/api/v1/auth/keys', {
                 method: 'POST',
                 body: JSON.stringify({ code }),
             });
@@ -163,8 +163,8 @@ async function checkOpenRouterAuth() {
                 toastr.success('OpenRouter token saved');
                 // Remove the code from the URL
                 const currentUrl = window.location.href;
-                const urlWithoutSearchParams = currentUrl.split("?")[0];
-                window.history.pushState({}, "", urlWithoutSearchParams);
+                const urlWithoutSearchParams = currentUrl.split('?')[0];
+                window.history.pushState({}, '', urlWithoutSearchParams);
             } else {
                 throw new Error('OpenRouter token not saved');
             }

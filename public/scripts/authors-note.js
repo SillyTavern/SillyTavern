@@ -4,12 +4,12 @@ import {
     event_types,
     saveSettingsDebounced,
     this_chid,
-} from "../script.js";
-import { selected_group } from "./group-chats.js";
-import { extension_settings, getContext, saveMetadataDebounced } from "./extensions.js";
-import { registerSlashCommand } from "./slash-commands.js";
-import { getCharaFilename, debounce, waitUntilCondition, delay } from "./utils.js";
-import { getTokenCount } from "./tokenizers.js";
+} from '../script.js';
+import { selected_group } from './group-chats.js';
+import { extension_settings, getContext, saveMetadataDebounced } from './extensions.js';
+import { registerSlashCommand } from './slash-commands.js';
+import { getCharaFilename, debounce, delay } from './utils.js';
+import { getTokenCount } from './tokenizers.js';
 export { MODULE_NAME as NOTE_MODULE_NAME };
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
@@ -21,17 +21,17 @@ export const metadata_keys = {
     interval: 'note_interval',
     depth: 'note_depth',
     position: 'note_position',
-}
+};
 
 const chara_note_position = {
     replace: 0,
     before: 1,
     after: 2,
-}
+};
 
 function setNoteTextCommand(_, text) {
     $('#extension_floating_prompt').val(text).trigger('input');
-    toastr.success("Author's Note text updated");
+    toastr.success('Author\'s Note text updated');
 }
 
 function setNoteDepthCommand(_, text) {
@@ -43,7 +43,7 @@ function setNoteDepthCommand(_, text) {
     }
 
     $('#extension_floating_depth').val(Math.abs(value)).trigger('input');
-    toastr.success("Author's Note depth updated");
+    toastr.success('Author\'s Note depth updated');
 }
 
 function setNoteIntervalCommand(_, text) {
@@ -55,7 +55,7 @@ function setNoteIntervalCommand(_, text) {
     }
 
     $('#extension_floating_interval').val(Math.abs(value)).trigger('input');
-    toastr.success("Author's Note frequency updated");
+    toastr.success('Author\'s Note frequency updated');
 }
 
 function setNotePositionCommand(_, text) {
@@ -72,7 +72,7 @@ function setNotePositionCommand(_, text) {
     }
 
     $(`input[name="extension_floating_position"][value="${position}"]`).prop('checked', true).trigger('input');
-    toastr.info("Author's Note position updated");
+    toastr.info('Author\'s Note position updated');
 }
 
 function updateSettings() {
@@ -154,8 +154,8 @@ function onExtensionFloatingCharaPromptInput() {
     const avatarName = getCharaFilename();
     let tempCharaNote = {
         name: avatarName,
-        prompt: tempPrompt
-    }
+        prompt: tempPrompt,
+    };
 
     setCharaPromptTokenCounterDebounced(tempPrompt);
 
@@ -164,7 +164,7 @@ function onExtensionFloatingCharaPromptInput() {
 
     if (extension_settings.note.chara) {
         existingCharaNoteIndex = extension_settings.note.chara.findIndex((e) => e.name === avatarName);
-        existingCharaNote = extension_settings.note.chara[existingCharaNoteIndex]
+        existingCharaNote = extension_settings.note.chara[existingCharaNoteIndex];
     }
 
     if (tempPrompt.length === 0 &&
@@ -179,14 +179,14 @@ function onExtensionFloatingCharaPromptInput() {
     }
     else if (avatarName && tempPrompt.length > 0) {
         if (!extension_settings.note.chara) {
-            extension_settings.note.chara = []
+            extension_settings.note.chara = [];
         }
-        Object.assign(tempCharaNote, { useChara: false, position: chara_note_position.replace })
+        Object.assign(tempCharaNote, { useChara: false, position: chara_note_position.replace });
 
         extension_settings.note.chara.push(tempCharaNote);
     } else {
-        console.log("Character author's note error: No avatar name key could be found.");
-        toastr.error("Something went wrong. Could not save character's author's note.");
+        console.log('Character author\'s note error: No avatar name key could be found.');
+        toastr.error('Something went wrong. Could not save character\'s author\'s note.');
 
         // Don't save settings if something went wrong
         return;
@@ -273,7 +273,7 @@ export function setFloatingPrompt() {
     ------
     lastMessageNumber = ${lastMessageNumber}
     metadata_keys.interval = ${chat_metadata[metadata_keys.interval]}
-    `)
+    `);
 
     // interval 1 should be inserted no matter what
     if (chat_metadata[metadata_keys.interval] === 1) {
@@ -319,46 +319,46 @@ export function setFloatingPrompt() {
 function onANMenuItemClick() {
     if (selected_group || this_chid) {
         //show AN if it's hidden
-        if ($("#floatingPrompt").css("display") !== 'flex') {
-            $("#floatingPrompt").addClass('resizing')
-            $("#floatingPrompt").css("display", "flex");
-            $("#floatingPrompt").css("opacity", 0.0);
-            $("#floatingPrompt").transition({
+        if ($('#floatingPrompt').css('display') !== 'flex') {
+            $('#floatingPrompt').addClass('resizing');
+            $('#floatingPrompt').css('display', 'flex');
+            $('#floatingPrompt').css('opacity', 0.0);
+            $('#floatingPrompt').transition({
                 opacity: 1.0,
                 duration: 250,
             }, async function () {
                 await delay(50);
-                $("#floatingPrompt").removeClass('resizing')
+                $('#floatingPrompt').removeClass('resizing');
             });
 
             //auto-open the main AN inline drawer
-            if ($("#ANBlockToggle")
+            if ($('#ANBlockToggle')
                 .siblings('.inline-drawer-content')
                 .css('display') !== 'block') {
-                $("#floatingPrompt").addClass('resizing')
-                $("#ANBlockToggle").click();
+                $('#floatingPrompt').addClass('resizing');
+                $('#ANBlockToggle').click();
             }
         } else {
             //hide AN if it's already displayed
-            $("#floatingPrompt").addClass('resizing')
-            $("#floatingPrompt").transition({
+            $('#floatingPrompt').addClass('resizing');
+            $('#floatingPrompt').transition({
                 opacity: 0.0,
                 duration: 250,
             },
-                async function () {
-                    await delay(50);
-                    $("#floatingPrompt").removeClass('resizing')
-                });
+            async function () {
+                await delay(50);
+                $('#floatingPrompt').removeClass('resizing');
+            });
             setTimeout(function () {
-                $("#floatingPrompt").hide();
+                $('#floatingPrompt').hide();
             }, 250);
 
         }
         //duplicate options menu close handler from script.js
         //because this listener takes priority
-        $("#options").stop().fadeOut(250);
+        $('#options').stop().fadeOut(250);
     } else {
-        toastr.warning(`Select a character before trying to use Author's Note`, '', { timeOut: 2000 });
+        toastr.warning('Select a character before trying to use Author\'s Note', '', { timeOut: 2000 });
     }
 }
 
@@ -413,18 +413,18 @@ export function initAuthorsNote() {
     $('input[name="extension_default_position"]').on('change', onDefaultPositionInput);
     $('input[name="extension_floating_char_position"]').on('change', onExtensionFloatingCharPositionInput);
     $('#ANClose').on('click', function () {
-        $("#floatingPrompt").transition({
+        $('#floatingPrompt').transition({
             opacity: 0,
             duration: 200,
             easing: 'ease-in-out',
         });
-        setTimeout(function () { $('#floatingPrompt').hide() }, 200);
-    })
-    $("#option_toggle_AN").on('click', onANMenuItemClick);
+        setTimeout(function () { $('#floatingPrompt').hide(); }, 200);
+    });
+    $('#option_toggle_AN').on('click', onANMenuItemClick);
 
-    registerSlashCommand('note', setNoteTextCommand, [], "<span class='monospace'>(text)</span> – sets an author's note for the currently selected chat", true, true);
-    registerSlashCommand('depth', setNoteDepthCommand, [], "<span class='monospace'>(number)</span> – sets an author's note depth for in-chat positioning", true, true);
-    registerSlashCommand('freq', setNoteIntervalCommand, ['interval'], "<span class='monospace'>(number)</span> – sets an author's note insertion frequency", true, true);
-    registerSlashCommand('pos', setNotePositionCommand, ['position'], "(<span class='monospace'>chat</span> or <span class='monospace'>scenario</span>) – sets an author's note position", true, true);
+    registerSlashCommand('note', setNoteTextCommand, [], '<span class=\'monospace\'>(text)</span> – sets an author\'s note for the currently selected chat', true, true);
+    registerSlashCommand('depth', setNoteDepthCommand, [], '<span class=\'monospace\'>(number)</span> – sets an author\'s note depth for in-chat positioning', true, true);
+    registerSlashCommand('freq', setNoteIntervalCommand, ['interval'], '<span class=\'monospace\'>(number)</span> – sets an author\'s note insertion frequency', true, true);
+    registerSlashCommand('pos', setNotePositionCommand, ['position'], '(<span class=\'monospace\'>chat</span> or <span class=\'monospace\'>scenario</span>) – sets an author\'s note position', true, true);
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 }

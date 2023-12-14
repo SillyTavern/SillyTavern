@@ -17,6 +17,8 @@
     <li><tt>&lcub;&lcub;char&rcub;&rcub;</tt> – the Character's name</li>
     <li><tt>&lcub;&lcub;lastMessage&rcub;&rcub;</tt> - the text of the latest chat message.</li>
     <li><tt>&lcub;&lcub;lastMessageId&rcub;&rcub;</tt> – index # of the latest chat message. Useful for slash command batching.</li>
+    <li><tt>&lcub;&lcub;currentSwipeId&rcub;&rcub;</tt> – the 1-based ID of the current swipe in the last chat message. Empty string if the last message is user or prompt-hidden.</li>
+    <li><tt>&lcub;&lcub;lastSwipeId&rcub;&rcub;</tt> – the number of swipes in the last chat message. Empty string if the last message is user or prompt-hidden.</li>
     <li><tt>&lcub;&lcub;// (note)&rcub;&rcub;</tt> – you can leave a note here, and the macro will be replaced with blank content. Not visible for the AI.</li>
     <li><tt>&lcub;&lcub;time&rcub;&rcub;</tt> – the current time</li>
     <li><tt>&lcub;&lcub;date&rcub;&rcub;</tt> – the current date</li>
@@ -39,6 +41,7 @@
     <small>(enabled in the Advanced Formatting settings)</small>
 </div>
 <ul>
+    <li><tt>&lcub;&lcub;maxPrompt&rcub;&rcub;</tt> – max allowed prompt length in tokens = (context size - response length)</li>
     <li><tt>&lcub;&lcub;exampleSeparator&rcub;&rcub;</tt> – context template example dialogues separator</li>
     <li><tt>&lcub;&lcub;chatStart&rcub;&rcub;</tt> – context template chat start line</li>
     <li><tt>&lcub;&lcub;instructSystem&rcub;&rcub;</tt> – instruct system prompt</li>
@@ -59,8 +62,12 @@
 <ul>
     <li><tt>&lcub;&lcub;getvar::name&rcub;&rcub;</tt> – replaced with the value of the local variable "name"</li>
     <li><tt>&lcub;&lcub;setvar::name::value&rcub;&rcub;</tt> – replaced with empty string, sets the local variable "name" to "value"</li>
-    <li><tt>&lcub;&lcub;addvar::name::increment&rcub;&rcub;</tt> – replaced with the result of addition numeric value of "increment" to the local variable "name"</li>
+    <li><tt>&lcub;&lcub;addvar::name::increment&rcub;&rcub;</tt> – replaced with empty strings, adds a numeric value of "increment" to the local variable "name"</li>
+    <li><tt>&lcub;&lcub;incvar::name&rcub;&rcub;</tt> – replaced with the result of the increment of value of the variable "name" by 1</li>
+    <li><tt>&lcub;&lcub;decvar::name&rcub;&rcub;</tt> – replaced with the result of the decrement of value of the variable "name" by 1</li>
     <li><tt>&lcub;&lcub;getglobalvar::name&rcub;&rcub;</tt> – replaced with the value of the global variable "name"</li>
     <li><tt>&lcub;&lcub;setglobalvar::name::value&rcub;&rcub;</tt> – replaced with empty string, sets the global variable "name" to "value"</li>
-    <li><tt>&lcub;&lcub;addglobalvar::name::value&rcub;&rcub;</tt> – replaced with the result of addition numeric value of "increment" to the global variable "name"</li>
+    <li><tt>&lcub;&lcub;addglobalvar::name::value&rcub;&rcub;</tt> – replaced with empty string, adds a numeric value of "increment" to the global variable "name"</li>
+    <li><tt>&lcub;&lcub;incglobalvar::name&rcub;&rcub;</tt> – replaced with the result of the increment of value of the global variable "name" by 1</li>
+    <li><tt>&lcub;&lcub;decglobalvar::name&rcub;&rcub;</tt> – replaced with the result of the decrement of value of the global variable "name" by 1</li>
 </ul>

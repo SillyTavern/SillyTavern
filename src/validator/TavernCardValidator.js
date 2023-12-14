@@ -48,7 +48,7 @@ class TavernCardValidator {
     validateV1() {
         const requiredFields = ['name', 'description', 'personality', 'scenario', 'first_mes', 'mes_example'];
         return requiredFields.every(field => {
-            if (!this.card.hasOwnProperty(field)) {
+            if (!Object.hasOwn(this.card, field)) {
                 this.#lastValidationError = field;
                 return false;
             }
@@ -94,7 +94,7 @@ class TavernCardValidator {
 
         const requiredFields = ['name', 'description', 'personality', 'scenario', 'first_mes', 'mes_example', 'creator_notes', 'system_prompt', 'post_history_instructions', 'alternate_greetings', 'tags', 'creator', 'character_version', 'extensions'];
         const isAllRequiredFieldsPresent = requiredFields.every(field => {
-            if (!data.hasOwnProperty(field)) {
+            if (!Object.hasOwn(data, field)) {
                 this.#lastValidationError = `data.${field}`;
                 return false;
             }
@@ -113,7 +113,7 @@ class TavernCardValidator {
 
         const requiredFields = ['extensions', 'entries'];
         const isAllRequiredFieldsPresent = requiredFields.every(field => {
-            if (!characterBook.hasOwnProperty(field)) {
+            if (!Object.hasOwn(characterBook, field)) {
                 this.#lastValidationError = `data.character_book.${field}`;
                 return false;
             }
@@ -124,4 +124,4 @@ class TavernCardValidator {
     }
 }
 
-module.exports = {TavernCardValidator}
+module.exports = { TavernCardValidator };

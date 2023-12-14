@@ -1,8 +1,8 @@
-import { isMobile } from "../../RossAscends-mods.js";
-import { getPreviewString } from "./index.js";
+import { isMobile } from '../../RossAscends-mods.js';
+import { getPreviewString } from './index.js';
 import { talkingAnimation } from './index.js';
-import { saveTtsProviderSettings } from "./index.js"
-export { SystemTtsProvider }
+import { saveTtsProviderSettings } from './index.js';
+export { SystemTtsProvider };
 
 /**
  * Chunkify
@@ -46,7 +46,7 @@ var speechUtteranceChunker = function (utt, settings, callback) {
         newUtt = new SpeechSynthesisUtterance(chunk);
         var x;
         for (x in utt) {
-            if (utt.hasOwnProperty(x) && x !== 'text') {
+            if (Object.hasOwn(utt, x) && x !== 'text') {
                 newUtt[x] = utt[x];
             }
         }
@@ -79,20 +79,20 @@ class SystemTtsProvider {
     // Config //
     //########//
 
-    settings
-    ready = false
-    voices = []
-    separator = ' ... '
+    settings;
+    ready = false;
+    voices = [];
+    separator = ' ... ';
 
     defaultSettings = {
         voiceMap: {},
         rate: 1,
         pitch: 1,
-    }
+    };
 
     get settingsHtml() {
         if (!('speechSynthesis' in window)) {
-            return "Your browser or operating system doesn't support speech synthesis";
+            return 'Your browser or operating system doesn\'t support speech synthesis';
         }
 
         return `<p>Uses the voices provided by your operating system</p>
@@ -107,13 +107,13 @@ class SystemTtsProvider {
         this.settings.pitch = Number($('#system_tts_pitch').val());
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
-        saveTtsProviderSettings()
+        saveTtsProviderSettings();
     }
 
     async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings");
+            console.info('Using default TTS Provider settings');
         }
 
         // iOS should only allows speech synthesis trigged by user interaction
@@ -146,21 +146,21 @@ class SystemTtsProvider {
         $('#system_tts_pitch').val(this.settings.pitch || this.defaultSettings.pitch);
 
         // Trigger updates
-        $('#system_tts_rate').on("input", () => { this.onSettingsChange() })
-        $('#system_tts_rate').on("input", () => { this.onSettingsChange() })
+        $('#system_tts_rate').on('input', () => { this.onSettingsChange(); });
+        $('#system_tts_rate').on('input', () => { this.onSettingsChange(); });
 
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
-        console.debug("SystemTTS: Settings loaded");
+        console.debug('SystemTTS: Settings loaded');
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady() {
-        await this.fetchTtsVoiceObjects()
+        await this.fetchTtsVoiceObjects();
     }
 
     async onRefreshClick() {
-        return
+        return;
     }
 
     //#################//
@@ -191,7 +191,7 @@ class SystemTtsProvider {
         const voice = speechSynthesis.getVoices().find(x => x.voiceURI === voiceId);
 
         if (!voice) {
-            throw `TTS Voice name ${voiceName} not found`
+            throw `TTS Voice id ${voiceId} not found`;
         }
 
         speechSynthesis.cancel();
@@ -205,14 +205,14 @@ class SystemTtsProvider {
 
     async getVoice(voiceName) {
         if (!('speechSynthesis' in window)) {
-            return { voice_id: null }
+            return { voice_id: null };
         }
 
         const voices = speechSynthesis.getVoices();
         const match = voices.find(x => x.name == voiceName);
 
         if (!match) {
-            throw `TTS Voice name ${voiceName} not found`
+            throw `TTS Voice name ${voiceName} not found`;
         }
 
         return { voice_id: match.voiceURI, name: match.name };

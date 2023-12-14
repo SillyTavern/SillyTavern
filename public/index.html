@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="darkreader-lock">
     <meta name="robots" content="noindex, nofollow" />
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" crossorigin="use-credentials" href="manifest.json">
     <link href="webfonts/NotoSans/stylesheet.css" rel="stylesheet">
     <!-- fontawesome webfonts-->
     <link href="css/fontawesome.css" rel="stylesheet">
@@ -22,6 +22,7 @@
     <link rel="apple-touch-icon" sizes="72x72" href="img/apple-icon-72x72.png" />
     <link rel="apple-touch-icon" sizes="114x114" href="img/apple-icon-114x114.png" />
     <link rel="apple-touch-icon" sizes="144x144" href="img/apple-icon-144x144.png" />
+    <script src="lib/object-hasown.js"></script>
     <script src="lib/jquery-3.5.1.min.js"></script>
     <script src="lib/jquery-ui.min.js"></script>
     <script src="lib/jquery.transit.min.js"></script>
@@ -135,16 +136,19 @@
                                         <span class="fa-solid fa-circle-question note-link-span"></span>
                                     </a>
                                 </h4>
-                                <div class="flex-container">
-                                    <select id="settings_preset" data-preset-manager-for="kobold" class="flex1 text_pole">
+                                <div class="flex-container flexNoGap">
+                                    <select id="settings_preset" data-preset-manager-for="kobold" class="flex1 flexBasis100p text_pole">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
                                     </select>
-                                    <input type="file" hidden data-preset-manager-file="kobold" accept=".json, .settings">
-                                    <i data-newbie-hidden data-preset-manager-update="kobold" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-new="kobold" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-import="kobold" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-export="kobold" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-delete="kobold" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                    <div class="flex-container flexBasis100p justifyCenter">
+                                        <input type="file" hidden data-preset-manager-file="kobold" accept=".json, .settings">
+                                        <i data-newbie-hidden data-preset-manager-update="kobold" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-new="kobold" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                        <i data-newbie-hidden data-preset-manager-import="kobold" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-export="kobold" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-restore="kobold" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-delete="kobold" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                    </div>
                                 </div>
                             </div>
                             <div id="novel_api-presets">
@@ -154,45 +158,53 @@
                                         <span class="fa-solid fa-circle-question note-link-span"></span>
                                     </a>
                                 </h4>
-                                <div class="flex-container">
-                                    <select id="settings_preset_novel" class="flex1 text_pole" data-preset-manager-for="novel">
+                                <div class="flex-container flexNoGap">
+                                    <select id="settings_preset_novel" class="flex1 flexBasis100p text_pole" data-preset-manager-for="novel">
                                         <option value="gui" data-i18n="default">Default</option>
                                     </select>
-                                    <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings">
-                                    <i data-newbie-hidden data-preset-manager-update="novel" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-new="novel" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-import="novel" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-export="novel" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-delete="novel" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                    <div class="flex-container flexBasis100p justifyCenter">
+                                        <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings">
+                                        <i data-newbie-hidden data-preset-manager-update="novel" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-new="novel" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                        <i data-newbie-hidden data-preset-manager-import="novel" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-export="novel" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-restore="novel" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-delete="novel" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                    </div>
                                 </div>
                             </div>
                             <div id="openai_api-presets">
                                 <div>
                                     <h4 class="margin0"><span data-i18n="openaipresets">Chat Completion Presets</span></h4>
-                                    <div class="flex-container">
+                                    <div class="flex-container flexNoGap">
                                         <select id="settings_preset_openai" class="flex1 text_pole">
                                             <option value="gui" data-i18n="default">Default</option>
                                         </select>
-                                        <i id="update_oai_preset" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                        <i id="new_oai_preset" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
-                                        <i data-newbie-hidden title="Import preset" id="import_oai_preset" class="menu_button fa-solid fa-file-import" data-i18n="[title]Import preset"></i>
-                                        <i data-newbie-hidden title="Export preset" id="export_oai_preset" class="menu_button fa-solid fa-file-export" data-i18n="[title]Export preset"></i>
-                                        <i data-newbie-hidden id="delete_oai_preset" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
-                                        <input id="openai_preset_import_file" type="file" accept=".json,.settings" hidden />
+                                        <div class="flex-container flexBasis100p justifyCenter">
+                                            <input id="openai_preset_import_file" type="file" accept=".json,.settings" hidden />
+                                            <i id="update_oai_preset" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                            <i id="new_oai_preset" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                            <i data-newbie-hidden title="Import preset" id="import_oai_preset" class="menu_button fa-solid fa-file-import" data-i18n="[title]Import preset"></i>
+                                            <i data-newbie-hidden title="Export preset" id="export_oai_preset" class="menu_button fa-solid fa-file-export" data-i18n="[title]Export preset"></i>
+                                            <i data-newbie-hidden id="delete_oai_preset" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             <div id="textgenerationwebui_api-presets">
                                 <h4 class="margin0"><span data-i18n="Text Completion presets">Text Completion presets</span></h4>
-                                <div class="flex-container">
+                                <div class="flex-container flexNoGap">
                                     <select id="settings_preset_textgenerationwebui" class="flex1 text_pole" data-preset-manager-for="textgenerationwebui">
                                     </select>
-                                    <input type="file" hidden data-preset-manager-file="textgenerationwebui" accept=".json, .settings">
-                                    <i data-newbie-hidden data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-import="textgenerationwebui" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-export="textgenerationwebui" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                    <i data-newbie-hidden data-preset-manager-delete="textgenerationwebui" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                    <div class="flex-container flexBasis100p justifyCenter">
+                                        <input type="file" hidden data-preset-manager-file="textgenerationwebui" accept=".json, .settings">
+                                        <i data-newbie-hidden data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                        <i data-newbie-hidden data-preset-manager-import="textgenerationwebui" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-export="textgenerationwebui" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-restore="textgenerationwebui" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
+                                        <i data-newbie-hidden data-preset-manager-delete="textgenerationwebui" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -216,9 +228,9 @@
                             <div id="pro-settings-block" class="flex-container gap10h5v justifyCenter">
                                 <div id="amount_gen_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                     <small data-i18n="response legth(tokens)">Response (tokens)</small>
-                                    <input class="neo-range-slider" type="range" id="amount_gen" name="volume" min="16" max="1024" step="1">
+                                    <input class="neo-range-slider" type="range" id="amount_gen" name="volume" min="16" max="2048" step="1">
                                     <div data-randomization-disabled="true" class="wide100p">
-                                        <input class="neo-range-input" type="number" min="16" max="1024" step="1" data-for="amount_gen" id="amount_gen_counter">
+                                        <input class="neo-range-input" type="number" min="16" max="2048" step="1" data-for="amount_gen" id="amount_gen_counter">
                                     </div>
                                     <div id="streaming_textgenerationwebui_block" class="flex-container alignitemscenter justifyCenter marginTop5">
                                         <label class="checkbox_label" for="streaming_textgenerationwebui">
@@ -576,6 +588,50 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
+                                            <div class="range-block-title openai_restorable" data-i18n="Scenario Format Template">
+                                                <span>Scenario format template</span>
+                                                <div id="scenario_format_restore" title="Restore default format" class="right_menu_button">
+                                                    <div class="fa-solid fa-clock-rotate-left"></div>
+                                                </div>
+                                            </div>
+                                            <div class="toggle-description justifyLeft" data-i18n="Use scenario to mark a place where the content is inserted.">
+                                                Use <tt>{{scenario}}</tt> to mark a place where the content is inserted.
+                                            </div>
+                                            <div class="wide100p">
+                                                <textarea id="scenario_format_textarea" class="text_pole textarea_compact autoSetHeight" rows="3" placeholder="&mdash;"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="range-block m-t-1">
+                                            <div class="range-block-title openai_restorable" data-i18n="Personality Format Template">
+                                                <span>Personality format template</span>
+                                                <div id="personality_format_restore" title="Restore default format" class="right_menu_button">
+                                                    <div class="fa-solid fa-clock-rotate-left"></div>
+                                                </div>
+                                            </div>
+                                            <div class="toggle-description justifyLeft" data-i18n="Use personality to mark a place where the content is inserted.">
+                                                Use <tt>{{personality}}</tt> to mark a place where the content is inserted.
+                                            </div>
+                                            <div class="wide100p">
+                                                <textarea id="personality_format_textarea" class="text_pole textarea_compact autoSetHeight" rows="3" placeholder="&mdash;"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="range-block m-t-1">
+                                            <div class="range-block-title openai_restorable" data-i18n="Group Nudge Prompt Template">
+                                                <span>Group Nudge prompt template</span>
+                                                <div id="group_nudge_prompt_restore" title="Restore default format" class="right_menu_button">
+                                                    <div class="fa-solid fa-clock-rotate-left"></div>
+                                                </div>
+                                            </div>
+                                            <div class="toggle-description justifyLeft">
+                                                <span data-i18n="Sent at the end of the group chat history to force reply from a specific character.">
+                                                    Sent at the end of the group chat history to force reply from a specific character.
+                                                </span>
+                                            </div>
+                                            <div class="wide100p">
+                                                <textarea id="group_nudge_prompt_textarea" class="text_pole textarea_compact autoSetHeight" rows="3" placeholder="&mdash;"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="range-block m-t-1">
                                             <div class="range-block-title openai_restorable" data-i18n="New Chat">
                                                 <span>New Chat</span>
                                                 <div id="newchat_prompt_restore" title="Restore new chat prompt" class="right_menu_button">
@@ -693,6 +749,17 @@
                                         <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                     </div>
                                 </div>
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter">
+                                    <div class="range-block-title justifyLeft" data-i18n="Seed">
+                                        Seed
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Set to get deterministic results. Use -1 for random seed.">
+                                        Set to get deterministic results. Use -1 for random seed.
+                                    </div>
+                                    <div class="wide100p">
+                                        <input type="number" id="seed_openai" name="seed_openai" class="text_pole" min="-1" max="2147483647" value="-1">
+                                    </div>
+                                </div>
                                 <div data-newbie-hidden class="range-block" data-source="openai,claude">
                                     <div class="range-block-title justifyLeft">
                                         <label for="legacy_streaming" class="checkbox_label">
@@ -712,16 +779,16 @@
                             <div id="kobold_api-settings">
                                 <div class="flex-container gap10h5v justifyCenter">
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="temperature">
-                                            Temperature
+                                        <small>
+                                            <span data-i18n="temperature">Temperature</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="temp" name="volume" min="0.0" max="4.0" step="0.01">
                                         <input class="neo-range-input" type="number" min="0.0" max="4.0" step="0.01" data-for="temp" id="temp_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Top K">
-                                            Top K
+                                        <small>
+                                            <span data-i18n="Top K">Top K</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="top_k" name="volume" min="0" max="100" step="1">
@@ -736,54 +803,54 @@
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p" id="top_p_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Typical P">
-                                            Typical P
+                                        <small>
+                                            <span data-i18n="Typical P">Typical P</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="typical_p" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="typical_p" id="typical_p_counter">
                                     </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Min P">
-                                            Min P
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                        <small>
+                                            <span data-i18n="Min P">Min P</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="min_p" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="min_p" id="min_p_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Top A">
-                                            Top A
+                                        <small>
+                                            <span data-i18n="Top A">Top A</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="top_a" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="top_a" id="top_a_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Tail Free Sampling">
-                                            Tail Free Sampling
+                                        <small>
+                                            <span data-i18n="Tail Free Sampling">Tail Free Sampling</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Tail-Free Sampling (TFS) analyzes the rate of change in token probabilities using derivatives.&#13;It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;Set to 1.0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="tfs" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="tfs" id="tfs_counter">
                                     </div>
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="rep.pen">
-                                            Repetition Penalty
+                                        <small>
+                                            <span data-i18n="rep.pen">Repetition Penalty</span>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01">
-                                        <input class="neo-range-input" type="number" min="1" max="1.5" step="0.01" data-for="rep_pen" id="rep_pen_counter">
+                                        <input class="neo-range-slider" type="range" id="rep_pen" name="volume" min="1" max="3" step="0.01">
+                                        <input class="neo-range-input" type="number" min="1" max="3" step="0.01" data-for="rep_pen" id="rep_pen_counter">
                                     </div>
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="rep.pen range">
-                                            Repetition Penalty Range
+                                        <small>
+                                            <span data-i18n="rep.pen range">Repetition Penalty Range</span>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="rep_pen_range" name="volume" min="0" max="4096" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="4096" step="1" data-for="rep_pen_range" id="rep_pen_range_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Rep. Pen. Slope">
-                                            Repetition Penalty Slope
+                                        <small>
+                                            <span data-i18n="Rep. Pen. Slope">Repetition Penalty Slope</span>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope" id="rep_pen_slope_counter">
@@ -818,8 +885,8 @@
                                     <div data-newbie-hidden class="alignitemscenter justifyCenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <label class="checkbox_label alignItemsBaseline" for="use_default_badwordsids">
                                             <input id="use_default_badwordsids" type="checkbox" />
-                                            <span data-i18n="Ban EOS Token">
-                                                Ban EOS Token
+                                            <span>
+                                                <span data-i18n="Ban EOS Token">Ban EOS Token</span>
                                                 <small class="fa-solid fa-circle-info opacity50p" title="Ban the End-of-Sequence (EOS) token with KoboldCpp (and possibly also other tokens with KoboldAI).&#13;Good for story writing, but should not be used for chat and instruct mode."></small>
                                             </span>
                                         </label>
@@ -832,7 +899,7 @@
                                     </div>
                                     <div data-newbie-hidden id="grammar_block" class="wide100p">
                                         <hr class="wide100p">
-                                        <h4 class="wide100p textAlignCenter" data-i18n="GBNF Grammar">GBNF Grammar
+                                        <h4 class="wide100p textAlignCenter"><span data-i18n="GBNF Grammar">GBNF Grammar</span>
                                             <a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">
                                                 <small>
                                                     <div class="fa-solid fa-circle-question note-link-span"></div>
@@ -1097,19 +1164,32 @@
                                 </div>
                             </div><!-- end of novel settings-->
                             <div id="textgenerationwebui_api-settings">
+                                <div data-newbie-hidden data-tg-type="aphrodite" class="flex-container flexFlowColumn alignitemscenter flexBasis100p flexGrow flexShrink gap0">
+                                    <small data-i18n="Multiple swipes per generation">Multiple swipes per generation</small>
+                                    <input type="number" id="n_textgenerationwebui" class="text_pole textAlignCenter" min="1" value="1" />
+                                </div>
                                 <div class="flex-container gap10h5v justifyCenter">
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="temperature">Temperature</small>
-                                        <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="2.0" step="0.01" x-setting-id="temp">
-                                        <input class="neo-range-input" type="number" min="0.0" max="2.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
+                                        <small>
+                                            <span data-i18n="temperature">Temperature</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="4.0" step="0.01" x-setting-id="temp">
+                                        <input class="neo-range-input" type="number" min="0.0" max="4.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Top K">Top K</small>
+                                        <small>
+                                            <span data-i18n="Top K">Top K</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable."></div>
+                                        </small>
                                         <input class="neo-range-slider" type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="200" step="1" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Top P">Top P</small>
+                                        <small>
+                                            <span data-i18n="Top P">Top P</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Top P adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable."></div>
+                                        </small>
                                         <input class="neo-range-slider" type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p_textgenerationwebui" id="top_p_counter_textgenerationwebui">
                                     </div>
@@ -1118,8 +1198,11 @@
                                         <input class="neo-range-slider" type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="typical_p_textgenerationwebui" id="typical_p_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Min P">Min P</small>
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                        <small>
+                                            <span data-i18n="Min P">Min P</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
+                                        </small>
                                         <input class="neo-range-slider" type="range" id="min_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.05" data-for="min_p_textgenerationwebui" id="min_p_counter_textgenerationwebui">
                                     </div>
@@ -1145,13 +1228,13 @@
                                     </div>
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="rep.pen">Repetition Penalty</small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
-                                        <input class="neo-range-input" type="number" min="1" max="1.5" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="3" step="0.01">
+                                        <input class="neo-range-input" type="number" min="1" max="3" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
                                     </div>
                                     <div data-forAphro=False class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="rep.pen range">Repetition Penalty Range</small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="0" max="4096" step="1">
-                                        <input class="neo-range-input" type="number" min="0" max="4096" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="-1" max="8192" step="1">
+                                        <input class="neo-range-input" type="number" min="-1" max="8192" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
                                     </div>
                                     <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Encoder Rep. Pen.">Encoder Penalty</small>
@@ -1229,8 +1312,8 @@
                                         <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
                                                 <small data-i18n="Number of Beams"># of Beams</small>
-                                                <input class="neo-range-slider" type="range" id="num_beams_textgenerationwebui" name="volume" min="0" max="20" step="1" />
-                                                <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="num_beams_textgenerationwebui" id="num_beams_counter_textgenerationwebui">
+                                                <input class="neo-range-slider" type="range" id="num_beams_textgenerationwebui" name="volume" min="1" max="20" step="1" />
+                                                <input class="neo-range-input" type="number" min="1" max="20" step="1" data-for="num_beams_textgenerationwebui" id="num_beams_counter_textgenerationwebui">
                                             </div>
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
                                                 <small data-i18n="Length Penalty">Length Penalty</small>
@@ -1313,17 +1396,17 @@
                                             <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
                                         </div>
                                     </div>
-                                    <div data-forAphro=False class="wide100p">
-                                        <hr data-newbie-hidden class="width100p">
+                                    <div data-newbie-hidden data-forAphro=False class="wide100p">
+                                        <hr  class="width100p">
                                         <h4 data-i18n="CFG" class="textAlignCenter">CFG
                                             <div class="margin5 fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon."></div>
                                         </h4>
-                                        <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexShrink gap0">
+                                        <div class="alignitemscenter flex-container flexFlowColumn flexShrink gap0">
                                             <small>Scale</small>
                                             <input class="neo-range-slider" type="range" id="guidance_scale_textgenerationwebui" name="volume" min="0.1" max="4" step="0.05">
                                             <input class="neo-range-input" type="number" min="0.1" max="4" step="0.05" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
                                         </div>
-                                        <div data-newbie-hidden class="range-block">
+                                        <div class="range-block">
                                             <div class="range-block-title justifyLeft">
                                                 <span data-i18n="Negative Prompt">Negative Prompt</span>
                                                 <small>
@@ -2083,7 +2166,7 @@
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
                                 <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode."></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                <i data-newbie-hidden data-preset-manager-new="context" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                <i data-newbie-hidden data-preset-manager-new="context" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                 <i data-newbie-hidden data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
                                 <i data-newbie-hidden data-preset-manager-export="context" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                 <i data-newbie-hidden id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
@@ -2111,6 +2194,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                <label class="checkbox_label" title="Add Chat Start and Example Separator to a list of stopping strings.">
+                                    <input id="context_use_stop_strings" type="checkbox" />
+                                    <small data-i18n="Use as Stop Strings">Use as Stop Strings</small>
+                                </label>
                             </div>
 
                             <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn margin-bot-10px" style="display:none;">
@@ -2170,7 +2257,7 @@
                                 <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
                                 <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection."></i>
                                 <i data-newbie-hidden data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                <i data-newbie-hidden data-preset-manager-new="instruct" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                <i data-newbie-hidden data-preset-manager-new="instruct" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                 <i data-newbie-hidden data-preset-manager-import="instruct" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
                                 <i data-newbie-hidden data-preset-manager-export="instruct" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                 <i data-newbie-hidden data-preset-manager-delete="instruct" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
@@ -2906,6 +2993,10 @@
                                 <input id="world_import_dialog" type="checkbox" />
                                 <span data-i18n="Lorebook Import Dialog">Lorebook Import Dialog</span>
                             </label>
+                            <label class="checkbox_label" for="restore_user_input" title="Restore unsaved user input on page refresh">
+                                <input id="restore_user_input" type="checkbox" />
+                                <span data-i18n="Restore User Input">Restore User Input</span>
+                            </label>
                             <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label">
                                 <input id="movingUImode" type="checkbox" />
                                 <span data-i18n="Movable UI Panels">MovingUI</span>
@@ -3391,8 +3482,9 @@
                             </div>
                         </div>
                         <hr>
-                        <div id="description_div" class="marginBot5">
+                        <div id="description_div" class="marginBot5 flex-container alignitemscenter">
                             <span data-i18n="Character Description">Description</span>
+                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
                             <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
                                 <span class="fa-solid fa-circle-question note-link-span"></span>
                             </a>
@@ -3402,12 +3494,13 @@
                             Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
                         </div>
                         <div id="first_message_div" class="marginBot5 title_restorable">
-                            <span>
+                            <div class="flex-container alignitemscenter">
                                 <span data-i18n="First message">First message</span>
+                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor"></i>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
                                     <span class="fa-solid fa-circle-question note-link-span"></span>
                                 </a>
-                            </span>
+                            </div>
                             <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
                                 <span data-i18n="Alt. Greetings">
                                     Alt. Greetings
@@ -3823,7 +3916,7 @@
                 <strong>Unique to this chat.</strong>
                 <span data-group="true">All group members will use the following scenario text instead of what is specified in their character cards.</span>
                 <span data-character="true">The following scenario text will be used instead of the value set in the character card.</span>
-                Bookmarks inherit the scenario override from their parent, and can be changed individually after that.
+                Checkpoints inherit the scenario override from their parent, and can be changed individually after that.
             </div>
             <div class="range-block-range wide100p">
                 <textarea class="wide100p chat_scenario" class="text_pole" rows="15" data-i18n="[placeholder]Type here..." placeholder="Type here..."></textarea>
@@ -3927,7 +4020,7 @@
                             <span class="flex-container alignitemscenter wide100p">
                                 <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
                                     <div class="flex-container flex1">
-                                        <textarea class="text_pole" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                        <textarea class="text_pole autoSetHeight" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                     </div>
                                     <!-- <span class="world_entry_form_position_value"></span> -->
                                     <select title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural margin0">
@@ -3979,8 +4072,9 @@
                                 <div class="world_entry_form_control">
                                     <small class="textAlignCenter">Logic</small>
                                     <select name="entryLogicType" class="widthFitContent margin0">
-                                        <option value="0">AND</option>
-                                        <option value="1">NOT</option>
+                                        <option value="0">AND ANY</option>
+                                        <option value="1">NOT ALL</option>
+                                        <option value="2">NOT ANY</option>
                                     </select>
                                 </div>
                                 <div class="world_entry_form_control keysecondary flex1">
@@ -4029,24 +4123,32 @@
                             <div class="world_entry_thin_controls commentContainer">
                             </div>
                         </div>
-                        <div class="flex-container flexFlowColumn flexNoGap wide100p">
-                            <div class="flex-container justifySpaceBetween">
-                                <label for="characterFilter" class="">
-                                    <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
-                                </label>
-                                <label class="checkbox flex-container alignitemscenter">
-                                    <input type="checkbox" name="character_exclusion" />
-                                    <span data-i18n="Character Exclusion">
-                                        <small>Character Exclusion</small>
-                                    </span>
-                                </label>
+                        <div class="flex-container wide100p flexGap10">
+                            <div class="flex1 flex-container flexFlowColumn flexNoGap">
+                                <div class="flex-container justifySpaceBetween">
+                                    <label for="characterFilter" class="">
+                                        <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
+                                    </label>
+                                    <label class="checkbox flex-container alignitemscenter">
+                                        <input type="checkbox" name="character_exclusion" />
+                                        <span data-i18n="Character Exclusion">
+                                            <small>Character Exclusion</small>
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="range-block-range">
+                                    <select name="characterFilter" multiple>
+                                        <option value="">
+                                            <span data-i18n="-- Characters not found --">-- Characters not found --</span>
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="range-block-range">
-                                <select name="characterFilter" multiple>
-                                    <option value="">
-                                        <span data-i18n="-- Characters not found --">-- Characters not found --</span>
-                                    </option>
-                                </select>
+                            <div class="flex1 flex-container flexFlowColumn flexNoGap">
+                                <label for="group">
+                                    <small data-i18n="">Inclusion Group</small>
+                                </label>
+                                <input type="text" class="text_pole" name="group" rows="1" data-i18n="[placeholder]Only one entry with the same label will be activated" placeholder="Only one entry with the same label will be activated">
                             </div>
                         </div>
                         <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
@@ -4219,11 +4321,11 @@
                             <div title="Exclude message from prompts" class="mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
                             <div title="Include message in prompts" class="mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
                             <div title="Embed file or image" class="mes_embed fa-solid fa-paperclip" data-i18n="[title]Embed file or image"></div>
-                            <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-solid fa-book-bookmark" data-i18n="[title]Create Bookmark"></div>
+                            <div title="Create checkpoint" class="mes_create_bookmark fa-regular fa-solid fa-flag-checkered" data-i18n="[title]Create checkpoint"></div>
                             <div title="Create branch" class="mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
                             <div title="Copy" class="mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
                         </div>
-                        <div title="Open bookmark chat" class="mes_bookmark fa-solid fa-bookmark" data-i18n="[title]Open bookmark chat"></div>
+                        <div title="Open checkpoint chat" class="mes_bookmark fa-solid fa-flag" data-i18n="[title]Open checkpoint chat"></div>
                         <div title="Edit" class="mes_edit fa-solid fa-pencil " data-i18n="[title]Edit"></div>
                     </div>
                     <div class="mes_edit_buttons">
@@ -4391,7 +4493,7 @@
                 <strong>Alternate Greeting #<span class="greeting_index"></span></strong>
                 <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
             </div>
-            <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="4"></textarea>
+            <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="12"></textarea>
         </div>
     </div>
     <!-- chat and input bar -->
@@ -4422,7 +4524,7 @@
                     <div class="inline-drawer-content">
                         <small>
                             <b>Unique to this chat</b>.<br>
-                            Bookmarks inherit the Note from their parent, and can be changed individually after that.<br>
+                            Checkpoints inherit the Note from their parent, and can be changed individually after that.<br>
                         </small>
                         <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="50000"></textarea>
                         <div class="extension_token_counter">
@@ -4747,8 +4849,8 @@
                 <span data-i18n="Back to parent chat">Back to parent chat</span>
             </a>
             <a id="option_new_bookmark">
-                <i class="fa-lg fa-solid fa-bookmark"></i>
-                <span data-i18n="Save bookmark">Save bookmark</span>
+                <i class="fa-lg fa-solid fa-flag"></i>
+                <span data-i18n="Save checkpoint">Save checkpoint</span>
             </a>
             <a id="option_convert_to_group">
                 <i class="fa-lg fa-solid fa-people-arrows"></i>

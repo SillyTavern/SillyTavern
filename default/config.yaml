@@ -1,6 +1,6 @@
 # -- NETWORK CONFIGURATION --
 # Listen for incoming connections
-listen: true
+listen: false
 # Server port
 port: 8000
 # Toggle whitelist mode
@@ -50,4 +50,11 @@ extras:
   captioningModel: Xenova/vit-gpt2-image-captioning
   embeddingModel: Xenova/all-mpnet-base-v2
   promptExpansionModel: Cohee/fooocus_expansion-onnx
-
+# -- OPENAI CONFIGURATION --
+openai:
+  # Will send a random user ID to OpenAI completion API
+  randomizeUserId: false
+# -- DEEPL TRANSLATION CONFIGURATION --
+deepl:
+  # Available options: default, more, less, prefer_more, prefer_less
+  formality: default

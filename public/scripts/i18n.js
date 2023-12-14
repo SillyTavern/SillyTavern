@@ -1,15 +1,15 @@
-import { registerDebugFunction } from "./power-user.js";
-import { waitUntilCondition } from "./utils.js";
+import { registerDebugFunction } from './power-user.js';
+import { waitUntilCondition } from './utils.js';
 
-const storageKey = "language";
-export const localeData = await fetch("i18n.json").then(response => response.json());
+const storageKey = 'language';
+export const localeData = await fetch('i18n.json').then(response => response.json());
 
 function getMissingTranslations() {
     const missingData = [];
 
     for (const language of localeData.lang) {
-        $(document).find("[data-i18n]").each(function () {
-            const keys = $(this).data("i18n").split(';'); // Multi-key entries are ; delimited
+        $(document).find('[data-i18n]').each(function () {
+            const keys = $(this).data('i18n').split(';'); // Multi-key entries are ; delimited
             for (const key of keys) {
                 const attributeMatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
                 if (attributeMatch) { // attribute-tagged key
@@ -54,18 +54,18 @@ function getMissingTranslations() {
 }
 
 export function applyLocale(root = document) {
-    const overrideLanguage = localStorage.getItem("language");
+    const overrideLanguage = localStorage.getItem('language');
     var language = overrideLanguage || navigator.language || navigator.userLanguage;
     language = language.toLowerCase();
     //load the appropriate language file
-    if (localeData.lang.indexOf(language) < 0) language = "en";
+    if (localeData.lang.indexOf(language) < 0) language = 'en';
 
-    const $root = root instanceof Document ? $(root) : $(new DOMParser().parseFromString(root, "text/html"));
+    const $root = root instanceof Document ? $(root) : $(new DOMParser().parseFromString(root, 'text/html'));
 
     //find all the elements with `data-i18n` attribute
-    $root.find("[data-i18n]").each(function () {
+    $root.find('[data-i18n]').each(function () {
         //read the translation from the language data
-        const keys = $(this).data("i18n").split(';'); // Multi-key entries are ; delimited
+        const keys = $(this).data('i18n').split(';'); // Multi-key entries are ; delimited
         for (const key of keys) {
             const attributeMatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
             if (attributeMatch) { // attribute-tagged key
@@ -105,7 +105,7 @@ function addLanguagesToDropdown() {
     }
 }
 
-jQuery(async () => {
+export function initLocales() {
     waitUntilCondition(() => !!localeData);
     applyLocale();
     addLanguagesToDropdown();
@@ -124,4 +124,4 @@ jQuery(async () => {
 
     registerDebugFunction('getMissingTranslations', 'Get missing translations', 'Detects missing localization data and dumps the data into the browser console.', getMissingTranslations);
     registerDebugFunction('applyLocale', 'Apply locale', 'Reapplies the currently selected locale to the page.', applyLocale);
-});
+}

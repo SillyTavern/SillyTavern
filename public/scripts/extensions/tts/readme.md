@@ -1,8 +1,8 @@
-# Provider Requirements. 
+# Provider Requirements.
 Because I don't know how, or if you can, and/or maybe I am just too lazy to implement interfaces in JS, here's the requirements of a provider that the extension needs to operate.
 
 ### class YourTtsProvider
-#### Required 
+#### Required
 Exported for use in extension index.js, and added to providers list in index.js
 1. generateTts(text, voiceId)
 2. fetchTtsVoiceObjects()
@@ -13,8 +13,9 @@ Exported for use in extension index.js, and added to providers list in index.js
 7. settingsHtml field
 
 #### Optional
-1. previewTtsVoice() 
+1. previewTtsVoice()
 2. separator field
+3. processText(text)
 
 # Requirement Descriptions
 ### generateTts(text, voiceId)
@@ -49,14 +50,14 @@ Return without error to let TTS extension know that the provider is ready.
 Return an error to block the main TTS extension for initializing the provider and UI. The error will be put in the TTS extension UI directly.
 
 ### loadSettings(settingsObject)
-Required. 
+Required.
 Handle the input settings from the TTS extension on provider load.
 Put code in here to load your provider settings.
 
 ### settings field
 Required, used for storing any provider state that needs to be saved.
 Anything stored in this field is automatically persisted under extension_settings[providerName] by the main extension in `saveTtsProviderSettings()`, as well as loaded when the provider is selected in `loadTtsProvider(provider)`.
-TTS extension doesn't expect any specific contents. 
+TTS extension doesn't expect any specific contents.
 
 ### settingsHtml field
 Required, injected into the TTS extension UI. Besides adding it, not relied on by TTS extension directly.
@@ -68,4 +69,8 @@ Function to handle playing previews of voice samples if no direct preview_url is
 ### separator field
 Optional.
 Used when narrate quoted text is enabled.
-Defines the string of characters used to introduce separation between between the groups of extracted quoted text sent to the provider. The provider will use this to introduce pauses by default using `...` 
+Defines the string of characters used to introduce separation between between the groups of extracted quoted text sent to the provider. The provider will use this to introduce pauses by default using `...`
+
+### processText(text)
+Optional.
+A function applied to the input text before passing it to the TTS generator. Can be async.

@@ -14,17 +14,17 @@ import {
     novelai_settings,
     saveSettingsDebounced,
     this_chid,
-} from "../script.js";
-import { groups, selected_group } from "./group-chats.js";
-import { instruct_presets } from "./instruct-mode.js";
-import { kai_settings } from "./kai-settings.js";
-import { context_presets, getContextSettings, power_user } from "./power-user.js";
+} from '../script.js';
+import { groups, selected_group } from './group-chats.js';
+import { instruct_presets } from './instruct-mode.js';
+import { kai_settings } from './kai-settings.js';
+import { context_presets, getContextSettings, power_user } from './power-user.js';
 import {
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
-    textgenerationwebui_settings,
-} from "./textgen-settings.js";
-import { download, parseJsonFile, waitUntilCondition } from "./utils.js";
+    textgenerationwebui_settings as textgen_settings,
+} from './textgen-settings.js';
+import { download, parseJsonFile, waitUntilCondition } from './utils.js';
 
 const presetManagers = {};
 
@@ -71,8 +71,8 @@ function getPresetManager(apiId) {
 
 function registerPresetManagers() {
     $('select[data-preset-manager-for]').each((_, e) => {
-        const forData = $(e).data("preset-manager-for");
-        for (const apiId of forData.split(",")) {
+        const forData = $(e).data('preset-manager-for');
+        for (const apiId of forData.split(',')) {
             console.debug(`Registering preset manager for API: ${apiId}`);
             presetManagers[apiId] = new PresetManager($(e), apiId);
         }
@@ -90,21 +90,21 @@ class PresetManager {
     }
 
     getSelectedPreset() {
-        return $(this.select).find("option:selected").val();
+        return $(this.select).find('option:selected').val();
     }
 
     getSelectedPresetName() {
-        return $(this.select).find("option:selected").text();
+        return $(this.select).find('option:selected').text();
     }
 
     selectPreset(preset) {
         $(this.select).find(`option[value=${preset}]`).prop('selected', true);
-        $(this.select).val(preset).trigger("change");
+        $(this.select).val(preset).trigger('change');
     }
 
     async updatePreset() {
-        const selected = $(this.select).find("option:selected");
-        console.log(selected)
+        const selected = $(this.select).find('option:selected');
+        console.log(selected);
 
         if (selected.val() == 'gui') {
             toastr.info('Cannot update GUI preset');
@@ -117,10 +117,11 @@ class PresetManager {
     }
 
     async savePresetAs() {
+        const inputValue = this.getSelectedPresetName();
         const popupText = `
             <h3>Preset name:</h3>
             ${!this.isNonGenericApi() ? '<h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>' : ''}`;
-        const name = await callPopup(popupText, "input");
+        const name = await callPopup(popupText, 'input', inputValue);
 
         if (!name) {
             console.log('Preset name not provided');
@@ -134,10 +135,10 @@ class PresetManager {
     async savePreset(name, settings) {
         const preset = settings ?? this.getPresetSettings(name);
 
-        const res = await fetch(`/api/presets/save`, {
-            method: "POST",
+        const res = await fetch('/api/presets/save', {
+            method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ preset, name, apiId: this.apiId })
+            body: JSON.stringify({ preset, name, apiId: this.apiId }),
         });
 
         if (!res.ok) {
@@ -155,24 +156,24 @@ class PresetManager {
         let preset_names = {};
 
         switch (this.apiId) {
-            case "koboldhorde":
-            case "kobold":
+            case 'koboldhorde':
+            case 'kobold':
                 presets = koboldai_settings;
                 preset_names = koboldai_setting_names;
                 break;
-            case "novel":
+            case 'novel':
                 presets = novelai_settings;
                 preset_names = novelai_setting_names;
                 break;
-            case "textgenerationwebui":
+            case 'textgenerationwebui':
                 presets = textgenerationwebui_presets;
                 preset_names = textgenerationwebui_preset_names;
                 break;
-            case "context":
+            case 'context':
                 presets = context_presets;
                 preset_names = context_presets.map(x => x.name);
                 break;
-            case "instruct":
+            case 'instruct':
                 presets = instruct_presets;
                 preset_names = instruct_presets.map(x => x.name);
                 break;
@@ -184,11 +185,11 @@ class PresetManager {
     }
 
     isKeyedApi() {
-        return this.apiId == "textgenerationwebui" || this.apiId == "context" || this.apiId == "instruct";
+        return this.apiId == 'textgenerationwebui' || this.apiId == 'context' || this.apiId == 'instruct';
     }
 
     isNonGenericApi() {
-        return this.apiId == "context" || this.apiId == "instruct";
+        return this.apiId == 'context' || this.apiId == 'instruct';
     }
 
     updateList(name, preset) {
@@ -199,13 +200,13 @@ class PresetManager {
             if (this.isKeyedApi()) {
                 presets[preset_names.indexOf(name)] = preset;
                 $(this.select).find(`option[value="${name}"]`).prop('selected', true);
-                $(this.select).val(name).trigger("change");
+                $(this.select).val(name).trigger('change');
             }
             else {
                 const value = preset_names[name];
                 presets[value] = preset;
                 $(this.select).find(`option[value="${value}"]`).prop('selected', true);
-                $(this.select).val(value).trigger("change");
+                $(this.select).val(value).trigger('change');
             }
         }
         else {
@@ -216,12 +217,12 @@ class PresetManager {
                 preset_names[value] = name;
                 const option = $('<option></option>', { value: name, text: name, selected: true });
                 $(this.select).append(option);
-                $(this.select).val(name).trigger("change");
+                $(this.select).val(name).trigger('change');
             } else {
                 preset_names[name] = value;
                 const option = $('<option></option>', { value: value, text: name, selected: true });
                 $(this.select).append(option);
-                $(this.select).val(value).trigger("change");
+                $(this.select).val(value).trigger('change');
             }
         }
     }
@@ -229,21 +230,23 @@ class PresetManager {
     getPresetSettings(name) {
         function getSettingsByApiId(apiId) {
             switch (apiId) {
-                case "koboldhorde":
-                case "kobold":
+                case 'koboldhorde':
+                case 'kobold':
                     return kai_settings;
-                case "novel":
+                case 'novel':
                     return nai_settings;
-                case "textgenerationwebui":
-                    return textgenerationwebui_settings;
-                case "context":
+                case 'textgenerationwebui':
+                    return textgen_settings;
+                case 'context': {
                     const context_preset = getContextSettings();
                     context_preset['name'] = name || power_user.context.preset;
                     return context_preset;
-                case "instruct":
+                }
+                case 'instruct': {
                     const instruct_preset = structuredClone(power_user.instruct);
                     instruct_preset['name'] = name || power_user.instruct.preset;
                     return instruct_preset;
+                }
                 default:
                     console.warn(`Unknown API ID ${apiId}`);
                     return {};
@@ -261,14 +264,14 @@ class PresetManager {
             'nai_preamble',
             'model_novel',
             'streaming_kobold',
-            "enabled",
+            'enabled',
             'seed',
             'mancer_model',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
         for (const key of filteredKeys) {
-            if (settings.hasOwnProperty(key)) {
+            if (Object.hasOwn(settings, key)) {
                 delete settings[key];
             }
         }
@@ -282,7 +285,7 @@ class PresetManager {
     }
 
     async deleteCurrentPreset() {
-        const { presets, preset_names } = this.getPresetList();
+        const { preset_names } = this.getPresetList();
         const value = this.getSelectedPreset();
         const nameToDelete = this.getSelectedPresetName();
 
@@ -312,11 +315,22 @@ class PresetManager {
             body: JSON.stringify({ name: nameToDelete, apiId: this.apiId }),
         });
 
+        return response.ok;
+    }
+
+    async getDefaultPreset(name) {
+        const response = await fetch('/api/presets/restore', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ name, apiId: this.apiId }),
+        });
+
         if (!response.ok) {
-            toastr.warning('Preset was not deleted from server');
-        } else {
-            toastr.success('Preset deleted');
+            toastr.error('Failed to restore default preset');
+            return;
         }
+
+        return await response.json();
     }
 }
 
@@ -325,8 +339,8 @@ jQuery(async () => {
 
     eventSource.on(event_types.CHAT_CHANGED, autoSelectPreset);
     registerPresetManagers();
-    $(document).on("click", "[data-preset-manager-update]", async function () {
-        const apiId = $(this).data("preset-manager-update");
+    $(document).on('click', '[data-preset-manager-update]', async function () {
+        const apiId = $(this).data('preset-manager-update');
         const presetManager = getPresetManager(apiId);
 
         if (!presetManager) {
@@ -337,8 +351,8 @@ jQuery(async () => {
         await presetManager.updatePreset();
     });
 
-    $(document).on("click", "[data-preset-manager-new]", async function () {
-        const apiId = $(this).data("preset-manager-new");
+    $(document).on('click', '[data-preset-manager-new]', async function () {
+        const apiId = $(this).data('preset-manager-new');
         const presetManager = getPresetManager(apiId);
 
         if (!presetManager) {
@@ -349,8 +363,8 @@ jQuery(async () => {
         await presetManager.savePresetAs();
     });
 
-    $(document).on("click", "[data-preset-manager-export]", async function () {
-        const apiId = $(this).data("preset-manager-export");
+    $(document).on('click', '[data-preset-manager-export]', async function () {
+        const apiId = $(this).data('preset-manager-export');
         const presetManager = getPresetManager(apiId);
 
         if (!presetManager) {
@@ -358,20 +372,20 @@ jQuery(async () => {
             return;
         }
 
-        const selected = $(presetManager.select).find("option:selected");
+        const selected = $(presetManager.select).find('option:selected');
         const name = selected.text();
         const preset = presetManager.getPresetSettings(name);
         const data = JSON.stringify(preset, null, 4);
-        download(data, `${name}.json`, "application/json");
+        download(data, `${name}.json`, 'application/json');
     });
 
-    $(document).on("click", "[data-preset-manager-import]", async function () {
-        const apiId = $(this).data("preset-manager-import");
+    $(document).on('click', '[data-preset-manager-import]', async function () {
+        const apiId = $(this).data('preset-manager-import');
         $(`[data-preset-manager-file="${apiId}"]`).trigger('click');
     });
 
-    $(document).on("change", "[data-preset-manager-file]", async function (e) {
-        const apiId = $(this).data("preset-manager-file");
+    $(document).on('change', '[data-preset-manager-file]', async function (e) {
+        const apiId = $(this).data('preset-manager-file');
         const presetManager = getPresetManager(apiId);
 
         if (!presetManager) {
@@ -395,8 +409,8 @@ jQuery(async () => {
         e.target.value = null;
     });
 
-    $(document).on("click", "[data-preset-manager-delete]", async function () {
-        const apiId = $(this).data("preset-manager-delete");
+    $(document).on('click', '[data-preset-manager-delete]', async function () {
+        const apiId = $(this).data('preset-manager-delete');
         const presetManager = getPresetManager(apiId);
 
         if (!presetManager) {
@@ -405,7 +419,7 @@ jQuery(async () => {
         }
 
         // default context preset cannot be deleted
-        if (apiId == "context" && power_user.default_context === power_user.context.preset) {
+        if (apiId == 'context' && power_user.default_context === power_user.context.preset) {
             return;
         }
 
@@ -415,7 +429,65 @@ jQuery(async () => {
             return;
         }
 
-        await presetManager.deleteCurrentPreset();
+        const result = await presetManager.deleteCurrentPreset();
+
+        if (result) {
+            toastr.success('Preset deleted');
+        } else {
+            toastr.warning('Preset was not deleted from server');
+        }
+
         saveSettingsDebounced();
     });
-})
+
+    $(document).on('click', '[data-preset-manager-restore]', async function() {
+        const apiId = $(this).data('preset-manager-restore');
+        const presetManager = getPresetManager(apiId);
+
+        if (!presetManager) {
+            console.warn(`Preset Manager not found for API: ${apiId}`);
+            return;
+        }
+
+        const name = presetManager.getSelectedPresetName();
+        const data = await presetManager.getDefaultPreset(name);
+
+        if (name == 'gui') {
+            toastr.info('Cannot restore GUI preset');
+            return;
+        }
+
+        if (!data) {
+            return;
+        }
+
+        if (data.isDefault) {
+            if (Object.keys(data.preset).length === 0) {
+                toastr.error('Default preset cannot be restored');
+                return;
+            }
+
+            const confirm = await callPopup('<h3>Are you sure?</h3>Resetting a <b>default preset</b> will restore the default settings.', 'confirm');
+
+            if (!confirm) {
+                return;
+            }
+
+            await presetManager.deleteCurrentPreset();
+            await presetManager.savePreset(name, data.preset);
+            const option = presetManager.findPreset(name);
+            presetManager.selectPreset(option);
+            toastr.success('Default preset restored');
+        } else {
+            const confirm = await callPopup('<h3>Are you sure?</h3>Resetting a <b>custom preset</b> will restore to the last saved state.', 'confirm');
+
+            if (!confirm) {
+                return;
+            }
+
+            const option = presetManager.findPreset(name);
+            presetManager.selectPreset(option);
+            toastr.success('Preset restored');
+        }
+    });
+});

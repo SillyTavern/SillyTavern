@@ -1,23 +1,23 @@
-import { substituteParams } from "../../../script.js";
-import { extension_settings } from "../../extensions.js";
+import { substituteParams } from '../../../script.js';
+import { extension_settings } from '../../extensions.js';
 export {
     regex_placement,
     getRegexedString,
-    runRegexScript
-}
+    runRegexScript,
+};
 
 const regex_placement = {
     // MD Display is deprecated. Do not use.
     MD_DISPLAY: 0,
     USER_INPUT: 1,
     AI_OUTPUT: 2,
-    SLASH_COMMAND: 3
-}
+    SLASH_COMMAND: 3,
+};
 
 const regex_replace_strategy = {
     REPLACE: 0,
-    OVERLAY: 1
-}
+    OVERLAY: 1,
+};
 
 // Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
 function regexFromString(input) {
@@ -40,7 +40,7 @@ function regexFromString(input) {
 // Parent function to fetch a regexed version of a raw string
 function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt } = {}) {
     let finalString = rawString;
-    if (extension_settings.disabledExtensions.includes("regex") || !rawString || placement === undefined) {
+    if (extension_settings.disabledExtensions.includes('regex') || !rawString || placement === undefined) {
         return finalString;
     }
 
@@ -98,8 +98,8 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
             trimCapturedMatch ?? trimFencedMatch,
             {
                 characterOverride,
-                replaceStrategy: regexScript.replaceStrategy ?? regex_replace_strategy.REPLACE
-            }
+                replaceStrategy: regexScript.replaceStrategy ?? regex_replace_strategy.REPLACE,
+            },
         );
         if (!newString) {
             newString = rawString.replace(fencedMatch, subReplaceString);
@@ -121,7 +121,7 @@ function filterString(rawString, trimStrings, { characterOverride } = {}) {
     let finalString = rawString;
     trimStrings.forEach((trimString) => {
         const subTrimString = substituteParams(trimString, undefined, characterOverride);
-        finalString = finalString.replaceAll(subTrimString, "");
+        finalString = finalString.replaceAll(subTrimString, '');
     });
 
     return finalString;
@@ -135,7 +135,7 @@ function substituteRegexParams(rawString, regexMatch, { characterOverride, repla
     let overlaidMatch = regexMatch;
     // TODO: Maybe move the for loops into a separate function?
     if (replaceStrategy === regex_replace_strategy.OVERLAY) {
-        const splitReplace = finalString.split("{{match}}");
+        const splitReplace = finalString.split('{{match}}');
 
         // There's a prefix
         if (splitReplace[0]) {
@@ -177,7 +177,7 @@ function substituteRegexParams(rawString, regexMatch, { characterOverride, repla
     }
 
     // Only one match is replaced. This is by design
-    finalString = finalString.replace("{{match}}", overlaidMatch) || finalString.replace("{{match}}", regexMatch);
+    finalString = finalString.replace('{{match}}', overlaidMatch) || finalString.replace('{{match}}', regexMatch);
 
     return finalString;
 }

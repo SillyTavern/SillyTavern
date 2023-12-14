@@ -7,7 +7,7 @@ const parse = async (cardUrl, format) => {
     let fileFormat = format === undefined ? 'png' : format;
 
     switch (fileFormat) {
-        case 'png':
+        case 'png': {
             const buffer = fs.readFileSync(cardUrl);
             const chunks = extract(buffer);
 
@@ -23,11 +23,12 @@ const parse = async (cardUrl, format) => {
             }
 
             return Buffer.from(textChunks[0].text, 'base64').toString('utf8');
+        }
         default:
             break;
     }
 };
 
 module.exports = {
-    parse: parse
+    parse: parse,
 };

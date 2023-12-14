@@ -23,7 +23,7 @@ const color = {
     blue: (mess) => color.byNum(mess, 34),
     magenta: (mess) => color.byNum(mess, 35),
     cyan: (mess) => color.byNum(mess, 36),
-    white: (mess) => color.byNum(mess, 37)
+    white: (mess) => color.byNum(mess, 37),
 };
 
 /**
