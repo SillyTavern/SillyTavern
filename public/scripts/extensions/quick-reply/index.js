@@ -1127,8 +1127,8 @@ jQuery(() => {
     newlabel - string - new text fort the button, e.g. newlabel=MyRenamedButton
     ${qrArgs}
     `.trim();
-    registerSlashCommand('qr-create', qrCreateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments [message])\n  arguments:\n    ${qrArgs}</span> – creates a new Quick Reply, example: <tt>/qr-create set=MyPreset label=MyButton /echo 123</tt>`, true, true);
-    registerSlashCommand('qr-update', qrUpdateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments [message])\n  arguments:\n    ${qrUpdateArgs}</span> – updates Quick Reply, example: <tt>/qr-update set=MyPreset label=MyButton newlabel=MyRenamedButton /echo 123</tt>`, true, true);
+    registerSlashCommand('qr-create', qrCreateCallback, [], `<span class="monospace" style="white-space:pre-line;">(arguments [message])\n  arguments:\n    ${qrArgs}</span> – creates a new Quick Reply, example: <tt>/qr-create set=MyPreset label=MyButton /echo 123</tt>`, true, true);
+    registerSlashCommand('qr-update', qrUpdateCallback, [], `<span class="monospace" style="white-space:pre-line;">(arguments [message])\n  arguments:\n    ${qrUpdateArgs}</span> – updates Quick Reply, example: <tt>/qr-update set=MyPreset label=MyButton newlabel=MyRenamedButton /echo 123</tt>`, true, true);
     registerSlashCommand('qr-delete', qrDeleteCallback, [], '<span class="monospace">(set=string [label])</span> – deletes Quick Reply', true, true);
     registerSlashCommand('qr-contextadd', qrContextAddCallback, [], '<span class="monospace">(set=string label=string chain=bool [preset name])</span> – add context menu preset to a QR, example: <tt>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset</tt>', true, true);
     registerSlashCommand('qr-contextdel', qrContextDeleteCallback, [], '<span class="monospace">(set=string label=string [preset name])</span> – remove context menu preset from a QR, example: <tt>/qr-contextdel set=MyPreset label=MyButton MyOtherPreset</tt>', true, true);
@@ -1140,6 +1140,6 @@ jQuery(() => {
     slots   - int  - number of slots
     inject  - bool - inject user input automatically (if disabled use {{input}})
     `.trim();
-    registerSlashCommand('qr-presetadd', qrPresetAddCallback, [], `<span class="monospace" style="white-space:pre;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – create a new preset (overrides existing ones), example: <tt>/qr-presetadd slots=3 MyNewPreset</tt>`, true, true);
-    registerSlashCommand('qr-presetupdate', qrPresetUpdateCallback, [], `<span class="monospace" style="white-space:pre;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – update an existing preset, example: <tt>/qr-presetupdate enabled=false MyPreset</tt>`, true, true);
+    registerSlashCommand('qr-presetadd', qrPresetAddCallback, [], `<span class="monospace" style="white-space:pre-line;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – create a new preset (overrides existing ones), example: <tt>/qr-presetadd slots=3 MyNewPreset</tt>`, true, true);
+    registerSlashCommand('qr-presetupdate', qrPresetUpdateCallback, [], `<span class="monospace" style="white-space:pre-line;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – update an existing preset, example: <tt>/qr-presetupdate enabled=false MyPreset</tt>`, true, true);
 });
