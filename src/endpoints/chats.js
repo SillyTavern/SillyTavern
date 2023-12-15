@@ -10,9 +10,9 @@ const { DIRECTORIES, UPLOADS_PATH } = require('../constants');
 const { getConfigValue, humanizedISO8601DateTime, tryParse, generateTimestamp, removeOldBackups } = require('../util');
 
 /**
- *
- * @param {string} name
- * @param {string} chat
+ * Saves a chat to the backups directory.
+ * @param {string} name The name of the chat.
+ * @param {string} chat The serialized chat to save.
  */
 function backupChat(name, chat) {
     try {
@@ -64,7 +64,6 @@ router.post('/get', jsonParser, function (request, response) {
             fs.mkdirSync(DIRECTORIES.chats + dirName);
             return response.send({});
         }
-
 
         if (!request.body.file_name) {
             return response.send({});
@@ -140,7 +139,6 @@ router.post('/delete', jsonParser, function (request, response) {
 
     }
 
-
     return response.send('ok');
 });
 
@@ -190,6 +188,10 @@ router.post('/export', jsonParser, async function (request, response) {
         let buffer = '';
         rl.on('line', (line) => {
             const data = JSON.parse(line);
+            // Skip non-printable/prompt-hidden messages
+            if (data.is_system) {
+                return;
+            }
             if (data.mes) {
                 const name = data.name;
                 const message = (data?.extra?.display_text || data?.mes || '').replace(/\r?\n/g, '\n');
