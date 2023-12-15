@@ -405,6 +405,12 @@ async function sendMistralAIRequest(request, response) {
         return response.status(400).send({ error: true });
     }
 
+    //can't send a system role as the last message.
+    const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
+    if (messages.length > 0 && messages[messages.length - 1].role === 'system') {
+        messages[messages.length - 1].role = 'user';
+    }
+
     try {
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
@@ -420,7 +426,7 @@ async function sendMistralAIRequest(request, response) {
             },
             body: JSON.stringify({
                 'model': request.body.model,
-                'messages': request.body.messages,
+                'messages': messages,
                 'temperature': request.body.temperature,
                 'top_p': request.body.top_p,
                 'max_tokens': request.body.max_tokens,
