@@ -22,8 +22,25 @@ const { importRisuSprites } = require('./sprites');
 
 let characters = {};
 
+// KV-store for parsed character data
+const characterDataCache = new Map();
+
+/**
+ * Reads the character card from the specified image file.
+ * @param {string} img_url - Path to the image file
+ * @param {string} input_format - 'png'
+ * @returns {Promise<string | undefined>} - Character card data
+ */
 async function charaRead(img_url, input_format) {
-    return characterCardParser.parse(img_url, input_format);
+    const stat = fs.statSync(img_url);
+    const cacheKey = `${img_url}-${stat.mtimeMs}`;
+    if (characterDataCache.has(cacheKey)) {
+        return characterDataCache.get(cacheKey);
+    }
+
+    const result = characterCardParser.parse(img_url, input_format);
+    characterDataCache.set(cacheKey, result);
+    return result;
 }
 
 /**
@@ -32,6 +49,13 @@ async function charaRead(img_url, input_format) {
  */
 async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok', crop = undefined) {
     try {
+        // Reset the cache
+        for (const key of characterDataCache.keys()) {
+            if (key.startsWith(img_url)) {
+                characterDataCache.delete(key);
+                break;
+            }
+        }
         // Read the image, resize, and save it as a PNG into the buffer
         const image = await tryReadImage(img_url, crop);
 

@@ -109,16 +109,21 @@ function loadSettings() {
     $('#memory_depth').val(extension_settings.memory.depth).trigger('input');
     $(`input[name="memory_position"][value="${extension_settings.memory.position}"]`).prop('checked', true).trigger('input');
     $('#memory_prompt_words_force').val(extension_settings.memory.promptForceWords).trigger('input');
+    switchSourceControls(extension_settings.memory.source);
 }
 
 function onSummarySourceChange(event) {
     const value = event.target.value;
     extension_settings.memory.source = value;
+    switchSourceControls(value);
+    saveSettingsDebounced();
+}
+
+function switchSourceControls(value) {
     $('#memory_settings [data-source]').each((_, element) => {
         const source = $(element).data('source');
         $(element).toggle(source === value);
     });
-    saveSettingsDebounced();
 }
 
 function onMemoryShortInput() {
