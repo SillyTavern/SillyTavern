@@ -19,11 +19,6 @@ if [ ! -e "config/settings.json" ]; then
     cp -r "default/settings.json" "config/settings.json"
 fi
 
-if [ ! -e "config/bg_load.css" ]; then
-    echo "Resource not found, copying from defaults: bg_load.css"
-    cp -r "default/bg_load.css" "config/bg_load.css"
-fi
-
 CONFIG_FILE="config.yaml"
 
 echo "Starting with the following config:"
