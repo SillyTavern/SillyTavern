@@ -266,8 +266,9 @@ export {
     countOccurrences,
 };
 
-// Cohee: Uncomment when we decide to use loader
 showLoader();
+// Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
+document.getElementById('preloader').remove();
 
 // Allow target="_blank" in links
 DOMPurify.addHook('afterSanitizeAttributes', function (node) {
