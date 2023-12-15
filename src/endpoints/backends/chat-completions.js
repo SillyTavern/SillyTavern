@@ -392,6 +392,15 @@ async function sendAI21Request(request, response) {
 
 }
 
+/**
+ * Sends a request to MistralAI API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendMistralAIRequest(request, response) {
+
+}
+
 const router = express.Router();
 
 router.post('/status', jsonParser, async function (request, response_getstatus_openai) {
@@ -401,15 +410,18 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     let api_key_openai;
     let headers;
 
-    if (request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.OPENROUTER) {
+    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         api_url = new URL(request.body.reverse_proxy || API_OPENAI).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
-    } else {
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         api_url = 'https://openrouter.ai/api/v1';
         api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
+    } else {
+        api_url = 'https://api.mistral.ai/v1';
+        api_key_openai = readSecret(SECRET_KEYS.MISTRALAI);
     }
 
     if (!api_key_openai && !request.body.reverse_proxy) {
@@ -444,6 +456,9 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
                 });
 
                 console.log('Available OpenRouter models:', models);
+            } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
+                const models = data?.data;
+                console.log(models);
             } else {
                 const models = data?.data;
 

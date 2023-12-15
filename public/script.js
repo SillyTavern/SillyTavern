@@ -5396,6 +5396,7 @@ function changeMainAPI() {
         case chat_completion_sources.OPENAI:
         case chat_completion_sources.AI21:
         case chat_completion_sources.MAKERSUITE:
+        case chat_completion_sources.MISTRALAI:
         default:
             setupChatCompletionPromptManager(oai_settings);
             break;
@@ -7546,6 +7547,11 @@ async function connectAPISlash(_, text) {
             source: 'makersuite',
             button: '#api_button_openai',
         },
+        'mistralai': {
+            selected: 'openai',
+            source: 'mistralai',
+            button: '#api_button_openai',
+        },
     };
 
     const apiConfig = apiMap[text.toLowerCase()];
@@ -7832,7 +7838,7 @@ jQuery(async function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
-    registerSlashCommand('api', connectAPISlash, [], '<span class="monospace">(kobold, horde, novel, ooba, tabby, mancer, aphrodite, kcpp, oai, claude, windowai, openrouter, scale, ai21, makersuite)</span> – connect to an API', true, true);
+    registerSlashCommand('api', connectAPISlash, [], '<span class="monospace">(kobold, horde, novel, ooba, tabby, mancer, aphrodite, kcpp, oai, claude, windowai, openrouter, scale, ai21, makersuite, mistralai)</span> – connect to an API', true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);

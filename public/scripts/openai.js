@@ -1453,6 +1453,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isAI21 = oai_settings.chat_completion_source == chat_completion_sources.AI21;
     const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
     const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
+    const isMistral = oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI;
     const isTextCompletion = (isOAI && textCompletionModels.includes(oai_settings.openai_model)) || (isOpenRouter && oai_settings.openrouter_force_instruct && power_user.instruct.enabled);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -1560,7 +1561,11 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['stop_tokens'] = [name1 + ':', oai_settings.new_chat_prompt, oai_settings.new_group_chat_prompt];
     }
 
-    if ((isOAI || isOpenRouter) && oai_settings.seed >= 0) {
+    if (isMistral) {
+        generate_data['safe_mode'] = false; // already defaults to false, but just incase they change that in the future.
+    }
+
+    if ((isOAI || isOpenRouter || isMistral) && oai_settings.seed >= 0) {
         generate_data['seed'] = oai_settings.seed;
     }
 
@@ -2457,7 +2462,7 @@ async function getStatusOpen() {
         chat_completion_source: oai_settings.chat_completion_source,
     };
 
-    if (oai_settings.reverse_proxy && oai_settings.chat_completion_source !== chat_completion_sources.OPENROUTER) {
+    if (oai_settings.reverse_proxy && (oai_settings.chat_completion_source !== chat_completion_sources.OPENROUTER || oai_settings.chat_completion_source !== chat_completion_sources.MISTRALAI)) {
         validateReverseProxy();
     }
 
@@ -3194,6 +3199,16 @@ async function onModelChange() {
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.MISTRALAI) {
+        $('#openai_max_context').attr('max', max_32k);
+        oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+
+        //mistral also caps temp at 1.0
+        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
@@ -3355,6 +3370,19 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
+        const api_key_mistralai = String($('#api_key_mistralai').val()).trim();
+
+        if (api_key_mistralai.length) {
+            await writeSecret(SECRET_KEYS.MISTRALAI, api_key_mistralai);
+        }
+
+        if (!secret_state[SECRET_KEYS.MISTRALAI]) {
+            console.log('No secret key saved for MistralAI');
+            return;
+        }
+    }
+
     startStatusLoading();
     saveSettingsDebounced();
     await getStatusOpen();
@@ -3386,6 +3414,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
         $('#model_ai21_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
+        $('#model_mistralai_select').trigger('change');
     }
     $('[data-source]').each(function () {
         const validSources = $(this).data('source').split(',');
@@ -3764,6 +3795,7 @@ $(document).ready(async function () {
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
     $('#model_ai21_select').on('change', onModelChange);
+    $('#model_mistralai_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);
