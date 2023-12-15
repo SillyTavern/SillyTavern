@@ -2,19 +2,21 @@ const fetch = require('node-fetch').default;
 const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
 
 /**
- * Gets the vector for the given text from OpenAI ada model
+ * Gets the vector for the given text from an OpenAI compatible endpoint.
  * @param {string} text - The text to get the vector for
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getOpenAIVector(text) {
-    const key = readSecret(SECRET_KEYS.OPENAI);
+async function getOpenAIVector(text, source) {
+    const isMistral = source === 'mistral';
+    const key = readSecret(isMistral ? SECRET_KEYS.MISTRALAI : SECRET_KEYS.OPENAI);
 
     if (!key) {
         console.log('No OpenAI key found');
         throw new Error('No OpenAI key found');
     }
 
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
+    const url = isMistral ? 'api.mistral.ai' : 'api.openai.com';
+    const response = await fetch(`https://${url}/v1/embeddings`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -22,7 +24,7 @@ async function getOpenAIVector(text) {
         },
         body: JSON.stringify({
             input: text,
-            model: 'text-embedding-ada-002',
+            model: isMistral ? 'mistral-embed' : 'text-embedding-ada-002',
         }),
     });
 
