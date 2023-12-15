@@ -185,7 +185,7 @@ function migrateBackground() {
         return;
     }
 
-    settingsJSON.background = { file: bgFilename, url: `url('backgrounds/${bgFilename}')` };
+    settingsJSON.background = { name: bgFilename, url: `url('backgrounds/${bgFilename}')` };
     fs.writeFileSync('./public/settings.json', JSON.stringify(settingsJSON, null, 4));
     fs.rmSync('./public/css/bg_load.css');
 }
