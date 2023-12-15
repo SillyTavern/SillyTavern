@@ -405,7 +405,7 @@ async function sendMistralAIRequest(request, response) {
         return response.status(400).send({ error: true });
     }
 
-    //can't send a system role as the last message.
+    //must send a user role as last message
     const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
     const lastMsg = messages[messages.length - 1];
     if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
