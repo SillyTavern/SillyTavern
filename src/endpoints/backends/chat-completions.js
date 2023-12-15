@@ -407,8 +407,12 @@ async function sendMistralAIRequest(request, response) {
 
     //can't send a system role as the last message.
     const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
-    if (messages.length > 0 && messages[messages.length - 1].role === 'system') {
-        messages[messages.length - 1].role = 'user';
+    const lastMsg = messages[messages.length - 1];
+    if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
+        lastMsg.role = 'user';
+        if(lastMsg.role === 'assistant') {
+            lastMsg.content = lastMsg.name + ': ' + lastMsg.content;
+        }
     }
 
     try {
