@@ -18,7 +18,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
         if (addAssistantPostfix) {
             messages.push({
                 role: 'assistant',
-                content: addAssistantPrefill || '',
+                content: addAssistantPrefill || '4',
             });
         }
         // Find the index of the first message with an assistant role and check for a "'user' role/Human:" before it.
@@ -63,7 +63,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
             'user': '\n\nHuman: ',
             'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : '\n\n',
             'FixHumMsg': '\n\nFirst message: ',
-        }[v.role] ?? '\n\n';
+        }[v.role] ?? '\n\n4';
 
         return prefix + v.content;
     }).join('');
