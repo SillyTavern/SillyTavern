@@ -5083,6 +5083,8 @@ async function saveChat(chat_name, withMetadata, mesId) {
             character_name: name2,
             create_date: chat_create_date,
             chat_metadata: metadata,
+            last_line: JSON.stringify(trimmed_chat[trimmed_chat.length - 1] ?? ''),
+            chat_items: trimmed_chat.length,
         },
         ...trimmed_chat,
     ];
@@ -5928,10 +5930,10 @@ async function messageEditDone(div) {
     mesBlock.find('.mes_bias').append(messageFormatting(bias));
     appendMediaToMessage(mes, div.closest('.mes'));
     addCopyToCodeBlocks(div.closest('.mes'));
-    await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
-
     this_edit_mes_id = undefined;
     await saveChatConditional();
+
+    await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
 }
 
 /**
@@ -6598,7 +6600,7 @@ export async function saveMetadata() {
 
 export async function saveChatConditional() {
     try {
-        await waitUntilCondition(() => !isChatSaving, durationSaveEdit, 100);
+        await waitUntilCondition(() => !isChatSaving, 2000, 100);
     } catch {
         console.warn('Timeout waiting for chat to save');
         return;

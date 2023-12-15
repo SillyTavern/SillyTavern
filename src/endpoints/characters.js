@@ -712,8 +712,20 @@ router.post('/chats', jsonParser, async function (request, response) {
                 let lastLine;
                 let itemCounter = 0;
                 rl.on('line', (line) => {
-                    itemCounter++;
+                    if (itemCounter === 0 && line.includes('last_line')) {
+                        const jsonData = tryParse(line);
+
+                        if (jsonData && typeof jsonData.last_line === 'string' && jsonData.last_line.length > 0) {
+                            lastLine = jsonData.last_line;
+                            itemCounter = jsonData.chat_items + 1;
+                            rl.close();
+                            fileStream.destroy();
+                            return;
+                        }
+                    }
+
                     lastLine = line;
+                    itemCounter++;
                 });
                 rl.on('close', () => {
                     rl.close();
@@ -734,6 +746,9 @@ router.post('/chats', jsonParser, async function (request, response) {
                             console.log('Found an invalid or corrupted chat file:', pathToFile);
                             res({});
                         }
+                    } else {
+                        console.log('Found an empty chat file:', pathToFile);
+                        res({});
                     }
                 });
             });
