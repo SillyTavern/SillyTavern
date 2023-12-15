@@ -1756,22 +1756,28 @@ async function generateMultimodalPrompt(generationType, quietPrompt) {
         }
     }
 
-    const response = await fetch(avatarUrl);
+    try {
+        const response = await fetch(avatarUrl);
 
-    if (!response.ok) {
-        throw new Error('Could not fetch avatar image.');
-    }
+        if (!response.ok) {
+            throw new Error('Could not fetch avatar image.');
+        }
 
-    const avatarBlob = await response.blob();
-    const avatarBase64 = await getBase64Async(avatarBlob);
+        const avatarBlob = await response.blob();
+        const avatarBase64 = await getBase64Async(avatarBlob);
 
-    const caption = await getMultimodalCaption(avatarBase64, quietPrompt);
+        const caption = await getMultimodalCaption(avatarBase64, quietPrompt);
 
-    if (!caption) {
+        if (!caption) {
+            throw new Error('No caption returned from the API.');
+        }
+
+        return caption;
+    } catch (error) {
+        console.error(error);
+        toastr.error('Multimodal captioning failed. Please try again.', 'Image Generation');
         throw new Error('Multimodal captioning failed.');
     }
-
-    return caption;
 }
 
 /**

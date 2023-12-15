@@ -105,7 +105,26 @@ const UNSAFE_EXTENSIONS = [
     '.ws',
 ];
 
-const PALM_SAFETY = [
+const GEMINI_SAFETY = [
+    {
+        category: 'HARM_CATEGORY_HARASSMENT',
+        threshold: 'BLOCK_NONE',
+    },
+    {
+        category: 'HARM_CATEGORY_HATE_SPEECH',
+        threshold: 'BLOCK_NONE',
+    },
+    {
+        category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+        threshold: 'BLOCK_NONE',
+    },
+    {
+        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+        threshold: 'BLOCK_NONE',
+    },
+];
+
+const BISON_SAFETY = [
     {
         category: 'HARM_CATEGORY_DEROGATORY',
         threshold: 'BLOCK_NONE',
@@ -139,7 +158,7 @@ const CHAT_COMPLETION_SOURCES = {
     SCALE: 'scale',
     OPENROUTER: 'openrouter',
     AI21: 'ai21',
-    PALM: 'palm',
+    MAKERSUITE: 'makersuite',
 };
 
 const UPLOADS_PATH = './uploads';
@@ -160,7 +179,8 @@ module.exports = {
     DIRECTORIES,
     UNSAFE_EXTENSIONS,
     UPLOADS_PATH,
-    PALM_SAFETY,
+    GEMINI_SAFETY,
+    BISON_SAFETY,
     TEXTGEN_TYPES,
     CHAT_COMPLETION_SOURCES,
     AVATAR_WIDTH,

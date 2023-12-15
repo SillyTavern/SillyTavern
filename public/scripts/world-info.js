@@ -441,7 +441,7 @@ async function loadWorldInfoData(name) {
 }
 
 async function updateWorldInfoList() {
-    const result = await fetch('/getsettings', {
+    const result = await fetch('/api/settings/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({}),

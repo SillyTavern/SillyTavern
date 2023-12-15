@@ -1,10 +1,11 @@
 const express = require('express');
 const fetch = require('node-fetch').default;
+const { Readable } = require('stream');
 
 const { jsonParser } = require('../../express-common');
-const { CHAT_COMPLETION_SOURCES, PALM_SAFETY } = require('../../constants');
+const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4 } = require('../../util');
-const { convertClaudePrompt, convertTextCompletionPrompt } = require('../prompt-converters');
+const { convertClaudePrompt, convertGooglePrompt, convertTextCompletionPrompt } = require('../prompt-converters');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
 const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
@@ -149,28 +150,70 @@ async function sendScaleRequest(request, response) {
  * @param {express.Request} request Express request
  * @param {express.Response} response Express response
  */
-async function sendPalmRequest(request, response) {
-    const api_key_palm = readSecret(SECRET_KEYS.PALM);
+async function sendMakerSuiteRequest(request, response) {
+    const apiKey = readSecret(SECRET_KEYS.MAKERSUITE);
 
-    if (!api_key_palm) {
-        console.log('Palm API key is missing.');
+    if (!apiKey) {
+        console.log('MakerSuite API key is missing.');
         return response.status(400).send({ error: true });
     }
 
-    const body = {
-        prompt: {
-            text: request.body.messages,
-        },
+    const model = String(request.body.model);
+    const isGemini = model.includes('gemini');
+    const isText = model.includes('text');
+    const stream = Boolean(request.body.stream) && isGemini;
+
+    const generationConfig = {
         stopSequences: request.body.stop,
-        safetySettings: PALM_SAFETY,
+        candidateCount: 1,
+        maxOutputTokens: request.body.max_tokens,
         temperature: request.body.temperature,
         topP: request.body.top_p,
         topK: request.body.top_k || undefined,
-        maxOutputTokens: request.body.max_tokens,
-        candidate_count: 1,
     };
 
-    console.log('Palm request:', body);
+    function getGeminiBody() {
+        return {
+            contents: convertGooglePrompt(request.body.messages, model),
+            safetySettings: GEMINI_SAFETY,
+            generationConfig: generationConfig,
+        };
+    }
+
+    function getBisonBody() {
+        const prompt = isText
+            ? ({ text: convertTextCompletionPrompt(request.body.messages) })
+            : ({ messages: convertGooglePrompt(request.body.messages, model) });
+
+        /** @type {any} Shut the lint up */
+        const bisonBody = {
+            ...generationConfig,
+            safetySettings: BISON_SAFETY,
+            candidate_count: 1, // lewgacy spelling
+            prompt: prompt,
+        };
+
+        if (!isText) {
+            delete bisonBody.stopSequences;
+            delete bisonBody.maxOutputTokens;
+            delete bisonBody.safetySettings;
+
+            if (Array.isArray(prompt.messages)) {
+                for (const msg of prompt.messages) {
+                    msg.author = msg.role;
+                    msg.content = msg.parts[0].text;
+                    delete msg.parts;
+                    delete msg.role;
+                }
+            }
+        }
+
+        delete bisonBody.candidateCount;
+        return bisonBody;
+    }
+
+    const body = isGemini ? getGeminiBody() : getBisonBody();
+    console.log('MakerSuite request:', body);
 
     try {
         const controller = new AbortController();
@@ -179,7 +222,12 @@ async function sendPalmRequest(request, response) {
             controller.abort();
         });
 
-        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${api_key_palm}`, {
+        const apiVersion = isGemini ? 'v1beta' : 'v1beta2';
+        const responseType = isGemini
+            ? (stream ? 'streamGenerateContent' : 'generateContent')
+            : (isText ? 'generateText' : 'generateMessage');
+
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${responseType}?key=${apiKey}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -188,34 +236,79 @@ async function sendPalmRequest(request, response) {
             signal: controller.signal,
             timeout: 0,
         });
+        // have to do this because of their busted ass streaming endpoint
+        if (stream) {
+            try {
+                let partialData = '';
+                generateResponse.body.on('data', (data) => {
+                    const chunk = data.toString();
+                    if (chunk.startsWith(',') || chunk.endsWith(',') || chunk.startsWith('[') || chunk.endsWith(']')) {
+                        partialData = chunk.slice(1);
+                    } else {
+                        partialData += chunk;
+                    }
+                    while (true) {
+                        let json;
+                        try {
+                            json = JSON.parse(partialData);
+                        } catch (e) {
+                            break;
+                        }
+                        response.write(JSON.stringify(json));
+                        partialData = '';
+                    }
+                });
 
-        if (!generateResponse.ok) {
-            console.log(`Palm API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
-            return response.status(generateResponse.status).send({ error: true });
-        }
+                request.socket.on('close', function () {
+                    if (generateResponse.body instanceof Readable) generateResponse.body.destroy();
+                    response.end();
+                });
 
-        const generateResponseJson = await generateResponse.json();
-        const responseText = generateResponseJson?.candidates?.[0]?.output;
+                generateResponse.body.on('end', () => {
+                    console.log('Streaming request finished');
+                    response.end();
+                });
 
-        if (!responseText) {
-            console.log('Palm API returned no response', generateResponseJson);
-            let message = `Palm API returned no response: ${JSON.stringify(generateResponseJson)}`;
-
-            // Check for filters
-            if (generateResponseJson?.filters?.[0]?.reason) {
-                message = `Palm filter triggered: ${generateResponseJson.filters[0].reason}`;
+            } catch (error) {
+                console.log('Error forwarding streaming response:', error);
+                if (!response.headersSent) {
+                    return response.status(500).send({ error: true });
+                }
+            }
+        } else {
+            if (!generateResponse.ok) {
+                console.log(`MakerSuite API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                return response.status(generateResponse.status).send({ error: true });
             }
 
-            return response.send({ error: { message } });
+            const generateResponseJson = await generateResponse.json();
+
+            const candidates = generateResponseJson?.candidates;
+            if (!candidates || candidates.length === 0) {
+                let message = 'MakerSuite API returned no candidate';
+                console.log(message, generateResponseJson);
+                if (generateResponseJson?.promptFeedback?.blockReason) {
+                    message += `\nPrompt was blocked due to : ${generateResponseJson.promptFeedback.blockReason}`;
+                }
+                return response.send({ error: { message } });
+            }
+
+            const responseContent = candidates[0].content ?? candidates[0].output;
+            const responseText = typeof responseContent === 'string' ? responseContent : responseContent.parts?.[0]?.text;
+            if (!responseText) {
+                let message = 'MakerSuite Candidate text empty';
+                console.log(message, generateResponseJson);
+                return response.send({ error: { message } });
+            }
+
+            console.log('MakerSuite response:', responseText);
+
+            // Wrap it back to OAI format
+            const reply = { choices: [{ 'message': { 'content': responseText } }] };
+            return response.send(reply);
         }
-
-        console.log('Palm response:', responseText);
-
-        // Wrap it back to OAI format
-        const reply = { choices: [{ 'message': { 'content': responseText } }] };
-        return response.send(reply);
     } catch (error) {
-        console.log('Error communicating with Palm API: ', error);
+        console.log('Error communicating with MakerSuite API: ', error);
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
         }
@@ -223,7 +316,7 @@ async function sendPalmRequest(request, response) {
 }
 
 /**
- * Sends a request to Google AI API.
+ * Sends a request to AI21 API.
  * @param {express.Request} request Express request
  * @param {express.Response} response Express response
  */
@@ -455,7 +548,7 @@ router.post('/generate', jsonParser, function (request, response) {
         case CHAT_COMPLETION_SOURCES.CLAUDE: return sendClaudeRequest(request, response);
         case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
-        case CHAT_COMPLETION_SOURCES.PALM: return sendPalmRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
     }
 
     let apiUrl;

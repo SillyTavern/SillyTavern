@@ -92,6 +92,68 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
 }
 
 /**
+ * Convert a prompt from the ChatML objects to the format used by Google MakerSuite models.
+ * @param {object[]} messages Array of messages
+ * @param {string} model Model name
+ * @returns {object[]} Prompt for Google MakerSuite models
+ */
+function convertGooglePrompt(messages, model) {
+    // This is a 1x1 transparent PNG
+    const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    const contents = [];
+    let lastRole = '';
+    let currentText = '';
+
+    const isMultimodal = model === 'gemini-pro-vision';
+
+    if (isMultimodal) {
+        const combinedText = messages.map((message) => {
+            const role = message.role === 'assistant' ? 'MODEL: ' : 'USER: ';
+            return role + message.content;
+        }).join('\n\n').trim();
+
+        const imageEntry = messages.find((message) => message.content?.[1]?.image_url);
+        const imageData = imageEntry?.content?.[1]?.image_url?.data ?? PNG_PIXEL;
+        contents.push({
+            parts: [
+                { text: combinedText },
+                {
+                    inlineData: {
+                        mimeType: 'image/png',
+                        data: imageData,
+                    },
+                },
+            ],
+            role: 'user',
+        });
+    } else {
+        messages.forEach((message, index) => {
+            const role = message.role === 'assistant' ? 'model' : 'user';
+            if (lastRole === role) {
+                currentText += '\n\n' + message.content;
+            } else {
+                if (currentText !== '') {
+                    contents.push({
+                        parts: [{ text: currentText.trim() }],
+                        role: lastRole,
+                    });
+                }
+                currentText = message.content;
+                lastRole = role;
+            }
+            if (index === messages.length - 1) {
+                contents.push({
+                    parts: [{ text: currentText.trim() }],
+                    role: lastRole,
+                });
+            }
+        });
+    }
+
+    return contents;
+}
+
+/**
  * Convert a prompt from the ChatML objects to the format used by Text Completion API.
  * @param {object[]} messages Array of messages
  * @returns {string} Prompt for Text Completion API
@@ -118,5 +180,6 @@ function convertTextCompletionPrompt(messages) {
 
 module.exports = {
     convertClaudePrompt,
+    convertGooglePrompt,
     convertTextCompletionPrompt,
 };
