@@ -419,7 +419,7 @@ hr {
 }
 
 #bg1 {
-    background-image: url('backgrounds/tavern day.jpg');
+    background-image: url('backgrounds/__transparent.png');
     z-index: -3;
 }
 

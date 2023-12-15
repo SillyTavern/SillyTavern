@@ -169,7 +169,6 @@ import {
 import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
 import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
-import { getDeviceInfo } from './scripts/RossAscends-mods.js';
 import { registerPromptManagerMigration } from './scripts/PromptManager.js';
 import { getRegexedString, regex_placement } from './scripts/extensions/regex/engine.js';
 import { FILTER_TYPES, FilterHelper } from './scripts/filters.js';
@@ -187,7 +186,7 @@ import {
 import { applyLocale, initLocales } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
 import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription } from './scripts/personas.js';
-import { getBackgrounds, initBackgrounds } from './scripts/backgrounds.js';
+import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels } from './scripts/mancer-settings.js';
@@ -266,8 +265,9 @@ export {
     countOccurrences,
 };
 
-// Cohee: Uncomment when we decide to use loader
 showLoader();
+// Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
+document.getElementById('preloader').remove();
 
 // Allow target="_blank" in links
 DOMPurify.addHook('afterSanitizeAttributes', function (node) {
@@ -5673,6 +5673,9 @@ async function getSettings() {
         // Load character tags
         loadTagsSettings(settings);
 
+        // Load background
+        loadBackgroundSettings(settings);
+
         // Allow subscribers to mutate settings
         eventSource.emit(event_types.SETTINGS_LOADED_AFTER, settings);
 
@@ -5755,6 +5758,9 @@ async function saveSettings(type) {
         console.warn('Settings not ready, aborting save');
         return;
     }
+
+    console.log(background_settings);
+
     //console.log('Entering settings with name1 = '+name1);
 
     return jQuery.ajax({
@@ -5784,6 +5790,7 @@ async function saveSettings(type) {
             nai_settings: nai_settings,
             kai_settings: kai_settings,
             oai_settings: oai_settings,
+            background: background_settings,
         }, null, 4),
         beforeSend: function () { },
         cache: false,
@@ -6834,8 +6841,7 @@ function openCharacterWorldPopup() {
     template.find('.character_name').text(name);
 
     // Not needed on mobile
-    const deviceInfo = getDeviceInfo();
-    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+    if (!isMobile()) {
         $(extraSelect).select2({
             width: '100%',
             placeholder: 'No auxillary Lorebooks set. Click here to select.',
@@ -7812,7 +7818,7 @@ function addDebugFunctions() {
 
 jQuery(async function () {
 
-    if (isMobile() === true) {
+    if (isMobile()) {
         console.debug('hiding movingUI and sheldWidth toggles for mobile');
         $('#sheldWidthToggleBlock').hide();
         $('#movingUIModeCheckBlock').hide();

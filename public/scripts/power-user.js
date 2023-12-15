@@ -57,7 +57,7 @@ const MAX_CONTEXT_UNLOCKED = 200 * 1024;
 const MAX_RESPONSE_UNLOCKED = 16 * 1024;
 const unlockedMaxContextStep = 512;
 const maxContextMin = 512;
-const maxContextStep = 256;
+const maxContextStep = 64;
 
 const defaultStoryString = '{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}\'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}';
 const defaultExampleSeparator = '***';
@@ -1530,7 +1530,7 @@ async function loadCharListState() {
 }
 
 function loadMovingUIState() {
-    if (isMobile() === false
+    if (!isMobile()
         && power_user.movingUIState
         && power_user.movingUI === true) {
         console.debug('loading movingUI state');
