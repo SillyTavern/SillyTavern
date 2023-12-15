@@ -164,6 +164,7 @@ export const chat_completion_sources = {
     OPENROUTER: 'openrouter',
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
+    MISTRALAI: 'mistralai',
 };
 
 const prefixMap = selected_group ? {
@@ -208,6 +209,7 @@ const default_settings = {
     claude_model: 'claude-instant-v1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
+    mistralai_model: 'mistral-medium',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
@@ -263,6 +265,7 @@ const oai_settings = {
     claude_model: 'claude-instant-v1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
+    mistralai_model: 'mistral-medium',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
@@ -1261,6 +1264,8 @@ function getChatCompletionModel() {
             return oai_settings.openrouter_model !== openrouter_website_model ? oai_settings.openrouter_model : null;
         case chat_completion_sources.AI21:
             return oai_settings.ai21_model;
+        case chat_completion_sources.MISTRALAI:
+            return oai_settings.mistralai_model;
         default:
             throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
     }
@@ -2300,6 +2305,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openrouter_use_fallback = settings.openrouter_use_fallback ?? default_settings.openrouter_use_fallback;
     oai_settings.openrouter_force_instruct = settings.openrouter_force_instruct ?? default_settings.openrouter_force_instruct;
     oai_settings.ai21_model = settings.ai21_model ?? default_settings.ai21_model;
+    oai_settings.mistralai_model = settings.mistralai_model ?? default_settings.mistralai_model;
     oai_settings.google_model = settings.google_model ?? default_settings.google_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
@@ -2342,6 +2348,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_google_select option[value="${oai_settings.google_model}"`).attr('selected', true);
     $('#model_ai21_select').val(oai_settings.ai21_model);
     $(`#model_ai21_select option[value="${oai_settings.ai21_model}"`).attr('selected', true);
+    $('#model_mistralai_select').val(oai_settings.mistralai_model);
+    $(`#model_mistralai_select option[value="${oai_settings.mistralai_model}"`).attr('selected', true);
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').val(`${oai_settings.openai_max_context}`);
     $('#model_openrouter_select').val(oai_settings.openrouter_model);
@@ -2519,6 +2527,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         openrouter_group_models: settings.openrouter_group_models,
         openrouter_sort_models: settings.openrouter_sort_models,
         ai21_model: settings.ai21_model,
+        mistralai_model: settings.mistralai_model,
         google_model: settings.google_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
@@ -2890,6 +2899,7 @@ function onSettingsPresetChange() {
         openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
         openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
         ai21_model: ['#model_ai21_select', 'ai21_model', false],
+        mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
         google_model: ['#model_google_select', 'google_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
@@ -3072,6 +3082,11 @@ async function onModelChange() {
     if ($(this).is('#model_google_select')) {
         console.log('Google model changed to', value);
         oai_settings.google_model = value;
+    }
+
+    if ($(this).is('#model_mistralai_select')) {
+        console.log('MistralAI model changed to', value);
+        oai_settings.mistralai_model = value;
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
