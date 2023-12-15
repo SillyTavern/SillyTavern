@@ -1912,11 +1912,26 @@ function sortEntitiesList(entities) {
     });
 }
 
-async function saveTheme() {
-    const name = await callPopup('Enter a theme preset name:', 'input');
+/**
+ * Updates the current UI theme file.
+ */
+async function updateTheme() {
+    await saveTheme(power_user.theme);
+    toastr.success('Theme saved.');
+}
 
-    if (!name) {
-        return;
+/**
+ * Saves the current theme to the server.
+ * @param {string|undefined} name Theme name. If undefined, a popup will be shown to enter a name.
+ * @returns {Promise<void>} A promise that resolves when the theme is saved.
+ */
+async function saveTheme(name = undefined) {
+    if (typeof name !== 'string') {
+        name = await callPopup('Enter a theme preset name:', 'input', power_user.theme);
+
+        if (!name) {
+            return;
+        }
     }
 
     const theme = {
@@ -2825,7 +2840,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#ui-preset-save-button').on('click', saveTheme);
+    $('#ui-preset-save-button').on('click', () => saveTheme());
+    $('#ui-preset-update-button').on('click', () => updateTheme());
     $('#movingui-preset-save-button').on('click', saveMovingUI);
 
     $('#never_resize_avatars').on('input', function () {
