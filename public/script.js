@@ -169,7 +169,6 @@ import {
 import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
 import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
-import { getDeviceInfo } from './scripts/RossAscends-mods.js';
 import { registerPromptManagerMigration } from './scripts/PromptManager.js';
 import { getRegexedString, regex_placement } from './scripts/extensions/regex/engine.js';
 import { FILTER_TYPES, FilterHelper } from './scripts/filters.js';
@@ -6842,8 +6841,7 @@ function openCharacterWorldPopup() {
     template.find('.character_name').text(name);
 
     // Not needed on mobile
-    const deviceInfo = getDeviceInfo();
-    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+    if (!isMobile()) {
         $(extraSelect).select2({
             width: '100%',
             placeholder: 'No auxillary Lorebooks set. Click here to select.',
@@ -7820,7 +7818,7 @@ function addDebugFunctions() {
 
 jQuery(async function () {
 
-    if (isMobile() === true) {
+    if (isMobile()) {
         console.debug('hiding movingUI and sheldWidth toggles for mobile');
         $('#sheldWidthToggleBlock').hide();
         $('#movingUIModeCheckBlock').hide();

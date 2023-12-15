@@ -9,7 +9,7 @@ import {
 } from '../script.js';
 import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { delay } from './utils.js';
-import { getDeviceInfo } from './RossAscends-mods.js';
+import { isMobile } from './RossAscends-mods.js';
 import { autoSelectInstructPreset } from './instruct-mode.js';
 
 export {
@@ -303,8 +303,7 @@ jQuery(function () {
     $('#horde_kudos').on('click', showKudos);
 
     // Not needed on mobile
-    const deviceInfo = getDeviceInfo();
-    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+    if (!isMobile()) {
         $('#horde_model').select2({
             width: '100%',
             placeholder: 'Select Horde models',
