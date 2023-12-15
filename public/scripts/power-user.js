@@ -1530,7 +1530,7 @@ async function loadCharListState() {
 }
 
 function loadMovingUIState() {
-    if (isMobile() === false
+    if (!isMobile()
         && power_user.movingUIState
         && power_user.movingUI === true) {
         console.debug('loading movingUI state');
