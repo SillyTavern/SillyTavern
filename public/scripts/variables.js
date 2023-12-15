@@ -3,11 +3,7 @@ import { extension_settings, saveMetadataDebounced } from './extensions.js';
 import { executeSlashCommands, registerSlashCommand } from './slash-commands.js';
 import { isFalseBoolean } from './utils.js';
 
-
-
 const MAX_LOOPS = 100;
-
-
 
 function getLocalVariable(name, args = {}) {
     if (!chat_metadata.variables) {
