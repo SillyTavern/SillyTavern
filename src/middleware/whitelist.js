@@ -7,7 +7,9 @@ const { color, getConfigValue } = require('../util');
 
 const whitelistPath = path.join(process.cwd(), './whitelist.txt');
 let whitelist = getConfigValue('whitelist', []);
+let knownIPs = new Set();
 const listen = getConfigValue('listen', false);
+const whitelistMode = getConfigValue('whitelistMode', true);
 
 if (fs.existsSync(whitelistPath)) {
     try {
@@ -17,11 +19,6 @@ if (fs.existsSync(whitelistPath)) {
         // Ignore errors that may occur when reading the whitelist (e.g. permissions)
     }
 }
-
-const whitelistMode = getConfigValue('whitelistMode', true);
-
-// IP Whitelist //
-let knownIPs = new Set();
 
 function getIpFromRequest(req) {
     let clientIp = req.connection.remoteAddress;
