@@ -9,7 +9,6 @@
  * @returns {string} Prompt for Claude
  * @copyright Prompt Conversion script taken from RisuAI by kwaroran (GPLv3).
  */
-
 function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSyspromptSupport, useSystemPrompt, addSysHumanMsg) {
 
     console.log(JSON.stringify(messages, null, 2));
@@ -43,9 +42,9 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
         } else {
             // Otherwise, use the default message format by setting the first message's role to 'user'(compatible with all claude models including 2.1.)
             messages[0].role = 'user';
-            // Also, fix messages order for default claude format when(messages > Context Size) by merging two messages with "\n\nHuman: " prefixes into one before the first Assistant's message.
+            // Fix messages order for default message format when(messages > Context Size) by merging two messages with "\n\nHuman: " prefixes into one, before the first Assistant's message.
             if (firstAssistantIndex > 0) {
-                messages[firstAssistantIndex - 1].role = firstAssistantIndex - 1 !== 0 && messages[firstAssistantIndex - 1].role === 'user' ? 'firstMsg' : messages[firstAssistantIndex - 1].role;
+                messages[firstAssistantIndex - 1].role = firstAssistantIndex - 1 !== 0 && messages[firstAssistantIndex - 1].role === 'user' ? 'FixHumMsg' : messages[firstAssistantIndex - 1].role;
             }
         }
     }
@@ -58,15 +57,14 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
             v.content = `${v.name}: ${v.content}`;
             delete v.name;
         }
-
-        let prefix = '';
-        prefix = {
+        //let prefix = ''; // Set prefix according to the role.
+        let prefix = {
             'assistant': '\n\nAssistant: ',
             'user': '\n\nHuman: ',
             'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : '\n\n',
-            'firstMsg': '\n\nFirst message: ',
+            'FixHumMsg': '\n\nFirst message: ',
         }[v.role] ?? '\n\n';
-        //}
+
         return prefix + v.content;
     }).join('');
 
