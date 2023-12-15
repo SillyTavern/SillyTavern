@@ -398,7 +398,61 @@ async function sendAI21Request(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendMistralAIRequest(request, response) {
+    const apiKey = readSecret(SECRET_KEYS.MISTRALAI);
 
+    if (!apiKey) {
+        console.log('MistralAI API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify({
+                'model': request.body.model,
+                'messages': request.body.messages,
+                'temperature': request.body.temperature,
+                'top_p': request.body.top_p,
+                'max_tokens': request.body.max_tokens,
+                'stream': request.body.stream,
+                'safe_mode': request.body.safe_mode,
+                'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
+            }),
+            signal: controller.signal,
+            timeout: 0,
+        };
+
+        const generateResponse = await fetch('https://api.mistral.ai/v1/chat/completions', config);
+        if (request.body.stream) {
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                console.log(`MistralAI API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                // a 401 unauthorized response breaks the frontend auth, so return a 500 instead. prob a better way of dealing with this.
+                // 401s are already handled by the streaming processor and dont pop up an error toast, that should probably be fixed too.
+                return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send({ error: true });
+            }
+            const generateResponseJson = await generateResponse.json();
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.log('Error communicating with MistralAI API: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
 }
 
 const router = express.Router();
@@ -566,6 +620,7 @@ router.post('/generate', jsonParser, function (request, response) {
         case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
     }
 
     let apiUrl;
