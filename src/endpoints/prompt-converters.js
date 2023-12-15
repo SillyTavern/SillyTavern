@@ -13,13 +13,45 @@
 function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSyspromptSupport, useSystemPrompt, addSysHumanMsg) {
 
     // Find the index of the first message with an assistant role and check for a "'user' role/Human:" before it.
-    let hasUser = false;
-    const firstAssistantIndex = messages.findIndex((message) => {
-        if (message.role === 'user' || message.content.includes('Human:')) {
-            hasUser = true;
+    console.log(JSON.stringify(messages, null, 2));
+    if (messages.length > 0) {
+        //messages[0].role = withSyspromptSupport && useSystemPrompt ? 'system' : 'user';
+        if (addAssistantPostfix) {
+            let role = 'assistant';
+            if (messages.length > 0 && messages[messages.length - 1].role === 'assistant' || messages[messages.length - 1].content.includes('Assistant:')) {
+                role = 'system';
+            }
+            messages.push({
+                role: role,
+                content: addAssistantPrefill || '',
+            });
         }
-        return message.role === 'assistant';
-    });
+
+        let hasUser = false;
+        const firstAssistantIndex = messages.findIndex((message, i) => {
+            if (i > 0 && (message.role === 'user' || message.content.includes('Human:'))) {
+                hasUser = true;
+            }
+            return message.role === 'assistant' && i > 0;
+        });
+        if (withSyspromptSupport && useSystemPrompt) {
+            messages[0].role = 'system';
+
+            if (!hasUser) {
+                messages.splice(firstAssistantIndex, 0, {
+                    role: 'user',
+                    content: addSysHumanMsg || 'Let\'s get started.',
+                });
+            }
+        } else {
+            messages[0].role = 'user';
+            if (firstAssistantIndex > 0) {
+                messages[firstAssistantIndex - 1].role = firstAssistantIndex - 1 !== 0 && messages[firstAssistantIndex - 1].role === 'user' ? 'FirstMsg' : messages[firstAssistantIndex - 1].role;
+            }
+        }
+    }
+
+    console.log(JSON.stringify(messages, null, 2));
 
     let setHumanMsg = addSysHumanMsg ? '\n\nHuman: ' + addSysHumanMsg : '\n\nHuman: Let\'s get started.';
     let requestPrompt = messages.map((v, i) => {
@@ -32,29 +64,30 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
         let prefix = '';
         // Switches to system prompt format by adding empty prefix to the first message of the assistant, when the "use system prompt" checked and the model is 2.1.
         // Otherwise, use the default message format by adding "Human: " prefix to the first message(compatible with all claude models including 2.1.)
-        if (i === 0) {
+        /* if (i === 0) {
             prefix = withSyspromptSupport && useSystemPrompt ? '' : '\n\nHuman: ';
             // For system prompt format. If there is no message with role "user" or prefix "Human:" change the first assistant's prefix(insert the human's message).
-        } else if (i === firstAssistantIndex && !hasUser && withSyspromptSupport && useSystemPrompt) {
+        } else  if (i === firstAssistantIndex && !hasUser && withSyspromptSupport && useSystemPrompt) {
             prefix = `${setHumanMsg}\n\nAssistant: `;
             //prefix = addSysHumanMsg ? '\n\nHuman: ' + addSysHumanMsg + '\n\nAssistant: ' : '\n\nHuman: Let\'s get started.\n\nAssistant: ';
             // Merge two messages with "\n\nHuman: " prefixes into one before the first Assistant's message. Fix messages order for default claude format when(messages > Context Size).
-        } else if (i > 0 && i === firstAssistantIndex - 1 && v.role === 'user' && !(withSyspromptSupport && useSystemPrompt)) {
+        } else*/ if (i > 0 && i === firstAssistantIndex - 1 && v.role === 'user' && !(withSyspromptSupport && useSystemPrompt)) {
             prefix = '\n\nFirst message: ';
             //Define role prefixes(role : prefix). Set the correct prefix according to the role/name.
         } else {
             prefix = {
                 'assistant': '\n\nAssistant: ',
                 'user': '\n\nHuman: ',
-                'system': v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : '\n\n',
-            }[v.role] || '\n\n';
+                'FirstMsg': '\n\nFirst message: ',
+                'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : i === messages.length - 1 ? '\n' : '\n\n',
+            }[v.role] ?? '\n\n';
         }
         return prefix + v.content;
     }).join('');
 
     //Add the assistant suffix(if the option unchecked), add a prefill after it(if filled). Also Add the first human message before the assistant suffix(when using sysprompt and there are no other messages with the role 'Assistant').
-    requestPrompt += addAssistantPostfix ? `${withSyspromptSupport && useSystemPrompt && firstAssistantIndex === -1 ? setHumanMsg : ''}\n\nAssistant: ${addAssistantPrefill ? addAssistantPrefill : ''}` : '';
-
+    //requestPrompt += addAssistantPostfix ? `${withSyspromptSupport && useSystemPrompt && firstAssistantIndex === -1 ? setHumanMsg : ''}\n\nAssistant: ${addAssistantPrefill ? addAssistantPrefill : ''}` : '';
+    requestPrompt += '';
     return requestPrompt;
 }
 
