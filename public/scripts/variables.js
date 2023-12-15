@@ -2,6 +2,12 @@ import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessa
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
 import { executeSlashCommands, registerSlashCommand } from './slash-commands.js';
 
+
+
+const MAX_LOOPS = 100;
+
+
+
 function getLocalVariable(name, args = {}) {
     if (!chat_metadata.variables) {
         chat_metadata.variables = {};
@@ -301,7 +307,6 @@ function listVariablesCallback() {
 }
 
 async function whileCallback(args, command) {
-    const MAX_LOOPS = 100;
     const isGuardOff = ['off', 'false', '0'].includes(args.guard?.toLowerCase());
     const iterations = isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS;
 
@@ -322,7 +327,6 @@ async function whileCallback(args, command) {
 async function timesCallback(args, value) {
     const [repeats, ...commandParts] = value.split(' ');
     const command = commandParts.join(' ');
-    const MAX_LOOPS = 100;
     const isGuardOff = ['off', 'false', '0'].includes(args.guard?.toLowerCase());
     const iterations = Math.min(Number(repeats), isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS);
 
