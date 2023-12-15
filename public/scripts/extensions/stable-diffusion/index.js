@@ -1758,7 +1758,7 @@ function generateFreeCharacterPrompt(trigger) {
         }
         for (let i = context.chat.length - 1; i >= 0; i--) {
             const message = context.chat[i];
-            if (context.is_user || message.is_system) {
+            if (message.is_user || message.is_system) {
                 continue;
             } else if (typeof message.original_avatar === 'string') {
                 return message.original_avatar.replace(/\.[^/.]+$/, '');
