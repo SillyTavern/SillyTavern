@@ -1,6 +1,7 @@
 import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from '../script.js';
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
 import { executeSlashCommands, registerSlashCommand } from './slash-commands.js';
+import { isFalseBoolean } from './utils.js';
 
 
 
@@ -307,7 +308,7 @@ function listVariablesCallback() {
 }
 
 async function whileCallback(args, command) {
-    const isGuardOff = ['off', 'false', '0'].includes(args.guard?.toLowerCase());
+    const isGuardOff = isFalseBoolean(args.guard);
     const iterations = isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS;
 
     for (let i = 0; i < iterations; i++) {
@@ -327,7 +328,7 @@ async function whileCallback(args, command) {
 async function timesCallback(args, value) {
     const [repeats, ...commandParts] = value.split(' ');
     const command = commandParts.join(' ');
-    const isGuardOff = ['off', 'false', '0'].includes(args.guard?.toLowerCase());
+    const isGuardOff = isFalseBoolean(args.guard);
     const iterations = Math.min(Number(repeats), isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS);
 
     for (let i = 0; i < iterations; i++) {
