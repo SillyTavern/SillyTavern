@@ -41,7 +41,7 @@ const getRequestArgs = () => ({
     },
 });
 
-async function getWorkers() {
+async function getWorkers(workerType) {
     const response = await fetch('https://horde.koboldai.net/api/v2/workers?type=text', getRequestArgs());
     const data = await response.json();
     return data;

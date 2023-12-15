@@ -537,7 +537,6 @@ redirect('/updatestats', '/api/stats/update');
 
 // Redirect deprecated backgrounds API endpoints
 redirect('/getbackgrounds', '/api/backgrounds/all');
-redirect('/setbackground', '/api/backgrounds/set');
 redirect('/delbackground', '/api/backgrounds/delete');
 redirect('/renamebackground', '/api/backgrounds/rename');
 redirect('/downloadbackground', '/api/backgrounds/upload'); // yes, the downloadbackground endpoint actually uploads one
