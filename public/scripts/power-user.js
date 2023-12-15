@@ -232,6 +232,7 @@ let power_user = {
     aux_field: 'character_version',
     restore_user_input: true,
     reduced_motion: false,
+    compact_input_area: true,
 };
 
 let themes = [];
@@ -273,6 +274,7 @@ const storage_keys = {
     enableZenSliders: 'enableZenSliders',
     enableLabMode: 'enableLabMode',
     reduced_motion: 'reduced_motion',
+    compact_input_area: 'compact_input_area',
 };
 
 const contextControls = [
@@ -448,6 +450,13 @@ function switchReducedMotion() {
     const overrideDuration = power_user.reduced_motion ? 0 : ANIMATION_DURATION_DEFAULT;
     setAnimationDuration(overrideDuration);
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
+}
+
+function switchCompactInputArea() {
+    const value = localStorage.getItem(storage_keys.compact_input_area);
+    power_user.compact_input_area = value === null ? true : value == 'true';
+    $('#send_form').toggleClass('compact', power_user.compact_input_area);
+    $('#compact_input_area').prop('checked', power_user.compact_input_area);
 }
 
 var originalSliderValues = [];
@@ -1246,6 +1255,15 @@ async function applyTheme(name) {
             action: async () => {
                 localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
                 $('#reduced_motion').prop('checked', power_user.reduced_motion);
+                switchReducedMotion();
+            },
+        },
+        {
+            key: 'compact_input_area',
+            action: async () => {
+                localStorage.setItem(storage_keys.compact_input_area, String(power_user.compact_input_area));
+                $('#compact_input_area').prop('checked', power_user.compact_input_area);
+                switchCompactInputArea();
             },
         },
     ];
@@ -1504,6 +1522,7 @@ function loadPowerUserSettings(settings, data) {
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop('selected', true);
     switchReducedMotion();
+    switchCompactInputArea();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode(data);
     loadContextSettings();
@@ -1932,6 +1951,8 @@ async function saveTheme() {
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
         bogus_folders: power_user.bogus_folders,
+        reduced_motion: power_user.reduced_motion,
+        compact_input_area: power_user.compact_input_area,
     };
 
     const response = await fetch('/savetheme', {
@@ -3148,6 +3169,13 @@ $(document).ready(() => {
         power_user.reduced_motion = !!$(this).prop('checked');
         localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
         switchReducedMotion();
+        saveSettingsDebounced();
+    });
+
+    $('#compact_input_area').on('input', function () {
+        power_user.compact_input_area = !!$(this).prop('checked');
+        localStorage.setItem(storage_keys.compact_input_area, String(power_user.compact_input_area));
+        switchCompactInputArea();
         saveSettingsDebounced();
     });
 
