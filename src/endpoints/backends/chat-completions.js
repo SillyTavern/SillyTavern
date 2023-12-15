@@ -405,17 +405,17 @@ async function sendMistralAIRequest(request, response) {
         return response.status(400).send({ error: true });
     }
 
-    //must send a user role as last message
-    const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
-    const lastMsg = messages[messages.length - 1];
-    if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
-        lastMsg.role = 'user';
-        if(lastMsg.role === 'assistant') {
-            lastMsg.content = lastMsg.name + ': ' + lastMsg.content;
-        }
-    }
-
     try {
+        //must send a user role as last message
+        const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
+        const lastMsg = messages[messages.length - 1];
+        if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
+            lastMsg.role = 'user';
+            if(lastMsg.role === 'assistant') {
+                lastMsg.content = lastMsg.name + ': ' + lastMsg.content;
+            }
+        }
+
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
