@@ -53,6 +53,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
         for (const key of characterDataCache.keys()) {
             if (key.startsWith(img_url)) {
                 characterDataCache.delete(key);
+                break;
             }
         }
         // Read the image, resize, and save it as a PNG into the buffer
