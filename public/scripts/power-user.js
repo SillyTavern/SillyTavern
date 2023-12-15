@@ -547,7 +547,7 @@ async function CreateZenSliders(elmnt) {
     var sliderMax = Number(originalSlider.attr('max'));
     var sliderValue = originalSlider.val();
     var sliderRange = sliderMax - sliderMin;
-    var numSteps = 10;
+    var numSteps = 20;
     var decimals = 2;
     var offVal, allVal;
     var stepScale;
