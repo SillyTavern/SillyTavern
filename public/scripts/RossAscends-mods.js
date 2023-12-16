@@ -416,6 +416,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
                     || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
                     || (secret_state[SECRET_KEYS.PALM] && oai_settings.chat_completion_source == chat_completion_sources.PALM)
+                    || (secret_state[SECRET_KEYS.TOGETHERAI] && oai_settings.chat_completion_source == chat_completion_sources.TOGETHERAI)
                 ) {
                     $('#api_button_openai').trigger('click');
                 }

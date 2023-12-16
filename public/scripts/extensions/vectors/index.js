@@ -392,8 +392,9 @@ async function getSavedHashes(collectionId) {
  * @returns {Promise<void>}
  */
 async function insertVectorItems(collectionId, items) {
-    if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
-        settings.source === 'palm' && !secret_state[SECRET_KEYS.PALM]) {
+    if ((settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI]) ||
+        (settings.source === 'palm' && !secret_state[SECRET_KEYS.PALM]) ||
+        (settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI])) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
