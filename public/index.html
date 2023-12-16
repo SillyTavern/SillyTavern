@@ -2125,6 +2125,23 @@
                             <!-- Its only purpose is to trigger max context size check -->
                             <select id="model_palm_select" class="displayNone"></select>
                         </form>
+                        <form id="togetherai_form" data-source="togetherai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4 data-i18n="TogetherAI API Key">TogetherAI API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_togetherai" name="api_key_togetherai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_togetherai"></div>
+                            </div>
+                            <div data-for="api_key_togetherai" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <div>
+                                <h4 data-i18n="TogetherAI Model">TogetherAI Model</h4>
+                                <select id="model_togetherai_select">
+                                    <optgroup label="Latest">
+                                        <option value="GPT-NeoXT-Chat-Base (20B)">togethercomputer/GPT-NeoXT-Chat-Base-20B</option> <!-- unsure about this one honestly -->
+                                    </optgroup>
+                                </select>
+                            </div>
                         <div class="flex-container flex">
                             <div id="api_button_openai" class="api_button menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
                             <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
