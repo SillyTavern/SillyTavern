@@ -14,6 +14,7 @@ export const SECRET_KEYS = {
     SCALE_COOKIE: 'scale_cookie',
     PALM: 'api_key_palm',
     SERPAPI: 'api_key_serpapi',
+    TOGETHERAI: 'api_key_togetherai',
 };
 
 const INPUT_MAP = {
@@ -29,6 +30,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.PALM]: '#api_key_palm',
     [SECRET_KEYS.APHRODITE]: '#api_key_aphrodite',
     [SECRET_KEYS.TABBY]: '#api_key_tabby',
+    [SECRET_KEYS.TOGETHERAI]: '#api_key_togetherai',
 };
 
 async function clearSecret() {
