@@ -2786,8 +2786,11 @@
                             <div class="flex-container flexnowrap alignitemscenter">
                                 <select id="themes" class="margin0">
                                 </select>
-                                <div id="ui-preset-save-button" title="Save changes to a new theme file" data-i18n="[title]Save changes to a new theme file" class="menu_button margin0">
+                                <div id="ui-preset-update-button" title="Update a theme file" data-i18n="[title]Update a theme file" class="menu_button margin0">
                                     <i class="fa-solid fa-save"></i>
+                                </div>
+                                <div id="ui-preset-save-button" title="Save as a new theme" data-i18n="[title]Save as a new theme" class="menu_button margin0">
+                                    <i class="fa-solid fa-paste"></i>
                                 </div>
                             </div>
                         </div>
@@ -2981,6 +2984,10 @@
                             <label data-newbie-hidden for="messageTokensEnabled" class="checkbox_label">
                                 <input id="messageTokensEnabled" type="checkbox" />
                                 <span data-i18n="Show Message Token Count">Message Token Count</span>
+                            </label>
+                            <label for="compact_input_area" class="checkbox_label">
+                                <input id="compact_input_area" type="checkbox" />
+                                <span data-i18n="Compact Input Area (Mobile)">Compact Input Area&nbsp;<i class="fa-solid fa-mobile-screen-button"></i></span>
                             </label>
                             <label data-newbie-hidden for="hotswapEnabled" class="checkbox_label">
                                 <input id="hotswapEnabled" type="checkbox" />
@@ -3633,6 +3640,7 @@
                                             <label id="rm_group_automode_label" class="checkbox_label whitespacenowrap">
                                                 <input id="rm_group_automode" type="checkbox" />
                                                 <span data-i18n="Auto Mode">Auto Mode</span>
+                                                <input id="rm_group_automode_delay" class="text_pole textarea_compact widthUnset" type="number" min="1" max="999" step="1" value="5" title="Auto Mode delay" />
                                             </label>
                                             <label id="rm_group_hidemutedsprites_label" class="checkbox_label whitespacenowrap">
                                                 <input id="rm_group_hidemutedsprites" type="checkbox" />

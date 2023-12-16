@@ -44,7 +44,7 @@ class OpenAITtsProvider {
         </div>
         <div>
             <label for="openai-tts-speed">Speed: <span id="openai-tts-speed-output"></span></label>
-            <input type="range" id="openai-tts-speed" value="1" min="0.25" max="4" step="0.25">
+            <input type="range" id="openai-tts-speed" value="1" min="0.25" max="4" step="0.05">
         </div>`;
         return html;
     }

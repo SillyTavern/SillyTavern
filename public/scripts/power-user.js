@@ -232,6 +232,7 @@ let power_user = {
     aux_field: 'character_version',
     restore_user_input: true,
     reduced_motion: false,
+    compact_input_area: true,
 };
 
 let themes = [];
@@ -273,6 +274,7 @@ const storage_keys = {
     enableZenSliders: 'enableZenSliders',
     enableLabMode: 'enableLabMode',
     reduced_motion: 'reduced_motion',
+    compact_input_area: 'compact_input_area',
 };
 
 const contextControls = [
@@ -450,6 +452,13 @@ function switchReducedMotion() {
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
 }
 
+function switchCompactInputArea() {
+    const value = localStorage.getItem(storage_keys.compact_input_area);
+    power_user.compact_input_area = value === null ? true : value == 'true';
+    $('#send_form').toggleClass('compact', power_user.compact_input_area);
+    $('#compact_input_area').prop('checked', power_user.compact_input_area);
+}
+
 var originalSliderValues = [];
 
 async function switchLabMode() {
@@ -547,7 +556,7 @@ async function CreateZenSliders(elmnt) {
     var sliderMax = Number(originalSlider.attr('max'));
     var sliderValue = originalSlider.val();
     var sliderRange = sliderMax - sliderMin;
-    var numSteps = 10;
+    var numSteps = 20;
     var decimals = 2;
     var offVal, allVal;
     var stepScale;
@@ -1246,6 +1255,15 @@ async function applyTheme(name) {
             action: async () => {
                 localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
                 $('#reduced_motion').prop('checked', power_user.reduced_motion);
+                switchReducedMotion();
+            },
+        },
+        {
+            key: 'compact_input_area',
+            action: async () => {
+                localStorage.setItem(storage_keys.compact_input_area, String(power_user.compact_input_area));
+                $('#compact_input_area').prop('checked', power_user.compact_input_area);
+                switchCompactInputArea();
             },
         },
     ];
@@ -1504,6 +1522,7 @@ function loadPowerUserSettings(settings, data) {
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop('selected', true);
     switchReducedMotion();
+    switchCompactInputArea();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode(data);
     loadContextSettings();
@@ -1893,11 +1912,26 @@ function sortEntitiesList(entities) {
     });
 }
 
-async function saveTheme() {
-    const name = await callPopup('Enter a theme preset name:', 'input');
+/**
+ * Updates the current UI theme file.
+ */
+async function updateTheme() {
+    await saveTheme(power_user.theme);
+    toastr.success('Theme saved.');
+}
 
-    if (!name) {
-        return;
+/**
+ * Saves the current theme to the server.
+ * @param {string|undefined} name Theme name. If undefined, a popup will be shown to enter a name.
+ * @returns {Promise<void>} A promise that resolves when the theme is saved.
+ */
+async function saveTheme(name = undefined) {
+    if (typeof name !== 'string') {
+        name = await callPopup('Enter a theme preset name:', 'input', power_user.theme);
+
+        if (!name) {
+            return;
+        }
     }
 
     const theme = {
@@ -1932,6 +1966,8 @@ async function saveTheme() {
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
         bogus_folders: power_user.bogus_folders,
+        reduced_motion: power_user.reduced_motion,
+        compact_input_area: power_user.compact_input_area,
     };
 
     const response = await fetch('/savetheme', {
@@ -2804,7 +2840,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#ui-preset-save-button').on('click', saveTheme);
+    $('#ui-preset-save-button').on('click', () => saveTheme());
+    $('#ui-preset-update-button').on('click', () => updateTheme());
     $('#movingui-preset-save-button').on('click', saveMovingUI);
 
     $('#never_resize_avatars').on('input', function () {
@@ -3148,6 +3185,13 @@ $(document).ready(() => {
         power_user.reduced_motion = !!$(this).prop('checked');
         localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
         switchReducedMotion();
+        saveSettingsDebounced();
+    });
+
+    $('#compact_input_area').on('input', function () {
+        power_user.compact_input_area = !!$(this).prop('checked');
+        localStorage.setItem(storage_keys.compact_input_area, String(power_user.compact_input_area));
+        switchCompactInputArea();
         saveSettingsDebounced();
     });
 
