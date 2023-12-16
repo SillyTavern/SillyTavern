@@ -140,6 +140,7 @@ const CHAT_COMPLETION_SOURCES = {
     OPENROUTER: 'openrouter',
     AI21: 'ai21',
     PALM: 'palm',
+    TOGETHERAI: 'togetherai',
 };
 
 const UPLOADS_PATH = './uploads';
