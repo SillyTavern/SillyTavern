@@ -42,3 +42,4 @@ access.log
 /vectors/
 /cache/
 public/css/user.css
+/plugins/
