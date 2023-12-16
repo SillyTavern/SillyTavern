@@ -40,6 +40,34 @@ async function sendClaudeRequest(request, response) {
         let requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSyspromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message);
 
         console.log(chalk.green(`${divider}\nClaude request\n`) + chalk.cyan(`PROMPT\n${divider}\n${requestPrompt}\n${divider}`));
+
+        // Check Claude messages sequence and prefixes presence.
+        const sequence = requestPrompt.split('\n').filter(x => x.startsWith('Human:') || x.startsWith('Assistant:'));
+        let humanErrorCount = 0;
+        let assistantErrorCount = 0;
+        let humanFound = sequence.some(line => line.startsWith('Human:'));
+        let assistantFound = sequence.some(line => line.startsWith('Assistant:'));
+
+        for (let i = 0; i < sequence.length - 1; i++) {
+
+            if (sequence[i].startsWith(sequence[i + 1].split(':')[0])) {
+                if (sequence[i].startsWith('Human:')) {
+                    humanErrorCount++;
+                } else if (sequence[i].startsWith('Assistant:')) {
+                    assistantErrorCount++;
+                }
+            }
+        }
+
+        if (!humanFound) {
+            console.log(chalk.red(`${divider}\nWarning: No Human prefix found in the prompt.\n${divider}`));
+        }
+        if (!assistantFound) {
+            console.log(chalk.red(`${divider}\nWarning: No Assistant prefix found in the prompt.\n${divider}`));
+        }
+        if (humanErrorCount > 0 || assistantErrorCount > 0) {
+            console.log(chalk.red(`${divider}\nWarning: Detected incorrect Prefix sequence(s).\nIncorrect 'Human:' prefix(es): ${humanErrorCount}.\nIncorrect 'Assistant:' prefix(es): ${assistantErrorCount}.\nCheck the prompt above and fix it in the sillytavern.\nThe correct sequence should look like this:\nSystem prompt message  <--(for new sysprompt format only)\n       <------------------(Every message start with Assistant:/Human:prefix should have one empty line above)\nHuman:\n\nAssistant:\n\...\n\nHuman:\n\nAssistant:\n${divider}`));
+        }
         const stop_sequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
 
         // Add custom stop sequences

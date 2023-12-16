@@ -14,26 +14,31 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
     console.log(JSON.stringify(messages, null, 2));
     //Prepare messages for claude.
     if (messages.length > 0) {
+        messages[0].role = 'system';
         //Add the assistant's message to the end of messages.
         if (addAssistantPostfix) {
             messages.push({
                 role: 'assistant',
-                content: addAssistantPrefill || '4',
+                content: addAssistantPrefill || '',
             });
         }
         // Find the index of the first message with an assistant role and check for a "'user' role/Human:" before it.
         let hasUser = false;
+        let hasAssist = false;
         const firstAssistantIndex = messages.findIndex((message, i) => {
-            if (i > 0 && (message.role === 'user' || message.content.includes('Human:'))) {
+            if (i >= 0 && (message.role === 'user' || message.content.includes('\n\nHuman: '))) {
+                if (message.content.includes('\n\nAssistant: ')) {
+                    hasAssist = true;
+                }
                 hasUser = true;
             }
             return message.role === 'assistant' && i > 0;
         });
-        // When 2.1 and 'Use system prompt" checked, switches to system prompt format by setting the first message's role to 'system'.
-        // Also, insert the human's message before the first the assistant one, in case there are no such message or prefix found.
+        // When 2.1 and 'Use system prompt" checked, switches to the system prompt format by setting the first message's role to the 'system'.
+        // Inserts the human's message before the first the assistant one, if there are no such message or prefix found.
         if (withSyspromptSupport && useSystemPrompt) {
             messages[0].role = 'system';
-            if (firstAssistantIndex > 0 && !hasUser) {
+            if (firstAssistantIndex > 0 && (!hasUser || (hasUser && hasAssist))) { //addSysHumanMsg for test
                 messages.splice(firstAssistantIndex, 0, {
                     role: 'user',
                     content: addSysHumanMsg || 'Let\'s get started.',
@@ -50,6 +55,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
     }
 
     console.log(JSON.stringify(messages, null, 2));
+
     // Convert messages to requestPrompt.
     let requestPrompt = messages.map((v, i) => {
         // Claude doesn't support message names, so we'll just add them to the message content.
@@ -63,7 +69,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
             'user': '\n\nHuman: ',
             'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : '\n\n',
             'FixHumMsg': '\n\nFirst message: ',
-        }[v.role] ?? '\n\n4';
+        }[v.role] ?? '\n\n';
 
         return prefix + v.content;
     }).join('');
