@@ -2462,7 +2462,7 @@ async function getStatusOpen() {
         chat_completion_source: oai_settings.chat_completion_source,
     };
 
-    if (oai_settings.reverse_proxy && (oai_settings.chat_completion_source !== chat_completion_sources.OPENROUTER || oai_settings.chat_completion_source !== chat_completion_sources.MISTRALAI)) {
+    if (oai_settings.reverse_proxy && (oai_settings.chat_completion_source === chat_completion_sources.OPENAI || oai_settings.chat_completion_source === chat_completion_sources.CLAUDE)) {
         validateReverseProxy();
     }
 
