@@ -58,7 +58,6 @@ const generationMode = {
     CHARACTER_MULTIMODAL: 8,
     USER_MULTIMODAL: 9,
     FACE_MULTIMODAL: 10,
-    CHARACTER_FREE: 11,
 };
 
 const multimodalMap = {
@@ -1564,10 +1563,6 @@ function getGenerationType(prompt) {
         mode = multimodalMap[mode];
     }
 
-    if (mode === generationMode.FREE && /^char\s/.test(prompt)) {
-        mode = generationMode.CHARACTER_FREE;
-    }
-
     return mode;
 }
 
@@ -1716,15 +1711,12 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
             prompt = message || getRawLastMessage();
             break;
         case generationMode.FREE:
-            prompt = trigger.trim();
+            prompt = generateFreeModePrompt(trigger.trim());
             break;
         case generationMode.FACE_MULTIMODAL:
         case generationMode.CHARACTER_MULTIMODAL:
         case generationMode.USER_MULTIMODAL:
             prompt = await generateMultimodalPrompt(generationType, quietPrompt);
-            break;
-        case generationMode.CHARACTER_FREE:
-            prompt = generateFreeCharacterPrompt(trigger);
             break;
         default:
             prompt = await generatePrompt(quietPrompt);
@@ -1739,38 +1731,33 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
 }
 
 /**
- * Generates a free prompt with a character-specific prompt prefix.
+ * Generates a free prompt with a character-specific prompt prefix support.
  * @param {string} trigger - The prompt to use for the image generation.
  * @returns {string}
  */
-function generateFreeCharacterPrompt(trigger) {
-    const context = getContext();
+function generateFreeModePrompt(trigger) {
+    return trigger
+        .replace(/(?:^char(\s)|\{\{charPrefix\}\})/gi, (_, suffix) => {
+            const getLastCharacterKey = () => {
+                if (typeof this_chid !== 'undefined') {
+                    return getCharaFilename(this_chid);
+                }
+                const context = getContext();
+                for (let i = context.chat.length - 1; i >= 0; i--) {
+                    const message = context.chat[i];
+                    if (message.is_user || message.is_system) {
+                        continue;
+                    } else if (typeof message.original_avatar === 'string') {
+                        return message.original_avatar.replace(/\.[^/.]+$/, '');
+                    }
+                }
+                throw new Error('No usable messages found.');
+            };
 
-    const getCharacterPrefix = () => {
-        const key = getLastCharacterKey();
-        const value = (extension_settings.sd.character_prompts[key] || '').trim();
-        return value ? value + ' ' : '';
-    };
-
-    const getLastCharacterKey = () => {
-        if (typeof this_chid !== 'undefined') {
-            return getCharaFilename(this_chid);
-        }
-        for (let i = context.chat.length - 1; i >= 0; i--) {
-            const message = context.chat[i];
-            if (message.is_user || message.is_system) {
-                continue;
-            } else if (typeof message.original_avatar === 'string') {
-                return message.original_avatar.replace(/\.[^/.]+$/, '');
-            }
-        }
-        throw new Error('No usable messages found.');
-    };
-
-    const prefix = getCharacterPrefix();
-    const pieces = trigger.split(/\s+/g);
-    const prompt = pieces.slice(1).join(' ');
-    return (prefix + prompt).trim();
+            const key = getLastCharacterKey();
+            const value = (extension_settings.sd.character_prompts[key] || '').trim();
+            return value ? value + (suffix || '') : '';
+        });
 }
 
 /**
