@@ -483,9 +483,12 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
-    } else {
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = 'https://api.mistral.ai/v1';
         api_key_openai = readSecret(SECRET_KEYS.MISTRALAI);
+    } else {
+        console.log('This chat completion source is not supported yet.');
+        return response_getstatus_openai.status(400).send({ error: true });
     }
 
     if (!api_key_openai && !request.body.reverse_proxy) {
