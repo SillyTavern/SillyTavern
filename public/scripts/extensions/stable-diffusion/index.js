@@ -1711,7 +1711,7 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
             prompt = message || getRawLastMessage();
             break;
         case generationMode.FREE:
-            prompt = trigger.trim();
+            prompt = generateFreeModePrompt(trigger.trim());
             break;
         case generationMode.FACE_MULTIMODAL:
         case generationMode.CHARACTER_MULTIMODAL:
@@ -1728,6 +1728,36 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
     }
 
     return prompt;
+}
+
+/**
+ * Generates a free prompt with a character-specific prompt prefix support.
+ * @param {string} trigger - The prompt to use for the image generation.
+ * @returns {string}
+ */
+function generateFreeModePrompt(trigger) {
+    return trigger
+        .replace(/(?:^char(\s)|\{\{charPrefix\}\})/gi, (_, suffix) => {
+            const getLastCharacterKey = () => {
+                if (typeof this_chid !== 'undefined') {
+                    return getCharaFilename(this_chid);
+                }
+                const context = getContext();
+                for (let i = context.chat.length - 1; i >= 0; i--) {
+                    const message = context.chat[i];
+                    if (message.is_user || message.is_system) {
+                        continue;
+                    } else if (typeof message.original_avatar === 'string') {
+                        return message.original_avatar.replace(/\.[^/.]+$/, '');
+                    }
+                }
+                throw new Error('No usable messages found.');
+            };
+
+            const key = getLastCharacterKey();
+            const value = (extension_settings.sd.character_prompts[key] || '').trim();
+            return value ? value + (suffix || '') : '';
+        });
 }
 
 /**
