@@ -110,9 +110,17 @@ export const group_generation_mode = {
     APPEND: 1,
 };
 
+const DEFAULT_AUTO_MODE_DELAY = 5;
+
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, 100));
-setInterval(groupChatAutoModeWorker, 5000);
+let autoModeWorker = null;
 const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), 500);
+
+function setAutoModeWorker() {
+    clearInterval(autoModeWorker);
+    const autoModeDelay = groups.find(x => x.id === selected_group)?.auto_mode_delay ?? DEFAULT_AUTO_MODE_DELAY;
+    autoModeWorker = setInterval(groupChatAutoModeWorker, autoModeDelay * 1000);
+}
 
 async function _save(group, reload = true) {
     await fetch('/api/groups/edit', {
@@ -1035,6 +1043,15 @@ async function onGroupGenerationModeInput(e) {
     }
 }
 
+async function onGroupAutoModeDelayInput(e) {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        _thisGroup.auto_mode_delay = Number(e.target.value);
+        await editGroup(openGroupId, false, false);
+        setAutoModeWorker();
+    }
+}
+
 async function onGroupNameInput() {
     if (openGroupId) {
         let _thisGroup = groups.find((x) => x.id == openGroupId);
@@ -1231,6 +1248,7 @@ function select_group_chats(groupId, skipAnimation) {
     $('#rm_group_submit').prop('disabled', !groupHasMembers);
     $('#rm_group_allow_self_responses').prop('checked', group && group.allow_self_responses);
     $('#rm_group_hidemutedsprites').prop('checked', group && group.hideMutedSprites);
+    $('#rm_group_automode_delay').val(group?.auto_mode_delay ?? DEFAULT_AUTO_MODE_DELAY);
 
     // bottom buttons
     if (openGroupId) {
@@ -1249,6 +1267,7 @@ function select_group_chats(groupId, skipAnimation) {
     }
 
     updateFavButtonState(group?.fav ?? false);
+    setAutoModeWorker();
 
     // top bar
     if (group) {
@@ -1441,6 +1460,7 @@ async function createGroup() {
     let allowSelfResponses = !!$('#rm_group_allow_self_responses').prop('checked');
     let activationStrategy = Number($('#rm_group_activation_strategy').find(':selected').val()) ?? group_activation_strategy.NATURAL;
     let generationMode = Number($('#rm_group_generation_mode').find(':selected').val()) ?? group_generation_mode.SWAP;
+    let autoModeDelay = Number($('#rm_group_automode_delay').val()) ?? DEFAULT_AUTO_MODE_DELAY;
     const members = newGroupMembers;
     const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(', ');
 
@@ -1469,6 +1489,7 @@ async function createGroup() {
             fav: fav_grp_checked,
             chat_id: chatName,
             chats: chats,
+            auto_mode_delay: autoModeDelay,
         }),
     });
 
@@ -1741,6 +1762,7 @@ jQuery(() => {
     $('#rm_group_allow_self_responses').on('input', onGroupSelfResponsesClick);
     $('#rm_group_activation_strategy').on('change', onGroupActivationStrategyInput);
     $('#rm_group_generation_mode').on('change', onGroupGenerationModeInput);
+    $('#rm_group_automode_delay').on('input', onGroupAutoModeDelayInput);
     $('#group_avatar_button').on('input', uploadGroupAvatar);
     $('#rm_group_restore_avatar').on('click', restoreGroupAvatar);
     $(document).on('click', '.group_member .right_menu_button', onGroupActionClick);

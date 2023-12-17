@@ -1,5 +1,9 @@
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
 @media screen and (max-width: 1000px) {
+    #send_form.compact #leftSendForm, #send_form.compact #rightSendForm {
+        flex-wrap: nowrap;
+        width: unset;
+    }
 
     .bg_button {
         font-size: 15px;
