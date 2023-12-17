@@ -129,7 +129,7 @@ async function loadFromPackage(app, packageJsonPath, exitHooks) {
  */
 async function loadFromFile(app, pluginFilePath, exitHooks) {
     try {
-        const plugin = await getPluginModule(pluginFilePath);
+        const plugin = await import(pluginFilePath);
         console.log(`Initializing plugin from ${pluginFilePath}`);
         return await initPlugin(app, plugin, exitHooks);
     } catch (error) {
@@ -196,21 +196,6 @@ async function initPlugin(app, plugin, exitHooks) {
     }
 
     return true;
-}
-
-/**
- * Loads a module from a file depending on the module type.
- * @param {string} pluginFilePath Path to plugin file
- * @returns {Promise<any>} Promise that resolves to plugin module
- */
-async function getPluginModule(pluginFilePath) {
-    if (isCommonJS(pluginFilePath)) {
-        return require(pluginFilePath);
-    }
-    if (isESModule(pluginFilePath)) {
-        return await import(pluginFilePath);
-    }
-    throw new Error(`Unsupported module type in ${pluginFilePath}`);
 }
 
 module.exports = {
