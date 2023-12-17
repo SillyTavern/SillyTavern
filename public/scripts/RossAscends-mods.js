@@ -18,6 +18,7 @@ import {
     eventSource,
     menu_type,
     substituteParams,
+    callPopup,
 } from '../script.js';
 
 import {
@@ -995,9 +996,31 @@ export function initRossMods() {
                 console.debug('Accepting edits with Ctrl+Enter');
                 editMesDone.trigger('click');
             } else if (is_send_press == false) {
-                console.debug('Regenerating with Ctrl+Enter');
-                $('#option_regenerate').click();
-                $('#options').hide();
+                const skipConfirmKey = 'RegenerateWithCtrlEnter';
+                const skipConfirm = LoadLocalBool(skipConfirmKey);
+                function doRegenerate() {
+                    console.debug('Regenerating with Ctrl+Enter');
+                    $('#option_regenerate').trigger('click');
+                    $('#options').hide();
+                }
+                if (skipConfirm) {
+                    doRegenerate();
+                } else {
+                    const popupText = `
+                    <div class="marginBot10">Are you sure you want to regenerate the latest message?</div>
+                    <label class="checkbox_label justifyCenter" for="regenerateWithCtrlEnter">
+                        <input type="checkbox" id="regenerateWithCtrlEnter">
+                        Don't ask again
+                    </label>`;
+                    callPopup(popupText, 'confirm').then(result =>{
+                        if (!result) {
+                            return;
+                        }
+                        const regenerateWithCtrlEnter = $('#regenerateWithCtrlEnter').prop('checked');
+                        SaveLocal(skipConfirmKey, regenerateWithCtrlEnter);
+                        doRegenerate();
+                    });
+                }
             } else {
                 console.debug('Ctrl+Enter ignored');
             }
