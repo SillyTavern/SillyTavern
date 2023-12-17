@@ -832,10 +832,15 @@ function onComfyWorkflowChange() {
     extension_settings.sd.comfy_workflow = $('#sd_comfy_workflow').find(':selected').val();
     saveSettingsDebounced();
 }
-function changeComfyWorkflow(_, name) {
-    extension_settings.sd.comfy_workflow = name.replace(/(\.json)?$/i, '.json');
-    $('#sd_comfy_workflow').val(extension_settings.sd.comfy_workflow);
-    saveSettingsDebounced();
+async function changeComfyWorkflow(_, name) {
+    name = name.replace(/(\.json)?$/i, '.json');
+    if ($(`#sd_comfy_workflow > [value="${name}"]`).length > 0) {
+        extension_settings.sd.comfy_workflow = name;
+        $('#sd_comfy_workflow').val(extension_settings.sd.comfy_workflow);
+        saveSettingsDebounced();
+    } else {
+        toastr.error(`ComfyUI Workflow "${name}" does not exist.`);
+    }
 }
 
 async function validateAutoUrl() {
