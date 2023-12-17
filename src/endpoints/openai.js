@@ -4,6 +4,7 @@ const express = require('express');
 const FormData = require('form-data');
 const fs = require('fs');
 const { jsonParser, urlencodedParser } = require('../express-common');
+const { getConfigValue } = require('../util');
 
 const router = express.Router();
 
@@ -11,15 +12,19 @@ router.post('/caption-image', jsonParser, async (request, response) => {
     try {
         let key = '';
 
-        if (request.body.api === 'openai') {
+        if (request.body.api === 'openai' && !request.body.reverse_proxy) {
             key = readSecret(SECRET_KEYS.OPENAI);
         }
 
-        if (request.body.api === 'openrouter') {
+        if (request.body.api === 'openrouter' && !request.body.reverse_proxy) {
             key = readSecret(SECRET_KEYS.OPENROUTER);
         }
 
-        if (!key) {
+        if (request.body.reverse_proxy && request.body.proxy_password) {
+            key = request.body.proxy_password;
+        }
+
+        if (!key && !request.body.reverse_proxy) {
             console.log('No key found for API', request.body.api);
             return response.sendStatus(400);
         }
@@ -38,6 +43,14 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             max_tokens: 500,
         };
 
+        const captionSystemPrompt = getConfigValue('openai.captionSystemPrompt');
+        if (captionSystemPrompt) {
+            body.messages.unshift({
+                role: 'system',
+                content: captionSystemPrompt,
+            });
+        }
+
         console.log('Multimodal captioning request', body);
 
         let apiUrl = '';
@@ -50,6 +63,10 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (request.body.api === 'openai') {
             apiUrl = 'https://api.openai.com/v1/chat/completions';
+        }
+
+        if (request.body.reverse_proxy) {
+            apiUrl = `${request.body.reverse_proxy}/chat/completions`;
         }
 
         const result = await fetch(apiUrl, {
