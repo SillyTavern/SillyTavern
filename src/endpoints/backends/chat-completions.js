@@ -418,6 +418,95 @@ async function sendAI21Request(request, response) {
 
 }
 
+/**
+ * Sends a request to MistralAI API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendMistralAIRequest(request, response) {
+    const apiKey = readSecret(SECRET_KEYS.MISTRALAI);
+
+    if (!apiKey) {
+        console.log('MistralAI API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    try {
+        //must send a user role as last message
+        const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
+        const lastMsg = messages[messages.length - 1];
+        if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
+            lastMsg.role = 'user';
+            if (lastMsg.role === 'assistant') {
+                lastMsg.content = lastMsg.name + ': ' + lastMsg.content;
+            } else if (lastMsg.role === 'system') {
+                lastMsg.content = '[INST] ' + lastMsg.content + ' [/INST]';
+            }
+        }
+
+        //system prompts can be stacked at the start, but any futher sys prompts after the first user/assistant message will break the model
+        let encounteredNonSystemMessage = false;
+        messages.forEach(msg => {
+            if ((msg.role === 'user' || msg.role === 'assistant') && !encounteredNonSystemMessage) {
+                encounteredNonSystemMessage = true;
+            }
+
+            if (encounteredNonSystemMessage && msg.role === 'system') {
+                msg.role = 'user';
+                //unsure if the instruct version is what they've deployed on their endpoints and if this will make a difference or not.
+                //it should be better than just sending the message as a user role without context though
+                msg.content = '[INST] ' + msg.content + ' [/INST]';
+            }
+        });
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify({
+                'model': request.body.model,
+                'messages': messages,
+                'temperature': request.body.temperature,
+                'top_p': request.body.top_p,
+                'max_tokens': request.body.max_tokens,
+                'stream': request.body.stream,
+                'safe_mode': request.body.safe_mode,
+                'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
+            }),
+            signal: controller.signal,
+            timeout: 0,
+        };
+
+        const generateResponse = await fetch('https://api.mistral.ai/v1/chat/completions', config);
+        if (request.body.stream) {
+            forwardFetchResponse(generateResponse, response);
+        } else {
+            if (!generateResponse.ok) {
+                console.log(`MistralAI API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                // a 401 unauthorized response breaks the frontend auth, so return a 500 instead. prob a better way of dealing with this.
+                // 401s are already handled by the streaming processor and dont pop up an error toast, that should probably be fixed too.
+                return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send({ error: true });
+            }
+            const generateResponseJson = await generateResponse.json();
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.log('Error communicating with MistralAI API: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
 const router = express.Router();
 
 router.post('/status', jsonParser, async function (request, response_getstatus_openai) {
@@ -427,15 +516,21 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     let api_key_openai;
     let headers;
 
-    if (request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.OPENROUTER) {
+    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         api_url = new URL(request.body.reverse_proxy || API_OPENAI).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
-    } else {
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         api_url = 'https://openrouter.ai/api/v1';
         api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
+        api_url = 'https://api.mistral.ai/v1';
+        api_key_openai = readSecret(SECRET_KEYS.MISTRALAI);
+    } else {
+        console.log('This chat completion source is not supported yet.');
+        return response_getstatus_openai.status(400).send({ error: true });
     }
 
     if (!api_key_openai && !request.body.reverse_proxy) {
@@ -470,6 +565,9 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
                 });
 
                 console.log('Available OpenRouter models:', models);
+            } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
+                const models = data?.data;
+                console.log(models);
             } else {
                 const models = data?.data;
 
@@ -577,6 +675,7 @@ router.post('/generate', jsonParser, function (request, response) {
         case CHAT_COMPLETION_SOURCES.SCALE: return sendScaleRequest(request, response);
         case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
     }
 
     let apiUrl;

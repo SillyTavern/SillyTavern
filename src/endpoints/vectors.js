@@ -12,8 +12,9 @@ const { jsonParser } = require('../express-common');
  */
 async function getVector(source, text) {
     switch (source) {
+        case 'mistral':
         case 'openai':
-            return require('../openai-vectors').getOpenAIVector(text);
+            return require('../openai-vectors').getOpenAIVector(text, source);
         case 'transformers':
             return require('../embedding').getTransformersVector(text);
         case 'palm':

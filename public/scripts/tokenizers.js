@@ -384,6 +384,10 @@ export function getTokenizerModel() {
         return claudeTokenizer;
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
+        return mistralTokenizer;
+    }
+
     // Default to Turbo 3.5
     return turboTokenizer;
 }

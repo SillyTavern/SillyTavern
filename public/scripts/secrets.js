@@ -14,6 +14,7 @@ export const SECRET_KEYS = {
     SCALE_COOKIE: 'scale_cookie',
     MAKERSUITE: 'api_key_makersuite',
     SERPAPI: 'api_key_serpapi',
+    MISTRALAI: 'api_key_mistralai',
 };
 
 const INPUT_MAP = {
@@ -29,6 +30,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.MAKERSUITE]: '#api_key_makersuite',
     [SECRET_KEYS.APHRODITE]: '#api_key_aphrodite',
     [SECRET_KEYS.TABBY]: '#api_key_tabby',
+    [SECRET_KEYS.MISTRALAI]: '#api_key_mistralai',
 };
 
 async function clearSecret() {

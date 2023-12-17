@@ -396,6 +396,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
                     || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
                     || (secret_state[SECRET_KEYS.MAKERSUITE] && oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE)
+                    || (secret_state[SECRET_KEYS.MISTRALAI] && oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI)
                 ) {
                     $('#api_button_openai').trigger('click');
                 }
@@ -1052,11 +1053,12 @@ export function initRossMods() {
         }
 
         if (event.key == 'ArrowUp') { //edits last message if chatbar is empty and focused
-            //console.log('got uparrow input');
+            console.log('got uparrow input');
             if (
                 $('#send_textarea').val() === '' &&
                 chatbarInFocus === true &&
-                $('.swipe_right:last').css('display') === 'flex' &&
+                //$('.swipe_right:last').css('display') === 'flex' &&
+                $('.last_mes .mes_buttons').is(':visible') &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none'
             ) {
