@@ -1058,6 +1058,7 @@ export function initRossMods() {
                 $('#send_textarea').val() === '' &&
                 chatbarInFocus === true &&
                 //$('.swipe_right:last').css('display') === 'flex' &&
+                $('.last_mes .mes_buttons').is(':visible') &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none'
             ) {
