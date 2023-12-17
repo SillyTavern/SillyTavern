@@ -3741,6 +3741,17 @@
     <!-- various fullscreen popups -->
     <div id="shadow_popup">
         <div id="dialogue_popup">
+            <div id="dialogue_popup_add_mes">
+                <h3>Add Message</h3>
+                <label for = "message_type">Add a</label>
+                <select id="message_type">
+                    <option value="newmes">New Message</option>
+                </select>
+                <textarea id="add_mes_textarea" class="text_pole" rows="10" placeholder="..."></textarea>
+                <label for = "add_message_as">Send as</label>
+                <select id="add_message_as">
+                </select>
+            </div>
             <div id="dialogue_popup_holder">
                 <div id="dialogue_popup_text">
                     <h3 class="margin0">text</h3>
@@ -4918,6 +4929,10 @@
                 <span data-i18n="Manage chat files">Manage chat files</span>
             </a>
             <hr>
+            <a id="option_add_mes">
+                <i class="fa-lg fa-solid fa-plus"></i>
+                <span data-i18n="Add message">Add message</span>
+            </a>
             <a id="option_delete_mes">
                 <i class="fa-lg fa-solid fa-trash-can"></i>
                 <span data-i18n="Delete messages">Delete messages</span>
