@@ -1,6 +1,24 @@
 const fetch = require('node-fetch').default;
 const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
 
+const SOURCES = {
+    'mistral': {
+        secretKey: SECRET_KEYS.MISTRAL,
+        url: 'api.mistral.ai',
+        model: 'mistral-embed',
+    },
+    'openai': {
+        secretKey: SECRET_KEYS.OPENAI,
+        url: 'api.openai.com',
+        model: 'text-embedding-ada-002',
+    },
+    'togetherai': {
+        secretKey: SECRET_KEYS.TOGETHERAI,
+        url: 'api.togetherai.xyz',
+        model: 'togethercomputer/GPT-NeoXT-Chat-Base-20B',
+    },
+};
+
 /**
  * Gets the vector for the given text from an OpenAI compatible endpoint.
  * @param {string} text - The text to get the vector for
@@ -8,34 +26,23 @@ const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
  * @returns {Promise<number[]>} - The vector for the text
  */
 async function getOpenAIVector(text, source) {
+  
+    const config = SOURCES[source];
 
-    // dictionary of sources to endpoints with source as key and endpoint, model and secret key as value
-    const endpoints = {
-        'togetherai': {
-            endpoint: 'https://api.togetherai.xyz/v1/embeddings',  // is this correct?
-            model: 'togethercomputer/GPT-NeoXT-Chat-Base-20B', 
-            secret: SECRET_KEYS.TOGETHERAI,
-        },
-        'openai': {
-            endpoint: 'https://api.openai.com/v1/embeddings',
-            model: 'text-embedding-ada-002',
-            secret: SECRET_KEYS.OPENAI,
-        },
-        'mistral': {
-            endpoint: 'https://api.mistral.ai/v1/embeddings',
-            model: 'mistral-embed',
-            secret: SECRET_KEYS.MISTRAL,
-        },
-    };
-
-    const key = readSecret(endpoints[source].secret);
-
-    if (!key) {
-        console.log('No %s key found.', source);
-        throw new Error('No ${source} key found.');
+    if (!config) {
+        console.log('Unknown source', source);
+        throw new Error('Unknown source');
     }
 
-    const response = await fetch(endpoints[source].endpoint, {
+    const key = readSecret(config.secretKey);
+
+    if (!key) {
+        console.log('No API key found');
+        throw new Error('No API key found');
+    }
+
+    const url = config.url;
+    const response = await fetch(`https://${url}/v1/embeddings`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -43,22 +50,22 @@ async function getOpenAIVector(text, source) {
         },
         body: JSON.stringify({
             input: text,
-            model: endpoints[source].model,
+            model: config.model,
         }),
     });
 
     if (!response.ok) {
         const text = await response.text();
-        console.log('${source} request failed', response.statusText, text);
-        throw new Error('${source} request failed');
+        console.log('API request failed', response.statusText, text);
+        throw new Error('API request failed');
     }
 
     const data = await response.json();
     const vector = data?.data[0]?.embedding;
 
     if (!Array.isArray(vector)) {
-        console.log('${source} response was not an array');
-        throw new Error('${source} response was not an array');
+        console.log('API response was not an array');
+        throw new Error('API response was not an array');
     }
 
     return vector;

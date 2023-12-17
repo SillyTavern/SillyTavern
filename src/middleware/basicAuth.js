@@ -2,7 +2,7 @@
  * When applied, this middleware will ensure the request contains the required header for basic authentication and only
  * allow access to the endpoint after successful authentication.
  */
-const { getConfig } = require('./../util.js');
+const { getConfig } = require('../util.js');
 
 const unauthorizedResponse = (res) => {
     res.set('WWW-Authenticate', 'Basic realm="SillyTavern", charset="UTF-8"');

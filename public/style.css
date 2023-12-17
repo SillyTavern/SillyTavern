@@ -316,6 +316,11 @@ table.responsiveTable {
     padding: 1em;
 }
 
+.mes_text img:not(.mes_img) {
+    max-width: 100%;
+    max-height: var(--doc-height);
+}
+
 .mes .mes_timer,
 .mes .mesIDDisplay,
 .mes .tokenCounterDisplay {
@@ -414,7 +419,7 @@ hr {
 }
 
 #bg1 {
-    background-image: url('backgrounds/tavern day.jpg');
+    background-image: url('backgrounds/__transparent.png');
     z-index: -3;
 }
 
@@ -631,6 +636,7 @@ hr {
     display: none;
     order: 2;
     padding-right: 2px;
+    place-self: center;
 }
 
 #options_button {
@@ -1444,9 +1450,7 @@ select option:not(:checked) {
     display: block;
 }
 
-#api_button:hover,
-#api_button_novel:hover,
-#api_button_textgenerationwebui:hover {
+.menu_button.api_button:hover {
     background-color: var(--active);
 }
 
@@ -2630,7 +2634,7 @@ input[type="range"]::-webkit-slider-thumb {
     max-height: calc(100vh - 84px);
     max-height: calc(100svh - 84px);
     position: absolute;
-    z-index: 3002;
+    z-index: 3000;
     margin-left: auto;
     margin-right: auto;
     left: 0;
@@ -3661,12 +3665,13 @@ a {
 }
 
 .icon-svg {
-    fill: currentColor;
     /* Takes on the color of the surrounding text */
+    fill: currentColor;
     width: auto;
     height: 14px;
-    vertical-align: middle;
+    aspect-ratio: 1;
     /* To align with adjacent text */
+    place-self: center;
 }
 
 .paginationjs {

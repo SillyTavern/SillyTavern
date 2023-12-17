@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const sanitize = require('sanitize-filename');
-const writeFileAtomicSync = require('write-file-atomic').sync;
 
 const { jsonParser, urlencodedParser } = require('../express-common');
 const { DIRECTORIES, UPLOADS_PATH } = require('../constants');
@@ -15,17 +14,6 @@ router.post('/all', jsonParser, function (request, response) {
     var images = getImages('public/backgrounds');
     response.send(JSON.stringify(images));
 
-});
-
-router.post('/set', jsonParser, function (request, response) {
-    try {
-        const bg = `#bg1 {background-image: url('../backgrounds/${request.body.bg}');}`;
-        writeFileAtomicSync('public/css/bg_load.css', bg, 'utf8');
-        response.send({ result: 'ok' });
-    } catch (err) {
-        console.log(err);
-        response.send(err);
-    }
 });
 
 router.post('/delete', jsonParser, function (request, response) {

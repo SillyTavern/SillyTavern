@@ -1,6 +1,6 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js';
-import { escapeRegex, getStringHash } from '../../utils.js';
+import { delay, escapeRegex, getStringHash } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
@@ -482,6 +482,12 @@ async function processTtsQueue() {
     console.debug('New message found, running TTS');
     currentTtsJob = ttsJobQueue.shift();
     let text = extension_settings.tts.narrate_translated_only ? (currentTtsJob?.extra?.display_text || currentTtsJob.mes) : currentTtsJob.mes;
+
+    if (extension_settings.tts.skip_codeblocks) {
+        text = text.replace(/^\s{4}.*$/gm, '').trim();
+        text = text.replace(/```.*?```/gs, '').trim();
+    }
+
     text = extension_settings.tts.narrate_dialogues_only
         ? text.replace(/\*[^*]*?(\*|$)/g, '').trim() // remove asterisks content
         : text.replaceAll('*', '').trim(); // remove just the asterisks
@@ -639,6 +645,11 @@ function onNarrateTranslatedOnlyClick() {
     saveSettingsDebounced();
 }
 
+function onSkipCodeblocksClick() {
+    extension_settings.tts.skip_codeblocks = !!$('#tts_skip_codeblocks').prop('checked');
+    saveSettingsDebounced();
+}
+
 //##############//
 // TTS Provider //
 //##############//
@@ -687,7 +698,8 @@ export function saveTtsProviderSettings() {
 
 async function onChatChanged() {
     await resetTtsPlayback();
-    await initVoiceMap();
+    const voiceMapInit = initVoiceMap();
+    await Promise.race([voiceMapInit, delay(1000)]);
     ttsLastMessage = null;
 }
 
@@ -952,6 +964,10 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_narrate_translated_only">
                             <small>Narrate only the translated text</small>
                         </label>
+                        <label class="checkbox_label" for="tts_skip_codeblocks">
+                            <input type="checkbox" id="tts_skip_codeblocks">
+                            <small>Skip codeblocks</small>
+                        </label>
                     </div>
                     <div id="tts_voicemap_block">
                     </div>
@@ -972,6 +988,7 @@ $(document).ready(function () {
         $('#tts_narrate_dialogues').on('click', onNarrateDialoguesClick);
         $('#tts_narrate_quoted').on('click', onNarrateQuotedClick);
         $('#tts_narrate_translated_only').on('click', onNarrateTranslatedOnlyClick);
+        $('#tts_skip_codeblocks').on('click', onSkipCodeblocksClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
         $('#tts_voices').on('click', onTtsVoicesClick);

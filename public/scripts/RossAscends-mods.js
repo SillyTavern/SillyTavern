@@ -36,6 +36,7 @@ import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCount } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
 
+import Bowser from '../lib/bowser.min.js';
 
 var RPanelPin = document.getElementById('rm_button_panel_pin');
 var LPanelPin = document.getElementById('lm_button_panel_pin');
@@ -98,43 +99,22 @@ export function humanizeGenTime(total_gen_time) {
     return time_spent;
 }
 
+let parsedUA = null;
+try {
+    parsedUA = Bowser.parse(navigator.userAgent);
+} catch {
+    // In case the user agent is an empty string or Bowser can't parse it for some other reason
+}
+
+
 /**
  * Checks if the device is a mobile device.
  * @returns {boolean} - True if the device is a mobile device, false otherwise.
  */
 export function isMobile() {
-    const mobileTypes = ['smartphone', 'tablet', 'phablet', 'feature phone', 'portable media player'];
-    const deviceInfo = getDeviceInfo();
+    const mobileTypes = ['mobile', 'tablet'];
 
-    return mobileTypes.includes(deviceInfo?.device?.type);
-}
-
-/**
- * Loads device info from the server. Caches the result in sessionStorage.
- * @returns {object} - The device info object.
- */
-export function getDeviceInfo() {
-    let deviceInfo = null;
-
-    if (sessionStorage.getItem('deviceInfo')) {
-        deviceInfo = JSON.parse(sessionStorage.getItem('deviceInfo'));
-    } else {
-        $.ajax({
-            url: '/deviceinfo',
-            dataType: 'json',
-            async: false,
-            cache: true,
-            success: function (result) {
-                sessionStorage.setItem('deviceInfo', JSON.stringify(result));
-                deviceInfo = result;
-            },
-            error: function () {
-                console.log('Couldn\'t load device info. Defaulting to desktop');
-                deviceInfo = { device: { type: 'desktop' } };
-            },
-        });
-    }
-    return deviceInfo;
+    return mobileTypes.includes(parsedUA?.platform?.type);
 }
 
 function shouldSendOnEnter() {
@@ -415,7 +395,8 @@ function RA_autoconnect(PrevApi) {
                     || (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI)
                     || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
                     || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
-                    || (secret_state[SECRET_KEYS.PALM] && oai_settings.chat_completion_source == chat_completion_sources.PALM)
+                    || (secret_state[SECRET_KEYS.MAKERSUITE] && oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE)
+                    || (secret_state[SECRET_KEYS.MISTRALAI] && oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI)
                     || (secret_state[SECRET_KEYS.TOGETHERAI] && oai_settings.chat_completion_source == chat_completion_sources.TOGETHERAI)
                 ) {
                     $('#api_button_openai').trigger('click');
@@ -432,8 +413,7 @@ function RA_autoconnect(PrevApi) {
 }
 
 function OpenNavPanels() {
-    const deviceInfo = getDeviceInfo();
-    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+    if (!isMobile()) {
         //auto-open R nav if locked and previously open
         if (LoadLocalBool('NavLockOn') == true && LoadLocalBool('NavOpened') == true) {
             //console.log("RA -- clicking right nav to open");
@@ -509,7 +489,7 @@ export function dragElement(elmnt) {
             || Number((String(target.height).replace('px', ''))) < 50
             || Number((String(target.width).replace('px', ''))) < 50
             || power_user.movingUI === false
-            || isMobile() === true
+            || isMobile()
         ) {
             console.debug('aborting mutator');
             return;
@@ -717,7 +697,7 @@ export function dragElement(elmnt) {
 }
 
 export async function initMovingUI() {
-    if (isMobile() === false && power_user.movingUI === true) {
+    if (!isMobile() && power_user.movingUI === true) {
         console.debug('START MOVING UI');
         dragElement($('#sheld'));
         dragElement($('#left-nav-panel'));
@@ -903,7 +883,7 @@ export function initRossMods() {
         const chatBlock = $('#chat');
         const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
         this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
-        this.style.height = this.scrollHeight + 0.1 + 'px';
+        this.style.height = this.scrollHeight + 0.3 + 'px';
 
         if (!isFirefox) {
             const newScrollTop = Math.round(chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom));
@@ -1124,12 +1104,14 @@ export function initRossMods() {
                 .not('#left-nav-panel')
                 .not('#right-nav-panel')
                 .not('#floatingPrompt')
+                .not('#cfgConfig')
                 .is(':visible')) {
                 let visibleDrawerContent = $('.drawer-content:visible')
                     .not('#WorldInfo')
                     .not('#left-nav-panel')
                     .not('#right-nav-panel')
-                    .not('#floatingPrompt');
+                    .not('#floatingPrompt')
+                    .not('#cfgConfig');
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
                 return;
             }
@@ -1141,6 +1123,11 @@ export function initRossMods() {
 
             if ($('#WorldInfo').is(':visible')) {
                 $('#WIDrawerIcon').trigger('click');
+                return;
+            }
+
+            if ($('#cfgConfig').is(':visible')) {
+                $('#CFGClose').trigger('click');
                 return;
             }
 

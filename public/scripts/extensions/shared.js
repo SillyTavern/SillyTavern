@@ -18,22 +18,35 @@ export async function getMultimodalCaption(base64Img, prompt) {
         throw new Error('OpenRouter API key is not set.');
     }
 
-    // OpenRouter has a payload limit of ~2MB
-    const base64Bytes = base64Img.length * 0.75;
-    const compressionLimit = 2 * 1024 * 1024;
-    if (extension_settings.caption.multimodal_api === 'openrouter' && base64Bytes > compressionLimit) {
-        const maxSide = 1024;
-        base64Img = await createThumbnail(base64Img, maxSide, maxSide, 'image/jpeg');
+    if (extension_settings.caption.multimodal_api === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE]) {
+        throw new Error('MakerSuite API key is not set.');
     }
 
-    const apiResult = await fetch('/api/openai/caption-image', {
+    // OpenRouter has a payload limit of ~2MB. Google is 4MB, but we love democracy.
+    const isGoogle = extension_settings.caption.multimodal_api === 'google';
+    const base64Bytes = base64Img.length * 0.75;
+    const compressionLimit = 2 * 1024 * 1024;
+    if (['google', 'openrouter'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) {
+        const maxSide = 1024;
+        base64Img = await createThumbnail(base64Img, maxSide, maxSide, 'image/jpeg');
+
+        if (isGoogle) {
+            base64Img = base64Img.split(',')[1];
+        }
+    }
+
+    const apiResult = await fetch(`/api/${isGoogle ? 'google' : 'openai'}/caption-image`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
             image: base64Img,
             prompt: prompt,
-            api: extension_settings.caption.multimodal_api || 'openai',
-            model: extension_settings.caption.multimodal_model || 'gpt-4-vision-preview',
+            ...(isGoogle
+                ? {}
+                : {
+                    api: extension_settings.caption.multimodal_api || 'openai',
+                    model: extension_settings.caption.multimodal_model || 'gpt-4-vision-preview',
+                }),
         }),
     });
 

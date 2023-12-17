@@ -596,7 +596,6 @@
         "openrouter_model": "OR_Website",
         "jailbreak_system": true,
         "reverse_proxy": "",
-        "legacy_streaming": false,
         "chat_completion_source": "openai",
         "max_context_unlocked": false,
         "api_url_scale": "",

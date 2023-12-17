@@ -1711,7 +1711,7 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
             prompt = message || getRawLastMessage();
             break;
         case generationMode.FREE:
-            prompt = trigger.trim();
+            prompt = generateFreeModePrompt(trigger.trim());
             break;
         case generationMode.FACE_MULTIMODAL:
         case generationMode.CHARACTER_MULTIMODAL:
@@ -1728,6 +1728,36 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
     }
 
     return prompt;
+}
+
+/**
+ * Generates a free prompt with a character-specific prompt prefix support.
+ * @param {string} trigger - The prompt to use for the image generation.
+ * @returns {string}
+ */
+function generateFreeModePrompt(trigger) {
+    return trigger
+        .replace(/(?:^char(\s|,)|\{\{charPrefix\}\})/gi, (_, suffix) => {
+            const getLastCharacterKey = () => {
+                if (typeof this_chid !== 'undefined') {
+                    return getCharaFilename(this_chid);
+                }
+                const context = getContext();
+                for (let i = context.chat.length - 1; i >= 0; i--) {
+                    const message = context.chat[i];
+                    if (message.is_user || message.is_system) {
+                        continue;
+                    } else if (typeof message.original_avatar === 'string') {
+                        return message.original_avatar.replace(/\.[^/.]+$/, '');
+                    }
+                }
+                throw new Error('No usable messages found.');
+            };
+
+            const key = getLastCharacterKey();
+            const value = (extension_settings.sd.character_prompts[key] || '').trim();
+            return value ? value + (suffix || '') : '';
+        });
 }
 
 /**
@@ -1756,22 +1786,28 @@ async function generateMultimodalPrompt(generationType, quietPrompt) {
         }
     }
 
-    const response = await fetch(avatarUrl);
+    try {
+        const response = await fetch(avatarUrl);
 
-    if (!response.ok) {
-        throw new Error('Could not fetch avatar image.');
-    }
+        if (!response.ok) {
+            throw new Error('Could not fetch avatar image.');
+        }
 
-    const avatarBlob = await response.blob();
-    const avatarBase64 = await getBase64Async(avatarBlob);
+        const avatarBlob = await response.blob();
+        const avatarBase64 = await getBase64Async(avatarBlob);
 
-    const caption = await getMultimodalCaption(avatarBase64, quietPrompt);
+        const caption = await getMultimodalCaption(avatarBase64, quietPrompt);
 
-    if (!caption) {
+        if (!caption) {
+            throw new Error('No caption returned from the API.');
+        }
+
+        return caption;
+    } catch (error) {
+        console.error(error);
+        toastr.error('Multimodal captioning failed. Please try again.', 'Image Generation');
         throw new Error('Multimodal captioning failed.');
     }
-
-    return caption;
 }
 
 /**
@@ -1781,7 +1817,14 @@ async function generateMultimodalPrompt(generationType, quietPrompt) {
  */
 async function generatePrompt(quietPrompt) {
     const reply = await generateQuietPrompt(quietPrompt, false, false);
-    return processReply(reply);
+    const processedReply = processReply(reply);
+
+    if (!processedReply) {
+        toastr.error('Prompt generation produced no text. Make sure you\'re using a valid instruct template and try again', 'Image Generation');
+        throw new Error('Prompt generation failed.');
+    }
+
+    return processedReply;
 }
 
 async function sendGenerationRequest(generationType, prompt, characterName = null, callback) {

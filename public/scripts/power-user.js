@@ -19,6 +19,8 @@ import {
     showMoreMessages,
     saveSettings,
     saveChatConditional,
+    setAnimationDuration,
+    ANIMATION_DURATION_DEFAULT,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -35,7 +37,7 @@ import { registerSlashCommand } from './slash-commands.js';
 import { tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 
-import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 
 export {
     loadPowerUserSettings,
@@ -55,7 +57,7 @@ const MAX_CONTEXT_UNLOCKED = 200 * 1024;
 const MAX_RESPONSE_UNLOCKED = 16 * 1024;
 const unlockedMaxContextStep = 512;
 const maxContextMin = 512;
-const maxContextStep = 256;
+const maxContextStep = 64;
 
 const defaultStoryString = '{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}\'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}';
 const defaultExampleSeparator = '***';
@@ -112,6 +114,7 @@ let power_user = {
     },
     markdown_escape_strings: '',
     chat_truncation: 100,
+    streaming_fps: 30,
 
     ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
@@ -228,6 +231,8 @@ let power_user = {
     bogus_folders: false,
     aux_field: 'character_version',
     restore_user_input: true,
+    reduced_motion: false,
+    compact_input_area: true,
 };
 
 let themes = [];
@@ -268,6 +273,8 @@ const storage_keys = {
     expand_message_actions: 'ExpandMessageActions',
     enableZenSliders: 'enableZenSliders',
     enableLabMode: 'enableLabMode',
+    reduced_motion: 'reduced_motion',
+    compact_input_area: 'compact_input_area',
 };
 
 const contextControls = [
@@ -436,6 +443,22 @@ function switchMessageActions() {
     $('.extraMesButtons, .extraMesButtonsHint').removeAttr('style');
 }
 
+function switchReducedMotion() {
+    const value = localStorage.getItem(storage_keys.reduced_motion);
+    power_user.reduced_motion = value === null ? false : value == 'true';
+    jQuery.fx.off = power_user.reduced_motion;
+    const overrideDuration = power_user.reduced_motion ? 0 : ANIMATION_DURATION_DEFAULT;
+    setAnimationDuration(overrideDuration);
+    $('#reduced_motion').prop('checked', power_user.reduced_motion);
+}
+
+function switchCompactInputArea() {
+    const value = localStorage.getItem(storage_keys.compact_input_area);
+    power_user.compact_input_area = value === null ? true : value == 'true';
+    $('#send_form').toggleClass('compact', power_user.compact_input_area);
+    $('#compact_input_area').prop('checked', power_user.compact_input_area);
+}
+
 var originalSliderValues = [];
 
 async function switchLabMode() {
@@ -533,7 +556,7 @@ async function CreateZenSliders(elmnt) {
     var sliderMax = Number(originalSlider.attr('max'));
     var sliderValue = originalSlider.val();
     var sliderRange = sliderMax - sliderMin;
-    var numSteps = 10;
+    var numSteps = 20;
     var decimals = 2;
     var offVal, allVal;
     var stepScale;
@@ -1227,6 +1250,22 @@ async function applyTheme(name) {
                 await printCharacters(true);
             },
         },
+        {
+            key: 'reduced_motion',
+            action: async () => {
+                localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
+                $('#reduced_motion').prop('checked', power_user.reduced_motion);
+                switchReducedMotion();
+            },
+        },
+        {
+            key: 'compact_input_area',
+            action: async () => {
+                localStorage.setItem(storage_keys.compact_input_area, String(power_user.compact_input_area));
+                $('#compact_input_area').prop('checked', power_user.compact_input_area);
+                switchCompactInputArea();
+            },
+        },
     ];
 
     for (const { key, selector, type, action } of themeProperties) {
@@ -1440,6 +1479,9 @@ function loadPowerUserSettings(settings, data) {
     $('#chat_truncation').val(power_user.chat_truncation);
     $('#chat_truncation_counter').val(power_user.chat_truncation);
 
+    $('#streaming_fps').val(power_user.streaming_fps);
+    $('#streaming_fps_counter').val(power_user.streaming_fps);
+
     $('#font_scale').val(power_user.font_scale);
     $('#font_scale_counter').val(power_user.font_scale);
 
@@ -1459,6 +1501,7 @@ function loadPowerUserSettings(settings, data) {
     $('#shadow-color-picker').attr('color', power_user.shadow_color);
     $('#border-color-picker').attr('color', power_user.border_color);
     $('#ui_mode_select').val(power_user.ui_mode).find(`option[value="${power_user.ui_mode}"]`).attr('selected', true);
+    $('#reduced_motion').prop('checked', power_user.reduced_motion);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -1478,6 +1521,8 @@ function loadPowerUserSettings(settings, data) {
 
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop('selected', true);
+    switchReducedMotion();
+    switchCompactInputArea();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode(data);
     loadContextSettings();
@@ -1504,7 +1549,7 @@ async function loadCharListState() {
 }
 
 function loadMovingUIState() {
-    if (isMobile() === false
+    if (!isMobile()
         && power_user.movingUIState
         && power_user.movingUI === true) {
         console.debug('loading movingUI state');
@@ -1818,10 +1863,6 @@ export function renderStoryString(params) {
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
 const compareFunc = (first, second) => {
-    if (power_user.sort_order == 'random') {
-        return Math.random() > 0.5 ? 1 : -1;
-    }
-
     const a = first[power_user.sort_field];
     const b = second[power_user.sort_field];
 
@@ -1853,6 +1894,11 @@ function sortEntitiesList(entities) {
         return;
     }
 
+    if (power_user.sort_order === 'random') {
+        shuffle(entities);
+        return;
+    }
+
     entities.sort((a, b) => {
         if (a.type === 'tag' && b.type !== 'tag') {
             return -1;
@@ -1866,11 +1912,26 @@ function sortEntitiesList(entities) {
     });
 }
 
-async function saveTheme() {
-    const name = await callPopup('Enter a theme preset name:', 'input');
+/**
+ * Updates the current UI theme file.
+ */
+async function updateTheme() {
+    await saveTheme(power_user.theme);
+    toastr.success('Theme saved.');
+}
 
-    if (!name) {
-        return;
+/**
+ * Saves the current theme to the server.
+ * @param {string|undefined} name Theme name. If undefined, a popup will be shown to enter a name.
+ * @returns {Promise<void>} A promise that resolves when the theme is saved.
+ */
+async function saveTheme(name = undefined) {
+    if (typeof name !== 'string') {
+        name = await callPopup('Enter a theme preset name:', 'input', power_user.theme);
+
+        if (!name) {
+            return;
+        }
     }
 
     const theme = {
@@ -1905,6 +1966,8 @@ async function saveTheme() {
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
         bogus_folders: power_user.bogus_folders,
+        reduced_motion: power_user.reduced_motion,
+        compact_input_area: power_user.compact_input_area,
     };
 
     const response = await fetch('/savetheme', {
@@ -2678,6 +2741,12 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#streaming_fps').on('input', function () {
+        power_user.streaming_fps = Number($('#streaming_fps').val());
+        $('#streaming_fps_counter').val(power_user.streaming_fps);
+        saveSettingsDebounced();
+    });
+
     $('input[name="font_scale"]').on('input', async function (e) {
         power_user.font_scale = Number(e.target.value);
         $('#font_scale_counter').val(power_user.font_scale);
@@ -2771,7 +2840,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#ui-preset-save-button').on('click', saveTheme);
+    $('#ui-preset-save-button').on('click', () => saveTheme());
+    $('#ui-preset-update-button').on('click', () => updateTheme());
     $('#movingui-preset-save-button').on('click', saveMovingUI);
 
     $('#never_resize_avatars').on('input', function () {
@@ -3108,6 +3178,20 @@ $(document).ready(() => {
 
     $('#restore_user_input').on('input', function () {
         power_user.restore_user_input = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#reduced_motion').on('input', function () {
+        power_user.reduced_motion = !!$(this).prop('checked');
+        localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
+        switchReducedMotion();
+        saveSettingsDebounced();
+    });
+
+    $('#compact_input_area').on('input', function () {
+        power_user.compact_input_area = !!$(this).prop('checked');
+        localStorage.setItem(storage_keys.compact_input_area, String(power_user.compact_input_area));
+        switchCompactInputArea();
         saveSettingsDebounced();
     });
 

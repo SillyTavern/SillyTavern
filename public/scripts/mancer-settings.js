@@ -1,5 +1,5 @@
 import { setGenerationParamsFromPreset } from '../script.js';
-import { getDeviceInfo } from './RossAscends-mods.js';
+import { isMobile } from './RossAscends-mods.js';
 import { textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
 
 let models = [];
@@ -52,8 +52,7 @@ function getMancerModelTemplate(option) {
 jQuery(function () {
     $('#mancer_model').on('change', onMancerModelSelect);
 
-    const deviceInfo = getDeviceInfo();
-    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+    if (!isMobile()) {
         $('#mancer_model').select2({
             placeholder: 'Select a model',
             searchInputPlaceholder: 'Search models...',

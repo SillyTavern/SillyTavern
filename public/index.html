@@ -61,7 +61,6 @@
     <link rel="stylesheet" type="text/css" href="css/extensions-panel.css">
     <link rel="stylesheet" type="text/css" href="css/select2-overrides.css">
     <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
-    <link rel="stylesheet" href="css/bg_load.css">
     <link rel="stylesheet" type="text/css" href="css/user.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script type="module" src="scripts/i18n.js"></script>
@@ -91,6 +90,7 @@
 </head>
 
 <body class="no-blur">
+    <div id="preloader"></div>
     <div id="bg_custom"></div>
     <div id="bg1"></div>
     <div id="character_context_menu" class="hidden">
@@ -177,7 +177,7 @@
                                 <div>
                                     <h4 class="margin0"><span data-i18n="openaipresets">Chat Completion Presets</span></h4>
                                     <div class="flex-container flexNoGap">
-                                        <select id="settings_preset_openai" class="flex1 text_pole">
+                                        <select id="settings_preset_openai" class="flex1 text_pole" data-preset-manager-for="openai">
                                             <option value="gui" data-i18n="default">Default</option>
                                         </select>
                                         <div class="flex-container flexBasis100p justifyCenter">
@@ -444,7 +444,7 @@
                                             complete.</span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,palm">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -496,7 +496,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,ai21,palm">
+                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,ai21,makersuite">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -509,7 +509,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,palm,togetherai">
+                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,togetherai">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -749,7 +749,7 @@
                                         <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,togetherai">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,mistralai,togetherai">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -758,19 +758,6 @@
                                     </div>
                                     <div class="wide100p">
                                         <input type="number" id="seed_openai" name="seed_openai" class="text_pole" min="-1" max="2147483647" value="-1">
-                                    </div>
-                                </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,claude">
-                                    <div class="range-block-title justifyLeft">
-                                        <label for="legacy_streaming" class="checkbox_label">
-                                            <input id="legacy_streaming" type="checkbox" />
-                                            <span data-i18n="Legacy Streaming Processing">
-                                                Legacy Streaming Processing
-                                            </span>
-                                        </label>
-                                    </div>
-                                    <div class="toggle-description justifyLeft" data-i18n="Enable this if the streaming doesn't work with your proxy">
-                                        Enable this if the streaming doesn't work with your proxy.
                                     </div>
                                 </div>
                             </div>
@@ -1510,7 +1497,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter">
+                                    <div class="range-block" data-source="openai,openrouter,makersuite">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -1527,6 +1514,14 @@
                                         </label>
                                         <div class="toggle-description justifyLeft">
                                             <span data-i18n="Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.">Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.</span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="makersuite">
+                                        <label for="use_google_tokenizer" title="Use Google Tokenizer" class="checkbox_label widthFreeExpand">
+                                            <input id="use_google_tokenizer" type="checkbox" /><span data-i18n="Use Google Tokenizer">Use Google Tokenizer</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.">Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.</span>
                                         </div>
                                     </div>
                                     <div data-newbie-hidden class="range-block" data-source="claude">
@@ -1598,7 +1593,7 @@
                             <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
                             <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
                             <option value="textgenerationwebui"><span data-i18n="Text Completion">Text Completion (ooba, Mancer, Aphrodite, TabbyAPI, KoboldCpp)</span></option>
-                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale, AI21, TogetherAI)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale, AI21, PaLM, TogetherAI)</span></option>
+                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale, AI21, Google MakerSuite, MistralAI, TogetherAI)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale, AI21, Google MakerSuite, MistralAI)</span></option>
                         </select>
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
@@ -1846,7 +1841,8 @@
                             <option value="claude">Claude</option>
                             <option value="scale">Scale</option>
                             <option value="ai21">AI21</option>
-                            <option value="palm">Google PaLM 2</option>
+                            <option value="makersuite">Google MakerSuite</option>
+                            <option value="mistralai">MistralAI</option>
                             <option value="togetherai">TogetherAI</option>
                         </select>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -2113,17 +2109,44 @@
                                 </select>
                             </div>
                         </form>
-                        <form id="palm_form" data-source="palm" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4 data-i18n="PaLM API Key">PaLM API Key</h4>
+                        <form id="makersuite_form" data-source="makersuite" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4 data-i18n="MakerSuite API Key">MakerSuite API Key</h4>
                             <div class="flex-container">
-                                <input id="api_key_palm" name="api_key_palm" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
-                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_palm"></div>
+                                <input id="api_key_makersuite" name="api_key_makersuite" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_makersuite"></div>
                             </div>
-                            <div data-for="api_key_palm" class="neutral_warning">
+                            <div data-for="api_key_makersuite" class="neutral_warning">
                                 For privacy reasons, your API key will be hidden after you reload the page.
                             </div>
-                            <!-- Its only purpose is to trigger max context size check -->
-                            <select id="model_palm_select" class="displayNone"></select>
+                            <div>
+                                <h4 data-i18n="Google Model">Google Model</h4>
+                                <select id="model_google_select">
+                                    <option value="gemini-pro">Gemini Pro</option>
+                                    <option value="gemini-pro-vision">Gemini Pro Vision</option>
+                                    <option value="text-bison-001">Bison Text</option>
+                                    <option value="chat-bison-001">Bison Chat</option>
+                                </select>
+                            </div>
+                        </form>
+                        <form id="mistralai_form" data-source="mistralai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4 data-i18n="MistralAI API Key">MistralAI API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_mistralai" name="api_key_mistralai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mistralai"></div>
+                            </div>
+                            <div data-for="api_key_mistralai" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <div>
+                                <h4 data-i18n="MistralAI Model">MistralAI Model</h4>
+                                <select id="model_mistralai_select">
+                                    <optgroup label="Latest">
+                                        <option value="mistral-tiny">mistral-tiny</option>
+                                        <option value="mistral-small">mistral-small</option>
+                                        <option value="mistral-medium">mistral-medium</option>
+                                    </optgroup>
+                                </select>
+                            </div>
                         </form>
                         <form id="togetherai_form" data-source="togetherai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4 data-i18n="TogetherAI API Key">TogetherAI API Key</h4>
@@ -2792,8 +2815,11 @@
                             <div class="flex-container flexnowrap alignitemscenter">
                                 <select id="themes" class="margin0">
                                 </select>
-                                <div id="ui-preset-save-button" title="Save changes to a new theme file" data-i18n="[title]Save changes to a new theme file" class="menu_button margin0">
+                                <div id="ui-preset-update-button" title="Update a theme file" data-i18n="[title]Update a theme file" class="menu_button margin0">
                                     <i class="fa-solid fa-save"></i>
+                                </div>
+                                <div id="ui-preset-save-button" title="Save as a new theme" data-i18n="[title]Save as a new theme" class="menu_button margin0">
+                                    <i class="fa-solid fa-paste"></i>
                                 </div>
                             </div>
                         </div>
@@ -2921,12 +2947,29 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div id="streaming-fps" class="range-block">
+                                    <div class="range-block-title" data-i18n="Streaming FPS">
+                                        Streaming FPS
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="streaming_fps" name="streaming_fps" min="5" max="100" step="5">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" min="5" max="100" step="1" data-for="streaming_fps" id="streaming_fps_counter">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div name="UserSettingsSecondColumn" id="UI-Customization" class="flex-container flexFlowColumn wide100p flexNoGap">
                         <div name="themeToggles">
                             <h4 data-i18n="Theme Toggles">Theme Toggles</h4>
+                            <label for="reduced_motion" class="checkbox_label" title="Disables animations and transitions" data-i18n="[title]Disables animations and transitions">
+                                <input id="reduced_motion" type="checkbox" />
+                                <span data-i18n="Reduced Motion">Reduced Motion</span>
+                            </label>
                             <label data-newbie-hidden for="fast_ui_mode" class="checkbox_label" title="removes blur from window backgrounds" data-i18n="[title]removes blur from window backgrounds">
                                 <input id="fast_ui_mode" type="checkbox" />
                                 <span data-i18n="No Blur Effect">No Blur Effect</span>
@@ -2970,6 +3013,10 @@
                             <label data-newbie-hidden for="messageTokensEnabled" class="checkbox_label">
                                 <input id="messageTokensEnabled" type="checkbox" />
                                 <span data-i18n="Show Message Token Count">Message Token Count</span>
+                            </label>
+                            <label for="compact_input_area" class="checkbox_label">
+                                <input id="compact_input_area" type="checkbox" />
+                                <span data-i18n="Compact Input Area (Mobile)">Compact Input Area&nbsp;<i class="fa-solid fa-mobile-screen-button"></i></span>
                             </label>
                             <label data-newbie-hidden for="hotswapEnabled" class="checkbox_label">
                                 <input id="hotswapEnabled" type="checkbox" />
@@ -3622,6 +3669,7 @@
                                             <label id="rm_group_automode_label" class="checkbox_label whitespacenowrap">
                                                 <input id="rm_group_automode" type="checkbox" />
                                                 <span data-i18n="Auto Mode">Auto Mode</span>
+                                                <input id="rm_group_automode_delay" class="text_pole textarea_compact widthUnset" type="number" min="1" max="999" step="1" value="5" title="Auto Mode delay" />
                                             </label>
                                             <label id="rm_group_hidemutedsprites_label" class="checkbox_label whitespacenowrap">
                                                 <input id="rm_group_hidemutedsprites" type="checkbox" />
@@ -3794,7 +3842,7 @@
                 <span data-i18n="Personality summary">Personality summary</span>
                 <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#personality-summary" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
             </h4>
-            <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="50000"></textarea>
+            <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="50000"></textarea>
             <div class="extension_token_counter">
                 Tokens: <span data-token-counter="personality_textarea" data-token-permanent="true">counting...</span>
             </div>
@@ -3806,7 +3854,7 @@
                     <span class="fa-solid fa-circle-question note-link-span"></span>
                 </a>
             </h4>
-            <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="50000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
+            <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="50000" value="" autocomplete="off" form="form_create" rows="4"></textarea>
             <div class="extension_token_counter">
                 Tokens: <span data-token-counter="scenario_pole" data-token-permanent="true">counting...</span>
             </div>

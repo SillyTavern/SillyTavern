@@ -1,10 +1,23 @@
-import { callPopup, chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl } from '../script.js';
+import { callPopup, chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl, saveSettingsDebounced } from '../script.js';
 import { saveMetadataDebounced } from './extensions.js';
 import { registerSlashCommand } from './slash-commands.js';
 import { stringFormat } from './utils.js';
 
 const BG_METADATA_KEY = 'custom_background';
 const LIST_METADATA_KEY = 'chat_backgrounds';
+
+export let background_settings = {
+    name: '__transparent.png',
+    url: generateUrlParameter('__transparent.png', false),
+};
+
+export function loadBackgroundSettings(settings) {
+    let backgroundSettings = settings.background;
+    if (!backgroundSettings || !backgroundSettings.name || !backgroundSettings.url) {
+        backgroundSettings = background_settings;
+    }
+    setBackground(backgroundSettings.name, backgroundSettings.url);
+}
 
 /**
  * Sets the background for the current chat and adds it to the list of custom backgrounds.
@@ -141,9 +154,8 @@ function onSelectBackgroundClick() {
         saveBackgroundMetadata(relativeBgImage);
         setCustomBackground();
         highlightLockedBackground();
-    } else {
-        highlightLockedBackground();
     }
+    highlightLockedBackground();
 
     const customBg = window.getComputedStyle(document.getElementById('bg_custom')).backgroundImage;
 
@@ -157,8 +169,7 @@ function onSelectBackgroundClick() {
 
     // Fetching to browser memory to reduce flicker
     fetch(backgroundUrl).then(() => {
-        $('#bg1').css('background-image', relativeBgImage);
-        setBackground(bgFile);
+        setBackground(bgFile, relativeBgImage);
     }).catch(() => {
         console.log('Background could not be set: ' + backgroundUrl);
     });
@@ -333,7 +344,7 @@ export async function getBackgrounds() {
             '': '',
         }),
     });
-    if (response.ok === true) {
+    if (response.ok) {
         const getData = await response.json();
         //background = getData;
         //console.log(getData.length);
@@ -346,12 +357,16 @@ export async function getBackgrounds() {
 }
 
 /**
- * Gets the URL of the background
+ * Gets the CSS URL of the background
  * @param {Element} block
  * @returns {string} URL of the background
  */
 function getUrlParameter(block) {
     return $(block).closest('.bg_example').data('url');
+}
+
+function generateUrlParameter(bg, isCustom) {
+    return isCustom ? `url("${encodeURI(bg)}")` : `url("${getBackgroundPath(bg)}")`;
 }
 
 /**
@@ -363,7 +378,7 @@ function getUrlParameter(block) {
 function getBackgroundFromTemplate(bg, isCustom) {
     const template = $('#background_template .bg_example').clone();
     const thumbPath = isCustom ? bg : getThumbnailUrl('bg', bg);
-    const url = isCustom ? `url("${encodeURI(bg)}")` : `url("${getBackgroundPath(bg)}")`;
+    const url = generateUrlParameter(bg, isCustom);
     const title = isCustom ? bg.split('/').pop() : bg;
     const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
     template.attr('title', title);
@@ -375,26 +390,11 @@ function getBackgroundFromTemplate(bg, isCustom) {
     return template;
 }
 
-async function setBackground(bg) {
-    jQuery.ajax({
-        type: 'POST', //
-        url: '/api/backgrounds/set', //
-        data: JSON.stringify({
-            bg: bg,
-        }),
-        beforeSend: function () {
-
-        },
-        cache: false,
-        dataType: 'json',
-        contentType: 'application/json',
-        //processData: false,
-        success: function (html) { },
-        error: function (jqXHR, exception) {
-            console.log(exception);
-            console.log(jqXHR);
-        },
-    });
+async function setBackground(bg, url) {
+    $('#bg1').css('background-image', url);
+    background_settings.name = bg;
+    background_settings.url = url;
+    saveSettingsDebounced();
 }
 
 async function delBackground(bg) {
@@ -435,8 +435,7 @@ function uploadBackground(formData) {
         contentType: false,
         processData: false,
         success: async function (bg) {
-            setBackground(bg);
-            $('#bg1').css('background-image', `url("${getBackgroundPath(bg)}"`);
+            setBackground(bg, generateUrlParameter(bg, false));
             await getBackgrounds();
             highlightNewBackground(bg);
         },
