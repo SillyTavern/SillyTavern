@@ -237,6 +237,12 @@ async function convertSoloToGroupChat() {
         return;
     }
 
+    const confirm = await callPopup('Are you sure you want to convert this chat to a group chat?', 'confirm');
+
+    if (!confirm) {
+        return;
+    }
+
     const character = characters[this_chid];
 
     // Populate group required fields
