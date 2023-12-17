@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
 const { getConfigValue } = require('./util');
 const enableServerPlugins = getConfigValue('enableServerPlugins', false);
 
@@ -128,18 +129,57 @@ async function loadFromFile(app, pluginFilePath) {
 }
 
 /**
+ * Check whether a plugin ID is valid (only lowercase alphanumeric, hyphens, and underscores).
+ * @param {string} id The plugin ID to check
+ * @returns {boolean} True if the plugin ID is valid.
+ */
+function isValidPluginID(id) {
+    return /^[a-z0-9_-]$/.test(id);
+}
+
+/**
  * Initializes a plugin module.
  * @param {import('express').Express} app Express app
  * @param {any} plugin Plugin module
  * @returns {Promise<boolean>} Promise that resolves to true if plugin was initialized successfully
  */
 async function initPlugin(app, plugin) {
-    if (typeof plugin.init === 'function') {
-        await plugin.init(app);
-        return true;
+    if (typeof plugin.info !== 'object') {
+        console.error('Failed to load plugin module; plugin info not found');
+        return false;
     }
 
-    return false;
+    // We don't currently use "name" or "description" but it would be nice to have a UI for listing server plugins, so
+    // require them now just to be safe
+    for (const field of ['id', 'name', 'description']) {
+        if (typeof plugin.info[field] !== 'string') {
+            console.error(`Failed to load plugin module; plugin info missing field '${field}'`);
+            return false;
+        }
+    }
+
+    if (typeof plugin.init !== 'function') {
+        console.error('Failed to load plugin module; no init function');
+        return false;
+    }
+
+    const { id } = plugin.info;
+
+    if (!isValidPluginID(id)) {
+        console.error(`Failed to load plugin module; invalid plugin ID '${id}'`);
+    }
+
+    // Allow the plugin to register API routes under /plugins/[plugin ID] via a router
+    const router = express.Router();
+
+    await plugin.init(router);
+
+    // Add API routes to the app if the plugin registered any
+    if (router.stack.length > 0) {
+        app.use(`/plugins/${id}`, router);
+    }
+
+    return true;
 }
 
 /**
