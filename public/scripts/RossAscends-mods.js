@@ -1052,11 +1052,11 @@ export function initRossMods() {
         }
 
         if (event.key == 'ArrowUp') { //edits last message if chatbar is empty and focused
-            //console.log('got uparrow input');
+            console.log('got uparrow input');
             if (
                 $('#send_textarea').val() === '' &&
                 chatbarInFocus === true &&
-                $('.swipe_right:last').css('display') === 'flex' &&
+                //$('.swipe_right:last').css('display') === 'flex' &&
                 $('#character_popup').css('display') === 'none' &&
                 $('#shadow_select_chat_popup').css('display') === 'none'
             ) {
