@@ -164,6 +164,7 @@ export const chat_completion_sources = {
     OPENROUTER: 'openrouter',
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
+    MISTRALAI: 'mistralai',
 };
 
 const prefixMap = selected_group ? {
@@ -208,6 +209,7 @@ const default_settings = {
     claude_model: 'claude-instant-v1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
+    mistralai_model: 'mistral-medium',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
@@ -263,6 +265,7 @@ const oai_settings = {
     claude_model: 'claude-instant-v1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
+    mistralai_model: 'mistral-medium',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
@@ -1261,6 +1264,8 @@ function getChatCompletionModel() {
             return oai_settings.openrouter_model !== openrouter_website_model ? oai_settings.openrouter_model : null;
         case chat_completion_sources.AI21:
             return oai_settings.ai21_model;
+        case chat_completion_sources.MISTRALAI:
+            return oai_settings.mistralai_model;
         default:
             throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
     }
@@ -1448,6 +1453,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isAI21 = oai_settings.chat_completion_source == chat_completion_sources.AI21;
     const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
     const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
+    const isMistral = oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI;
     const isTextCompletion = (isOAI && textCompletionModels.includes(oai_settings.openai_model)) || (isOpenRouter && oai_settings.openrouter_force_instruct && power_user.instruct.enabled);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -1555,7 +1561,11 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['stop_tokens'] = [name1 + ':', oai_settings.new_chat_prompt, oai_settings.new_group_chat_prompt];
     }
 
-    if ((isOAI || isOpenRouter) && oai_settings.seed >= 0) {
+    if (isMistral) {
+        generate_data['safe_mode'] = false; // already defaults to false, but just incase they change that in the future.
+    }
+
+    if ((isOAI || isOpenRouter || isMistral) && oai_settings.seed >= 0) {
         generate_data['seed'] = oai_settings.seed;
     }
 
@@ -2300,6 +2310,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openrouter_use_fallback = settings.openrouter_use_fallback ?? default_settings.openrouter_use_fallback;
     oai_settings.openrouter_force_instruct = settings.openrouter_force_instruct ?? default_settings.openrouter_force_instruct;
     oai_settings.ai21_model = settings.ai21_model ?? default_settings.ai21_model;
+    oai_settings.mistralai_model = settings.mistralai_model ?? default_settings.mistralai_model;
     oai_settings.google_model = settings.google_model ?? default_settings.google_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
@@ -2342,6 +2353,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_google_select option[value="${oai_settings.google_model}"`).attr('selected', true);
     $('#model_ai21_select').val(oai_settings.ai21_model);
     $(`#model_ai21_select option[value="${oai_settings.ai21_model}"`).attr('selected', true);
+    $('#model_mistralai_select').val(oai_settings.mistralai_model);
+    $(`#model_mistralai_select option[value="${oai_settings.mistralai_model}"`).attr('selected', true);
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').val(`${oai_settings.openai_max_context}`);
     $('#model_openrouter_select').val(oai_settings.openrouter_model);
@@ -2449,7 +2462,7 @@ async function getStatusOpen() {
         chat_completion_source: oai_settings.chat_completion_source,
     };
 
-    if (oai_settings.reverse_proxy && oai_settings.chat_completion_source !== chat_completion_sources.OPENROUTER) {
+    if (oai_settings.reverse_proxy && (oai_settings.chat_completion_source === chat_completion_sources.OPENAI || oai_settings.chat_completion_source === chat_completion_sources.CLAUDE)) {
         validateReverseProxy();
     }
 
@@ -2519,6 +2532,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         openrouter_group_models: settings.openrouter_group_models,
         openrouter_sort_models: settings.openrouter_sort_models,
         ai21_model: settings.ai21_model,
+        mistralai_model: settings.mistralai_model,
         google_model: settings.google_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
@@ -2890,6 +2904,7 @@ function onSettingsPresetChange() {
         openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
         openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
         ai21_model: ['#model_ai21_select', 'ai21_model', false],
+        mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
         google_model: ['#model_google_select', 'google_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
@@ -3074,6 +3089,11 @@ async function onModelChange() {
         oai_settings.google_model = value;
     }
 
+    if ($(this).is('#model_mistralai_select')) {
+        console.log('MistralAI model changed to', value);
+        oai_settings.mistralai_model = value;
+    }
+
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
@@ -3177,6 +3197,16 @@ async function onModelChange() {
 
         oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
         $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.MISTRALAI) {
+        $('#openai_max_context').attr('max', max_32k);
+        oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+
+        //mistral also caps temp at 1.0
+        oai_settings.temp_openai = Math.min(claude_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
@@ -3340,6 +3370,19 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
+        const api_key_mistralai = String($('#api_key_mistralai').val()).trim();
+
+        if (api_key_mistralai.length) {
+            await writeSecret(SECRET_KEYS.MISTRALAI, api_key_mistralai);
+        }
+
+        if (!secret_state[SECRET_KEYS.MISTRALAI]) {
+            console.log('No secret key saved for MistralAI');
+            return;
+        }
+    }
+
     startStatusLoading();
     saveSettingsDebounced();
     await getStatusOpen();
@@ -3371,6 +3414,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
         $('#model_ai21_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI) {
+        $('#model_mistralai_select').trigger('change');
     }
     $('[data-source]').each(function () {
         const validSources = $(this).data('source').split(',');
@@ -3749,6 +3795,7 @@ $(document).ready(async function () {
     $('#openrouter_group_models').on('change', onOpenrouterModelSortChange);
     $('#openrouter_sort_models').on('change', onOpenrouterModelSortChange);
     $('#model_ai21_select').on('change', onModelChange);
+    $('#model_mistralai_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);
     $('#delete_oai_preset').on('click', onDeletePresetClick);

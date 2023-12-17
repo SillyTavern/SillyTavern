@@ -46,6 +46,7 @@ async function loadPlugins(app, pluginsPath) {
 
         if (fs.statSync(pluginFilePath).isDirectory()) {
             await loadFromDirectory(app, pluginFilePath);
+            continue;
         }
 
         // Not a JavaScript file.
