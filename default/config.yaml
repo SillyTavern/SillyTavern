@@ -58,3 +58,5 @@ openai:
 deepl:
   # Available options: default, more, less, prefer_more, prefer_less
   formality: default
+# -- SERVER PLUGIN CONFIGURATION --
+enableServerPlugins: false
