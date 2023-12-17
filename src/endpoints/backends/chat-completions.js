@@ -411,7 +411,7 @@ async function sendMistralAIRequest(request, response) {
         const lastMsg = messages[messages.length - 1];
         if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
             lastMsg.role = 'user';
-            if(lastMsg.role === 'assistant') {
+            if (lastMsg.role === 'assistant') {
                 lastMsg.content = lastMsg.name + ': ' + lastMsg.content;
             }
         }
