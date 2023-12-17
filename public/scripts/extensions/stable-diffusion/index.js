@@ -16,6 +16,7 @@ import {
     user_avatar,
     getCharacterAvatar,
     formatCharacterAvatar,
+    substituteParams,
 } from '../../../script.js';
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
@@ -2180,6 +2181,9 @@ async function generateComfyImage(prompt) {
     placeholders.forEach(ph => {
         workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
     });
+    (extension_settings.sd.comfy_placeholders ?? []).forEach(ph => {
+        workflow = workflow.replace(`"%${ph.find}%"`, JSON.stringify(substituteParams(ph.replace)));
+    });
     console.log(`{
         "prompt": ${workflow}
     }`);
@@ -2216,6 +2220,50 @@ async function onComfyOpenWorkflowEditorClick() {
     };
     $('#sd_comfy_workflow_editor_name').text(extension_settings.sd.comfy_workflow);
     $('#sd_comfy_workflow_editor_workflow').val(workflow);
+    const addPlaceholderDom = (placeholder) => {
+        const el = $(`
+            <li class="sd_comfy_workflow_editor_not_found" data-placeholder="${placeholder.find}">
+                <span class="sd_comfy_workflow_editor_custom_remove" title="Remove custom placeholder">⊘</span>
+                <span class="sd_comfy_workflow_editor_custom_final">"%${placeholder.find}%"</span><br>
+                <input placeholder="find" title="find" type="text" class="text_pole sd_comfy_workflow_editor_custom_find" value=""><br>
+                <input placeholder="replace" title="replace" type="text" class="text_pole sd_comfy_workflow_editor_custom_replace">
+            </li>
+        `);
+        $('#sd_comfy_workflow_editor_placeholder_list_custom').append(el);
+        el.find('.sd_comfy_workflow_editor_custom_find').val(placeholder.find);
+        el.find('.sd_comfy_workflow_editor_custom_find').on('input', function() {
+            placeholder.find = this.value;
+            el.find('.sd_comfy_workflow_editor_custom_final').text(`"%${this.value}%"`);
+            el.attr('data-placeholder', `${this.value}`);
+            checkPlaceholders();
+            saveSettingsDebounced();
+        });
+        el.find('.sd_comfy_workflow_editor_custom_replace').val(placeholder.replace);
+        el.find('.sd_comfy_workflow_editor_custom_replace').on('input', function() {
+            placeholder.replace = this.value;
+            saveSettingsDebounced();
+        });
+        el.find('.sd_comfy_workflow_editor_custom_remove').on('click', () => {
+            el.remove();
+            extension_settings.sd.comfy_placeholders.splice(extension_settings.sd.comfy_placeholders.indexOf(placeholder));
+            saveSettingsDebounced();
+        });
+    };
+    $('#sd_comfy_workflow_editor_placeholder_add').on('click', () => {
+        if (!extension_settings.sd.comfy_placeholders) {
+            extension_settings.sd.comfy_placeholders = [];
+        }
+        const placeholder = {
+            find: '',
+            replace: '',
+        };
+        extension_settings.sd.comfy_placeholders.push(placeholder);
+        addPlaceholderDom(placeholder);
+        saveSettingsDebounced();
+    });
+    (extension_settings.sd.comfy_placeholders ?? []).forEach(placeholder=>{
+        addPlaceholderDom(placeholder);
+    });
     checkPlaceholders();
     $('#sd_comfy_workflow_editor_workflow').on('input', checkPlaceholders);
     if (await popupResult) {
