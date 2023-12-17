@@ -1,7 +1,8 @@
 import { getRequestHeaders } from '../../script.js';
 import { extension_settings } from '../extensions.js';
+import { oai_settings } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
-import { createThumbnail } from '../utils.js';
+import { createThumbnail, isValidUrl } from '../utils.js';
 
 /**
  * Generates a caption for an image using a multimodal model.
@@ -35,6 +36,15 @@ export async function getMultimodalCaption(base64Img, prompt) {
         }
     }
 
+    const useReverseProxy =
+        extension_settings.caption.multimodal_api === 'openai'
+        && extension_settings.caption.allow_reverse_proxy
+        && oai_settings.reverse_proxy
+        && isValidUrl(oai_settings.reverse_proxy);
+
+    const proxyUrl = useReverseProxy ? oai_settings.reverse_proxy : '';
+    const proxyPassword = useReverseProxy ? oai_settings.proxy_password : '';
+
     const apiResult = await fetch(`/api/${isGoogle ? 'google' : 'openai'}/caption-image`, {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -46,6 +56,8 @@ export async function getMultimodalCaption(base64Img, prompt) {
                 : {
                     api: extension_settings.caption.multimodal_api || 'openai',
                     model: extension_settings.caption.multimodal_model || 'gpt-4-vision-preview',
+                    reverse_proxy: proxyUrl,
+                    proxy_password: proxyPassword,
                 }),
         }),
     });

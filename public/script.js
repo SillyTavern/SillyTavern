@@ -291,6 +291,7 @@ export const event_types = {
     MESSAGE_DELETED: 'message_deleted',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
+    GENERATION_STARTED: 'generation_started',
     GENERATION_STOPPED: 'generation_stopped',
     EXTENSIONS_FIRST_LOAD: 'extensions_first_load',
     SETTINGS_LOADED: 'settings_loaded',
@@ -2925,6 +2926,7 @@ export async function generateRaw(prompt, api, instructOverride) {
 // Returns a promise that resolves when the text is done generating.
 async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops } = {}, dryRun = false) {
     console.log('Generate entered');
+    eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops }, dryRun);
     setGenerationProgress(0);
     generation_started = new Date();
 
