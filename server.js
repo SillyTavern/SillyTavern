@@ -608,9 +608,12 @@ const setupTasks = async function () {
     await loadTokenizers();
     await statsEndpoint.init();
 
+    const cleanupPlugins = await loadPlugins();
+
     const exitProcess = () => {
         statsEndpoint.onExit();
         process.exit();
+        cleanupPlugins();
     };
 
     // Set up event listeners for a graceful shutdown
@@ -621,7 +624,6 @@ const setupTasks = async function () {
         exitProcess();
     });
 
-    await loadPlugins();
 
     console.log('Launching...');
 

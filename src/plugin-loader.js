@@ -22,9 +22,12 @@ const isESModule = (file) => path.extname(file) === '.mjs';
  * Load and initialize server plugins from a directory if they are enabled.
  * @param {import('express').Express} app Express app
  * @param {string} pluginsPath Path to plugins directory
- * @returns {Promise<any>} Promise that resolves when all plugins are loaded
+ * @returns {Promise<Function>} Promise that resolves when all plugins are loaded. Resolves to a "cleanup" function to
+ * be called before the server shuts down.
  */
 async function loadPlugins(app, pluginsPath) {
+    const exitHooks = [];
+
     // Server plugins are disabled.
     if (!enableServerPlugins) {
         return;
@@ -46,7 +49,7 @@ async function loadPlugins(app, pluginsPath) {
         const pluginFilePath = path.join(pluginsPath, file);
 
         if (fs.statSync(pluginFilePath).isDirectory()) {
-            await loadFromDirectory(app, pluginFilePath);
+            await loadFromDirectory(app, pluginFilePath, exitHooks);
             continue;
         }
 
@@ -55,11 +58,14 @@ async function loadPlugins(app, pluginsPath) {
             continue;
         }
 
-        await loadFromFile(app, pluginFilePath);
+        await loadFromFile(app, pluginFilePath, exitHooks);
     }
+
+    // Call all plugin "exit" functions at once and wait for them to finish
+    return () => Promise.all(exitHooks.map(exitFn => exitFn()));
 }
 
-async function loadFromDirectory(app, pluginDirectoryPath) {
+async function loadFromDirectory(app, pluginDirectoryPath, exitHooks) {
     const files = fs.readdirSync(pluginDirectoryPath);
 
     // No plugins to load.
@@ -70,7 +76,7 @@ async function loadFromDirectory(app, pluginDirectoryPath) {
     // Plugin is an npm package.
     const packageJsonFilePath = path.join(pluginDirectoryPath, 'package.json');
     if (fs.existsSync(packageJsonFilePath)) {
-        if (await loadFromPackage(app, packageJsonFilePath)) {
+        if (await loadFromPackage(app, packageJsonFilePath, exitHooks)) {
             return;
         }
     }
@@ -78,7 +84,7 @@ async function loadFromDirectory(app, pluginDirectoryPath) {
     // Plugin is a CommonJS module.
     const cjsFilePath = path.join(pluginDirectoryPath, 'index.js');
     if (fs.existsSync(cjsFilePath)) {
-        if (await loadFromFile(app, cjsFilePath)) {
+        if (await loadFromFile(app, cjsFilePath, exitHooks)) {
             return;
         }
     }
@@ -86,7 +92,7 @@ async function loadFromDirectory(app, pluginDirectoryPath) {
     // Plugin is an ECMAScript module.
     const esmFilePath = path.join(pluginDirectoryPath, 'index.mjs');
     if (fs.existsSync(esmFilePath)) {
-        if (await loadFromFile(app, esmFilePath)) {
+        if (await loadFromFile(app, esmFilePath, exitHooks)) {
             return;
         }
     }
@@ -96,14 +102,16 @@ async function loadFromDirectory(app, pluginDirectoryPath) {
  * Loads and initializes a plugin from an npm package.
  * @param {import('express').Express} app Express app
  * @param {string} packageJsonPath Path to package.json file
+ * @param {Array<Function>} exitHooks Array of functions to be run on plugin exit. Will be pushed to if the plugin has
+ * an "exit" function.
  * @returns {Promise<boolean>} Promise that resolves to true if plugin was loaded successfully
  */
-async function loadFromPackage(app, packageJsonPath) {
+async function loadFromPackage(app, packageJsonPath, exitHooks) {
     try {
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
         if (packageJson.main) {
             const pluginFilePath = path.join(path.dirname(packageJsonPath), packageJson.main);
-            return await loadFromFile(app, pluginFilePath);
+            return await loadFromFile(app, pluginFilePath, exitHooks);
         }
     } catch (error) {
         console.error(`Failed to load plugin from ${packageJsonPath}: ${error}`);
@@ -115,13 +123,15 @@ async function loadFromPackage(app, packageJsonPath) {
  * Loads and initializes a plugin from a file.
  * @param {import('express').Express} app Express app
  * @param {string} pluginFilePath Path to plugin directory
+ * @param {Array.<Function>} exitHooks Array of functions to be run on plugin exit. Will be pushed to if the plugin has
+ * an "exit" function.
  * @returns {Promise<boolean>} Promise that resolves to true if plugin was loaded successfully
  */
-async function loadFromFile(app, pluginFilePath) {
+async function loadFromFile(app, pluginFilePath, exitHooks) {
     try {
         const plugin = await getPluginModule(pluginFilePath);
         console.log(`Initializing plugin from ${pluginFilePath}`);
-        return await initPlugin(app, plugin);
+        return await initPlugin(app, plugin, exitHooks);
     } catch (error) {
         console.error(`Failed to load plugin from ${pluginFilePath}: ${error}`);
         return false;
@@ -141,9 +151,11 @@ function isValidPluginID(id) {
  * Initializes a plugin module.
  * @param {import('express').Express} app Express app
  * @param {any} plugin Plugin module
+ * @param {Array.<Function>} exitHooks Array of functions to be run on plugin exit. Will be pushed to if the plugin has
+ * an "exit" function.
  * @returns {Promise<boolean>} Promise that resolves to true if plugin was initialized successfully
  */
-async function initPlugin(app, plugin) {
+async function initPlugin(app, plugin, exitHooks) {
     if (typeof plugin.info !== 'object') {
         console.error('Failed to load plugin module; plugin info not found');
         return false;
@@ -177,6 +189,10 @@ async function initPlugin(app, plugin) {
     // Add API routes to the app if the plugin registered any
     if (router.stack.length > 0) {
         app.use(`/plugins/${id}`, router);
+    }
+
+    if (typeof plugin.exit === 'function') {
+        exitHooks.push(plugin.exit);
     }
 
     return true;
