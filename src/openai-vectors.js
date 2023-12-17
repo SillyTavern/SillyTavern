@@ -12,11 +12,6 @@ const SOURCES = {
         url: 'api.openai.com',
         model: 'text-embedding-ada-002',
     },
-    'togetherai': {
-        secretKey: SECRET_KEYS.TOGETHERAI,
-        url: 'api.togetherai.xyz',
-        model: 'togethercomputer/GPT-NeoXT-Chat-Base-20B',
-    },
 };
 
 /**
@@ -26,7 +21,6 @@ const SOURCES = {
  * @returns {Promise<number[]>} - The vector for the text
  */
 async function getOpenAIVector(text, source) {
-  
     const config = SOURCES[source];
 
     if (!config) {

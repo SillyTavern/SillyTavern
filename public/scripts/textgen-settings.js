@@ -31,15 +31,17 @@ export const textgen_types = {
     APHRODITE: 'aphrodite',
     TABBY: 'tabby',
     KOBOLDCPP: 'koboldcpp',
+    TOGETHERAI: 'togetherai',
 };
 
-const { MANCER, APHRODITE } = textgen_types;
+const { MANCER, APHRODITE, TOGETHERAI } = textgen_types;
 
 // Maybe let it be configurable in the future?
 // (7 days later) The future has come.
 const MANCER_SERVER_KEY = 'mancer_server';
 const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
-export let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
+let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
+let TOGETHERAI_SERVER = 'https://api.together.xyz';
 
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
 const settings = {
@@ -89,6 +91,7 @@ const settings = {
     //prompt_log_probs_aphrodite: 0,
     type: textgen_types.OOBA,
     mancer_model: 'mytholite',
+    togetherai_model: 'Gryphe/MythoMax-L2-13b',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
     n: 1,
@@ -164,8 +167,8 @@ async function selectPreset(name) {
 
 function formatTextGenURL(value) {
     try {
-        // Mancer doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER) {
+        // Mancer/Together doesn't need any formatting (it's hardcoded)
+        if (settings.type === MANCER || settings.type === TOGETHERAI) {
             return value;
         }
 
@@ -546,11 +549,27 @@ function getModel() {
         return settings.mancer_model;
     }
 
+    if (settings.type === TOGETHERAI) {
+        return settings.togetherai_model;
+    }
+
     if (settings.type === APHRODITE) {
         return online_status;
     }
 
     return undefined;
+}
+
+export function getTextGenServer() {
+    if (settings.type === MANCER) {
+        return MANCER_SERVER;
+    }
+
+    if (settings.type === TOGETHERAI) {
+        return TOGETHERAI_SERVER;
+    }
+
+    return api_server_textgenerationwebui;
 }
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
@@ -590,10 +609,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
             toIntArray(getCustomTokenBans()) :
             getCustomTokenBans(),
         'api_type': settings.type,
-        'api_server': settings.type === MANCER ?
-            MANCER_SERVER :
-            api_server_textgenerationwebui,
-        'legacy_api': settings.legacy_api && settings.type !== MANCER,
+        'api_server': getTextGenServer(),
+        'legacy_api': settings.legacy_api && settings.type !== MANCER && settings.type !== TOGETHERAI,
         'sampler_order': settings.type === textgen_types.KOBOLDCPP ?
             settings.sampler_order :
             undefined,

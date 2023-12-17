@@ -19,10 +19,10 @@ import {
     getTextGenUrlSourceId,
     textgen_types,
     textgenerationwebui_banned_in_macros,
-    MANCER_SERVER,
+    getTextGenServer,
 } from './scripts/textgen-settings.js';
 
-const { MANCER } = textgen_types;
+const { MANCER, TOGETHERAI } = textgen_types;
 
 import {
     world_info,
@@ -189,7 +189,7 @@ import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescriptio
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels } from './scripts/mancer-settings.js';
+import { loadMancerModels, loadTogetherAIModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment } from './scripts/chats.js';
 import { replaceVariableMacros } from './scripts/variables.js';
 import { initPresetManager } from './scripts/preset-manager.js';
@@ -931,9 +931,7 @@ async function getStatusKobold() {
 async function getStatusTextgen() {
     const url = '/api/backends/text-completions/status';
 
-    let endpoint = textgen_settings.type === MANCER ?
-        MANCER_SERVER :
-        api_server_textgenerationwebui;
+    let endpoint = getTextGenServer();
 
     if (!endpoint) {
         console.warn('No endpoint for status check');
@@ -949,7 +947,8 @@ async function getStatusTextgen() {
                 api_type: textgen_settings.type,
                 legacy_api:
                     textgen_settings.legacy_api &&
-                    textgen_settings.type !== MANCER,
+                    textgen_settings.type !== MANCER &&
+                    textgen_settings.type !== TOGETHERAI,
             }),
             signal: abortStatusCheck.signal,
         });
@@ -959,6 +958,9 @@ async function getStatusTextgen() {
         if (textgen_settings.type === MANCER) {
             online_status = textgen_settings.mancer_model;
             loadMancerModels(data?.data);
+        } else if (textgen_settings.type === TOGETHERAI) {
+            online_status = textgen_settings.togetherai_model;
+            loadTogetherAIModels(data?.data);
         } else {
             online_status = data?.result;
         }
@@ -2958,7 +2960,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     if (main_api === 'textgenerationwebui' &&
         textgen_settings.streaming &&
         textgen_settings.legacy_api &&
-        textgen_settings.type !== MANCER) {
+        textgen_settings.type !== MANCER &&
+        textgen_settings.type !== TOGETHERAI) {
         toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use --extensions openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration();
         return Promise.resolve();
@@ -5399,7 +5402,6 @@ function changeMainAPI() {
         case chat_completion_sources.AI21:
         case chat_completion_sources.MAKERSUITE:
         case chat_completion_sources.MISTRALAI:
-        case chat_completion_sources.TOGETHERAI:
         default:
             setupChatCompletionPromptManager(oai_settings);
             break;
@@ -7515,6 +7517,11 @@ async function connectAPISlash(_, text) {
             button: '#api_button_textgenerationwebui',
             type: textgen_types.KOBOLDCPP,
         },
+        'togetherai': {
+            selected: 'textgenerationwebui',
+            button: '#api_button_textgenerationwebui',
+            type: textgen_types.TOGETHERAI,
+        },
         'oai': {
             selected: 'openai',
             source: 'openai',
@@ -7553,11 +7560,6 @@ async function connectAPISlash(_, text) {
         'mistralai': {
             selected: 'openai',
             source: 'mistralai',
-            button: '#api_button_openai',
-        },
-        'togetherai': {
-            selected: 'openai',
-            source: 'togetherai',
             button: '#api_button_openai',
         },
     };
@@ -8398,6 +8400,11 @@ jQuery(async function () {
         const tabbyKey = String($('#api_key_tabby').val()).trim();
         if (tabbyKey.length) {
             await writeSecret(SECRET_KEYS.TABBY, tabbyKey);
+        }
+
+        const togetherKey = String($('#api_key_togetherai').val()).trim();
+        if (togetherKey.length) {
+            await writeSecret(SECRET_KEYS.TOGETHERAI, togetherKey);
         }
 
         const urlSourceId = getTextGenUrlSourceId();
