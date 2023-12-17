@@ -1737,7 +1737,7 @@ async function getPrompt(generationType, message, trigger, quietPrompt) {
  */
 function generateFreeModePrompt(trigger) {
     return trigger
-        .replace(/(?:^char(\s)|\{\{charPrefix\}\})/gi, (_, suffix) => {
+        .replace(/(?:^char(\s|,)|\{\{charPrefix\}\})/gi, (_, suffix) => {
             const getLastCharacterKey = () => {
                 if (typeof this_chid !== 'undefined') {
                     return getCharaFilename(this_chid);
