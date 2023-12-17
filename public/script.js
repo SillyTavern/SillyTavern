@@ -61,6 +61,8 @@ import {
     getGroupBlock,
     getGroupCharacterCards,
     getGroupDepthPrompts,
+    current_group_member_chids,
+    current_group_member_names,
 } from './scripts/group-chats.js';
 
 import {
@@ -4639,7 +4641,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     return getMessage;
 }
 
-async function saveReply(type, getMessage, fromStreaming, title, swipes) {
+async function saveReply(type, getMessage, fromStreaming, title, swipes, send_as_user = false, custom_name = '') {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
@@ -4713,8 +4715,8 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
         console.debug('entering chat update routine for non-swipe post');
         chat[chat.length] = {};
         chat[chat.length - 1]['extra'] = {};
-        chat[chat.length - 1]['name'] = name2;
-        chat[chat.length - 1]['is_user'] = false;
+        chat[chat.length - 1]['name'] = (selected_group && custom_name !== '') ? custom_name : (send_as_user ? name1 : name2);
+        chat[chat.length - 1]['is_user'] = send_as_user;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
@@ -4730,7 +4732,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
             chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
         }
 
-        if (selected_group) {
+        if (selected_group && !send_as_user) {
             console.debug('entering chat update for groups');
             let avatarImg = 'img/ai4.png';
             if (characters[this_chid].avatar != 'none') {
@@ -6461,7 +6463,14 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } 
     $('#dialogue_popup').toggleClass('large_dialogue_popup', !!large);
 
     $('#dialogue_popup_cancel').css('display', 'inline-block');
+
+    $('#dialogue_popup_add_mes').css('display', 'none');
+    $('#dialogue_popup_ok').css('background-color', 'rgba(100, 0, 0, 0.7)'); //don't hardcode this - reset to default
     switch (popup_type) {
+        case 'add_mes':
+            $('#dialogue_popup_ok').text('Add');
+            $('#dialogue_popup_ok').css('background-color', 'rgba(0, 100, 0, 0.7)');
+            break;
         case 'avatarToCrop':
             $('#dialogue_popup_ok').text(okButton ?? 'Accept');
             break;
@@ -6495,10 +6504,17 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } 
     else {
         $('#dialogue_popup_input').css('display', 'none');
     }
-
+    if (popup_type == 'add_mes') {
+        $('#dialogue_popup_add_mes').css('display', 'block');
+    }
     $('#dialogue_popup_text').empty().append(text);
     $('#shadow_popup').css('display', 'block');
-    if (popup_type == 'input') {
+    if (popup_type == 'add_mes') {
+        $('#dialogue_popup').css('width', '50%');
+    } else {
+        $('#dialogue_popup').css('width', '300px'); //don't hardcode this - reset to default
+    }
+    if (popup_type == 'input' || popup_type == 'add_mes') {
         $('#dialogue_popup_input').focus();
     }
     if (popup_type == 'avatarToCrop') {
@@ -8064,6 +8080,7 @@ jQuery(async function () {
         $('#character_popup').css('display', 'none');
     });
 
+    let new_mes = '';
     $('#dialogue_popup_ok').click(async function (e) {
         dialogueCloseStop = false;
         $('#shadow_popup').transition({
@@ -8103,6 +8120,42 @@ jQuery(async function () {
             }, 2000);
 
         }
+
+        if (popup_type == 'add_mes') {
+            $('#dialogue_popup_add_mes').css('display', 'none');
+            let send_as_user = ($('#add_message_as').val() === name1);
+            if (selected_group) {
+                for (let i = 0; i < current_group_member_chids.length; i++) {
+                    let matchingDiv = $('.group_member[chid="' + current_group_member_chids[i] + '"]');
+                    if (matchingDiv.find('.ch_name').text() === $('#add_message_as').val()) {
+                        setCharacterId(current_group_member_chids[i]);
+                        break;
+                    }
+                }
+            }
+            if ($('#message_type').find(':selected').val() === 'newmes') {
+                await saveReply('normal', new_mes, false, send_as_user ? name1 : undefined, undefined, send_as_user, $('#add_message_as').val());
+                updateViewMessageIds();
+                await saveChatConditional();
+            } else if ($('#message_type').find(':selected').val() === 'swipe' && !send_as_user) {
+                const lastMessage = chat[chat.length - 1];
+                lastMessage.swipes.push(new_mes);
+                lastMessage.swipe_info.push({
+                    send_date: getMessageTimeStamp(),
+                    gen_started: null,
+                    gen_finished: null,
+                    extra: {
+                        bias: extractMessageBias(new_mes),
+                        gen_id: Date.now(),
+                        api: 'manual',
+                        model: 'slash command',
+                    },
+                });
+                await saveChatConditional();
+                await reloadCurrentChat();
+            }
+        }
+
         if (popup_type == 'del_ch') {
             const deleteChats = !!$('#del_char_checkbox').prop('checked');
             await handleDeleteCharacter(popup_type, this_chid, deleteChats);
@@ -8531,6 +8584,47 @@ jQuery(async function () {
                 is_send_press = true;
                 Generate('continue');
             }
+        }
+
+        else if (id == 'option_add_mes') {
+            callPopup('', 'add_mes');
+            if ($('#message_type option[value="swipe"]').length != 0)
+                $('#message_type option[value="swipe"]').remove();
+            $('#add_mes_textarea').val('');
+            $('#add_message_as').empty();
+            $('#add_message_as').append($('<option>', {
+                value: name1,
+                text: name1,
+            }));
+            if (selected_group) {
+                characters.filter(x => current_group_member_names.includes(x.avatar)).map(x => x.name).forEach(char => {
+                    $('#add_message_as').append($('<option>', {
+                        value: char,
+                        text: char,
+                    }));
+                });
+            } else {
+                $('#add_message_as').append($('<option>', {
+                    value: name2,
+                    text: name2,
+                }));
+            }
+            $('#add_message_as').change(function () {
+                let selectedOption = $(this).val();
+                if (selectedOption === name1) {
+                    $('#message_type option[value="swipe"]').remove();
+                } else {
+                    if ($('#message_type option[value="swipe"]').length == 0) {
+                        $('#message_type').append($('<option>', {
+                            value: 'swipe',
+                            text: 'Swipe',
+                        }));
+                    }
+                }
+            });
+            $('#add_mes_textarea').on('keyup paste cut', function () {
+                new_mes = $('#add_mes_textarea').val();
+            });
         }
 
         else if (id == 'option_delete_mes') {
