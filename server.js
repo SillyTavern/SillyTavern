@@ -93,9 +93,9 @@ const cliArguments = yargs(hideBin(process.argv))
     }).parseSync();
 
 // change all relative paths
-const directory = process['pkg'] ? path.dirname(process.execPath) : __dirname;
+const serverDirectory = process['pkg'] ? path.dirname(process.execPath) : __dirname;
 console.log(process['pkg'] ? 'Running from binary' : 'Running from source');
-process.chdir(directory);
+process.chdir(serverDirectory);
 
 const app = express();
 app.use(compression());
@@ -621,6 +621,8 @@ const setupTasks = async function () {
         exitProcess();
     });
 
+    await loadPlugins();
+
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
@@ -631,6 +633,16 @@ const setupTasks = async function () {
         console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
 };
+
+async function loadPlugins() {
+    try {
+        const pluginDirectory = path.join(serverDirectory, 'plugins');
+        const loader = require('./src/plugin-loader');
+        await loader.loadPlugins(app, pluginDirectory);
+    } catch {
+        console.log('Plugin loading failed.');
+    }
+}
 
 if (listen && !getConfigValue('whitelistMode', true) && !getConfigValue('basicAuthMode', false)) {
     if (getConfigValue('securityOverride', false)) {

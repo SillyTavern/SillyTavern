@@ -73,6 +73,7 @@ router.post('/create', jsonParser, (request, response) => {
         fav: request.body.fav,
         chat_id: request.body.chat_id ?? id,
         chats: request.body.chats ?? [id],
+        auto_mode_delay: request.body.auto_mode_delay ?? 5,
     };
     const pathToFile = path.join(DIRECTORIES.groups, `${id}.json`);
     const fileData = JSON.stringify(groupMetadata);
