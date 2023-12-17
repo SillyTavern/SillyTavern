@@ -842,6 +842,36 @@ async function unhideMessageCallback(_, arg) {
     return '';
 }
 
+/**
+ * Copium for running group actions when the member is offscreen.
+ * @param {number} chid - character ID
+ * @param {string} action - one of 'enable', 'disable', 'up', 'down', 'peek', 'remove'
+ * @returns {void}
+ */
+function performGroupMemberAction(chid, action) {
+    const memberSelector = `.group_member[chid="${chid}"]`;
+    // Do not optimize. Paginator gets recreated on every action
+    const paginationSelector = '#rm_group_members_pagination';
+    const pageSizeSelector = '#rm_group_members_pagination select';
+    let wasOffscreen = false;
+    let paginationValue = null;
+    let pageValue = null;
+
+    if ($(memberSelector).length === 0) {
+        wasOffscreen = true;
+        paginationValue = Number($(pageSizeSelector).val());
+        pageValue = $(paginationSelector).pagination('getCurrentPageNum');
+        $(pageSizeSelector).val($(pageSizeSelector).find('option').last().val()).trigger('change');
+    }
+
+    $(memberSelector).find(`[data-action="${action}"]`).trigger('click');
+
+    if (wasOffscreen) {
+        $(pageSizeSelector).val(paginationValue).trigger('change');
+        $(paginationSelector).pagination('go', pageValue);
+    }
+}
+
 async function disableGroupMemberCallback(_, arg) {
     if (!selected_group) {
         toastr.warning('Cannot run /disable command outside of a group chat.');
@@ -855,7 +885,7 @@ async function disableGroupMemberCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="disable"]`).trigger('click');
+    performGroupMemberAction(chid, 'disable');
     return '';
 }
 
@@ -872,7 +902,7 @@ async function enableGroupMemberCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="enable"]`).trigger('click');
+    performGroupMemberAction(chid, 'enable');
     return '';
 }
 
@@ -889,7 +919,7 @@ async function moveGroupMemberUpCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="up"]`).trigger('click');
+    performGroupMemberAction(chid, 'up');
     return '';
 }
 
@@ -906,7 +936,7 @@ async function moveGroupMemberDownCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="down"]`).trigger('click');
+    performGroupMemberAction(chid, 'down');
     return '';
 }
 
@@ -928,7 +958,7 @@ async function peekCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="view"]`).trigger('click');
+    performGroupMemberAction(chid, 'peek');
     return '';
 }
 
@@ -950,7 +980,7 @@ async function removeGroupMemberCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="remove"]`).trigger('click');
+    performGroupMemberAction(chid, 'remove');
     return '';
 }
 
