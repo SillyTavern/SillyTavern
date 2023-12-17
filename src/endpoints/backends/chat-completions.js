@@ -413,9 +413,25 @@ async function sendMistralAIRequest(request, response) {
             lastMsg.role = 'user';
             if(lastMsg.role === 'assistant') {
                 lastMsg.content = lastMsg.name + ': ' + lastMsg.content;
+            } else if (lastMsg.role === 'system') {
+                lastMsg.content = '[INST] ' + lastMsg.content + ' [/INST]';
             }
         }
 
+        //system prompts can be stacked at the start, but any futher sys prompts after the first user/assistant message will break the model
+        let encounteredNonSystemMessage = false;
+        messages.forEach(msg => {
+            if ((msg.role === 'user' || msg.role === 'assistant') && !encounteredNonSystemMessage) {
+                encounteredNonSystemMessage = true;
+            }
+
+            if (encounteredNonSystemMessage && msg.role === 'system') {
+                msg.role = 'user';
+                //unsure if the instruct version is what they've deployed on their endpoints and if this will make a difference or not.
+                //it should be better than just sending the message as a user role without context though
+                msg.content = '[INST] ' + msg.content + ' [/INST]';
+            }
+        });
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
