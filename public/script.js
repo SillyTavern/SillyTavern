@@ -22,7 +22,7 @@ import {
     getTextGenServer,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, APHRODITE } = textgen_types;
 
 import {
     world_info,
@@ -945,10 +945,7 @@ async function getStatusTextgen() {
             body: JSON.stringify({
                 api_server: endpoint,
                 api_type: textgen_settings.type,
-                legacy_api:
-                    textgen_settings.legacy_api &&
-                    textgen_settings.type !== MANCER &&
-                    textgen_settings.type !== TOGETHERAI,
+                legacy_api: textgen_settings.legacy_api && (textgen_settings.type === OOBA || textgen_settings.type === APHRODITE),
             }),
             signal: abortStatusCheck.signal,
         });
@@ -2960,9 +2957,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     if (main_api === 'textgenerationwebui' &&
         textgen_settings.streaming &&
         textgen_settings.legacy_api &&
-        textgen_settings.type !== MANCER &&
-        textgen_settings.type !== TOGETHERAI) {
-        toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use --extensions openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
+        (textgen_settings.type === OOBA || textgen_settings.type === APHRODITE)) {
+        toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use new API to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration();
         return Promise.resolve();
     }
@@ -4460,6 +4456,11 @@ function extractTitleFromData(data) {
     return undefined;
 }
 
+/**
+ * Extracts the message from the response data.
+ * @param {object} data Response data
+ * @returns {string} Extracted message
+ */
 function extractMessageFromData(data) {
     switch (main_api) {
         case 'kobold':
@@ -4467,7 +4468,7 @@ function extractMessageFromData(data) {
         case 'koboldhorde':
             return data.text;
         case 'textgenerationwebui':
-            return data.choices[0].text;
+            return data.choices?.[0]?.text ?? data.content;
         case 'novel':
             return data.output;
         case 'openai':
@@ -5738,6 +5739,7 @@ async function getSettings() {
         $('#textgenerationwebui_api_url_text').val(api_server_textgenerationwebui);
         $('#aphrodite_api_url_text').val(api_server_textgenerationwebui);
         $('#tabby_api_url_text').val(api_server_textgenerationwebui);
+        $('#llamacpp_api_url_text').val(api_server_textgenerationwebui);
         $('#koboldcpp_api_url_text').val(api_server_textgenerationwebui);
 
         selected_button = settings.selected_button;
@@ -7502,6 +7504,11 @@ async function connectAPISlash(_, text) {
             button: '#api_button_textgenerationwebui',
             type: textgen_types.TABBY,
         },
+        'llamacpp': {
+            selected: 'textgenerationwebui',
+            button: '#api_button_textgenerationwebui',
+            type: textgen_types.LLAMACPP,
+        },
         'mancer': {
             selected: 'textgenerationwebui',
             button: '#api_button_textgenerationwebui',
@@ -7848,7 +7855,7 @@ jQuery(async function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
-    registerSlashCommand('api', connectAPISlash, [], '<span class="monospace">(kobold, horde, novel, ooba, tabby, mancer, aphrodite, kcpp, oai, claude, windowai, openrouter, scale, ai21, makersuite, mistralai, togetherai)</span> – connect to an API', true, true);
+    registerSlashCommand('api', connectAPISlash, [], '<span class="monospace">(kobold, horde, novel, ooba, tabby, mancer, aphrodite, kcpp, oai, claude, windowai, openrouter, scale, ai21, makersuite, mistralai, togetherai, llamacpp)</span> – connect to an API', true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);

@@ -172,6 +172,7 @@ const TEXTGEN_TYPES = {
     TABBY: 'tabby',
     KOBOLDCPP: 'koboldcpp',
     TOGETHERAI: 'togetherai',
+    LLAMACPP: 'llamacpp',
 };
 
 // https://docs.together.ai/reference/completions

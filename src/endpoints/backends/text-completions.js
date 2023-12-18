@@ -39,6 +39,7 @@ router.post('/status', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.OOBA:
                 case TEXTGEN_TYPES.APHRODITE:
                 case TEXTGEN_TYPES.KOBOLDCPP:
+                case TEXTGEN_TYPES.LLAMACPP:
                     url += '/v1/models';
                     break;
                 case TEXTGEN_TYPES.MANCER:
@@ -159,6 +160,9 @@ router.post('/generate', jsonParser, async function (request, response_generate)
                     break;
                 case TEXTGEN_TYPES.MANCER:
                     url += '/oai/v1/completions';
+                    break;
+                case TEXTGEN_TYPES.LLAMACPP:
+                    url += '/completion';
                     break;
             }
         }
