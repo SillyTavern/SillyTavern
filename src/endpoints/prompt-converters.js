@@ -11,7 +11,6 @@
  */
 function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSyspromptSupport, useSystemPrompt, addSysHumanMsg) {
 
-    console.log(JSON.stringify(messages, null, 2));
     //Prepare messages for claude.
     if (messages.length > 0) {
         messages[0].role = 'system';
@@ -30,7 +29,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
             }
             return message.role === 'assistant' && i > 0;
         });
-        // When 2.1 and 'Use system prompt" checked, switches to the system prompt format by setting the first message's role to the 'system'.
+        // When 2.1+ and 'Use system prompt" checked, switches to the system prompt format by setting the first message's role to the 'system'.
         // Inserts the human's message before the first the assistant one, if there are no such message or prefix found.
         if (withSyspromptSupport && useSystemPrompt) {
             messages[0].role = 'system';
@@ -50,9 +49,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
         }
     }
 
-    console.log(JSON.stringify(messages, null, 2));
-
-    // Convert messages to requestPrompt.
+    // Convert messages to the prompt.
     let requestPrompt = messages.map((v, i) => {
         // Set prefix according to the role.
         let prefix = {
