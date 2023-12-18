@@ -60,13 +60,20 @@ async function sendClaudeRequest(request, response) {
         }
 
         if (!humanFound) {
-            console.log(chalk.red(`${divider}\nWarning: No Human prefix found in the prompt.\n${divider}`));
+            console.log(chalk.red(`${divider}\nWarning: No 'Human:' prefix found in the prompt.\n${divider}`));
         }
         if (!assistantFound) {
-            console.log(chalk.red(`${divider}\nWarning: No Assistant prefix found in the prompt.\n${divider}`));
+            console.log(chalk.red(`${divider}\nWarning: No 'Assistant: ' prefix found in the prompt.\n${divider}`));
+        }
+        if (!sequence[0].startsWith('Human:')) {
+            console.log(chalk.red(`${divider}\nWarning: The messages sequence should start with 'Human:' prefix.\nMake sure you have 'Human:' prefix at the very beggining of the prompt, or after the system prompt.\n${divider}`));
         }
         if (humanErrorCount > 0 || assistantErrorCount > 0) {
-            console.log(chalk.red(`${divider}\nWarning: Detected incorrect Prefix sequence(s).\nIncorrect 'Human:' prefix(es): ${humanErrorCount}.\nIncorrect 'Assistant:' prefix(es): ${assistantErrorCount}.\nCheck the prompt above and fix it in the sillytavern.\nThe correct sequence should look like this:\nSystem prompt message  <--(for new sysprompt format only)\n       <------------------(Every message start with Assistant:/Human:prefix should have one empty line above)\nHuman:\n\nAssistant:\n\...\n\nHuman:\n\nAssistant:\n${divider}`));
+            console.log(chalk.red(`${divider}\nWarning: Detected incorrect Prefix sequence(s).`));
+            console.log(chalk.red(`Incorrect "Human:" prefix(es): ${humanErrorCount}.\nIncorrect "Assistant: " prefix(es): ${assistantErrorCount}.`));
+            console.log(chalk.red('Check the prompt above and fix it in the sillytavern.'));
+            console.log(chalk.red('\nThe correct sequence should look like this:\nSystem prompt  <-(for the sysprompt format only, else have 2 empty lines above the first human\'s  message.)'));
+            console.log(chalk.red(`       <-----(Each message beginning with the "Assistant:/Human:" prefix must have one empty line above.)\nHuman:\n\nAssistant:\n...\n\nHuman:\n\nAssistant:\n${divider}`));
         }
         const stop_sequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
 

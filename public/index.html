@@ -1538,8 +1538,13 @@
                                             <span data-i18n="Exclude the 'Human: ' prefix from being added to the beginning of the prompt.">Exclude the 'Human: ' prefix from being added to the beginning of the prompt. Instead, place it between the sysprompt and the first message with the role 'assistant'(right before 'Chat History', by default).</span>
                                         </div>
                                         <div id="claude_human_sysprompt_message_block" data-source="claude" class="wide100p">
-                                            <span id="claude_human_sysprompt_message_text" data-i18n="Human: first message">Human: first message</span>
-                                            <textarea id="claude_human_sysprompt_message" class="text_pole textarea_compact" name="human_sysprompt_message autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Your message, instruction, etc... WHEN EMPTY and no manually added Human's message found between sysprompt and the first assistant message(Chat history), add 'Human: Let's get started.'." placeholder="Your message, instruction, etc... WHEN EMPTY and no manually added Human's message found between sysprompt and the first assistant message(Chat history), add 'Human: Let's get started.'."></textarea>
+                                            <div class="range-block-title openai_restorable">
+                                                <span id="claude_human_sysprompt_textarea_text" data-i18n="Human: first message">Human: first message</span>
+                                                <div id="claude_human_sysprompt_message_restore" title="Restore Human: first message" class="right_menu_button">
+                                                    <div class="fa-solid fa-clock-rotate-left"></div>
+                                                </div>
+                                            </div>
+                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" name="human_sysprompt_message autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Your(Human: ) message, instruction, etc... !!WHEN EMPTY, ADDS NOTHING!!I.e., requires a new prompt with the role 'user' or manually adding the 'Human: ' prefix." placeholder="Your(Human: ) message, instruction, etc... !!WHEN EMPTY, ADDS NOTHING!! I.e., requires a new prompt with the role 'user' or manually adding the 'Human: ' prefix."></textarea>
                                         </div>
                                     </div>
                                 </div>

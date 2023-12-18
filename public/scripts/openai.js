@@ -90,6 +90,7 @@ const default_wi_format = '[Details of the fictional world the RP is set in:\n{0
 const default_new_chat_prompt = '[Start a new Chat]';
 const default_new_group_chat_prompt = '[Start a new group chat. Group members: {{group}}]';
 const default_new_example_chat_prompt = '[Start a new Chat]';
+const default_claude_human_sysprompt_message = 'Let\'s get started. Please generate your response based on the information and instructions provided above.';
 const default_continue_nudge_prompt = '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message: {{lastChatMessage}}]';
 const default_bias = 'Default (none)';
 const default_personality_format = '[{{char}}\'s personality: {{personality}}]';
@@ -224,7 +225,7 @@ const default_settings = {
     show_external_models: false,
     proxy_password: '',
     assistant_prefill: '',
-    human_sysprompt_message: '',
+    human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
     exclude_assistant: false,
@@ -282,7 +283,7 @@ const oai_settings = {
     show_external_models: false,
     proxy_password: '',
     assistant_prefill: '',
-    human_sysprompt_message: '',
+    human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
     exclude_assistant: false,
@@ -2348,7 +2349,7 @@ function loadOpenAISettings(data, settings) {
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
-    $('#claude_human_sysprompt_message').val(oai_settings.human_sysprompt_message);
+    $('#claude_human_sysprompt_textarea').val(oai_settings.human_sysprompt_message);
     $('#openai_image_inlining').prop('checked', oai_settings.image_inlining);
     $('#openai_bypass_status_check').prop('checked', oai_settings.bypass_status_check);
 
@@ -2941,7 +2942,7 @@ function onSettingsPresetChange() {
         show_external_models: ['#openai_show_external_models', 'show_external_models', true],
         proxy_password: ['#openai_proxy_password', 'proxy_password', false],
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
-        human_sysprompt_message: ['#claude_human_sysprompt_message', 'human_sysprompt_message', false],
+        human_sysprompt_message: ['#claude_human_sysprompt_textarea', 'human_sysprompt_message', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', true],
         use_google_tokenizer: ['#use_google_tokenizer', 'use_google_tokenizer', true],
         exclude_assistant: ['#exclude_assistant', 'exclude_assistant', true],
@@ -3679,6 +3680,12 @@ $(document).ready(async function () {
         saveSettingsDebounced();
     });
 
+    $('#claude_human_sysprompt_message_restore').on('click', function () {
+        oai_settings.human_sysprompt_message = default_claude_human_sysprompt_message;
+        $('#claude_human_sysprompt_textarea').val(oai_settings.human_sysprompt_message);
+        saveSettingsDebounced();
+    });
+
     $('#newgroupchat_prompt_restore').on('click', function () {
         oai_settings.new_group_chat_prompt = default_new_group_chat_prompt;
         $('#newgroupchat_prompt_textarea').val(oai_settings.new_group_chat_prompt);
@@ -3766,8 +3773,8 @@ $(document).ready(async function () {
         saveSettingsDebounced();
     });
 
-    $('#claude_human_sysprompt_message').on('input', function () {
-        oai_settings.human_sysprompt_message = String($(this).val());
+    $('#claude_human_sysprompt_textarea').on('input', function () {
+        oai_settings.human_sysprompt_message = String($('#claude_human_sysprompt_textarea').val());
         saveSettingsDebounced();
     });
 

@@ -24,12 +24,8 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
         }
         // Find the index of the first message with an assistant role and check for a "'user' role/Human:" before it.
         let hasUser = false;
-        let hasAssist = false;
         const firstAssistantIndex = messages.findIndex((message, i) => {
             if (i >= 0 && (message.role === 'user' || message.content.includes('\n\nHuman: '))) {
-                if (message.content.includes('\n\nAssistant: ')) {
-                    hasAssist = true;
-                }
                 hasUser = true;
             }
             return message.role === 'assistant' && i > 0;
@@ -38,10 +34,10 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
         // Inserts the human's message before the first the assistant one, if there are no such message or prefix found.
         if (withSyspromptSupport && useSystemPrompt) {
             messages[0].role = 'system';
-            if (firstAssistantIndex > 0 && (!hasUser || (hasUser && hasAssist))) { //addSysHumanMsg for test
+            if (firstAssistantIndex > 0 && addSysHumanMsg && !hasUser) {
                 messages.splice(firstAssistantIndex, 0, {
                     role: 'user',
-                    content: addSysHumanMsg || 'Let\'s get started.',
+                    content: addSysHumanMsg,
                 });
             }
         } else {
@@ -58,20 +54,15 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
 
     // Convert messages to requestPrompt.
     let requestPrompt = messages.map((v, i) => {
-        // Claude doesn't support message names, so we'll just add them to the message content.
-        if (v.name && v.role !== 'system') {
-            v.content = `${v.name}: ${v.content}`;
-            delete v.name;
-        }
-        //let prefix = ''; // Set prefix according to the role.
+        // Set prefix according to the role.
         let prefix = {
             'assistant': '\n\nAssistant: ',
             'user': '\n\nHuman: ',
             'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : '\n\n',
             'FixHumMsg': '\n\nFirst message: ',
-        }[v.role] ?? '\n\n';
-
-        return prefix + v.content;
+        }[v.role] ?? '';
+        // Claude doesn't support message names, so we'll just add them to the message content.
+        return `${prefix}${v.name && v.role !== 'system' ? `${v.name}: ` : ''}${v.content}`;
     }).join('');
 
     return requestPrompt;
