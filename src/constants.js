@@ -171,7 +171,20 @@ const TEXTGEN_TYPES = {
     APHRODITE: 'aphrodite',
     TABBY: 'tabby',
     KOBOLDCPP: 'koboldcpp',
+    TOGETHERAI: 'togetherai',
 };
+
+// https://docs.together.ai/reference/completions
+const TOGETHERAI_KEYS = [
+    'model',
+    'prompt',
+    'max_tokens',
+    'temperature',
+    'top_p',
+    'top_k',
+    'repetition_penalty',
+    'stream',
+];
 
 const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
@@ -186,4 +199,5 @@ module.exports = {
     CHAT_COMPLETION_SOURCES,
     AVATAR_WIDTH,
     AVATAR_HEIGHT,
+    TOGETHERAI_KEYS,
 };

@@ -6,7 +6,7 @@ import { getStringHash } from './utils.js';
 import { kai_flags } from './kai-settings.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
 
-const { OOBA, TABBY, KOBOLDCPP, MANCER } = textgen_types;
+const { OOBA, TABBY, KOBOLDCPP, MANCER, TOGETHERAI } = textgen_types;
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
@@ -540,7 +540,8 @@ function getTextgenAPITokenizationParams(str) {
         url: api_server_textgenerationwebui,
         legacy_api:
             textgen_settings.legacy_api &&
-            textgen_settings.type !== MANCER,
+            textgen_settings.type !== MANCER &&
+            textgen_settings.type !== TOGETHERAI,
     };
 }
 

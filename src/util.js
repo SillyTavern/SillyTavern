@@ -106,6 +106,21 @@ function delay(ms) {
 }
 
 /**
+ * Generates a random hex string of the given length.
+ * @param {number} length String length
+ * @returns {string} Random hex string
+ * @example getHexString(8) // 'a1b2c3d4'
+ */
+function getHexString(length) {
+    const chars = '0123456789abcdef';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
+}
+
+/**
  * Extracts a file with given extension from an ArrayBuffer containing a ZIP archive.
  * @param {ArrayBuffer} archiveBuffer Buffer containing a ZIP archive
  * @param {string} fileExtension File extension to look for
@@ -404,4 +419,5 @@ module.exports = {
     removeOldBackups,
     getImages,
     forwardFetchResponse,
+    getHexString,
 };

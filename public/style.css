@@ -3448,30 +3448,30 @@ a {
     height: 100%;
 }
 
-.novelai_logit_bias_form {
+.logit_bias_form {
     display: flex;
     flex-direction: row;
     column-gap: 10px;
     align-items: center;
 }
 
-.novelai_logit_bias_text,
-.novelai_logit_bias_value {
+.logit_bias_text,
+.logit_bias_value {
     flex: 1;
 }
 
-.novelai_logit_bias_list {
+.logit_bias_list {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.novelai_logit_bias_list:empty {
+.logit_bias_list:empty {
     width: 100%;
     height: 100%;
 }
 
-.novelai_logit_bias_list:empty::before {
+.logit_bias_list:empty::before {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3480,7 +3480,7 @@ a {
     width: 100%;
     height: 100%;
     opacity: 0.8;
-    min-height: 2.5rem;
+    min-height: 2.5em;
 }
 
 .openai_logit_bias_preset_form {

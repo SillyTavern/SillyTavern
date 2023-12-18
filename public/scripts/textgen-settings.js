@@ -9,6 +9,7 @@ import {
     setOnlineStatus,
     substituteParams,
 } from '../script.js';
+import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
 
 import {
     power_user,
@@ -31,15 +32,18 @@ export const textgen_types = {
     APHRODITE: 'aphrodite',
     TABBY: 'tabby',
     KOBOLDCPP: 'koboldcpp',
+    TOGETHERAI: 'togetherai',
 };
 
-const { MANCER, APHRODITE } = textgen_types;
+const { MANCER, APHRODITE, TOGETHERAI } = textgen_types;
+const BIAS_KEY = '#textgenerationwebui_api-settings';
 
 // Maybe let it be configurable in the future?
 // (7 days later) The future has come.
 const MANCER_SERVER_KEY = 'mancer_server';
 const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
-export let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
+let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
+let TOGETHERAI_SERVER = 'https://api.together.xyz';
 
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
 const settings = {
@@ -89,8 +93,10 @@ const settings = {
     //prompt_log_probs_aphrodite: 0,
     type: textgen_types.OOBA,
     mancer_model: 'mytholite',
+    togetherai_model: 'Gryphe/MythoMax-L2-13b',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
+    logit_bias: [],
     n: 1,
 };
 
@@ -144,6 +150,7 @@ const setting_names = [
     //'prompt_log_probs_aphrodite'
     'sampler_order',
     'n',
+    'logit_bias',
 ];
 
 async function selectPreset(name) {
@@ -159,13 +166,14 @@ async function selectPreset(name) {
         setSettingByName(name, value, true);
     }
     setGenerationParamsFromPreset(preset);
+    displayLogitBias(preset.logit_bias, BIAS_KEY);
     saveSettingsDebounced();
 }
 
 function formatTextGenURL(value) {
     try {
-        // Mancer doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER) {
+        // Mancer/Together doesn't need any formatting (it's hardcoded)
+        if (settings.type === MANCER || settings.type === TOGETHERAI) {
             return value;
         }
 
@@ -240,6 +248,42 @@ function getCustomTokenBans() {
     return result.filter(onlyUnique).map(x => String(x)).join(',');
 }
 
+/**
+ * Calculates logit bias object from the logit bias list.
+ * @returns {object} Logit bias object
+ */
+function calculateLogitBias() {
+    if (!Array.isArray(settings.logit_bias) || settings.logit_bias.length === 0) {
+        return {};
+    }
+
+    const tokenizer = SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer) ? power_user.tokenizer : tokenizers.LLAMA;
+    const result = {};
+
+    /**
+     * Adds bias to the logit bias object.
+     * @param {number} bias
+     * @param {number[]} sequence
+     * @returns {object} Accumulated logit bias object
+     */
+    function addBias(bias, sequence) {
+        if (sequence.length === 0) {
+            return;
+        }
+
+        for (const logit of sequence) {
+            const key = String(logit);
+            result[key] = bias;
+        }
+
+        return result;
+    }
+
+    getLogitBiasListResult(settings.logit_bias, tokenizer, addBias);
+
+    return result;
+}
+
 function loadTextGenSettings(data, loadedSettings) {
     textgenerationwebui_presets = convertPresets(data.textgenerationwebui_presets);
     textgenerationwebui_preset_names = data.textgenerationwebui_preset_names ?? [];
@@ -267,6 +311,7 @@ function loadTextGenSettings(data, loadedSettings) {
 
     $('#textgen_type').val(settings.type);
     showTypeSpecificControls(settings.type);
+    displayLogitBias(settings.logit_bias, BIAS_KEY);
     //this is needed because showTypeSpecificControls() does not handle NOT declarations
     if (settings.type === textgen_types.APHRODITE) {
         $('[data-forAphro=False]').each(function () {
@@ -412,6 +457,8 @@ jQuery(function () {
             saveSettingsDebounced();
         });
     }
+
+    $('#textgen_logit_bias_new_entry').on('click', () => createNewLogitBiasEntry(settings.logit_bias, BIAS_KEY));
 });
 
 function showTypeSpecificControls(type) {
@@ -434,6 +481,11 @@ function setSettingByName(setting, value, trigger) {
         value = Array.isArray(value) ? value : KOBOLDCPP_ORDER;
         sortItemsByOrder(value);
         settings.sampler_order = value;
+        return;
+    }
+
+    if ('logit_bias' === setting) {
+        settings.logit_bias = Array.isArray(value) ? value : [];
         return;
     }
 
@@ -546,11 +598,27 @@ function getModel() {
         return settings.mancer_model;
     }
 
+    if (settings.type === TOGETHERAI) {
+        return settings.togetherai_model;
+    }
+
     if (settings.type === APHRODITE) {
         return online_status;
     }
 
     return undefined;
+}
+
+export function getTextGenServer() {
+    if (settings.type === MANCER) {
+        return MANCER_SERVER;
+    }
+
+    if (settings.type === TOGETHERAI) {
+        return TOGETHERAI_SERVER;
+    }
+
+    return api_server_textgenerationwebui;
 }
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
@@ -590,10 +658,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
             toIntArray(getCustomTokenBans()) :
             getCustomTokenBans(),
         'api_type': settings.type,
-        'api_server': settings.type === MANCER ?
-            MANCER_SERVER :
-            api_server_textgenerationwebui,
-        'legacy_api': settings.legacy_api && settings.type !== MANCER,
+        'api_server': getTextGenServer(),
+        'legacy_api': settings.legacy_api && settings.type !== MANCER && settings.type !== TOGETHERAI,
         'sampler_order': settings.type === textgen_types.KOBOLDCPP ?
             settings.sampler_order :
             undefined,
@@ -623,6 +689,12 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         APIflags = Object.assign(APIflags, aphroditeFlags);
     } else {
         APIflags = Object.assign(APIflags, aphroditeExclusionFlags);
+    }
+
+    if (Array.isArray(settings.logit_bias) && settings.logit_bias.length) {
+        const logitBias = BIAS_CACHE.get(BIAS_KEY) || calculateLogitBias();
+        BIAS_CACHE.set(BIAS_KEY, logitBias);
+        APIflags.logit_bias = logitBias;
     }
 
     return APIflags;

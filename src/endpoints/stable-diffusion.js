@@ -1,11 +1,12 @@
 const express = require('express');
 const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
-const { getBasicAuthHeader, delay } = require('../util.js');
+const { getBasicAuthHeader, delay, getHexString } = require('../util.js');
 const fs = require('fs');
 const { DIRECTORIES } = require('../constants.js');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser } = require('../express-common');
+const { readSecret, SECRET_KEYS } = require('./secrets.js');
 
 /**
  * Sanitizes a string.
@@ -545,6 +546,99 @@ comfy.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
+const together = express.Router();
+
+together.post('/models', jsonParser, async (_, response) => {
+    try {
+        const key = readSecret(SECRET_KEYS.TOGETHERAI);
+
+        if (!key) {
+            console.log('TogetherAI key not found.');
+            return response.sendStatus(400);
+        }
+
+        const modelsResponse = await fetch('https://api.together.xyz/api/models', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!modelsResponse.ok) {
+            console.log('TogetherAI returned an error.');
+            return response.sendStatus(500);
+        }
+
+        const data = await modelsResponse.json();
+
+        if (!Array.isArray(data)) {
+            console.log('TogetherAI returned invalid data.');
+            return response.sendStatus(500);
+        }
+
+        const models = data
+            .filter(x => x.display_type === 'image')
+            .map(x => ({ value: x.name, text: x.display_name }));
+
+        return response.send(models);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+together.post('/generate', jsonParser, async (request, response) => {
+    try {
+        const key = readSecret(SECRET_KEYS.TOGETHERAI);
+
+        if (!key) {
+            console.log('TogetherAI key not found.');
+            return response.sendStatus(400);
+        }
+
+        console.log('TogetherAI request:', request.body);
+
+        const result = await fetch('https://api.together.xyz/api/inference', {
+            method: 'POST',
+            body: JSON.stringify({
+                request_type: 'image-model-inference',
+                prompt: request.body.prompt,
+                negative_prompt: request.body.negative_prompt,
+                height: request.body.height,
+                width: request.body.width,
+                model: request.body.model,
+                steps: request.body.steps,
+                n: 1,
+                seed: Math.floor(Math.random() * 10_000_000), // Limited to 10000 on playground, works fine with more.
+                sessionKey: getHexString(40), // Don't know if that's supposed to be random or not. It works either way.
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`,
+            },
+        });
+
+        if (!result.ok) {
+            console.log('TogetherAI returned an error.');
+            return response.sendStatus(500);
+        }
+
+        const data = await result.json();
+        console.log('TogetherAI response:', data);
+
+        if (data.status !== 'finished') {
+            console.log('TogetherAI job failed.');
+            return response.sendStatus(500);
+        }
+
+        return response.send(data);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.use('/comfy', comfy);
+router.use('/together', together);
 
 module.exports = { router };

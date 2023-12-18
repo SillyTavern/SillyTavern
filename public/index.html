@@ -69,7 +69,7 @@
     <script type="module" src="scripts/group-chats.js"></script>
     <script type="module" src="scripts/kai-settings.js"></script>
     <script type="module" src="scripts/textgen-settings.js"></script>
-    <script type="module" src="scripts/mancer-settings.js"></script>
+    <script type="module" src="scripts/textgen-models.js"></script>
     <script type="module" src="scripts/bookmarks.js"></script>
     <script type="module" src="scripts/horde.js"></script>
     <script type="module" src="scripts/RossAscends-mods.js"></script>
@@ -974,7 +974,7 @@
                                         Helps to ban or reinforce the usage of certain tokens.
                                     </div>
                                     <div class="flex-container flexFlowColumn wide100p">
-                                        <div class="novelai_logit_bias_list"></div>
+                                        <div class="logit_bias_list"></div>
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -1379,6 +1379,21 @@
                                             <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
                                         </div>
                                     </div>
+                                    <div class="range-block wide100p">
+                                        <div class="range-block-title title_restorable">
+                                            <span data-i18n="Logit Bias">Logit Bias</span>
+                                            <div id="textgen_logit_bias_new_entry" class="menu_button menu_button_icon">
+                                                <i class="fa-xs fa-solid fa-plus"></i>
+                                                <small data-i18n="Add">Add</small>
+                                            </div>
+                                        </div>
+                                        <div class="toggle-description justifyLeft" data-i18n="Helps to ban or reenforce the usage of certain words">
+                                            Helps to ban or reinforce the usage of certain tokens.
+                                        </div>
+                                        <div class="flex-container flexFlowColumn wide100p">
+                                            <div class="logit_bias_list"></div>
+                                        </div>
+                                    </div>
                                     <div data-newbie-hidden data-forAphro=False class="wide100p">
                                         <hr  class="width100p">
                                         <h4 data-i18n="CFG" class="textAlignCenter">CFG
@@ -1607,8 +1622,8 @@
                             <option value="kobold"><span data-i18n="KoboldAI">KoboldAI Classic</span></option>
                             <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
                             <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
-                            <option value="textgenerationwebui"><span data-i18n="Text Completion">Text Completion (ooba, Mancer, Aphrodite, TabbyAPI, KoboldCpp)</span></option>
-                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale, AI21, Google MakerSuite, MistralAI)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale, AI21, Google MakerSuite, MistralAI)</span></option>
+                            <option value="textgenerationwebui"><span data-i18n="Text Completion">Text Completion</span></option>
+                            <option value="openai"><span data-i18n="Chat Completion">Chat Completion</span></option>
                         </select>
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
@@ -1738,7 +1753,26 @@
                                     <option value="aphrodite">Aphrodite</option>
                                     <option value="tabby">TabbyAPI</option>
                                     <option value="koboldcpp">KoboldCpp</option>
+                                    <option value="togetherai">TogetherAI</option>
                                 </select>
+                            </div>
+                            <div data-tg-type="togetherai" class="flex-container flexFlowColumn">
+                                <h4 data-i18n="TogetherAI API Key">TogetherAI API Key</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_togetherai" name="api_key_togetherai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_togetherai"></div>
+                                </div>
+                                <div data-for="api_key_togetherai" class="neutral_warning">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <div>
+                                    <h4 data-i18n="TogetherAI Model">TogetherAI Model</h4>
+                                    <select id="model_togetherai_select">
+                                        <option>
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
                             <div data-tg-type="mancer" class="flex-container flexFlowColumn">
                                 <div class="flex-container flexFlowColumn">
@@ -4268,11 +4302,11 @@
         </div>
     </div>
     </div>
-    <div id="novelai_logit_bias_template" class="template_element">
-        <div class="novelai_logit_bias_form">
-            <input class="novelai_logit_bias_text text_pole" data-i18n="[placeholder]Type here..." placeholder="type here..." />
-            <input class="novelai_logit_bias_value text_pole" type="number" min="-2" value="0" max="2" step="0.01" />
-            <i class="menu_button fa-solid fa-xmark novelai_logit_bias_remove"></i>
+    <div id="logit_bias_template" class="template_element">
+        <div class="logit_bias_form">
+            <input class="logit_bias_text text_pole" data-i18n="[placeholder]Type here..." placeholder="type here..." />
+            <input class="logit_bias_value text_pole" type="number" min="-2" value="0" max="2" step="0.01" />
+            <i class="menu_button fa-solid fa-xmark logit_bias_remove"></i>
         </div>
     </div>
     <div id="completion_prompt_manager_popup" class="drawer-content" style="display:none;">

@@ -382,7 +382,9 @@ function RA_autoconnect(PrevApi) {
                 }
                 break;
             case 'textgenerationwebui':
-                if (textgen_settings.type === textgen_types.MANCER && secret_state[SECRET_KEYS.MANCER]) {
+                if ((textgen_settings.type === textgen_types.MANCER && secret_state[SECRET_KEYS.MANCER]) ||
+                    (textgen_settings.type === textgen_types.TOGETHERAI && secret_state[SECRET_KEYS.TOGETHERAI])
+                ) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
                 else if (api_server_textgenerationwebui && isValidUrl(api_server_textgenerationwebui)) {
