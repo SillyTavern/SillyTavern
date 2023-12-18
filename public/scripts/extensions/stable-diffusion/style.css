@@ -82,3 +82,17 @@
 .sd_comfy_workflow_editor_placeholder_list>li>.notes-link {
     cursor: help;
 }
+
+.sd_comfy_workflow_editor_placeholder_list input {
+    font-size: inherit;
+    margin: 0;
+}
+.sd_comfy_workflow_editor_custom_remove, #sd_comfy_workflow_editor_placeholder_add {
+    cursor: pointer;
+    font-weight: bold;
+    width: 1em;
+    opacity: 0.5;
+    &:hover {
+        opacity: 1;
+    }
+}
