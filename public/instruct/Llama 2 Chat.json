@@ -8,7 +8,7 @@
     "system_sequence_prefix": "[INST] <<SYS>>\n",
     "system_sequence_suffix": "\n<</SYS>>\n",
     "stop_sequence": "",
-    "separator_sequence": "\n",
+    "separator_sequence": " ",
     "wrap": false,
     "macro": true,
     "names": false,
