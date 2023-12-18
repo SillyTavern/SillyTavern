@@ -49,7 +49,6 @@ async function sendClaudeRequest(request, response) {
         let assistantFound = sequence.some(line => line.startsWith('Assistant:'));
 
         for (let i = 0; i < sequence.length - 1; i++) {
-
             if (sequence[i].startsWith(sequence[i + 1].split(':')[0])) {
                 if (sequence[i].startsWith('Human:')) {
                     humanErrorCount++;
