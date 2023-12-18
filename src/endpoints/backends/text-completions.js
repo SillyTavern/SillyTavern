@@ -1,8 +1,9 @@
 const express = require('express');
 const fetch = require('node-fetch').default;
+const _ = require('lodash');
 
 const { jsonParser } = require('../../express-common');
-const { TEXTGEN_TYPES } = require('../../constants');
+const { TEXTGEN_TYPES, TOGETHERAI_KEYS } = require('../../constants');
 const { forwardFetchResponse } = require('../../util');
 const { setAdditionalHeaders } = require('../../additional-headers');
 
@@ -46,6 +47,9 @@ router.post('/status', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.TABBY:
                     url += '/v1/model/list';
                     break;
+                case TEXTGEN_TYPES.TOGETHERAI:
+                    url += '/api/models?&info';
+                    break;
             }
         }
 
@@ -56,11 +60,16 @@ router.post('/status', jsonParser, async function (request, response) {
             return response.status(400);
         }
 
-        const data = await modelsReply.json();
+        let data = await modelsReply.json();
 
         if (request.body.legacy_api) {
             console.log('Legacy API response:', data);
             return response.send({ result: data?.result });
+        }
+
+        // Rewrap to OAI-like response
+        if (request.body.api_type === TEXTGEN_TYPES.TOGETHERAI && Array.isArray(data)) {
+            data = { data: data.map(x => ({ id: x.name, ...x })) };
         }
 
         if (!Array.isArray(data.data)) {
@@ -145,6 +154,7 @@ router.post('/generate', jsonParser, async function (request, response_generate)
                 case TEXTGEN_TYPES.OOBA:
                 case TEXTGEN_TYPES.TABBY:
                 case TEXTGEN_TYPES.KOBOLDCPP:
+                case TEXTGEN_TYPES.TOGETHERAI:
                     url += '/v1/completions';
                     break;
                 case TEXTGEN_TYPES.MANCER:
@@ -162,6 +172,15 @@ router.post('/generate', jsonParser, async function (request, response_generate)
         };
 
         setAdditionalHeaders(request, args, baseUrl);
+
+        if (request.body.api_type === TEXTGEN_TYPES.TOGETHERAI) {
+            const stop = Array.isArray(request.body.stop) ? request.body.stop[0] : '';
+            request.body = _.pickBy(request.body, (_, key) => TOGETHERAI_KEYS.includes(key));
+            if (typeof stop === 'string' && stop.length > 0) {
+                request.body.stop = stop;
+            }
+            args.body = JSON.stringify(request.body);
+        }
 
         if (request.body.stream) {
             const completionsStream = await fetch(url, args);

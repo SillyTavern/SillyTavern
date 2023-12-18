@@ -25,6 +25,7 @@ const SECRET_KEYS = {
     DEEPLX_URL: 'deeplx_url',
     MAKERSUITE: 'api_key_makersuite',
     SERPAPI: 'api_key_serpapi',
+    TOGETHERAI: 'api_key_togetherai',
     MISTRALAI: 'api_key_mistralai',
 };
 
