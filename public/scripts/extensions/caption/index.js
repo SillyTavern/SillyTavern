@@ -300,7 +300,7 @@ jQuery(function () {
         $('#caption_prompt_block').toggle(isMultimodal);
         $('#caption_multimodal_api').val(extension_settings.caption.multimodal_api);
         $('#caption_multimodal_model').val(extension_settings.caption.multimodal_model);
-        $('#caption_multimodal_model option').each(function () {
+        $('#caption_multimodal_block [data-type]').each(function () {
             const type = $(this).data('type');
             $(this).toggle(type === extension_settings.caption.multimodal_api);
         });
@@ -351,6 +351,10 @@ jQuery(function () {
                                 <option data-type="openrouter" value="haotian-liu/llava-13b">haotian-liu/llava-13b</option>
                             </select>
                         </div>
+                        <label data-type="openai" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
+                            <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox">
+                            Allow reverse proxy
+                        </label>
                     </div>
                     <div id="caption_prompt_block">
                         <label for="caption_prompt">Caption Prompt</label>
@@ -377,6 +381,7 @@ jQuery(function () {
     switchMultimodalBlocks();
 
     $('#caption_refine_mode').prop('checked', !!(extension_settings.caption.refine_mode));
+    $('#caption_allow_reverse_proxy').prop('checked', !!(extension_settings.caption.allow_reverse_proxy));
     $('#caption_source').val(extension_settings.caption.source);
     $('#caption_prompt').val(extension_settings.caption.prompt);
     $('#caption_template').val(extension_settings.caption.template);
@@ -392,6 +397,10 @@ jQuery(function () {
     });
     $('#caption_template').on('input', () => {
         extension_settings.caption.template = String($('#caption_template').val());
+        saveSettingsDebounced();
+    });
+    $('#caption_allow_reverse_proxy').on('input', () => {
+        extension_settings.caption.allow_reverse_proxy = $('#caption_allow_reverse_proxy').prop('checked');
         saveSettingsDebounced();
     });
 });
