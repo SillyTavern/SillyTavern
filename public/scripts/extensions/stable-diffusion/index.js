@@ -46,6 +46,7 @@ const sources = {
     vlad: 'vlad',
     openai: 'openai',
     comfy: 'comfy',
+    togetherai: 'togetherai',
 };
 
 const generationMode = {
@@ -917,7 +918,7 @@ async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
-    const cloudSources = [sources.horde, sources.novel, sources.openai];
+    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
         return;
@@ -1050,10 +1051,13 @@ async function loadSamplers() {
             samplers = await loadVladSamplers();
             break;
         case sources.openai:
-            samplers = await loadOpenAiSamplers();
+            samplers = ['N/A'];
             break;
         case sources.comfy:
             samplers = await loadComfySamplers();
+            break;
+        case sources.togetherai:
+            samplers = ['N/A'];
             break;
     }
 
@@ -1063,6 +1067,11 @@ async function loadSamplers() {
         option.value = sampler;
         option.selected = sampler === extension_settings.sd.sampler;
         $('#sd_sampler').append(option);
+    }
+
+    if (!extension_settings.sd.sampler && samplers.length > 0) {
+        extension_settings.sd.sampler = samplers[0];
+        $('#sd_sampler').val(extension_settings.sd.sampler).trigger('change');
     }
 }
 
@@ -1118,10 +1127,6 @@ async function loadAutoSamplers() {
     } catch (error) {
         return [];
     }
-}
-
-async function loadOpenAiSamplers() {
-    return ['N/A'];
 }
 
 async function loadVladSamplers() {
@@ -1212,6 +1217,9 @@ async function loadModels() {
         case sources.comfy:
             models = await loadComfyModels();
             break;
+        case sources.togetherai:
+            models = await loadTogetherAIModels();
+            break;
     }
 
     for (const model of models) {
@@ -1221,6 +1229,30 @@ async function loadModels() {
         option.selected = model.value === extension_settings.sd.model;
         $('#sd_model').append(option);
     }
+
+    if (!extension_settings.sd.model && models.length > 0) {
+        extension_settings.sd.model = models[0].value;
+        $('#sd_model').val(extension_settings.sd.model).trigger('change');
+    }
+}
+
+async function loadTogetherAIModels() {
+    if (!secret_state[SECRET_KEYS.TOGETHERAI]) {
+        console.debug('TogetherAI API key is not set.');
+        return [];
+    }
+
+    const result = await fetch('/api/sd/together/models', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return data;
+    }
+
+    return [];
 }
 
 async function loadHordeModels() {
@@ -1434,6 +1466,9 @@ async function loadSchedulers() {
         case sources.openai:
             schedulers = ['N/A'];
             break;
+        case sources.togetherai:
+            schedulers = ['N/A'];
+            break;
         case sources.comfy:
             schedulers = await loadComfySchedulers();
             break;
@@ -1491,6 +1526,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.openai:
+            vaes = ['N/A'];
+            break;
+        case sources.togetherai:
             vaes = ['N/A'];
             break;
         case sources.comfy:
@@ -1873,6 +1911,9 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
             case sources.comfy:
                 result = await generateComfyImage(prefixedPrompt);
                 break;
+            case sources.togetherai:
+                result = await generateTogetherAIImage(prefixedPrompt);
+                break;
         }
 
         if (!result.data) {
@@ -1893,6 +1934,29 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
     callback ? callback(prompt, base64Image, generationType) : sendMessage(prompt, base64Image, generationType);
+}
+
+async function generateTogetherAIImage(prompt) {
+    const result = await fetch('/api/sd/together/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            prompt: prompt,
+            negative_prompt: extension_settings.sd.negative_prompt,
+            model: extension_settings.sd.model,
+            steps: extension_settings.sd.steps,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'jpg', data: data?.output?.choices?.[0]?.image_base64 };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
 }
 
 /**
@@ -2435,6 +2499,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.OPENAI];
         case sources.comfy:
             return true;
+        case sources.togetherai:
+            return secret_state[SECRET_KEYS.TOGETHERAI];
     }
 }
 
