@@ -1383,6 +1383,21 @@
                                             <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
                                         </div>
                                     </div>
+                                    <div class="range-block wide100p">
+                                        <div class="range-block-title title_restorable">
+                                            <span data-i18n="Logit Bias">Logit Bias</span>
+                                            <div id="textgen_logit_bias_new_entry" class="menu_button menu_button_icon">
+                                                <i class="fa-xs fa-solid fa-plus"></i>
+                                                <small data-i18n="Add">Add</small>
+                                            </div>
+                                        </div>
+                                        <div class="toggle-description justifyLeft" data-i18n="Helps to ban or reenforce the usage of certain words">
+                                            Helps to ban or reinforce the usage of certain tokens.
+                                        </div>
+                                        <div class="flex-container flexFlowColumn wide100p">
+                                            <div class="logit_bias_list"></div>
+                                        </div>
+                                    </div>
                                     <div data-newbie-hidden data-forAphro=False class="wide100p">
                                         <hr  class="width100p">
                                         <h4 data-i18n="CFG" class="textAlignCenter">CFG
