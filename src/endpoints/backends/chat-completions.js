@@ -35,17 +35,17 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        let isSyspromptSupported = request.body.model === 'claude-2' || request.body.model === 'claude-2.1';
-        let requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSyspromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message);
+        const isSysPromptSupported = request.body.model === 'claude-2' || request.body.model === 'claude-2.1';
+        const requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSysPromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message);
 
         console.log(color.green(`${divider}\nClaude request\n`) + color.cyan(`PROMPT\n${divider}\n${requestPrompt}\n${divider}`));
 
         // Check Claude messages sequence and prefixes presence.
         const sequence = requestPrompt.split('\n').filter(x => x.startsWith('Human:') || x.startsWith('Assistant:'));
-        let humanErrorCount = 0;
-        let assistantErrorCount = 0;
         const humanFound = sequence.some(line => line.startsWith('Human:'));
         const assistantFound = sequence.some(line => line.startsWith('Assistant:'));
+        let humanErrorCount = 0;
+        let assistantErrorCount = 0;
 
         for (let i = 0; i < sequence.length - 1; i++) {
             if (sequence[i].startsWith(sequence[i + 1].split(':')[0])) {
