@@ -36,6 +36,7 @@ import {
 import { registerSlashCommand } from './slash-commands.js';
 import { tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
+import { BIAS_CACHE } from './logit-bias.js';
 
 import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 
@@ -2932,6 +2933,7 @@ $(document).ready(() => {
     $('#tokenizer').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.tokenizer = Number(value);
+        BIAS_CACHE.clear();
         saveSettingsDebounced();
 
         // Trigger character editor re-tokenize
