@@ -1754,6 +1754,7 @@
                                     <option value="tabby">TabbyAPI</option>
                                     <option value="koboldcpp">KoboldCpp</option>
                                     <option value="llamacpp">llama.cpp</option>
+                                    <option value="ollama">Ollama</option>
                                     <option value="togetherai">TogetherAI</option>
                                 </select>
                             </div>
@@ -1794,7 +1795,11 @@
                                 </div>
                                 <div class="flex1">
                                     <h4>Mancer Model</h4>
-                                    <select id="mancer_model"></select>
+                                    <select id="mancer_model">
+                                        <option>
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                             <div data-tg-type="ooba" class="flex-container flexFlowColumn">
@@ -1843,6 +1848,32 @@
                                     <h4 data-i18n="API url">API URL</h4>
                                     <small data-i18n="Example: http://127.0.0.1:8080">Example: http://127.0.0.1:8080</small>
                                     <input id="llamacpp_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="llamacpp">
+                                </div>
+                            </div>
+                            <div data-tg-type="ollama">
+                                <div class="flex-container flexFlowColumn">
+                                    <a href="https://github.com/jmorganca/ollama" target="_blank">
+                                        jmorganca/ollama
+                                    </a>
+                                </div>
+                                <div class="flex1">
+                                    <h4 data-i18n="API url">API URL</h4>
+                                    <small data-i18n="Example: http://127.0.0.1:11434">Example: http://127.0.0.1:11434</small>
+                                    <input id="ollama_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ollama">
+                                </div>
+                                <div class="flex1">
+                                    <h4>
+                                        <span data-i18n="Ollama Model">Ollama Model</h4>
+                                    </h4>
+                                    <select id="ollama_model">
+                                        <option>
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
+                                    <div id="ollama_download_model" class="menu_button menu_button_icon">
+                                        <i class="fa-solid fa-download"></i>
+                                        <span data-i18n="Download">Download</span>
+                                    </div>
                                 </div>
                             </div>
                             <div data-tg-type="tabby">
