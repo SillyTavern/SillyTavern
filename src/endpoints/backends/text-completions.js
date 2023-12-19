@@ -265,9 +265,7 @@ router.post('/generate', jsonParser, async function (request, response) {
             const completionsReply = await fetch(url, args);
 
             if (completionsReply.ok) {
-                const text = await completionsReply.text();
-                console.log('Endpoint response:', text);
-                const data = JSON.parse(text);
+                const data = await completionsReply.json();
                 console.log('Endpoint response:', data);
 
                 // Wrap legacy response to OAI completions format
