@@ -845,7 +845,7 @@ async function unhideMessageCallback(_, arg) {
 /**
  * Copium for running group actions when the member is offscreen.
  * @param {number} chid - character ID
- * @param {string} action - one of 'enable', 'disable', 'up', 'down', 'peek', 'remove'
+ * @param {string} action - one of 'enable', 'disable', 'up', 'down', 'view', 'remove'
  * @returns {void}
  */
 function performGroupMemberAction(chid, action) {
@@ -868,7 +868,9 @@ function performGroupMemberAction(chid, action) {
 
     if (wasOffscreen) {
         $(pageSizeSelector).val(paginationValue).trigger('change');
-        $(paginationSelector).pagination('go', pageValue);
+        if ($(paginationSelector).length) {
+            $(paginationSelector).pagination('go', pageValue);
+        }
     }
 }
 
@@ -958,7 +960,7 @@ async function peekCallback(_, arg) {
         return '';
     }
 
-    performGroupMemberAction(chid, 'peek');
+    performGroupMemberAction(chid, 'view');
     return '';
 }
 
