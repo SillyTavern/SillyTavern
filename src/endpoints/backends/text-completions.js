@@ -1,13 +1,60 @@
 const express = require('express');
 const fetch = require('node-fetch').default;
 const _ = require('lodash');
+const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
-const { TEXTGEN_TYPES, TOGETHERAI_KEYS } = require('../../constants');
+const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS } = require('../../constants');
 const { forwardFetchResponse } = require('../../util');
 const { setAdditionalHeaders } = require('../../additional-headers');
 
 const router = express.Router();
+
+/**
+ * Special boy's steaming routine. Wrap this abomination into proper SSE stream.
+ * @param {import('node-fetch').Response} jsonStream JSON stream
+ * @param {import('express').Request} request Express request
+ * @param {import('express').Response} response Express response
+ * @returns {Promise<any>} Nothing valuable
+ */
+async function parseOllamaStream(jsonStream, request, response) {
+    try {
+        let partialData = '';
+        jsonStream.body.on('data', (data) => {
+            const chunk = data.toString();
+            partialData += chunk;
+            while (true) {
+                let json;
+                try {
+                    json = JSON.parse(partialData);
+                } catch (e) {
+                    break;
+                }
+                const text = json.response || '';
+                response.write(`data: {"choices": [{"text": "${text}"}]}\n\n`);
+                partialData = '';
+            }
+        });
+
+        request.socket.on('close', function () {
+            if (jsonStream.body instanceof Readable) jsonStream.body.destroy();
+            response.end();
+        });
+
+        jsonStream.body.on('end', () => {
+            console.log('Streaming request finished');
+            response.write('data: [DONE]\n\n');
+            response.end();
+        });
+    } catch (error) {
+        console.log('Error forwarding streaming response:', error);
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        } else {
+            return response.end();
+        }
+    }
+}
 
 //************** Ooba/OpenAI text completions API
 router.post('/status', jsonParser, async function (request, response) {
@@ -51,6 +98,9 @@ router.post('/status', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.TOGETHERAI:
                     url += '/api/models?&info';
                     break;
+                case TEXTGEN_TYPES.OLLAMA:
+                    url += '/api/tags';
+                    break;
             }
         }
 
@@ -71,6 +121,10 @@ router.post('/status', jsonParser, async function (request, response) {
         // Rewrap to OAI-like response
         if (request.body.api_type === TEXTGEN_TYPES.TOGETHERAI && Array.isArray(data)) {
             data = { data: data.map(x => ({ id: x.name, ...x })) };
+        }
+
+        if (request.body.api_type === TEXTGEN_TYPES.OLLAMA && Array.isArray(data.models)) {
+            data = { data: data.models.map(x => ({ id: x.name, ...x })) };
         }
 
         if (!Array.isArray(data.data)) {
@@ -127,8 +181,8 @@ router.post('/status', jsonParser, async function (request, response) {
     }
 });
 
-router.post('/generate', jsonParser, async function (request, response_generate) {
-    if (!request.body) return response_generate.sendStatus(400);
+router.post('/generate', jsonParser, async function (request, response) {
+    if (!request.body) return response.sendStatus(400);
 
     try {
         if (request.body.api_server.indexOf('localhost') !== -1) {
@@ -164,6 +218,9 @@ router.post('/generate', jsonParser, async function (request, response_generate)
                 case TEXTGEN_TYPES.LLAMACPP:
                     url += '/completion';
                     break;
+                case TEXTGEN_TYPES.OLLAMA:
+                    url += '/api/generate';
+                    break;
             }
         }
 
@@ -186,16 +243,31 @@ router.post('/generate', jsonParser, async function (request, response_generate)
             args.body = JSON.stringify(request.body);
         }
 
-        if (request.body.stream) {
+        if (request.body.api_type === TEXTGEN_TYPES.OLLAMA) {
+            args.body = JSON.stringify({
+                model: request.body.model,
+                prompt: request.body.prompt,
+                stream: request.body.stream ?? false,
+                raw: true,
+                options: _.pickBy(request.body, (_, key) => OLLAMA_KEYS.includes(key)),
+            });
+        }
+
+        if (request.body.api_type === TEXTGEN_TYPES.OLLAMA && request.body.stream) {
+            const stream = await fetch(url, args);
+            parseOllamaStream(stream, request, response);
+        } else if (request.body.stream) {
             const completionsStream = await fetch(url, args);
             // Pipe remote SSE stream to Express response
-            forwardFetchResponse(completionsStream, response_generate);
+            forwardFetchResponse(completionsStream, response);
         }
         else {
             const completionsReply = await fetch(url, args);
 
             if (completionsReply.ok) {
-                const data = await completionsReply.json();
+                const text = await completionsReply.text();
+                console.log('Endpoint response:', text);
+                const data = JSON.parse(text);
                 console.log('Endpoint response:', data);
 
                 // Wrap legacy response to OAI completions format
@@ -204,28 +276,60 @@ router.post('/generate', jsonParser, async function (request, response_generate)
                     data['choices'] = [{ text }];
                 }
 
-                return response_generate.send(data);
+                return response.send(data);
             } else {
                 const text = await completionsReply.text();
                 const errorBody = { error: true, status: completionsReply.status, response: text };
 
-                if (!response_generate.headersSent) {
-                    return response_generate.send(errorBody);
+                if (!response.headersSent) {
+                    return response.send(errorBody);
                 }
 
-                return response_generate.end();
+                return response.end();
             }
         }
     } catch (error) {
         let value = { error: true, status: error?.status, response: error?.statusText };
         console.log('Endpoint error:', error);
 
-        if (!response_generate.headersSent) {
-            return response_generate.send(value);
+        if (!response.headersSent) {
+            return response.send(value);
         }
 
-        return response_generate.end();
+        return response.end();
     }
 });
+
+const ollama = express.Router();
+
+ollama.post('/download', jsonParser, async function (request, response) {
+    try {
+        if (!request.body.name || !request.body.api_server) return response.sendStatus(400);
+
+        const name = request.body.name;
+        const url = String(request.body.api_server).replace(/\/$/, '');
+
+        const fetchResponse = await fetch(`${url}/api/pull`, {
+            method: 'POST',
+            body: JSON.stringify({
+                name: name,
+                stream: false,
+            }),
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!fetchResponse.ok) {
+            console.log('Download error:', fetchResponse.status, fetchResponse.statusText);
+            return response.status(fetchResponse.status).send({ error: true });
+        }
+
+        return response.send({ ok: true });
+    } catch (error) {
+        console.error(error);
+        return response.status(500);
+    }
+});
+
+router.use('/ollama', ollama);
 
 module.exports = { router };
