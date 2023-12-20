@@ -1,0 +1,124 @@
+#qr--bar {
+	outline: none;
+	margin: 0;
+    transition: 0.3s;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    order: 1;
+    position: relative;
+
+	> .qr--buttons {
+		margin: 0;
+		padding: 0;
+		display: flex;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: 5px;
+		width: 100%;
+
+		> .qr--buttons {
+			display: contents;
+		}
+
+		.qr--button {
+			color: var(--SmartThemeBodyColor);
+			background-color: var(--black50a);
+			border: 1px solid var(--SmartThemeBorderColor);
+			border-radius: 10px;
+			padding: 3px 5px;
+			margin: 3px 0;
+			cursor: pointer;
+			transition: 0.3s;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			&:hover {
+				opacity: 1;
+				filter: brightness(1.2);
+			}
+		}
+	}
+}
+
+
+
+#qr--settings {
+	.qr--head {
+		display: flex;
+		align-items: baseline;
+		gap: 1em;
+		> .qr--title {
+			font-weight: bold;
+		}
+		> .qr--actions {
+			display: flex;
+			flex-direction: row;
+			align-items: baseline;
+			gap: 0.5em;
+		}
+	}
+	.qr--setList {
+		> .qr--item {
+			display: flex;
+			flex-direction: row;
+			gap: 0.5em;
+			align-items: baseline;
+			padding: 0 0.5em;
+			> .qr--visible {
+				flex: 1 1 200px;
+				display: flex;
+				flex-direction: row;
+			}
+		}
+	}
+	#qr--set-settings {
+		#qr--injectInputContainer {
+			flex-wrap: nowrap;
+		}
+	}
+	#qr--set-qrList {
+		.qr--set-qrListContents > {
+			padding: 0 0.5em;
+			> .qr--set-item {
+				display: flex;
+				flex-direction: row;
+				gap: 0.5em;
+				align-items: baseline;
+				padding: 0.25em 0;
+				> :nth-child(1) { flex: 0 0 auto; }
+				> :nth-child(2) { flex: 1 1 25%; }
+				> :nth-child(3) { flex: 0 0 auto; }
+				> :nth-child(4) { flex: 0 0 auto; }
+				> :nth-child(5) { flex: 1 1 75%; }
+				> :nth-child(6) { flex: 0 0 auto; }
+				.qr--set-itemLabel, .qr--action {
+					margin: 0;
+				}
+				.qr--set-itemMessage {
+					font-size: smaller;
+				}
+			}
+		}
+	}
+}
+
+
+
+
+
+#qr--qrOptions {
+	> #qr--ctxEditor {
+		.qr--ctxItem {
+			display: flex;
+			flex-direction: row;
+			gap: 0.5em;
+			align-items: baseline;
+		}
+	}
+}
