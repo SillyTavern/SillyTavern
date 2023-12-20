@@ -437,14 +437,15 @@
                                             Streaming</span>
                                     </label>
                                     <div class="toggle-description justifyLeft">
-                                        <span data-i18n="Display the response bit by bit as it is generated.">Display
-                                            the response bit by bit as it is generated.</span><br>
-                                        <span data-i18n="When this is off, responses will be displayed all at once when they are complete.">When
-                                            this is off, responses will be displayed all at once when they are
-                                            complete.</span>
+                                        <span data-i18n="Display the response bit by bit as it is generated.">
+                                            Display the response bit by bit as it is generated.
+                                        </span><br>
+                                        <span data-i18n="When this is off, responses will be displayed all at once when they are complete.">
+                                            When this is off, responses will be displayed all at once when they are complete.
+                                        </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -457,7 +458,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -470,7 +471,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -509,7 +510,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai">
+                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -733,6 +734,9 @@
                                     </div>
                                     <div class="wide100p">
                                         <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="500" />
+                                        <small class="reverse_proxy_warning">
+                                            Doesn't work? Try adding <tt>/v1</tt> at the end!
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,claude">
@@ -749,7 +753,7 @@
                                         <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,mistralai">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,mistralai,custom">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1921,6 +1925,7 @@
                             <option value="ai21">AI21</option>
                             <option value="makersuite">Google MakerSuite</option>
                             <option value="mistralai">MistralAI</option>
+                            <option value="custom">Custom (OpenAI-compatible)</option>
                         </select>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4><span data-i18n="OpenAI API key">OpenAI API key</span></h4>
@@ -2224,6 +2229,35 @@
                                     </optgroup>
                                 </select>
                             </div>
+                        </form>
+                        <form id="custom_form" data-source="custom">
+                            <h4 data-i18n="Endpoint">Endpoint URL</h4>
+                            <div class="flex-container">
+                                <input id="custom_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" placeholder="Example: http://localhost:1234/v1">
+                            </div>
+                            <div>
+                                <small>
+                                    Doesn't work? Try adding <code>/v1</code> at the end of the URL!
+                                </small>
+                            </div>
+                            <h4 data-i18n="Custom API Key">Custom API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_custom" name="api_key_custom" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_custom"></div>
+                            </div>
+                            <div data-for="api_key_custom" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4>Enter a Model ID</h4>
+                            <div class="flex-container">
+                                <input id="custom_model_id" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" placeholder="Example: gpt-3.5-turbo">
+                            </div>
+                                <h4 data-i18n="Available Models">Available Models</h4>
+                                <div class="flex-container">
+                                    <select id="model_custom_select">
+                                        <option>-- Connect to the API --</option>
+                                    </select>
+                                </div>
                         </form>
                         <div class="flex-container flex">
                             <div id="api_button_openai" class="api_button menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>

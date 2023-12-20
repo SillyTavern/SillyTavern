@@ -502,12 +502,16 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = 'https://api.mistral.ai/v1';
         api_key_openai = readSecret(SECRET_KEYS.MISTRALAI);
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
+        api_url = request.body.custom_url;
+        api_key_openai = readSecret(SECRET_KEYS.CUSTOM);
+        headers = {};
     } else {
         console.log('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
     }
 
-    if (!api_key_openai && !request.body.reverse_proxy) {
+    if (!api_key_openai && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
         console.log('OpenAI API key is missing.');
         return response_getstatus_openai.status(400).send({ error: true });
     }
@@ -657,7 +661,7 @@ router.post('/generate', jsonParser, function (request, response) {
     let headers;
     let bodyParams;
 
-    if (request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.OPENROUTER) {
+    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
@@ -666,7 +670,7 @@ router.post('/generate', jsonParser, function (request, response) {
         if (getConfigValue('openai.randomizeUserId', false)) {
             bodyParams['user'] = uuidv4();
         }
-    } else {
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         apiUrl = 'https://openrouter.ai/api/v1';
         apiKey = readSecret(SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
@@ -676,9 +680,17 @@ router.post('/generate', jsonParser, function (request, response) {
         if (request.body.use_fallback) {
             bodyParams['route'] = 'fallback';
         }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
+        apiUrl = request.body.custom_url;
+        apiKey = readSecret(SECRET_KEYS.CUSTOM);
+        headers = {};
+        bodyParams = {};
+    } else {
+        console.log('This chat completion source is not supported yet.');
+        return response.status(400).send({ error: true });
     }
 
-    if (!apiKey && !request.body.reverse_proxy) {
+    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
         console.log('OpenAI API key is missing.');
         return response.status(400).send({ error: true });
     }

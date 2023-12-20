@@ -5453,6 +5453,7 @@ function changeMainAPI() {
         case chat_completion_sources.AI21:
         case chat_completion_sources.MAKERSUITE:
         case chat_completion_sources.MISTRALAI:
+        case chat_completion_sources.CUSTOM:
         default:
             setupChatCompletionPromptManager(oai_settings);
             break;
@@ -7572,43 +7573,48 @@ const CONNECT_API_MAP = {
     },
     'oai': {
         selected: 'openai',
-        source: 'openai',
         button: '#api_button_openai',
+        source: chat_completion_sources.OPENAI,
     },
     'claude': {
         selected: 'openai',
-        source: 'claude',
         button: '#api_button_openai',
+        source: chat_completion_sources.CLAUDE,
     },
     'windowai': {
         selected: 'openai',
-        source: 'windowai',
         button: '#api_button_openai',
+        source: chat_completion_sources.WINDOWAI,
     },
     'openrouter': {
         selected: 'openai',
-        source: 'openrouter',
         button: '#api_button_openai',
+        source: chat_completion_sources.OPENROUTER,
     },
     'scale': {
         selected: 'openai',
-        source: 'scale',
         button: '#api_button_openai',
+        source: chat_completion_sources.SCALE,
     },
     'ai21': {
         selected: 'openai',
-        source: 'ai21',
         button: '#api_button_openai',
+        source: chat_completion_sources.AI21,
     },
     'makersuite': {
         selected: 'openai',
-        source: 'makersuite',
         button: '#api_button_openai',
+        source: chat_completion_sources.MAKERSUITE,
     },
     'mistralai': {
         selected: 'openai',
-        source: 'mistralai',
         button: '#api_button_openai',
+        source: chat_completion_sources.MISTRALAI,
+    },
+    'custom': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.CUSTOM,
     },
 };
 
