@@ -24,7 +24,11 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             key = request.body.proxy_password;
         }
 
-        if (!key && !request.body.reverse_proxy) {
+        if (request.body.api === 'custom') {
+            key = readSecret(SECRET_KEYS.CUSTOM);
+        }
+
+        if (!key && !request.body.reverse_proxy && request.body.api !== 'custom') {
             console.log('No key found for API', request.body.api);
             return response.sendStatus(400);
         }
@@ -67,6 +71,10 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (request.body.reverse_proxy) {
             apiUrl = `${request.body.reverse_proxy}/chat/completions`;
+        }
+
+        if (request.body.api === 'custom') {
+            apiUrl = `${request.body.server_url}/chat/completions`;
         }
 
         const result = await fetch(apiUrl, {

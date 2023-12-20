@@ -1333,6 +1333,23 @@ function saveModelList(data) {
             $('#model_openai_select').val(model).trigger('change');
         }
     }
+
+    if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
+        $('#model_custom_select').empty();
+        $('#model_custom_select').append('<option value="">None</option>');
+        model_list.forEach((model) => {
+            $('#model_custom_select').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                    selected: model.id == oai_settings.custom_model,
+                }));
+        });
+
+        if (!oai_settings.custom_model && model_list.length > 0) {
+            $('#model_custom_select').val(model_list[0].id).trigger('change');
+        }
+    }
 }
 
 function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
@@ -1461,6 +1478,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isGoogle = oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE;
     const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
     const isMistral = oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI;
+    const isCustom = oai_settings.chat_completion_source == chat_completion_sources.CUSTOM;
     const isTextCompletion = (isOAI && textCompletionModels.includes(oai_settings.openai_model)) || (isOpenRouter && oai_settings.openrouter_force_instruct && power_user.instruct.enabled);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -1572,7 +1590,11 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['safe_mode'] = false; // already defaults to false, but just incase they change that in the future.
     }
 
-    if ((isOAI || isOpenRouter || isMistral) && oai_settings.seed >= 0) {
+    if (isCustom) {
+        generate_data['custom_url'] = oai_settings.custom_url;
+    }
+
+    if ((isOAI || isOpenRouter || isMistral || isCustom) && oai_settings.seed >= 0) {
         generate_data['seed'] = oai_settings.seed;
     }
 
@@ -2478,7 +2500,8 @@ async function getStatusOpen() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM) {
-        custom_url: oai_settings.custom_url;
+        $('#model_custom_select').empty();
+        data.custom_url = oai_settings.custom_url;
     }
 
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
@@ -3525,7 +3548,7 @@ export function isImageInliningSupported() {
 
     const gpt4v = 'gpt-4-vision';
     const geminiProV = 'gemini-pro-vision';
-    const llava13b = 'llava-13b';
+    const llava = 'llava';
 
     if (!oai_settings.image_inlining) {
         return false;
@@ -3537,7 +3560,9 @@ export function isImageInliningSupported() {
         case chat_completion_sources.MAKERSUITE:
             return oai_settings.google_model.includes(geminiProV);
         case chat_completion_sources.OPENROUTER:
-            return oai_settings.openrouter_model.includes(gpt4v) || oai_settings.openrouter_model.includes(llava13b);
+            return !oai_settings.openrouter_force_instruct && (oai_settings.openrouter_model.includes(gpt4v) || oai_settings.openrouter_model.includes(llava));
+        case chat_completion_sources.CUSTOM:
+            return oai_settings.custom_model.includes(gpt4v) || oai_settings.custom_model.includes(llava) || oai_settings.custom_model.includes(geminiProV);
         default:
             return false;
     }

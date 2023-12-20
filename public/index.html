@@ -582,7 +582,7 @@
                                             </div>
                                             <div class="toggle-description justifyLeft" data-i18n="Wraps activated World Info entries before inserting into the prompt.">
                                                 Wraps activated World Info entries before inserting into the prompt. Use
-                                                <tt>{0}</tt> to mark a place where the content is inserted.
+                                                <code>{0}</code> to mark a place where the content is inserted.
                                             </div>
                                             <div class="wide100p">
                                                 <textarea id="wi_format_textarea" class="text_pole textarea_compact autoSetHeight" rows="3" placeholder="&mdash;"></textarea>
@@ -596,7 +596,7 @@
                                                 </div>
                                             </div>
                                             <div class="toggle-description justifyLeft" data-i18n="Use scenario to mark a place where the content is inserted.">
-                                                Use <tt>{{scenario}}</tt> to mark a place where the content is inserted.
+                                                Use <code>{{scenario}}</code> to mark a place where the content is inserted.
                                             </div>
                                             <div class="wide100p">
                                                 <textarea id="scenario_format_textarea" class="text_pole textarea_compact autoSetHeight" rows="3" placeholder="&mdash;"></textarea>
@@ -610,7 +610,7 @@
                                                 </div>
                                             </div>
                                             <div class="toggle-description justifyLeft" data-i18n="Use personality to mark a place where the content is inserted.">
-                                                Use <tt>{{personality}}</tt> to mark a place where the content is inserted.
+                                                Use <code>{{personality}}</code> to mark a place where the content is inserted.
                                             </div>
                                             <div class="wide100p">
                                                 <textarea id="personality_format_textarea" class="text_pole textarea_compact autoSetHeight" rows="3" placeholder="&mdash;"></textarea>
@@ -735,7 +735,7 @@
                                     <div class="wide100p">
                                         <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="500" />
                                         <small class="reverse_proxy_warning">
-                                            Doesn't work? Try adding <tt>/v1</tt> at the end!
+                                            Doesn't work? Try adding <code>/v1</code> at the end!
                                         </small>
                                     </div>
                                 </div>
@@ -1516,7 +1516,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,makersuite">
+                                    <div class="range-block" data-source="openai,openrouter,makersuite,custom">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -1797,7 +1797,7 @@
                                         oobabooga/text-generation-webui
                                     </a>
                                     <span data-i18n="Make sure you run it with">
-                                        Make sure you run it with <tt>--api</tt> flag
+                                        Make sure you run it with <code>--api</code> flag
                                     </span>
                                 </div>
                                 <div class="flex1">
@@ -2231,7 +2231,7 @@
                             </div>
                         </form>
                         <form id="custom_form" data-source="custom">
-                            <h4 data-i18n="Endpoint">Endpoint URL</h4>
+                            <h4 data-i18n="Custom Endpoint (Base URL)">Custom Endpoint (Base URL)</h4>
                             <div class="flex-container">
                                 <input id="custom_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" placeholder="Example: http://localhost:1234/v1">
                             </div>
@@ -2240,7 +2240,10 @@
                                     Doesn't work? Try adding <code>/v1</code> at the end of the URL!
                                 </small>
                             </div>
-                            <h4 data-i18n="Custom API Key">Custom API Key</h4>
+                            <h4>
+                                <span data-i18n="Custom API Key">Custom API Key</span>
+                                <small>(Optional)</small>
+                            </h4>
                             <div class="flex-container">
                                 <input id="api_key_custom" name="api_key_custom" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_custom"></div>
@@ -2254,9 +2257,7 @@
                             </div>
                                 <h4 data-i18n="Available Models">Available Models</h4>
                                 <div class="flex-container">
-                                    <select id="model_custom_select">
-                                        <option>-- Connect to the API --</option>
-                                    </select>
+                                    <select id="model_custom_select" class="text_pole"></select>
                                 </div>
                         </form>
                         <div class="flex-container flex">

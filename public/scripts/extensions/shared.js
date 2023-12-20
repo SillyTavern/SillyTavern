@@ -24,6 +24,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     const isGoogle = extension_settings.caption.multimodal_api === 'google';
     const isOllama = extension_settings.caption.multimodal_api === 'ollama';
     const isLlamaCpp = extension_settings.caption.multimodal_api === 'llamacpp';
+    const isCustom = extension_settings.caption.multimodal_api === 'custom';
     const base64Bytes = base64Img.length * 0.75;
     const compressionLimit = 2 * 1024 * 1024;
     if (['google', 'openrouter'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) {
@@ -66,6 +67,11 @@ export async function getMultimodalCaption(base64Img, prompt) {
 
     if (isLlamaCpp) {
         requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
+    }
+
+    if (isCustom) {
+        requestBody.server_url = oai_settings.custom_url;
+        requestBody.model = oai_settings.custom_model || 'gpt-4-vision-preview';
     }
 
     function getEndpointUrl() {
@@ -118,5 +124,9 @@ function throwIfInvalidModel() {
 
     if (extension_settings.caption.multimodal_api === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
         throw new Error('LlamaCPP server URL is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'custom' && !oai_settings.custom_url) {
+        throw new Error('Custom API URL is not set.');
     }
 }

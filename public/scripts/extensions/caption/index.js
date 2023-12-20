@@ -277,6 +277,7 @@ jQuery(function () {
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'google' && secret_state[SECRET_KEYS.MAKERSUITE]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ollama' && textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'llamacpp' && textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) ||
+                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'custom') ||
                 extension_settings.caption.source === 'local' ||
                 extension_settings.caption.source === 'horde';
 
@@ -345,6 +346,7 @@ jQuery(function () {
                                 <option value="openai">OpenAI</option>
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="google">Google MakerSuite</option>
+                                <option value="custom">Custom (OpenAI-compatible)</option>
                             </select>
                         </div>
                         <div class="flex1 flex-container flexFlowColumn flexNoGap">
@@ -358,6 +360,7 @@ jQuery(function () {
                                 <option data-type="ollama" value="bakllava:latest">bakllava:latest</option>
                                 <option data-type="ollama" value="llava:latest">llava:latest</option>
                                 <option data-type="llamacpp" value="llamacpp_current">[Currently loaded]</option>
+                                <option data-type="custom" value="custom_current">[Currently selected]</option>
                             </select>
                         </div>
                         <label data-type="openai" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
