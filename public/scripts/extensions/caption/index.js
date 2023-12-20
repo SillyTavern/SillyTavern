@@ -217,7 +217,16 @@ async function captionHorde(base64Img) {
  * @returns {Promise<{caption: string}>} Generated caption
  */
 async function captionMultimodal(base64Img) {
-    const prompt = extension_settings.caption.prompt || PROMPT_DEFAULT;
+    let prompt = extension_settings.caption.prompt || PROMPT_DEFAULT;
+
+    if (extension_settings.caption.prompt_ask) {
+        const customPrompt = await callPopup('<h3>Enter a comment or question:</h3>', 'input', prompt, { rows: 2 });
+        if (!customPrompt) {
+            throw new Error('User aborted the caption sending.');
+        }
+        prompt = String(customPrompt).trim();
+    }
+
     const caption = await getMultimodalCaption(base64Img, prompt);
     return { caption };
 }
@@ -374,6 +383,10 @@ jQuery(function () {
                     <div id="caption_prompt_block">
                         <label for="caption_prompt">Caption Prompt</label>
                         <textarea id="caption_prompt" class="text_pole" rows="1" placeholder="&lt; Use default &gt;">${PROMPT_DEFAULT}</textarea>
+                        <label class="checkbox_label margin-bot-10px" for="caption_prompt_ask" title="Ask for a custom prompt every time an image is captioned.">
+                            <input id="caption_prompt_ask" type="checkbox" class="checkbox">
+                            Ask every time
+                        </label>
                     </div>
                     <label for="caption_template">Message Template <small>(use <code>{{caption}}</code> macro)</small></label>
                     <textarea id="caption_template" class="text_pole" rows="2" placeholder="&lt; Use default &gt;">${TEMPLATE_DEFAULT}</textarea>
@@ -397,6 +410,7 @@ jQuery(function () {
 
     $('#caption_refine_mode').prop('checked', !!(extension_settings.caption.refine_mode));
     $('#caption_allow_reverse_proxy').prop('checked', !!(extension_settings.caption.allow_reverse_proxy));
+    $('#caption_prompt_ask').prop('checked', !!(extension_settings.caption.prompt_ask));
     $('#caption_source').val(extension_settings.caption.source);
     $('#caption_prompt').val(extension_settings.caption.prompt);
     $('#caption_template').val(extension_settings.caption.template);
@@ -416,6 +430,10 @@ jQuery(function () {
     });
     $('#caption_allow_reverse_proxy').on('input', () => {
         extension_settings.caption.allow_reverse_proxy = $('#caption_allow_reverse_proxy').prop('checked');
+        saveSettingsDebounced();
+    });
+    $('#caption_prompt_ask').on('input', () => {
+        extension_settings.caption.prompt_ask = $('#caption_prompt_ask').prop('checked');
         saveSettingsDebounced();
     });
 });
