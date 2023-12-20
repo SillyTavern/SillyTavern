@@ -76,6 +76,7 @@ export class QuickReplySettings {
     toJSON() {
         return {
             isEnabled: this.isEnabled,
+            isCombined: this.isCombined,
             config: this.config,
         };
     }
