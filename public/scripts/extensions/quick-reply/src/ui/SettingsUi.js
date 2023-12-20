@@ -210,23 +210,26 @@ export class SettingsUi {
     async deleteQrSet() {
         const confirmed = await callPopup(`Are you sure you want to delete the Quick Reply Set "${this.currentQrSet.name}"? This cannot be undone.`, 'confirm');
         if (confirmed) {
-            await this.currentQrSet.delete();
-            //HACK should just bubble up from QuickReplySet.delete() but that would require proper or at least more comples onDelete listeners
-            for (let i = this.settings.config.setList.length - 1; i >= 0; i--) {
-                if (this.settings.config.setList[i].set == this.currentQrSet) {
+            await this.doDeleteQrSet(this.currentQrSet);
+            this.rerender();
+        }
+    }
+    async doDeleteQrSet(qrs) {
+        await qrs.delete();
+        //TODO (HACK) should just bubble up from QuickReplySet.delete() but that would require proper or at least more comples onDelete listeners
+        for (let i = this.settings.config.setList.length - 1; i >= 0; i--) {
+            if (this.settings.config.setList[i].set == qrs) {
+                this.settings.config.setList.splice(i, 1);
+            }
+        }
+        if (this.settings.chatConfig) {
+            for (let i = this.settings.chatConfig.setList.length - 1; i >= 0; i--) {
+                if (this.settings.config.setList[i].set == qrs) {
                     this.settings.config.setList.splice(i, 1);
                 }
             }
-            if (this.settings.chatConfig) {
-                for (let i = this.settings.chatConfig.setList.length - 1; i >= 0; i--) {
-                    if (this.settings.config.setList[i].set == this.currentQrSet) {
-                        this.settings.config.setList.splice(i, 1);
-                    }
-                }
-            }
-            this.settings.save();
-            this.rerender();
         }
+        this.settings.save();
     }
 
     async addQrSet() {
@@ -236,10 +239,13 @@ export class SettingsUi {
             if (oldQrs) {
                 const replace = await callPopup(`A Quick Reply Set named "${name}" already exists.\nDo you want to overwrite the existing Quick Reply Set?\nThe existing set will be deleted. This cannot be undone.`, 'confirm');
                 if (replace) {
+                    const idx = QuickReplySet.list.indexOf(oldQrs);
+                    await this.doDeleteQrSet(oldQrs);
                     const qrs = new QuickReplySet();
                     qrs.name = name;
                     qrs.addQuickReply();
-                    QuickReplySet.list[QuickReplySet.list.indexOf(oldQrs)] = qrs;
+                    QuickReplySet.list.splice(idx, 0, qrs);
+                    this.rerender();
                     this.currentSet.value = name;
                     this.onQrSetChange();
                     this.prepareGlobalSetList();
