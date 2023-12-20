@@ -12,7 +12,6 @@ import { SettingsUi } from './src/ui/SettingsUi.js';
 
 
 //TODO popout QR button bar (allow separate popouts for each QR set?)
-//TODO context menus
 //TODO move advanced QR options into own UI class
 //TODO slash commands
 //TODO easy way to CRUD QRs and sets
@@ -61,7 +60,7 @@ const loadSets = async () => {
         const setList = (await response.json()).quickReplyPresets ?? [];
         for (const set of setList) {
             if (set.version == 2) {
-                QuickReplySet.list.push(QuickReplySet.from(set));
+                QuickReplySet.list.push(QuickReplySet.from(JSON.parse(JSON.stringify(set))));
             } else {
                 const qrs = new QuickReplySet();
                 qrs.name = set.name;
@@ -89,6 +88,10 @@ const loadSets = async () => {
                 await qrs.save();
             }
         }
+        setList.forEach((set, idx)=>{
+            QuickReplySet.list[idx].qrList = set.qrList.map(it=>QuickReply.from(it));
+            QuickReplySet.list[idx].init();
+        });
         log('sets: ', QuickReplySet.list);
     }
 };

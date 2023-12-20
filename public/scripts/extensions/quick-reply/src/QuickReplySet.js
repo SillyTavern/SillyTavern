@@ -9,9 +9,9 @@ export class QuickReplySet {
 
 
     static from(props) {
-        props.qrList = props.qrList?.map(it=>QuickReply.from(it));
+        props.qrList = []; //props.qrList?.map(it=>QuickReply.from(it));
         const instance = Object.assign(new this(), props);
-        instance.init();
+        // instance.init();
         return instance;
     }
 

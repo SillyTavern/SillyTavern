@@ -3,6 +3,7 @@ import { getSortableDelay } from '../../../utils.js';
 import { log, warn } from '../index.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
 import { QuickReplySet } from './QuickReplySet.js';
+import { ContextMenu } from './ui/ctx/ContextMenu.js';
 
 export class QuickReply {
     /**
@@ -35,7 +36,13 @@ export class QuickReply {
 
 
     /**@type {HTMLElement}*/ dom;
+    /**@type {HTMLElement}*/ domLabel;
     /**@type {HTMLElement}*/ settingsDom;
+
+
+    get hasContext() {
+        return this.contextList && this.contextList.length > 0;
+    }
 
 
 
@@ -47,7 +54,8 @@ export class QuickReply {
     updateRender() {
         if (!this.dom) return;
         this.dom.title = this.title || this.message;
-        this.dom.textContent = this.label;
+        this.domLabel.textContent = this.label;
+        this.dom.classList[this.hasContext ? 'add' : 'remove']('qr--hasCtx');
     }
     render() {
         this.unrender();
@@ -55,8 +63,37 @@ export class QuickReply {
             const root = document.createElement('div'); {
                 this.dom = root;
                 root.classList.add('qr--button');
+                if (this.hasContext) {
+                    root.classList.add('qr--hasCtx');
+                }
                 root.title = this.title || this.message;
-                root.textContent = this.label;
+                root.addEventListener('contextmenu', (evt) => {
+                    log('contextmenu', this, this.hasContext);
+                    if (this.hasContext) {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        const menu = new ContextMenu(this);
+                        menu.show(evt);
+                    }
+                });
+                const lbl = document.createElement('div'); {
+                    this.domLabel = lbl;
+                    lbl.classList.add('qr--button-label');
+                    lbl.textContent = this.label;
+                    root.append(lbl);
+                }
+                const expander = document.createElement('div'); {
+                    expander.classList.add('qr--button-expander');
+                    expander.textContent = '⋮';
+                    expander.title = 'Open context menu';
+                    expander.addEventListener('click', (evt) => {
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        const menu = new ContextMenu(this);
+                        menu.show(evt);
+                    });
+                    root.append(expander);
+                }
                 root.addEventListener('click', ()=>{
                     if (this.message?.length > 0 && this.onExecute) {
                         this.onExecute(this);
