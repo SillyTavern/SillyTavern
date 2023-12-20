@@ -189,7 +189,7 @@ import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_set
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels, loadOllamaModels, loadTogetherAIModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { replaceVariableMacros } from './scripts/variables.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 
@@ -272,6 +272,22 @@ DOMPurify.addHook('afterSanitizeAttributes', function (node) {
     if ('target' in node) {
         node.setAttribute('target', '_blank');
         node.setAttribute('rel', 'noopener');
+    }
+});
+
+DOMPurify.addHook("uponSanitizeAttribute", (_, data, config) => {
+    if (!config['MESSAGE_SANITIZE']) {
+        return;
+    }
+    switch (data.attrName) {
+        case 'class': {
+            if (data.attrValue) {
+                data.attrValue = data.attrValue.split(' ').map((v) => {
+                    return "custom-" + v;
+                }).join(' ');
+            }
+            break;
+        }
     }
 });
 
@@ -1550,7 +1566,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), '$1');
     }
 
-    mes = DOMPurify.sanitize(mes, { FORBID_TAGS: ['style'] });
+    /** @type {any} */
+    const config = { MESSAGE_SANITIZE: true, ADD_TAGS: ['custom-style'] };
+    mes = encodeStyleTags(mes);
+    mes = DOMPurify.sanitize(mes, config);
+    mes = decodeStyleTags(mes);
 
     return mes;
 }
@@ -3634,11 +3654,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                     mesSendString = addChatsPreamble(mesSendString);
 
                     let combinedPrompt = beforeScenarioAnchor +
-                            storyString +
-                            afterScenarioAnchor +
-                            mesExmString +
-                            mesSendString +
-                            generatedPromptCache;
+                        storyString +
+                        afterScenarioAnchor +
+                        mesExmString +
+                        mesSendString +
+                        generatedPromptCache;
 
                     combinedPrompt = combinedPrompt.replace(/\r/gm, '');
 
