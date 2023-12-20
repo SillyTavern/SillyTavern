@@ -26,17 +26,16 @@ export class QuickReplySet {
 
 
     /**@type {String}*/ name;
-
     /**@type {Boolean}*/ disableSend = false;
     /**@type {Boolean}*/ placeBeforeInput = false;
     /**@type {Boolean}*/ injectInput = false;
-
     /**@type {QuickReply[]}*/ qrList = [];
 
     /**@type {Number}*/ idIndex = 0;
 
-    /**@type {Function}*/ save;
+    /**@type {Boolean}*/ isDeleted = false;
 
+    /**@type {Function}*/ save;
 
     /**@type {HTMLElement}*/ dom;
     /**@type {HTMLElement}*/ settingsDom;
@@ -201,6 +200,7 @@ export class QuickReplySet {
             this.unrender();
             const idx = QuickReplySet.list.indexOf(this);
             QuickReplySet.list.splice(idx, 1);
+            this.isDeleted = true;
         } else {
             warn(`Failed to delete Quick Reply Set: ${this.name}`);
         }

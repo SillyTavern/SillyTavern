@@ -1,9 +1,14 @@
 import { QuickReplySet } from './QuickReplySet.js';
 
+
+
+
 export class QuickReplySetLink {
     static from(props) {
         props.set = QuickReplySet.get(props.set);
-        return Object.assign(new this(), props);
+        /**@type {QuickReplySetLink}*/
+        const instance = Object.assign(new this(), props);
+        return instance;
     }
 
 
@@ -24,67 +29,65 @@ export class QuickReplySetLink {
 
 
     renderSettings(idx) {
-        if (!this.settingsDom || idx != this.index) {
-            this.index = idx;
-            const item = document.createElement('div'); {
-                this.settingsDom = item;
-                item.classList.add('qr--item');
-                item.setAttribute('data-order', String(this.index));
-                const drag = document.createElement('div'); {
-                    drag.classList.add('drag-handle');
-                    drag.classList.add('ui-sortable-handle');
-                    drag.textContent = '☰';
-                    item.append(drag);
-                }
-                const set = document.createElement('select'); {
-                    set.classList.add('qr--set');
-                    set.addEventListener('change', ()=>{
-                        this.set = QuickReplySet.get(set.value);
+        this.index = idx;
+        const item = document.createElement('div'); {
+            this.settingsDom = item;
+            item.classList.add('qr--item');
+            item.setAttribute('data-order', String(this.index));
+            const drag = document.createElement('div'); {
+                drag.classList.add('drag-handle');
+                drag.classList.add('ui-sortable-handle');
+                drag.textContent = '☰';
+                item.append(drag);
+            }
+            const set = document.createElement('select'); {
+                set.classList.add('qr--set');
+                set.addEventListener('change', ()=>{
+                    this.set = QuickReplySet.get(set.value);
+                    this.update();
+                });
+                QuickReplySet.list.forEach(qrs=>{
+                    const opt = document.createElement('option'); {
+                        opt.value = qrs.name;
+                        opt.textContent = qrs.name;
+                        opt.selected = qrs == this.set;
+                        set.append(opt);
+                    }
+                });
+                item.append(set);
+            }
+            const visible = document.createElement('label'); {
+                visible.classList.add('qr--visible');
+                const cb = document.createElement('input'); {
+                    cb.type = 'checkbox';
+                    cb.checked = this.isVisible;
+                    cb.addEventListener('click', ()=>{
+                        this.isVisible = cb.checked;
                         this.update();
                     });
-                    QuickReplySet.list.forEach(qrs=>{
-                        const opt = document.createElement('option'); {
-                            opt.value = qrs.name;
-                            opt.textContent = qrs.name;
-                            opt.selected = qrs == this.set;
-                            set.append(opt);
-                        }
-                    });
-                    item.append(set);
+                    visible.append(cb);
                 }
-                const visible = document.createElement('label'); {
-                    visible.classList.add('qr--visible');
-                    const cb = document.createElement('input'); {
-                        cb.type = 'checkbox';
-                        cb.checked = this.isVisible;
-                        cb.addEventListener('click', ()=>{
-                            this.isVisible = cb.checked;
-                            this.update();
-                        });
-                        visible.append(cb);
-                    }
-                    visible.append('Show buttons');
-                    item.append(visible);
-                }
-                const edit = document.createElement('div'); {
-                    edit.classList.add('menu_button');
-                    edit.classList.add('menu_button_icon');
-                    edit.classList.add('fa-solid');
-                    edit.classList.add('fa-pencil');
-                    edit.title = 'Edit quick reply set';
-                    edit.addEventListener('click', ()=>this.requestEditSet());
-                    item.append(edit);
-                }
-                const del = document.createElement('div'); {
-                    del.classList.add('qr--del');
-                    del.classList.add('menu_button');
-                    del.classList.add('menu_button_icon');
-                    del.classList.add('fa-solid');
-                    del.classList.add('fa-trash-can');
-                    del.title = 'Remove quick reply set';
-                    del.addEventListener('click', ()=>this.delete());
-                    item.append(del);
-                }
+                visible.append('Show buttons');
+                item.append(visible);
+            }
+            const edit = document.createElement('div'); {
+                edit.classList.add('menu_button');
+                edit.classList.add('menu_button_icon');
+                edit.classList.add('fa-solid');
+                edit.classList.add('fa-pencil');
+                edit.title = 'Edit quick reply set';
+                edit.addEventListener('click', ()=>this.requestEditSet());
+                item.append(edit);
+            }
+            const del = document.createElement('div'); {
+                del.classList.add('qr--del');
+                del.classList.add('menu_button');
+                del.classList.add('menu_button_icon');
+                del.classList.add('fa-solid');
+                del.classList.add('fa-trash-can');
+                del.title = 'Remove quick reply set';
+                del.addEventListener('click', ()=>this.delete());
+                item.append(del);
             }
         }
         return this.settingsDom;

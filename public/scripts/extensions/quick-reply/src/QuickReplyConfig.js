@@ -16,7 +16,7 @@ export class QuickReplyConfig {
 
 
     static from(props) {
-        props.setList = props.setList?.map(it=>QuickReplySetLink.from(it)) ?? [];
+        props.setList = props.setList?.map(it=>QuickReplySetLink.from(it))?.filter(it=>it.set) ?? [];
         const instance = Object.assign(new this(), props);
         instance.init();
         return instance;
@@ -50,7 +50,7 @@ export class QuickReplyConfig {
             delay: getSortableDelay(),
             stop: ()=>this.onSetListSort(),
         });
-        this.setList.forEach((qrl,idx)=>setList.append(qrl.renderSettings(idx)));
+        this.setList.filter(it=>!it.set.isDeleted).forEach((qrl,idx)=>setList.append(qrl.renderSettings(idx)));
     }
 
 

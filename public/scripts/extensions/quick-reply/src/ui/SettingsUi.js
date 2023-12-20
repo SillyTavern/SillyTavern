@@ -79,17 +79,26 @@ export class SettingsUi {
     }
 
     prepareGlobalSetList() {
-        this.settings.config.renderSettingsInto(this.dom.querySelector('#qr--global'));
+        const dom = this.template.querySelector('#qr--global');
+        const clone = dom.cloneNode(true);
+        // @ts-ignore
+        this.settings.config.renderSettingsInto(clone);
+        this.dom.querySelector('#qr--global').replaceWith(clone);
     }
     prepareChatSetList() {
+        const dom = this.template.querySelector('#qr--chat');
+        const clone = dom.cloneNode(true);
         if (this.settings.chatConfig) {
-            this.settings.chatConfig.renderSettingsInto(this.dom.querySelector('#qr--chat'));
+            // @ts-ignore
+            this.settings.chatConfig.renderSettingsInto(clone);
         } else {
             const info = document.createElement('div'); {
                 info.textContent = 'No active chat.';
+                // @ts-ignore
+                clone.append(info);
             }
-            this.dom.querySelector('#qr--chat').append(info);
         }
+        this.dom.querySelector('#qr--chat').replaceWith(clone);
     }
 
     prepareQrEditor() {
@@ -201,19 +210,8 @@ export class SettingsUi {
     async deleteQrSet() {
         const confirmed = await callPopup(`Are you sure you want to delete the Quick Reply Set "${this.currentQrSet.name}"? This cannot be undone.`, 'confirm');
         if (confirmed) {
-            const idx = QuickReplySet.list.indexOf(this.currentQrSet);
             await this.currentQrSet.delete();
-            this.currentSet.children[idx].remove();
-            [
-                ...Array.from(this.globalSetList.querySelectorAll('.qr--item > .qr--set')),
-                ...Array.from(this.chatSetList.querySelectorAll('.qr--item > .qr--set')),
-            ]
-                // @ts-ignore
-                .filter(it=>it.value == this.currentQrSet.name)
-                // @ts-ignore
-                .forEach(it=>it.closest('.qr--item').querySelector('.qr--del').click())
-            ;
-            this.onQrSetChange();
+            this.rerender();
         }
     }
 
@@ -230,20 +228,32 @@ export class SettingsUi {
                     QuickReplySet.list[QuickReplySet.list.indexOf(oldQrs)] = qrs;
                     this.currentSet.value = name;
                     this.onQrSetChange();
+                    this.prepareGlobalSetList();
+                    this.prepareChatSetList();
                 }
             } else {
                 const qrs = new QuickReplySet();
                 qrs.name = name;
                 qrs.addQuickReply();
                 const idx = QuickReplySet.list.findIndex(it=>it.name.localeCompare(name) == 1);
-                QuickReplySet.list.splice(idx, 0, qrs);
+                if (idx > -1) {
+                    QuickReplySet.list.splice(idx, 0, qrs);
+                } else {
+                    QuickReplySet.list.push(qrs);
+                }
                 const opt = document.createElement('option'); {
                     opt.value = qrs.name;
                     opt.textContent = qrs.name;
-                    this.currentSet.children[idx].insertAdjacentElement('beforebegin', opt);
+                    if (idx > -1) {
+                        this.currentSet.children[idx].insertAdjacentElement('beforebegin', opt);
+                    } else {
+                        this.currentSet.append(opt);
+                    }
                 }
                 this.currentSet.value = name;
                 this.onQrSetChange();
+                this.prepareGlobalSetList();
+                this.prepareChatSetList();
             }
         }
     }
