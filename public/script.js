@@ -291,6 +291,8 @@ export const event_types = {
     CHAT_CHANGED: 'chat_id_changed',
     GENERATION_STARTED: 'generation_started',
     GENERATION_STOPPED: 'generation_stopped',
+    GENERATION_BEFORE_COMBINE_PROMPTS: 'generation_before_combine_prompts',
+    GENERATION_BEFORE_SEND_REQUEST: 'generation_before_send_request',
     EXTENSIONS_FIRST_LOAD: 'extensions_first_load',
     SETTINGS_LOADED: 'settings_loaded',
     SETTINGS_UPDATED: 'settings_updated',
@@ -313,7 +315,6 @@ export const event_types = {
     FORCE_SET_BACKGROUND: 'force_set_background',
     CHAT_DELETED: 'chat_deleted',
     GROUP_CHAT_DELETED: 'group_chat_deleted',
-    GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
 };
 
 export const eventSource = new EventEmitter();
@@ -2888,6 +2889,9 @@ export async function generateRaw(prompt, api, instructOverride) {
             generateData = [{ role: 'user', content: prompt.trim() }];
     }
 
+    // Allow subscribers to mutate generation data before sending.
+    eventSource.emitAndWait(event_types.GENERATION_BEFORE_SEND_REQUEST, generateData);
+
     let data = {};
 
     if (api == 'koboldhorde') {
@@ -3669,7 +3673,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 };
 
                 // Before returning the combined prompt, give available context related information to all subscribers.
-                eventSource.emitAndWait(event_types.GENERATE_BEFORE_COMBINE_PROMPTS, data);
+                eventSource.emitAndWait(event_types.GENERATION_BEFORE_COMBINE_PROMPTS, data);
 
                 // If one or multiple subscribers return a value, forfeit the responsibillity of flattening the context.
                 return !data.combinedPrompt ? combine() : data.combinedPrompt;
@@ -3802,6 +3806,9 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
                 /** @type {Promise<any>} */
                 let streamingGeneratorPromise = Promise.resolve();
+
+                // Allow subscribers to mutate generation data before sending.
+                await eventSource.emit(event_types.GENERATION_BEFORE_SEND_REQUEST, generate_data);
 
                 if (main_api == 'openai') {
                     if (isStreamingEnabled() && type !== 'quiet') {
