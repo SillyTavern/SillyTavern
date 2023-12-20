@@ -5,7 +5,9 @@ import { QuickReplyConfig } from './QuickReplyConfig.js';
 export class QuickReplySettings {
     static from(props) {
         props.config = QuickReplyConfig.from(props.config);
-        return Object.assign(new this(), props);
+        const instance = Object.assign(new this(), props);
+        instance.init();
+        return instance;
     }
 
 
@@ -14,9 +16,41 @@ export class QuickReplySettings {
     /**@type {Boolean}*/ isEnabled = false;
     /**@type {Boolean}*/ isCombined = false;
     /**@type {QuickReplyConfig}*/ config;
-    /**@type {QuickReplyConfig}*/ chatConfig;
+    /**@type {QuickReplyConfig}*/ _chatConfig;
+    get chatConfig() {
+        return this._chatConfig;
+    }
+    set chatConfig(value) {
+        if (this._chatConfig != value) {
+            this.unhookConfig(this._chatConfig);
+            this._chatConfig = value;
+            this.hookConfig(this._chatConfig);
+        }
+    }
 
     /**@type {Function}*/ onSave;
+    /**@type {Function}*/ onRequestEditSet;
+
+
+
+
+    init() {
+        this.hookConfig(this.config);
+        this.hookConfig(this.chatConfig);
+    }
+
+    hookConfig(config) {
+        if (config) {
+            config.onUpdate = ()=>this.save();
+            config.onRequestEditSet = (qrs)=>this.requestEditSet(qrs);
+        }
+    }
+    unhookConfig(config) {
+        if (config) {
+            config.onUpdate = null;
+            config.onRequestEditSet = null;
+        }
+    }
 
 
 
@@ -30,6 +64,12 @@ export class QuickReplySettings {
         }
         if (this.onSave) {
             this.onSave();
+        }
+    }
+
+    requestEditSet(qrs) {
+        if (this.onRequestEditSet) {
+            this.onRequestEditSet(qrs);
         }
     }
 

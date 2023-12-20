@@ -16,6 +16,7 @@ import { SettingsUi } from './src/ui/SettingsUi.js';
 //TODO move advanced QR options into own UI class
 //TODO slash commands
 //TODO delete QR set
+//TODO handle replacing QR set (create->overwrite): update configs that use this set
 //TODO easy way to CRUD QRs and sets
 //TODO easy way to set global and chat sets
 

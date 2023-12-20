@@ -1,7 +1,6 @@
 import { callPopup } from '../../../../../script.js';
 import { getSortableDelay } from '../../../../utils.js';
 import { warn } from '../../index.js';
-import { QuickReplyLink } from '../QuickReplyLink.js';
 import { QuickReplySet } from '../QuickReplySet.js';
 // eslint-disable-next-line no-unused-vars
 import { QuickReplySettings } from '../QuickReplySettings.js';
@@ -30,6 +29,7 @@ export class SettingsUi {
 
     constructor(/**@type {QuickReplySettings}*/settings) {
         this.settings = settings;
+        settings.onRequestEditSet = (qrs) => this.selectQrSet(qrs);
     }
 
 
@@ -78,135 +78,23 @@ export class SettingsUi {
         this.isCombined.addEventListener('click', ()=>this.onIsCombined());
     }
 
-    /**
-     * @param {QuickReplyLink} qrl
-     * @param {Number} idx
-     */
-    renderQrLinkItem(qrl, idx, isGlobal) {
-        const item = document.createElement('div'); {
-            item.classList.add('qr--item');
-            item.setAttribute('data-order', String(idx));
-            const drag = document.createElement('div'); {
-                drag.classList.add('drag-handle');
-                drag.classList.add('ui-sortable-handle');
-                drag.textContent = '☰';
-                item.append(drag);
-            }
-            const set = document.createElement('select'); {
-                set.addEventListener('change', ()=>{
-                    qrl.set = QuickReplySet.get(set.value);
-                    this.settings.save();
-                });
-                QuickReplySet.list.forEach(qrs=>{
-                    const opt = document.createElement('option'); {
-                        opt.value = qrs.name;
-                        opt.textContent = qrs.name;
-                        opt.selected = qrs == qrl.set;
-                        set.append(opt);
-                    }
-                });
-                item.append(set);
-            }
-            const visible = document.createElement('label'); {
-                visible.classList.add('qr--visible');
-                const cb = document.createElement('input'); {
-                    cb.type = 'checkbox';
-                    cb.checked = qrl.isVisible;
-                    cb.addEventListener('click', ()=>{
-                        qrl.isVisible = cb.checked;
-                        this.settings.save();
-                    });
-                    visible.append(cb);
-                }
-                visible.append('Show buttons');
-                item.append(visible);
-            }
-            const edit = document.createElement('div'); {
-                edit.classList.add('menu_button');
-                edit.classList.add('menu_button_icon');
-                edit.classList.add('fa-solid');
-                edit.classList.add('fa-pencil');
-                edit.title = 'Edit quick reply set';
-                edit.addEventListener('click', ()=>{
-                    this.currentSet.value = qrl.set.name;
-                    this.onQrSetChange();
-                });
-                item.append(edit);
-            }
-            const del = document.createElement('div'); {
-                del.classList.add('menu_button');
-                del.classList.add('menu_button_icon');
-                del.classList.add('fa-solid');
-                del.classList.add('fa-trash-can');
-                del.title = 'Remove quick reply set';
-                del.addEventListener('click', ()=>{
-                    item.remove();
-                    if (isGlobal) {
-                        this.settings.config.setList.splice(this.settings.config.setList.indexOf(qrl), 1);
-                        this.updateOrder(this.globalSetList);
-                    } else {
-                        this.settings.chatConfig.setList.splice(this.settings.chatConfig.setList.indexOf(qrl), 1);
-                        this.updateOrder(this.chatSetList);
-                    }
-                    this.settings.save();
-                });
-                item.append(del);
-            }
-        }
-        return item;
-    }
     prepareGlobalSetList() {
-        // global set list
-        this.dom.querySelector('#qr--global-setListAdd').addEventListener('click', ()=>{
-            const qrl = new QuickReplyLink();
-            qrl.set = QuickReplySet.list[0];
-            this.settings.config.setList.push(qrl);
-            this.globalSetList.append(this.renderQrLinkItem(qrl, this.settings.config.setList.length - 1, true));
-            this.settings.save();
-        });
-        this.globalSetList = this.dom.querySelector('#qr--global-setList');
-        // @ts-ignore
-        $(this.globalSetList).sortable({
-            delay: getSortableDelay(),
-            stop: ()=>this.onGlobalSetListSort(),
-        });
-        this.settings.config.setList.forEach((qrl,idx)=>{
-            this.globalSetList.append(this.renderQrLinkItem(qrl, idx, true));
-        });
+        this.settings.config.renderSettingsInto(this.dom.querySelector('#qr--global'));
     }
     prepareChatSetList() {
-        // chat set list
-        this.dom.querySelector('#qr--chat-setListAdd').addEventListener('click', ()=>{
-            if (!this.settings.chatConfig) {
-                toastr.warning('No active chat.');
-                return;
-            }
-            const qrl = new QuickReplyLink();
-            qrl.set = QuickReplySet.list[0];
-            this.settings.chatConfig.setList.push(qrl);
-            this.chatSetList.append(this.renderQrLinkItem(qrl, this.settings.chatConfig.setList.length - 1, false));
-            this.settings.save();
-        });
-
-        this.chatSetList = this.dom.querySelector('#qr--chat-setList');
-        if (!this.settings.chatConfig) {
-            const info = document.createElement('small'); {
+        if (this.settings.chatConfig) {
+            this.settings.chatConfig.renderSettingsInto(this.dom.querySelector('#qr--chat'));
+        } else {
+            const info = document.createElement('div'); {
                 info.textContent = 'No active chat.';
-                this.chatSetList.append(info);
             }
+            this.dom.querySelector('#qr--chat').append(info);
         }
-        // @ts-ignore
-        $(this.chatSetList).sortable({
-            delay: getSortableDelay(),
-            stop: ()=>this.onChatSetListSort(),
-        });
-        this.settings.chatConfig?.setList?.forEach((qrl,idx)=>{
-            this.chatSetList.append(this.renderQrLinkItem(qrl, idx, false));
-        });
     }
 
     prepareQrEditor() {
         // qr editor
+        this.dom.querySelector('#qr--set-delete').addEventListener('click', async()=>this.deleteQrSet());
         this.dom.querySelector('#qr--set-new').addEventListener('click', async()=>this.addQrSet());
         this.dom.querySelector('#qr--set-add').addEventListener('click', async()=>{
             this.currentQrSet.addQuickReply();
@@ -310,12 +198,31 @@ export class SettingsUi {
         this.currentQrSet.save();
     }
 
+    async deleteQrSet() {
+        const confirmed = await callPopup(`Are you sure you want to delete the Quick Reply Set "${this.currentQrSet.name}"? This cannot be undone.`, 'confirm');
+        if (confirmed) {
+            const idx = QuickReplySet.list.indexOf(this.currentQrSet);
+            await this.currentQrSet.delete();
+            this.currentSet.children[idx].remove();
+            [
+                ...Array.from(this.globalSetList.querySelectorAll('.qr--item > .qr--set')),
+                ...Array.from(this.chatSetList.querySelectorAll('.qr--item > .qr--set')),
+            ]
+                // @ts-ignore
+                .filter(it=>it.value == this.currentQrSet.name)
+                // @ts-ignore
+                .forEach(it=>it.closest('.qr--item').querySelector('.qr--del').click())
+            ;
+            this.onQrSetChange();
+        }
+    }
+
     async addQrSet() {
         const name = await callPopup('Quick Reply Set Name:', 'input');
         if (name && name.length > 0) {
             const oldQrs = QuickReplySet.get(name);
             if (oldQrs) {
-                const replace = await callPopup(`A Quick Reply Set named "${name} already exists.\nDo you want to overwrite the existing Quick Reply Set?\nThe existing set will be deleted. This cannot be undone.`, 'confirm');
+                const replace = await callPopup(`A Quick Reply Set named "${name}" already exists.\nDo you want to overwrite the existing Quick Reply Set?\nThe existing set will be deleted. This cannot be undone.`, 'confirm');
                 if (replace) {
                     const qrs = new QuickReplySet();
                     qrs.name = name;
@@ -339,5 +246,10 @@ export class SettingsUi {
                 this.onQrSetChange();
             }
         }
+    }
+
+    selectQrSet(qrs) {
+        this.currentSet.value = qrs.name;
+        this.onQrSetChange();
     }
 }

@@ -189,4 +189,20 @@ export class QuickReplySet {
             warn(`Failed to save Quick Reply Set: ${this.name}`);
         }
     }
+
+    async delete() {
+        const response = await fetch('/deletequickreply', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(this),
+        });
+
+        if (response.ok) {
+            this.unrender();
+            const idx = QuickReplySet.list.indexOf(this);
+            QuickReplySet.list.splice(idx, 1);
+        } else {
+            warn(`Failed to delete Quick Reply Set: ${this.name}`);
+        }
+    }
 }

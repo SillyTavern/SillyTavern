@@ -13,9 +13,6 @@ export class QuickReplyContextLink {
     /**@type {QuickReplySet}*/ set;
     /**@type {Boolean}*/ isChained = false;
 
-
-
-
     toJSON() {
         return {
             set: this.set?.name,
