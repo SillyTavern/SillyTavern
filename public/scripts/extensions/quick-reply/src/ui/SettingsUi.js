@@ -208,7 +208,7 @@ export class SettingsUi {
     }
 
     async deleteQrSet() {
-        const confirmed = await callPopup(`Are you sure you want to delete the Quick Reply Set "${this.currentQrSet.name}"? This cannot be undone.`, 'confirm');
+        const confirmed = await callPopup(`Are you sure you want to delete the Quick Reply Set "${this.currentQrSet.name}"?<br>This cannot be undone.`, 'confirm');
         if (confirmed) {
             await this.doDeleteQrSet(this.currentQrSet);
             this.rerender();
@@ -237,7 +237,7 @@ export class SettingsUi {
         if (name && name.length > 0) {
             const oldQrs = QuickReplySet.get(name);
             if (oldQrs) {
-                const replace = await callPopup(`A Quick Reply Set named "${name}" already exists.\nDo you want to overwrite the existing Quick Reply Set?\nThe existing set will be deleted. This cannot be undone.`, 'confirm');
+                const replace = await callPopup(`A Quick Reply Set named "${name}" already exists.<br>Do you want to overwrite the existing Quick Reply Set?<br>The existing set will be deleted. This cannot be undone.`, 'confirm');
                 if (replace) {
                     const idx = QuickReplySet.list.indexOf(oldQrs);
                     await this.doDeleteQrSet(oldQrs);
