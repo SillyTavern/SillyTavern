@@ -4,7 +4,7 @@ const { Readable } = require('stream');
 
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY } = require('../../constants');
-const { forwardFetchResponse, getConfigValue, tryParse, uuidv4 } = require('../../util');
+const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml } = require('../../util');
 const { convertClaudePrompt, convertGooglePrompt, convertTextCompletionPrompt } = require('../prompt-converters');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
@@ -506,6 +506,7 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         api_url = request.body.custom_url;
         api_key_openai = readSecret(SECRET_KEYS.CUSTOM);
         headers = {};
+        mergeObjectWithYaml(headers, request.body.custom_include_headers);
     } else {
         console.log('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
@@ -685,6 +686,8 @@ router.post('/generate', jsonParser, function (request, response) {
         apiKey = readSecret(SECRET_KEYS.CUSTOM);
         headers = {};
         bodyParams = {};
+        mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
+        mergeObjectWithYaml(headers, request.body.custom_include_headers);
     } else {
         console.log('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
@@ -712,6 +715,27 @@ router.post('/generate', jsonParser, function (request, response) {
         controller.abort();
     });
 
+    const requestBody = {
+        'messages': isTextCompletion === false ? request.body.messages : undefined,
+        'prompt': isTextCompletion === true ? textPrompt : undefined,
+        'model': request.body.model,
+        'temperature': request.body.temperature,
+        'max_tokens': request.body.max_tokens,
+        'stream': request.body.stream,
+        'presence_penalty': request.body.presence_penalty,
+        'frequency_penalty': request.body.frequency_penalty,
+        'top_p': request.body.top_p,
+        'top_k': request.body.top_k,
+        'stop': isTextCompletion === false ? request.body.stop : undefined,
+        'logit_bias': request.body.logit_bias,
+        'seed': request.body.seed,
+        ...bodyParams,
+    };
+
+    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
+        excludeKeysByYaml(requestBody, request.body.custom_exclude_body);
+    }
+
     /** @type {import('node-fetch').RequestInit} */
     const config = {
         method: 'post',
@@ -720,27 +744,12 @@ router.post('/generate', jsonParser, function (request, response) {
             'Authorization': 'Bearer ' + apiKey,
             ...headers,
         },
-        body: JSON.stringify({
-            'messages': isTextCompletion === false ? request.body.messages : undefined,
-            'prompt': isTextCompletion === true ? textPrompt : undefined,
-            'model': request.body.model,
-            'temperature': request.body.temperature,
-            'max_tokens': request.body.max_tokens,
-            'stream': request.body.stream,
-            'presence_penalty': request.body.presence_penalty,
-            'frequency_penalty': request.body.frequency_penalty,
-            'top_p': request.body.top_p,
-            'top_k': request.body.top_k,
-            'stop': isTextCompletion === false ? request.body.stop : undefined,
-            'logit_bias': request.body.logit_bias,
-            'seed': request.body.seed,
-            ...bodyParams,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
         timeout: 0,
     };
 
-    console.log(JSON.parse(String(config.body)));
+    console.log(requestBody);
 
     makeRequest(config, response, request);
 

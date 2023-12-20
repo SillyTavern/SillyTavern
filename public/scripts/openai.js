@@ -213,6 +213,9 @@ const default_settings = {
     mistralai_model: 'mistral-medium',
     custom_model: '',
     custom_url: '',
+    custom_include_body: '',
+    custom_exclude_body: '',
+    custom_include_headers: '',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
@@ -271,6 +274,9 @@ const oai_settings = {
     mistralai_model: 'mistral-medium',
     custom_model: '',
     custom_url: '',
+    custom_include_body: '',
+    custom_exclude_body: '',
+    custom_include_headers: '',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
@@ -1592,6 +1598,9 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isCustom) {
         generate_data['custom_url'] = oai_settings.custom_url;
+        generate_data['custom_include_body'] = oai_settings.custom_include_body;
+        generate_data['custom_exclude_body'] = oai_settings.custom_exclude_body;
+        generate_data['custom_include_headers'] = oai_settings.custom_include_headers;
     }
 
     if ((isOAI || isOpenRouter || isMistral || isCustom) && oai_settings.seed >= 0) {
@@ -2342,6 +2351,9 @@ function loadOpenAISettings(data, settings) {
     oai_settings.mistralai_model = settings.mistralai_model ?? default_settings.mistralai_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
+    oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
+    oai_settings.custom_exclude_body = settings.custom_exclude_body ?? default_settings.custom_exclude_body;
+    oai_settings.custom_include_headers = settings.custom_include_headers ?? default_settings.custom_include_headers;
     oai_settings.google_model = settings.google_model ?? default_settings.google_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
@@ -2502,6 +2514,7 @@ async function getStatusOpen() {
     if (oai_settings.chat_completion_source === chat_completion_sources.CUSTOM) {
         $('#model_custom_select').empty();
         data.custom_url = oai_settings.custom_url;
+        data.custom_include_headers = oai_settings.custom_include_headers;
     }
 
     const canBypass = (oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check) || oai_settings.chat_completion_source === chat_completion_sources.CUSTOM;
@@ -2946,6 +2959,9 @@ function onSettingsPresetChange() {
         mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
         custom_model: ['#custom_model_id', 'custom_model', false],
         custom_url: ['#custom_api_url_text', 'custom_url', false],
+        custom_include_body: ['#custom_include_body', 'custom_include_body', false],
+        custom_exclude_body: ['#custom_exclude_body', 'custom_exclude_body', false],
+        custom_include_headers: ['#custom_include_headers', 'custom_include_headers', false],
         google_model: ['#model_google_select', 'google_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
@@ -3308,7 +3324,7 @@ async function onNewPresetClick() {
     const popupText = `
         <h3>Preset name:</h3>
         <h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>`;
-    const name = await callPopup(popupText, 'input');
+    const name = await callPopup(popupText, 'input', oai_settings.preset_settings_openai);
 
     if (!name) {
         return;
@@ -3535,6 +3551,42 @@ function updateScaleForm() {
         $('#normal_scale_form').css('display', '');
         $('#alt_scale_form').css('display', 'none');
     }
+}
+
+function onCustomizeParametersClick() {
+    const template = $(`
+    <div class="flex-container flexFlowColumn height100p">
+        <h3>Additional Parameters</h3>
+        <div class="flex1 flex-container flexFlowColumn">
+            <h4>Include Body Parameters</h4>
+            <textarea id="custom_include_body" class="flex1" placeholder="Parameters to be included in the Chat Completion request body (YAML object)&#10;&#10;Example:&#10;- top_k: 20&#10;- repetition_penalty: 1.1"></textarea>
+        </div>
+        <div class="flex1 flex-container flexFlowColumn">
+            <h4>Exclude Body Parameters</h4>
+            <textarea id="custom_exclude_body" class="flex1" placeholder="Parameters to be excluded from the Chat Completion request body (YAML array)&#10;&#10;Example:&#10;- frequency_penalty&#10;- presence_penalty"></textarea>
+        </div>
+        <div class="flex1 flex-container flexFlowColumn">
+            <h4>Include Request Headers</h4>
+            <textarea id="custom_include_headers" class="flex1" placeholder="Additional headers for Chat Completion requests (YAML object)&#10;&#10;Example:&#10;- CustomHeader: custom-value&#10;- AnotherHeader: custom-value"></textarea>
+        </div>
+    </div>`);
+
+    template.find('#custom_include_body').val(oai_settings.custom_include_body).on('input', function() {
+        oai_settings.custom_include_body = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    template.find('#custom_exclude_body').val(oai_settings.custom_exclude_body).on('input', function() {
+        oai_settings.custom_exclude_body = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    template.find('#custom_include_headers').val(oai_settings.custom_include_headers).on('input', function() {
+        oai_settings.custom_include_headers = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    callPopup(template, 'text', '', { wide: true, large: true });
 }
 
 /**
@@ -3892,4 +3944,5 @@ $(document).ready(async function () {
     $('#openai_logit_bias_delete_preset').on('click', onLogitBiasPresetDeleteClick);
     $('#import_oai_preset').on('click', onImportPresetClick);
     $('#openai_proxy_password_show').on('click', onProxyPasswordShowClick);
+    $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
 });

@@ -399,6 +399,65 @@ function forwardFetchResponse(from, to) {
     });
 }
 
+/**
+ * Adds YAML-serialized object to the object.
+ * @param {object} obj Object
+ * @param {string} yamlString YAML-serialized object
+ * @returns
+ */
+function mergeObjectWithYaml(obj, yamlString) {
+    if (!yamlString) {
+        return;
+    }
+
+    try {
+        const parsedObject = yaml.parse(yamlString);
+
+        if (Array.isArray(parsedObject)) {
+            for (const item of parsedObject) {
+                if (typeof item === 'object' && item && !Array.isArray(item)) {
+                    Object.assign(obj, item);
+                }
+            }
+        }
+        else if (parsedObject && typeof parsedObject === 'object') {
+            Object.assign(obj, parsedObject);
+        }
+    } catch {
+        // Do nothing
+    }
+}
+
+/**
+ * Removes keys from the object by YAML-serialized array.
+ * @param {object} obj Object
+ * @param {string} yamlString YAML-serialized array
+ * @returns {void} Nothing
+ */
+function excludeKeysByYaml(obj, yamlString) {
+    if (!yamlString) {
+        return;
+    }
+
+    try {
+        const parsedObject = yaml.parse(yamlString);
+
+        if (Array.isArray(parsedObject)) {
+            parsedObject.forEach(key => {
+                delete obj[key];
+            });
+        } else if (typeof parsedObject === 'object') {
+            Object.keys(parsedObject).forEach(key => {
+                delete obj[key];
+            });
+        } else if (typeof parsedObject === 'string') {
+            delete obj[parsedObject];
+        }
+    } catch {
+        // Do nothing
+    }
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -420,4 +479,6 @@ module.exports = {
     getImages,
     forwardFetchResponse,
     getHexString,
+    mergeObjectWithYaml,
+    excludeKeysByYaml,
 };
