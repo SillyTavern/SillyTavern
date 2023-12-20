@@ -1,3 +1,4 @@
+import { callPopup } from '../../../../../script.js';
 import { getSortableDelay } from '../../../../utils.js';
 import { warn } from '../../index.js';
 import { QuickReplyLink } from '../QuickReplyLink.js';
@@ -206,6 +207,7 @@ export class SettingsUi {
 
     prepareQrEditor() {
         // qr editor
+        this.dom.querySelector('#qr--set-new').addEventListener('click', async()=>this.addQrSet());
         this.dom.querySelector('#qr--set-add').addEventListener('click', async()=>{
             this.currentQrSet.addQuickReply();
         });
@@ -306,5 +308,36 @@ export class SettingsUi {
             return qr;
         });
         this.currentQrSet.save();
+    }
+
+    async addQrSet() {
+        const name = await callPopup('Quick Reply Set Name:', 'input');
+        if (name && name.length > 0) {
+            const oldQrs = QuickReplySet.get(name);
+            if (oldQrs) {
+                const replace = await callPopup(`A Quick Reply Set named "${name} already exists.\nDo you want to overwrite the existing Quick Reply Set?\nThe existing set will be deleted. This cannot be undone.`, 'confirm');
+                if (replace) {
+                    const qrs = new QuickReplySet();
+                    qrs.name = name;
+                    qrs.addQuickReply();
+                    QuickReplySet.list[QuickReplySet.list.indexOf(oldQrs)] = qrs;
+                    this.currentSet.value = name;
+                    this.onQrSetChange();
+                }
+            } else {
+                const qrs = new QuickReplySet();
+                qrs.name = name;
+                qrs.addQuickReply();
+                const idx = QuickReplySet.list.findIndex(it=>it.name.localeCompare(name) == 1);
+                QuickReplySet.list.splice(idx, 0, qrs);
+                const opt = document.createElement('option'); {
+                    opt.value = qrs.name;
+                    opt.textContent = qrs.name;
+                    this.currentSet.children[idx].insertAdjacentElement('beforebegin', opt);
+                }
+                this.currentSet.value = name;
+                this.onQrSetChange();
+            }
+        }
     }
 }
