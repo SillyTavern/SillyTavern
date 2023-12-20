@@ -211,6 +211,20 @@ export class SettingsUi {
         const confirmed = await callPopup(`Are you sure you want to delete the Quick Reply Set "${this.currentQrSet.name}"? This cannot be undone.`, 'confirm');
         if (confirmed) {
             await this.currentQrSet.delete();
+            //HACK should just bubble up from QuickReplySet.delete() but that would require proper or at least more comples onDelete listeners
+            for (let i = this.settings.config.setList.length - 1; i >= 0; i--) {
+                if (this.settings.config.setList[i].set == this.currentQrSet) {
+                    this.settings.config.setList.splice(i, 1);
+                }
+            }
+            if (this.settings.chatConfig) {
+                for (let i = this.settings.chatConfig.setList.length - 1; i >= 0; i--) {
+                    if (this.settings.config.setList[i].set == this.currentQrSet) {
+                        this.settings.config.setList.splice(i, 1);
+                    }
+                }
+            }
+            this.settings.save();
             this.rerender();
         }
     }
