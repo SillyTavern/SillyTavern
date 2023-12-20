@@ -283,6 +283,10 @@ DOMPurify.addHook("uponSanitizeAttribute", (_, data, config) => {
         case 'class': {
             if (data.attrValue) {
                 data.attrValue = data.attrValue.split(' ').map((v) => {
+                    if (v.startsWith('fa-') || v.startsWith('note-') || v === 'monospace') {
+                        return v;
+                    }
+
                     return "custom-" + v;
                 }).join(' ');
             }
@@ -7908,7 +7912,7 @@ jQuery(async function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
-    registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP)})</span> – connect to an API`, true, true);
+    registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
