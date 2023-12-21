@@ -3362,10 +3362,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         let mesSend = [];
         console.debug('calling runGenerate');
 
-        if (!dryRun) {
-            streamingProcessor = isStreamingEnabled() && type !== 'quiet' ? new StreamingProcessor(type, force_name2, generation_started, message_already_generated) : false;
-        }
-
         if (isContinue) {
             // Coping mechanism for OAI spacing
             const isForceInstruct = isOpenRouterWithInstruct();
@@ -3373,9 +3369,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 cyclePrompt += ' ';
                 continue_mag += ' ';
             }
-
-            // Save reply does add cycle text to the prompt, so it's not needed here
-            streamingProcessor && (streamingProcessor.firstMessageText = '');
             message_already_generated = continue_mag;
         }
 
@@ -3754,7 +3747,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         }
 
         async function finishGenerating() {
-            if (true === dryRun) return { error: 'dryRun' };
+            if (dryRun) return { error: 'dryRun' };
 
             if (power_user.console_log_prompts) {
                 console.log(generate_data.prompt);
@@ -3808,6 +3801,12 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
             if (isStreamingEnabled() && type !== 'quiet') {
+                streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, message_already_generated);
+                if (isContinue) {
+                    // Save reply does add cycle text to the prompt, so it's not needed here
+                    streamingProcessor.firstMessageText = '';
+                }
+
                 let streamingGenerator;
 
                 switch (main_api) {
