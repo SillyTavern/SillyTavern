@@ -38,8 +38,6 @@ async function sendClaudeRequest(request, response) {
         const isSysPromptSupported = request.body.model === 'claude-2' || request.body.model === 'claude-2.1';
         const requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSysPromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message);
 
-        console.log(color.green(`${divider}\nClaude request\n`) + color.cyan(`PROMPT\n${divider}\n${requestPrompt}\n${divider}`));
-
         // Check Claude messages sequence and prefixes presence.
         const sequence = requestPrompt.split('\n').filter(x => x.startsWith('Human:') || x.startsWith('Assistant:'));
         const humanFound = sequence.some(line => line.startsWith('Human:'));
@@ -69,30 +67,34 @@ async function sendClaudeRequest(request, response) {
         if (humanErrorCount > 0 || assistantErrorCount > 0) {
             console.log(color.red(`${divider}\nWarning: Detected incorrect Prefix sequence(s).`));
             console.log(color.red(`Incorrect "Human:" prefix(es): ${humanErrorCount}.\nIncorrect "Assistant: " prefix(es): ${assistantErrorCount}.`));
-            console.log(color.red('Check the prompt above and fix it in the sillytavern.'));
+            console.log(color.red('Check the prompt above and fix it in the SillyTavern.'));
             console.log(color.red('\nThe correct sequence should look like this:\nSystem prompt  <-(for the sysprompt format only, else have 2 empty lines above the first human\'s  message.)'));
             console.log(color.red(`       <-----(Each message beginning with the "Assistant:/Human:" prefix must have one empty line above.)\nHuman:\n\nAssistant:\n...\n\nHuman:\n\nAssistant:\n${divider}`));
         }
-        const stop_sequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
 
         // Add custom stop sequences
+        const stopSequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
         if (Array.isArray(request.body.stop)) {
-            stop_sequences.push(...request.body.stop);
+            stopSequences.push(...request.body.stop);
         }
+
+        const requestBody = {
+            prompt: requestPrompt,
+            model: request.body.model,
+            max_tokens_to_sample: request.body.max_tokens,
+            stop_sequences: stopSequences,
+            temperature: request.body.temperature,
+            top_p: request.body.top_p,
+            top_k: request.body.top_k,
+            stream: request.body.stream,
+        };
+
+        console.log('Claude request:', requestBody);
 
         const generateResponse = await fetch(apiUrl + '/complete', {
             method: 'POST',
             signal: controller.signal,
-            body: JSON.stringify({
-                prompt: requestPrompt,
-                model: request.body.model,
-                max_tokens_to_sample: request.body.max_tokens,
-                stop_sequences: stop_sequences,
-                temperature: request.body.temperature,
-                top_p: request.body.top_p,
-                top_k: request.body.top_k,
-                stream: request.body.stream,
-            }),
+            body: JSON.stringify(requestBody),
             headers: {
                 'Content-Type': 'application/json',
                 'anthropic-version': '2023-06-01',
@@ -112,7 +114,7 @@ async function sendClaudeRequest(request, response) {
 
             const generateResponseJson = await generateResponse.json();
             const responseText = generateResponseJson.completion;
-            console.log(color.green(`Claude response\n${divider}\n${responseText}\n${divider}`));
+            console.log('Claude response:', generateResponseJson);
 
             // Wrap it back to OAI format
             const reply = { choices: [{ 'message': { 'content': responseText } }] };
