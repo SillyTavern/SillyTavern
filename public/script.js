@@ -189,7 +189,7 @@ import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_set
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels, loadOllamaModels, loadTogetherAIModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { replaceVariableMacros } from './scripts/variables.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 
@@ -275,6 +275,26 @@ DOMPurify.addHook('afterSanitizeAttributes', function (node) {
     }
 });
 
+DOMPurify.addHook("uponSanitizeAttribute", (_, data, config) => {
+    if (!config['MESSAGE_SANITIZE']) {
+        return;
+    }
+    switch (data.attrName) {
+        case 'class': {
+            if (data.attrValue) {
+                data.attrValue = data.attrValue.split(' ').map((v) => {
+                    if (v.startsWith('fa-') || v.startsWith('note-') || v === 'monospace') {
+                        return v;
+                    }
+
+                    return "custom-" + v;
+                }).join(' ');
+            }
+            break;
+        }
+    }
+});
+
 // API OBJECT FOR EXTERNAL WIRING
 window['SillyTavern'] = {};
 
@@ -313,6 +333,7 @@ export const event_types = {
     FORCE_SET_BACKGROUND: 'force_set_background',
     CHAT_DELETED: 'chat_deleted',
     GROUP_CHAT_DELETED: 'group_chat_deleted',
+    GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
 };
 
 export const eventSource = new EventEmitter();
@@ -1549,7 +1570,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), '$1');
     }
 
-    mes = DOMPurify.sanitize(mes, { FORBID_TAGS: ['style'] });
+    /** @type {any} */
+    const config = { MESSAGE_SANITIZE: true, ADD_TAGS: ['custom-style'] };
+    mes = encodeStyleTags(mes);
+    mes = DOMPurify.sanitize(mes, config);
+    mes = decodeStyleTags(mes);
 
     return mes;
 }
@@ -3621,30 +3646,57 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                     generatedPromptCache = cleanupPromptCache(generatedPromptCache);
                 }
 
-                // Right now, everything is suffixed with a newline
-                mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
+                // Flattens the multiple prompt objects to a string.
+                const combine = () => {
+                    // Right now, everything is suffixed with a newline
+                    mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
 
-                // add chat preamble
-                mesSendString = addChatsPreamble(mesSendString);
+                    // add a custom dingus (if defined)
+                    mesSendString = addChatsSeparator(mesSendString);
 
-                // add a custom dingus (if defined)
-                mesSendString = addChatsSeparator(mesSendString);
+                    // add chat preamble
+                    mesSendString = addChatsPreamble(mesSendString);
 
-                let combinedPrompt =
-                    beforeScenarioAnchor +
-                    storyString +
-                    afterScenarioAnchor +
-                    mesExmString +
-                    mesSendString +
-                    generatedPromptCache;
+                    let combinedPrompt = beforeScenarioAnchor +
+                        storyString +
+                        afterScenarioAnchor +
+                        mesExmString +
+                        mesSendString +
+                        generatedPromptCache;
 
-                combinedPrompt = combinedPrompt.replace(/\r/gm, '');
+                    combinedPrompt = combinedPrompt.replace(/\r/gm, '');
 
-                if (power_user.collapse_newlines) {
-                    combinedPrompt = collapseNewlines(combinedPrompt);
-                }
+                    if (power_user.collapse_newlines) {
+                        combinedPrompt = collapseNewlines(combinedPrompt);
+                    }
 
-                return combinedPrompt;
+                    return combinedPrompt;
+                };
+
+                let data = {
+                    api: main_api,
+                    combinedPrompt: null,
+                    description,
+                    personality,
+                    persona,
+                    scenario,
+                    char: name2,
+                    user: name1,
+                    beforeScenarioAnchor,
+                    afterScenarioAnchor,
+                    mesExmString,
+                    finalMesSend,
+                    generatedPromptCache,
+                    main: system,
+                    jailbreak,
+                    naiPreamble: nai_settings.preamble,
+                };
+
+                // Before returning the combined prompt, give available context related information to all subscribers.
+                eventSource.emitAndWait(event_types.GENERATE_BEFORE_COMBINE_PROMPTS, data);
+
+                // If one or multiple subscribers return a value, forfeit the responsibillity of flattening the context.
+                return !data.combinedPrompt ? combine() : data.combinedPrompt;
             }
 
             // Get the negative prompt first since it has the unmodified mesSend array
@@ -7854,7 +7906,7 @@ jQuery(async function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
-    registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP)})</span> – connect to an API`, true, true);
+    registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);

@@ -8,7 +8,7 @@ import {
     substituteParams,
 } from '../script.js';
 import { getCfgPrompt } from './cfg-scale.js';
-import { MAX_CONTEXT_DEFAULT, MAX_RESPONSE_DEFAULT } from './power-user.js';
+import { MAX_CONTEXT_DEFAULT, MAX_RESPONSE_DEFAULT, power_user } from './power-user.js';
 import { getTextTokens, tokenizers } from './tokenizers.js';
 import EventSourceStream from './sse-stream.js';
 import {
@@ -435,6 +435,10 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
     if (tokenizerType !== tokenizers.NONE && Array.isArray(nai_settings.logit_bias) && nai_settings.logit_bias.length) {
         logitBias = BIAS_CACHE.get(BIAS_KEY) || calculateLogitBias();
         BIAS_CACHE.set(BIAS_KEY, logitBias);
+    }
+
+    if (power_user.console_log_prompts) {
+        console.log(finalPrompt);
     }
 
     return {

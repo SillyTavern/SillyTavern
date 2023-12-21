@@ -55,7 +55,7 @@ openai:
   # Will send a random user ID to OpenAI completion API
   randomizeUserId: false
   # If not empty, will add this as a system message to the start of every caption completion prompt
-  # Example: "Perform the instructions to the best of your ability.\n\n" (for LLaVA)
+  # Example: "Perform the instructions to the best of your ability.\n" (for LLaVA)
   # Not used in image inlining mode
   captionSystemPrompt: ""
 # -- DEEPL TRANSLATION CONFIGURATION --
