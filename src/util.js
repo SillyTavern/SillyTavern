@@ -458,6 +458,15 @@ function excludeKeysByYaml(obj, yamlString) {
     }
 }
 
+/**
+ * Removes trailing slash and /v1 from a string.
+ * @param {string} str Input string
+ * @returns {string} Trimmed string
+ */
+function trimV1(str) {
+    return String(str ?? '').replace(/\/$/, '').replace(/\/v1$/, '');
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -481,4 +490,5 @@ module.exports = {
     getHexString,
     mergeObjectWithYaml,
     excludeKeysByYaml,
+    trimV1,
 };

@@ -5,7 +5,7 @@ const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
 const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS } = require('../../constants');
-const { forwardFetchResponse } = require('../../util');
+const { forwardFetchResponse, trimV1 } = require('../../util');
 const { setAdditionalHeaders } = require('../../additional-headers');
 
 const router = express.Router();
@@ -67,9 +67,7 @@ router.post('/status', jsonParser, async function (request, response) {
         }
 
         console.log('Trying to connect to API:', request.body);
-
-        // Convert to string + remove trailing slash + /v1 suffix
-        const baseUrl = String(request.body.api_server).replace(/\/$/, '').replace(/\/v1$/, '');
+        const baseUrl = trimV1(request.body.api_server);
 
         const args = {
             headers: { 'Content-Type': 'application/json' },
@@ -199,8 +197,7 @@ router.post('/generate', jsonParser, async function (request, response) {
             controller.abort();
         });
 
-        // Convert to string + remove trailing slash + /v1 suffix
-        let url = String(baseUrl).replace(/\/$/, '').replace(/\/v1$/, '');
+        let url = trimV1(baseUrl);
 
         if (request.body.legacy_api) {
             url += '/v1/generate';
@@ -337,8 +334,7 @@ ollama.post('/caption-image', jsonParser, async function (request, response) {
         }
 
         console.log('Ollama caption request:', request.body);
-        // Convert to string + remove trailing slash + /v1 suffix
-        const baseUrl = String(request.body.server_url).replace(/\/$/, '').replace(/\/v1$/, '');
+        const baseUrl = trimV1(request.body.server_url);
 
         const fetchResponse = await fetch(`${baseUrl}/api/generate`, {
             method: 'POST',
@@ -383,8 +379,7 @@ llamacpp.post('/caption-image', jsonParser, async function (request, response) {
         }
 
         console.log('LlamaCpp caption request:', request.body);
-        // Convert to string + remove trailing slash + /v1 suffix
-        const baseUrl = String(request.body.server_url).replace(/\/$/, '').replace(/\/v1$/, '');
+        const baseUrl = trimV1(request.body.server_url);
 
         const fetchResponse = await fetch(`${baseUrl}/completion`, {
             method: 'POST',
