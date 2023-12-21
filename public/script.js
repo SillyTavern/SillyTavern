@@ -2783,6 +2783,9 @@ class StreamingProcessor {
     }
 
     onErrorStreaming() {
+        this.abortController.abort();
+        this.isStopped = true;
+
         this.hideMessageButtons(this.messageId);
         $('#send_textarea').removeAttr('disabled');
         is_send_press = false;
@@ -2827,7 +2830,6 @@ class StreamingProcessor {
             for await (const { text, swipes } of this.generator()) {
                 timestamps.push(Date.now());
                 if (this.isStopped) {
-                    this.onStopStreaming();
                     return;
                 }
 
@@ -2841,7 +2843,6 @@ class StreamingProcessor {
         catch (err) {
             console.error(err);
             this.onErrorStreaming();
-            this.isStopped = true;
             return;
         }
 
@@ -7181,7 +7182,7 @@ function swipe_left() {      // when we swipe left..but no generation.
     }
 
     if (isStreamingEnabled() && streamingProcessor) {
-        streamingProcessor.isStopped = true;
+        streamingProcessor.onStopStreaming();
     }
 
     const swipe_duration = 120;
@@ -9310,8 +9311,6 @@ jQuery(async function () {
 
     $(document).on('click', '.mes_stop', function () {
         if (streamingProcessor) {
-            streamingProcessor.abortController.abort();
-            streamingProcessor.isStopped = true;
             streamingProcessor.onStopStreaming();
             streamingProcessor = null;
         }
@@ -9566,7 +9565,7 @@ jQuery(async function () {
         cancelTtsPlay();
         if (streamingProcessor) {
             console.log('Page reloaded. Aborting streaming...');
-            streamingProcessor.abortController.abort();
+            streamingProcessor.onStopStreaming();
         }
     });
 
