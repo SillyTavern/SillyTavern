@@ -2,6 +2,7 @@ import { getRequestHeaders } from '../../script.js';
 import { extension_settings } from '../extensions.js';
 import { oai_settings } from '../openai.js';
 import { SECRET_KEYS, secret_state } from '../secrets.js';
+import { textgen_types, textgenerationwebui_settings } from '../textgen-settings.js';
 import { createThumbnail, isValidUrl } from '../utils.js';
 
 /**
@@ -11,20 +12,18 @@ import { createThumbnail, isValidUrl } from '../utils.js';
  * @returns {Promise<string>} Generated caption
  */
 export async function getMultimodalCaption(base64Img, prompt) {
-    if (extension_settings.caption.multimodal_api === 'openai' && !secret_state[SECRET_KEYS.OPENAI]) {
-        throw new Error('OpenAI API key is not set.');
-    }
+    throwIfInvalidModel();
 
-    if (extension_settings.caption.multimodal_api === 'openrouter' && !secret_state[SECRET_KEYS.OPENROUTER]) {
-        throw new Error('OpenRouter API key is not set.');
-    }
+    const noPrefix = ['google', 'ollama', 'llamacpp'].includes(extension_settings.caption.multimodal_api);
 
-    if (extension_settings.caption.multimodal_api === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE]) {
-        throw new Error('MakerSuite API key is not set.');
+    if (noPrefix && base64Img.startsWith('data:image/')) {
+        base64Img = base64Img.split(',')[1];
     }
 
     // OpenRouter has a payload limit of ~2MB. Google is 4MB, but we love democracy.
     const isGoogle = extension_settings.caption.multimodal_api === 'google';
+    const isOllama = extension_settings.caption.multimodal_api === 'ollama';
+    const isLlamaCpp = extension_settings.caption.multimodal_api === 'llamacpp';
     const base64Bytes = base64Img.length * 0.75;
     const compressionLimit = 2 * 1024 * 1024;
     if (['google', 'openrouter'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) {
@@ -45,27 +44,79 @@ export async function getMultimodalCaption(base64Img, prompt) {
     const proxyUrl = useReverseProxy ? oai_settings.reverse_proxy : '';
     const proxyPassword = useReverseProxy ? oai_settings.proxy_password : '';
 
-    const apiResult = await fetch(`/api/${isGoogle ? 'google' : 'openai'}/caption-image`, {
+    const requestBody = {
+        image: base64Img,
+        prompt: prompt,
+    };
+
+    if (!isGoogle) {
+        requestBody.api = extension_settings.caption.multimodal_api || 'openai';
+        requestBody.model = extension_settings.caption.multimodal_model || 'gpt-4-vision-preview';
+        requestBody.reverse_proxy = proxyUrl;
+        requestBody.proxy_password = proxyPassword;
+    }
+
+    if (isOllama) {
+        if (extension_settings.caption.multimodal_model === 'ollama_current') {
+            requestBody.model = textgenerationwebui_settings.ollama_model;
+        }
+
+        requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.OLLAMA];
+    }
+
+    if (isLlamaCpp) {
+        requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
+    }
+
+    function getEndpointUrl() {
+        switch (extension_settings.caption.multimodal_api) {
+            case 'google':
+                return '/api/google/caption-image';
+            case 'llamacpp':
+                return '/api/backends/text-completions/llamacpp/caption-image';
+            case 'ollama':
+                return '/api/backends/text-completions/ollama/caption-image';
+            default:
+                return '/api/openai/caption-image';
+        }
+    }
+
+    const apiResult = await fetch(getEndpointUrl(), {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({
-            image: base64Img,
-            prompt: prompt,
-            ...(isGoogle
-                ? {}
-                : {
-                    api: extension_settings.caption.multimodal_api || 'openai',
-                    model: extension_settings.caption.multimodal_model || 'gpt-4-vision-preview',
-                    reverse_proxy: proxyUrl,
-                    proxy_password: proxyPassword,
-                }),
-        }),
+        body: JSON.stringify(requestBody),
     });
 
     if (!apiResult.ok) {
-        throw new Error('Failed to caption image via OpenAI.');
+        throw new Error('Failed to caption image via Multimodal API.');
     }
 
     const { caption } = await apiResult.json();
-    return caption;
+    return String(caption).trim();
+}
+
+function throwIfInvalidModel() {
+    if (extension_settings.caption.multimodal_api === 'openai' && !secret_state[SECRET_KEYS.OPENAI]) {
+        throw new Error('OpenAI API key is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'openrouter' && !secret_state[SECRET_KEYS.OPENROUTER]) {
+        throw new Error('OpenRouter API key is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE]) {
+        throw new Error('MakerSuite API key is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) {
+        throw new Error('Ollama server URL is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'ollama' && extension_settings.caption.multimodal_model === 'ollama_current' && !textgenerationwebui_settings.ollama_model) {
+        throw new Error('Ollama model is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
+        throw new Error('LlamaCPP server URL is not set.');
+    }
 }

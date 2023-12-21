@@ -310,11 +310,12 @@ ollama.post('/download', jsonParser, async function (request, response) {
 
         const fetchResponse = await fetch(`${url}/api/pull`, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 name: name,
                 stream: false,
             }),
-            headers: { 'Content-Type': 'application/json' },
+            timeout: 0,
         });
 
         if (!fetchResponse.ok) {
@@ -329,6 +330,99 @@ ollama.post('/download', jsonParser, async function (request, response) {
     }
 });
 
+ollama.post('/caption-image', jsonParser, async function (request, response) {
+    try {
+        if (!request.body.server_url || !request.body.model) {
+            return response.sendStatus(400);
+        }
+
+        console.log('Ollama caption request:', request.body);
+        // Convert to string + remove trailing slash + /v1 suffix
+        const baseUrl = String(request.body.server_url).replace(/\/$/, '').replace(/\/v1$/, '');
+
+        const fetchResponse = await fetch(`${baseUrl}/api/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: request.body.model,
+                prompt: request.body.prompt,
+                images: [request.body.image],
+                stream: false,
+            }),
+            timeout: 0,
+        });
+
+        if (!fetchResponse.ok) {
+            console.log('Ollama caption error:', fetchResponse.status, fetchResponse.statusText);
+            return response.status(500).send({ error: true });
+        }
+
+        const data = await fetchResponse.json();
+        console.log('Ollama caption response:', data);
+
+        const caption = data?.response || '';
+
+        if (!caption) {
+            console.log('Ollama caption is empty.');
+            return response.status(500).send({ error: true });
+        }
+
+        return response.send({ caption });
+    } catch (error) {
+        console.error(error);
+        return response.status(500);
+    }
+});
+
+const llamacpp = express.Router();
+
+llamacpp.post('/caption-image', jsonParser, async function (request, response) {
+    try {
+        if (!request.body.server_url) {
+            return response.sendStatus(400);
+        }
+
+        console.log('LlamaCpp caption request:', request.body);
+        // Convert to string + remove trailing slash + /v1 suffix
+        const baseUrl = String(request.body.server_url).replace(/\/$/, '').replace(/\/v1$/, '');
+
+        const fetchResponse = await fetch(`${baseUrl}/completion`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 0,
+            body: JSON.stringify({
+                prompt: `USER:[img-1]${String(request.body.prompt).trim()}\nASSISTANT:`,
+                image_data: [{ data: request.body.image, id: 1 }],
+                temperature: 0.1,
+                stream: false,
+                stop: ['USER:', '</s>'],
+            }),
+        });
+
+        if (!fetchResponse.ok) {
+            console.log('LlamaCpp caption error:', fetchResponse.status, fetchResponse.statusText);
+            return response.status(500).send({ error: true });
+        }
+
+        const data = await fetchResponse.json();
+        console.log('LlamaCpp caption response:', data);
+
+        const caption = data?.content || '';
+
+        if (!caption) {
+            console.log('LlamaCpp caption is empty.');
+            return response.status(500).send({ error: true });
+        }
+
+        return response.send({ caption });
+
+    } catch (error) {
+        console.error(error);
+        return response.status(500);
+    }
+});
+
 router.use('/ollama', ollama);
+router.use('/llamacpp', llamacpp);
 
 module.exports = { router };
