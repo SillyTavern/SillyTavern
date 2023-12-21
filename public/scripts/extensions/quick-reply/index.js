@@ -44,7 +44,7 @@ let manager;
 /** @type {ButtonUi} */
 let buttons;
 /** @type {QuickReplyApi} */
-export let api;
+export let quickReplyApi;
 
 
 
@@ -153,8 +153,8 @@ const init = async () => {
         }
     }
 
-    api = new QuickReplyApi(settings);
-    const slash = new SlashCommandHandler(api);
+    quickReplyApi = new QuickReplyApi(settings);
+    const slash = new SlashCommandHandler(quickReplyApi);
     slash.init();
 };
 eventSource.on(event_types.APP_READY, init);
