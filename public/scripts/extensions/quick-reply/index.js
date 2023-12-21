@@ -11,7 +11,6 @@ import { SettingsUi } from './src/ui/SettingsUi.js';
 
 
 
-//TODO popout QR button bar (allow separate popouts for each QR set?)
 //TODO move advanced QR options into own UI class
 //TODO slash commands
 //TODO easy way to CRUD QRs and sets

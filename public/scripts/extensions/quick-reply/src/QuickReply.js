@@ -63,6 +63,7 @@ export class QuickReply {
             const root = document.createElement('div'); {
                 this.dom = root;
                 root.classList.add('qr--button');
+                root.classList.add('menu_button');
                 if (this.hasContext) {
                     root.classList.add('qr--hasCtx');
                 }

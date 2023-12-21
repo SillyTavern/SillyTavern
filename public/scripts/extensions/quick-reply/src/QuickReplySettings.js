@@ -15,6 +15,7 @@ export class QuickReplySettings {
 
     /**@type {Boolean}*/ isEnabled = false;
     /**@type {Boolean}*/ isCombined = false;
+    /**@type {Boolean}*/ isPopout = false;
     /**@type {QuickReplyConfig}*/ config;
     /**@type {QuickReplyConfig}*/ _chatConfig;
     get chatConfig() {
@@ -77,6 +78,7 @@ export class QuickReplySettings {
         return {
             isEnabled: this.isEnabled,
             isCombined: this.isCombined,
+            isPopout: this.isPopout,
             config: this.config,
         };
     }

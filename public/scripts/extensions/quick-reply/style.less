@@ -10,8 +10,38 @@
     max-width: 100%;
     overflow-x: auto;
     order: 1;
+	padding-right: 2.5em;
     position: relative;
-
+	> #qr--popoutTrigger {
+		position: absolute;
+		right: 0.25em;
+		top: 0.25em;
+	}
+}
+#qr--popout {
+	display: flex;
+	flex-direction: column;
+	padding: 0;
+	z-index: 31;
+	> .qr--header {
+		flex: 0 0 auto;
+		height: 2em;
+		position: relative;
+		> .qr--controls {
+			> .qr--close {
+				height: 15px;
+				aspect-ratio: 1 / 1;
+				font-size: 20px;
+				opacity: 0.5;
+				transition: all 250ms;
+			}
+		}
+	}
+	> .qr--body {
+		overflow-y: auto;
+	}
+}
+#qr--bar, #qr--popout > .qr--body {
 	> .qr--buttons {
 		margin: 0;
 		padding: 0;
@@ -27,7 +57,7 @@
 
 		.qr--button {
 			color: var(--SmartThemeBodyColor);
-			background-color: var(--black50a);
+			// background-color: var(--black50a);
 			border: 1px solid var(--SmartThemeBorderColor);
 			border-radius: 10px;
 			padding: 3px 5px;
