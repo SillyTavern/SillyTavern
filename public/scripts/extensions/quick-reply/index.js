@@ -1,5 +1,6 @@
 import { chat_metadata, eventSource, event_types, getRequestHeaders } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
+import { QuickReplyApi } from './api/QuickReplyApi.js';
 import { QuickReply } from './src/QuickReply.js';
 import { QuickReplyConfig } from './src/QuickReplyConfig.js';
 import { QuickReplyContextLink } from './src/QuickReplyContextLink.js';
@@ -13,8 +14,6 @@ import { SettingsUi } from './src/ui/SettingsUi.js';
 
 
 //TODO move advanced QR options into own UI class
-//TODO easy way to CRUD QRs and sets
-//TODO easy way to set global and chat sets
 
 
 
@@ -44,6 +43,8 @@ let settings;
 let manager;
 /** @type {ButtonUi} */
 let buttons;
+/** @type {QuickReplyApi} */
+export let api;
 
 
 
@@ -152,7 +153,8 @@ const init = async () => {
         }
     }
 
-    const slash = new SlashCommandHandler(settings);
+    api = new QuickReplyApi(settings);
+    const slash = new SlashCommandHandler(api);
     slash.init();
 };
 eventSource.on(event_types.APP_READY, init);

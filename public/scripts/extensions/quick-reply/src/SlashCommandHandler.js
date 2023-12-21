@@ -1,16 +1,14 @@
 import { registerSlashCommand } from '../../../slash-commands.js';
-import { QuickReplyContextLink } from './QuickReplyContextLink.js';
-import { QuickReplySet } from './QuickReplySet.js';
-import { QuickReplySettings } from './QuickReplySettings.js';
+import { QuickReplyApi } from '../api/QuickReplyApi.js';
 
 export class SlashCommandHandler {
-    /**@type {QuickReplySettings}*/ settings;
+    /**@type {QuickReplyApi}*/ api;
 
 
 
 
-    constructor(/**@type {QuickReplySettings}*/settings) {
-        this.settings = settings;
+    constructor(/**@type {QuickReplyApi}*/api) {
+        this.api = api;
     }
 
 
@@ -61,7 +59,7 @@ export class SlashCommandHandler {
 
 
     getSetByName(name) {
-        const set = QuickReplySet.get(name);
+        const set = this.api.getSetByName(name);
         if (!set) {
             toastr.error(`No Quick Reply Set with the name "${name}" could be found.`);
         }
@@ -69,11 +67,9 @@ export class SlashCommandHandler {
     }
 
     getQrByLabel(setName, label) {
-        const set = this.getSetByName(setName);
-        if (!set) return;
-        const qr = set.qrList.find(it=>it.label == label);
+        const qr = this.api.getQrByLabel(setName, label);
         if (!qr) {
-            toastr.error(`No Quick Reply with the label "${label}" could be found in the set "${set.name}"`);
+            toastr.error(`No Quick Reply with the label "${label}" could be found in the set "${setName}"`);
         }
         return qr;
     }
@@ -82,111 +78,102 @@ export class SlashCommandHandler {
 
 
     async executeQuickReplyByIndex(idx) {
-        const qr = [...this.settings.config.setList, ...(this.settings.chatConfig?.setList ?? [])]
-            .map(it=>it.set.qrList)
-            .flat()[idx]
-        ;
-        if (qr) {
-            return await qr.onExecute();
-        } else {
-            toastr.error(`No Quick Reply at index "${idx}"`);
+        try {
+            return await this.api.executeQuickReplyByIndex(idx);
+        } catch (ex) {
+            toastr.error(ex.message);
         }
     }
 
 
     toggleGlobalSet(name, args = {}) {
-        const set = this.getSetByName(name);
-        if (!set) return;
-        if (this.settings.config.hasSet(set)) {
-            this.settings.config.removeSet(set);
-        } else {
-            this.settings.config.addSet(set, JSON.parse(args.visible ?? 'true'));
-        }
+        this.api.toggleGlobalSet(name, JSON.parse(args.visible ?? 'true') === true);
     }
     addGlobalSet(name, args = {}) {
-        const set = this.getSetByName(name);
-        if (!set) return;
-        this.settings.config.addSet(set, JSON.parse(args.visible ?? 'true'));
+        this.api.addGlobalSet(name, JSON.parse(args.visible ?? 'true') === true);
     }
     removeGlobalSet(name) {
-        const set = this.getSetByName(name);
-        if (!set) return;
-        this.settings.config.removeSet(set);
+        this.api.removeGlobalSet(name);
     }
 
 
     toggleChatSet(name, args = {}) {
-        if (!this.settings.chatConfig) return;
-        const set = this.getSetByName(name);
-        if (!set) return;
-        if (this.settings.chatConfig.hasSet(set)) {
-            this.settings.chatConfig.removeSet(set);
-        } else {
-            this.settings.chatConfig.addSet(set, JSON.parse(args.visible ?? 'true'));
-        }
+        this.api.toggleChatSet(name, JSON.parse(args.visible ?? 'true') === true);
     }
     addChatSet(name, args = {}) {
-        if (!this.settings.chatConfig) return;
-        const set = this.getSetByName(name);
-        if (!set) return;
-        this.settings.chatConfig.addSet(set, JSON.parse(args.visible ?? 'true'));
+        this.api.addChatSet(name, JSON.parse(args.visible ?? 'true') === true);
     }
     removeChatSet(name) {
-        if (!this.settings.chatConfig) return;
-        const set = this.getSetByName(name);
-        if (!set) return;
-        this.settings.chatConfig.removeSet(set);
+        this.api.removeChatSet(name);
     }
 
 
     createQuickReply(args, message) {
-        const set = this.getSetByName(args.set);
-        if (!set) return;
-        const qr = set.addQuickReply();
-        qr.label = args.label ?? '';
-        qr.message = message ?? '';
-        qr.title = args.title ?? '';
-        qr.isHidden = JSON.parse(args.hidden ?? 'false') === true;
-        qr.executeOnStartup = JSON.parse(args.startup ?? 'false') === true;
-        qr.executeOnUser = JSON.parse(args.user ?? 'false') === true;
-        qr.executeOnAi = JSON.parse(args.bot ?? 'false') === true;
-        qr.executeOnChatChange = JSON.parse(args.load ?? 'false') === true;
-        qr.onUpdate();
+        try {
+            this.api.createQuickReply(
+                args.set ?? '',
+                args.label ?? '',
+                {
+                    message: message ?? '',
+                    title: args.title,
+                    isHidden: JSON.parse(args.hidden ?? 'false') === true,
+                    executeOnStartup: JSON.parse(args.startup ?? 'false') === true,
+                    executeOnUser: JSON.parse(args.user ?? 'false') === true,
+                    executeOnAi: JSON.parse(args.bot ?? 'false') === true,
+                    executeOnChatChange: JSON.parse(args.load ?? 'false') === true,
+                },
+            );
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
     updateQuickReply(args, message) {
-        const qr = this.getQrByLabel(args.set, args.label);
-        if (!qr) return;
-        qr.message = (message ?? '').trim().length > 0 ? message : qr.message;
-        qr.label = args.newlabel !== undefined ? (args.newlabel ?? '') : qr.label;
-        qr.title = args.title !== undefined ? (args.title ?? '') : qr.title;
-        qr.isHidden = args.hidden !== undefined ? (JSON.parse(args.hidden ?? 'false') === true) : qr.isHidden;
-        qr.executeOnStartup = args.startup !== undefined ? (JSON.parse(args.startup ?? 'false') === true) : qr.executeOnStartup;
-        qr.executeOnUser = args.user !== undefined ? (JSON.parse(args.user ?? 'false') === true) : qr.executeOnUser;
-        qr.executeOnAi = args.bot !== undefined ? (JSON.parse(args.bot ?? 'false') === true) : qr.executeOnAi;
-        qr.executeOnChatChange = args.load !== undefined ? (JSON.parse(args.load ?? 'false') === true) : qr.executeOnChatChange;
-        qr.onUpdate();
+        try {
+            this.api.updateQuickReply(
+                args.set ?? '',
+                args.label ?? '',
+                {
+                    newLabel: args.newlabel,
+                    message: (message ?? '').trim().length > 0 ? message : undefined,
+                    title: args.title,
+                    isHidden: args.hidden,
+                    executeOnStartup: args.startup,
+                    executeOnUser: args.user,
+                    executeOnAi: args.bot,
+                    executeOnChatChange: args.load,
+                },
+            );
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
     deleteQuickReply(args, label) {
-        const qr = this.getQrByLabel(args.set, args.label ?? label);
-        if (!qr) return;
-        qr.delete();
+        try {
+            this.api.deleteQuickReply(args.set, label);
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
 
 
     createContextItem(args, name) {
-        const qr = this.getQrByLabel(args.set, args.label);
-        const set = this.getSetByName(name);
-        if (!qr || !set) return;
-        const cl = new QuickReplyContextLink();
-        cl.set = set;
-        cl.isChained = JSON.parse(args.chain ?? 'false') ?? false;
-        qr.addContextLink(cl);
+        try {
+            this.api.createContextItem(
+                args.set,
+                args.label,
+                name,
+                JSON.parse(args.chain ?? 'false') === true,
+            );
+        }  catch (ex) {
+            toastr.error(ex.message);
+        }
     }
     deleteContextItem(args, name) {
-        const qr = this.getQrByLabel(args.set, args.label);
-        const set = this.getSetByName(name);
-        if (!qr || !set) return;
-        qr.removeContextLink(set.name);
+        try {
+            this.api.deleteContextItem(args.set, args.label, name);
+        }  catch (ex) {
+            toastr.error(ex.message);
+        }
     }
     clearContextMenu(args, label) {
         const qr = this.getQrByLabel(args.set, args.label ?? label);
@@ -196,22 +183,23 @@ export class SlashCommandHandler {
 
 
     createSet(name, args) {
-        const set = new QuickReplySet();
-        set.name = args.name ?? name;
-        set.disableSend = JSON.parse(args.nosend ?? 'false') === true;
-        set.placeBeforeInput = JSON.parse(args.before ?? 'false') === true;
-        set.injectInput = JSON.parse(args.inject ?? 'false') === true;
-        QuickReplySet.list.push(set);
-        set.save();
-        //TODO settings UI must be updated
+        this.api.createSet(
+            args.name ?? name ?? '',
+            {
+                disableSend: JSON.parse(args.nosend ?? 'false') === true,
+                placeBeforeInput: JSON.parse(args.before ?? 'false') === true,
+                injectInput: JSON.parse(args.inject ?? 'false') === true,
+            },
+        );
     }
     updateSet(name, args) {
-        const set = this.getSetByName(args.name ?? name);
-        if (!set) return;
-        set.disableSend = args.nosend !== undefined ? (JSON.parse(args.nosend ?? 'false') === true) : set.disableSend;
-        set.placeBeforeInput = args.before !== undefined ? (JSON.parse(args.before ?? 'false') === true) : set.placeBeforeInput;
-        set.injectInput = args.inject !== undefined ? (JSON.parse(args.inject ?? 'false') === true) : set.injectInput;
-        set.save();
-        //TODO settings UI must be updated
+        this.api.updateSet(
+            args.name ?? name ?? '',
+            {
+                disableSend: args.nosend !== undefined ? JSON.parse(args.nosend ?? 'false') === true : undefined,
+                placeBeforeInput: args.before !== undefined ? JSON.parse(args.before ?? 'false') === true : undefined,
+                injectInput: args.inject !== undefined ? JSON.parse(args.inject ?? 'false') === true : undefined,
+            },
+        );
     }
 }
