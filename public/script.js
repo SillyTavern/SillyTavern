@@ -3807,26 +3807,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                     streamingProcessor.firstMessageText = '';
                 }
 
-                let streamingGenerator;
+                streamingProcessor.generator = await sendStreamingRequest(type, generate_data);
 
-                switch (main_api) {
-                    case 'openai':
-                        streamingGenerator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
-                        break;
-                    case 'textgenerationwebui':
-                        streamingGenerator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                        break;
-                    case 'novel':
-                        streamingGenerator = await generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                        break;
-                    case 'kobold':
-                        streamingGenerator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                        break;
-                    default:
-                        throw new Error('Streaming is enabled, but the current API does not support streaming.');
-                }
-
-                streamingProcessor.generator = streamingGenerator;
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
                 let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
@@ -3841,21 +3823,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                     triggerAutoContinue(messageChunk, isImpersonate);
                 }
             } else {
-                const response = await fetch(getGenerateUrl(main_api), {
-                    method: 'POST',
-                    headers: getRequestHeaders(),
-                    cache: 'no-cache',
-                    body: JSON.stringify(generate_data),
-                    signal: abortController.signal,
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw error;
-                }
-
-                const data = await response.json();
-                return data;
+                return await sendGenerationRequest(type, generate_data);
             }
         }
 
@@ -3991,9 +3959,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         }
         is_send_press = false;
     }
-
-    //console.log('generate ending');
-} //generate ends
+}
 
 function flushWIDepthInjections() {
     //prevent custom depth WI entries (which have unique random key names) from duplicating
@@ -4440,16 +4406,73 @@ function setInContextMessages(lastmsg, type) {
     }
 }
 
-function getGenerateUrl(api) {
-    let generate_url = '';
-    if (api == 'kobold') {
-        generate_url = '/api/backends/kobold/generate';
-    } else if (api == 'textgenerationwebui') {
-        generate_url = '/api/backends/text-completions/generate';
-    } else if (api == 'novel') {
-        generate_url = '/api/novelai/generate';
+/**
+ * Sends a non-streaming request to the API.
+ * @param {string} type Generation type
+ * @param {object} data Generation data
+ * @returns {Promise<object>} Response data from the API
+ */
+async function sendGenerationRequest(type, data) {
+    if (main_api === 'openai') {
+        return await sendOpenAIRequest(type, data.prompt, abortController.signal);
     }
-    return generate_url;
+
+    const response = await fetch(getGenerateUrl(main_api), {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        cache: 'no-cache',
+        body: JSON.stringify(data),
+        signal: abortController.signal,
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw error;
+    }
+
+    const responseData = await response.json();
+    return responseData;
+}
+
+/**
+ * Sends a streaming request to the API.
+ * @param {string} type Generation type
+ * @param {object} data Generation data
+ * @returns {Promise<any>} Streaming generator
+ */
+async function sendStreamingRequest(type, data) {
+    switch (main_api) {
+        case 'openai':
+            return await sendOpenAIRequest(type, data.prompt, streamingProcessor.abortController.signal);
+        case 'textgenerationwebui':
+            return await generateTextGenWithStreaming(data, streamingProcessor.abortController.signal);
+        case 'novel':
+            return await generateNovelWithStreaming(data, streamingProcessor.abortController.signal);
+        case 'kobold':
+            return await generateKoboldWithStreaming(data, streamingProcessor.abortController.signal);
+        default:
+            throw new Error('Streaming is enabled, but the current API does not support streaming.');
+    }
+}
+
+/**
+ * Gets the generation endpoint URL for the specified API.
+ * @param {string} api API name
+ * @returns {string} Generation URL
+ */
+function getGenerateUrl(api) {
+    switch (api) {
+        case 'kobold':
+            return '/api/backends/kobold/generate';
+        case 'koboldhorde':
+            return '/api/backends/koboldhorde/generate';
+        case 'textgenerationwebui':
+            return '/api/backends/text-completions/generate';
+        case 'novel':
+            return '/api/novelai/generate';
+        default:
+            throw new Error(`Unknown API: ${api}`);
+    }
 }
 
 function throwCircuitBreakerError() {
