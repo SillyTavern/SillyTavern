@@ -3755,8 +3755,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 }
             }
 
-            return new Promise(async (resolve, reject) => {
-                if (true === dryRun) return onSuccess({ error: 'dryRun' });
+            async function finishGenerating() {
+                if (true === dryRun) return { error: 'dryRun' };
 
                 if (power_user.console_log_prompts) {
                     console.log(generate_data.prompt);
@@ -3810,197 +3810,186 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
                 if (isStreamingEnabled() && type !== 'quiet') {
-                    try {
-                        let streamingGenerator;
+                    let streamingGenerator;
 
-                        switch (main_api) {
-                            case 'openai':
-                                streamingGenerator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
-                                break;
-                            case 'textgenerationwebui':
-                                streamingGenerator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                                break;
-                            case 'novel':
-                                streamingGenerator = await generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                                break;
-                            case 'kobold':
-                                streamingGenerator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                                break;
-                            default:
-                                throw new Error('Streaming is enabled, but the current API does not support streaming.');
-                        }
-
-                        streamingProcessor.generator = streamingGenerator;
-                        hideSwipeButtons();
-                        let getMessage = await streamingProcessor.generate();
-                        let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
-
-                        if (isContinue) {
-                            getMessage = continue_mag + getMessage;
-                        }
-
-                        if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
-                            await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
-                            streamingProcessor = null;
-                            triggerAutoContinue(messageChunk, isImpersonate);
-                        }
-                        resolve();
-                    } catch (error) {
-                        onError(error);
-                    }
-                } else {
-                    try {
-                        const response = await fetch(getGenerateUrl(main_api), {
-                            method: 'POST',
-                            headers: getRequestHeaders(),
-                            cache: 'no-cache',
-                            body: JSON.stringify(generate_data),
-                            signal: abortController.signal,
-                        });
-
-                        if (!response.ok) {
-                            const error = await response.json();
-                            throw error;
-                        }
-
-                        const data = await response.json();
-                        onSuccess(data);
-                    } catch (error) {
-                        onError(error);
-                    }
-                }
-
-                async function onSuccess(data) {
-                    let messageChunk = '';
-
-                    if (data.error == 'dryRun') {
-                        generatedPromptCache = '';
-                        resolve();
-                        return;
+                    switch (main_api) {
+                        case 'openai':
+                            streamingGenerator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
+                            break;
+                        case 'textgenerationwebui':
+                            streamingGenerator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                            break;
+                        case 'novel':
+                            streamingGenerator = await generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                            break;
+                        case 'kobold':
+                            streamingGenerator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                            break;
+                        default:
+                            throw new Error('Streaming is enabled, but the current API does not support streaming.');
                     }
 
-                    if (!data.error) {
-                        //const getData = await response.json();
-                        let getMessage = extractMessageFromData(data);
-                        let title = extractTitleFromData(data);
-                        kobold_horde_model = title;
+                    streamingProcessor.generator = streamingGenerator;
+                    hideSwipeButtons();
+                    let getMessage = await streamingProcessor.generate();
+                    let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
 
-                        const swipes = extractMultiSwipes(data, type);
-
-                        messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
-
-                        if (isContinue) {
-                            getMessage = continue_mag + getMessage;
-                        }
-
-                        //Formating
-                        const displayIncomplete = type === 'quiet' && !quietToLoud;
-                        getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
-
-                        if (getMessage.length > 0) {
-                            if (isImpersonate) {
-                                $('#send_textarea').val(getMessage).trigger('input');
-                                generatedPromptCache = '';
-                                await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
-                            }
-                            else if (type == 'quiet') {
-                                resolve(getMessage);
-                            }
-                            else {
-                                // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
-                                if (originalType !== 'continue') {
-                                    ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
-                                }
-                                else {
-                                    ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
-                                }
-                            }
-
-                            if (type !== 'quiet') {
-                                playMessageSound();
-                            }
-                        } else {
-                            // If maxLoops is not passed in (e.g. first time generating), set it to MAX_GENERATION_LOOPS
-                            maxLoops ??= MAX_GENERATION_LOOPS;
-
-                            if (maxLoops === 0) {
-                                reject(new Error('Generate circuit breaker interruption'));
-                                if (type !== 'quiet') {
-                                    throwCircuitBreakerError();
-                                }
-                                return;
-                            }
-
-                            // regenerate with character speech reenforced
-                            // to make sure we leave on swipe type while also adding the name2 appendage
-                            delay(1000).then(async () => {
-                                // The first await is for waiting for the generate to start. The second one is waiting for it to finish
-                                const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
-                                resolve(result);
-                            });
-                            return;
-                        }
-
-                        if (power_user.auto_swipe) {
-                            console.debug('checking for autoswipeblacklist on non-streaming message');
-                            function containsBlacklistedWords(getMessage, blacklist, threshold) {
-                                console.debug('checking blacklisted words');
-                                const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
-                                const matches = getMessage.match(regex) || [];
-                                return matches.length >= threshold;
-                            }
-
-                            const generatedTextFiltered = (getMessage) => {
-                                if (power_user.auto_swipe_blacklist_threshold) {
-                                    if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
-                                        console.debug('Generated text has blacklisted words');
-                                        return true;
-                                    }
-                                }
-
-                                return false;
-                            };
-                            if (generatedTextFiltered(getMessage)) {
-                                console.debug('swiping right automatically');
-                                is_send_press = false;
-                                swipe_right();
-                                // TODO: do we want to resolve after an auto-swipe?
-                                resolve();
-                                return;
-                            }
-                        }
-                    } else {
-                        generatedPromptCache = '';
-
-                        if (data?.response) {
-                            toastr.error(data.response, 'API Error');
-                        }
-                        reject(data?.response);
-                        return;
+                    if (isContinue) {
+                        getMessage = continue_mag + getMessage;
                     }
 
-                    console.debug('/api/chats/save called by /Generate');
-                    await saveChatConditional();
-                    unblockGeneration();
-                    streamingProcessor = null;
-
-                    if (type !== 'quiet') {
+                    if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
+                        await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
+                        streamingProcessor = null;
                         triggerAutoContinue(messageChunk, isImpersonate);
                     }
-                    resolve();
-                }
+                } else {
+                    const response = await fetch(getGenerateUrl(main_api), {
+                        method: 'POST',
+                        headers: getRequestHeaders(),
+                        cache: 'no-cache',
+                        body: JSON.stringify(generate_data),
+                        signal: abortController.signal,
+                    });
 
-                function onError(exception) {
-                    if (typeof exception?.error?.message === 'string') {
-                        toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw error;
                     }
 
-                    reject(exception);
-                    unblockGeneration();
-                    console.log(exception);
-                    streamingProcessor = null;
+                    const data = await response.json();
+                    return data;
                 }
-            });
+            }
+
+            return finishGenerating().then(onSuccess, onError);
+
+            async function onSuccess(data) {
+                if (!data) return;
+                let messageChunk = '';
+
+                if (data.error == 'dryRun') {
+                    generatedPromptCache = '';
+                    return;
+                }
+
+                if (!data.error) {
+                    //const getData = await response.json();
+                    let getMessage = extractMessageFromData(data);
+                    let title = extractTitleFromData(data);
+                    kobold_horde_model = title;
+
+                    const swipes = extractMultiSwipes(data, type);
+
+                    messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+
+                    if (isContinue) {
+                        getMessage = continue_mag + getMessage;
+                    }
+
+                    //Formating
+                    const displayIncomplete = type === 'quiet' && !quietToLoud;
+                    getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
+
+                    if (getMessage.length > 0) {
+                        if (isImpersonate) {
+                            $('#send_textarea').val(getMessage).trigger('input');
+                            generatedPromptCache = '';
+                            await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
+                        }
+                        else if (type == 'quiet') {
+                            return getMessage;
+                        }
+                        else {
+                            // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
+                            if (originalType !== 'continue') {
+                                ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
+                            }
+                            else {
+                                ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
+                            }
+                        }
+
+                        if (type !== 'quiet') {
+                            playMessageSound();
+                        }
+                    } else {
+                        // If maxLoops is not passed in (e.g. first time generating), set it to MAX_GENERATION_LOOPS
+                        maxLoops ??= MAX_GENERATION_LOOPS;
+
+                        if (maxLoops === 0) {
+                            if (type !== 'quiet') {
+                                throwCircuitBreakerError();
+                            }
+                            throw new Error('Generate circuit breaker interruption');
+                        }
+
+                        // regenerate with character speech reenforced
+                        // to make sure we leave on swipe type while also adding the name2 appendage
+                        delay(1000).then(async () => {
+                            // The first await is for waiting for the generate to start. The second one is waiting for it to finish
+                            const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
+                            return result;
+                        });
+                        return;
+                    }
+
+                    if (power_user.auto_swipe) {
+                        console.debug('checking for autoswipeblacklist on non-streaming message');
+                        function containsBlacklistedWords(getMessage, blacklist, threshold) {
+                            console.debug('checking blacklisted words');
+                            const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
+                            const matches = getMessage.match(regex) || [];
+                            return matches.length >= threshold;
+                        }
+
+                        const generatedTextFiltered = (getMessage) => {
+                            if (power_user.auto_swipe_blacklist_threshold) {
+                                if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
+                                    console.debug('Generated text has blacklisted words');
+                                    return true;
+                                }
+                            }
+
+                            return false;
+                        };
+                        if (generatedTextFiltered(getMessage)) {
+                            console.debug('swiping right automatically');
+                            is_send_press = false;
+                            swipe_right();
+                            // TODO: do we want to resolve after an auto-swipe?
+                            return;
+                        }
+                    }
+                } else {
+                    generatedPromptCache = '';
+
+                    if (data?.response) {
+                        toastr.error(data.response, 'API Error');
+                    }
+                    throw data?.response;
+                }
+
+                console.debug('/api/chats/save called by /Generate');
+                await saveChatConditional();
+                unblockGeneration();
+                streamingProcessor = null;
+
+                if (type !== 'quiet') {
+                    triggerAutoContinue(messageChunk, isImpersonate);
+                }
+            }
+
+            function onError(exception) {
+                if (typeof exception?.error?.message === 'string') {
+                    toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
+                }
+
+                unblockGeneration();
+                console.log(exception);
+                streamingProcessor = null;
+                throw exception;
+            }
 
         } //rungenerate ends
     } else {    //generate's primary loop ends, after this is error handling for no-connection or safety-id
@@ -4473,7 +4462,6 @@ function getGenerateUrl(api) {
 function throwCircuitBreakerError() {
     callPopup(`Could not extract reply in ${MAX_GENERATION_LOOPS} attempts. Try generating again`, 'text');
     unblockGeneration();
-    throw new Error('Generate circuit breaker interruption');
 }
 
 function extractTitleFromData(data) {
