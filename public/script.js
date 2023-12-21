@@ -1474,13 +1474,11 @@ export async function reloadCurrentChat() {
 }
 
 function messageFormatting(mes, ch_name, isSystem, isUser) {
-    if (mes) {
-        mesForShowdownParse = mes;
+    if (!mes) {
+        return '';
     }
 
-    if (!mes) {
-        mes = '';
-    }
+    mesForShowdownParse = mes;
 
     // Force isSystem = false on comment messages so they get formatted properly
     if (ch_name === COMMENT_NAME_DEFAULT && isSystem && !isUser) {
@@ -7167,7 +7165,7 @@ window['SillyTavern'].getContext = function () {
         /**
          * @deprecated Handlebars for extensions are no longer supported.
          */
-        registerHelper: () => {},
+        registerHelper: () => { },
         registedDebugFunction: registerDebugFunction,
         renderExtensionTemplate: renderExtensionTemplate,
         callPopup: callPopup,
