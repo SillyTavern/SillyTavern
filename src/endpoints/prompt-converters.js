@@ -3,13 +3,13 @@
  * @param {object[]} messages Array of messages
  * @param {boolean}  addAssistantPostfix Add Assistant postfix.
  * @param {string}   addAssistantPrefill Add Assistant prefill after the assistant postfix.
- * @param {boolean}  withSyspromptSupport Indicates if the Claude model supports the system prompt format.
+ * @param {boolean}  withSysPromptSupport Indicates if the Claude model supports the system prompt format.
  * @param {boolean}  useSystemPrompt Indicates if the system prompt format should be used.
  * @param {string}   addSysHumanMsg Add Human message between system prompt and assistant.
  * @returns {string} Prompt for Claude
  * @copyright Prompt Conversion script taken from RisuAI by kwaroran (GPLv3).
  */
-function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSyspromptSupport, useSystemPrompt, addSysHumanMsg) {
+function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg) {
 
     //Prepare messages for claude.
     if (messages.length > 0) {
@@ -31,7 +31,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
         });
         // When 2.1+ and 'Use system prompt" checked, switches to the system prompt format by setting the first message's role to the 'system'.
         // Inserts the human's message before the first the assistant one, if there are no such message or prefix found.
-        if (withSyspromptSupport && useSystemPrompt) {
+        if (withSysPromptSupport && useSystemPrompt) {
             messages[0].role = 'system';
             if (firstAssistantIndex > 0 && addSysHumanMsg && !hasUser) {
                 messages.splice(firstAssistantIndex, 0, {

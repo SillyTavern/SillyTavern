@@ -1537,29 +1537,38 @@
                                     </div>
                                     <div data-newbie-hidden class="range-block" data-source="claude">
                                         <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
-                                            <input id="exclude_assistant" type="checkbox" /><span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
+                                            <input id="exclude_assistant" type="checkbox" />
+                                            <span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">Exclude the assistant suffix from being added to the end of prompt (Requires jailbreak with 'Assistant:' in it).</span>
+                                            <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">
+                                                Exclude the assistant suffix from being added to the end of prompt (Requires jailbreak with 'Assistant:' in it).
+                                            </span>
                                         </div>
-                                        <div id="claude_assistant_prefill_block" data-source="claude" class="wide100p">
+                                        <div id="claude_assistant_prefill_block" class="wide100p">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                             <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
-                                        <label for="claude_use_sysprompt" title="Use system prompt(claude 2.1+ only)" class="checkbox_label widthFreeExpand">
-                                            <input id="claude_use_sysprompt" type="checkbox" /><span data-i18n="Use system prompt(claude 2.1+ only)">Use system prompt(claude 2.1+ only)</span>
+                                        <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
+                                            <input id="claude_use_sysprompt" type="checkbox" />
+                                            <span data-i18n="Use system prompt (Claude 2.1+ only)">
+                                                Use system prompt (Claude 2.1+ only)
+                                            </span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Exclude the 'Human: ' prefix from being added to the beginning of the prompt.">Exclude the 'Human: ' prefix from being added to the beginning of the prompt. Instead, place it between the sysprompt and the first message with the role 'assistant'(right before 'Chat History', by default).</span>
+                                            <span data-i18n="Exclude the 'Human: ' prefix from being added to the beginning of the prompt.">
+                                                Exclude the 'Human: ' prefix from being added to the beginning of the prompt.
+                                                Instead, place it between the system prompt and the first message with the role 'assistant' (right before 'Chat History' by default).
+                                            </span>
                                         </div>
-                                        <div id="claude_human_sysprompt_message_block" data-source="claude" class="wide100p">
+                                        <div id="claude_human_sysprompt_message_block" class="wide100p">
                                             <div class="range-block-title openai_restorable">
-                                                <span id="claude_human_sysprompt_textarea_text" data-i18n="Human: first message">Human: first message</span>
+                                                <span data-i18n="Human: first message">Human: first message</span>
                                                 <div id="claude_human_sysprompt_message_restore" title="Restore Human: first message" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
-                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" name="human_sysprompt_message autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Your(Human: ) message, instruction, etc... !!WHEN EMPTY, ADDS NOTHING!!I.e., requires a new prompt with the role 'user' or manually adding the 'Human: ' prefix." placeholder="Your(Human: ) message, instruction, etc... !!WHEN EMPTY, ADDS NOTHING!! I.e., requires a new prompt with the role 'user' or manually adding the 'Human: ' prefix."></textarea>
+                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user' or manually adding the 'Human: ' prefix."></textarea>
                                         </div>
                                     </div>
                                 </div>
