@@ -108,9 +108,6 @@ export class QuickReply {
 
 
 
-    /**
-     * @param {any} idx
-     */
     renderSettings(idx) {
         if (!this.settingsDom) {
             const item = document.createElement('div'); {
@@ -192,44 +189,6 @@ export class QuickReply {
     }
     unrenderSettings() {
         this.settingsDom?.remove();
-    }
-
-
-
-
-    delete() {
-        if (this.onDelete) {
-            this.unrender();
-            this.unrenderSettings();
-            this.onDelete(this);
-        }
-    }
-    /**
-     * @param {string} value
-     */
-    updateMessage(value) {
-        if (this.onUpdate) {
-            this.message = value;
-            this.updateRender();
-            this.onUpdate(this);
-        }
-    }
-    /**
-     * @param {string} value
-     */
-    updateLabel(value) {
-        if (this.onUpdate) {
-            this.label = value;
-            this.updateRender();
-            this.onUpdate(this);
-        }
-    }
-
-    updateContext() {
-        if (this.onUpdate) {
-            this.updateRender();
-            this.onUpdate(this);
-        }
     }
 
     async showOptions() {
@@ -353,6 +312,63 @@ export class QuickReply {
             await popupResult;
         } else {
             warn('failed to fetch qrOptions template');
+        }
+    }
+
+
+
+
+    delete() {
+        if (this.onDelete) {
+            this.unrender();
+            this.unrenderSettings();
+            this.onDelete(this);
+        }
+    }
+
+    /**
+     * @param {string} value
+     */
+    updateMessage(value) {
+        if (this.onUpdate) {
+            this.message = value;
+            this.updateRender();
+            this.onUpdate(this);
+        }
+    }
+
+    /**
+     * @param {string} value
+     */
+    updateLabel(value) {
+        if (this.onUpdate) {
+            this.label = value;
+            this.updateRender();
+            this.onUpdate(this);
+        }
+    }
+
+    updateContext() {
+        if (this.onUpdate) {
+            this.updateRender();
+            this.onUpdate(this);
+        }
+    }
+    addContextLink(cl) {
+        this.contextList.push(cl);
+        this.updateContext();
+    }
+    removeContextLink(setName) {
+        const idx = this.contextList.findIndex(it=>it.set.name == setName);
+        if (idx > -1) {
+            this.contextList.splice(idx, 1);
+            this.updateContext();
+        }
+    }
+    clearContextLinks() {
+        if (this.contextList.length) {
+            this.contextList.splice(0, this.contextList.length);
+            this.updateContext();
         }
     }
 

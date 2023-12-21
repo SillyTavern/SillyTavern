@@ -30,27 +30,52 @@ export class QuickReplyConfig {
     }
 
 
+    hasSet(qrs) {
+        return this.setList.find(it=>it.set == qrs) != null;
+    }
+    addSet(qrs, isVisible = true) {
+        if (!this.hasSet(qrs)) {
+            const qrl = new QuickReplySetLink();
+            qrl.set = qrs;
+            qrl.isVisible = isVisible;
+            this.setList.push(qrl);
+            this.update();
+            this.updateSetListDom();
+        }
+    }
+    removeSet(qrs) {
+        const idx = this.setList.findIndex(it=>it.set == qrs);
+        if (idx > -1) {
+            this.setList.splice(idx, 1);
+            this.update();
+            this.updateSetListDom();
+        }
+    }
+
+
 
 
     renderSettingsInto(/**@type {HTMLElement}*/root) {
         /**@type {HTMLElement}*/
-        const setList = root.querySelector('.qr--setList');
-        this.setListDom = setList;
-        setList.innerHTML = '';
+        this.setListDom = root.querySelector('.qr--setList');
         root.querySelector('.qr--setListAdd').addEventListener('click', ()=>{
             const qrl = new QuickReplySetLink();
             qrl.set = QuickReplySet.list[0];
             this.hookQuickReplyLink(qrl);
             this.setList.push(qrl);
-            setList.append(qrl.renderSettings(this.setList.length - 1));
+            this.setListDom.append(qrl.renderSettings(this.setList.length - 1));
             this.update();
         });
+        this.updateSetListDom();
+    }
+    updateSetListDom() {
+        this.setListDom.innerHTML = '';
         // @ts-ignore
-        $(setList).sortable({
+        $(this.setListDom).sortable({
             delay: getSortableDelay(),
             stop: ()=>this.onSetListSort(),
         });
-        this.setList.filter(it=>!it.set.isDeleted).forEach((qrl,idx)=>setList.append(qrl.renderSettings(idx)));
+        this.setList.filter(it=>!it.set.isDeleted).forEach((qrl,idx)=>this.setListDom.append(qrl.renderSettings(idx)));
     }
 
 

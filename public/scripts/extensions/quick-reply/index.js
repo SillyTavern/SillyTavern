@@ -5,6 +5,7 @@ import { QuickReplyConfig } from './src/QuickReplyConfig.js';
 import { QuickReplyContextLink } from './src/QuickReplyContextLink.js';
 import { QuickReplySet } from './src/QuickReplySet.js';
 import { QuickReplySettings } from './src/QuickReplySettings.js';
+import { SlashCommandHandler } from './src/SlashCommandHandler.js';
 import { ButtonUi } from './src/ui/ButtonUi.js';
 import { SettingsUi } from './src/ui/SettingsUi.js';
 
@@ -12,7 +13,6 @@ import { SettingsUi } from './src/ui/SettingsUi.js';
 
 
 //TODO move advanced QR options into own UI class
-//TODO slash commands
 //TODO easy way to CRUD QRs and sets
 //TODO easy way to set global and chat sets
 
@@ -151,6 +151,9 @@ const init = async () => {
             await qr.onExecute();
         }
     }
+
+    const slash = new SlashCommandHandler(settings);
+    slash.init();
 };
 eventSource.on(event_types.APP_READY, init);
 
