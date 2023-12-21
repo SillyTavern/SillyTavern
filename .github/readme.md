@@ -1,6 +1,6 @@
 English | [中文](readme-zh_cn.md)
 
-![SillyTavern-Banner](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
+![Kainatica-Banner](https://github.com/Kainatica//assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
 
 Mobile-friendly layout, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale), VN-like Waifu Mode, Stable Diffusion, TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need + ability to install third-party extensions.
 
