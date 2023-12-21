@@ -27,6 +27,7 @@ const SECRET_KEYS = {
     SERPAPI: 'api_key_serpapi',
     TOGETHERAI: 'api_key_togetherai',
     MISTRALAI: 'api_key_mistralai',
+    CUSTOM: 'api_key_custom',
 };
 
 /**
