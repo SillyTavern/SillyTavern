@@ -12,6 +12,7 @@ import {
 } from '../../../script.js';
 import { extension_settings, getContext } from '../../extensions.js';
 import { secret_state, writeSecret } from '../../secrets.js';
+import { splitRecursive } from '../../utils.js';
 
 export const autoModeOptions = {
     NONE: 'none',
@@ -316,6 +317,28 @@ async function translateProviderBing(text, lang) {
 }
 
 /**
+ * Splits text into chunks and translates each chunk separately
+ * @param {string} text Text to translate
+ * @param {string} lang Target language code
+ * @param {(text: string, lang: string) => Promise<string>} translateFn Function to translate a single chunk (must return a Promise)
+ * @param {number} chunkSize Maximum chunk size
+ * @returns {Promise<string>} Translated text
+ */
+async function chunkedTranslate(text, lang, translateFn, chunkSize = 5000) {
+    if (text.length <= chunkSize) {
+        return await translateFn(text, lang);
+    }
+
+    const chunks = splitRecursive(text, chunkSize);
+
+    let result = '';
+    for (const chunk of chunks) {
+        result += await translateFn(chunk, lang);
+    }
+    return result;
+}
+
+/**
  * Translates text using the selected translation provider
  * @param {string} text Text to translate
  * @param {string} lang Target language code
@@ -331,15 +354,15 @@ async function translate(text, lang) {
             case 'libre':
                 return await translateProviderLibre(text, lang);
             case 'google':
-                return await translateProviderGoogle(text, lang);
+                return await chunkedTranslate(text, lang, translateProviderGoogle, 5000);
             case 'deepl':
                 return await translateProviderDeepl(text, lang);
             case 'deeplx':
-                return await translateProviderDeepLX(text, lang);
+                return await chunkedTranslate(text, lang, translateProviderDeepLX, 1500);
             case 'oneringtranslator':
                 return await translateProviderOneRing(text, lang);
             case 'bing':
-                return await translateProviderBing(text, lang);
+                return await chunkedTranslate(text, lang, translateProviderBing, 1000);
             default:
                 console.error('Unknown translation provider', extension_settings.translate.provider);
                 return text;
