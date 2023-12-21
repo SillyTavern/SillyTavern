@@ -701,8 +701,6 @@ export let user_avatar = 'you.png';
 export var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
 
-var message_already_generated = '';
-
 var swipes = true;
 let extension_prompts = {};
 
@@ -2600,7 +2598,7 @@ function hideStopButton() {
 }
 
 class StreamingProcessor {
-    constructor(type, force_name2, timeStarted) {
+    constructor(type, force_name2, timeStarted, messageAlreadyGenerated) {
         this.result = '';
         this.messageId = -1;
         this.type = type;
@@ -2611,6 +2609,7 @@ class StreamingProcessor {
         this.abortController = new AbortController();
         this.firstMessageText = '...';
         this.timeStarted = timeStarted;
+        this.messageAlreadyGenerated = messageAlreadyGenerated;
         this.swipes = [];
     }
 
@@ -2834,7 +2833,7 @@ class StreamingProcessor {
 
                 this.result = text;
                 this.swipes = swipes;
-                await sw.tick(() => this.onProgressStreaming(this.messageId, message_already_generated + text));
+                await sw.tick(() => this.onProgressStreaming(this.messageId, this.messageAlreadyGenerated + text));
             }
             const seconds = (timestamps[timestamps.length - 1] - timestamps[0]) / 1000;
             console.warn(`Stream stats: ${timestamps.length} tokens, ${seconds.toFixed(2)} seconds, rate: ${Number(timestamps.length / seconds).toFixed(2)} TPS`);
@@ -2949,7 +2948,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == 'impersonate';
 
-    message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
+    let message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     const interruptedByCommand = await processCommands($('#send_textarea').val(), type, dryRun);
 
@@ -3363,7 +3362,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         console.debug('calling runGenerate');
 
         if (!dryRun) {
-            streamingProcessor = isStreamingEnabled() && type !== 'quiet' ? new StreamingProcessor(type, force_name2, generation_started) : false;
+            streamingProcessor = isStreamingEnabled() && type !== 'quiet' ? new StreamingProcessor(type, force_name2, generation_started, message_already_generated) : false;
         }
 
         if (isContinue) {
