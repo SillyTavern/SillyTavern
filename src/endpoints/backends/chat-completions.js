@@ -4,7 +4,7 @@ const { Readable } = require('stream');
 
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY } = require('../../constants');
-const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml } = require('../../util');
+const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
 const { convertClaudePrompt, convertGooglePrompt, convertTextCompletionPrompt } = require('../prompt-converters');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
@@ -21,9 +21,10 @@ const API_CLAUDE = 'https://api.anthropic.com/v1';
 async function sendClaudeRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
     const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
+    const divider = '-'.repeat(process.stdout.columns);
 
     if (!apiKey) {
-        console.log('Claude API key is missing.');
+        console.log(color.red(`Claude API key is missing.\n${divider}`));
         return response.status(400).send({ error: true });
     }
 
@@ -34,34 +35,66 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        let doSystemPrompt = request.body.model === 'claude-2' || request.body.model === 'claude-2.1';
-        let requestPrompt = convertClaudePrompt(request.body.messages, true, !request.body.exclude_assistant, doSystemPrompt);
+        const isSysPromptSupported = request.body.model === 'claude-2' || request.body.model === 'claude-2.1';
+        const requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSysPromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message);
 
-        if (request.body.assistant_prefill && !request.body.exclude_assistant) {
-            requestPrompt += request.body.assistant_prefill;
+        // Check Claude messages sequence and prefixes presence.
+        const sequence = requestPrompt.split('\n').filter(x => x.startsWith('Human:') || x.startsWith('Assistant:'));
+        const humanFound = sequence.some(line => line.startsWith('Human:'));
+        const assistantFound = sequence.some(line => line.startsWith('Assistant:'));
+        let humanErrorCount = 0;
+        let assistantErrorCount = 0;
+
+        for (let i = 0; i < sequence.length - 1; i++) {
+            if (sequence[i].startsWith(sequence[i + 1].split(':')[0])) {
+                if (sequence[i].startsWith('Human:')) {
+                    humanErrorCount++;
+                } else if (sequence[i].startsWith('Assistant:')) {
+                    assistantErrorCount++;
+                }
+            }
         }
 
-        console.log('Claude request:', requestPrompt);
-        const stop_sequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
+        if (!humanFound) {
+            console.log(color.red(`${divider}\nWarning: No 'Human:' prefix found in the prompt.\n${divider}`));
+        }
+        if (!assistantFound) {
+            console.log(color.red(`${divider}\nWarning: No 'Assistant: ' prefix found in the prompt.\n${divider}`));
+        }
+        if (!sequence[0].startsWith('Human:')) {
+            console.log(color.red(`${divider}\nWarning: The messages sequence should start with 'Human:' prefix.\nMake sure you have 'Human:' prefix at the very beggining of the prompt, or after the system prompt.\n${divider}`));
+        }
+        if (humanErrorCount > 0 || assistantErrorCount > 0) {
+            console.log(color.red(`${divider}\nWarning: Detected incorrect Prefix sequence(s).`));
+            console.log(color.red(`Incorrect "Human:" prefix(es): ${humanErrorCount}.\nIncorrect "Assistant: " prefix(es): ${assistantErrorCount}.`));
+            console.log(color.red('Check the prompt above and fix it in the SillyTavern.'));
+            console.log(color.red('\nThe correct sequence should look like this:\nSystem prompt  <-(for the sysprompt format only, else have 2 empty lines above the first human\'s  message.)'));
+            console.log(color.red(`       <-----(Each message beginning with the "Assistant:/Human:" prefix must have one empty line above.)\nHuman:\n\nAssistant:\n...\n\nHuman:\n\nAssistant:\n${divider}`));
+        }
 
         // Add custom stop sequences
+        const stopSequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
         if (Array.isArray(request.body.stop)) {
-            stop_sequences.push(...request.body.stop);
+            stopSequences.push(...request.body.stop);
         }
+
+        const requestBody = {
+            prompt: requestPrompt,
+            model: request.body.model,
+            max_tokens_to_sample: request.body.max_tokens,
+            stop_sequences: stopSequences,
+            temperature: request.body.temperature,
+            top_p: request.body.top_p,
+            top_k: request.body.top_k,
+            stream: request.body.stream,
+        };
+
+        console.log('Claude request:', requestBody);
 
         const generateResponse = await fetch(apiUrl + '/complete', {
             method: 'POST',
             signal: controller.signal,
-            body: JSON.stringify({
-                prompt: requestPrompt,
-                model: request.body.model,
-                max_tokens_to_sample: request.body.max_tokens,
-                stop_sequences: stop_sequences,
-                temperature: request.body.temperature,
-                top_p: request.body.top_p,
-                top_k: request.body.top_k,
-                stream: request.body.stream,
-            }),
+            body: JSON.stringify(requestBody),
             headers: {
                 'Content-Type': 'application/json',
                 'anthropic-version': '2023-06-01',
@@ -75,20 +108,20 @@ async function sendClaudeRequest(request, response) {
             forwardFetchResponse(generateResponse, response);
         } else {
             if (!generateResponse.ok) {
-                console.log(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                console.log(color.red(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText}\n${await generateResponse.text()}\n${divider}`));
                 return response.status(generateResponse.status).send({ error: true });
             }
 
             const generateResponseJson = await generateResponse.json();
             const responseText = generateResponseJson.completion;
-            console.log('Claude response:', responseText);
+            console.log('Claude response:', generateResponseJson);
 
             // Wrap it back to OAI format
             const reply = { choices: [{ 'message': { 'content': responseText } }] };
             return response.send(reply);
         }
     } catch (error) {
-        console.log('Error communicating with Claude: ', error);
+        console.log(color.red(`Error communicating with Claude: ${error}\n${divider}`));
         if (!response.headersSent) {
             return response.status(500).send({ error: true });
         }

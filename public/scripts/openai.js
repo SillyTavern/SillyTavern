@@ -90,6 +90,7 @@ const default_wi_format = '[Details of the fictional world the RP is set in:\n{0
 const default_new_chat_prompt = '[Start a new Chat]';
 const default_new_group_chat_prompt = '[Start a new group chat. Group members: {{group}}]';
 const default_new_example_chat_prompt = '[Start a new Chat]';
+const default_claude_human_sysprompt_message = 'Let\'s get started. Please generate your response based on the information and instructions provided above.';
 const default_continue_nudge_prompt = '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message: {{lastChatMessage}}]';
 const default_bias = 'Default (none)';
 const default_personality_format = '[{{char}}\'s personality: {{personality}}]';
@@ -230,9 +231,11 @@ const default_settings = {
     show_external_models: false,
     proxy_password: '',
     assistant_prefill: '',
+    human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
     exclude_assistant: false,
+    claude_use_sysprompt: false,
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
@@ -291,9 +294,11 @@ const oai_settings = {
     show_external_models: false,
     proxy_password: '',
     assistant_prefill: '',
+    human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
     exclude_assistant: false,
+    claude_use_sysprompt: false,
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
@@ -1559,7 +1564,9 @@ async function sendOpenAIRequest(type, messages, signal) {
     if (isClaude) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['exclude_assistant'] = oai_settings.exclude_assistant;
+        generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
+        generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
         // Don't add a prefill on quiet gens (summarization)
         if (!isQuiet && !oai_settings.exclude_assistant) {
             generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
@@ -2002,7 +2009,7 @@ class ChatCompletion {
 
         for (let message of this.messages.collection) {
             if (!excludeList.includes(message.identifier) && message.role === 'system' && !message.name) {
-                if (lastMessage && lastMessage.role === 'system') {
+                if (lastMessage && message.content && lastMessage.role === 'system') {
                     lastMessage.content += '\n' + message.content;
                     lastMessage.tokens = tokenHandler.count({ role: lastMessage.role, content: lastMessage.content });
                 }
@@ -2360,6 +2367,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
     oai_settings.proxy_password = settings.proxy_password ?? default_settings.proxy_password;
     oai_settings.assistant_prefill = settings.assistant_prefill ?? default_settings.assistant_prefill;
+    oai_settings.human_sysprompt_message = settings.human_sysprompt_message ?? default_settings.human_sysprompt_message;
     oai_settings.image_inlining = settings.image_inlining ?? default_settings.image_inlining;
     oai_settings.bypass_status_check = settings.bypass_status_check ?? default_settings.bypass_status_check;
 
@@ -2378,11 +2386,13 @@ function loadOpenAISettings(data, settings) {
     if (settings.use_ai21_tokenizer !== undefined) { oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer; oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200; }
     if (settings.use_google_tokenizer !== undefined) oai_settings.use_google_tokenizer = !!settings.use_google_tokenizer;
     if (settings.exclude_assistant !== undefined) oai_settings.exclude_assistant = !!settings.exclude_assistant;
+    if (settings.claude_use_sysprompt !== undefined) oai_settings.claude_use_sysprompt = !!settings.claude_use_sysprompt;
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
+    $('#claude_human_sysprompt_textarea').val(oai_settings.human_sysprompt_message);
     $('#openai_image_inlining').prop('checked', oai_settings.image_inlining);
     $('#openai_bypass_status_check').prop('checked', oai_settings.bypass_status_check);
 
@@ -2415,6 +2425,7 @@ function loadOpenAISettings(data, settings) {
     $('#use_ai21_tokenizer').prop('checked', oai_settings.use_ai21_tokenizer);
     $('#use_google_tokenizer').prop('checked', oai_settings.use_google_tokenizer);
     $('#exclude_assistant').prop('checked', oai_settings.exclude_assistant);
+    $('#claude_use_sysprompt').prop('checked', oai_settings.claude_use_sysprompt);
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
     $('#openrouter_force_instruct').prop('checked', oai_settings.openrouter_force_instruct);
@@ -2618,9 +2629,11 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         api_url_scale: settings.api_url_scale,
         show_external_models: settings.show_external_models,
         assistant_prefill: settings.assistant_prefill,
+        human_sysprompt_message: settings.human_sysprompt_message,
         use_ai21_tokenizer: settings.use_ai21_tokenizer,
         use_google_tokenizer: settings.use_google_tokenizer,
         exclude_assistant: settings.exclude_assistant,
+        claude_use_sysprompt: settings.claude_use_sysprompt,
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
@@ -2986,9 +2999,11 @@ function onSettingsPresetChange() {
         show_external_models: ['#openai_show_external_models', 'show_external_models', true],
         proxy_password: ['#openai_proxy_password', 'proxy_password', false],
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
+        human_sysprompt_message: ['#claude_human_sysprompt_textarea', 'human_sysprompt_message', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', true],
         use_google_tokenizer: ['#use_google_tokenizer', 'use_google_tokenizer', true],
         exclude_assistant: ['#exclude_assistant', 'exclude_assistant', true],
+        claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true],
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
         image_inlining: ['#openai_image_inlining', 'image_inlining', true],
@@ -3510,6 +3525,7 @@ function toggleChatCompletionForms() {
 
     if (chat_completion_sources.CLAUDE == oai_settings.chat_completion_source) {
         $('#claude_assistant_prefill_block').toggle(!oai_settings.exclude_assistant);
+        $('#claude_human_sysprompt_message_block').toggle(oai_settings.claude_use_sysprompt);
     }
 }
 
@@ -3708,6 +3724,12 @@ $(document).ready(async function () {
         saveSettingsDebounced();
     });
 
+    $('#claude_use_sysprompt').on('change', function () {
+        oai_settings.claude_use_sysprompt = !!$('#claude_use_sysprompt').prop('checked');
+        $('#claude_human_sysprompt_message_block').toggle(oai_settings.claude_use_sysprompt);
+        saveSettingsDebounced();
+    });
+
     $('#names_in_completion').on('change', function () {
         oai_settings.names_in_completion = !!$('#names_in_completion').prop('checked');
         saveSettingsDebounced();
@@ -3778,6 +3800,12 @@ $(document).ready(async function () {
     $('#newchat_prompt_restore').on('click', function () {
         oai_settings.new_chat_prompt = default_new_chat_prompt;
         $('#newchat_prompt_textarea').val(oai_settings.new_chat_prompt);
+        saveSettingsDebounced();
+    });
+
+    $('#claude_human_sysprompt_message_restore').on('click', function () {
+        oai_settings.human_sysprompt_message = default_claude_human_sysprompt_message;
+        $('#claude_human_sysprompt_textarea').val(oai_settings.human_sysprompt_message);
         saveSettingsDebounced();
     });
 
@@ -3865,6 +3893,11 @@ $(document).ready(async function () {
 
     $('#claude_assistant_prefill').on('input', function () {
         oai_settings.assistant_prefill = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#claude_human_sysprompt_textarea').on('input', function () {
+        oai_settings.human_sysprompt_message = String($('#claude_human_sysprompt_textarea').val());
         saveSettingsDebounced();
     });
 
