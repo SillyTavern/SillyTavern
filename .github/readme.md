@@ -8,21 +8,21 @@ Based on a fork of [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8
 
 ## Important news!
 
-1. We have created a [Documentation website](https://docs.sillytavern.app/) to answer most of your questions and help you get started.
+1. We have created a [Documentation website](https://docs.Kainatica.app/) to answer most of your questions and help you get started.
 
 2. Missing extensions after the update? Since the 1.10.6 release version, most of the previously built-in extensions have been converted to downloadable add-ons. You can download them via the built-in "Download Extensions and Assets" menu in the extensions panel (stacked blocks icon in the top bar).
 
-### Brought to you by Cohee, RossAscends, and the SillyTavern community
+### Brought to you by Kainat Quaderee (i01binary), and the Kainatica community
 
-### What is SillyTavern or TavernAI?
+### What is Kainatica or TavernAI?
 
-SillyTavern is a user interface you can install on your computer (and Android phones) that allows you to interact with text generation AIs and chat/roleplay with characters you or the community create.
+Kainatica is a user interface you can install on your computer (and Android phones) that allows you to interact with text generation AIs and chat/roleplay with characters you or the community create.
 
-SillyTavern is a fork of TavernAI 1.2.8 which is under more active development and has added many major features. At this point, they can be thought of as completely independent programs.
+Kainatica is a fork of TavernAI 1.2.8 which is under more active development and has added many major features. At this point, they can be thought of as completely independent programs.
 
 ### Branches
 
-SillyTavern is being developed using a two-branch system to ensure a smooth experience for all users.
+Kainatica is being developed using a two-branch system to ensure a smooth experience for all users.
 
 * release -🌟 **Recommended for most users.** This is the most stable and recommended branch, updated only when major releases are pushed. It's suitable for the majority of users.
 * staging - ⚠️ **Not recommended for casual use.** This branch has the latest features, but be cautious as it may break at any time. Only for power users and enthusiasts.
@@ -31,7 +31,7 @@ If you're not familiar with using the git CLI or don't understand what a branch 
 
 ### What do I need other than Tavern?
 
-On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more. You can read more about this in [the FAQ](https://docs.sillytavern.app/usage/faq/).
+On its own Tavern is useless, as it's just a user interface. You have to have access to an AI system backend that can act as the roleplay character. There are various supported backends: OpenAPI API (GPT), KoboldAI (either running locally or on Google Colab), and more. You can read more about this in [the FAQ](https://docs.Kainatica.app/usage/faq/).
 
 ### Do I need a powerful PC to run Tavern?
 
@@ -57,9 +57,9 @@ Get support, share favorite characters and prompts:
 
 Get in touch with the developers directly:
 
-* Discord: cohee or rossascends
+* Discord: Kainat Quaderee (i01binary) or rossascends
 * Reddit: /u/RossAscends or /u/sillylossy
-* [Post a GitHub issue](https://github.com/SillyTavern/SillyTavern/issues)
+* [Post a GitHub issue](https://github.com/Kainatica/Kainatica/issues)
 
 ## This version includes
 
@@ -76,7 +76,7 @@ Get in touch with the developers directly:
 
 ## Extensions
 
-SillyTavern has extensibility support, with some additional AI modules hosted via [SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras)
+Kainatica has extensibility support, with some additional AI modules hosted via [Kainatica Extras API](https://github.com/Kainatica/Kainatica-extras)
 
 * Author's Note / Character Bias
 * Character emotional expressions (sprites)
@@ -85,7 +85,7 @@ SillyTavern has extensibility support, with some additional AI modules hosted vi
 * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 
-A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/extras/extensions/).
+A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.Kainatica.app/extras/extensions/).
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
@@ -137,7 +137,7 @@ A full list of included extensions and tutorials on how to use them can be found
 Installing via Git (recommended for easy updating)
 
 An easy-to-follow guide with pretty pictures:
-<https://docs.sillytavern.app/installation/windows/>
+<https://docs.Kainatica.app/installation/windows/>
 
   1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
   2. Install [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32)
@@ -146,16 +146,16 @@ An easy-to-follow guide with pretty pictures:
   5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
   6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
 
-* for Release Branch: `git clone https://github.com/SillyTavern/SillyTavern -b release`
-* for Staging Branch: `git clone https://github.com/SillyTavern/SillyTavern -b staging`
+* for Release Branch: `git clone https://github.com/Kainatica/Kainatica -b release`
+* for Staging Branch: `git clone https://github.com/Kainatica/Kainatica -b staging`
 
   7. Once everything is cloned, double-click `Start.bat` to make NodeJS install its requirements.
-  8. The server will then start, and SillyTavern will pop up in your browser.
+  8. The server will then start, and Kainatica will pop up in your browser.
 
 Installing via ZIP download (discouraged)
 
   1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
-  2. Download the zip from this GitHub repo. (Get the `Source code (zip)` from [Releases](https://github.com/SillyTavern/SillyTavern/releases/latest))
+  2. Download the zip from this GitHub repo. (Get the `Source code (zip)` from [Releases](https://github.com/Kainatica/Kainatica/releases/latest))
   3. Unzip it into a folder of your choice
   4. Run `Start.bat` by double-clicking or in a command line.
   5. Once the server has prepared everything for you, it will open a tab in your browser.
@@ -169,26 +169,26 @@ Alternatively, use the [Node Version Manager](https://github.com/nvm-sh/nvm#inst
 
 ## API keys management
 
-SillyTavern saves your API keys to a `secrets.json` file in the server directory.
+Kainatica saves your API keys to a `secrets.json` file in the server directory.
 
 By default, they will not be exposed to a frontend after you enter them and reload the page.
 
 In order to enable viewing your keys by clicking a button in the API block:
 
 1. Set the value of `allowKeysExposure` to `true` in `config.yaml` file.
-2. Restart the SillyTavern server.
+2. Restart the Kainatica server.
 
 ## Remote connections
 
-Most often this is for people who want to use SillyTavern on their mobile phones while their PC runs the ST server on the same wifi network.
+Most often this is for people who want to use Kainatica on their mobile phones while their PC runs the ST server on the same wifi network.
 
 However, it can be used to allow remote connections from anywhere as well.
 
-**IMPORTANT: SillyTavern is a single-user program, so anyone who logs in will be able to see all characters and chats, and be able to change any settings inside the UI.**
+**IMPORTANT: Kainatica is a single-user program, so anyone who logs in will be able to see all characters and chats, and be able to change any settings inside the UI.**
 
 ### 1. Managing whitelisted IPs
 
-* Create a new text file inside your SillyTavern base install folder called `whitelist.txt`.
+* Create a new text file inside your Kainatica base install folder called `whitelist.txt`.
 * Open the file in a text editor, and add a list of IPs you want to be allowed to connect.
 
 *Both individual IPs and wildcard IP ranges are accepted. Examples:*
@@ -241,7 +241,7 @@ Use http:// NOT https://
 
 We do not recommend doing this, but you can open `config.yaml` and change `whitelistMode` to `false`.
 
-You must remove (or rename) `whitelist.txt` in the SillyTavern base install folder if it exists.
+You must remove (or rename) `whitelist.txt` in the Kainatica base install folder if it exists.
 
 This is usually an insecure practice, so we require you to set a username and password when you do this.
 
