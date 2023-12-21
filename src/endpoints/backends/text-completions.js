@@ -57,6 +57,26 @@ async function parseOllamaStream(jsonStream, request, response) {
     }
 }
 
+/**
+ * Abort KoboldCpp generation request.
+ * @param {string} url Server base URL
+ * @returns {Promise<void>} Promise resolving when we are done
+ */
+async function abortKoboldCppRequest(url) {
+    try {
+        console.log('Aborting Kobold generation...');
+        const abortResponse = await fetch(`${url}/api/extra/abort`, {
+            method: 'POST',
+        });
+
+        if (!abortResponse.ok) {
+            console.log('Error sending abort request to Kobold:', abortResponse.status, abortResponse.statusText);
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 //************** Ooba/OpenAI text completions API
 router.post('/status', jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
@@ -193,7 +213,11 @@ router.post('/generate', jsonParser, async function (request, response) {
 
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
-        request.socket.on('close', function () {
+        request.socket.on('close', async function () {
+            if (request.body.api_type === TEXTGEN_TYPES.KOBOLDCPP && !response.writableEnded) {
+                await abortKoboldCppRequest(trimV1(baseUrl));
+            }
+
             controller.abort();
         });
 
