@@ -7649,6 +7649,10 @@ export async function processDroppedFiles(files) {
     const allowedMimeTypes = [
         'application/json',
         'image/png',
+        'application/yaml',
+        'application/x-yaml',
+        'text/yaml',
+        'text/x-yaml',
     ];
 
     for (const file of files) {
@@ -7662,10 +7666,7 @@ export async function processDroppedFiles(files) {
 
 async function importCharacter(file) {
     const ext = file.name.match(/\.(\w+)$/);
-    if (
-        !ext ||
-        (ext[1].toLowerCase() != 'json' && ext[1].toLowerCase() != 'png')
-    ) {
+    if (!ext || !(['json', 'png', 'yaml', 'yml'].includes(ext[1].toLowerCase()))) {
         return;
     }
 
