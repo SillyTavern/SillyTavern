@@ -637,6 +637,9 @@ hr {
     order: 2;
     padding-right: 2px;
     place-self: center;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
 }
 
 #options_button {
