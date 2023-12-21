@@ -3380,618 +3380,614 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         }
 
         const originalType = type;
-        return runGenerate(cyclePrompt);
 
-        async function runGenerate(cycleGenerationPrompt = '') {
-            if (!dryRun) {
-                is_send_press = true;
-            }
+        if (!dryRun) {
+            is_send_press = true;
+        }
 
-            generatedPromptCache += cycleGenerationPrompt;
-            if (generatedPromptCache.length == 0 || type === 'continue') {
-                console.debug('generating prompt');
-                chatString = '';
-                arrMes = arrMes.reverse();
-                arrMes.forEach(function (item, i, arr) {// For added anchors and others
-                    // OAI doesn't need all of this
-                    if (main_api === 'openai') {
-                        return;
-                    }
-
-                    // Cohee: I'm not even sure what this is for anymore
-                    if (i === arrMes.length - 1 && type !== 'continue') {
-                        item = item.replace(/\n?$/, '');
-                    }
-
-                    mesSend[mesSend.length] = { message: item, extensionPrompts: [] };
-                });
-            }
-
-            let mesExmString = '';
-
-            function setPromptString() {
-                if (main_api == 'openai') {
-                    return;
-                }
-
-                console.debug('--setting Prompt string');
-                mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
-
-                if (mesSend.length) {
-                    mesSend[mesSend.length - 1].message = modifyLastPromptLine(mesSend[mesSend.length - 1].message);
-                }
-            }
-
-            function modifyLastPromptLine(lastMesString) {
-                //#########QUIET PROMPT STUFF PT2##############
-
-                // Add quiet generation prompt at depth 0
-                if (quiet_prompt && quiet_prompt.length) {
-
-                    // here name1 is forced for all quiet prompts..why?
-                    const name = name1;
-                    //checks if we are in instruct, if so, formats the chat as such, otherwise just adds the quiet prompt
-                    const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${quiet_prompt}`;
-
-                    //This begins to fix quietPrompts (particularly /sysgen) for instruct
-                    //previously instruct input sequence was being appended to the last chat message w/o '\n'
-                    //and no output sequence was added after the input's content.
-                    //TODO: respect output_sequence vs last_output_sequence settings
-                    //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
-                    if (isInstruct) {
-                        lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
-                    } else {
-                        lastMesString += quietAppend;
-                    }
-
-
-                    // Ross: bailing out early prevents quiet prompts from respecting other instruct prompt toggles
-                    // for sysgen, SD, and summary this is desireable as it prevents the AI from responding as char..
-                    // but for idle prompting, we want the flexibility of the other prompt toggles, and to respect them as per settings in the extension
-                    // need a detection for what the quiet prompt is being asked for...
-
-                    // Bail out early?
-                    if (quietToLoud !== true) {
-                        return lastMesString;
-                    }
-                }
-
-
-                // Get instruct mode line
-                if (isInstruct && !isContinue) {
-                    const name = isImpersonate ? name1 : name2;
-                    lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
-                }
-
-                // Get non-instruct impersonation line
-                if (!isInstruct && isImpersonate && !isContinue) {
-                    const name = name1;
-                    if (!lastMesString.endsWith('\n')) {
-                        lastMesString += '\n';
-                    }
-                    lastMesString += name + ':';
-                }
-
-                // Add character's name
-                // Force name append on continue (if not continuing on user message)
-                if (!isInstruct && force_name2) {
-                    if (!lastMesString.endsWith('\n')) {
-                        lastMesString += '\n';
-                    }
-                    if (!isContinue || !(chat[chat.length - 1]?.is_user)) {
-                        lastMesString += `${name2}:`;
-                    }
-                }
-
-                return lastMesString;
-            }
-
-            // Clean up the already generated prompt for seamless addition
-            function cleanupPromptCache(promptCache) {
-                // Remove the first occurrance of character's name
-                if (promptCache.trimStart().startsWith(`${name2}:`)) {
-                    promptCache = promptCache.replace(`${name2}:`, '').trimStart();
-                }
-
-                // Remove the first occurrance of prompt bias
-                if (promptCache.trimStart().startsWith(promptBias)) {
-                    promptCache = promptCache.replace(promptBias, '');
-                }
-
-                // Add a space if prompt cache doesn't start with one
-                if (!/^\s/.test(promptCache) && !isInstruct && !isContinue) {
-                    promptCache = ' ' + promptCache;
-                }
-
-                return promptCache;
-            }
-
-            function checkPromptSize() {
-                console.debug('---checking Prompt size');
-                setPromptString();
-                const prompt = [
-                    storyString,
-                    mesExmString,
-                    mesSend.join(''),
-                    generatedPromptCache,
-                    allAnchors,
-                    quiet_prompt,
-                ].join('').replace(/\r/gm, '');
-                let thisPromptContextSize = getTokenCount(prompt, power_user.token_padding);
-
-                if (thisPromptContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
-                    if (count_exm_add > 0) {                            // ..and we have example mesages..
-                        count_exm_add--;                            // remove the example messages...
-                        checkPromptSize();                            // and try agin...
-                    } else if (mesSend.length > 0) {                    // if the chat history is longer than 0
-                        mesSend.shift();                            // remove the first (oldest) chat entry..
-                        checkPromptSize();                            // and check size again..
-                    } else {
-                        //end
-                        console.debug(`---mesSend.length = ${mesSend.length}`);
-                    }
-                }
-            }
-
-            if (generatedPromptCache.length > 0 && main_api !== 'openai') {
-                console.debug('---Generated Prompt Cache length: ' + generatedPromptCache.length);
-                checkPromptSize();
-            } else {
-                console.debug('---calling setPromptString ' + generatedPromptCache.length);
-                setPromptString();
-            }
-
-            // Fetches the combined prompt for both negative and positive prompts
-            const cfgGuidanceScale = getGuidanceScale();
-
-            // For prompt bit itemization
-            let mesSendString = '';
-
-            function getCombinedPrompt(isNegative) {
-                // Only return if the guidance scale doesn't exist or the value is 1
-                // Also don't return if constructing the neutral prompt
-                if (isNegative && (!cfgGuidanceScale || cfgGuidanceScale?.value === 1)) {
-                    return;
-                }
-
-                // OAI has its own prompt manager. No need to do anything here
+        generatedPromptCache += cyclePrompt;
+        if (generatedPromptCache.length == 0 || type === 'continue') {
+            console.debug('generating prompt');
+            chatString = '';
+            arrMes = arrMes.reverse();
+            arrMes.forEach(function (item, i, arr) {// For added anchors and others
+                // OAI doesn't need all of this
                 if (main_api === 'openai') {
-                    return '';
+                    return;
                 }
 
-                // Deep clone
-                let finalMesSend = structuredClone(mesSend);
-
-                // TODO: Rewrite getExtensionPrompt to not require multiple for loops
-                // Set all extension prompts where insertion depth > mesSend length
-                if (finalMesSend.length) {
-                    for (let upperDepth = MAX_INJECTION_DEPTH; upperDepth >= finalMesSend.length; upperDepth--) {
-                        const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
-                        if (upperAnchor && upperAnchor.length) {
-                            finalMesSend[0].extensionPrompts.push(upperAnchor);
-                        }
-                    }
+                // Cohee: I'm not even sure what this is for anymore
+                if (i === arrMes.length - 1 && type !== 'continue') {
+                    item = item.replace(/\n?$/, '');
                 }
 
-                finalMesSend.forEach((mesItem, index) => {
-                    if (index === 0) {
-                        return;
+                mesSend[mesSend.length] = { message: item, extensionPrompts: [] };
+            });
+        }
+
+        let mesExmString = '';
+
+        function setPromptString() {
+            if (main_api == 'openai') {
+                return;
+            }
+
+            console.debug('--setting Prompt string');
+            mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
+
+            if (mesSend.length) {
+                mesSend[mesSend.length - 1].message = modifyLastPromptLine(mesSend[mesSend.length - 1].message);
+            }
+        }
+
+        function modifyLastPromptLine(lastMesString) {
+            //#########QUIET PROMPT STUFF PT2##############
+
+            // Add quiet generation prompt at depth 0
+            if (quiet_prompt && quiet_prompt.length) {
+
+                // here name1 is forced for all quiet prompts..why?
+                const name = name1;
+                //checks if we are in instruct, if so, formats the chat as such, otherwise just adds the quiet prompt
+                const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${quiet_prompt}`;
+
+                //This begins to fix quietPrompts (particularly /sysgen) for instruct
+                //previously instruct input sequence was being appended to the last chat message w/o '\n'
+                //and no output sequence was added after the input's content.
+                //TODO: respect output_sequence vs last_output_sequence settings
+                //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
+                if (isInstruct) {
+                    lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
+                } else {
+                    lastMesString += quietAppend;
+                }
+
+
+                // Ross: bailing out early prevents quiet prompts from respecting other instruct prompt toggles
+                // for sysgen, SD, and summary this is desireable as it prevents the AI from responding as char..
+                // but for idle prompting, we want the flexibility of the other prompt toggles, and to respect them as per settings in the extension
+                // need a detection for what the quiet prompt is being asked for...
+
+                // Bail out early?
+                if (quietToLoud !== true) {
+                    return lastMesString;
+                }
+            }
+
+
+            // Get instruct mode line
+            if (isInstruct && !isContinue) {
+                const name = isImpersonate ? name1 : name2;
+                lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
+            }
+
+            // Get non-instruct impersonation line
+            if (!isInstruct && isImpersonate && !isContinue) {
+                const name = name1;
+                if (!lastMesString.endsWith('\n')) {
+                    lastMesString += '\n';
+                }
+                lastMesString += name + ':';
+            }
+
+            // Add character's name
+            // Force name append on continue (if not continuing on user message)
+            if (!isInstruct && force_name2) {
+                if (!lastMesString.endsWith('\n')) {
+                    lastMesString += '\n';
+                }
+                if (!isContinue || !(chat[chat.length - 1]?.is_user)) {
+                    lastMesString += `${name2}:`;
+                }
+            }
+
+            return lastMesString;
+        }
+
+        // Clean up the already generated prompt for seamless addition
+        function cleanupPromptCache(promptCache) {
+            // Remove the first occurrance of character's name
+            if (promptCache.trimStart().startsWith(`${name2}:`)) {
+                promptCache = promptCache.replace(`${name2}:`, '').trimStart();
+            }
+
+            // Remove the first occurrance of prompt bias
+            if (promptCache.trimStart().startsWith(promptBias)) {
+                promptCache = promptCache.replace(promptBias, '');
+            }
+
+            // Add a space if prompt cache doesn't start with one
+            if (!/^\s/.test(promptCache) && !isInstruct && !isContinue) {
+                promptCache = ' ' + promptCache;
+            }
+
+            return promptCache;
+        }
+
+        function checkPromptSize() {
+            console.debug('---checking Prompt size');
+            setPromptString();
+            const prompt = [
+                storyString,
+                mesExmString,
+                mesSend.join(''),
+                generatedPromptCache,
+                allAnchors,
+                quiet_prompt,
+            ].join('').replace(/\r/gm, '');
+            let thisPromptContextSize = getTokenCount(prompt, power_user.token_padding);
+
+            if (thisPromptContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
+                if (count_exm_add > 0) {                            // ..and we have example mesages..
+                    count_exm_add--;                            // remove the example messages...
+                    checkPromptSize();                            // and try agin...
+                } else if (mesSend.length > 0) {                    // if the chat history is longer than 0
+                    mesSend.shift();                            // remove the first (oldest) chat entry..
+                    checkPromptSize();                            // and check size again..
+                } else {
+                    //end
+                    console.debug(`---mesSend.length = ${mesSend.length}`);
+                }
+            }
+        }
+
+        if (generatedPromptCache.length > 0 && main_api !== 'openai') {
+            console.debug('---Generated Prompt Cache length: ' + generatedPromptCache.length);
+            checkPromptSize();
+        } else {
+            console.debug('---calling setPromptString ' + generatedPromptCache.length);
+            setPromptString();
+        }
+
+        // Fetches the combined prompt for both negative and positive prompts
+        const cfgGuidanceScale = getGuidanceScale();
+
+        // For prompt bit itemization
+        let mesSendString = '';
+
+        function getCombinedPrompt(isNegative) {
+            // Only return if the guidance scale doesn't exist or the value is 1
+            // Also don't return if constructing the neutral prompt
+            if (isNegative && (!cfgGuidanceScale || cfgGuidanceScale?.value === 1)) {
+                return;
+            }
+
+            // OAI has its own prompt manager. No need to do anything here
+            if (main_api === 'openai') {
+                return '';
+            }
+
+            // Deep clone
+            let finalMesSend = structuredClone(mesSend);
+
+            // TODO: Rewrite getExtensionPrompt to not require multiple for loops
+            // Set all extension prompts where insertion depth > mesSend length
+            if (finalMesSend.length) {
+                for (let upperDepth = MAX_INJECTION_DEPTH; upperDepth >= finalMesSend.length; upperDepth--) {
+                    const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
+                    if (upperAnchor && upperAnchor.length) {
+                        finalMesSend[0].extensionPrompts.push(upperAnchor);
                     }
+                }
+            }
 
-                    const anchorDepth = Math.abs(index - finalMesSend.length);
-                    // NOTE: Depth injected here!
-                    const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
+            finalMesSend.forEach((mesItem, index) => {
+                if (index === 0) {
+                    return;
+                }
 
-                    if (anchorDepth >= 0 && extensionAnchor && extensionAnchor.length) {
-                        mesItem.extensionPrompts.push(extensionAnchor);
-                    }
-                });
+                const anchorDepth = Math.abs(index - finalMesSend.length);
+                // NOTE: Depth injected here!
+                const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
 
-                // TODO: Move zero-depth anchor append to work like CFG and bias appends
-                if (zeroDepthAnchor?.length && !isContinue) {
-                    console.debug(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)));
+                if (anchorDepth >= 0 && extensionAnchor && extensionAnchor.length) {
+                    mesItem.extensionPrompts.push(extensionAnchor);
+                }
+            });
+
+            // TODO: Move zero-depth anchor append to work like CFG and bias appends
+            if (zeroDepthAnchor?.length && !isContinue) {
+                console.debug(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)));
+                finalMesSend[finalMesSend.length - 1].message +=
+                    /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
+                        ? zeroDepthAnchor
+                        : `${zeroDepthAnchor}`;
+            }
+
+            let cfgPrompt = {};
+            if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
+                cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
+            }
+
+            if (cfgPrompt && cfgPrompt?.value) {
+                if (cfgPrompt?.depth === 0) {
                     finalMesSend[finalMesSend.length - 1].message +=
                         /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
-                            ? zeroDepthAnchor
-                            : `${zeroDepthAnchor}`;
+                            ? cfgPrompt.value
+                            : ` ${cfgPrompt.value}`;
+                } else {
+                    // TODO: Make all extension prompts use an array/splice method
+                    const lengthDiff = mesSend.length - cfgPrompt.depth;
+                    const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
+                    finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+                }
+            }
+
+            // Add prompt bias after everything else
+            // Always run with continue
+            if (!isInstruct && !isImpersonate) {
+                if (promptBias.trim().length !== 0) {
+                    finalMesSend[finalMesSend.length - 1].message +=
+                        /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
+                            ? promptBias.trimStart()
+                            : ` ${promptBias.trimStart()}`;
+                }
+            }
+
+            // Prune from prompt cache if it exists
+            if (generatedPromptCache.length !== 0) {
+                generatedPromptCache = cleanupPromptCache(generatedPromptCache);
+            }
+
+            // Flattens the multiple prompt objects to a string.
+            const combine = () => {
+                // Right now, everything is suffixed with a newline
+                mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
+
+                // add a custom dingus (if defined)
+                mesSendString = addChatsSeparator(mesSendString);
+
+                // add chat preamble
+                mesSendString = addChatsPreamble(mesSendString);
+
+                let combinedPrompt = beforeScenarioAnchor +
+                    storyString +
+                    afterScenarioAnchor +
+                    mesExmString +
+                    mesSendString +
+                    generatedPromptCache;
+
+                combinedPrompt = combinedPrompt.replace(/\r/gm, '');
+
+                if (power_user.collapse_newlines) {
+                    combinedPrompt = collapseNewlines(combinedPrompt);
                 }
 
-                let cfgPrompt = {};
-                if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
-                    cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
+                return combinedPrompt;
+            };
+
+            let data = {
+                api: main_api,
+                combinedPrompt: null,
+                description,
+                personality,
+                persona,
+                scenario,
+                char: name2,
+                user: name1,
+                beforeScenarioAnchor,
+                afterScenarioAnchor,
+                mesExmString,
+                finalMesSend,
+                generatedPromptCache,
+                main: system,
+                jailbreak,
+                naiPreamble: nai_settings.preamble,
+            };
+
+            // Before returning the combined prompt, give available context related information to all subscribers.
+            eventSource.emitAndWait(event_types.GENERATE_BEFORE_COMBINE_PROMPTS, data);
+
+            // If one or multiple subscribers return a value, forfeit the responsibillity of flattening the context.
+            return !data.combinedPrompt ? combine() : data.combinedPrompt;
+        }
+
+        // Get the negative prompt first since it has the unmodified mesSend array
+        let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
+        let finalPrompt = getCombinedPrompt(false);
+
+        // Include the entire guidance scale object
+        const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
+
+        let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
+        let thisPromptBits = [];
+
+        // TODO: Make this a switch
+        if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
+            maxLength = Math.min(maxLength, adjustedParams.maxLength);
+            maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
+        }
+
+        let generate_data;
+        if (main_api == 'koboldhorde' || main_api == 'kobold') {
+            generate_data = {
+                prompt: finalPrompt,
+                gui_settings: true,
+                max_length: maxLength,
+                max_context_length: max_context,
+            };
+
+            if (preset_settings != 'gui') {
+                const isHorde = main_api == 'koboldhorde';
+                const presetSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
+                const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
+                generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
+            }
+        }
+        else if (main_api == 'textgenerationwebui') {
+            generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
+        }
+        else if (main_api == 'novel') {
+            const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
+            generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
+        }
+        else if (main_api == 'openai') {
+            let [prompt, counts] = await prepareOpenAIMessages({
+                name2: name2,
+                charDescription: description,
+                charPersonality: personality,
+                Scenario: scenario,
+                worldInfoBefore: worldInfoBefore,
+                worldInfoAfter: worldInfoAfter,
+                extensionPrompts: extension_prompts,
+                bias: promptBias,
+                type: type,
+                quietPrompt: quiet_prompt,
+                quietImage: quietImage,
+                cyclePrompt: cyclePrompt,
+                systemPromptOverride: system,
+                jailbreakPromptOverride: jailbreak,
+                personaDescription: persona,
+                messages: oaiMessages,
+                messageExamples: oaiMessageExamples,
+            }, dryRun);
+            generate_data = { prompt: prompt };
+
+            // counts will return false if the user has not enabled the token breakdown feature
+            if (counts) {
+                parseTokenCounts(counts, thisPromptBits);
+            }
+
+            if (!dryRun) {
+                setInContextMessages(openai_messages_count, type);
+            }
+        }
+
+        async function finishGenerating() {
+            if (true === dryRun) return { error: 'dryRun' };
+
+            if (power_user.console_log_prompts) {
+                console.log(generate_data.prompt);
+            }
+
+            console.debug('rungenerate calling API');
+
+            showStopButton();
+
+            //set array object for prompt token itemization of this message
+            let currentArrayEntry = Number(thisPromptBits.length - 1);
+            let additionalPromptStuff = {
+                ...thisPromptBits[currentArrayEntry],
+                rawPrompt: generate_data.prompt || generate_data.input,
+                mesId: getNextMessageId(type),
+                allAnchors: allAnchors,
+                summarizeString: (extension_prompts['1_memory']?.value || ''),
+                authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
+                smartContextString: (extension_prompts['chromadb']?.value || ''),
+                worldInfoString: worldInfoString,
+                storyString: storyString,
+                beforeScenarioAnchor: beforeScenarioAnchor,
+                afterScenarioAnchor: afterScenarioAnchor,
+                examplesString: examplesString,
+                mesSendString: mesSendString,
+                generatedPromptCache: generatedPromptCache,
+                promptBias: promptBias,
+                finalPrompt: finalPrompt,
+                charDescription: description,
+                charPersonality: personality,
+                scenarioText: scenario,
+                this_max_context: this_max_context,
+                padding: power_user.token_padding,
+                main_api: main_api,
+                instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.instruct.system_prompt) : '',
+                userPersona: (power_user.persona_description || ''),
+            };
+
+            thisPromptBits = additionalPromptStuff;
+
+            //console.log(thisPromptBits);
+            const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === thisPromptBits['mesId']);
+
+            if (itemizedIndex !== -1) {
+                itemizedPrompts[itemizedIndex] = thisPromptBits;
+            }
+            else {
+                itemizedPrompts.push(thisPromptBits);
+            }
+
+            console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
+
+            if (isStreamingEnabled() && type !== 'quiet') {
+                let streamingGenerator;
+
+                switch (main_api) {
+                    case 'openai':
+                        streamingGenerator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
+                        break;
+                    case 'textgenerationwebui':
+                        streamingGenerator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                        break;
+                    case 'novel':
+                        streamingGenerator = await generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                        break;
+                    case 'kobold':
+                        streamingGenerator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                        break;
+                    default:
+                        throw new Error('Streaming is enabled, but the current API does not support streaming.');
                 }
 
-                if (cfgPrompt && cfgPrompt?.value) {
-                    if (cfgPrompt?.depth === 0) {
-                        finalMesSend[finalMesSend.length - 1].message +=
-                            /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
-                                ? cfgPrompt.value
-                                : ` ${cfgPrompt.value}`;
-                    } else {
-                        // TODO: Make all extension prompts use an array/splice method
-                        const lengthDiff = mesSend.length - cfgPrompt.depth;
-                        const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
-                        finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+                streamingProcessor.generator = streamingGenerator;
+                hideSwipeButtons();
+                let getMessage = await streamingProcessor.generate();
+                let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+
+                if (isContinue) {
+                    getMessage = continue_mag + getMessage;
+                }
+
+                if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
+                    await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
+                    streamingProcessor = null;
+                    triggerAutoContinue(messageChunk, isImpersonate);
+                }
+            } else {
+                const response = await fetch(getGenerateUrl(main_api), {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    cache: 'no-cache',
+                    body: JSON.stringify(generate_data),
+                    signal: abortController.signal,
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw error;
+                }
+
+                const data = await response.json();
+                return data;
+            }
+        }
+
+        return finishGenerating().then(onSuccess, onError);
+
+        async function onSuccess(data) {
+            if (!data) return;
+            let messageChunk = '';
+
+            if (data.error == 'dryRun') {
+                generatedPromptCache = '';
+                return;
+            }
+
+            if (!data.error) {
+                //const getData = await response.json();
+                let getMessage = extractMessageFromData(data);
+                let title = extractTitleFromData(data);
+                kobold_horde_model = title;
+
+                const swipes = extractMultiSwipes(data, type);
+
+                messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+
+                if (isContinue) {
+                    getMessage = continue_mag + getMessage;
+                }
+
+                //Formating
+                const displayIncomplete = type === 'quiet' && !quietToLoud;
+                getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
+
+                if (getMessage.length > 0) {
+                    if (isImpersonate) {
+                        $('#send_textarea').val(getMessage).trigger('input');
+                        generatedPromptCache = '';
+                        await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
                     }
-                }
-
-                // Add prompt bias after everything else
-                // Always run with continue
-                if (!isInstruct && !isImpersonate) {
-                    if (promptBias.trim().length !== 0) {
-                        finalMesSend[finalMesSend.length - 1].message +=
-                            /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
-                                ? promptBias.trimStart()
-                                : ` ${promptBias.trimStart()}`;
+                    else if (type == 'quiet') {
+                        return getMessage;
                     }
-                }
-
-                // Prune from prompt cache if it exists
-                if (generatedPromptCache.length !== 0) {
-                    generatedPromptCache = cleanupPromptCache(generatedPromptCache);
-                }
-
-                // Flattens the multiple prompt objects to a string.
-                const combine = () => {
-                    // Right now, everything is suffixed with a newline
-                    mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
-
-                    // add a custom dingus (if defined)
-                    mesSendString = addChatsSeparator(mesSendString);
-
-                    // add chat preamble
-                    mesSendString = addChatsPreamble(mesSendString);
-
-                    let combinedPrompt = beforeScenarioAnchor +
-                        storyString +
-                        afterScenarioAnchor +
-                        mesExmString +
-                        mesSendString +
-                        generatedPromptCache;
-
-                    combinedPrompt = combinedPrompt.replace(/\r/gm, '');
-
-                    if (power_user.collapse_newlines) {
-                        combinedPrompt = collapseNewlines(combinedPrompt);
+                    else {
+                        // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
+                        if (originalType !== 'continue') {
+                            ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
+                        }
+                        else {
+                            ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
+                        }
                     }
 
-                    return combinedPrompt;
-                };
-
-                let data = {
-                    api: main_api,
-                    combinedPrompt: null,
-                    description,
-                    personality,
-                    persona,
-                    scenario,
-                    char: name2,
-                    user: name1,
-                    beforeScenarioAnchor,
-                    afterScenarioAnchor,
-                    mesExmString,
-                    finalMesSend,
-                    generatedPromptCache,
-                    main: system,
-                    jailbreak,
-                    naiPreamble: nai_settings.preamble,
-                };
-
-                // Before returning the combined prompt, give available context related information to all subscribers.
-                eventSource.emitAndWait(event_types.GENERATE_BEFORE_COMBINE_PROMPTS, data);
-
-                // If one or multiple subscribers return a value, forfeit the responsibillity of flattening the context.
-                return !data.combinedPrompt ? combine() : data.combinedPrompt;
-            }
-
-            // Get the negative prompt first since it has the unmodified mesSend array
-            let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
-            let finalPrompt = getCombinedPrompt(false);
-
-            // Include the entire guidance scale object
-            const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
-
-            let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
-            let thisPromptBits = [];
-
-            // TODO: Make this a switch
-            if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
-                maxLength = Math.min(maxLength, adjustedParams.maxLength);
-                maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
-            }
-
-            let generate_data;
-            if (main_api == 'koboldhorde' || main_api == 'kobold') {
-                generate_data = {
-                    prompt: finalPrompt,
-                    gui_settings: true,
-                    max_length: maxLength,
-                    max_context_length: max_context,
-                };
-
-                if (preset_settings != 'gui') {
-                    const isHorde = main_api == 'koboldhorde';
-                    const presetSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
-                    const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
-                    generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
-                }
-            }
-            else if (main_api == 'textgenerationwebui') {
-                generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
-            }
-            else if (main_api == 'novel') {
-                const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
-            }
-            else if (main_api == 'openai') {
-                let [prompt, counts] = await prepareOpenAIMessages({
-                    name2: name2,
-                    charDescription: description,
-                    charPersonality: personality,
-                    Scenario: scenario,
-                    worldInfoBefore: worldInfoBefore,
-                    worldInfoAfter: worldInfoAfter,
-                    extensionPrompts: extension_prompts,
-                    bias: promptBias,
-                    type: type,
-                    quietPrompt: quiet_prompt,
-                    quietImage: quietImage,
-                    cyclePrompt: cyclePrompt,
-                    systemPromptOverride: system,
-                    jailbreakPromptOverride: jailbreak,
-                    personaDescription: persona,
-                    messages: oaiMessages,
-                    messageExamples: oaiMessageExamples,
-                }, dryRun);
-                generate_data = { prompt: prompt };
-
-                // counts will return false if the user has not enabled the token breakdown feature
-                if (counts) {
-                    parseTokenCounts(counts, thisPromptBits);
-                }
-
-                if (!dryRun) {
-                    setInContextMessages(openai_messages_count, type);
-                }
-            }
-
-            async function finishGenerating() {
-                if (true === dryRun) return { error: 'dryRun' };
-
-                if (power_user.console_log_prompts) {
-                    console.log(generate_data.prompt);
-                }
-
-                console.debug('rungenerate calling API');
-
-                showStopButton();
-
-                //set array object for prompt token itemization of this message
-                let currentArrayEntry = Number(thisPromptBits.length - 1);
-                let additionalPromptStuff = {
-                    ...thisPromptBits[currentArrayEntry],
-                    rawPrompt: generate_data.prompt || generate_data.input,
-                    mesId: getNextMessageId(type),
-                    allAnchors: allAnchors,
-                    summarizeString: (extension_prompts['1_memory']?.value || ''),
-                    authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
-                    smartContextString: (extension_prompts['chromadb']?.value || ''),
-                    worldInfoString: worldInfoString,
-                    storyString: storyString,
-                    beforeScenarioAnchor: beforeScenarioAnchor,
-                    afterScenarioAnchor: afterScenarioAnchor,
-                    examplesString: examplesString,
-                    mesSendString: mesSendString,
-                    generatedPromptCache: generatedPromptCache,
-                    promptBias: promptBias,
-                    finalPrompt: finalPrompt,
-                    charDescription: description,
-                    charPersonality: personality,
-                    scenarioText: scenario,
-                    this_max_context: this_max_context,
-                    padding: power_user.token_padding,
-                    main_api: main_api,
-                    instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.instruct.system_prompt) : '',
-                    userPersona: (power_user.persona_description || ''),
-                };
-
-                thisPromptBits = additionalPromptStuff;
-
-                //console.log(thisPromptBits);
-                const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === thisPromptBits['mesId']);
-
-                if (itemizedIndex !== -1) {
-                    itemizedPrompts[itemizedIndex] = thisPromptBits;
-                }
-                else {
-                    itemizedPrompts.push(thisPromptBits);
-                }
-
-                console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
-
-                if (isStreamingEnabled() && type !== 'quiet') {
-                    let streamingGenerator;
-
-                    switch (main_api) {
-                        case 'openai':
-                            streamingGenerator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
-                            break;
-                        case 'textgenerationwebui':
-                            streamingGenerator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                            break;
-                        case 'novel':
-                            streamingGenerator = await generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                            break;
-                        case 'kobold':
-                            streamingGenerator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                            break;
-                        default:
-                            throw new Error('Streaming is enabled, but the current API does not support streaming.');
-                    }
-
-                    streamingProcessor.generator = streamingGenerator;
-                    hideSwipeButtons();
-                    let getMessage = await streamingProcessor.generate();
-                    let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
-
-                    if (isContinue) {
-                        getMessage = continue_mag + getMessage;
-                    }
-
-                    if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
-                        await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
-                        streamingProcessor = null;
-                        triggerAutoContinue(messageChunk, isImpersonate);
+                    if (type !== 'quiet') {
+                        playMessageSound();
                     }
                 } else {
-                    const response = await fetch(getGenerateUrl(main_api), {
-                        method: 'POST',
-                        headers: getRequestHeaders(),
-                        cache: 'no-cache',
-                        body: JSON.stringify(generate_data),
-                        signal: abortController.signal,
-                    });
+                    // If maxLoops is not passed in (e.g. first time generating), set it to MAX_GENERATION_LOOPS
+                    maxLoops ??= MAX_GENERATION_LOOPS;
 
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw error;
+                    if (maxLoops === 0) {
+                        if (type !== 'quiet') {
+                            throwCircuitBreakerError();
+                        }
+                        throw new Error('Generate circuit breaker interruption');
                     }
 
-                    const data = await response.json();
-                    return data;
-                }
-            }
-
-            return finishGenerating().then(onSuccess, onError);
-
-            async function onSuccess(data) {
-                if (!data) return;
-                let messageChunk = '';
-
-                if (data.error == 'dryRun') {
-                    generatedPromptCache = '';
+                    // regenerate with character speech reenforced
+                    // to make sure we leave on swipe type while also adding the name2 appendage
+                    delay(1000).then(async () => {
+                        // The first await is for waiting for the generate to start. The second one is waiting for it to finish
+                        const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
+                        return result;
+                    });
                     return;
                 }
 
-                if (!data.error) {
-                    //const getData = await response.json();
-                    let getMessage = extractMessageFromData(data);
-                    let title = extractTitleFromData(data);
-                    kobold_horde_model = title;
-
-                    const swipes = extractMultiSwipes(data, type);
-
-                    messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
-
-                    if (isContinue) {
-                        getMessage = continue_mag + getMessage;
+                if (power_user.auto_swipe) {
+                    console.debug('checking for autoswipeblacklist on non-streaming message');
+                    function containsBlacklistedWords(getMessage, blacklist, threshold) {
+                        console.debug('checking blacklisted words');
+                        const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
+                        const matches = getMessage.match(regex) || [];
+                        return matches.length >= threshold;
                     }
 
-                    //Formating
-                    const displayIncomplete = type === 'quiet' && !quietToLoud;
-                    getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
-
-                    if (getMessage.length > 0) {
-                        if (isImpersonate) {
-                            $('#send_textarea').val(getMessage).trigger('input');
-                            generatedPromptCache = '';
-                            await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
-                        }
-                        else if (type == 'quiet') {
-                            return getMessage;
-                        }
-                        else {
-                            // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
-                            if (originalType !== 'continue') {
-                                ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
-                            }
-                            else {
-                                ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
+                    const generatedTextFiltered = (getMessage) => {
+                        if (power_user.auto_swipe_blacklist_threshold) {
+                            if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
+                                console.debug('Generated text has blacklisted words');
+                                return true;
                             }
                         }
 
-                        if (type !== 'quiet') {
-                            playMessageSound();
-                        }
-                    } else {
-                        // If maxLoops is not passed in (e.g. first time generating), set it to MAX_GENERATION_LOOPS
-                        maxLoops ??= MAX_GENERATION_LOOPS;
-
-                        if (maxLoops === 0) {
-                            if (type !== 'quiet') {
-                                throwCircuitBreakerError();
-                            }
-                            throw new Error('Generate circuit breaker interruption');
-                        }
-
-                        // regenerate with character speech reenforced
-                        // to make sure we leave on swipe type while also adding the name2 appendage
-                        delay(1000).then(async () => {
-                            // The first await is for waiting for the generate to start. The second one is waiting for it to finish
-                            const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
-                            return result;
-                        });
+                        return false;
+                    };
+                    if (generatedTextFiltered(getMessage)) {
+                        console.debug('swiping right automatically');
+                        is_send_press = false;
+                        swipe_right();
+                        // TODO: do we want to resolve after an auto-swipe?
                         return;
                     }
-
-                    if (power_user.auto_swipe) {
-                        console.debug('checking for autoswipeblacklist on non-streaming message');
-                        function containsBlacklistedWords(getMessage, blacklist, threshold) {
-                            console.debug('checking blacklisted words');
-                            const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
-                            const matches = getMessage.match(regex) || [];
-                            return matches.length >= threshold;
-                        }
-
-                        const generatedTextFiltered = (getMessage) => {
-                            if (power_user.auto_swipe_blacklist_threshold) {
-                                if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
-                                    console.debug('Generated text has blacklisted words');
-                                    return true;
-                                }
-                            }
-
-                            return false;
-                        };
-                        if (generatedTextFiltered(getMessage)) {
-                            console.debug('swiping right automatically');
-                            is_send_press = false;
-                            swipe_right();
-                            // TODO: do we want to resolve after an auto-swipe?
-                            return;
-                        }
-                    }
-                } else {
-                    generatedPromptCache = '';
-
-                    if (data?.response) {
-                        toastr.error(data.response, 'API Error');
-                    }
-                    throw data?.response;
                 }
+            } else {
+                generatedPromptCache = '';
 
-                console.debug('/api/chats/save called by /Generate');
-                await saveChatConditional();
-                unblockGeneration();
-                streamingProcessor = null;
-
-                if (type !== 'quiet') {
-                    triggerAutoContinue(messageChunk, isImpersonate);
+                if (data?.response) {
+                    toastr.error(data.response, 'API Error');
                 }
+                throw data?.response;
             }
 
-            function onError(exception) {
-                if (typeof exception?.error?.message === 'string') {
-                    toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
-                }
+            console.debug('/api/chats/save called by /Generate');
+            await saveChatConditional();
+            unblockGeneration();
+            streamingProcessor = null;
 
-                unblockGeneration();
-                console.log(exception);
-                streamingProcessor = null;
-                throw exception;
+            if (type !== 'quiet') {
+                triggerAutoContinue(messageChunk, isImpersonate);
+            }
+        }
+
+        function onError(exception) {
+            if (typeof exception?.error?.message === 'string') {
+                toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
             }
 
-        } //rungenerate ends
+            unblockGeneration();
+            console.log(exception);
+            streamingProcessor = null;
+            throw exception;
+        }
     } else {    //generate's primary loop ends, after this is error handling for no-connection or safety-id
         if (this_chid === undefined || this_chid === 'invalid-safety-id') {
             toastr.warning('Сharacter is not selected');
