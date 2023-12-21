@@ -3863,6 +3863,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                         await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
                     }
                     else if (type == 'quiet') {
+                        unblockGeneration();
                         return getMessage;
                     }
                     else {
@@ -4415,6 +4416,10 @@ function setInContextMessages(lastmsg, type) {
 async function sendGenerationRequest(type, data) {
     if (main_api === 'openai') {
         return await sendOpenAIRequest(type, data.prompt, abortController.signal);
+    }
+
+    if (main_api === 'koboldhorde') {
+        return await generateHorde(data.prompt, data, abortController.signal, true);
     }
 
     const response = await fetch(getGenerateUrl(main_api), {
