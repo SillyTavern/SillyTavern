@@ -437,14 +437,15 @@
                                             Streaming</span>
                                     </label>
                                     <div class="toggle-description justifyLeft">
-                                        <span data-i18n="Display the response bit by bit as it is generated.">Display
-                                            the response bit by bit as it is generated.</span><br>
-                                        <span data-i18n="When this is off, responses will be displayed all at once when they are complete.">When
-                                            this is off, responses will be displayed all at once when they are
-                                            complete.</span>
+                                        <span data-i18n="Display the response bit by bit as it is generated.">
+                                            Display the response bit by bit as it is generated.
+                                        </span><br>
+                                        <span data-i18n="When this is off, responses will be displayed all at once when they are complete.">
+                                            When this is off, responses will be displayed all at once when they are complete.
+                                        </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -457,7 +458,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -470,7 +471,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -509,7 +510,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai">
+                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -577,7 +578,7 @@
                                             </div>
                                             <div class="toggle-description justifyLeft" data-i18n="Wraps activated World Info entries before inserting into the prompt.">
                                                 Wraps activated World Info entries before inserting into the prompt. Use
-                                                <tt>{0}</tt> to mark a place where the content is inserted.
+                                                <code>{0}</code> to mark a place where the content is inserted.
                                             </div>
                                             <div class="wide100p">
                                                 <textarea id="wi_format_textarea" class="text_pole textarea_compact autoSetHeight" rows="3" placeholder="&mdash;"></textarea>
@@ -591,7 +592,7 @@
                                                 </div>
                                             </div>
                                             <div class="toggle-description justifyLeft" data-i18n="Use scenario to mark a place where the content is inserted.">
-                                                Use <tt>{{scenario}}</tt> to mark a place where the content is inserted.
+                                                Use <code>{{scenario}}</code> to mark a place where the content is inserted.
                                             </div>
                                             <div class="wide100p">
                                                 <textarea id="scenario_format_textarea" class="text_pole textarea_compact autoSetHeight" rows="3" placeholder="&mdash;"></textarea>
@@ -605,7 +606,7 @@
                                                 </div>
                                             </div>
                                             <div class="toggle-description justifyLeft" data-i18n="Use personality to mark a place where the content is inserted.">
-                                                Use <tt>{{personality}}</tt> to mark a place where the content is inserted.
+                                                Use <code>{{personality}}</code> to mark a place where the content is inserted.
                                             </div>
                                             <div class="wide100p">
                                                 <textarea id="personality_format_textarea" class="text_pole textarea_compact autoSetHeight" rows="3" placeholder="&mdash;"></textarea>
@@ -729,6 +730,9 @@
                                     </div>
                                     <div class="wide100p">
                                         <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="500" />
+                                        <small class="reverse_proxy_warning">
+                                            Doesn't work? Try adding <code>/v1</code> at the end!
+                                        </small>
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,claude">
@@ -745,7 +749,7 @@
                                         <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,mistralai">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,mistralai,custom">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -1508,7 +1512,7 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,makersuite">
+                                    <div class="range-block" data-source="openai,openrouter,makersuite,custom">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
@@ -1817,7 +1821,7 @@
                                         oobabooga/text-generation-webui
                                     </a>
                                     <span data-i18n="Make sure you run it with">
-                                        Make sure you run it with <tt>--api</tt> flag
+                                        Make sure you run it with <code>--api</code> flag
                                     </span>
                                 </div>
                                 <div class="flex1">
@@ -1945,6 +1949,7 @@
                             <option value="ai21">AI21</option>
                             <option value="makersuite">Google MakerSuite</option>
                             <option value="mistralai">MistralAI</option>
+                            <option value="custom">Custom (OpenAI-compatible)</option>
                         </select>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4><span data-i18n="OpenAI API key">OpenAI API key</span></h4>
@@ -2249,9 +2254,40 @@
                                 </select>
                             </div>
                         </form>
+                        <form id="custom_form" data-source="custom">
+                            <h4 data-i18n="Custom Endpoint (Base URL)">Custom Endpoint (Base URL)</h4>
+                            <div class="flex-container">
+                                <input id="custom_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" placeholder="Example: http://localhost:1234/v1">
+                            </div>
+                            <div>
+                                <small>
+                                    Doesn't work? Try adding <code>/v1</code> at the end of the URL!
+                                </small>
+                            </div>
+                            <h4>
+                                <span data-i18n="Custom API Key">Custom API Key</span>
+                                <small>(Optional)</small>
+                            </h4>
+                            <div class="flex-container">
+                                <input id="api_key_custom" name="api_key_custom" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_custom"></div>
+                            </div>
+                            <div data-for="api_key_custom" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4>Enter a Model ID</h4>
+                            <div class="flex-container">
+                                <input id="custom_model_id" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" placeholder="Example: gpt-3.5-turbo">
+                            </div>
+                                <h4 data-i18n="Available Models">Available Models</h4>
+                                <div class="flex-container">
+                                    <select id="model_custom_select" class="text_pole"></select>
+                                </div>
+                        </form>
                         <div class="flex-container flex">
                             <div id="api_button_openai" class="api_button menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
                             <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
+                            <div data-source="custom" id="customize_additional_parameters" class="menu_button menu_button_icon">Additional Parameters</div>
                             <div data-source="openrouter" id="openrouter_authorize" class="menu_button menu_button_icon" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
                             <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">Test Message</div>
                         </div>
@@ -2368,10 +2404,14 @@
                                     <span class="fa-solid fa-circle-question note-link-span"></span>
                                 </a>
                             </h4>
-                            <div>
-                                <label for="instruct_enabled" class="checkbox_label">
+                            <div class="flex-container">
+                                <label for="instruct_enabled" class="checkbox_label flex1">
                                     <input id="instruct_enabled" type="checkbox" />
                                     <span data-i18n="Enabled">Enabled</span>
+                                </label>
+                                <label for="instruct_bind_to_context" class="checkbox_label flex1" title="If enabled, Context templates will be automatically selected based on selected Instruct template name or by preference.">
+                                    <input id="instruct_bind_to_context" type="checkbox" />
+                                    <span data-i18n="Bind to Context">Bind to Context</span>
                                 </label>
                             </div>
                             <label for="instruct_presets">

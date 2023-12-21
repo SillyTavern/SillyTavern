@@ -992,8 +992,7 @@ async function getExpressionsList() {
     }
 
     const result = await resolveExpressionsList();
-    result.push(...extension_settings.expressions.custom);
-    return result;
+    return [...result, ...extension_settings.expressions.custom];
 }
 
 async function setExpression(character, expression, force) {

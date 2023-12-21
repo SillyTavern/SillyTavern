@@ -160,6 +160,7 @@ const CHAT_COMPLETION_SOURCES = {
     AI21: 'ai21',
     MAKERSUITE: 'makersuite',
     MISTRALAI: 'mistralai',
+    CUSTOM: 'custom',
 };
 
 const UPLOADS_PATH = './uploads';

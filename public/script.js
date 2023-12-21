@@ -184,7 +184,7 @@ import {
 } from './scripts/instruct-mode.js';
 import { applyLocale, initLocales } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
-import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription } from './scripts/personas.js';
+import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription, updatePersonaNameIfExists } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
@@ -3252,6 +3252,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         if (skipWIAN !== true) {
             console.log('skipWIAN not active, adding WIAN');
             // Add all depth WI entries to prompt
+            flushWIDepthInjections();
             if (Array.isArray(worldInfoDepth)) {
                 worldInfoDepth.forEach((e) => {
                     const joinedEntries = e.entries.join('\n');
@@ -3938,7 +3939,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                                     ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
                                 }
                             }
-                            activateSendButtons();
 
                             if (type !== 'quiet') {
                                 playMessageSound();
@@ -3995,23 +3995,16 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                         }
                     } else {
                         generatedPromptCache = '';
-                        activateSendButtons();
-                        //console.log('runGenerate calling showSwipeBtns');
-                        showSwipeButtons();
 
                         if (data?.response) {
                             toastr.error(data.response, 'API Error');
                         }
                         reject(data.response);
                     }
-                    console.debug('/api/chats/save called by /Generate');
 
+                    console.debug('/api/chats/save called by /Generate');
                     await saveChatConditional();
-                    is_send_press = false;
-                    hideStopButton();
-                    activateSendButtons();
-                    showSwipeButtons();
-                    setGenerationProgress(0);
+                    unblockGeneration();
                     streamingProcessor = null;
 
                     if (type !== 'quiet') {
@@ -4040,14 +4033,17 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         is_send_press = false;
     }
 
+    //console.log('generate ending');
+} //generate ends
+
+function flushWIDepthInjections() {
     //prevent custom depth WI entries (which have unique random key names) from duplicating
-    for (let key in extension_prompts) {
-        if (key.includes('customDepthWI')) {
+    for (const key of Object.keys(extension_prompts)) {
+        if (key.startsWith('customDepthWI')) {
             delete extension_prompts[key];
         }
     }
-    //console.log('generate ending');
-} //generate ends
+}
 
 function unblockGeneration() {
     is_send_press = false;
@@ -4055,6 +4051,7 @@ function unblockGeneration() {
     showSwipeButtons();
     setGenerationProgress(0);
     flushEphemeralStoppingStrings();
+    flushWIDepthInjections();
     $('#send_textarea').removeAttr('disabled');
 }
 
@@ -5457,6 +5454,7 @@ function changeMainAPI() {
         case chat_completion_sources.AI21:
         case chat_completion_sources.MAKERSUITE:
         case chat_completion_sources.MISTRALAI:
+        case chat_completion_sources.CUSTOM:
         default:
             setupChatCompletionPromptManager(oai_settings);
             break;
@@ -7576,43 +7574,48 @@ const CONNECT_API_MAP = {
     },
     'oai': {
         selected: 'openai',
-        source: 'openai',
         button: '#api_button_openai',
+        source: chat_completion_sources.OPENAI,
     },
     'claude': {
         selected: 'openai',
-        source: 'claude',
         button: '#api_button_openai',
+        source: chat_completion_sources.CLAUDE,
     },
     'windowai': {
         selected: 'openai',
-        source: 'windowai',
         button: '#api_button_openai',
+        source: chat_completion_sources.WINDOWAI,
     },
     'openrouter': {
         selected: 'openai',
-        source: 'openrouter',
         button: '#api_button_openai',
+        source: chat_completion_sources.OPENROUTER,
     },
     'scale': {
         selected: 'openai',
-        source: 'scale',
         button: '#api_button_openai',
+        source: chat_completion_sources.SCALE,
     },
     'ai21': {
         selected: 'openai',
-        source: 'ai21',
         button: '#api_button_openai',
+        source: chat_completion_sources.AI21,
     },
     'makersuite': {
         selected: 'openai',
-        source: 'makersuite',
         button: '#api_button_openai',
+        source: chat_completion_sources.MAKERSUITE,
     },
     'mistralai': {
         selected: 'openai',
-        source: 'mistralai',
         button: '#api_button_openai',
+        source: chat_completion_sources.MISTRALAI,
+    },
+    'custom': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.CUSTOM,
     },
 };
 
@@ -9153,8 +9156,10 @@ jQuery(async function () {
         await messageEditDone($(this));
     });
 
-    $('#your_name_button').click(function () {
-        setUserName($('#your_name').val());
+    $('#your_name_button').click(async function () {
+        const userName = String($('#your_name').val()).trim();
+        setUserName(userName);
+        await updatePersonaNameIfExists(user_avatar, userName);
     });
 
     $('#sync_name_button').on('click', async function () {

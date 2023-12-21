@@ -217,7 +217,16 @@ async function captionHorde(base64Img) {
  * @returns {Promise<{caption: string}>} Generated caption
  */
 async function captionMultimodal(base64Img) {
-    const prompt = extension_settings.caption.prompt || PROMPT_DEFAULT;
+    let prompt = extension_settings.caption.prompt || PROMPT_DEFAULT;
+
+    if (extension_settings.caption.prompt_ask) {
+        const customPrompt = await callPopup('<h3>Enter a comment or question:</h3>', 'input', prompt, { rows: 2 });
+        if (!customPrompt) {
+            throw new Error('User aborted the caption sending.');
+        }
+        prompt = String(customPrompt).trim();
+    }
+
     const caption = await getMultimodalCaption(base64Img, prompt);
     return { caption };
 }
@@ -277,6 +286,7 @@ jQuery(function () {
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'google' && secret_state[SECRET_KEYS.MAKERSUITE]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ollama' && textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'llamacpp' && textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) ||
+                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'custom') ||
                 extension_settings.caption.source === 'local' ||
                 extension_settings.caption.source === 'horde';
 
@@ -345,6 +355,7 @@ jQuery(function () {
                                 <option value="openai">OpenAI</option>
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="google">Google MakerSuite</option>
+                                <option value="custom">Custom (OpenAI-compatible)</option>
                             </select>
                         </div>
                         <div class="flex1 flex-container flexFlowColumn flexNoGap">
@@ -358,6 +369,7 @@ jQuery(function () {
                                 <option data-type="ollama" value="bakllava:latest">bakllava:latest</option>
                                 <option data-type="ollama" value="llava:latest">llava:latest</option>
                                 <option data-type="llamacpp" value="llamacpp_current">[Currently loaded]</option>
+                                <option data-type="custom" value="custom_current">[Currently selected]</option>
                             </select>
                         </div>
                         <label data-type="openai" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
@@ -371,6 +383,10 @@ jQuery(function () {
                     <div id="caption_prompt_block">
                         <label for="caption_prompt">Caption Prompt</label>
                         <textarea id="caption_prompt" class="text_pole" rows="1" placeholder="&lt; Use default &gt;">${PROMPT_DEFAULT}</textarea>
+                        <label class="checkbox_label margin-bot-10px" for="caption_prompt_ask" title="Ask for a custom prompt every time an image is captioned.">
+                            <input id="caption_prompt_ask" type="checkbox" class="checkbox">
+                            Ask every time
+                        </label>
                     </div>
                     <label for="caption_template">Message Template <small>(use <code>{{caption}}</code> macro)</small></label>
                     <textarea id="caption_template" class="text_pole" rows="2" placeholder="&lt; Use default &gt;">${TEMPLATE_DEFAULT}</textarea>
@@ -394,6 +410,7 @@ jQuery(function () {
 
     $('#caption_refine_mode').prop('checked', !!(extension_settings.caption.refine_mode));
     $('#caption_allow_reverse_proxy').prop('checked', !!(extension_settings.caption.allow_reverse_proxy));
+    $('#caption_prompt_ask').prop('checked', !!(extension_settings.caption.prompt_ask));
     $('#caption_source').val(extension_settings.caption.source);
     $('#caption_prompt').val(extension_settings.caption.prompt);
     $('#caption_template').val(extension_settings.caption.template);
@@ -413,6 +430,10 @@ jQuery(function () {
     });
     $('#caption_allow_reverse_proxy').on('input', () => {
         extension_settings.caption.allow_reverse_proxy = $('#caption_allow_reverse_proxy').prop('checked');
+        saveSettingsDebounced();
+    });
+    $('#caption_prompt_ask').on('input', () => {
+        extension_settings.caption.prompt_ask = $('#caption_prompt_ask').prop('checked');
         saveSettingsDebounced();
     });
 });
