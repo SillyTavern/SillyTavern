@@ -3252,6 +3252,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         if (skipWIAN !== true) {
             console.log('skipWIAN not active, adding WIAN');
             // Add all depth WI entries to prompt
+            flushWIDepthInjections();
             if (Array.isArray(worldInfoDepth)) {
                 worldInfoDepth.forEach((e) => {
                     const joinedEntries = e.entries.join('\n');
@@ -3938,7 +3939,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                                     ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
                                 }
                             }
-                            activateSendButtons();
 
                             if (type !== 'quiet') {
                                 playMessageSound();
@@ -3995,23 +3995,16 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                         }
                     } else {
                         generatedPromptCache = '';
-                        activateSendButtons();
-                        //console.log('runGenerate calling showSwipeBtns');
-                        showSwipeButtons();
 
                         if (data?.response) {
                             toastr.error(data.response, 'API Error');
                         }
                         reject(data.response);
                     }
-                    console.debug('/api/chats/save called by /Generate');
 
+                    console.debug('/api/chats/save called by /Generate');
                     await saveChatConditional();
-                    is_send_press = false;
-                    hideStopButton();
-                    activateSendButtons();
-                    showSwipeButtons();
-                    setGenerationProgress(0);
+                    unblockGeneration();
                     streamingProcessor = null;
 
                     if (type !== 'quiet') {
@@ -4040,14 +4033,17 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         is_send_press = false;
     }
 
+    //console.log('generate ending');
+} //generate ends
+
+function flushWIDepthInjections() {
     //prevent custom depth WI entries (which have unique random key names) from duplicating
-    for (let key in extension_prompts) {
-        if (key.includes('customDepthWI')) {
+    for (const key of Object.keys(extension_prompts)) {
+        if (key.startsWith('customDepthWI')) {
             delete extension_prompts[key];
         }
     }
-    //console.log('generate ending');
-} //generate ends
+}
 
 function unblockGeneration() {
     is_send_press = false;
@@ -4055,6 +4051,7 @@ function unblockGeneration() {
     showSwipeButtons();
     setGenerationProgress(0);
     flushEphemeralStoppingStrings();
+    flushWIDepthInjections();
     $('#send_textarea').removeAttr('disabled');
 }
 
