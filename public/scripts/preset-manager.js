@@ -303,6 +303,7 @@ class PresetManager {
             'model_novel',
             'streaming_kobold',
             'enabled',
+            'bind_to_context',
             'seed',
             'legacy_api',
             'mancer_model',
