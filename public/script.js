@@ -3762,7 +3762,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                     console.log(generate_data.prompt);
                 }
 
-                let generate_url = getGenerateUrl(main_api);
                 console.debug('rungenerate calling API');
 
                 showStopButton();
@@ -3809,32 +3808,49 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 }
 
                 console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
-                /** @type {Promise<any>} */
-                let streamingGeneratorPromise = Promise.resolve();
 
-                if (main_api == 'openai') {
-                    if (isStreamingEnabled() && type !== 'quiet') {
-                        streamingGeneratorPromise = sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
-                    }
-                    else {
-                        sendOpenAIRequest(type, generate_data.prompt, abortController.signal).then(onSuccess).catch(onError);
-                    }
-                }
-                else if (main_api == 'koboldhorde') {
-                    generateHorde(finalPrompt, generate_data, abortController.signal, true).then(onSuccess).catch(onError);
-                }
-                else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
-                    streamingGeneratorPromise = generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                }
-                else if (main_api == 'novel' && isStreamingEnabled() && type !== 'quiet') {
-                    streamingGeneratorPromise = generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                }
-                else if (main_api == 'kobold' && isStreamingEnabled() && type !== 'quiet') {
-                    streamingGeneratorPromise = generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
-                }
-                else {
+                if (isStreamingEnabled() && type !== 'quiet') {
                     try {
-                        const response = await fetch(generate_url, {
+                        let streamingGenerator;
+
+                        switch (main_api) {
+                            case 'openai':
+                                streamingGenerator = await sendOpenAIRequest(type, generate_data.prompt, streamingProcessor.abortController.signal);
+                                break;
+                            case 'textgenerationwebui':
+                                streamingGenerator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                                break;
+                            case 'novel':
+                                streamingGenerator = await generateNovelWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                                break;
+                            case 'kobold':
+                                streamingGenerator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
+                                break;
+                            default:
+                                throw new Error('Streaming is enabled, but the current API does not support streaming.');
+                        }
+
+                        streamingProcessor.generator = streamingGenerator;
+                        hideSwipeButtons();
+                        let getMessage = await streamingProcessor.generate();
+                        let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+
+                        if (isContinue) {
+                            getMessage = continue_mag + getMessage;
+                        }
+
+                        if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
+                            await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
+                            streamingProcessor = null;
+                            triggerAutoContinue(messageChunk, isImpersonate);
+                        }
+                        resolve();
+                    } catch (error) {
+                        onError(error);
+                    }
+                } else {
+                    try {
+                        const response = await fetch(getGenerateUrl(main_api), {
                             method: 'POST',
                             headers: getRequestHeaders(),
                             cache: 'no-cache',
@@ -3852,30 +3868,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                     } catch (error) {
                         onError(error);
                     }
-                }
-
-                if (isStreamingEnabled() && type !== 'quiet') {
-                    try {
-                        const streamingGenerator = await streamingGeneratorPromise;
-                        streamingProcessor.generator = streamingGenerator;
-                        hideSwipeButtons();
-                        let getMessage = await streamingProcessor.generate();
-                        let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
-
-                        if (isContinue) {
-                            getMessage = continue_mag + getMessage;
-                        }
-
-                        if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
-                            await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
-                            streamingProcessor = null;
-                            triggerAutoContinue(messageChunk, isImpersonate);
-                        }
-                        resolve();
-                    } catch (err) {
-                        onError(err);
-                    }
-
                 }
 
                 async function onSuccess(data) {
@@ -3983,7 +3975,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                         if (data?.response) {
                             toastr.error(data.response, 'API Error');
                         }
-                        reject(data.response);
+                        reject(data?.response);
+                        return;
                     }
 
                     console.debug('/api/chats/save called by /Generate');
