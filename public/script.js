@@ -2600,6 +2600,20 @@ function hideStopButton() {
 }
 
 class StreamingProcessor {
+    constructor(type, force_name2, timeStarted) {
+        this.result = '';
+        this.messageId = -1;
+        this.type = type;
+        this.force_name2 = force_name2;
+        this.isStopped = false;
+        this.isFinished = false;
+        this.generator = this.nullStreamingGeneration;
+        this.abortController = new AbortController();
+        this.firstMessageText = '...';
+        this.timeStarted = timeStarted;
+        this.swipes = [];
+    }
+
     showMessageButtons(messageId) {
         if (messageId == -1) {
             return;
@@ -2809,20 +2823,6 @@ class StreamingProcessor {
 
     *nullStreamingGeneration() {
         throw new Error('Generation function for streaming is not hooked up');
-    }
-
-    constructor(type, force_name2, timeStarted) {
-        this.result = '';
-        this.messageId = -1;
-        this.type = type;
-        this.force_name2 = force_name2;
-        this.isStopped = false;
-        this.isFinished = false;
-        this.generator = this.nullStreamingGeneration;
-        this.abortController = new AbortController();
-        this.firstMessageText = '...';
-        this.timeStarted = timeStarted;
-        this.swipes = [];
     }
 
     async generate() {
