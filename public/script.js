@@ -2649,32 +2649,16 @@ class StreamingProcessor {
         return messageId;
     }
 
-    removePrefix(text) {
-        const name1Marker = `${name1}: `;
-        const name2Marker = `${name2}: `;
-
-        if (text) {
-            if (text.startsWith(name1Marker)) {
-                text = text.replace(name1Marker, '');
-            }
-            if (text.startsWith(name2Marker)) {
-                text = text.replace(name2Marker, '');
-            }
-        }
-        return text;
-    }
-
     onProgressStreaming(messageId, text, isFinal) {
         const isImpersonate = this.type == 'impersonate';
         const isContinue = this.type == 'continue';
 
         if (!isImpersonate && !isContinue && Array.isArray(this.swipes) && this.swipes.length > 0) {
             for (let i = 0; i < this.swipes.length; i++) {
-                this.swipes[i] = cleanUpMessage(this.removePrefix(this.swipes[i]), false, false, true, this.stoppingStrings);
+                this.swipes[i] = cleanUpMessage(this.swipes[i], false, false, true, this.stoppingStrings);
             }
         }
 
-        text = this.removePrefix(text);
         let processedText = cleanUpMessage(text, isImpersonate, isContinue, !isFinal, this.stoppingStrings);
 
         // Predict unbalanced asterisks / quotes during streaming
