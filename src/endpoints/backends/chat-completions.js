@@ -438,25 +438,29 @@ async function sendMistralAIRequest(request, response) {
             controller.abort();
         });
 
+        const requestBody = {
+            'model': request.body.model,
+            'messages': messages,
+            'temperature': request.body.temperature,
+            'top_p': request.body.top_p,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'safe_mode': request.body.safe_mode,
+            'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
+        };
+
         const config = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + apiKey,
             },
-            body: JSON.stringify({
-                'model': request.body.model,
-                'messages': messages,
-                'temperature': request.body.temperature,
-                'top_p': request.body.top_p,
-                'max_tokens': request.body.max_tokens,
-                'stream': request.body.stream,
-                'safe_mode': request.body.safe_mode,
-                'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
-            }),
+            body: JSON.stringify(requestBody),
             signal: controller.signal,
             timeout: 0,
         };
+
+        console.log('MisralAI request:', requestBody);
 
         const generateResponse = await fetch('https://api.mistral.ai/v1/chat/completions', config);
         if (request.body.stream) {
@@ -469,6 +473,7 @@ async function sendMistralAIRequest(request, response) {
                 return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send({ error: true });
             }
             const generateResponseJson = await generateResponse.json();
+            console.log('MistralAI response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
     } catch (error) {
