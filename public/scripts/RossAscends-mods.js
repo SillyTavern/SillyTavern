@@ -4,7 +4,6 @@ import {
     online_status,
     main_api,
     api_server,
-    api_server_textgenerationwebui,
     is_send_press,
     max_context,
     saveSettingsDebounced,
@@ -35,7 +34,7 @@ import {
 import { debounce, delay, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCount } from './tokenizers.js';
-import { textgen_types, textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
+import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
 
 import Bowser from '../lib/bowser.min.js';
 
@@ -387,7 +386,7 @@ function RA_autoconnect(PrevApi) {
                 ) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
-                else if (api_server_textgenerationwebui && isValidUrl(api_server_textgenerationwebui)) {
+                else if (isValidUrl(getTextGenServer())) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
                 break;
@@ -400,6 +399,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
                     || (secret_state[SECRET_KEYS.MAKERSUITE] && oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE)
                     || (secret_state[SECRET_KEYS.MISTRALAI] && oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI)
+                    || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                 ) {
                     $('#api_button_openai').trigger('click');
                 }

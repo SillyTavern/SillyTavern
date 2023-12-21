@@ -29,6 +29,7 @@ const controls = [
     { id: 'instruct_first_output_sequence', property: 'first_output_sequence', isCheckbox: false },
     { id: 'instruct_last_output_sequence', property: 'last_output_sequence', isCheckbox: false },
     { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
+    { id: 'instruct_bind_to_context', property: 'bind_to_context', isCheckbox: true },
 ];
 
 /**
@@ -409,6 +410,10 @@ jQuery(() => {
     });
 
     $('#instruct_enabled').on('change', function () {
+        if (!power_user.instruct.bind_to_context) {
+            return;
+        }
+
         // When instruct mode gets enabled, select context template matching selected instruct preset
         if (power_user.instruct.enabled) {
             selectMatchingContextTemplate(power_user.instruct.preset);
@@ -440,8 +445,10 @@ jQuery(() => {
             }
         });
 
-        // Select matching context template
-        selectMatchingContextTemplate(name);
+        if (power_user.instruct.bind_to_context) {
+            // Select matching context template
+            selectMatchingContextTemplate(name);
+        }
 
         highlightDefaultPreset();
     });

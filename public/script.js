@@ -15,14 +15,13 @@ import {
     loadTextGenSettings,
     generateTextGenWithStreaming,
     getTextGenGenerationData,
-    formatTextGenURL,
-    getTextGenUrlSourceId,
     textgen_types,
     textgenerationwebui_banned_in_macros,
     getTextGenServer,
+    validateTextGenUrl,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA } = textgen_types;
 
 import {
     world_info,
@@ -185,12 +184,12 @@ import {
 } from './scripts/instruct-mode.js';
 import { applyLocale, initLocales } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
-import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription } from './scripts/personas.js';
+import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription, updatePersonaNameIfExists } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadTogetherAIModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment } from './scripts/chats.js';
+import { loadMancerModels, loadOllamaModels, loadTogetherAIModels } from './scripts/textgen-models.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { replaceVariableMacros } from './scripts/variables.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 
@@ -250,7 +249,6 @@ export {
     name1,
     name2,
     is_send_press,
-    api_server_textgenerationwebui,
     max_context,
     chat_metadata,
     streamingProcessor,
@@ -274,6 +272,26 @@ DOMPurify.addHook('afterSanitizeAttributes', function (node) {
     if ('target' in node) {
         node.setAttribute('target', '_blank');
         node.setAttribute('rel', 'noopener');
+    }
+});
+
+DOMPurify.addHook("uponSanitizeAttribute", (_, data, config) => {
+    if (!config['MESSAGE_SANITIZE']) {
+        return;
+    }
+    switch (data.attrName) {
+        case 'class': {
+            if (data.attrValue) {
+                data.attrValue = data.attrValue.split(' ').map((v) => {
+                    if (v.startsWith('fa-') || v.startsWith('note-') || v === 'monospace') {
+                        return v;
+                    }
+
+                    return "custom-" + v;
+                }).join(' ');
+            }
+            break;
+        }
     }
 });
 
@@ -315,6 +333,7 @@ export const event_types = {
     FORCE_SET_BACKGROUND: 'force_set_background',
     CHAT_DELETED: 'chat_deleted',
     GROUP_CHAT_DELETED: 'group_chat_deleted',
+    GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
 };
 
 export const eventSource = new EventEmitter();
@@ -662,7 +681,6 @@ let chat_file_for_del = '';
 let online_status = 'no_connection';
 
 let api_server = '';
-let api_server_textgenerationwebui = '';
 
 let is_send_press = false; //Send generation
 
@@ -888,7 +906,8 @@ async function getStatusKobold() {
 
     if (!endpoint) {
         console.warn('No endpoint for status check');
-        return;
+        online_status = 'no_connection';
+        return resultCheckStatus();
     }
 
     try {
@@ -931,11 +950,12 @@ async function getStatusKobold() {
 async function getStatusTextgen() {
     const url = '/api/backends/text-completions/status';
 
-    let endpoint = getTextGenServer();
+    const endpoint = getTextGenServer();
 
     if (!endpoint) {
         console.warn('No endpoint for status check');
-        return;
+        online_status = 'no_connection';
+        return resultCheckStatus();
     }
 
     try {
@@ -945,10 +965,7 @@ async function getStatusTextgen() {
             body: JSON.stringify({
                 api_server: endpoint,
                 api_type: textgen_settings.type,
-                legacy_api:
-                    textgen_settings.legacy_api &&
-                    textgen_settings.type !== MANCER &&
-                    textgen_settings.type !== TOGETHERAI,
+                legacy_api: textgen_settings.legacy_api && (textgen_settings.type === OOBA || textgen_settings.type === APHRODITE),
             }),
             signal: abortStatusCheck.signal,
         });
@@ -956,11 +973,14 @@ async function getStatusTextgen() {
         const data = await response.json();
 
         if (textgen_settings.type === MANCER) {
-            online_status = textgen_settings.mancer_model;
             loadMancerModels(data?.data);
+            online_status = textgen_settings.mancer_model;
         } else if (textgen_settings.type === TOGETHERAI) {
-            online_status = textgen_settings.togetherai_model;
             loadTogetherAIModels(data?.data);
+            online_status = textgen_settings.togetherai_model;
+        } else if (textgen_settings.type === OLLAMA) {
+            loadOllamaModels(data?.data);
+            online_status = textgen_settings.ollama_model || 'Connected';
         } else {
             online_status = data?.result;
         }
@@ -1550,7 +1570,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), '$1');
     }
 
-    mes = DOMPurify.sanitize(mes, { FORBID_TAGS: ['style'] });
+    /** @type {any} */
+    const config = { MESSAGE_SANITIZE: true, ADD_TAGS: ['custom-style'] };
+    mes = encodeStyleTags(mes);
+    mes = DOMPurify.sanitize(mes, config);
+    mes = decodeStyleTags(mes);
 
     return mes;
 }
@@ -2960,9 +2984,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     if (main_api === 'textgenerationwebui' &&
         textgen_settings.streaming &&
         textgen_settings.legacy_api &&
-        textgen_settings.type !== MANCER &&
-        textgen_settings.type !== TOGETHERAI) {
-        toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use --extensions openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
+        (textgen_settings.type === OOBA || textgen_settings.type === APHRODITE)) {
+        toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use new API to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration();
         return Promise.resolve();
     }
@@ -3229,6 +3252,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         if (skipWIAN !== true) {
             console.log('skipWIAN not active, adding WIAN');
             // Add all depth WI entries to prompt
+            flushWIDepthInjections();
             if (Array.isArray(worldInfoDepth)) {
                 worldInfoDepth.forEach((e) => {
                     const joinedEntries = e.entries.join('\n');
@@ -3623,30 +3647,57 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                     generatedPromptCache = cleanupPromptCache(generatedPromptCache);
                 }
 
-                // Right now, everything is suffixed with a newline
-                mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
+                // Flattens the multiple prompt objects to a string.
+                const combine = () => {
+                    // Right now, everything is suffixed with a newline
+                    mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
 
-                // add chat preamble
-                mesSendString = addChatsPreamble(mesSendString);
+                    // add a custom dingus (if defined)
+                    mesSendString = addChatsSeparator(mesSendString);
 
-                // add a custom dingus (if defined)
-                mesSendString = addChatsSeparator(mesSendString);
+                    // add chat preamble
+                    mesSendString = addChatsPreamble(mesSendString);
 
-                let combinedPrompt =
-                    beforeScenarioAnchor +
-                    storyString +
-                    afterScenarioAnchor +
-                    mesExmString +
-                    mesSendString +
-                    generatedPromptCache;
+                    let combinedPrompt = beforeScenarioAnchor +
+                        storyString +
+                        afterScenarioAnchor +
+                        mesExmString +
+                        mesSendString +
+                        generatedPromptCache;
 
-                combinedPrompt = combinedPrompt.replace(/\r/gm, '');
+                    combinedPrompt = combinedPrompt.replace(/\r/gm, '');
 
-                if (power_user.collapse_newlines) {
-                    combinedPrompt = collapseNewlines(combinedPrompt);
-                }
+                    if (power_user.collapse_newlines) {
+                        combinedPrompt = collapseNewlines(combinedPrompt);
+                    }
 
-                return combinedPrompt;
+                    return combinedPrompt;
+                };
+
+                let data = {
+                    api: main_api,
+                    combinedPrompt: null,
+                    description,
+                    personality,
+                    persona,
+                    scenario,
+                    char: name2,
+                    user: name1,
+                    beforeScenarioAnchor,
+                    afterScenarioAnchor,
+                    mesExmString,
+                    finalMesSend,
+                    generatedPromptCache,
+                    main: system,
+                    jailbreak,
+                    naiPreamble: nai_settings.preamble,
+                };
+
+                // Before returning the combined prompt, give available context related information to all subscribers.
+                eventSource.emitAndWait(event_types.GENERATE_BEFORE_COMBINE_PROMPTS, data);
+
+                // If one or multiple subscribers return a value, forfeit the responsibillity of flattening the context.
+                return !data.combinedPrompt ? combine() : data.combinedPrompt;
             }
 
             // Get the negative prompt first since it has the unmodified mesSend array
@@ -3888,7 +3939,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                                     ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
                                 }
                             }
-                            activateSendButtons();
 
                             if (type !== 'quiet') {
                                 playMessageSound();
@@ -3945,23 +3995,16 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                         }
                     } else {
                         generatedPromptCache = '';
-                        activateSendButtons();
-                        //console.log('runGenerate calling showSwipeBtns');
-                        showSwipeButtons();
 
                         if (data?.response) {
                             toastr.error(data.response, 'API Error');
                         }
                         reject(data.response);
                     }
-                    console.debug('/api/chats/save called by /Generate');
 
+                    console.debug('/api/chats/save called by /Generate');
                     await saveChatConditional();
-                    is_send_press = false;
-                    hideStopButton();
-                    activateSendButtons();
-                    showSwipeButtons();
-                    setGenerationProgress(0);
+                    unblockGeneration();
                     streamingProcessor = null;
 
                     if (type !== 'quiet') {
@@ -3990,14 +4033,17 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         is_send_press = false;
     }
 
+    //console.log('generate ending');
+} //generate ends
+
+function flushWIDepthInjections() {
     //prevent custom depth WI entries (which have unique random key names) from duplicating
-    for (let key in extension_prompts) {
-        if (key.includes('customDepthWI')) {
+    for (const key of Object.keys(extension_prompts)) {
+        if (key.startsWith('customDepthWI')) {
             delete extension_prompts[key];
         }
     }
-    //console.log('generate ending');
-} //generate ends
+}
 
 function unblockGeneration() {
     is_send_press = false;
@@ -4005,6 +4051,7 @@ function unblockGeneration() {
     showSwipeButtons();
     setGenerationProgress(0);
     flushEphemeralStoppingStrings();
+    flushWIDepthInjections();
     $('#send_textarea').removeAttr('disabled');
 }
 
@@ -4460,6 +4507,11 @@ function extractTitleFromData(data) {
     return undefined;
 }
 
+/**
+ * Extracts the message from the response data.
+ * @param {object} data Response data
+ * @returns {string} Extracted message
+ */
 function extractMessageFromData(data) {
     switch (main_api) {
         case 'kobold':
@@ -4467,7 +4519,7 @@ function extractMessageFromData(data) {
         case 'koboldhorde':
             return data.text;
         case 'textgenerationwebui':
-            return data.choices[0].text;
+            return data.choices?.[0]?.text ?? data.content ?? data.response;
         case 'novel':
             return data.output;
         case 'openai':
@@ -5402,6 +5454,7 @@ function changeMainAPI() {
         case chat_completion_sources.AI21:
         case chat_completion_sources.MAKERSUITE:
         case chat_completion_sources.MISTRALAI:
+        case chat_completion_sources.CUSTOM:
         default:
             setupChatCompletionPromptManager(oai_settings);
             break;
@@ -5734,12 +5787,6 @@ async function getSettings() {
 
         setWorldInfoSettings(settings.world_info_settings ?? settings, data);
 
-        api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
-        $('#textgenerationwebui_api_url_text').val(api_server_textgenerationwebui);
-        $('#aphrodite_api_url_text').val(api_server_textgenerationwebui);
-        $('#tabby_api_url_text').val(api_server_textgenerationwebui);
-        $('#koboldcpp_api_url_text').val(api_server_textgenerationwebui);
-
         selected_button = settings.selected_button;
 
         if (data.enable_extensions) {
@@ -5779,7 +5826,6 @@ async function saveSettings(type) {
             active_character: active_character,
             active_group: active_group,
             api_server: api_server,
-            api_server_textgenerationwebui: api_server_textgenerationwebui,
             preset_settings: preset_settings,
             user_avatar: user_avatar,
             amount_gen: amount_gen,
@@ -7476,95 +7522,110 @@ const swipe_right = () => {
     }
 };
 
+const CONNECT_API_MAP = {
+    'kobold': {
+        button: '#api_button',
+    },
+    'horde': {
+        selected: 'koboldhorde',
+    },
+    'novel': {
+        button: '#api_button_novel',
+    },
+    'ooba': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.OOBA,
+    },
+    'tabby': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.TABBY,
+    },
+    'llamacpp': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.LLAMACPP,
+    },
+    'ollama': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.OLLAMA,
+    },
+    'mancer': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.MANCER,
+    },
+    'aphrodite': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.APHRODITE,
+    },
+    'kcpp': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.KOBOLDCPP,
+    },
+    'togetherai': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.TOGETHERAI,
+    },
+    'oai': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.OPENAI,
+    },
+    'claude': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.CLAUDE,
+    },
+    'windowai': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.WINDOWAI,
+    },
+    'openrouter': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.OPENROUTER,
+    },
+    'scale': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.SCALE,
+    },
+    'ai21': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.AI21,
+    },
+    'makersuite': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.MAKERSUITE,
+    },
+    'mistralai': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.MISTRALAI,
+    },
+    'custom': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.CUSTOM,
+    },
+};
+
 /**
  * @param {string} text API name
  */
 async function connectAPISlash(_, text) {
     if (!text) return;
 
-    const apiMap = {
-        'kobold': {
-            button: '#api_button',
-        },
-        'horde': {
-            selected: 'koboldhorde',
-        },
-        'novel': {
-            button: '#api_button_novel',
-        },
-        'ooba': {
-            selected: 'textgenerationwebui',
-            button: '#api_button_textgenerationwebui',
-            type: textgen_types.OOBA,
-        },
-        'tabby': {
-            selected: 'textgenerationwebui',
-            button: '#api_button_textgenerationwebui',
-            type: textgen_types.TABBY,
-        },
-        'mancer': {
-            selected: 'textgenerationwebui',
-            button: '#api_button_textgenerationwebui',
-            type: textgen_types.MANCER,
-        },
-        'aphrodite': {
-            selected: 'textgenerationwebui',
-            button: '#api_button_textgenerationwebui',
-            type: textgen_types.APHRODITE,
-        },
-        'kcpp': {
-            selected: 'textgenerationwebui',
-            button: '#api_button_textgenerationwebui',
-            type: textgen_types.KOBOLDCPP,
-        },
-        'togetherai': {
-            selected: 'textgenerationwebui',
-            button: '#api_button_textgenerationwebui',
-            type: textgen_types.TOGETHERAI,
-        },
-        'oai': {
-            selected: 'openai',
-            source: 'openai',
-            button: '#api_button_openai',
-        },
-        'claude': {
-            selected: 'openai',
-            source: 'claude',
-            button: '#api_button_openai',
-        },
-        'windowai': {
-            selected: 'openai',
-            source: 'windowai',
-            button: '#api_button_openai',
-        },
-        'openrouter': {
-            selected: 'openai',
-            source: 'openrouter',
-            button: '#api_button_openai',
-        },
-        'scale': {
-            selected: 'openai',
-            source: 'scale',
-            button: '#api_button_openai',
-        },
-        'ai21': {
-            selected: 'openai',
-            source: 'ai21',
-            button: '#api_button_openai',
-        },
-        'makersuite': {
-            selected: 'openai',
-            source: 'makersuite',
-            button: '#api_button_openai',
-        },
-        'mistralai': {
-            selected: 'openai',
-            source: 'mistralai',
-            button: '#api_button_openai',
-        },
-    };
-
-    const apiConfig = apiMap[text.toLowerCase()];
+    const apiConfig = CONNECT_API_MAP[text.toLowerCase()];
     if (!apiConfig) {
         toastr.error(`Error: ${text} is not a valid API`);
         return;
@@ -7848,7 +7909,7 @@ jQuery(async function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
-    registerSlashCommand('api', connectAPISlash, [], '<span class="monospace">(kobold, horde, novel, ooba, tabby, mancer, aphrodite, kcpp, oai, claude, windowai, openrouter, scale, ai21, makersuite, mistralai, togetherai)</span> – connect to an API', true, true);
+    registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
@@ -8407,19 +8468,7 @@ jQuery(async function () {
             await writeSecret(SECRET_KEYS.TOGETHERAI, togetherKey);
         }
 
-        const urlSourceId = getTextGenUrlSourceId();
-
-        if (urlSourceId && $(urlSourceId).val() !== '') {
-            let value = formatTextGenURL(String($(urlSourceId).val()).trim());
-            if (!value) {
-                callPopup('Please enter a valid URL.', 'text');
-                return;
-            }
-
-            $(urlSourceId).val(value);
-            api_server_textgenerationwebui = value;
-        }
-
+        validateTextGenUrl();
         startStatusLoading();
         main_api = 'textgenerationwebui';
         saveSettingsDebounced();
@@ -9107,8 +9156,10 @@ jQuery(async function () {
         await messageEditDone($(this));
     });
 
-    $('#your_name_button').click(function () {
-        setUserName($('#your_name').val());
+    $('#your_name_button').click(async function () {
+        const userName = String($('#your_name').val()).trim();
+        setUserName(userName);
+        await updatePersonaNameIfExists(user_avatar, userName);
     });
 
     $('#sync_name_button').on('click', async function () {

@@ -4,7 +4,7 @@ const { Readable } = require('stream');
 
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY } = require('../../constants');
-const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, color } = require('../../util');
+const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
 const { convertClaudePrompt, convertGooglePrompt, convertTextCompletionPrompt } = require('../prompt-converters');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
@@ -469,25 +469,29 @@ async function sendMistralAIRequest(request, response) {
             controller.abort();
         });
 
+        const requestBody = {
+            'model': request.body.model,
+            'messages': messages,
+            'temperature': request.body.temperature,
+            'top_p': request.body.top_p,
+            'max_tokens': request.body.max_tokens,
+            'stream': request.body.stream,
+            'safe_mode': request.body.safe_mode,
+            'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
+        };
+
         const config = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + apiKey,
             },
-            body: JSON.stringify({
-                'model': request.body.model,
-                'messages': messages,
-                'temperature': request.body.temperature,
-                'top_p': request.body.top_p,
-                'max_tokens': request.body.max_tokens,
-                'stream': request.body.stream,
-                'safe_mode': request.body.safe_mode,
-                'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
-            }),
+            body: JSON.stringify(requestBody),
             signal: controller.signal,
             timeout: 0,
         };
+
+        console.log('MisralAI request:', requestBody);
 
         const generateResponse = await fetch('https://api.mistral.ai/v1/chat/completions', config);
         if (request.body.stream) {
@@ -500,6 +504,7 @@ async function sendMistralAIRequest(request, response) {
                 return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send({ error: true });
             }
             const generateResponseJson = await generateResponse.json();
+            console.log('MistralAI response:', generateResponseJson);
             return response.send(generateResponseJson);
         }
     } catch (error) {
@@ -533,12 +538,17 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = 'https://api.mistral.ai/v1';
         api_key_openai = readSecret(SECRET_KEYS.MISTRALAI);
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
+        api_url = request.body.custom_url;
+        api_key_openai = readSecret(SECRET_KEYS.CUSTOM);
+        headers = {};
+        mergeObjectWithYaml(headers, request.body.custom_include_headers);
     } else {
         console.log('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
     }
 
-    if (!api_key_openai && !request.body.reverse_proxy) {
+    if (!api_key_openai && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
         console.log('OpenAI API key is missing.');
         return response_getstatus_openai.status(400).send({ error: true });
     }
@@ -688,7 +698,7 @@ router.post('/generate', jsonParser, function (request, response) {
     let headers;
     let bodyParams;
 
-    if (request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.OPENROUTER) {
+    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
@@ -697,7 +707,7 @@ router.post('/generate', jsonParser, function (request, response) {
         if (getConfigValue('openai.randomizeUserId', false)) {
             bodyParams['user'] = uuidv4();
         }
-    } else {
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         apiUrl = 'https://openrouter.ai/api/v1';
         apiKey = readSecret(SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
@@ -707,9 +717,19 @@ router.post('/generate', jsonParser, function (request, response) {
         if (request.body.use_fallback) {
             bodyParams['route'] = 'fallback';
         }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
+        apiUrl = request.body.custom_url;
+        apiKey = readSecret(SECRET_KEYS.CUSTOM);
+        headers = {};
+        bodyParams = {};
+        mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
+        mergeObjectWithYaml(headers, request.body.custom_include_headers);
+    } else {
+        console.log('This chat completion source is not supported yet.');
+        return response.status(400).send({ error: true });
     }
 
-    if (!apiKey && !request.body.reverse_proxy) {
+    if (!apiKey && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
         console.log('OpenAI API key is missing.');
         return response.status(400).send({ error: true });
     }
@@ -731,6 +751,27 @@ router.post('/generate', jsonParser, function (request, response) {
         controller.abort();
     });
 
+    const requestBody = {
+        'messages': isTextCompletion === false ? request.body.messages : undefined,
+        'prompt': isTextCompletion === true ? textPrompt : undefined,
+        'model': request.body.model,
+        'temperature': request.body.temperature,
+        'max_tokens': request.body.max_tokens,
+        'stream': request.body.stream,
+        'presence_penalty': request.body.presence_penalty,
+        'frequency_penalty': request.body.frequency_penalty,
+        'top_p': request.body.top_p,
+        'top_k': request.body.top_k,
+        'stop': isTextCompletion === false ? request.body.stop : undefined,
+        'logit_bias': request.body.logit_bias,
+        'seed': request.body.seed,
+        ...bodyParams,
+    };
+
+    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
+        excludeKeysByYaml(requestBody, request.body.custom_exclude_body);
+    }
+
     /** @type {import('node-fetch').RequestInit} */
     const config = {
         method: 'post',
@@ -739,27 +780,12 @@ router.post('/generate', jsonParser, function (request, response) {
             'Authorization': 'Bearer ' + apiKey,
             ...headers,
         },
-        body: JSON.stringify({
-            'messages': isTextCompletion === false ? request.body.messages : undefined,
-            'prompt': isTextCompletion === true ? textPrompt : undefined,
-            'model': request.body.model,
-            'temperature': request.body.temperature,
-            'max_tokens': request.body.max_tokens,
-            'stream': request.body.stream,
-            'presence_penalty': request.body.presence_penalty,
-            'frequency_penalty': request.body.frequency_penalty,
-            'top_p': request.body.top_p,
-            'top_k': request.body.top_k,
-            'stop': isTextCompletion === false ? request.body.stop : undefined,
-            'logit_bias': request.body.logit_bias,
-            'seed': request.body.seed,
-            ...bodyParams,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
         timeout: 0,
     };
 
-    console.log(JSON.parse(String(config.body)));
+    console.log(requestBody);
 
     makeRequest(config, response, request);
 

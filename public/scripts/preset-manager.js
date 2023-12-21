@@ -303,8 +303,14 @@ class PresetManager {
             'model_novel',
             'streaming_kobold',
             'enabled',
+            'bind_to_context',
             'seed',
+            'legacy_api',
             'mancer_model',
+            'togetherai_model',
+            'ollama_model',
+            'server_urls',
+            'type',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
