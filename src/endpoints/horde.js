@@ -226,7 +226,6 @@ router.post('/generate-image', jsonParser, async (request, response) => {
                 },
                 r2: false,
                 nsfw: request.body.nfsw,
-                replacement_filter: false,
                 models: [request.body.model],
             },
             { token: api_key_horde });
