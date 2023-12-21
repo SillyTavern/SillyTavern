@@ -13,6 +13,7 @@ import { SettingsUi } from './src/ui/SettingsUi.js';
 
 
 
+//TODO slash command hints
 //TODO move advanced QR options into own UI class
 
 
@@ -104,6 +105,7 @@ const loadSettings = async () => {
     try {
         settings = QuickReplySettings.from(extension_settings.quickReplyV2);
     } catch (ex) {
+        //TODO remove debugger
         debugger;
         settings = QuickReplySettings.from(defaultSettings);
     }
