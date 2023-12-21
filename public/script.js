@@ -1540,7 +1540,6 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
         mes = converter.makeHtml(mes);
-        mes = replaceBiasMarkup(mes);
 
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
             // Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
@@ -3070,7 +3069,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         //for normal messages sent from user..
         if ((textareaText != '' || hasPendingFileAttachment()) && !automatic_trigger && type !== 'quiet' && !dryRun) {
             // If user message contains no text other than bias - send as a system message
-            if (messageBias && replaceBiasMarkup(textareaText).trim().length === 0) {
+            if (messageBias && !removeMacros(textareaText)) {
                 sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
             }
             else {
@@ -4089,13 +4088,16 @@ function formatMessageHistoryItem(chatItem, isInstruct, forceOutputSequence) {
         textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar, name1, name2, forceOutputSequence);
     }
 
-    textResult = replaceBiasMarkup(textResult);
-
     return textResult;
 }
 
-export function replaceBiasMarkup(str) {
-    return (str ?? '').replace(/\{\{[\s\S]*?\}\}/gm, '');
+/**
+ * Removes all {{macros}} from a string.
+ * @param {string} str String to remove macros from.
+ * @returns {string} String with macros removed.
+ */
+export function removeMacros(str) {
+    return (str ?? '').replace(/\{\{[\s\S]*?\}\}/gm, '').trim();
 }
 
 /**
