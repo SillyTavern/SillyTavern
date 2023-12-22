@@ -25,6 +25,9 @@ autorun: true
 disableThumbnails: false
 # Thumbnail quality (0-100)
 thumbnailsQuality: 95
+# Generate avatar thumbnails as PNG instead of JPG (preserves transparency but increases filesize by about 100%)
+#  Changing this only affects new thumbnails. To recreate the old ones, clear out your ST/thumbnails/ folder.
+avatarThumbnailsPng: false
 # Allow secret keys exposure via API
 allowKeysExposure: false
 # Skip new default content checks
