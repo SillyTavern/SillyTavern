@@ -130,8 +130,6 @@ const loadSettings = async () => {
     try {
         settings = QuickReplySettings.from(extension_settings.quickReplyV2);
     } catch (ex) {
-        //TODO remove debugger
-        debugger;
         settings = QuickReplySettings.from(defaultSettings);
     }
 };
