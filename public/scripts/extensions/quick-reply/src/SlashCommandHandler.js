@@ -49,8 +49,9 @@ export class SlashCommandHandler {
         before  - bool - place QR before user input
         inject  - bool - inject user input automatically (if disabled use {{input}})
         `.trim();
-        registerSlashCommand('qr-set-create', (args, name)=>this.createSet(name, args), ['qr-presetadd'], `<span class="monospace" style="white-space:pre-line;">[arguments] (label)\n  arguments:\n    ${presetArgs}</span> – create a new preset (overrides existing ones), example: <tt>/qr-presetadd MyNewPreset</tt>`, true, true);
-        registerSlashCommand('qr-set-update', (args, name)=>this.updateSet(name, args), ['qr-presetupdate'], `<span class="monospace" style="white-space:pre-line;">[arguments] (label)\n  arguments:\n    ${presetArgs}</span> – update an existing preset, example: <tt>/qr-presetupdate enabled=false MyPreset</tt>`, true, true);
+        registerSlashCommand('qr-set-create', (args, name)=>this.createSet(name, args), ['qr-presetadd'], `<span class="monospace" style="white-space:pre-line;">[arguments] (name)\n  arguments:\n    ${presetArgs}</span> – create a new preset (overrides existing ones), example: <tt>/qr-set-add MyNewPreset</tt>`, true, true);
+        registerSlashCommand('qr-set-update', (args, name)=>this.updateSet(name, args), ['qr-presetupdate'], `<span class="monospace" style="white-space:pre-line;">[arguments] (name)\n  arguments:\n    ${presetArgs}</span> – update an existing preset, example: <tt>/qr-set-update enabled=false MyPreset</tt>`, true, true);
+        registerSlashCommand('qr-set-delete', (args, name)=>this.deleteSet(name), ['qr-presetdelete'], `<span class="monospace" style="white-space:pre-line;">(name)\n  arguments:\n    ${presetArgs}</span> – delete an existing preset, example: <tt>/qr-set-delete MyPreset</tt>`, true, true);
     }
 
 
@@ -234,5 +235,11 @@ export class SlashCommandHandler {
             toastr.error(ex.message);
         }
     }
+    deleteSet(name) {
+        try {
+            this.api.deleteSet(name ?? '');
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
 }

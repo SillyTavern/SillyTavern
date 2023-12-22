@@ -2,18 +2,21 @@ import { QuickReply } from '../src/QuickReply.js';
 import { QuickReplyContextLink } from '../src/QuickReplyContextLink.js';
 import { QuickReplySet } from '../src/QuickReplySet.js';
 import { QuickReplySettings } from '../src/QuickReplySettings.js';
+import { SettingsUi } from '../src/ui/SettingsUi.js';
 
 
 
 
 export class QuickReplyApi {
     /**@type {QuickReplySettings}*/ settings;
+    /**@type {SettingsUi}*/ settingsUi;
 
 
 
 
-    constructor(/**@type {QuickReplySettings}*/settings) {
+    constructor(/**@type {QuickReplySettings}*/settings, /**@type {SettingsUi}*/settingsUi) {
         this.settings = settings;
+        this.settingsUi = settingsUi;
     }
 
 
@@ -322,9 +325,9 @@ export class QuickReplyApi {
      * @param {Boolean} [props.disableSend] whether or not to send the quick replies or put the message or slash command into the char input box
      * @param {Boolean} [props.placeBeforeInput] whether or not to place the quick reply contents before the existing user input
      * @param {Boolean} [props.injectInput] whether or not to automatically inject the user input at the end of the quick reply
-     * @returns {QuickReplySet} the new quick reply set
+     * @returns {Promise<QuickReplySet>} the new quick reply set
      */
-    createSet(name, {
+    async createSet(name, {
         disableSend,
         placeBeforeInput,
         injectInput,
@@ -334,9 +337,19 @@ export class QuickReplyApi {
         set.disableSend = disableSend ?? false;
         set.placeBeforeInput = placeBeforeInput ?? false;
         set.injectInput = injectInput ?? false;
-        QuickReplySet.list.push(set);
-        set.save();
-        //TODO settings UI must be updated
+        const oldSet = this.getSetByName(name);
+        if (oldSet) {
+            QuickReplySet.list.splice(QuickReplySet.list.indexOf(oldSet), 1, set);
+        } else {
+            const idx = QuickReplySet.list.findIndex(it=>it.name.localeCompare(name) == 1);
+            if (idx > -1) {
+                QuickReplySet.list.splice(idx, 0, set);
+            } else {
+                QuickReplySet.list.push(set);
+            }
+        }
+        await set.save();
+        this.settingsUi.rerender();
         return set;
     }
 
@@ -348,9 +361,9 @@ export class QuickReplyApi {
      * @param {Boolean} [props.disableSend] whether or not to send the quick replies or put the message or slash command into the char input box
      * @param {Boolean} [props.placeBeforeInput] whether or not to place the quick reply contents before the existing user input
      * @param {Boolean} [props.injectInput] whether or not to automatically inject the user input at the end of the quick reply
-     * @returns {QuickReplySet} the altered quick reply set
+     * @returns {Promise<QuickReplySet>} the altered quick reply set
      */
-    updateSet(name, {
+    async updateSet(name, {
         disableSend,
         placeBeforeInput,
         injectInput,
@@ -362,8 +375,22 @@ export class QuickReplyApi {
         set.disableSend = disableSend ?? false;
         set.placeBeforeInput = placeBeforeInput ?? false;
         set.injectInput = injectInput ?? false;
-        set.save();
-        //TODO settings UI must be updated
+        await set.save();
+        this.settingsUi.rerender();
         return set;
+    }
+
+    /**
+     * Delete an existing quick reply set.
+     *
+     * @param {String} name name of the existing quick reply set
+     */
+    async deleteSet(name) {
+        const set  = this.getSetByName(name);
+        if (!set) {
+            throw new Error(`No quick reply set with name "${name}" found.`);
+        }
+        await set.delete();
+        this.settingsUi.rerender();
     }
 }

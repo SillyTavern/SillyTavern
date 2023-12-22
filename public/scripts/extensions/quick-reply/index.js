@@ -21,6 +21,32 @@ import { SettingsUi } from './src/ui/SettingsUi.js';
 const _VERBOSE = true;
 export const log = (...msg) => _VERBOSE ? console.log('[QR2]', ...msg) : null;
 export const warn = (...msg) => _VERBOSE ? console.warn('[QR2]', ...msg) : null;
+/**
+ * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
+ * @param {Function} func The function to debounce.
+ * @param {Number} [timeout=300] The timeout in milliseconds.
+ * @returns {Function} The debounced function.
+ */
+export function debounceAsync(func, timeout = 300) {
+    let timer;
+    /**@type {Promise}*/
+    let debouncePromise;
+    /**@type {Function}*/
+    let debounceResolver;
+    return (...args) => {
+        clearTimeout(timer);
+        if (!debouncePromise) {
+            debouncePromise = new Promise(resolve => {
+                debounceResolver = resolve;
+            });
+        }
+        timer = setTimeout(() => {
+            debounceResolver(func.apply(this, args));
+            debouncePromise = null;
+        }, timeout);
+        return debouncePromise;
+    };
+}
 
 
 const defaultConfig = {
@@ -154,7 +180,7 @@ const init = async () => {
         }
     }
 
-    quickReplyApi = new QuickReplyApi(settings);
+    quickReplyApi = new QuickReplyApi(settings, manager);
     const slash = new SlashCommandHandler(quickReplyApi);
     slash.init();
 };

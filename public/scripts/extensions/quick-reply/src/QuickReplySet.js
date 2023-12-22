@@ -1,7 +1,6 @@
 import { getRequestHeaders } from '../../../../script.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
-import { debounce } from '../../../utils.js';
-import { warn } from '../index.js';
+import { debounceAsync, warn } from '../index.js';
 import { QuickReply } from './QuickReply.js';
 
 export class QuickReplySet {
@@ -44,7 +43,7 @@ export class QuickReplySet {
 
 
     constructor() {
-        this.save = debounce(()=>this.performSave(), 200);
+        this.save = debounceAsync(()=>this.performSave(), 200);
     }
 
     init() {
