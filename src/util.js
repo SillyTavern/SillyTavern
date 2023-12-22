@@ -467,6 +467,61 @@ function trimV1(str) {
     return String(str ?? '').replace(/\/$/, '').replace(/\/v1$/, '');
 }
 
+/**
+ * Simple TTL memory cache.
+ */
+class Cache {
+    /**
+     * @param {number} ttl Time to live in milliseconds
+     */
+    constructor(ttl) {
+        this.cache = new Map();
+        this.ttl = ttl;
+    }
+
+    /**
+     * Gets a value from the cache.
+     * @param {string} key Cache key
+     */
+    get(key) {
+        const value = this.cache.get(key);
+        if (value?.expiry > Date.now()) {
+            return value.value;
+        }
+
+        // Cache miss or expired, remove the key
+        this.cache.delete(key);
+        return null;
+    }
+
+    /**
+     * Sets a value in the cache.
+     * @param {string} key Key
+     * @param {object} value Value
+     */
+    set(key, value) {
+        this.cache.set(key, {
+            value: value,
+            expiry: Date.now() + this.ttl,
+        });
+    }
+
+    /**
+     * Removes a value from the cache.
+     * @param {string} key Key
+     */
+    remove(key) {
+        this.cache.delete(key);
+    }
+
+    /**
+     * Clears the cache.
+     */
+    clear() {
+        this.cache.clear();
+    }
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -491,4 +546,5 @@ module.exports = {
     mergeObjectWithYaml,
     excludeKeysByYaml,
     trimV1,
+    Cache,
 };
