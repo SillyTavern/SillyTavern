@@ -5,7 +5,7 @@ const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
 const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS } = require('../../constants');
-const { forwardFetchResponse } = require('../../util');
+const { forwardFetchResponse, trimV1 } = require('../../util');
 const { setAdditionalHeaders } = require('../../additional-headers');
 
 const router = express.Router();
@@ -57,6 +57,26 @@ async function parseOllamaStream(jsonStream, request, response) {
     }
 }
 
+/**
+ * Abort KoboldCpp generation request.
+ * @param {string} url Server base URL
+ * @returns {Promise<void>} Promise resolving when we are done
+ */
+async function abortKoboldCppRequest(url) {
+    try {
+        console.log('Aborting Kobold generation...');
+        const abortResponse = await fetch(`${url}/api/extra/abort`, {
+            method: 'POST',
+        });
+
+        if (!abortResponse.ok) {
+            console.log('Error sending abort request to Kobold:', abortResponse.status, abortResponse.statusText);
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 //************** Ooba/OpenAI text completions API
 router.post('/status', jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
@@ -67,9 +87,7 @@ router.post('/status', jsonParser, async function (request, response) {
         }
 
         console.log('Trying to connect to API:', request.body);
-
-        // Convert to string + remove trailing slash + /v1 suffix
-        const baseUrl = String(request.body.api_server).replace(/\/$/, '').replace(/\/v1$/, '');
+        const baseUrl = trimV1(request.body.api_server);
 
         const args = {
             headers: { 'Content-Type': 'application/json' },
@@ -195,12 +213,15 @@ router.post('/generate', jsonParser, async function (request, response) {
 
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
-        request.socket.on('close', function () {
+        request.socket.on('close', async function () {
+            if (request.body.api_type === TEXTGEN_TYPES.KOBOLDCPP && !response.writableEnded) {
+                await abortKoboldCppRequest(trimV1(baseUrl));
+            }
+
             controller.abort();
         });
 
-        // Convert to string + remove trailing slash + /v1 suffix
-        let url = String(baseUrl).replace(/\/$/, '').replace(/\/v1$/, '');
+        let url = trimV1(baseUrl);
 
         if (request.body.legacy_api) {
             url += '/v1/generate';
@@ -337,8 +358,7 @@ ollama.post('/caption-image', jsonParser, async function (request, response) {
         }
 
         console.log('Ollama caption request:', request.body);
-        // Convert to string + remove trailing slash + /v1 suffix
-        const baseUrl = String(request.body.server_url).replace(/\/$/, '').replace(/\/v1$/, '');
+        const baseUrl = trimV1(request.body.server_url);
 
         const fetchResponse = await fetch(`${baseUrl}/api/generate`, {
             method: 'POST',
@@ -383,8 +403,7 @@ llamacpp.post('/caption-image', jsonParser, async function (request, response) {
         }
 
         console.log('LlamaCpp caption request:', request.body);
-        // Convert to string + remove trailing slash + /v1 suffix
-        const baseUrl = String(request.body.server_url).replace(/\/$/, '').replace(/\/v1$/, '');
+        const baseUrl = trimV1(request.body.server_url);
 
         const fetchResponse = await fetch(`${baseUrl}/completion`, {
             method: 'POST',

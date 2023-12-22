@@ -21,7 +21,6 @@ import {
     MAX_INJECTION_DEPTH,
     name1,
     name2,
-    replaceBiasMarkup,
     replaceItemizedPromptText,
     resultCheckStatus,
     saveSettingsDebounced,
@@ -443,8 +442,6 @@ function setOpenAIMessages(chat) {
                 content = `${chat[j].name}: ${content}`;
             }
         }
-        content = replaceBiasMarkup(content);
-
         // remove caret return (waste of tokens)
         content = content.replace(/\r/gm, '');
 

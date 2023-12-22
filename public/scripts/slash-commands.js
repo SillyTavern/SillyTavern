@@ -20,7 +20,7 @@ import {
     main_api,
     name1,
     reloadCurrentChat,
-    replaceBiasMarkup,
+    removeMacros,
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
@@ -1260,7 +1260,7 @@ export async function sendMessageAs(args, text) {
 
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
-    const isSystem = replaceBiasMarkup(mesText).trim().length === 0;
+    const isSystem = bias && !removeMacros(mesText).length;
 
     const character = characters.find(x => x.name === name);
     let force_avatar, original_avatar;
@@ -1313,7 +1313,7 @@ export async function sendNarratorMessage(args, text) {
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(text);
-    const isSystem = replaceBiasMarkup(text).trim().length === 0;
+    const isSystem = bias && !removeMacros(text).length;
 
     const message = {
         name: name,

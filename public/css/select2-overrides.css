@@ -121,7 +121,7 @@
 }
 
 /* Add the custom checkbox */
-.select2-results__option:before {
+.select2-results__option::before {
     content: '';
     display: inline-block;
     position: absolute;
@@ -141,11 +141,19 @@
 }
 
 /* Add the custom checkbox checkmark */
-.select2-results__option--selected.select2-results__option:before {
+.select2-results__option--selected.select2-results__option::before {
     content: '\2713';
     font-weight: bold;
     color: var(--SmartThemeBodyColor);
     background-color: var(--SmartThemeBlurTintColor);
     text-align: center;
     line-height: 14px;
+}
+
+.select2-results__option.select2-results__message {
+    background-color: inherit;
+}
+
+.select2-results__option.select2-results__message::before {
+    display: none;
 }
