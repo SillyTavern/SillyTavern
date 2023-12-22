@@ -13,7 +13,7 @@
 function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg, excludePrefixes) {
 
     //Prepare messages for claude.
-    //When 'Exclude Human/Assistant prefixes' checked, setting messages role to the 'system'(The last message reserved for user.).
+    //When 'Exclude Human/Assistant prefixes' checked, setting messages role to the 'system'(last message is exception).
     if (messages.length > 0) {
         if (excludePrefixes) {
             messages.slice(0, -1).forEach(message => message.role = 'system');
@@ -49,7 +49,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
             // Otherwise, use the default message format by setting the first message's role to 'user'(compatible with all claude models including 2.1.)
             messages[0].role = 'user';
             // Fix messages order for default message format when(messages > Context Size) by merging two messages with "\n\nHuman: " prefixes into one, before the first Assistant's message.
-            if (firstAssistantIndex > 0) {
+            if (firstAssistantIndex > 0 && !excludePrefixes) {
                 messages[firstAssistantIndex - 1].role = firstAssistantIndex - 1 !== 0 && messages[firstAssistantIndex - 1].role === 'user' ? 'FixHumMsg' : messages[firstAssistantIndex - 1].role;
             }
         }
@@ -63,7 +63,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
             'assistant': `\n\nAssistant: ${v.name ? `${v.name}: ` : ''}`,
             'user': `\n\nHuman: ${v.name ? `${v.name}: ` : ''}`,
             'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : excludePrefixes && v.name ? `\n\n${v.name}: ` : '\n\n',
-            'FixHumMsg': `\n\nFirst message${v.name ? `: ${v.name}` : ''}: `,
+            'FixHumMsg': `\n\nFirst message: ${v.name ? `${v.name}: ` : ''}`,
         }[v.role] ?? '';
         return `${prefix}${v.content}`;
     }).join('');
