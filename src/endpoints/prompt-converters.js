@@ -5,15 +5,20 @@
  * @param {string}   addAssistantPrefill Add Assistant prefill after the assistant postfix.
  * @param {boolean}  withSysPromptSupport Indicates if the Claude model supports the system prompt format.
  * @param {boolean}  useSystemPrompt Indicates if the system prompt format should be used.
+ * @param {boolean}  excludePrefixes Exlude Human/Assistant prefixes.
  * @param {string}   addSysHumanMsg Add Human message between system prompt and assistant.
  * @returns {string} Prompt for Claude
  * @copyright Prompt Conversion script taken from RisuAI by kwaroran (GPLv3).
  */
-function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg) {
+function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg, excludePrefixes) {
 
     //Prepare messages for claude.
     if (messages.length > 0) {
-        messages[0].role = 'system';
+        if (excludePrefixes) {
+            messages.forEach(message => message.role = 'system');
+        } else {
+            messages[0].role = 'system';
+        }
         //Add the assistant's message to the end of messages.
         if (addAssistantPostfix) {
             messages.push({
@@ -52,14 +57,21 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
     // Convert messages to the prompt.
     let requestPrompt = messages.map((v, i) => {
         // Set prefix according to the role.
-        let prefix = {
+        /* let prefix = {
             'assistant': '\n\nAssistant: ',
             'user': '\n\nHuman: ',
             'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : '\n\n',
             'FixHumMsg': '\n\nFirst message: ',
+        }[v.role] ?? ''; */
+        let prefix = {
+            'assistant': `\n\nAssistant: ${v.name ? `${v.name}: ` : ''}`,
+            'user': `\n\nHuman: ${v.name ? `${v.name}: ` : ''}`,
+            'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : v.name ? `\n\n${v.name}: ` : '\n\n',
+            'FixHumMsg': `\n\nFirst message${v.name ? `: ${v.name}` : ''}: `,
         }[v.role] ?? '';
         // Claude doesn't support message names, so we'll just add them to the message content.
-        return `${prefix}${v.name && v.role !== 'system' ? `${v.name}: ` : ''}${v.content}`;
+        //return `${prefix}${v.name && v.role !== 'system' ? `${v.name}: ` : ''}${v.content}`;
+        return `${prefix}${v.content}`;
     }).join('');
 
     return requestPrompt;
