@@ -72,7 +72,9 @@ export class QuickReplyApi {
      */
     toggleGlobalSet(name, isVisible = true) {
         const set = this.getSetByName(name);
-        if (!set) return;
+        if (!set) {
+            throw new Error(`No quick reply set with name "${name}" found.`);
+        }
         if (this.settings.config.hasSet(set)) {
             this.settings.config.removeSet(set);
         } else {
@@ -88,7 +90,9 @@ export class QuickReplyApi {
      */
     addGlobalSet(name, isVisible = true) {
         const set = this.getSetByName(name);
-        if (!set) return;
+        if (!set) {
+            throw new Error(`No quick reply set with name "${name}" found.`);
+        }
         this.settings.config.addSet(set, isVisible);
     }
 
@@ -99,7 +103,9 @@ export class QuickReplyApi {
      */
     removeGlobalSet(name) {
         const set = this.getSetByName(name);
-        if (!set) return;
+        if (!set) {
+            throw new Error(`No quick reply set with name "${name}" found.`);
+        }
         this.settings.config.removeSet(set);
     }
 
@@ -113,7 +119,9 @@ export class QuickReplyApi {
     toggleChatSet(name, isVisible = true) {
         if (!this.settings.chatConfig) return;
         const set = this.getSetByName(name);
-        if (!set) return;
+        if (!set) {
+            throw new Error(`No quick reply set with name "${name}" found.`);
+        }
         if (this.settings.chatConfig.hasSet(set)) {
             this.settings.chatConfig.removeSet(set);
         } else {
@@ -130,7 +138,9 @@ export class QuickReplyApi {
     addChatSet(name, isVisible = true) {
         if (!this.settings.chatConfig) return;
         const set = this.getSetByName(name);
-        if (!set) return;
+        if (!set) {
+            throw new Error(`No quick reply set with name "${name}" found.`);
+        }
         this.settings.chatConfig.addSet(set, isVisible);
     }
 
@@ -142,7 +152,9 @@ export class QuickReplyApi {
     removeChatSet(name) {
         if (!this.settings.chatConfig) return;
         const set = this.getSetByName(name);
-        if (!set) return;
+        if (!set) {
+            throw new Error(`No quick reply set with name "${name}" found.`);
+        }
         this.settings.chatConfig.removeSet(set);
     }
 

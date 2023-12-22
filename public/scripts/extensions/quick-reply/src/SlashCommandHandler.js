@@ -85,24 +85,48 @@ export class SlashCommandHandler {
 
 
     toggleGlobalSet(name, args = {}) {
-        this.api.toggleGlobalSet(name, JSON.parse(args.visible ?? 'true') === true);
+        try {
+            this.api.toggleGlobalSet(name, JSON.parse(args.visible ?? 'true') === true);
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
     addGlobalSet(name, args = {}) {
-        this.api.addGlobalSet(name, JSON.parse(args.visible ?? 'true') === true);
+        try {
+            this.api.addGlobalSet(name, JSON.parse(args.visible ?? 'true') === true);
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
     removeGlobalSet(name) {
-        this.api.removeGlobalSet(name);
+        try {
+            this.api.removeGlobalSet(name);
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
 
 
     toggleChatSet(name, args = {}) {
-        this.api.toggleChatSet(name, JSON.parse(args.visible ?? 'true') === true);
+        try {
+            this.api.toggleChatSet(name, JSON.parse(args.visible ?? 'true') === true);
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
     addChatSet(name, args = {}) {
-        this.api.addChatSet(name, JSON.parse(args.visible ?? 'true') === true);
+        try {
+            this.api.addChatSet(name, JSON.parse(args.visible ?? 'true') === true);
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
     removeChatSet(name) {
-        this.api.removeChatSet(name);
+        try {
+            this.api.removeChatSet(name);
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
 
 
@@ -174,30 +198,41 @@ export class SlashCommandHandler {
         }
     }
     clearContextMenu(args, label) {
-        const qr = this.getQrByLabel(args.set, args.label ?? label);
-        if (!qr) return;
-        qr.clearContextLinks();
+        try {
+            this.api.clearContextMenu(args.set, args.label ?? label);
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
 
 
     createSet(name, args) {
-        this.api.createSet(
-            args.name ?? name ?? '',
-            {
-                disableSend: JSON.parse(args.nosend ?? 'false') === true,
-                placeBeforeInput: JSON.parse(args.before ?? 'false') === true,
-                injectInput: JSON.parse(args.inject ?? 'false') === true,
-            },
-        );
+        try {
+            this.api.createSet(
+                args.name ?? name ?? '',
+                {
+                    disableSend: JSON.parse(args.nosend ?? 'false') === true,
+                    placeBeforeInput: JSON.parse(args.before ?? 'false') === true,
+                    injectInput: JSON.parse(args.inject ?? 'false') === true,
+                },
+            );
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
     }
     updateSet(name, args) {
-        this.api.updateSet(
-            args.name ?? name ?? '',
-            {
-                disableSend: args.nosend !== undefined ? JSON.parse(args.nosend ?? 'false') === true : undefined,
-                placeBeforeInput: args.before !== undefined ? JSON.parse(args.before ?? 'false') === true : undefined,
-                injectInput: args.inject !== undefined ? JSON.parse(args.inject ?? 'false') === true : undefined,
-            },
-        );
+        try {
+            this.api.updateSet(
+                args.name ?? name ?? '',
+                {
+                    disableSend: args.nosend !== undefined ? JSON.parse(args.nosend ?? 'false') === true : undefined,
+                    placeBeforeInput: args.before !== undefined ? JSON.parse(args.before ?? 'false') === true : undefined,
+                    injectInput: args.inject !== undefined ? JSON.parse(args.inject ?? 'false') === true : undefined,
+                },
+            );
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
+    }
     }
 }
