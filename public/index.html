@@ -1495,7 +1495,18 @@
                                             <input id="names_in_completion" type="checkbox" /><span data-i18n="Add character names">Add character names</span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Send names in the ChatML objects.">Send names in the ChatML objects. Helps the model to associate messages with characters.</span>
+                                            <span data-i18n="Send names in the message objects.">Send names in the message objects. Helps the model to associate messages with characters.</span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <label for="continue_prefill" class="checkbox_label widthFreeExpand">
+                                            <input id="continue_prefill" type="checkbox" />
+                                            <span data-i18n="Continue prefill">Continue prefill</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Continue sends the last message.">
+                                                Continue sends the last message as assistant role instead of system message with instruction.
+                                            </span>
                                         </div>
                                     </div>
                                     <div class="range-block">

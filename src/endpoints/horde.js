@@ -1,20 +1,30 @@
 const fetch = require('node-fetch').default;
 const express = require('express');
 const AIHorde = require('../ai_horde');
-const { getVersion, delay } = require('../util');
+const { getVersion, delay, Cache } = require('../util');
 const { readSecret, SECRET_KEYS } = require('./secrets');
 const { jsonParser } = require('../express-common');
 
 const ANONYMOUS_KEY = '0000000000';
+const cache = new Cache(60 * 1000);
+const router = express.Router();
+
+/**
+ * Returns the AIHorde client agent.
+ * @returns {Promise<string>} AIHorde client agent
+ */
+async function getClientAgent() {
+    const version = await getVersion();
+    return version?.agent || 'SillyTavern:UNKNOWN:Cohee#1207';
+}
 
 /**
  * Returns the AIHorde client.
  * @returns {Promise<AIHorde>} AIHorde client
  */
 async function getHordeClient() {
-    const version = await getVersion();
     const ai_horde = new AIHorde({
-        client_agent: version?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
+        client_agent: await getClientAgent(),
     });
     return ai_horde;
 }
@@ -46,11 +56,112 @@ function sanitizeHordeImagePrompt(prompt) {
     return prompt;
 }
 
-const router = express.Router();
+router.post('/text-workers', jsonParser, async (request, response) => {
+    try {
+        const cachedWorkers = cache.get('workers');
+
+        if (cachedWorkers && !request.body.force) {
+            return response.send(cachedWorkers);
+        }
+
+        const agent = await getClientAgent();
+        const fetchResult = await fetch('https://horde.koboldai.net/api/v2/workers?type=text', {
+            headers: {
+                'Client-Agent': agent,
+            },
+        });
+        const data = await fetchResult.json();
+        cache.set('workers', data);
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/text-models', jsonParser, async (request, response) => {
+    try {
+        const cachedModels = cache.get('models');
+
+        if (cachedModels && !request.body.force) {
+            return response.send(cachedModels);
+        }
+
+        const agent = await getClientAgent();
+        const fetchResult = await fetch('https://horde.koboldai.net/api/v2/status/models?type=text', {
+            headers: {
+                'Client-Agent': agent,
+            },
+        });
+
+        const data = await fetchResult.json();
+        cache.set('models', data);
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/status', jsonParser, async (_, response) => {
+    try {
+        const agent = await getClientAgent();
+        const fetchResult = await fetch('https://horde.koboldai.net/api/v2/status/heartbeat', {
+            headers: {
+                'Client-Agent': agent,
+            },
+        });
+
+        return response.send({ ok: fetchResult.ok });
+    } catch (error) {
+        console.error(error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/cancel-task', jsonParser, async (request, response) => {
+    try {
+        const taskId = request.body.taskId;
+        const agent = await getClientAgent();
+        const fetchResult = await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${taskId}`, {
+            method: 'DELETE',
+            headers: {
+                'Client-Agent': agent,
+            },
+        });
+
+        const data = await fetchResult.json();
+        console.log(`Cancelled Horde task ${taskId}`);
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/task-status', jsonParser, async (request, response) => {
+    try {
+        const taskId = request.body.taskId;
+        const agent = await getClientAgent();
+        const fetchResult = await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${taskId}`, {
+            headers: {
+                'Client-Agent': agent,
+            },
+        });
+
+        const data = await fetchResult.json();
+        console.log(`Horde task ${taskId} status:`, data);
+        return response.send(data);
+    } catch (error) {
+        console.error(error);
+        response.sendStatus(500);
+    }
+});
 
 router.post('/generate-text', jsonParser, async (request, response) => {
-    const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+    const apiKey = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
     const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
+    const agent = await getClientAgent();
 
     console.log(request.body);
     try {
@@ -59,8 +170,8 @@ router.post('/generate-text', jsonParser, async (request, response) => {
             body: JSON.stringify(request.body),
             headers: {
                 'Content-Type': 'application/json',
-                'apikey': api_key_horde,
-                'Client-Agent': String(request.header('Client-Agent')),
+                'apikey': apiKey,
+                'Client-Agent': agent,
             },
         });
 
