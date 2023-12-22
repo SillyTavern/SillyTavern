@@ -35,24 +35,22 @@ export class SlashCommandHandler {
         title    - bool   - title / tooltip to be shown on button, e.g., title="My Fancy Button"
         `.trim();
         const qrUpdateArgs = `
-        newlabel - string - new text fort the button, e.g. newlabel=MyRenamedButton
+        newlabel - string - new text for the button, e.g. newlabel=MyRenamedButton
         ${qrArgs}
         `.trim();
-        registerSlashCommand('qr-create', (args, message)=>this.createQuickReply(args, message), [], `<span class="monospace" style="white-space:pre-line;">(arguments [message])\n  arguments:\n    ${qrArgs}</span> – creates a new Quick Reply, example: <tt>/qr-create set=MyPreset label=MyButton /echo 123</tt>`, true, true);
-        registerSlashCommand('qr-update', (args, message)=>this.updateQuickReply(args, message), [], `<span class="monospace" style="white-space:pre-line;">(arguments [message])\n  arguments:\n    ${qrUpdateArgs}</span> – updates Quick Reply, example: <tt>/qr-update set=MyPreset label=MyButton newlabel=MyRenamedButton /echo 123</tt>`, true, true);
-        registerSlashCommand('qr-delete', (args, name)=>this.deleteQuickReply(args, name), [], '<span class="monospace">(set=string [label])</span> – deletes Quick Reply', true, true);
-        registerSlashCommand('qr-contextadd', (args, name)=>this.createContextItem(args, name), [], '<span class="monospace">(set=string label=string chain=bool [preset name])</span> – add context menu preset to a QR, example: <tt>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset</tt>', true, true);
-        registerSlashCommand('qr-contextdel', (args, name)=>this.deleteContextItem(args, name), [], '<span class="monospace">(set=string label=string [preset name])</span> – remove context menu preset from a QR, example: <tt>/qr-contextdel set=MyPreset label=MyButton MyOtherPreset</tt>', true, true);
-        registerSlashCommand('qr-contextclear', (args, label)=>this.clearContextMenu(args, label), [], '<span class="monospace">(set=string [label])</span> – remove all context menu presets from a QR, example: <tt>/qr-contextclear set=MyPreset MyButton</tt>', true, true);
+        registerSlashCommand('qr-create', (args, message)=>this.createQuickReply(args, message), [], `<span class="monospace" style="white-space:pre-line;">[arguments] (message)\n  arguments:\n    ${qrArgs}</span> – creates a new Quick Reply, example: <tt>/qr-create set=MyPreset label=MyButton /echo 123</tt>`, true, true);
+        registerSlashCommand('qr-update', (args, message)=>this.updateQuickReply(args, message), [], `<span class="monospace" style="white-space:pre-line;">[arguments] (message)\n  arguments:\n    ${qrUpdateArgs}</span> – updates Quick Reply, example: <tt>/qr-update set=MyPreset label=MyButton newlabel=MyRenamedButton /echo 123</tt>`, true, true);
+        registerSlashCommand('qr-delete', (args, name)=>this.deleteQuickReply(args, name), [], '<span class="monospace">set=string [label]</span> – deletes Quick Reply', true, true);
+        registerSlashCommand('qr-contextadd', (args, name)=>this.createContextItem(args, name), [], '<span class="monospace">set=string label=string [chain=false] (preset name)</span> – add context menu preset to a QR, example: <tt>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset</tt>', true, true);
+        registerSlashCommand('qr-contextdel', (args, name)=>this.deleteContextItem(args, name), [], '<span class="monospace">set=string label=string (preset name)</span> – remove context menu preset from a QR, example: <tt>/qr-contextdel set=MyPreset label=MyButton MyOtherPreset</tt>', true, true);
+        registerSlashCommand('qr-contextclear', (args, label)=>this.clearContextMenu(args, label), [], '<span class="monospace">set=string (label)</span> – remove all context menu presets from a QR, example: <tt>/qr-contextclear set=MyPreset MyButton</tt>', true, true);
         const presetArgs = `
-        enabled - bool - enable or disable the preset
         nosend  - bool - disable send / insert in user input (invalid for slash commands)
         before  - bool - place QR before user input
-        slots   - int  - number of slots
         inject  - bool - inject user input automatically (if disabled use {{input}})
         `.trim();
-        registerSlashCommand('qr-set-create', (args, name)=>this.createSet(name, args), ['qr-presetadd'], `<span class="monospace" style="white-space:pre-line;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – create a new preset (overrides existing ones), example: <tt>/qr-presetadd slots=3 MyNewPreset</tt>`, true, true);
-        registerSlashCommand('qr-set-update', (args, name)=>this.updateSet(name, args), ['qr-presetupdate'], `<span class="monospace" style="white-space:pre-line;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – update an existing preset, example: <tt>/qr-presetupdate enabled=false MyPreset</tt>`, true, true);
+        registerSlashCommand('qr-set-create', (args, name)=>this.createSet(name, args), ['qr-presetadd'], `<span class="monospace" style="white-space:pre-line;">[arguments] (label)\n  arguments:\n    ${presetArgs}</span> – create a new preset (overrides existing ones), example: <tt>/qr-presetadd MyNewPreset</tt>`, true, true);
+        registerSlashCommand('qr-set-update', (args, name)=>this.updateSet(name, args), ['qr-presetupdate'], `<span class="monospace" style="white-space:pre-line;">[arguments] (label)\n  arguments:\n    ${presetArgs}</span> – update an existing preset, example: <tt>/qr-presetupdate enabled=false MyPreset</tt>`, true, true);
     }
 
 

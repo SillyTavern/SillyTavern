@@ -13,7 +13,6 @@ import { SettingsUi } from './src/ui/SettingsUi.js';
 
 
 
-//TODO slash command hints
 //TODO move advanced QR options into own UI class
 
 
