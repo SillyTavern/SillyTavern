@@ -13,11 +13,6 @@ import { SettingsUi } from './src/ui/SettingsUi.js';
 
 
 
-//TODO move advanced QR options into own UI class
-
-
-
-
 const _VERBOSE = true;
 export const log = (...msg) => _VERBOSE ? console.log('[QR2]', ...msg) : null;
 export const warn = (...msg) => _VERBOSE ? console.warn('[QR2]', ...msg) : null;
@@ -123,9 +118,17 @@ const loadSets = async () => {
 };
 
 const loadSettings = async () => {
-    //TODO migrate old settings
     if (!extension_settings.quickReplyV2) {
-        extension_settings.quickReplyV2 = defaultSettings;
+        if (!extension_settings.quickReply) {
+            extension_settings.quickReplyV2 = defaultSettings;
+        } else {
+            extension_settings.quickReplyV2 = {
+                isEnabled: extension_settings.quickReply.quickReplyEnabled ?? false,
+                isCombined: false,
+                isPopout: false,
+                config: extension_settings.quickReply.selectedPreset ?? extension_settings.quickReply.name ?? 'Default',
+            };
+        }
     }
     try {
         settings = QuickReplySettings.from(extension_settings.quickReplyV2);
