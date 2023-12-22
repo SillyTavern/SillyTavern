@@ -1,4 +1,5 @@
 import { registerSlashCommand } from '../../../slash-commands.js';
+// eslint-disable-next-line no-unused-vars
 import { QuickReplyApi } from '../api/QuickReplyApi.js';
 
 export class SlashCommandHandler {

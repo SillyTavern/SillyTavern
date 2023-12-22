@@ -1,8 +1,5 @@
 import { QuickReplySet } from './QuickReplySet.js';
 
-
-
-
 export class QuickReplySetLink {
     static from(props) {
         props.set = QuickReplySet.get(props.set);
