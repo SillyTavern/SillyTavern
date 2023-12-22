@@ -637,6 +637,9 @@ hr {
     order: 2;
     padding-right: 2px;
     place-self: center;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
 }
 
 #options_button {
@@ -3531,11 +3534,11 @@ a {
     display: none;
 }
 
-.reverse_proxy_warning {
+.reverse_proxy_warning:not(small) {
     color: var(--warning);
     background-color: var(--black70a);
     text-shadow: none !important;
-    margin-top: 12px !important;
+    margin-top: 5px !important;
     border-radius: 5px;
     padding: 3px;
     border: 1px solid var(--SmartThemeBorderColor);

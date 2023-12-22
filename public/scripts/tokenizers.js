@@ -1,10 +1,10 @@
-import { characters, main_api, api_server, api_server_textgenerationwebui, nai_settings, online_status, this_chid } from '../script.js';
+import { characters, main_api, api_server, nai_settings, online_status, this_chid } from '../script.js';
 import { power_user, registerDebugFunction } from './power-user.js';
 import { chat_completion_sources, model_list, oai_settings } from './openai.js';
 import { groups, selected_group } from './group-chats.js';
 import { getStringHash } from './utils.js';
 import { kai_flags } from './kai-settings.js';
-import { textgen_types, textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
+import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
 
 const { OOBA, TABBY, KOBOLDCPP, APHRODITE, LLAMACPP } = textgen_types;
 
@@ -388,6 +388,10 @@ export function getTokenizerModel() {
         return mistralTokenizer;
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
+        return oai_settings.custom_model;
+    }
+
     // Default to Turbo 3.5
     return turboTokenizer;
 }
@@ -537,7 +541,7 @@ function getTextgenAPITokenizationParams(str) {
     return {
         text: str,
         api_type: textgen_settings.type,
-        url: api_server_textgenerationwebui,
+        url: getTextGenServer(),
         legacy_api: textgen_settings.legacy_api && (textgen_settings.type === OOBA || textgen_settings.type === APHRODITE),
     };
 }

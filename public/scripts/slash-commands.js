@@ -20,7 +20,7 @@ import {
     main_api,
     name1,
     reloadCurrentChat,
-    replaceBiasMarkup,
+    removeMacros,
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
@@ -845,7 +845,7 @@ async function unhideMessageCallback(_, arg) {
 /**
  * Copium for running group actions when the member is offscreen.
  * @param {number} chid - character ID
- * @param {string} action - one of 'enable', 'disable', 'up', 'down', 'peek', 'remove'
+ * @param {string} action - one of 'enable', 'disable', 'up', 'down', 'view', 'remove'
  * @returns {void}
  */
 function performGroupMemberAction(chid, action) {
@@ -868,7 +868,9 @@ function performGroupMemberAction(chid, action) {
 
     if (wasOffscreen) {
         $(pageSizeSelector).val(paginationValue).trigger('change');
-        $(paginationSelector).pagination('go', pageValue);
+        if ($(paginationSelector).length) {
+            $(paginationSelector).pagination('go', pageValue);
+        }
     }
 }
 
@@ -958,7 +960,7 @@ async function peekCallback(_, arg) {
         return '';
     }
 
-    performGroupMemberAction(chid, 'peek');
+    performGroupMemberAction(chid, 'view');
     return '';
 }
 
@@ -1258,7 +1260,7 @@ export async function sendMessageAs(args, text) {
 
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
-    const isSystem = replaceBiasMarkup(mesText).trim().length === 0;
+    const isSystem = bias && !removeMacros(mesText).length;
 
     const character = characters.find(x => x.name === name);
     let force_avatar, original_avatar;
@@ -1311,7 +1313,7 @@ export async function sendNarratorMessage(args, text) {
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(text);
-    const isSystem = replaceBiasMarkup(text).trim().length === 0;
+    const isSystem = bias && !removeMacros(text).length;
 
     const message = {
         name: name,

@@ -1,73 +1,66 @@
 /**
  * Convert a prompt from the ChatML objects to the format used by Claude.
  * @param {object[]} messages Array of messages
- * @param {boolean} addHumanPrefix Add Human prefix
- * @param {boolean} addAssistantPostfix Add Assistant postfix
- * @param {boolean} withSystemPrompt Build system prompt before "\n\nHuman: "
+ * @param {boolean}  addAssistantPostfix Add Assistant postfix.
+ * @param {string}   addAssistantPrefill Add Assistant prefill after the assistant postfix.
+ * @param {boolean}  withSysPromptSupport Indicates if the Claude model supports the system prompt format.
+ * @param {boolean}  useSystemPrompt Indicates if the system prompt format should be used.
+ * @param {string}   addSysHumanMsg Add Human message between system prompt and assistant.
  * @returns {string} Prompt for Claude
  * @copyright Prompt Conversion script taken from RisuAI by kwaroran (GPLv3).
  */
-function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, withSystemPrompt) {
-    // Claude doesn't support message names, so we'll just add them to the message content.
-    for (const message of messages) {
-        if (message.name && message.role !== 'system') {
-            message.content = message.name + ': ' + message.content;
-            delete message.name;
+function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg) {
+
+    //Prepare messages for claude.
+    if (messages.length > 0) {
+        messages[0].role = 'system';
+        //Add the assistant's message to the end of messages.
+        if (addAssistantPostfix) {
+            messages.push({
+                role: 'assistant',
+                content: addAssistantPrefill || '',
+            });
         }
-    }
-
-    let systemPrompt = '';
-    if (withSystemPrompt) {
-        let lastSystemIdx = -1;
-
-        for (let i = 0; i < messages.length - 1; i++) {
-            const message = messages[i];
-            if (message.role === 'system' && !message.name) {
-                systemPrompt += message.content + '\n\n';
-            } else {
-                lastSystemIdx = i - 1;
-                break;
+        // Find the index of the first message with an assistant role and check for a "'user' role/Human:" before it.
+        let hasUser = false;
+        const firstAssistantIndex = messages.findIndex((message, i) => {
+            if (i >= 0 && (message.role === 'user' || message.content.includes('\n\nHuman: '))) {
+                hasUser = true;
+            }
+            return message.role === 'assistant' && i > 0;
+        });
+        // When 2.1+ and 'Use system prompt" checked, switches to the system prompt format by setting the first message's role to the 'system'.
+        // Inserts the human's message before the first the assistant one, if there are no such message or prefix found.
+        if (withSysPromptSupport && useSystemPrompt) {
+            messages[0].role = 'system';
+            if (firstAssistantIndex > 0 && addSysHumanMsg && !hasUser) {
+                messages.splice(firstAssistantIndex, 0, {
+                    role: 'user',
+                    content: addSysHumanMsg,
+                });
+            }
+        } else {
+            // Otherwise, use the default message format by setting the first message's role to 'user'(compatible with all claude models including 2.1.)
+            messages[0].role = 'user';
+            // Fix messages order for default message format when(messages > Context Size) by merging two messages with "\n\nHuman: " prefixes into one, before the first Assistant's message.
+            if (firstAssistantIndex > 0) {
+                messages[firstAssistantIndex - 1].role = firstAssistantIndex - 1 !== 0 && messages[firstAssistantIndex - 1].role === 'user' ? 'FixHumMsg' : messages[firstAssistantIndex - 1].role;
             }
         }
-        if (lastSystemIdx >= 0) {
-            messages.splice(0, lastSystemIdx + 1);
-        }
     }
 
-    let requestPrompt = messages.map((v) => {
-        let prefix = '';
-        switch (v.role) {
-            case 'assistant':
-                prefix = '\n\nAssistant: ';
-                break;
-            case 'user':
-                prefix = '\n\nHuman: ';
-                break;
-            case 'system':
-                // According to the Claude docs, H: and A: should be used for example conversations.
-                if (v.name === 'example_assistant') {
-                    prefix = '\n\nA: ';
-                } else if (v.name === 'example_user') {
-                    prefix = '\n\nH: ';
-                } else {
-                    prefix = '\n\n';
-                }
-                break;
-        }
-        return prefix + v.content;
+    // Convert messages to the prompt.
+    let requestPrompt = messages.map((v, i) => {
+        // Set prefix according to the role.
+        let prefix = {
+            'assistant': '\n\nAssistant: ',
+            'user': '\n\nHuman: ',
+            'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : '\n\n',
+            'FixHumMsg': '\n\nFirst message: ',
+        }[v.role] ?? '';
+        // Claude doesn't support message names, so we'll just add them to the message content.
+        return `${prefix}${v.name && v.role !== 'system' ? `${v.name}: ` : ''}${v.content}`;
     }).join('');
-
-    if (addHumanPrefix) {
-        requestPrompt = '\n\nHuman: ' + requestPrompt;
-    }
-
-    if (addAssistantPostfix) {
-        requestPrompt = requestPrompt + '\n\nAssistant: ';
-    }
-
-    if (withSystemPrompt) {
-        requestPrompt = systemPrompt + requestPrompt;
-    }
 
     return requestPrompt;
 }
