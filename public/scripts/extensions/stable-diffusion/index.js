@@ -351,6 +351,10 @@ async function loadSettings() {
         extension_settings.sd.character_prompts = {};
     }
 
+    if (extension_settings.sd.character_negative_prompts === undefined) {
+        extension_settings.sd.character_negative_prompts = {};
+    }
+
     if (!Array.isArray(extension_settings.sd.styles)) {
         extension_settings.sd.styles = defaultStyles;
     }
@@ -575,11 +579,19 @@ function onChatChanged() {
     $('#sd_character_prompt_block').show();
     const key = getCharaFilename(this_chid);
     $('#sd_character_prompt').val(key ? (extension_settings.sd.character_prompts[key] || '') : '');
+    $('#sd_character_negative_prompt').val(key ? (extension_settings.sd.character_negative_prompts[key] || '') : '');
 }
 
 function onCharacterPromptInput() {
     const key = getCharaFilename(this_chid);
     extension_settings.sd.character_prompts[key] = $('#sd_character_prompt').val();
+    resetScrollHeight($(this));
+    saveSettingsDebounced();
+}
+
+function onCharacterNegativePromptInput() {
+    const key = getCharaFilename(this_chid);
+    extension_settings.sd.character_negative_prompts[key] = $('#sd_character_negative_prompt').val();
     resetScrollHeight($(this));
     saveSettingsDebounced();
 }
@@ -593,6 +605,20 @@ function getCharacterPrefix() {
 
     if (key) {
         return extension_settings.sd.character_prompts[key] || '';
+    }
+
+    return '';
+}
+
+function getCharacterNegativePrefix() {
+    if (!this_chid || selected_group) {
+        return '';
+    }
+
+    const key = getCharaFilename(this_chid);
+
+    if (key) {
+        return extension_settings.sd.character_negative_prompts[key] || '';
     }
 
     return '';
@@ -1885,34 +1911,38 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
 
     const prefixedPrompt = combinePrefixes(prefix, prompt, '{prompt}');
 
+    const negativePrompt = noCharPrefix.includes(generationType)
+        ? extension_settings.sd.negative_prompt
+        : combinePrefixes(extension_settings.sd.negative_prompt, getCharacterNegativePrefix());
+
     let result = { format: '', data: '' };
     const currentChatId = getCurrentChatId();
 
     try {
         switch (extension_settings.sd.source) {
             case sources.extras:
-                result = await generateExtrasImage(prefixedPrompt);
+                result = await generateExtrasImage(prefixedPrompt, negativePrompt);
                 break;
             case sources.horde:
-                result = await generateHordeImage(prefixedPrompt);
+                result = await generateHordeImage(prefixedPrompt, negativePrompt);
                 break;
             case sources.vlad:
-                result = await generateAutoImage(prefixedPrompt);
+                result = await generateAutoImage(prefixedPrompt, negativePrompt);
                 break;
             case sources.auto:
-                result = await generateAutoImage(prefixedPrompt);
+                result = await generateAutoImage(prefixedPrompt, negativePrompt);
                 break;
             case sources.novel:
-                result = await generateNovelImage(prefixedPrompt);
+                result = await generateNovelImage(prefixedPrompt, negativePrompt);
                 break;
             case sources.openai:
                 result = await generateOpenAiImage(prefixedPrompt);
                 break;
             case sources.comfy:
-                result = await generateComfyImage(prefixedPrompt);
+                result = await generateComfyImage(prefixedPrompt, negativePrompt);
                 break;
             case sources.togetherai:
-                result = await generateTogetherAIImage(prefixedPrompt);
+                result = await generateTogetherAIImage(prefixedPrompt, negativePrompt);
                 break;
         }
 
@@ -1936,13 +1966,13 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
     callback ? callback(prompt, base64Image, generationType) : sendMessage(prompt, base64Image, generationType);
 }
 
-async function generateTogetherAIImage(prompt) {
+async function generateTogetherAIImage(prompt, negativePrompt) {
     const result = await fetch('/api/sd/together/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
             prompt: prompt,
-            negative_prompt: extension_settings.sd.negative_prompt,
+            negative_prompt: negativePrompt,
             model: extension_settings.sd.model,
             steps: extension_settings.sd.steps,
             width: extension_settings.sd.width,
@@ -1963,9 +1993,10 @@ async function generateTogetherAIImage(prompt) {
  * Generates an "extras" image using a provided prompt and other settings.
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateExtrasImage(prompt) {
+async function generateExtrasImage(prompt, negativePrompt) {
     const url = new URL(getApiUrl());
     url.pathname = '/api/image';
     const result = await doExtrasFetch(url, {
@@ -1980,7 +2011,7 @@ async function generateExtrasImage(prompt) {
             scale: extension_settings.sd.scale,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
-            negative_prompt: extension_settings.sd.negative_prompt,
+            negative_prompt: negativePrompt,
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
             karras: !!extension_settings.sd.horde_karras,
@@ -2004,9 +2035,10 @@ async function generateExtrasImage(prompt) {
  * Generates a "horde" image using the provided prompt and configuration settings.
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateHordeImage(prompt) {
+async function generateHordeImage(prompt, negativePrompt) {
     const result = await fetch('/api/horde/generate-image', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -2017,7 +2049,7 @@ async function generateHordeImage(prompt) {
             scale: extension_settings.sd.scale,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
-            negative_prompt: extension_settings.sd.negative_prompt,
+            negative_prompt: negativePrompt,
             model: extension_settings.sd.model,
             nsfw: extension_settings.sd.horde_nsfw,
             restore_faces: !!extension_settings.sd.restore_faces,
@@ -2039,16 +2071,17 @@ async function generateHordeImage(prompt) {
  * Generates an image in SD WebUI API using the provided prompt and configuration settings.
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateAutoImage(prompt) {
+async function generateAutoImage(prompt, negativePrompt) {
     const result = await fetch('/api/sd/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
             ...getSdRequestBody(),
             prompt: prompt,
-            negative_prompt: extension_settings.sd.negative_prompt,
+            negative_prompt: negativePrompt,
             sampler_name: extension_settings.sd.sampler,
             steps: extension_settings.sd.steps,
             cfg_scale: extension_settings.sd.scale,
@@ -2081,9 +2114,10 @@ async function generateAutoImage(prompt) {
  * Generates an image in NovelAI API using the provided prompt and configuration settings.
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateNovelImage(prompt) {
+async function generateNovelImage(prompt, negativePrompt) {
     const { steps, width, height } = getNovelParams();
 
     const result = await fetch('/api/novelai/generate-image', {
@@ -2097,7 +2131,7 @@ async function generateNovelImage(prompt) {
             scale: extension_settings.sd.scale,
             width: width,
             height: height,
-            negative_prompt: extension_settings.sd.negative_prompt,
+            negative_prompt: negativePrompt,
             upscale_ratio: extension_settings.sd.novel_upscale_ratio,
         }),
     });
@@ -2225,11 +2259,11 @@ async function generateOpenAiImage(prompt) {
  * Generates an image in ComfyUI using the provided prompt and configuration settings.
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
-async function generateComfyImage(prompt) {
+async function generateComfyImage(prompt, negativePrompt) {
     const placeholders = [
-        'negative_prompt',
         'model',
         'vae',
         'sampler',
@@ -2252,6 +2286,7 @@ async function generateComfyImage(prompt) {
         toastr.error(`Failed to load workflow.\n\n${text}`);
     }
     let workflow = (await workflowResponse.json()).replace('"%prompt%"', JSON.stringify(prompt));
+    workflow = (await workflowResponse.json()).replace('"%negative_prompt%"', JSON.stringify(negativePrompt));
     workflow = workflow.replace('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
     placeholders.forEach(ph => {
         workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
@@ -2629,6 +2664,7 @@ jQuery(async () => {
     $('#sd_enable_hr').on('input', onHighResFixInput);
     $('#sd_refine_mode').on('input', onRefineModeInput);
     $('#sd_character_prompt').on('input', onCharacterPromptInput);
+    $('#sd_character_negative_prompt').on('input', onCharacterNegativePromptInput);
     $('#sd_auto_validate').on('click', validateAutoUrl);
     $('#sd_auto_url').on('input', onAutoUrlInput);
     $('#sd_auto_auth').on('input', onAutoAuthInput);
@@ -2661,6 +2697,7 @@ jQuery(async () => {
         initScrollHeight($('#sd_prompt_prefix'));
         initScrollHeight($('#sd_negative_prompt'));
         initScrollHeight($('#sd_character_prompt'));
+        initScrollHeight($('#sd_character_negative_prompt'));
     });
 
     for (const [key, value] of Object.entries(resolutionOptions)) {
