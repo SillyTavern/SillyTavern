@@ -9581,6 +9581,10 @@ jQuery(async function () {
         valueBeforeManualInput = $(this).val();
         console.log(valueBeforeManualInput);
     })
+        .on('change', function (e) {
+            e.target.focus();
+            e.target.dispatchEvent(new Event('keyup'));
+        })
         .on('keydown', function (e) {
             const masterSelector = '#' + $(this).data('for');
             const masterElement = $(masterSelector);

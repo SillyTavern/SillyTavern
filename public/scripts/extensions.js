@@ -110,6 +110,7 @@ const extension_settings = {
     sd: {
         prompts: {},
         character_prompts: {},
+        character_negative_prompts: {},
     },
     chromadb: {},
     translate: {},

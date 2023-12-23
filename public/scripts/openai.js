@@ -239,6 +239,7 @@ const default_settings = {
     squash_system_messages: false,
     image_inlining: false,
     bypass_status_check: false,
+    continue_prefill: false,
     seed: -1,
 };
 
@@ -302,6 +303,7 @@ const oai_settings = {
     squash_system_messages: false,
     image_inlining: false,
     bypass_status_check: false,
+    continue_prefill: false,
     seed: -1,
 };
 
@@ -660,12 +662,20 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     let continueMessage = null;
     const instruct = isOpenRouterWithInstruct();
     if (type === 'continue' && cyclePrompt && !instruct) {
-        const continuePrompt = new Prompt({
-            identifier: 'continueNudge',
-            role: 'system',
-            content: oai_settings.continue_nudge_prompt.replace('{{lastChatMessage}}', cyclePrompt),
-            system_prompt: true,
-        });
+        const promptObject = oai_settings.continue_prefill ?
+            {
+                identifier: 'continueNudge',
+                role: 'assistant',
+                content: cyclePrompt,
+                system_prompt: true,
+            } :
+            {
+                identifier: 'continueNudge',
+                role: 'system',
+                content: oai_settings.continue_nudge_prompt.replace('{{lastChatMessage}}', cyclePrompt),
+                system_prompt: true,
+            };
+        const continuePrompt = new Prompt(promptObject);
         const preparedPrompt = promptManager.preparePrompt(continuePrompt);
         continueMessage = Message.fromPrompt(preparedPrompt);
         chatCompletion.reserveBudget(continueMessage);
@@ -2376,6 +2386,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.new_example_chat_prompt = settings.new_example_chat_prompt ?? default_settings.new_example_chat_prompt;
     oai_settings.continue_nudge_prompt = settings.continue_nudge_prompt ?? default_settings.continue_nudge_prompt;
     oai_settings.squash_system_messages = settings.squash_system_messages ?? default_settings.squash_system_messages;
+    oai_settings.continue_prefill = settings.continue_prefill ?? default_settings.continue_prefill;
 
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
     if (settings.names_in_completion !== undefined) oai_settings.names_in_completion = !!settings.names_in_completion;
@@ -2428,6 +2439,7 @@ function loadOpenAISettings(data, settings) {
     $('#openrouter_force_instruct').prop('checked', oai_settings.openrouter_force_instruct);
     $('#openrouter_group_models').prop('checked', oai_settings.openrouter_group_models);
     $('#squash_system_messages').prop('checked', oai_settings.squash_system_messages);
+    $('#continue_prefill').prop('checked', oai_settings.continue_prefill);
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
 
     $('#impersonation_prompt_textarea').val(oai_settings.impersonation_prompt);
@@ -2593,6 +2605,10 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         ai21_model: settings.ai21_model,
         mistralai_model: settings.mistralai_model,
         custom_model: settings.custom_model,
+        custom_url: settings.custom_url,
+        custom_include_body: settings.custom_include_body,
+        custom_exclude_body: settings.custom_exclude_body,
+        custom_include_headers: settings.custom_include_headers,
         google_model: settings.google_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
@@ -2634,6 +2650,8 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
+        bypass_status_check: settings.bypass_status_check,
+        continue_prefill: settings.continue_prefill,
         seed: settings.seed,
     };
 
@@ -3004,6 +3022,7 @@ function onSettingsPresetChange() {
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
         image_inlining: ['#openai_image_inlining', 'image_inlining', true],
+        continue_prefill: ['#continue_prefill', 'continue_prefill', true],
         seed: ['#seed_openai', 'seed', false],
     };
 
@@ -3584,17 +3603,17 @@ function onCustomizeParametersClick() {
         </div>
     </div>`);
 
-    template.find('#custom_include_body').val(oai_settings.custom_include_body).on('input', function() {
+    template.find('#custom_include_body').val(oai_settings.custom_include_body).on('input', function () {
         oai_settings.custom_include_body = String($(this).val());
         saveSettingsDebounced();
     });
 
-    template.find('#custom_exclude_body').val(oai_settings.custom_exclude_body).on('input', function() {
+    template.find('#custom_exclude_body').val(oai_settings.custom_exclude_body).on('input', function () {
         oai_settings.custom_exclude_body = String($(this).val());
         saveSettingsDebounced();
     });
 
-    template.find('#custom_include_headers').val(oai_settings.custom_include_headers).on('input', function() {
+    template.find('#custom_include_headers').val(oai_settings.custom_include_headers).on('input', function () {
         oai_settings.custom_include_headers = String($(this).val());
         saveSettingsDebounced();
     });
@@ -3925,6 +3944,11 @@ $(document).ready(async function () {
 
     $('#openai_image_inlining').on('input', function () {
         oai_settings.image_inlining = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#continue_prefill').on('input', function () {
+        oai_settings.continue_prefill = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

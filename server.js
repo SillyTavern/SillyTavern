@@ -621,8 +621,13 @@ const setupTasks = async function () {
     await loadTokenizers();
     await statsEndpoint.init();
 
-    const exitProcess = () => {
+    const cleanupPlugins = await loadPlugins();
+
+    const exitProcess = async () => {
         statsEndpoint.onExit();
+        if (typeof cleanupPlugins === 'function') {
+            await cleanupPlugins();
+        }
         process.exit();
     };
 
@@ -634,7 +639,6 @@ const setupTasks = async function () {
         exitProcess();
     });
 
-    await loadPlugins();
 
     console.log('Launching...');
 
@@ -647,13 +651,19 @@ const setupTasks = async function () {
     }
 };
 
+/**
+ * Loads server plugins from a directory.
+ * @returns {Promise<Function>} Function to be run on server exit
+ */
 async function loadPlugins() {
     try {
         const pluginDirectory = path.join(serverDirectory, 'plugins');
         const loader = require('./src/plugin-loader');
-        await loader.loadPlugins(app, pluginDirectory);
+        const cleanupPlugins = await loader.loadPlugins(app, pluginDirectory);
+        return cleanupPlugins;
     } catch {
         console.log('Plugin loading failed.');
+        return () => {};
     }
 }
 
