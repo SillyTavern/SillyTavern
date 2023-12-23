@@ -612,8 +612,10 @@ const setupTasks = async function () {
 
     const exitProcess = () => {
         statsEndpoint.onExit();
+        if (typeof cleanupPlugins === 'function') {
+            cleanupPlugins();
+        }
         process.exit();
-        cleanupPlugins();
     };
 
     // Set up event listeners for a graceful shutdown
@@ -636,13 +638,19 @@ const setupTasks = async function () {
     }
 };
 
+/**
+ * Loads server plugins from a directory.
+ * @returns {Promise<Function>} Function to be run on server exit
+ */
 async function loadPlugins() {
     try {
         const pluginDirectory = path.join(serverDirectory, 'plugins');
         const loader = require('./src/plugin-loader');
-        await loader.loadPlugins(app, pluginDirectory);
+        const cleanupPlugins = await loader.loadPlugins(app, pluginDirectory);
+        return cleanupPlugins;
     } catch {
         console.log('Plugin loading failed.');
+        return () => {};
     }
 }
 

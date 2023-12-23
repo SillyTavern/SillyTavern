@@ -27,22 +27,23 @@ const isESModule = (file) => path.extname(file) === '.mjs';
  */
 async function loadPlugins(app, pluginsPath) {
     const exitHooks = [];
+    const emptyFn = () => {};
 
     // Server plugins are disabled.
     if (!enableServerPlugins) {
-        return;
+        return emptyFn;
     }
 
     // Plugins directory does not exist.
     if (!fs.existsSync(pluginsPath)) {
-        return;
+        return emptyFn;
     }
 
     const files = fs.readdirSync(pluginsPath);
 
     // No plugins to load.
     if (files.length === 0) {
-        return;
+        return emptyFn;
     }
 
     for (const file of files) {
@@ -144,7 +145,7 @@ async function loadFromFile(app, pluginFilePath, exitHooks) {
  * @returns {boolean} True if the plugin ID is valid.
  */
 function isValidPluginID(id) {
-    return /^[a-z0-9_-]$/.test(id);
+    return /^[a-z0-9_-]+$/.test(id);
 }
 
 /**
@@ -156,7 +157,8 @@ function isValidPluginID(id) {
  * @returns {Promise<boolean>} Promise that resolves to true if plugin was initialized successfully
  */
 async function initPlugin(app, plugin, exitHooks) {
-    if (typeof plugin.info !== 'object') {
+    const info = plugin.info || plugin.default?.info;
+    if (typeof info !== 'object') {
         console.error('Failed to load plugin module; plugin info not found');
         return false;
     }
@@ -164,7 +166,7 @@ async function initPlugin(app, plugin, exitHooks) {
     // We don't currently use "name" or "description" but it would be nice to have a UI for listing server plugins, so
     // require them now just to be safe
     for (const field of ['id', 'name', 'description']) {
-        if (typeof plugin.info[field] !== 'string') {
+        if (typeof info[field] !== 'string') {
             console.error(`Failed to load plugin module; plugin info missing field '${field}'`);
             return false;
         }
@@ -175,20 +177,21 @@ async function initPlugin(app, plugin, exitHooks) {
         return false;
     }
 
-    const { id } = plugin.info;
+    const { id } = info;
 
     if (!isValidPluginID(id)) {
         console.error(`Failed to load plugin module; invalid plugin ID '${id}'`);
+        return false;
     }
 
-    // Allow the plugin to register API routes under /plugins/[plugin ID] via a router
+    // Allow the plugin to register API routes under /api/plugins/[plugin ID] via a router
     const router = express.Router();
 
     await plugin.init(router);
 
     // Add API routes to the app if the plugin registered any
     if (router.stack.length > 0) {
-        app.use(`/plugins/${id}`, router);
+        app.use(`/api/plugins/${id}`, router);
     }
 
     if (typeof plugin.exit === 'function') {
