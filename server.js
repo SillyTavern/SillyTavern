@@ -610,10 +610,10 @@ const setupTasks = async function () {
 
     const cleanupPlugins = await loadPlugins();
 
-    const exitProcess = () => {
+    const exitProcess = async () => {
         statsEndpoint.onExit();
         if (typeof cleanupPlugins === 'function') {
-            cleanupPlugins();
+            await cleanupPlugins();
         }
         process.exit();
     };
