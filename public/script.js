@@ -2354,11 +2354,7 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
     return generateFinished;
 }
 
-async function processCommands(message, type, dryRun) {
-    if (dryRun || type == 'regenerate' || type == 'swipe' || type == 'quiet') {
-        return null;
-    }
-
+async function processCommands(message) {
     const previousText = String($('#send_textarea').val());
     const result = await executeSlashCommands(message);
 
@@ -2946,12 +2942,14 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     let message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
-    const interruptedByCommand = await processCommands($('#send_textarea').val(), type, dryRun);
+    if (!(dryRun || type == 'regenerate' || type == 'swipe' || type == 'quiet')) {
+        const interruptedByCommand = await processCommands($('#send_textarea').val());
 
-    if (interruptedByCommand) {
-        //$("#send_textarea").val('').trigger('input');
-        unblockGeneration();
-        return Promise.resolve();
+        if (interruptedByCommand) {
+            //$("#send_textarea").val('').trigger('input');
+            unblockGeneration();
+            return Promise.resolve();
+        }
     }
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
