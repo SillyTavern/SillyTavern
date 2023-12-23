@@ -1031,9 +1031,6 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
         prompts.set(jbReplacement, prompts.index('jailbreak'));
     }
 
-    // Allow subscribers to manipulate the prompts object
-    eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
-
     return prompts;
 }
 

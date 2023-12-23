@@ -320,7 +320,6 @@ export const event_types = {
     SETTINGS_LOADED_AFTER: 'settings_loaded_after',
     CHATCOMPLETION_SOURCE_CHANGED: 'chatcompletion_source_changed',
     CHATCOMPLETION_MODEL_CHANGED: 'chatcompletion_model_changed',
-    OAI_BEFORE_CHATCOMPLETION: 'oai_before_chatcompletion',
     OAI_PRESET_CHANGED_BEFORE: 'oai_preset_changed_before',
     OAI_PRESET_CHANGED_AFTER: 'oai_preset_changed_after',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
