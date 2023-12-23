@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const url = require('url');
 const express = require('express');
 const { getConfigValue } = require('./util');
 const enableServerPlugins = getConfigValue('enableServerPlugins', false);
@@ -130,7 +131,8 @@ async function loadFromPackage(app, packageJsonPath, exitHooks) {
  */
 async function loadFromFile(app, pluginFilePath, exitHooks) {
     try {
-        const plugin = await import(pluginFilePath);
+        const fileUrl = url.pathToFileURL(pluginFilePath).toString();
+        const plugin = await import(fileUrl);
         console.log(`Initializing plugin from ${pluginFilePath}`);
         return await initPlugin(app, plugin, exitHooks);
     } catch (error) {
