@@ -1,6 +1,9 @@
 import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from '../script.js';
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
 import { executeSlashCommands, registerSlashCommand } from './slash-commands.js';
+import { isFalseBoolean } from './utils.js';
+
+const MAX_LOOPS = 100;
 
 function getLocalVariable(name, args = {}) {
     if (!chat_metadata.variables) {
@@ -301,8 +304,7 @@ function listVariablesCallback() {
 }
 
 async function whileCallback(args, command) {
-    const MAX_LOOPS = 100;
-    const isGuardOff = ['off', 'false', '0'].includes(args.guard?.toLowerCase());
+    const isGuardOff = isFalseBoolean(args.guard);
     const iterations = isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS;
 
     for (let i = 0; i < iterations; i++) {
@@ -314,6 +316,19 @@ async function whileCallback(args, command) {
         } else {
             break;
         }
+    }
+
+    return '';
+}
+
+async function timesCallback(args, value) {
+    const [repeats, ...commandParts] = value.split(' ');
+    const command = commandParts.join(' ');
+    const isGuardOff = isFalseBoolean(args.guard);
+    const iterations = Math.min(Number(repeats), isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS);
+
+    for (let i = 0; i < iterations; i++) {
+        await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i));
     }
 
     return '';
@@ -637,6 +652,21 @@ function lenValuesCallback(value) {
     return parsedValue.length;
 }
 
+function randValuesCallback(from, to, args) {
+    const range = to - from;
+    const value = from + Math.random() * range;
+    if (args.round == 'round') {
+        return Math.round(value);
+    }
+    if (args.round == 'ceil') {
+        return Math.ceil(value);
+    }
+    if (args.round == 'floor') {
+        return Math.floor(value);
+    }
+    return value;
+}
+
 export function registerVariableCommands() {
     registerSlashCommand('listvar', listVariablesCallback, [], ' – list registered chat variables', true, true);
     registerSlashCommand('setvar', (args, value) => setLocalVariable(args.key || args.name, value, args), [], '<span class="monospace">key=varname index=listIndex (value)</span> – set a local variable value and pass it down the pipe, index is optional, e.g. <tt>/setvar key=color green</tt>', true, true);
@@ -651,6 +681,7 @@ export function registerVariableCommands() {
     registerSlashCommand('decglobalvar', (_, value) => decrementGlobalVariable(value), [], '<span class="monospace">(key)</span> – decrement a global variable by 1 and pass the result down the pipe, e.g. <tt>/decglobalvar score</tt>', true, true);
     registerSlashCommand('if', ifCallback, [], '<span class="monospace">left=varname1 right=varname2 rule=comparison else="(alt.command)" "(command)"</span> – compare the value of the left operand "a" with the value of the right operand "b", and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the result of the command execution down the pipe. Numeric values and string literals for left and right operands supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/if left=score right=10 rule=gte "/speak You win"</tt> triggers a /speak command if the value of "score" is greater or equals 10.', true, true);
     registerSlashCommand('while', whileCallback, [], '<span class="monospace">left=varname1 right=varname2 rule=comparison "(command)"</span> – compare the value of the left operand "a" with the value of the right operand "b", and if the condition yields true, then execute any valid slash command enclosed in quotes. Numeric values and string literals for left and right operands supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/setvar key=i 0 | /while left=i right=10 rule=let "/addvar key=i 1"</tt> adds 1 to the value of "i" until it reaches 10. Loops are limited to 100 iterations by default, pass guard=off to disable.', true, true);
+    registerSlashCommand('times', (args, value) => timesCallback(args, value), [], '<span class="monospace">(repeats) "(command)"</span> – execute any valid slash command enclosed in quotes <tt>repeats</tt> number of times, e.g. <tt>/setvar key=i 1 | /times 5 "/addvar key=i 1"</tt> adds 1 to the value of "i" 5 times. <tt>{{timesIndex}}</tt> is replaced with the iteration number (zero-based), e.g. <tt>/times 4 "/echo {{timesIndex}}"</tt> echos the numbers 0 through 4. Loops are limited to 100 iterations by default, pass guard=off to disable.', true, true);
     registerSlashCommand('flushvar', (_, value) => deleteLocalVariable(value), [], '<span class="monospace">(key)</span> – delete a local variable, e.g. <tt>/flushvar score</tt>', true, true);
     registerSlashCommand('flushglobalvar', (_, value) => deleteGlobalVariable(value), [], '<span class="monospace">(key)</span> – delete a global variable, e.g. <tt>/flushglobalvar score</tt>', true, true);
     registerSlashCommand('add', (_, value) => addValuesCallback(value), [], '<span class="monospace">(a b c d)</span> – performs an addition of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/add 10 i 30 j</tt>', true, true);
@@ -668,4 +699,5 @@ export function registerVariableCommands() {
     registerSlashCommand('sqrt', (_, value) => sqrtValuesCallback(value), [], '<span class="monospace">(a)</span> – performs a square root operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/sqrt i</tt>', true, true);
     registerSlashCommand('round', (_, value) => roundValuesCallback(value), [], '<span class="monospace">(a)</span> – rounds a value and passes the result down the pipe, can use variable names, e.g. <tt>/round i</tt>', true, true);
     registerSlashCommand('len', (_, value) => lenValuesCallback(value), [], '<span class="monospace">(a)</span> – gets the length of a value and passes the result down the pipe, can use variable names, e.g. <tt>/len i</tt>', true, true);
+    registerSlashCommand('rand', (args, value) => randValuesCallback(Number(args.from ?? 0), Number(args.to ?? (value.length ? value : 1)), args), [], '<span class="monospace">(from=number=0 to=number=1 round=round|ceil|floor)</span> – returns a random number between from and to, e.g. <tt>/rand</tt> or <tt>/rand 10</tt> or <tt>/rand from=5 to=10</tt>', true, true);
 }

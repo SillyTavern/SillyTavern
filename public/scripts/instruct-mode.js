@@ -29,6 +29,7 @@ const controls = [
     { id: 'instruct_first_output_sequence', property: 'first_output_sequence', isCheckbox: false },
     { id: 'instruct_last_output_sequence', property: 'last_output_sequence', isCheckbox: false },
     { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
+    { id: 'instruct_bind_to_context', property: 'bind_to_context', isCheckbox: true },
 ];
 
 /**
@@ -136,7 +137,7 @@ export function autoSelectInstructPreset(modelId) {
     let foundMatch = false;
     for (const instruct_preset of instruct_presets) {
         // If instruct preset matches the context template
-        if (instruct_preset.name === power_user.context.preset) {
+        if (power_user.instruct.bind_to_context && instruct_preset.name === power_user.context.preset) {
             foundMatch = true;
             selectInstructPreset(instruct_preset.name);
             break;
@@ -163,7 +164,7 @@ export function autoSelectInstructPreset(modelId) {
             }
         }
 
-        if (power_user.default_instruct && power_user.instruct.preset !== power_user.default_instruct) {
+        if (power_user.instruct.bind_to_context && power_user.default_instruct && power_user.instruct.preset !== power_user.default_instruct) {
             if (instruct_presets.some(p => p.name === power_user.default_instruct)) {
                 console.log(`Instruct mode: default preset "${power_user.default_instruct}" selected`);
                 $('#instruct_presets').val(power_user.default_instruct).trigger('change');
@@ -409,6 +410,10 @@ jQuery(() => {
     });
 
     $('#instruct_enabled').on('change', function () {
+        if (!power_user.instruct.bind_to_context) {
+            return;
+        }
+
         // When instruct mode gets enabled, select context template matching selected instruct preset
         if (power_user.instruct.enabled) {
             selectMatchingContextTemplate(power_user.instruct.preset);
@@ -440,8 +445,10 @@ jQuery(() => {
             }
         });
 
-        // Select matching context template
-        selectMatchingContextTemplate(name);
+        if (power_user.instruct.bind_to_context) {
+            // Select matching context template
+            selectMatchingContextTemplate(name);
+        }
 
         highlightDefaultPreset();
     });

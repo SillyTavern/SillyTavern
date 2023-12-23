@@ -69,6 +69,27 @@ EventEmitter.prototype.emit = async function (event) {
     }
 };
 
+EventEmitter.prototype.emitAndWait = function (event) {
+    console.debug('Event emitted: ' + event);
+
+    var i, listeners, length, args = [].slice.call(arguments, 1);
+
+    if (typeof this.events[event] === 'object') {
+        listeners = this.events[event].slice();
+        length = listeners.length;
+
+        for (i = 0; i < length; i++) {
+            try {
+                listeners[i].apply(this, args);
+            }
+            catch (err) {
+                console.error(err);
+                console.trace('Error in event listener');
+            }
+        }
+    }
+};
+
 EventEmitter.prototype.once = function (event, listener) {
     this.on(event, function g () {
         this.removeListener(event, g);

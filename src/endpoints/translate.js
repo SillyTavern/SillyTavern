@@ -106,6 +106,10 @@ router.post('/deepl', jsonParser, async (request, response) => {
         return response.sendStatus(400);
     }
 
+    if (request.body.lang === 'zh-CN' || request.body.lang === 'zh-TW') {
+        request.body.lang = 'ZH';
+    }
+
     const text = request.body.text;
     const lang = request.body.lang;
     const formality = getConfigValue('deepl.formality', 'default');
@@ -221,7 +225,7 @@ router.post('/deeplx', jsonParser, async (request, response) => {
 
     const text = request.body.text;
     let lang = request.body.lang;
-    if (request.body.lang === 'zh-CN') {
+    if (request.body.lang === 'zh-CN' || request.body.lang === 'zh-TW') {
         lang = 'ZH';
     }
 

@@ -1,6 +1,6 @@
-import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams, eventSource, event_types } from '../../../script.js';
+import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams, eventSource, event_types, animation_duration } from '../../../script.js';
 import { getContext, extension_settings } from '../../extensions.js';
-import { getSortableDelay, escapeHtml } from '../../utils.js';
+import { getSortableDelay, escapeHtml, delay } from '../../utils.js';
 import { executeSlashCommands, registerSlashCommand } from '../../slash-commands.js';
 import { ContextMenu } from './src/ContextMenu.js';
 import { MenuItem } from './src/MenuItem.js';
@@ -26,7 +26,7 @@ const defaultSettings = {
 
 //method from worldinfo
 async function updateQuickReplyPresetList() {
-    const result = await fetch('/getsettings', {
+    const result = await fetch('/api/settings/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
@@ -388,7 +388,7 @@ async function doQuickReplyBarPopout() {
         });
 
         loadMovingUIState();
-        $('#quickReplyBarPopout').fadeIn(250);
+        $('#quickReplyBarPopout').fadeIn(animation_duration);
         dragElement(newElement);
 
         $('#quickReplyBarPopoutClose').off('click').on('click', function () {
@@ -396,8 +396,8 @@ async function doQuickReplyBarPopout() {
             let quickRepliesClone = $('#quickReplies').html();
             $('#quickReplyBar').append(newQuickRepliesDiv);
             $('#quickReplies').prepend(quickRepliesClone);
-            $('#quickReplyBar').append(popoutButtonClone).fadeIn(250);
-            $('#quickReplyBarPopout').fadeOut(250, () => { $('#quickReplyBarPopout').remove(); });
+            $('#quickReplyBar').append(popoutButtonClone).fadeIn(animation_duration);
+            $('#quickReplyBarPopout').fadeOut(animation_duration, () => { $('#quickReplyBarPopout').remove(); });
             $('.quickReplyButton').on('click', function () {
                 let index = $(this).data('index');
                 sendQuickReply(index);
@@ -639,7 +639,7 @@ function generateQuickReplyElements() {
             <span class="drag-handle ui-sortable-handle">☰</span>
             <input class="text_pole wide30p" id="quickReply${i}Label" placeholder="(Button label)">
             <span class="menu_button menu_button_icon" id="quickReply${i}CtxButton" title="Additional options: context menu, auto-execution">⋮</span>
-            <span class="menu_button menu_button_icon editor_maximize fa-solid fa-maximize" data-for="quickReply${i}Mes" id="quickReply${i}ExpandButton" title="Expand the editor"></span>
+            <span class="menu_button menu_button_icon editor_maximize fa-solid fa-maximize" data-tab="true" data-for="quickReply${i}Mes" id="quickReply${i}ExpandButton" title="Expand the editor"></span>
             <textarea id="quickReply${i}Mes" placeholder="(Custom message or /command)" class="text_pole widthUnset flex1" rows="2"></textarea>
         </div>
         `;
@@ -714,6 +714,222 @@ function saveQROrder() {
         onQuickReplyLabelInput(i);
         onQuickReplyInput(i);
         i++;
+    });
+}
+
+async function qrCreateCallback(args, mes) {
+    const qr = {
+        label: args.label ?? '',
+        mes: (mes ?? '')
+            .replace(/\\\|/g, '|')
+            .replace(/\\\{/g, '{')
+            .replace(/\\\}/g, '}')
+        ,
+        title: args.title ?? '',
+        autoExecute_chatLoad: JSON.parse(args.load ?? false),
+        autoExecute_userMessage: JSON.parse(args.user ?? false),
+        autoExecute_botMessage: JSON.parse(args.bot ?? false),
+        autoExecute_appStartup: JSON.parse(args.startup ?? false),
+        hidden: JSON.parse(args.hidden ?? false),
+    };
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
+    preset.quickReplySlots.push(qr);
+    preset.numberOfSlots++;
+    await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+    return '';
+}
+async function qrUpdateCallback(args, mes) {
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
+    const idx = preset.quickReplySlots.findIndex(x => x.label == args.label);
+    const oqr = preset.quickReplySlots[idx];
+    const qr = {
+        label: args.newlabel ?? oqr.label ?? '',
+        mes: (mes ?? oqr.mes)
+            .replace('\\|', '|')
+            .replace('\\{', '{')
+            .replace('\\}', '}')
+        ,
+        title: args.title ?? oqr.title ?? '',
+        autoExecute_chatLoad: JSON.parse(args.load ?? oqr.autoExecute_chatLoad ?? false),
+        autoExecute_userMessage: JSON.parse(args.user ?? oqr.autoExecute_userMessage ?? false),
+        autoExecute_botMessage: JSON.parse(args.bot ?? oqr.autoExecute_botMessage ?? false),
+        autoExecute_appStartup: JSON.parse(args.startup ?? oqr.autoExecute_appStartup ?? false),
+        hidden: JSON.parse(args.hidden ?? oqr.hidden ?? false),
+    };
+    preset.quickReplySlots[idx] = qr;
+    await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+    return '';
+}
+async function qrDeleteCallback(args, label) {
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
+    const idx = preset.quickReplySlots.findIndex(x => x.label == label);
+    if (idx === -1) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR with label '${label}' not found`);
+        return '';
+    };
+    preset.quickReplySlots.splice(idx, 1);
+    preset.numberOfSlots--;
+    await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+    return '';
+}
+
+async function qrContextAddCallback(args, presetName) {
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
+    const idx = preset.quickReplySlots.findIndex(x => x.label == args.label);
+    const oqr = preset.quickReplySlots[idx];
+    if (!oqr.contextMenu) {
+        oqr.contextMenu = [];
+    }
+    let item = oqr.contextMenu.find(it => it.preset == presetName);
+    if (item) {
+        item.chain = JSON.parse(args.chain ?? 'null') ?? item.chain ?? false;
+    } else {
+        oqr.contextMenu.push({ preset: presetName, chain: JSON.parse(args.chain ?? 'false') });
+    }
+    await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+    return '';
+}
+async function qrContextDeleteCallback(args, presetName) {
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
+    const idx = preset.quickReplySlots.findIndex(x => x.label == args.label);
+    const oqr = preset.quickReplySlots[idx];
+    if (!oqr.contextMenu) return;
+    const ctxIdx = oqr.contextMenu.findIndex(it => it.preset == presetName);
+    if (ctxIdx > -1) {
+        oqr.contextMenu.splice(ctxIdx, 1);
+    }
+    await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+    return '';
+}
+async function qrContextClearCallback(args, label) {
+    const setName = args.set ?? selected_preset;
+    const preset = presets.find(x => x.name == setName);
+
+    if (!preset) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR preset '${setName}' not found`);
+        return '';
+    }
+
+    const idx = preset.quickReplySlots.findIndex(x => x.label == label);
+    const oqr = preset.quickReplySlots[idx];
+    oqr.contextMenu = [];
+    await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(preset),
+    });
+    saveSettingsDebounced();
+    await delay(400);
+    applyQuickReplyPreset(selected_preset);
+    return '';
+}
+
+async function qrPresetAddCallback(args, name) {
+    const quickReplyPreset = {
+        name: name,
+        quickReplyEnabled: JSON.parse(args.enabled ?? null) ?? true,
+        quickActionEnabled: JSON.parse(args.nosend ?? null) ?? false,
+        placeBeforeInputEnabled: JSON.parse(args.before ?? null) ?? false,
+        quickReplySlots: [],
+        numberOfSlots: Number(args.slots ?? '0'),
+        AutoInputInject: JSON.parse(args.inject ?? 'false'),
+    };
+
+    await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(quickReplyPreset),
+    });
+    await updateQuickReplyPresetList();
+}
+
+async function qrPresetUpdateCallback(args, name) {
+    const preset = presets.find(it => it.name == name);
+    const quickReplyPreset = {
+        name: preset.name,
+        quickReplyEnabled: JSON.parse(args.enabled ?? null) ?? preset.quickReplyEnabled,
+        quickActionEnabled: JSON.parse(args.nosend ?? null) ?? preset.quickActionEnabled,
+        placeBeforeInputEnabled: JSON.parse(args.before ?? null) ?? preset.placeBeforeInputEnabled,
+        quickReplySlots: preset.quickReplySlots,
+        numberOfSlots: Number(args.slots ?? preset.numberOfSlots),
+        AutoInputInject: JSON.parse(args.inject ?? 'null') ?? preset.AutoInputInject,
+    };
+    Object.assign(preset, quickReplyPreset);
+
+    await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(quickReplyPreset),
     });
 }
 
@@ -901,4 +1117,33 @@ jQuery(async () => {
 jQuery(() => {
     registerSlashCommand('qr', doQR, [], '<span class="monospace">(number)</span> – activates the specified Quick Reply', true, true);
     registerSlashCommand('qrset', doQRPresetSwitch, [], '<span class="monospace">(name)</span> – swaps to the specified Quick Reply Preset', true, true);
+    const qrArgs = `
+    label    - string - text on the button, e.g., label=MyButton
+    set      - string - name of the QR set, e.g., set=PresetName1
+    hidden   - bool   - whether the button should be hidden, e.g., hidden=true
+    startup  - bool   - auto execute on app startup, e.g., startup=true
+    user     - bool   - auto execute on user message, e.g., user=true
+    bot      - bool   - auto execute on AI message, e.g., bot=true
+    load     - bool   - auto execute on chat load, e.g., load=true
+    title    - bool   - title / tooltip to be shown on button, e.g., title="My Fancy Button"
+    `.trim();
+    const qrUpdateArgs = `
+    newlabel - string - new text fort the button, e.g. newlabel=MyRenamedButton
+    ${qrArgs}
+    `.trim();
+    registerSlashCommand('qr-create', qrCreateCallback, [], `<span class="monospace" style="white-space:pre-line;">(arguments [message])\n  arguments:\n    ${qrArgs}</span> – creates a new Quick Reply, example: <tt>/qr-create set=MyPreset label=MyButton /echo 123</tt>`, true, true);
+    registerSlashCommand('qr-update', qrUpdateCallback, [], `<span class="monospace" style="white-space:pre-line;">(arguments [message])\n  arguments:\n    ${qrUpdateArgs}</span> – updates Quick Reply, example: <tt>/qr-update set=MyPreset label=MyButton newlabel=MyRenamedButton /echo 123</tt>`, true, true);
+    registerSlashCommand('qr-delete', qrDeleteCallback, [], '<span class="monospace">(set=string [label])</span> – deletes Quick Reply', true, true);
+    registerSlashCommand('qr-contextadd', qrContextAddCallback, [], '<span class="monospace">(set=string label=string chain=bool [preset name])</span> – add context menu preset to a QR, example: <tt>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset</tt>', true, true);
+    registerSlashCommand('qr-contextdel', qrContextDeleteCallback, [], '<span class="monospace">(set=string label=string [preset name])</span> – remove context menu preset from a QR, example: <tt>/qr-contextdel set=MyPreset label=MyButton MyOtherPreset</tt>', true, true);
+    registerSlashCommand('qr-contextclear', qrContextClearCallback, [], '<span class="monospace">(set=string [label])</span> – remove all context menu presets from a QR, example: <tt>/qr-contextclear set=MyPreset MyButton</tt>', true, true);
+    const presetArgs = `
+    enabled - bool - enable or disable the preset
+    nosend  - bool - disable send / insert in user input (invalid for slash commands)
+    before  - bool - place QR before user input
+    slots   - int  - number of slots
+    inject  - bool - inject user input automatically (if disabled use {{input}})
+    `.trim();
+    registerSlashCommand('qr-presetadd', qrPresetAddCallback, [], `<span class="monospace" style="white-space:pre-line;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – create a new preset (overrides existing ones), example: <tt>/qr-presetadd slots=3 MyNewPreset</tt>`, true, true);
+    registerSlashCommand('qr-presetupdate', qrPresetUpdateCallback, [], `<span class="monospace" style="white-space:pre-line;">(arguments [label])\n  arguments:\n    ${presetArgs}</span> – update an existing preset, example: <tt>/qr-presetupdate enabled=false MyPreset</tt>`, true, true);
 });

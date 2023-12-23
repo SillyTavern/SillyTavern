@@ -741,6 +741,38 @@ export function escapeRegex(string) {
     return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
+export class Stopwatch {
+    /**
+     * Initializes a Stopwatch class.
+     * @param {number} interval Update interval in milliseconds. Must be a finite number above zero.
+     */
+    constructor(interval) {
+        if (isNaN(interval) || !isFinite(interval) || interval <= 0) {
+            console.warn('Invalid interval for Stopwatch, setting to 1');
+            interval = 1;
+        }
+
+        this.interval = interval;
+        this.lastAction = Date.now();
+    }
+
+    /**
+     * Executes a function if the interval passed.
+     * @param {(arg0: any) => any} action Action function
+     * @returns Promise<void>
+     */
+    async tick(action) {
+        const passed = (Date.now() - this.lastAction);
+
+        if (passed < this.interval) {
+            return;
+        }
+
+        await action();
+        this.lastAction = Date.now();
+    }
+}
+
 /**
  * Provides an interface for rate limiting function calls.
  */
@@ -998,6 +1030,11 @@ export function loadFileToDocument(url, type) {
  * @returns {Promise<string>} A promise that resolves to the thumbnail data URL.
  */
 export function createThumbnail(dataUrl, maxWidth, maxHeight, type = 'image/jpeg') {
+    // Someone might pass in a base64 encoded string without the data URL prefix
+    if (!dataUrl.includes('data:')) {
+        dataUrl = `data:image/jpeg;base64,${dataUrl}`;
+    }
+
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.src = dataUrl;
@@ -1143,11 +1180,13 @@ export async function extractTextFromPDF(blob) {
  * @param {Blob} blob HTML content blob
  * @returns {Promise<string>} A promise that resolves to the parsed text.
  */
-export async function extractTextFromHTML(blob) {
+export async function extractTextFromHTML(blob, textSelector = 'body') {
     const html = await blob.text();
     const domParser = new DOMParser();
     const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
-    const text = postProcessText(document.body.textContent);
+    const elements = document.querySelectorAll(textSelector);
+    const rawText = Array.from(elements).map(e => e.textContent).join('\n');
+    const text = postProcessText(rawText);
     return text;
 }
 

@@ -10,6 +10,7 @@ import {
 import {
     power_user,
 } from './power-user.js';
+import EventSourceStream from './sse-stream.js';
 import { getSortableDelay } from './utils.js';
 
 export const kai_settings = {
@@ -128,13 +129,6 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         top_p: kai_settings.top_p,
         min_p: (kai_flags.can_use_min_p || isHorde) ? kai_settings.min_p : undefined,
         typical: kai_settings.typical,
-        s1: sampler_order[0],
-        s2: sampler_order[1],
-        s3: sampler_order[2],
-        s4: sampler_order[3],
-        s5: sampler_order[4],
-        s6: sampler_order[5],
-        s7: sampler_order[6],
         use_world_info: false,
         singleline: false,
         stop_sequence: (kai_flags.can_use_stop_sequence || isHorde) ? getStoppingStrings(isImpersonate, isContinue) : undefined,
@@ -153,44 +147,50 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
     return generate_data;
 }
 
+function tryParseStreamingError(response, decoded) {
+    try {
+        const data = JSON.parse(decoded);
+
+        if (!data) {
+            return;
+        }
+
+        if (data.error) {
+            toastr.error(data.error.message || response.statusText, 'KoboldAI API');
+            throw new Error(data);
+        }
+    }
+    catch {
+        // No JSON. Do nothing.
+    }
+}
+
 export async function generateKoboldWithStreaming(generate_data, signal) {
-    const response = await fetch('/generate', {
+    const response = await fetch('/api/backends/kobold/generate', {
         headers: getRequestHeaders(),
         body: JSON.stringify(generate_data),
         method: 'POST',
         signal: signal,
     });
+    if (!response.ok) {
+        tryParseStreamingError(response, await response.text());
+        throw new Error(`Got response status ${response.status}`);
+    }
+    const eventStream = new EventSourceStream();
+    response.body.pipeThrough(eventStream);
+    const reader = eventStream.readable.getReader();
 
     return async function* streamData() {
-        const decoder = new TextDecoder();
-        const reader = response.body.getReader();
-        let getMessage = '';
-        let messageBuffer = '';
+        let text = '';
         while (true) {
             const { done, value } = await reader.read();
-            let response = decoder.decode(value);
-            let eventList = [];
+            if (done) return;
 
-            // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
-            // We need to buffer chunks until we have one or more full messages (separated by double newlines)
-            messageBuffer += response;
-            eventList = messageBuffer.split('\n\n');
-            // Last element will be an empty string or a leftover partial message
-            messageBuffer = eventList.pop();
-
-            for (let event of eventList) {
-                for (let subEvent of event.split('\n')) {
-                    if (subEvent.startsWith('data')) {
-                        let data = JSON.parse(subEvent.substring(5));
-                        getMessage += (data?.token || '');
-                        yield { text: getMessage, swipes: [] };
-                    }
-                }
+            const data = JSON.parse(value.data);
+            if (data?.token) {
+                text += data.token;
             }
-
-            if (done) {
-                return;
-            }
+            yield { text, swipes: [] };
         }
     };
 }
@@ -310,87 +310,24 @@ const sliders = [
     },
 ];
 
-export function setKoboldFlags(version, koboldVersion) {
-    kai_flags.can_use_stop_sequence = canUseKoboldStopSequence(version);
-    kai_flags.can_use_streaming = canUseKoboldStreaming(koboldVersion);
-    kai_flags.can_use_tokenization = canUseKoboldTokenization(koboldVersion);
-    kai_flags.can_use_default_badwordsids = canUseDefaultBadwordIds(version);
-    kai_flags.can_use_mirostat = canUseMirostat(koboldVersion);
-    kai_flags.can_use_grammar = canUseGrammar(koboldVersion);
-    kai_flags.can_use_min_p = canUseMinP(koboldVersion);
+export function setKoboldFlags(koboldUnitedVersion, koboldCppVersion) {
+    kai_flags.can_use_stop_sequence = versionCompare(koboldUnitedVersion, MIN_STOP_SEQUENCE_VERSION);
+    kai_flags.can_use_streaming = versionCompare(koboldCppVersion, MIN_STREAMING_KCPPVERSION);
+    kai_flags.can_use_tokenization = versionCompare(koboldCppVersion, MIN_TOKENIZATION_KCPPVERSION);
+    kai_flags.can_use_default_badwordsids = versionCompare(koboldUnitedVersion, MIN_UNBAN_VERSION);
+    kai_flags.can_use_mirostat = versionCompare(koboldCppVersion, MIN_MIROSTAT_KCPPVERSION);
+    kai_flags.can_use_grammar = versionCompare(koboldCppVersion, MIN_GRAMMAR_KCPPVERSION);
+    kai_flags.can_use_min_p = versionCompare(koboldCppVersion, MIN_MIN_P_KCPPVERSION);
 }
 
 /**
- * Determines if the Kobold stop sequence can be used with the given version.
- * @param {string} version KoboldAI version to check.
- * @returns {boolean} True if the Kobold stop sequence can be used, false otherwise.
+ * Compares two version numbers, returning true if srcVersion >= minVersion
+ * @param {string} srcVersion The current version.
+ * @param {string} minVersion The target version number to test against
+ * @returns {boolean} True if srcVersion >= minVersion, false if not
  */
-function canUseKoboldStopSequence(version) {
-    return (version || '0.0.0').localeCompare(MIN_STOP_SEQUENCE_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-}
-
-/**
- * Determines if the Kobold default badword ids can be used with the given version.
- * @param {string} version KoboldAI version to check.
- * @returns {boolean} True if the Kobold default badword ids can be used, false otherwise.
- */
-function canUseDefaultBadwordIds(version) {
-    return (version || '0.0.0').localeCompare(MIN_UNBAN_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-}
-
-/**
- * Determines if the Kobold streaming API can be used with the given version.
- * @param {{ result: string; version: string; }} koboldVersion KoboldAI version object.
- * @returns {boolean} True if the Kobold streaming API can be used, false otherwise.
- */
-function canUseKoboldStreaming(koboldVersion) {
-    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
-        return (koboldVersion.version || '0.0').localeCompare(MIN_STREAMING_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-    } else return false;
-}
-
-/**
- * Determines if the Kobold tokenization API can be used with the given version.
- * @param {{ result: string; version: string; }} koboldVersion KoboldAI version object.
- * @returns {boolean} True if the Kobold tokenization API can be used, false otherwise.
- */
-function canUseKoboldTokenization(koboldVersion) {
-    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
-        return (koboldVersion.version || '0.0').localeCompare(MIN_TOKENIZATION_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-    } else return false;
-}
-
-/**
- * Determines if the Kobold mirostat can be used with the given version.
- * @param {{result: string; version: string;}} koboldVersion KoboldAI version object.
- * @returns {boolean} True if the Kobold mirostat API can be used, false otherwise.
- */
-function canUseMirostat(koboldVersion) {
-    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
-        return (koboldVersion.version || '0.0').localeCompare(MIN_MIROSTAT_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-    } else return false;
-}
-
-/**
- * Determines if the Kobold grammar can be used with the given version.
- * @param {{result: string; version:string;}} koboldVersion KoboldAI version object.
- * @returns {boolean} True if the Kobold grammar can be used, false otherwise.
- */
-function canUseGrammar(koboldVersion) {
-    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
-        return (koboldVersion.version || '0.0').localeCompare(MIN_GRAMMAR_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-    } else return false;
-}
-
-/**
- * Determines if the Kobold min_p can be used with the given version.
- * @param {{result:string, version:string;}} koboldVersion KoboldAI version object.
- * @returns {boolean} True if the Kobold min_p can be used, false otherwise.
- */
-function canUseMinP(koboldVersion) {
-    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
-        return (koboldVersion.version || '0.0').localeCompare(MIN_MIN_P_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
-    } else return false;
+function versionCompare(srcVersion, minVersion) {
+    return (srcVersion || '0.0.0').localeCompare(minVersion, undefined, { numeric: true, sensitivity: 'base' }) > -1;
 }
 
 /**

@@ -13,6 +13,7 @@
                     <option value="transformers">Local (Transformers)</option>
                     <option value="openai">OpenAI</option>
                     <option value="palm">Google MakerSuite (PaLM)</option>
+                    <option value="mistral">MistralAI</option>
                 </select>
             </div>
 
@@ -22,6 +23,11 @@
                 </label>
                 <input type="number" id="vectors_query" class="text_pole widthUnset" min="1" max="99" />
             </div>
+
+            <label class="checkbox_label" for="vectors_include_wi" title="Query results can activate World Info entries.">
+                <input id="vectors_include_wi" type="checkbox" class="checkbox">
+                Include in World Info Scanning
+            </label>
 
             <hr>
 

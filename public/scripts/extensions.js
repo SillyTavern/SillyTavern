@@ -47,8 +47,6 @@ export function saveMetadataDebounced() {
     }, 1000);
 }
 
-export const extensionsHandlebars = Handlebars.create();
-
 /**
  * Provides an ability for extensions to render HTML templates.
  * Templates sanitation and localization is forced.
@@ -59,40 +57,6 @@ export const extensionsHandlebars = Handlebars.create();
  */
 export function renderExtensionTemplate(extensionName, templateId, templateData = {}, sanitize = true, localize = true) {
     return renderTemplate(`scripts/extensions/${extensionName}/${templateId}.html`, templateData, sanitize, localize, true);
-}
-
-/**
- * Registers a Handlebars helper for use in extensions.
- * @param {string} name Handlebars helper name
- * @param {function} helper Handlebars helper function
- */
-export function registerExtensionHelper(name, helper) {
-    extensionsHandlebars.registerHelper(name, helper);
-}
-
-/**
- * Applies handlebars extension helpers to a message.
- * @param {number} messageId Message index in the chat.
- */
-export function processExtensionHelpers(messageId) {
-    const context = getContext();
-    const message = context.chat[messageId];
-
-    if (!message?.mes || typeof message.mes !== 'string') {
-        return;
-    }
-
-    // Don't waste time if there are no mustaches
-    if (!substituteParams(message.mes).includes('{{')) {
-        return;
-    }
-
-    try {
-        const template = extensionsHandlebars.compile(substituteParams(message.mes), { noEscape: true });
-        message.mes = template({});
-    } catch {
-        // Ignore
-    }
 }
 
 // Disables parallel updates
@@ -146,6 +110,7 @@ const extension_settings = {
     sd: {
         prompts: {},
         character_prompts: {},
+        character_negative_prompts: {},
     },
     chromadb: {},
     translate: {},
@@ -879,7 +844,7 @@ async function runGenerationInterceptors(chat, contextSize) {
         exitImmediately = immediately;
     };
 
-    for (const manifest of Object.values(manifests)) {
+    for (const manifest of Object.values(manifests).sort((a, b) => a.loading_order - b.loading_order)) {
         const interceptorKey = manifest.generate_interceptor;
         if (typeof window[interceptorKey] === 'function') {
             try {

@@ -1,5 +1,4 @@
 import {
-    api_server_textgenerationwebui,
     getRequestHeaders,
     getStoppingStrings,
     max_context,
@@ -9,11 +8,13 @@ import {
     setOnlineStatus,
     substituteParams,
 } from '../script.js';
+import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
 
 import {
     power_user,
     registerDebugFunction,
 } from './power-user.js';
+import EventSourceStream from './sse-stream.js';
 import { SENTENCEPIECE_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
 
@@ -30,15 +31,29 @@ export const textgen_types = {
     APHRODITE: 'aphrodite',
     TABBY: 'tabby',
     KOBOLDCPP: 'koboldcpp',
+    TOGETHERAI: 'togetherai',
+    LLAMACPP: 'llamacpp',
+    OLLAMA: 'ollama',
 };
 
-const { MANCER, APHRODITE } = textgen_types;
+const { MANCER, APHRODITE, TOGETHERAI, OOBA, OLLAMA, LLAMACPP } = textgen_types;
+const BIAS_KEY = '#textgenerationwebui_api-settings';
 
 // Maybe let it be configurable in the future?
 // (7 days later) The future has come.
 const MANCER_SERVER_KEY = 'mancer_server';
 const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
-export let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
+let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
+let TOGETHERAI_SERVER = 'https://api.together.xyz';
+
+const SERVER_INPUTS = {
+    [textgen_types.OOBA]:  '#textgenerationwebui_api_url_text',
+    [textgen_types.APHRODITE]: '#aphrodite_api_url_text',
+    [textgen_types.TABBY]: '#tabby_api_url_text',
+    [textgen_types.KOBOLDCPP]: '#koboldcpp_api_url_text',
+    [textgen_types.LLAMACPP]: '#llamacpp_api_url_text',
+    [textgen_types.OLLAMA]: '#ollama_api_url_text',
+};
 
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
 const settings = {
@@ -88,9 +103,13 @@ const settings = {
     //prompt_log_probs_aphrodite: 0,
     type: textgen_types.OOBA,
     mancer_model: 'mytholite',
+    togetherai_model: 'Gryphe/MythoMax-L2-13b',
+    ollama_model: '',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
+    logit_bias: [],
     n: 1,
+    server_urls: {},
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -143,7 +162,39 @@ const setting_names = [
     //'prompt_log_probs_aphrodite'
     'sampler_order',
     'n',
+    'logit_bias',
 ];
+
+export function validateTextGenUrl() {
+    const selector = SERVER_INPUTS[settings.type];
+
+    if (!selector) {
+        return;
+    }
+
+    const control = $(selector);
+    const url = String(control.val()).trim();
+    const formattedUrl = formatTextGenURL(url);
+
+    if (!formattedUrl) {
+        toastr.error('Enter a valid API URL', 'Text Completion API');
+        return;
+    }
+
+    control.val(formattedUrl);
+}
+
+export function getTextGenServer() {
+    if (settings.type === MANCER) {
+        return MANCER_SERVER;
+    }
+
+    if (settings.type === TOGETHERAI) {
+        return TOGETHERAI_SERVER;
+    }
+
+    return settings.server_urls[settings.type] ?? '';
+}
 
 async function selectPreset(name) {
     const preset = textgenerationwebui_presets[textgenerationwebui_preset_names.indexOf(name)];
@@ -158,13 +209,15 @@ async function selectPreset(name) {
         setSettingByName(name, value, true);
     }
     setGenerationParamsFromPreset(preset);
+    BIAS_CACHE.delete(BIAS_KEY);
+    displayLogitBias(preset.logit_bias, BIAS_KEY);
     saveSettingsDebounced();
 }
 
 function formatTextGenURL(value) {
     try {
-        // Mancer doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER) {
+        // Mancer/Together doesn't need any formatting (it's hardcoded)
+        if (settings.type === MANCER || settings.type === TOGETHERAI) {
             return value;
         }
 
@@ -239,10 +292,61 @@ function getCustomTokenBans() {
     return result.filter(onlyUnique).map(x => String(x)).join(',');
 }
 
+/**
+ * Calculates logit bias object from the logit bias list.
+ * @returns {object} Logit bias object
+ */
+function calculateLogitBias() {
+    if (!Array.isArray(settings.logit_bias) || settings.logit_bias.length === 0) {
+        return {};
+    }
+
+    const tokenizer = SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer) ? power_user.tokenizer : tokenizers.LLAMA;
+    const result = {};
+
+    /**
+     * Adds bias to the logit bias object.
+     * @param {number} bias
+     * @param {number[]} sequence
+     * @returns {object} Accumulated logit bias object
+     */
+    function addBias(bias, sequence) {
+        if (sequence.length === 0) {
+            return;
+        }
+
+        for (const logit of sequence) {
+            const key = String(logit);
+            result[key] = bias;
+        }
+
+        return result;
+    }
+
+    getLogitBiasListResult(settings.logit_bias, tokenizer, addBias);
+
+    return result;
+}
+
 function loadTextGenSettings(data, loadedSettings) {
     textgenerationwebui_presets = convertPresets(data.textgenerationwebui_presets);
     textgenerationwebui_preset_names = data.textgenerationwebui_preset_names ?? [];
     Object.assign(settings, loadedSettings.textgenerationwebui_settings ?? {});
+
+    if (loadedSettings.api_server_textgenerationwebui) {
+        for (const type of Object.keys(SERVER_INPUTS)) {
+            settings.server_urls[type] = loadedSettings.api_server_textgenerationwebui;
+        }
+        delete loadedSettings.api_server_textgenerationwebui;
+    }
+
+    for (const [type, selector] of Object.entries(SERVER_INPUTS)) {
+        const control = $(selector);
+        control.val(settings.server_urls[type] ?? '').on('input', function () {
+            settings.server_urls[type] = String($(this).val());
+            saveSettingsDebounced();
+        });
+    }
 
     if (loadedSettings.api_use_mancer_webui) {
         settings.type = MANCER;
@@ -266,6 +370,8 @@ function loadTextGenSettings(data, loadedSettings) {
 
     $('#textgen_type').val(settings.type);
     showTypeSpecificControls(settings.type);
+    BIAS_CACHE.delete(BIAS_KEY);
+    displayLogitBias(settings.logit_bias, BIAS_KEY);
     //this is needed because showTypeSpecificControls() does not handle NOT declarations
     if (settings.type === textgen_types.APHRODITE) {
         $('[data-forAphro=False]').each(function () {
@@ -285,19 +391,6 @@ function loadTextGenSettings(data, loadedSettings) {
             MANCER_SERVER = result;
         }
     });
-}
-
-export function getTextGenUrlSourceId() {
-    switch (settings.type) {
-        case textgen_types.OOBA:
-            return '#textgenerationwebui_api_url_text';
-        case textgen_types.APHRODITE:
-            return '#aphrodite_api_url_text';
-        case textgen_types.TABBY:
-            return '#tabby_api_url_text';
-        case textgen_types.KOBOLDCPP:
-            return '#koboldcpp_api_url_text';
-    }
 }
 
 /**
@@ -369,9 +462,13 @@ jQuery(function () {
 
         showTypeSpecificControls(type);
         setOnlineStatus('no_connection');
+        BIAS_CACHE.delete(BIAS_KEY);
 
         $('#main_api').trigger('change');
-        $('#api_button_textgenerationwebui').trigger('click');
+
+        if (!SERVER_INPUTS[type] || settings.server_urls[type]) {
+            $('#api_button_textgenerationwebui').trigger('click');
+        }
 
         saveSettingsDebounced();
     });
@@ -411,15 +508,20 @@ jQuery(function () {
             saveSettingsDebounced();
         });
     }
+
+    $('#textgen_logit_bias_new_entry').on('click', () => createNewLogitBiasEntry(settings.logit_bias, BIAS_KEY));
 });
 
 function showTypeSpecificControls(type) {
     $('[data-tg-type]').each(function () {
-        const tgType = $(this).attr('data-tg-type');
-        if (tgType == type) {
-            $(this).show();
-        } else {
-            $(this).hide();
+        const tgTypes = $(this).attr('data-tg-type').split(',');
+        for (const tgType of tgTypes) {
+            if (tgType === type || tgType == 'all') {
+                $(this).show();
+                return;
+            } else {
+                $(this).hide();
+            }
         }
     });
 }
@@ -433,6 +535,11 @@ function setSettingByName(setting, value, trigger) {
         value = Array.isArray(value) ? value : KOBOLDCPP_ORDER;
         sortItemsByOrder(value);
         settings.sampler_order = value;
+        return;
+    }
+
+    if ('logit_bias' === setting) {
+        settings.logit_bias = Array.isArray(value) ? value : [];
         return;
     }
 
@@ -467,7 +574,7 @@ function setSettingByName(setting, value, trigger) {
 async function generateTextGenWithStreaming(generate_data, signal) {
     generate_data.stream = true;
 
-    const response = await fetch('/api/textgenerationwebui/generate', {
+    const response = await fetch('/api/backends/text-completions/generate', {
         headers: {
             ...getRequestHeaders(),
         },
@@ -476,68 +583,50 @@ async function generateTextGenWithStreaming(generate_data, signal) {
         signal: signal,
     });
 
+    if (!response.ok) {
+        tryParseStreamingError(response, await response.text());
+        throw new Error(`Got response status ${response.status}`);
+    }
+
+    const eventStream = new EventSourceStream();
+    response.body.pipeThrough(eventStream);
+    const reader = eventStream.readable.getReader();
+
     return async function* streamData() {
-        const decoder = new TextDecoder();
-        const reader = response.body.getReader();
-        let getMessage = '';
-        let messageBuffer = '';
+        let text = '';
         const swipes = [];
         while (true) {
             const { done, value } = await reader.read();
-            // We don't want carriage returns in our messages
-            let response = decoder.decode(value).replace(/\r/g, '');
+            if (done) return;
+            if (value.data === '[DONE]') return;
 
-            tryParseStreamingError(response);
+            tryParseStreamingError(response, value.data);
 
-            let eventList = [];
+            let data = JSON.parse(value.data);
 
-            messageBuffer += response;
-            eventList = messageBuffer.split('\n\n');
-            // Last element will be an empty string or a leftover partial message
-            messageBuffer = eventList.pop();
-
-            for (let event of eventList) {
-                if (event.startsWith('event: completion')) {
-                    event = event.split('\n')[1];
-                }
-
-                if (typeof event !== 'string' || !event.length)
-                    continue;
-
-                if (!event.startsWith('data'))
-                    continue;
-                if (event == 'data: [DONE]') {
-                    return;
-                }
-                let data = JSON.parse(event.substring(6));
-
-                if (data?.choices[0]?.index > 0) {
-                    const swipeIndex = data.choices[0].index - 1;
-                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.choices[0].text;
-                } else {
-                    getMessage += data?.choices[0]?.text || '';
-                }
-
-                yield { text: getMessage, swipes: swipes };
+            if (data?.choices?.[0]?.index > 0) {
+                const swipeIndex = data.choices[0].index - 1;
+                swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.choices[0].text;
+            } else {
+                text += data?.choices?.[0]?.text || data?.content || '';
             }
 
-            if (done) {
-                return;
-            }
+            yield { text, swipes };
         }
     };
 }
 
 /**
  * Parses errors in streaming responses and displays them in toastr.
- * @param {string} response - Response from the server.
+ * @param {Response} response - Response from the server.
+ * @param {string} decoded - Decoded response body.
  * @returns {void} Nothing.
  */
-function tryParseStreamingError(response) {
+function tryParseStreamingError(response, decoded) {
     let data = {};
 
     try {
-        data = JSON.parse(response);
+        data = JSON.parse(decoded);
     } catch {
         // No JSON. Do nothing.
     }
@@ -545,11 +634,16 @@ function tryParseStreamingError(response) {
     const message = data?.error?.message || data?.message;
 
     if (message) {
-        toastr.error(message, 'API Error');
+        toastr.error(message, 'Text Completion API');
         throw new Error(message);
     }
 }
 
+/**
+ * Converts a string of comma-separated integers to an array of integers.
+ * @param {string} string Input string
+ * @returns {number[]} Array of integers
+ */
 function toIntArray(string) {
     if (!string) {
         return [];
@@ -563,8 +657,21 @@ function getModel() {
         return settings.mancer_model;
     }
 
+    if (settings.type === TOGETHERAI) {
+        return settings.togetherai_model;
+    }
+
     if (settings.type === APHRODITE) {
         return online_status;
+    }
+
+    if (settings.type === OLLAMA) {
+        if (!settings.ollama_model) {
+            toastr.error('No Ollama model selected.', 'Text Completion API');
+            throw new Error('No Ollama model selected');
+        }
+
+        return settings.ollama_model;
     }
 
     return undefined;
@@ -572,7 +679,7 @@ function getModel() {
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
-    let APIflags = {
+    let params = {
         'prompt': finalPrompt,
         'model': getModel(),
         'max_new_tokens': maxTokens,
@@ -607,15 +714,11 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
             toIntArray(getCustomTokenBans()) :
             getCustomTokenBans(),
         'api_type': settings.type,
-        'api_server': settings.type === MANCER ?
-            MANCER_SERVER :
-            api_server_textgenerationwebui,
-        'legacy_api': settings.legacy_api && settings.type !== MANCER,
-        'sampler_order': settings.type === textgen_types.KOBOLDCPP ?
-            settings.sampler_order :
-            undefined,
+        'api_server': getTextGenServer(),
+        'legacy_api': settings.legacy_api && (settings.type === OOBA || settings.type === APHRODITE),
+        'sampler_order': settings.type === textgen_types.KOBOLDCPP ? settings.sampler_order : undefined,
     };
-    let aphroditeExclusionFlags = {
+    const nonAphroditeParams = {
         'repetition_penalty_range': settings.rep_pen_range,
         'encoder_repetition_penalty': settings.encoder_rep_pen,
         'no_repeat_ngram_size': settings.no_repeat_ngram_size,
@@ -626,8 +729,15 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
         'grammar_string': settings.grammar_string,
+        // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
+        'repeat_penalty': settings.rep_pen,
+        'tfs_z': settings.tfs,
+        'repeat_last_n': settings.rep_pen_range,
+        'n_predict': settings.maxTokens,
+        'mirostat': settings.mirostat_mode,
+        'ignore_eos': settings.ban_eos_token,
     };
-    let aphroditeFlags = {
+    const aphroditeParams = {
         'n': canMultiSwipe ? settings.n : 1,
         'best_of': canMultiSwipe ? settings.n : 1,
         'ignore_eos': settings.ignore_eos_token_aphrodite,
@@ -636,12 +746,33 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         //'logprobs': settings.log_probs_aphrodite,
         //'prompt_logprobs': settings.prompt_log_probs_aphrodite,
     };
-    if (settings.type === textgen_types.APHRODITE) {
-        APIflags = Object.assign(APIflags, aphroditeFlags);
+    if (settings.type === APHRODITE) {
+        params = Object.assign(params, aphroditeParams);
     } else {
-        APIflags = Object.assign(APIflags, aphroditeExclusionFlags);
+        params = Object.assign(params, nonAphroditeParams);
     }
 
-    return APIflags;
+    if (Array.isArray(settings.logit_bias) && settings.logit_bias.length) {
+        const logitBias = BIAS_CACHE.get(BIAS_KEY) || calculateLogitBias();
+        BIAS_CACHE.set(BIAS_KEY, logitBias);
+        params.logit_bias = logitBias;
+    }
+
+    if (settings.type === LLAMACPP || settings.type === OLLAMA) {
+        // Convert bias and token bans to array of arrays
+        const logitBiasArray = (params.logit_bias && typeof params.logit_bias === 'object' && Object.keys(params.logit_bias).length > 0)
+            ? Object.entries(params.logit_bias).map(([key, value]) => [Number(key), value])
+            : [];
+        const tokenBans = toIntArray(getCustomTokenBans());
+        logitBiasArray.push(...tokenBans.map(x => [Number(x), false]));
+        const llamaCppParams = {
+            'logit_bias': logitBiasArray,
+            // Conflicts with ooba's grammar_string
+            'grammar': settings.grammar_string,
+        };
+        params = Object.assign(params, llamaCppParams);
+    }
+
+    return params;
 }
 

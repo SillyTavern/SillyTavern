@@ -11,6 +11,7 @@ export const EXTENSION_PROMPT_TAG = '3_vectors';
 const settings = {
     // For both
     source: 'transformers',
+    include_wi: false,
 
     // For chats
     enabled_chats: false,
@@ -254,7 +255,7 @@ async function vectorizeFile(fileText, fileName, collectionId) {
 async function rearrangeChat(chat) {
     try {
         // Clear the extension prompt
-        setExtensionPrompt(EXTENSION_PROMPT_TAG, '', extension_prompt_types.IN_PROMPT, 0);
+        setExtensionPrompt(EXTENSION_PROMPT_TAG, '', extension_prompt_types.IN_PROMPT, 0, settings.include_wi);
 
         if (settings.enabled_files) {
             await processFiles(chat);
@@ -319,7 +320,7 @@ async function rearrangeChat(chat) {
 
         // Format queried messages into a single string
         const insertedText = getPromptText(queriedMessages);
-        setExtensionPrompt(EXTENSION_PROMPT_TAG, insertedText, settings.position, settings.depth);
+        setExtensionPrompt(EXTENSION_PROMPT_TAG, insertedText, settings.position, settings.depth, settings.include_wi);
     } catch (error) {
         console.error('Vectors: Failed to rearrange chat', error);
     }
@@ -393,7 +394,8 @@ async function getSavedHashes(collectionId) {
  */
 async function insertVectorItems(collectionId, items) {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
-        settings.source === 'palm' && !secret_state[SECRET_KEYS.PALM]) {
+        settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
+        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
@@ -570,6 +572,12 @@ jQuery(async () => {
 
     $('#vectors_chunk_count').val(settings.chunk_count).on('input', () => {
         settings.chunk_count = Number($('#vectors_chunk_count').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_include_wi').prop('checked', settings.include_wi).on('input', () => {
+        settings.include_wi = !!$('#vectors_include_wi').prop('checked');
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

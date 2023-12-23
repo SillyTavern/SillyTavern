@@ -35,6 +35,7 @@
                 <option value="novel">NovelAI Diffusion</option>
                 <option value="openai">OpenAI (DALL-E)</option>
                 <option value="comfy">ComfyUI</option>
+                <option value="togetherai">TogetherAI</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -207,6 +208,9 @@
                 <label for="sd_character_prompt">Character-specific prompt prefix</label>
                 <small>Won't be used in groups.</small>
                 <textarea id="sd_character_prompt" class="text_pole textarea_compact" rows="3" placeholder="Any characteristics that describe the currently selected character. Will be added after a common prefix.&#10;Example: female, green eyes, brown hair, pink shirt"></textarea>
+                <label for="sd_character_negative_prompt">Character-specific negative prompt prefix</label>
+                <small>Won't be used in groups.</small>
+                <textarea id="sd_character_negative_prompt" class="text_pole textarea_compact" rows="3" placeholder="Any characteristics that should not appear for the selected character. Will be added after a negative common prefix.&#10;Example: jewellery, shoes, glasses"></textarea>
             </div>
         </div>
     </div>

@@ -316,6 +316,11 @@ table.responsiveTable {
     padding: 1em;
 }
 
+.mes_text img:not(.mes_img) {
+    max-width: 100%;
+    max-height: var(--doc-height);
+}
+
 .mes .mes_timer,
 .mes .mesIDDisplay,
 .mes .tokenCounterDisplay {
@@ -414,7 +419,7 @@ hr {
 }
 
 #bg1 {
-    background-image: url('backgrounds/tavern day.jpg');
+    background-image: url('backgrounds/__transparent.png');
     z-index: -3;
 }
 
@@ -631,6 +636,10 @@ hr {
     display: none;
     order: 2;
     padding-right: 2px;
+    place-self: center;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
 }
 
 #options_button {
@@ -1444,9 +1453,7 @@ select option:not(:checked) {
     display: block;
 }
 
-#api_button:hover,
-#api_button_novel:hover,
-#api_button_textgenerationwebui:hover {
+.menu_button.api_button:hover {
     background-color: var(--active);
 }
 
@@ -2630,7 +2637,7 @@ input[type="range"]::-webkit-slider-thumb {
     max-height: calc(100vh - 84px);
     max-height: calc(100svh - 84px);
     position: absolute;
-    z-index: 3002;
+    z-index: 3000;
     margin-left: auto;
     margin-right: auto;
     left: 0;
@@ -3444,30 +3451,30 @@ a {
     height: 100%;
 }
 
-.novelai_logit_bias_form {
+.logit_bias_form {
     display: flex;
     flex-direction: row;
     column-gap: 10px;
     align-items: center;
 }
 
-.novelai_logit_bias_text,
-.novelai_logit_bias_value {
+.logit_bias_text,
+.logit_bias_value {
     flex: 1;
 }
 
-.novelai_logit_bias_list {
+.logit_bias_list {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.novelai_logit_bias_list:empty {
+.logit_bias_list:empty {
     width: 100%;
     height: 100%;
 }
 
-.novelai_logit_bias_list:empty::before {
+.logit_bias_list:empty::before {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3476,7 +3483,7 @@ a {
     width: 100%;
     height: 100%;
     opacity: 0.8;
-    min-height: 2.5rem;
+    min-height: 2.5em;
 }
 
 .openai_logit_bias_preset_form {
@@ -3527,11 +3534,11 @@ a {
     display: none;
 }
 
-.reverse_proxy_warning {
+.reverse_proxy_warning:not(small) {
     color: var(--warning);
     background-color: var(--black70a);
     text-shadow: none !important;
-    margin-top: 12px !important;
+    margin-top: 5px !important;
     border-radius: 5px;
     padding: 3px;
     border: 1px solid var(--SmartThemeBorderColor);
@@ -3661,12 +3668,13 @@ a {
 }
 
 .icon-svg {
-    fill: currentColor;
     /* Takes on the color of the surrounding text */
+    fill: currentColor;
     width: auto;
     height: 14px;
-    vertical-align: middle;
+    aspect-ratio: 1;
     /* To align with adjacent text */
+    place-self: center;
 }
 
 .paginationjs {

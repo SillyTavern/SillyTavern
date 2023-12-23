@@ -3,7 +3,7 @@ import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile,
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { registerSlashCommand } from './slash-commands.js';
-import { getDeviceInfo } from './RossAscends-mods.js';
+import { isMobile } from './RossAscends-mods.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { getTokenCount } from './tokenizers.js';
 import { power_user } from './power-user.js';
@@ -441,7 +441,7 @@ async function loadWorldInfoData(name) {
 }
 
 async function updateWorldInfoList() {
-    const result = await fetch('/getsettings', {
+    const result = await fetch('/api/settings/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
@@ -896,8 +896,8 @@ function getWorldEntry(name, data, entry) {
 
     const characterFilter = template.find('select[name="characterFilter"]');
     characterFilter.data('uid', entry.uid);
-    const deviceInfo = getDeviceInfo();
-    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+
+    if (!isMobile()) {
         $(characterFilter).select2({
             width: '100%',
             placeholder: 'All characters will pull from this entry.',
@@ -1684,19 +1684,12 @@ async function checkWorldInfo(chat, maxContext) {
 
     // Add the depth or AN if enabled
     // Put this code here since otherwise, the chat reference is modified
-    if (extension_settings.note.allowWIScan) {
-        for (const key of Object.keys(context.extensionPrompts)) {
-            if (key.startsWith('DEPTH_PROMPT')) {
-                const depthPrompt = getExtensionPromptByName(key);
-                if (depthPrompt) {
-                    textToScan = `${depthPrompt}\n${textToScan}`;
-                }
+    for (const key of Object.keys(context.extensionPrompts)) {
+        if (context.extensionPrompts[key]?.scan) {
+            const prompt = getExtensionPromptByName(key);
+            if (prompt) {
+                textToScan = `${prompt}\n${textToScan}`;
             }
-        }
-
-        const anPrompt = getExtensionPromptByName(NOTE_MODULE_NAME);
-        if (anPrompt) {
-            textToScan = `${anPrompt}\n${textToScan}`;
         }
     }
 
@@ -1948,7 +1941,7 @@ async function checkWorldInfo(chat, maxContext) {
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
         const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`;
-        context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
+        context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan);
     }
 
     return { worldInfoBefore, worldInfoAfter, WIDepthEntries };
@@ -2558,8 +2551,7 @@ jQuery(() => {
     $(document).on('click', '.chat_lorebook_button', assignLorebookToChat);
 
     // Not needed on mobile
-    const deviceInfo = getDeviceInfo();
-    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+    if (!isMobile()) {
         $('#world_info').select2({
             width: '100%',
             placeholder: 'No Worlds active. Click here to select.',

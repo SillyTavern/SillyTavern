@@ -12,12 +12,13 @@ const { jsonParser } = require('../express-common');
  */
 async function getVector(source, text) {
     switch (source) {
+        case 'mistral':
         case 'openai':
-            return require('../openai-vectors').getOpenAIVector(text);
+            return require('../openai-vectors').getOpenAIVector(text, source);
         case 'transformers':
             return require('../embedding').getTransformersVector(text);
         case 'palm':
-            return require('../palm-vectors').getPaLMVector(text);
+            return require('../makersuite-vectors').getMakerSuiteVector(text);
     }
 
     throw new Error(`Unknown vector source ${source}`);
@@ -196,7 +197,7 @@ router.post('/purge', jsonParser, async (req, res) => {
 
         const collectionId = String(req.body.collectionId);
 
-        const sources = ['transformers', 'openai'];
+        const sources = ['transformers', 'openai', 'palm'];
         for (const source of sources) {
             const index = await getIndex(collectionId, source, false);
 

@@ -20,7 +20,7 @@ import {
     main_api,
     name1,
     reloadCurrentChat,
-    replaceBiasMarkup,
+    removeMacros,
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
@@ -186,6 +186,7 @@ parser.addCommand('trimend', trimEndCallback, [], '<span class="monospace">(text
 parser.addCommand('inject', injectCallback, [], '<span class="monospace">id=injectId (position=before/after/chat depth=number [text])</span> – injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4).', true, true);
 parser.addCommand('listinjects', listInjectsCallback, [], ' – lists all script injections for the current chat.', true, true);
 parser.addCommand('flushinjects', flushInjectsCallback, [], ' – removes all script injections for the current chat.', true, true);
+parser.addCommand('tokens', (_, text) => getTokenCount(text), [], '<span class="monospace">(text)</span> – counts the number of tokens in the text.', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
@@ -841,6 +842,38 @@ async function unhideMessageCallback(_, arg) {
     return '';
 }
 
+/**
+ * Copium for running group actions when the member is offscreen.
+ * @param {number} chid - character ID
+ * @param {string} action - one of 'enable', 'disable', 'up', 'down', 'view', 'remove'
+ * @returns {void}
+ */
+function performGroupMemberAction(chid, action) {
+    const memberSelector = `.group_member[chid="${chid}"]`;
+    // Do not optimize. Paginator gets recreated on every action
+    const paginationSelector = '#rm_group_members_pagination';
+    const pageSizeSelector = '#rm_group_members_pagination select';
+    let wasOffscreen = false;
+    let paginationValue = null;
+    let pageValue = null;
+
+    if ($(memberSelector).length === 0) {
+        wasOffscreen = true;
+        paginationValue = Number($(pageSizeSelector).val());
+        pageValue = $(paginationSelector).pagination('getCurrentPageNum');
+        $(pageSizeSelector).val($(pageSizeSelector).find('option').last().val()).trigger('change');
+    }
+
+    $(memberSelector).find(`[data-action="${action}"]`).trigger('click');
+
+    if (wasOffscreen) {
+        $(pageSizeSelector).val(paginationValue).trigger('change');
+        if ($(paginationSelector).length) {
+            $(paginationSelector).pagination('go', pageValue);
+        }
+    }
+}
+
 async function disableGroupMemberCallback(_, arg) {
     if (!selected_group) {
         toastr.warning('Cannot run /disable command outside of a group chat.');
@@ -854,7 +887,7 @@ async function disableGroupMemberCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="disable"]`).trigger('click');
+    performGroupMemberAction(chid, 'disable');
     return '';
 }
 
@@ -871,7 +904,7 @@ async function enableGroupMemberCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="enable"]`).trigger('click');
+    performGroupMemberAction(chid, 'enable');
     return '';
 }
 
@@ -888,7 +921,7 @@ async function moveGroupMemberUpCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="up"]`).trigger('click');
+    performGroupMemberAction(chid, 'up');
     return '';
 }
 
@@ -905,7 +938,7 @@ async function moveGroupMemberDownCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="down"]`).trigger('click');
+    performGroupMemberAction(chid, 'down');
     return '';
 }
 
@@ -927,7 +960,7 @@ async function peekCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="view"]`).trigger('click');
+    performGroupMemberAction(chid, 'view');
     return '';
 }
 
@@ -949,7 +982,7 @@ async function removeGroupMemberCallback(_, arg) {
         return '';
     }
 
-    $(`.group_member[chid="${chid}"] [data-action="remove"]`).trigger('click');
+    performGroupMemberAction(chid, 'remove');
     return '';
 }
 
@@ -1227,7 +1260,7 @@ export async function sendMessageAs(args, text) {
 
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
-    const isSystem = replaceBiasMarkup(mesText).trim().length === 0;
+    const isSystem = bias && !removeMacros(mesText).length;
 
     const character = characters.find(x => x.name === name);
     let force_avatar, original_avatar;
@@ -1280,7 +1313,7 @@ export async function sendNarratorMessage(args, text) {
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(text);
-    const isSystem = replaceBiasMarkup(text).trim().length === 0;
+    const isSystem = bias && !removeMacros(text).length;
 
     const message = {
         name: name,

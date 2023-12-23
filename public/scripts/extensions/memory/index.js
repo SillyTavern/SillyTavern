@@ -1,10 +1,11 @@
 import { getStringHash, debounce, waitUntilCondition, extractAllWords } from '../../utils.js';
 import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules } from '../../extensions.js';
-import { eventSource, event_types, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { animation_duration, eventSource, event_types, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { is_group_generating, selected_group } from '../../group-chats.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
+import { getTextTokens, tokenizers } from '../../tokenizers.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -42,26 +43,6 @@ const defaultPrompt = '[Pause your roleplay. Summarize the most important facts 
 const defaultTemplate = '[Summary: {{summary}}]';
 
 const defaultSettings = {
-    minLongMemory: 16,
-    maxLongMemory: 1024,
-    longMemoryLength: 128,
-    shortMemoryLength: 512,
-    minShortMemory: 128,
-    maxShortMemory: 1024,
-    shortMemoryStep: 16,
-    longMemoryStep: 8,
-    repetitionPenaltyStep: 0.05,
-    repetitionPenalty: 1.2,
-    maxRepetitionPenalty: 2.0,
-    minRepetitionPenalty: 1.0,
-    temperature: 1.0,
-    minTemperature: 0.1,
-    maxTemperature: 2.0,
-    temperatureStep: 0.05,
-    lengthPenalty: 1,
-    minLengthPenalty: -4,
-    maxLengthPenalty: 4,
-    lengthPenaltyStep: 0.1,
     memoryFrozen: false,
     SkipWIAN: false,
     source: summary_sources.extras,
@@ -95,11 +76,6 @@ function loadSettings() {
     }
 
     $('#summary_source').val(extension_settings.memory.source).trigger('change');
-    $('#memory_long_length').val(extension_settings.memory.longMemoryLength).trigger('input');
-    $('#memory_short_length').val(extension_settings.memory.shortMemoryLength).trigger('input');
-    $('#memory_repetition_penalty').val(extension_settings.memory.repetitionPenalty).trigger('input');
-    $('#memory_temperature').val(extension_settings.memory.temperature).trigger('input');
-    $('#memory_length_penalty').val(extension_settings.memory.lengthPenalty).trigger('input');
     $('#memory_frozen').prop('checked', extension_settings.memory.memoryFrozen).trigger('input');
     $('#memory_skipWIAN').prop('checked', extension_settings.memory.SkipWIAN).trigger('input');
     $('#memory_prompt').val(extension_settings.memory.prompt).trigger('input');
@@ -109,61 +85,21 @@ function loadSettings() {
     $('#memory_depth').val(extension_settings.memory.depth).trigger('input');
     $(`input[name="memory_position"][value="${extension_settings.memory.position}"]`).prop('checked', true).trigger('input');
     $('#memory_prompt_words_force').val(extension_settings.memory.promptForceWords).trigger('input');
+    switchSourceControls(extension_settings.memory.source);
 }
 
 function onSummarySourceChange(event) {
     const value = event.target.value;
     extension_settings.memory.source = value;
+    switchSourceControls(value);
+    saveSettingsDebounced();
+}
+
+function switchSourceControls(value) {
     $('#memory_settings [data-source]').each((_, element) => {
         const source = $(element).data('source');
         $(element).toggle(source === value);
     });
-    saveSettingsDebounced();
-}
-
-function onMemoryShortInput() {
-    const value = $(this).val();
-    extension_settings.memory.shortMemoryLength = Number(value);
-    $('#memory_short_length_tokens').text(value);
-    saveSettingsDebounced();
-
-    // Don't let long buffer be bigger than short
-    if (extension_settings.memory.longMemoryLength > extension_settings.memory.shortMemoryLength) {
-        $('#memory_long_length').val(extension_settings.memory.shortMemoryLength).trigger('input');
-    }
-}
-
-function onMemoryLongInput() {
-    const value = $(this).val();
-    extension_settings.memory.longMemoryLength = Number(value);
-    $('#memory_long_length_tokens').text(value);
-    saveSettingsDebounced();
-
-    // Don't let long buffer be bigger than short
-    if (extension_settings.memory.longMemoryLength > extension_settings.memory.shortMemoryLength) {
-        $('#memory_short_length').val(extension_settings.memory.longMemoryLength).trigger('input');
-    }
-}
-
-function onMemoryRepetitionPenaltyInput() {
-    const value = $(this).val();
-    extension_settings.memory.repetitionPenalty = Number(value);
-    $('#memory_repetition_penalty_value').text(extension_settings.memory.repetitionPenalty.toFixed(2));
-    saveSettingsDebounced();
-}
-
-function onMemoryTemperatureInput() {
-    const value = $(this).val();
-    extension_settings.memory.temperature = Number(value);
-    $('#memory_temperature_value').text(extension_settings.memory.temperature.toFixed(2));
-    saveSettingsDebounced();
-}
-
-function onMemoryLengthPenaltyInput() {
-    const value = $(this).val();
-    extension_settings.memory.lengthPenalty = Number(value);
-    $('#memory_length_penalty_value').text(extension_settings.memory.lengthPenalty.toFixed(2));
-    saveSettingsDebounced();
 }
 
 function onMemoryFrozenInput() {
@@ -317,6 +253,11 @@ async function onChatEvent() {
 }
 
 async function forceSummarizeChat() {
+    if (extension_settings.memory.source === summary_sources.extras) {
+        toastr.warning('Force summarization is not supported for Extras API');
+        return;
+    }
+
     const context = getContext();
 
     const skipWIAN = extension_settings.memory.SkipWIAN;
@@ -434,33 +375,36 @@ async function summarizeChatExtras(context) {
     const longMemory = getLatestMemoryFromChat(chat);
     const reversedChat = chat.slice().reverse();
     reversedChat.shift();
-    let memoryBuffer = [];
+    const memoryBuffer = [];
+    const CONTEXT_SIZE = 1024 - 64;
 
-    for (let mes of reversedChat) {
+    for (const message of reversedChat) {
         // we reached the point of latest memory
-        if (longMemory && mes.extra && mes.extra.memory == longMemory) {
+        if (longMemory && message.extra && message.extra.memory == longMemory) {
             break;
         }
 
         // don't care about system
-        if (mes.is_system) {
+        if (message.is_system) {
             continue;
         }
 
         // determine the sender's name
-        const name = mes.is_user ? (context.name1 ?? 'You') : (mes.force_avatar ? mes.name : context.name2);
-        const entry = `${name}:\n${mes['mes']}`;
+        const entry = `${message.name}:\n${message.mes}`;
         memoryBuffer.push(entry);
 
         // check if token limit was reached
-        if (context.getTokenCount(getMemoryString()) >= extension_settings.memory.shortMemoryLength) {
+        const tokens = getTextTokens(tokenizers.GPT2, getMemoryString()).length;
+        if (tokens >= CONTEXT_SIZE) {
             break;
         }
     }
 
     const resultingString = getMemoryString();
+    const resultingTokens = getTextTokens(tokenizers.GPT2, resultingString).length;
 
-    if (context.getTokenCount(resultingString) < extension_settings.memory.shortMemoryLength) {
+    if (!resultingString || resultingTokens < CONTEXT_SIZE) {
+        console.debug('Not enough context to summarize');
         return;
     }
 
@@ -478,13 +422,7 @@ async function summarizeChatExtras(context) {
             },
             body: JSON.stringify({
                 text: resultingString,
-                params: {
-                    min_length: extension_settings.memory.longMemoryLength * 0, // testing how it behaves 0 min length
-                    max_length: extension_settings.memory.longMemoryLength,
-                    repetition_penalty: extension_settings.memory.repetitionPenalty,
-                    temperature: extension_settings.memory.temperature,
-                    length_penalty: extension_settings.memory.lengthPenalty,
-                },
+                params: {},
             }),
         });
 
@@ -589,14 +527,14 @@ function doPopout(e) {
         loadSettings();
         loadMovingUIState();
 
-        $('#summaryExtensionPopout').fadeIn(250);
+        $('#summaryExtensionPopout').fadeIn(animation_duration);
         dragElement(newElement);
 
         //setup listener for close button to restore extensions menu
         $('#summaryExtensionPopoutClose').off('click').on('click', function () {
             $('#summaryExtensionDrawerContents').removeClass('scrollableInnerFull');
             const summaryPopoutHTML = $('#summaryExtensionDrawerContents');
-            $('#summaryExtensionPopout').fadeOut(250, () => {
+            $('#summaryExtensionPopout').fadeOut(animation_duration, () => {
                 originalElement.empty();
                 originalElement.html(summaryPopoutHTML);
                 $('#summaryExtensionPopout').remove();
@@ -605,7 +543,7 @@ function doPopout(e) {
         });
     } else {
         console.debug('saw existing popout, removing');
-        $('#summaryExtensionPopout').fadeOut(250, () => { $('#summaryExtensionPopoutClose').trigger('click'); });
+        $('#summaryExtensionPopout').fadeOut(animation_duration, () => { $('#summaryExtensionPopoutClose').trigger('click'); });
     }
 }
 
@@ -613,11 +551,6 @@ function setupListeners() {
     //setup shared listeners for popout and regular ext menu
     $('#memory_restore').off('click').on('click', onMemoryRestoreClick);
     $('#memory_contents').off('click').on('input', onMemoryContentInput);
-    $('#memory_long_length').off('click').on('input', onMemoryLongInput);
-    $('#memory_short_length').off('click').on('input', onMemoryShortInput);
-    $('#memory_repetition_penalty').off('click').on('input', onMemoryRepetitionPenaltyInput);
-    $('#memory_temperature').off('click').on('input', onMemoryTemperatureInput);
-    $('#memory_length_penalty').off('click').on('input', onMemoryLengthPenaltyInput);
     $('#memory_frozen').off('click').on('input', onMemoryFrozenInput);
     $('#memory_skipWIAN').off('click').on('input', onMemorySkipWIANInput);
     $('#summary_source').off('click').on('change', onSummarySourceChange);
@@ -659,7 +592,7 @@ jQuery(function () {
 
                         <textarea id="memory_contents" class="text_pole textarea_compact" rows="6" placeholder="Summary will be generated here..."></textarea>
                         <div class="memory_contents_controls">
-                            <div id="memory_force_summarize" class="menu_button menu_button_icon">
+                            <div id="memory_force_summarize" data-source="main" class="menu_button menu_button_icon">
                                 <i class="fa-solid fa-database"></i>
                                 <span>Summarize now</span>
                             </div>
@@ -709,18 +642,6 @@ jQuery(function () {
                                 <small>0 = disable</small>
                                 <input id="memory_prompt_words_force" type="range" value="${defaultSettings.promptForceWords}" min="${defaultSettings.promptMinForceWords}" max="${defaultSettings.promptMaxForceWords}" step="${defaultSettings.promptForceWordsStep}" />
                                 <small>If both sliders are non-zero, then both will trigger summary updates a their respective intervals.</small>
-                            </div>
-                            <div data-source="extras">
-                                <label for="memory_short_length">Chat to Summarize buffer length (<span id="memory_short_length_tokens"></span> tokens)</label>
-                                <input id="memory_short_length" type="range" value="${defaultSettings.shortMemoryLength}" min="${defaultSettings.minShortMemory}" max="${defaultSettings.maxShortMemory}" step="${defaultSettings.shortMemoryStep}" />
-                                <label for="memory_long_length">Summary output length (<span id="memory_long_length_tokens"></span> tokens)</label>
-                                <input id="memory_long_length" type="range" value="${defaultSettings.longMemoryLength}" min="${defaultSettings.minLongMemory}" max="${defaultSettings.maxLongMemory}" step="${defaultSettings.longMemoryStep}" />
-                                <label for="memory_temperature">Temperature (<span id="memory_temperature_value"></span>)</label>
-                                <input id="memory_temperature" type="range" value="${defaultSettings.temperature}" min="${defaultSettings.minTemperature}" max="${defaultSettings.maxTemperature}" step="${defaultSettings.temperatureStep}" />
-                                <label for="memory_repetition_penalty">Repetition penalty (<span id="memory_repetition_penalty_value"></span>)</label>
-                                <input id="memory_repetition_penalty" type="range" value="${defaultSettings.repetitionPenalty}" min="${defaultSettings.minRepetitionPenalty}" max="${defaultSettings.maxRepetitionPenalty}" step="${defaultSettings.repetitionPenaltyStep}" />
-                                <label for="memory_length_penalty">Length preference <small>[higher = longer summaries]</small> (<span id="memory_length_penalty_value"></span>)</label>
-                                <input id="memory_length_penalty" type="range" value="${defaultSettings.lengthPenalty}" min="${defaultSettings.minLengthPenalty}" max="${defaultSettings.maxLengthPenalty}" step="${defaultSettings.lengthPenaltyStep}" />
                             </div>
                         </div>
                     </div>

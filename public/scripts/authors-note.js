@@ -1,4 +1,5 @@
 import {
+    animation_duration,
     chat_metadata,
     eventSource,
     event_types,
@@ -312,7 +313,7 @@ export function setFloatingPrompt() {
             }
         }
     }
-    context.setExtensionPrompt(MODULE_NAME, prompt, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
+    context.setExtensionPrompt(MODULE_NAME, prompt, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan);
     $('#extension_floating_counter').text(shouldAddPrompt ? '0' : messagesTillInsertion);
 }
 
@@ -325,7 +326,7 @@ function onANMenuItemClick() {
             $('#floatingPrompt').css('opacity', 0.0);
             $('#floatingPrompt').transition({
                 opacity: 1.0,
-                duration: 250,
+                duration: animation_duration,
             }, async function () {
                 await delay(50);
                 $('#floatingPrompt').removeClass('resizing');
@@ -343,7 +344,7 @@ function onANMenuItemClick() {
             $('#floatingPrompt').addClass('resizing');
             $('#floatingPrompt').transition({
                 opacity: 0.0,
-                duration: 250,
+                duration: animation_duration,
             },
             async function () {
                 await delay(50);
@@ -351,12 +352,12 @@ function onANMenuItemClick() {
             });
             setTimeout(function () {
                 $('#floatingPrompt').hide();
-            }, 250);
+            }, animation_duration);
 
         }
         //duplicate options menu close handler from script.js
         //because this listener takes priority
-        $('#options').stop().fadeOut(250);
+        $('#options').stop().fadeOut(animation_duration);
     } else {
         toastr.warning('Select a character before trying to use Author\'s Note', '', { timeOut: 2000 });
     }
@@ -415,10 +416,10 @@ export function initAuthorsNote() {
     $('#ANClose').on('click', function () {
         $('#floatingPrompt').transition({
             opacity: 0,
-            duration: 200,
+            duration: animation_duration,
             easing: 'ease-in-out',
         });
-        setTimeout(function () { $('#floatingPrompt').hide(); }, 200);
+        setTimeout(function () { $('#floatingPrompt').hide(); }, animation_duration);
     });
     $('#option_toggle_AN').on('click', onANMenuItemClick);
 

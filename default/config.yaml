@@ -25,6 +25,9 @@ autorun: true
 disableThumbnails: false
 # Thumbnail quality (0-100)
 thumbnailsQuality: 95
+# Generate avatar thumbnails as PNG instead of JPG (preserves transparency but increases filesize by about 100%)
+#  Changing this only affects new thumbnails. To recreate the old ones, clear out your ST/thumbnails/ folder.
+avatarThumbnailsPng: false
 # Allow secret keys exposure via API
 allowKeysExposure: false
 # Skip new default content checks
@@ -54,7 +57,13 @@ extras:
 openai:
   # Will send a random user ID to OpenAI completion API
   randomizeUserId: false
+  # If not empty, will add this as a system message to the start of every caption completion prompt
+  # Example: "Perform the instructions to the best of your ability.\n" (for LLaVA)
+  # Not used in image inlining mode
+  captionSystemPrompt: ""
 # -- DEEPL TRANSLATION CONFIGURATION --
 deepl:
   # Available options: default, more, less, prefer_more, prefer_less
   formality: default
+# -- SERVER PLUGIN CONFIGURATION --
+enableServerPlugins: false

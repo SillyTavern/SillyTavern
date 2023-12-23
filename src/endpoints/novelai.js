@@ -1,9 +1,8 @@
 const fetch = require('node-fetch').default;
 const express = require('express');
 const util = require('util');
-const { Readable } = require('stream');
 const { readSecret, SECRET_KEYS } = require('./secrets');
-const { readAllChunks, extractFileFromZipBuffer } = require('../util');
+const { readAllChunks, extractFileFromZipBuffer, forwardFetchResponse } = require('../util');
 const { jsonParser } = require('../express-common');
 
 const API_NOVELAI = 'https://api.novelai.net';
@@ -190,17 +189,7 @@ router.post('/generate', jsonParser, async function (req, res) {
 
         if (req.body.streaming) {
             // Pipe remote SSE stream to Express response
-            response.body.pipe(res);
-
-            req.socket.on('close', function () {
-                if (response.body instanceof Readable) response.body.destroy(); // Close the remote stream
-                res.end(); // End the Express response
-            });
-
-            response.body.on('end', function () {
-                console.log('Streaming request finished');
-                res.end();
-            });
+            forwardFetchResponse(response, res);
         } else {
             if (!response.ok) {
                 const text = await response.text();

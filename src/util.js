@@ -6,6 +6,7 @@ const yauzl = require('yauzl');
 const mime = require('mime-types');
 const yaml = require('yaml');
 const { default: simpleGit } = require('simple-git');
+const { Readable } = require('stream');
 
 const { DIRECTORIES } = require('./constants');
 
@@ -102,6 +103,21 @@ async function getVersion() {
  */
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Generates a random hex string of the given length.
+ * @param {number} length String length
+ * @returns {string} Random hex string
+ * @example getHexString(8) // 'a1b2c3d4'
+ */
+function getHexString(length) {
+    const chars = '0123456789abcdef';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
 }
 
 /**
@@ -346,6 +362,166 @@ function getImages(path) {
         .sort(Intl.Collator().compare);
 }
 
+/**
+ * Pipe a fetch() response to an Express.js Response, including status code.
+ * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
+ * @param {Express.Response} to The Express response to pipe to.
+ */
+function forwardFetchResponse(from, to) {
+    let statusCode = from.status;
+    let statusText = from.statusText;
+
+    if (!from.ok) {
+        console.log(`Streaming request failed with status ${statusCode} ${statusText}`);
+    }
+
+    // Avoid sending 401 responses as they reset the client Basic auth.
+    // This can produce an interesting artifact as "400 Unauthorized", but it's not out of spec.
+    // https://www.rfc-editor.org/rfc/rfc9110.html#name-overview-of-status-codes
+    // "The reason phrases listed here are only recommendations -- they can be replaced by local
+    //  equivalents or left out altogether without affecting the protocol."
+    if (statusCode === 401) {
+        statusCode = 400;
+    }
+
+    to.statusCode = statusCode;
+    to.statusMessage = statusText;
+    from.body.pipe(to);
+
+    to.socket.on('close', function () {
+        if (from.body instanceof Readable) from.body.destroy(); // Close the remote stream
+        to.end(); // End the Express response
+    });
+
+    from.body.on('end', function () {
+        console.log('Streaming request finished');
+        to.end();
+    });
+}
+
+/**
+ * Adds YAML-serialized object to the object.
+ * @param {object} obj Object
+ * @param {string} yamlString YAML-serialized object
+ * @returns
+ */
+function mergeObjectWithYaml(obj, yamlString) {
+    if (!yamlString) {
+        return;
+    }
+
+    try {
+        const parsedObject = yaml.parse(yamlString);
+
+        if (Array.isArray(parsedObject)) {
+            for (const item of parsedObject) {
+                if (typeof item === 'object' && item && !Array.isArray(item)) {
+                    Object.assign(obj, item);
+                }
+            }
+        }
+        else if (parsedObject && typeof parsedObject === 'object') {
+            Object.assign(obj, parsedObject);
+        }
+    } catch {
+        // Do nothing
+    }
+}
+
+/**
+ * Removes keys from the object by YAML-serialized array.
+ * @param {object} obj Object
+ * @param {string} yamlString YAML-serialized array
+ * @returns {void} Nothing
+ */
+function excludeKeysByYaml(obj, yamlString) {
+    if (!yamlString) {
+        return;
+    }
+
+    try {
+        const parsedObject = yaml.parse(yamlString);
+
+        if (Array.isArray(parsedObject)) {
+            parsedObject.forEach(key => {
+                delete obj[key];
+            });
+        } else if (typeof parsedObject === 'object') {
+            Object.keys(parsedObject).forEach(key => {
+                delete obj[key];
+            });
+        } else if (typeof parsedObject === 'string') {
+            delete obj[parsedObject];
+        }
+    } catch {
+        // Do nothing
+    }
+}
+
+/**
+ * Removes trailing slash and /v1 from a string.
+ * @param {string} str Input string
+ * @returns {string} Trimmed string
+ */
+function trimV1(str) {
+    return String(str ?? '').replace(/\/$/, '').replace(/\/v1$/, '');
+}
+
+/**
+ * Simple TTL memory cache.
+ */
+class Cache {
+    /**
+     * @param {number} ttl Time to live in milliseconds
+     */
+    constructor(ttl) {
+        this.cache = new Map();
+        this.ttl = ttl;
+    }
+
+    /**
+     * Gets a value from the cache.
+     * @param {string} key Cache key
+     */
+    get(key) {
+        const value = this.cache.get(key);
+        if (value?.expiry > Date.now()) {
+            return value.value;
+        }
+
+        // Cache miss or expired, remove the key
+        this.cache.delete(key);
+        return null;
+    }
+
+    /**
+     * Sets a value in the cache.
+     * @param {string} key Key
+     * @param {object} value Value
+     */
+    set(key, value) {
+        this.cache.set(key, {
+            value: value,
+            expiry: Date.now() + this.ttl,
+        });
+    }
+
+    /**
+     * Removes a value from the cache.
+     * @param {string} key Key
+     */
+    remove(key) {
+        this.cache.delete(key);
+    }
+
+    /**
+     * Clears the cache.
+     */
+    clear() {
+        this.cache.clear();
+    }
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -365,4 +541,10 @@ module.exports = {
     generateTimestamp,
     removeOldBackups,
     getImages,
+    forwardFetchResponse,
+    getHexString,
+    mergeObjectWithYaml,
+    excludeKeysByYaml,
+    trimV1,
+    Cache,
 };
