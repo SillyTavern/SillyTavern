@@ -6,6 +6,12 @@ const { getConfigValue } = require('./util');
 const enableServerPlugins = getConfigValue('enableServerPlugins', false);
 
 /**
+ * Map of loaded plugins.
+ * @type {Map<string, any>}
+ */
+const loadedPlugins = new Map();
+
+/**
  * Determine if a file is a CommonJS module.
  * @param {string} file Path to file
  * @returns {boolean} True if file is a CommonJS module
@@ -186,10 +192,17 @@ async function initPlugin(app, plugin, exitHooks) {
         return false;
     }
 
+    if (loadedPlugins.has(id)) {
+        console.error(`Failed to load plugin module; plugin ID '${id}' is already in use`);
+        return false;
+    }
+
     // Allow the plugin to register API routes under /api/plugins/[plugin ID] via a router
     const router = express.Router();
 
     await plugin.init(router);
+
+    loadedPlugins.set(id, plugin);
 
     // Add API routes to the app if the plugin registered any
     if (router.stack.length > 0) {
