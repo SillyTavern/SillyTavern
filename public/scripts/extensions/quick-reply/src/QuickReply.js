@@ -77,6 +77,11 @@ export class QuickReply {
                         menu.show(evt);
                     }
                 });
+                root.addEventListener('click', ()=>{
+                    if (this.message?.length > 0 && this.onExecute) {
+                        this.onExecute(this);
+                    }
+                });
                 const lbl = document.createElement('div'); {
                     this.domLabel = lbl;
                     lbl.classList.add('qr--button-label');
@@ -95,11 +100,6 @@ export class QuickReply {
                     });
                     root.append(expander);
                 }
-                root.addEventListener('click', ()=>{
-                    if (this.message?.length > 0 && this.onExecute) {
-                        this.onExecute(this);
-                    }
-                });
             }
         }
         return this.dom;
