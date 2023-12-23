@@ -4,7 +4,7 @@ const express = require('express');
 const FormData = require('form-data');
 const fs = require('fs');
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml } = require('../util');
+const { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1 } = require('../util');
 
 const router = express.Router();
 
@@ -32,7 +32,11 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             mergeObjectWithYaml(headers, request.body.custom_include_headers);
         }
 
-        if (!key && !request.body.reverse_proxy && request.body.api !== 'custom') {
+        if (request.body.api === 'ooba') {
+            bodyParams.temperature = 0.1;
+        }
+
+        if (!key && !request.body.reverse_proxy && request.body.api !== 'custom' && request.body.api !== 'ooba') {
             console.log('No key found for API', request.body.api);
             return response.sendStatus(400);
         }
@@ -83,6 +87,20 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (request.body.api === 'custom') {
             apiUrl = `${request.body.server_url}/chat/completions`;
+        }
+
+        if (request.body.api === 'ooba') {
+            apiUrl = `${trimV1(request.body.server_url)}/v1/chat/completions`;
+            const imgMessage = body.messages.pop();
+            body.messages.push({
+                role: 'user',
+                content: imgMessage?.content?.[0]?.text,
+            });
+            body.messages.push({
+                role: 'user',
+                content: [],
+                image_url: imgMessage?.content?.[1]?.image_url?.url,
+            });
         }
 
         const result = await fetch(apiUrl, {
