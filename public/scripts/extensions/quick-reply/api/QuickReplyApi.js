@@ -393,4 +393,44 @@ export class QuickReplyApi {
         await set.delete();
         this.settingsUi.rerender();
     }
+
+
+    /**
+     * Gets a list of all quick reply sets.
+     *
+     * @returns array with the names of all quick reply sets
+     */
+    listSets() {
+        return QuickReplySet.list.map(it=>it.name);
+    }
+    /**
+     * Gets a list of all globally active quick reply sets.
+     *
+     * @returns array with the names of all quick reply sets
+     */
+    listGlobalSets() {
+        return this.settings.config.setList.map(it=>it.set.name);
+    }
+    /**
+     * Gets a list of all quick reply sets activated by the current chat.
+     *
+     * @returns array with the names of all quick reply sets
+     */
+    listChatSets() {
+        return this.settings.chatConfig?.setList?.flatMap(it=>it.set.name) ?? [];
+    }
+
+    /**
+     * Gets a list of all quick replies in the quick reply set.
+     *
+     * @param {String} setName name of the existing quick reply set
+     * @returns array with the labels of this set's quick replies
+     */
+    listQuickReplies(setName) {
+        const set = this.getSetByName(setName);
+        if (!set) {
+            throw new Error(`No quick reply set with name "${name}" found.`);
+        }
+        return set.qrList.map(it=>it.label);
+    }
 }

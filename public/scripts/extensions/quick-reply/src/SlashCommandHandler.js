@@ -24,6 +24,8 @@ export class SlashCommandHandler {
         registerSlashCommand('qr-chat-set', (args, value)=>this.toggleChatSet(value, args), [], '<span class="monospace">[visible=true] (number)</span> – toggle chat QR set', true, true);
         registerSlashCommand('qr-chat-set-on', (args, value)=>this.addChatSet(value, args), [], '<span class="monospace">[visible=true] (number)</span> – activate chat QR set', true, true);
         registerSlashCommand('qr-chat-set-off', (_, value)=>this.removeChatSet(value), [], '<span class="monospace">(number)</span> – deactivate chat QR set', true, true);
+        registerSlashCommand('qr-set-list', (_, value)=>this.listSets(value ?? 'all'), [], '(all|global|chat) – gets a list of the names of all quick reply sets', true, true);
+        registerSlashCommand('qr-list', (_, value)=>this.listQuickReplies(value), [], '(set name) – gets a list of the names of all quick replies in this quick reply set', true, true);
 
         const qrArgs = `
         label    - string - text on the button, e.g., label=MyButton
@@ -239,6 +241,28 @@ export class SlashCommandHandler {
     deleteSet(name) {
         try {
             this.api.deleteSet(name ?? '');
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
+    }
+
+    listSets(source) {
+        try {
+            switch (source) {
+                case 'global':
+                    return this.api.listGlobalSets();
+                case 'chat':
+                    return this.api.listChatSets();
+                default:
+                    return this.api.listSets();
+            }
+        } catch (ex) {
+            toastr.error(ex.message);
+        }
+    }
+    listQuickReplies(name) {
+        try {
+            return this.api.listQuickReplies(name);
         } catch (ex) {
             toastr.error(ex.message);
         }
