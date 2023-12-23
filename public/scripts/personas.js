@@ -193,6 +193,22 @@ export function autoSelectPersona(name) {
     }
 }
 
+/**
+ * Updates the name of a persona if it exists.
+ * @param {string} avatarId User avatar id
+ * @param {string} newName New name for the persona
+ */
+export async function updatePersonaNameIfExists(avatarId, newName) {
+    if (avatarId in power_user.personas) {
+        power_user.personas[avatarId] = newName;
+        await getUserAvatars();
+        saveSettingsDebounced();
+        console.log(`Updated persona name for ${avatarId} to ${newName}`);
+    } else {
+        console.log(`Persona name ${avatarId} was not updated because it does not exist`);
+    }
+}
+
 async function bindUserNameToPersona() {
     const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
 

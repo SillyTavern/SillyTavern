@@ -622,6 +622,10 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
                     url += '/api/extra/tokencount';
                     args.body = JSON.stringify({ 'prompt': text });
                     break;
+                case TEXTGEN_TYPES.LLAMACPP:
+                    url += '/tokenize';
+                    args.body = JSON.stringify({ 'content': text });
+                    break;
                 default:
                     url += '/v1/internal/encode';
                     args.body = JSON.stringify({ 'text': text });
@@ -637,7 +641,7 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
         }
 
         const data = await result.json();
-        const count = legacyApi ? data?.results[0]?.tokens : (data?.length ?? data?.value);
+        const count = legacyApi ? data?.results[0]?.tokens : (data?.length ?? data?.value ?? data?.tokens?.length);
         const ids = legacyApi ? [] : (data?.tokens ?? data?.ids ?? []);
 
         return response.send({ count, ids });

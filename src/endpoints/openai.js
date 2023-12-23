@@ -4,22 +4,35 @@ const express = require('express');
 const FormData = require('form-data');
 const fs = require('fs');
 const { jsonParser, urlencodedParser } = require('../express-common');
+const { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml } = require('../util');
 
 const router = express.Router();
 
 router.post('/caption-image', jsonParser, async (request, response) => {
     try {
         let key = '';
+        let headers = {};
+        let bodyParams = {};
 
-        if (request.body.api === 'openai') {
+        if (request.body.api === 'openai' && !request.body.reverse_proxy) {
             key = readSecret(SECRET_KEYS.OPENAI);
         }
 
-        if (request.body.api === 'openrouter') {
+        if (request.body.api === 'openrouter' && !request.body.reverse_proxy) {
             key = readSecret(SECRET_KEYS.OPENROUTER);
         }
 
-        if (!key) {
+        if (request.body.reverse_proxy && request.body.proxy_password) {
+            key = request.body.proxy_password;
+        }
+
+        if (request.body.api === 'custom') {
+            key = readSecret(SECRET_KEYS.CUSTOM);
+            mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
+            mergeObjectWithYaml(headers, request.body.custom_include_headers);
+        }
+
+        if (!key && !request.body.reverse_proxy && request.body.api !== 'custom') {
             console.log('No key found for API', request.body.api);
             return response.sendStatus(400);
         }
@@ -36,12 +49,24 @@ router.post('/caption-image', jsonParser, async (request, response) => {
                 },
             ],
             max_tokens: 500,
+            ...bodyParams,
         };
+
+        const captionSystemPrompt = getConfigValue('openai.captionSystemPrompt');
+        if (captionSystemPrompt) {
+            body.messages.unshift({
+                role: 'system',
+                content: captionSystemPrompt,
+            });
+        }
+
+        if (request.body.api === 'custom') {
+            excludeKeysByYaml(body, request.body.custom_exclude_body);
+        }
 
         console.log('Multimodal captioning request', body);
 
         let apiUrl = '';
-        let headers = {};
 
         if (request.body.api === 'openrouter') {
             apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
@@ -50,6 +75,14 @@ router.post('/caption-image', jsonParser, async (request, response) => {
 
         if (request.body.api === 'openai') {
             apiUrl = 'https://api.openai.com/v1/chat/completions';
+        }
+
+        if (request.body.reverse_proxy) {
+            apiUrl = `${request.body.reverse_proxy}/chat/completions`;
+        }
+
+        if (request.body.api === 'custom') {
+            apiUrl = `${request.body.server_url}/chat/completions`;
         }
 
         const result = await fetch(apiUrl, {

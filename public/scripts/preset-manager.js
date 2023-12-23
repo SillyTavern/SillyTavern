@@ -303,8 +303,14 @@ class PresetManager {
             'model_novel',
             'streaming_kobold',
             'enabled',
+            'bind_to_context',
             'seed',
+            'legacy_api',
             'mancer_model',
+            'togetherai_model',
+            'ollama_model',
+            'server_urls',
+            'type',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
@@ -323,7 +329,7 @@ class PresetManager {
     }
 
     async deleteCurrentPreset() {
-        const { preset_names } = this.getPresetList();
+        const { preset_names, presets } = this.getPresetList();
         const value = this.getSelectedPreset();
         const nameToDelete = this.getSelectedPresetName();
 
@@ -335,7 +341,9 @@ class PresetManager {
         $(this.select).find(`option[value="${value}"]`).remove();
 
         if (this.isKeyedApi()) {
-            preset_names.splice(preset_names.indexOf(value), 1);
+            const index = preset_names.indexOf(nameToDelete);
+            preset_names.splice(index, 1);
+            presets.splice(index, 1);
         } else {
             delete preset_names[nameToDelete];
         }

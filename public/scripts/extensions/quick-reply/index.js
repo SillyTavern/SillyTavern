@@ -798,6 +798,10 @@ async function qrDeleteCallback(args, label) {
     }
 
     const idx = preset.quickReplySlots.findIndex(x => x.label == label);
+    if (idx === -1) {
+        toastr.warning('Confirm you are using proper case sensitivity!', `QR with label '${label}' not found`);
+        return '';
+    };
     preset.quickReplySlots.splice(idx, 1);
     preset.numberOfSlots--;
     await fetch('/savequickreply', {

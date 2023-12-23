@@ -11,6 +11,14 @@ function getMancerHeaders() {
     }) : {};
 }
 
+function getTogetherAIHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.TOGETHERAI);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
 function getAphroditeHeaders() {
     const apiKey = readSecret(SECRET_KEYS.APHRODITE);
 
@@ -57,6 +65,9 @@ function setAdditionalHeaders(request, args, server) {
             break;
         case TEXTGEN_TYPES.TABBY:
             headers = getTabbyHeaders();
+            break;
+        case TEXTGEN_TYPES.TOGETHERAI:
+            headers = getTogetherAIHeaders();
             break;
         default:
             headers = server ? getOverrideHeaders((new URL(server))?.host) : {};

@@ -4,7 +4,6 @@ import {
     online_status,
     main_api,
     api_server,
-    api_server_textgenerationwebui,
     is_send_press,
     max_context,
     saveSettingsDebounced,
@@ -18,6 +17,7 @@ import {
     eventSource,
     menu_type,
     substituteParams,
+    callPopup,
 } from '../script.js';
 
 import {
@@ -34,7 +34,7 @@ import {
 import { debounce, delay, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCount } from './tokenizers.js';
-import { textgen_types, textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
+import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
 
 import Bowser from '../lib/bowser.min.js';
 
@@ -381,10 +381,12 @@ function RA_autoconnect(PrevApi) {
                 }
                 break;
             case 'textgenerationwebui':
-                if (textgen_settings.type === textgen_types.MANCER && secret_state[SECRET_KEYS.MANCER]) {
+                if ((textgen_settings.type === textgen_types.MANCER && secret_state[SECRET_KEYS.MANCER]) ||
+                    (textgen_settings.type === textgen_types.TOGETHERAI && secret_state[SECRET_KEYS.TOGETHERAI])
+                ) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
-                else if (api_server_textgenerationwebui && isValidUrl(api_server_textgenerationwebui)) {
+                else if (isValidUrl(getTextGenServer())) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
                 break;
@@ -397,6 +399,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
                     || (secret_state[SECRET_KEYS.MAKERSUITE] && oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE)
                     || (secret_state[SECRET_KEYS.MISTRALAI] && oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI)
+                    || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                 ) {
                     $('#api_button_openai').trigger('click');
                 }
@@ -995,9 +998,31 @@ export function initRossMods() {
                 console.debug('Accepting edits with Ctrl+Enter');
                 editMesDone.trigger('click');
             } else if (is_send_press == false) {
-                console.debug('Regenerating with Ctrl+Enter');
-                $('#option_regenerate').click();
-                $('#options').hide();
+                const skipConfirmKey = 'RegenerateWithCtrlEnter';
+                const skipConfirm = LoadLocalBool(skipConfirmKey);
+                function doRegenerate() {
+                    console.debug('Regenerating with Ctrl+Enter');
+                    $('#option_regenerate').trigger('click');
+                    $('#options').hide();
+                }
+                if (skipConfirm) {
+                    doRegenerate();
+                } else {
+                    const popupText = `
+                    <div class="marginBot10">Are you sure you want to regenerate the latest message?</div>
+                    <label class="checkbox_label justifyCenter" for="regenerateWithCtrlEnter">
+                        <input type="checkbox" id="regenerateWithCtrlEnter">
+                        Don't ask again
+                    </label>`;
+                    callPopup(popupText, 'confirm').then(result =>{
+                        if (!result) {
+                            return;
+                        }
+                        const regenerateWithCtrlEnter = $('#regenerateWithCtrlEnter').prop('checked');
+                        SaveLocal(skipConfirmKey, regenerateWithCtrlEnter);
+                        doRegenerate();
+                    });
+                }
             } else {
                 console.debug('Ctrl+Enter ignored');
             }

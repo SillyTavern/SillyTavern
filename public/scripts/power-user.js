@@ -36,6 +36,7 @@ import {
 import { registerSlashCommand } from './slash-commands.js';
 import { tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
+import { BIAS_CACHE } from './logit-bias.js';
 
 import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 
@@ -204,6 +205,7 @@ let power_user = {
         names: false,
         names_force_groups: true,
         activation_regex: '',
+        bind_to_context: false,
     },
 
     default_context: 'Default',
@@ -1717,17 +1719,18 @@ function loadContextSettings() {
             }
         });
 
-        // Select matching instruct preset
-        for (const instruct_preset of instruct_presets) {
-            // If instruct preset matches the context template
-            if (instruct_preset.name === name) {
-                selectInstructPreset(instruct_preset.name);
-                break;
+        if (power_user.instruct.bind_to_context) {
+            // Select matching instruct preset
+            for (const instruct_preset of instruct_presets) {
+                // If instruct preset matches the context template
+                if (instruct_preset.name === name) {
+                    selectInstructPreset(instruct_preset.name);
+                    break;
+                }
             }
         }
 
         highlightDefaultContext();
-
         saveSettingsDebounced();
     });
 
@@ -2932,6 +2935,7 @@ $(document).ready(() => {
     $('#tokenizer').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.tokenizer = Number(value);
+        BIAS_CACHE.clear();
         saveSettingsDebounced();
 
         // Trigger character editor re-tokenize

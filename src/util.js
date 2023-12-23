@@ -106,6 +106,21 @@ function delay(ms) {
 }
 
 /**
+ * Generates a random hex string of the given length.
+ * @param {number} length String length
+ * @returns {string} Random hex string
+ * @example getHexString(8) // 'a1b2c3d4'
+ */
+function getHexString(length) {
+    const chars = '0123456789abcdef';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
+}
+
+/**
  * Extracts a file with given extension from an ArrayBuffer containing a ZIP archive.
  * @param {ArrayBuffer} archiveBuffer Buffer containing a ZIP archive
  * @param {string} fileExtension File extension to look for
@@ -384,6 +399,129 @@ function forwardFetchResponse(from, to) {
     });
 }
 
+/**
+ * Adds YAML-serialized object to the object.
+ * @param {object} obj Object
+ * @param {string} yamlString YAML-serialized object
+ * @returns
+ */
+function mergeObjectWithYaml(obj, yamlString) {
+    if (!yamlString) {
+        return;
+    }
+
+    try {
+        const parsedObject = yaml.parse(yamlString);
+
+        if (Array.isArray(parsedObject)) {
+            for (const item of parsedObject) {
+                if (typeof item === 'object' && item && !Array.isArray(item)) {
+                    Object.assign(obj, item);
+                }
+            }
+        }
+        else if (parsedObject && typeof parsedObject === 'object') {
+            Object.assign(obj, parsedObject);
+        }
+    } catch {
+        // Do nothing
+    }
+}
+
+/**
+ * Removes keys from the object by YAML-serialized array.
+ * @param {object} obj Object
+ * @param {string} yamlString YAML-serialized array
+ * @returns {void} Nothing
+ */
+function excludeKeysByYaml(obj, yamlString) {
+    if (!yamlString) {
+        return;
+    }
+
+    try {
+        const parsedObject = yaml.parse(yamlString);
+
+        if (Array.isArray(parsedObject)) {
+            parsedObject.forEach(key => {
+                delete obj[key];
+            });
+        } else if (typeof parsedObject === 'object') {
+            Object.keys(parsedObject).forEach(key => {
+                delete obj[key];
+            });
+        } else if (typeof parsedObject === 'string') {
+            delete obj[parsedObject];
+        }
+    } catch {
+        // Do nothing
+    }
+}
+
+/**
+ * Removes trailing slash and /v1 from a string.
+ * @param {string} str Input string
+ * @returns {string} Trimmed string
+ */
+function trimV1(str) {
+    return String(str ?? '').replace(/\/$/, '').replace(/\/v1$/, '');
+}
+
+/**
+ * Simple TTL memory cache.
+ */
+class Cache {
+    /**
+     * @param {number} ttl Time to live in milliseconds
+     */
+    constructor(ttl) {
+        this.cache = new Map();
+        this.ttl = ttl;
+    }
+
+    /**
+     * Gets a value from the cache.
+     * @param {string} key Cache key
+     */
+    get(key) {
+        const value = this.cache.get(key);
+        if (value?.expiry > Date.now()) {
+            return value.value;
+        }
+
+        // Cache miss or expired, remove the key
+        this.cache.delete(key);
+        return null;
+    }
+
+    /**
+     * Sets a value in the cache.
+     * @param {string} key Key
+     * @param {object} value Value
+     */
+    set(key, value) {
+        this.cache.set(key, {
+            value: value,
+            expiry: Date.now() + this.ttl,
+        });
+    }
+
+    /**
+     * Removes a value from the cache.
+     * @param {string} key Key
+     */
+    remove(key) {
+        this.cache.delete(key);
+    }
+
+    /**
+     * Clears the cache.
+     */
+    clear() {
+        this.cache.clear();
+    }
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -404,4 +542,9 @@ module.exports = {
     removeOldBackups,
     getImages,
     forwardFetchResponse,
+    getHexString,
+    mergeObjectWithYaml,
+    excludeKeysByYaml,
+    trimV1,
+    Cache,
 };

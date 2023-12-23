@@ -15,6 +15,8 @@ export const SECRET_KEYS = {
     MAKERSUITE: 'api_key_makersuite',
     SERPAPI: 'api_key_serpapi',
     MISTRALAI: 'api_key_mistralai',
+    TOGETHERAI: 'api_key_togetherai',
+    CUSTOM: 'api_key_custom',
 };
 
 const INPUT_MAP = {
@@ -31,6 +33,8 @@ const INPUT_MAP = {
     [SECRET_KEYS.APHRODITE]: '#api_key_aphrodite',
     [SECRET_KEYS.TABBY]: '#api_key_tabby',
     [SECRET_KEYS.MISTRALAI]: '#api_key_mistralai',
+    [SECRET_KEYS.CUSTOM]: '#api_key_custom',
+    [SECRET_KEYS.TOGETHERAI]: '#api_key_togetherai',
 };
 
 async function clearSecret() {
