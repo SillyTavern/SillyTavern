@@ -2978,10 +2978,12 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         chat_metadata['tainted'] = true;
     }
 
-    if (selected_group && !is_group_generating && !dryRun) {
-        // Returns the promise that generateGroupWrapper returns; resolves when generation is done
-        return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, maxLoops });
-    } else if (selected_group && !is_group_generating && dryRun) {
+    if (selected_group && !is_group_generating) {
+        if (!dryRun) {
+            // Returns the promise that generateGroupWrapper returns; resolves when generation is done
+            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, maxLoops });
+        }
+
         const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
         const group = groups.find((x) => x.id === selected_group);
 
