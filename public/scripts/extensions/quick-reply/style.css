@@ -199,6 +199,13 @@
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemMessage {
   font-size: smaller;
 }
+#qr--settings .qr--set-qrListActions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+  justify-content: center;
+  padding-bottom: 0.5em;
+}
 #qr--qrOptions > #qr--ctxEditor .qr--ctxItem {
   display: flex;
   flex-direction: row;
