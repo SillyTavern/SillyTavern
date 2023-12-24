@@ -79,7 +79,11 @@ export class QuickReply {
                         menu.show(evt);
                     }
                 });
-                root.addEventListener('click', ()=>{
+                root.addEventListener('click', (evt)=>{
+                    if (evt.ctrlKey) {
+                        this.showEditor();
+                        return;
+                    }
                     if (this.message?.length > 0 && this.onExecute) {
                         this.onExecute(this);
                     }
