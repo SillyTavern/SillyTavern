@@ -1558,9 +1558,10 @@ async function sendOpenAIRequest(type, messages, signal) {
         delete generate_data.stop;
     }
 
-    // Vision models don't support logit bias
-    if (isImageInliningSupported()) {
+    // Remove logit bias and stop strings if it's not supported by the model
+    if (isOAI && oai_settings.openai_model.includes('vision') || isOpenRouter && oai_settings.openrouter_model.includes('vision')) {
         delete generate_data.logit_bias;
+        delete generate_data.stop;
     }
 
     // Proxy is only supported for Claude and OpenAI
