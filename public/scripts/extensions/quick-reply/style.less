@@ -198,9 +198,8 @@
 				> :nth-child(1) { flex: 0 0 auto; }
 				> :nth-child(2) { flex: 1 1 25%; }
 				> :nth-child(3) { flex: 0 0 auto; }
-				> :nth-child(4) { flex: 0 0 auto; }
-				> :nth-child(5) { flex: 1 1 75%; }
-				> :nth-child(6) { flex: 0 0 auto; }
+				> :nth-child(4) { flex: 1 1 75%; }
+				> :nth-child(5) { flex: 0 0 auto; }
 				.qr--set-itemLabel, .qr--action {
 					margin: 0;
 				}
@@ -230,6 +229,58 @@
 			flex-direction: row;
 			gap: 0.5em;
 			align-items: baseline;
+		}
+	}
+}
+
+
+
+#dialogue_popup:has(#qr--modalEditor) {
+	aspect-ratio: unset;
+
+	#dialogue_popup_text {
+		display: flex;
+		flex-direction: column;
+
+		> #qr--modalEditor {
+			flex: 1 1 auto;
+			display: flex;
+			flex-direction: row;
+			gap: 1em;
+
+			> #qr--main {
+				flex: 1 1 auto;
+				display: flex;
+				flex-direction: column;
+				> .qr--labels {
+					flex: 0 0 auto;
+					display: flex;
+					flex-direction: row;
+					gap: 0.5em;
+					> label {
+						flex: 1 1 1px;
+						display: flex;
+						flex-direction: column;
+						> .qr--labelText {
+							flex: 1 1 auto;
+						}
+						> .qr--labelHint {
+							flex: 1 1 auto;
+						}
+						> input {
+							flex: 0 0 auto;
+						}
+					}
+				}
+				> .qr--modal-messageContainer {
+					flex: 1 1 auto;
+					display: flex;
+					flex-direction: column;
+					> #qr--modal-message {
+						flex: 1 1 auto;
+					}
+				}
+			}
 		}
 	}
 }

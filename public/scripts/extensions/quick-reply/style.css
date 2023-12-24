@@ -184,12 +184,9 @@
   flex: 0 0 auto;
 }
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(4) {
-  flex: 0 0 auto;
-}
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(5) {
   flex: 1 1 75%;
 }
-#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(6) {
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(5) {
   flex: 0 0 auto;
 }
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemLabel,
@@ -211,4 +208,50 @@
   flex-direction: row;
   gap: 0.5em;
   align-items: baseline;
+}
+#dialogue_popup:has(#qr--modalEditor) {
+  aspect-ratio: unset;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text {
+  display: flex;
+  flex-direction: column;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label {
+  flex: 1 1 1px;
+  display: flex;
+  flex-direction: column;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelText {
+  flex: 1 1 auto;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelHint {
+  flex: 1 1 auto;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > input {
+  flex: 0 0 auto;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-message {
+  flex: 1 1 auto;
 }
