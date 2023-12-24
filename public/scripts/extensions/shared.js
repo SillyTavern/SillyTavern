@@ -21,13 +21,15 @@ export async function getMultimodalCaption(base64Img, prompt) {
     }
 
     // OpenRouter has a payload limit of ~2MB. Google is 4MB, but we love democracy.
+    // Ooba requires all images to be JPEGs.
     const isGoogle = extension_settings.caption.multimodal_api === 'google';
     const isOllama = extension_settings.caption.multimodal_api === 'ollama';
     const isLlamaCpp = extension_settings.caption.multimodal_api === 'llamacpp';
     const isCustom = extension_settings.caption.multimodal_api === 'custom';
+    const isOoba = extension_settings.caption.multimodal_api === 'ooba';
     const base64Bytes = base64Img.length * 0.75;
     const compressionLimit = 2 * 1024 * 1024;
-    if (['google', 'openrouter'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) {
+    if ((['google', 'openrouter'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) || isOoba) {
         const maxSide = 1024;
         base64Img = await createThumbnail(base64Img, maxSide, maxSide, 'image/jpeg');
 
@@ -67,6 +69,10 @@ export async function getMultimodalCaption(base64Img, prompt) {
 
     if (isLlamaCpp) {
         requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP];
+    }
+
+    if (isOoba) {
+        requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.OOBA];
     }
 
     if (isCustom) {
@@ -127,6 +133,10 @@ function throwIfInvalidModel() {
 
     if (extension_settings.caption.multimodal_api === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
         throw new Error('LlamaCPP server URL is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'ooba' && !textgenerationwebui_settings.server_urls[textgen_types.OOBA]) {
+        throw new Error('Text Generation WebUI server URL is not set.');
     }
 
     if (extension_settings.caption.multimodal_api === 'custom' && !oai_settings.custom_url) {
