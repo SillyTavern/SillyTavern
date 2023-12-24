@@ -367,7 +367,7 @@ export class QuickReply {
      */
     updateMessage(value) {
         if (this.onUpdate) {
-            if (this.settingsDomMessage.value != value) {
+            if (this.settingsDomMessage && this.settingsDomMessage.value != value) {
                 this.settingsDomMessage.value = value;
             }
             this.message = value;
@@ -381,7 +381,7 @@ export class QuickReply {
      */
     updateLabel(value) {
         if (this.onUpdate) {
-            if (this.settingsDomLabel.value != value) {
+            if (this.settingsDomLabel && this.settingsDomLabel.value != value) {
                 this.settingsDomLabel.value = value;
             }
             this.label = value;
