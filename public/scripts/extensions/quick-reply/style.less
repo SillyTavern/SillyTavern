@@ -281,6 +281,20 @@
 					}
 				}
 			}
+
+			#qr--modal-execute {
+				display: flex;
+				flex-direction: row;
+				gap: 0.5em;
+				&.qr--busy {
+					opacity: 0.5;
+					cursor: wait;
+				}
+			}
 		}
 	}
+}
+
+#shadow_popup.qr--hide {
+	opacity: 0 !important;
 }

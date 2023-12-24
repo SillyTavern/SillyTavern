@@ -345,6 +345,32 @@ export class QuickReply {
                 this.updateContext();
             });
 
+
+            /**@type {HTMLElement}*/
+            const executeErrors = dom.querySelector('#qr--modal-executeErrors');
+            /**@type {HTMLInputElement}*/
+            const executeHide = dom.querySelector('#qr--modal-executeHide');
+            let executePromise;
+            /**@type {HTMLElement}*/
+            const executeBtn = dom.querySelector('#qr--modal-execute');
+            executeBtn.addEventListener('click', async()=>{
+                if (executePromise) return;
+                executeBtn.classList.add('qr--busy');
+                executeErrors.innerHTML = '';
+                if (executeHide.checked) {
+                    document.querySelector('#shadow_popup').classList.add('qr--hide');
+                }
+                try {
+                    executePromise = this.onExecute();
+                    await executePromise;
+                } catch (ex) {
+                    executeErrors.textContent = ex.message;
+                }
+                executePromise = null;
+                executeBtn.classList.remove('qr--busy');
+                document.querySelector('#shadow_popup').classList.remove('qr--hide');
+            });
+
             await popupResult;
         } else {
             warn('failed to fetch qrEditor template');
