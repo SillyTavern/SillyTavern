@@ -169,6 +169,7 @@ export class QuickReply {
                         del.classList.add('menu_button_icon');
                         del.classList.add('fa-solid');
                         del.classList.add('fa-trash-can');
+                        del.classList.add('redWarningBG');
                         del.title = 'Remove quick reply';
                         del.addEventListener('click', ()=>this.delete());
                         actions.append(del);

@@ -1,6 +1,7 @@
 import { callPopup } from '../../../../../script.js';
 import { getSortableDelay } from '../../../../utils.js';
-import { warn } from '../../index.js';
+import { log, warn } from '../../index.js';
+import { QuickReply } from '../QuickReply.js';
 import { QuickReplySet } from '../QuickReplySet.js';
 // eslint-disable-next-line no-unused-vars
 import { QuickReplySettings } from '../QuickReplySettings.js';
@@ -103,8 +104,16 @@ export class SettingsUi {
 
     prepareQrEditor() {
         // qr editor
-        this.dom.querySelector('#qr--set-delete').addEventListener('click', async()=>this.deleteQrSet());
         this.dom.querySelector('#qr--set-new').addEventListener('click', async()=>this.addQrSet());
+        /**@type {HTMLInputElement}*/
+        const importFile = this.dom.querySelector('#qr--set-importFile');
+        importFile.addEventListener('change', async()=>{
+            await this.importQrSet(importFile.files);
+            importFile.value = null;
+        });
+        this.dom.querySelector('#qr--set-import').addEventListener('click', ()=>importFile.click());
+        this.dom.querySelector('#qr--set-export').addEventListener('click', async()=>this.exportQrSet());
+        this.dom.querySelector('#qr--set-delete').addEventListener('click', async()=>this.deleteQrSet());
         this.dom.querySelector('#qr--set-add').addEventListener('click', async()=>{
             this.currentQrSet.addQuickReply();
         });
@@ -275,6 +284,77 @@ export class SettingsUi {
                 this.prepareGlobalSetList();
                 this.prepareChatSetList();
             }
+        }
+    }
+
+    async importQrSet(/**@type {FileList}*/files) {
+        for (let i = 0; i < files.length; i++) {
+            await this.importSingleQrSet(files.item(i));
+        }
+    }
+    async importSingleQrSet(/**@type {File}*/file) {
+        log('FILE', file);
+        try {
+            const text = await file.text();
+            const props = JSON.parse(text);
+            if (!Number.isInteger(props.version) || typeof props.name != 'string') {
+                toastr.error(`The file "${file.name}" does not appear to be a valid quick reply set.`);
+                warn(`The file "${file.name}" does not appear to be a valid quick reply set.`);
+            } else {
+                /**@type {QuickReplySet}*/
+                const qrs = QuickReplySet.from(JSON.parse(JSON.stringify(props)));
+                qrs.qrList = props.qrList.map(it=>QuickReply.from(it));
+                qrs.init();
+                const oldQrs = QuickReplySet.get(props.name);
+                if (oldQrs) {
+                    const replace = await callPopup(`A Quick Reply Set named "${qrs.name}" already exists.<br>Do you want to overwrite the existing Quick Reply Set?<br>The existing set will be deleted. This cannot be undone.`, 'confirm');
+                    if (replace) {
+                        const idx = QuickReplySet.list.indexOf(oldQrs);
+                        await this.doDeleteQrSet(oldQrs);
+                        QuickReplySet.list.splice(idx, 0, qrs);
+                        await qrs.save();
+                        this.rerender();
+                        this.currentSet.value = qrs.name;
+                        this.onQrSetChange();
+                        this.prepareGlobalSetList();
+                        this.prepareChatSetList();
+                    }
+                } else {
+                    const idx = QuickReplySet.list.findIndex(it=>it.name.localeCompare(qrs.name) == 1);
+                    if (idx > -1) {
+                        QuickReplySet.list.splice(idx, 0, qrs);
+                    } else {
+                        QuickReplySet.list.push(qrs);
+                    }
+                    await qrs.save();
+                    const opt = document.createElement('option'); {
+                        opt.value = qrs.name;
+                        opt.textContent = qrs.name;
+                        if (idx > -1) {
+                            this.currentSet.children[idx].insertAdjacentElement('beforebegin', opt);
+                        } else {
+                            this.currentSet.append(opt);
+                        }
+                    }
+                    this.currentSet.value = qrs.name;
+                    this.onQrSetChange();
+                    this.prepareGlobalSetList();
+                    this.prepareChatSetList();
+                }
+            }
+        } catch (ex) {
+            warn(ex);
+            toastr.error(`Failed to import "${file.name}":\n\n${ex.message}`);
+        }
+    }
+
+    exportQrSet() {
+        const blob = new Blob([JSON.stringify(this.currentQrSet)], { type:'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); {
+            a.href = url;
+            a.download = `${this.currentQrSet.name}.json`;
+            a.click();
         }
     }
 
