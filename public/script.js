@@ -3771,9 +3771,12 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         }
     }
 
-    async function finishGenerating() {
-        if (dryRun) return { error: 'dryRun' };
+    if (dryRun) {
+        generatedPromptCache = '';
+        return Promise.resolve();
+    }
 
+    async function finishGenerating() {
         if (power_user.console_log_prompts) {
             console.log(generate_data.prompt);
         }
@@ -3857,11 +3860,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     async function onSuccess(data) {
         if (!data) return;
         let messageChunk = '';
-
-        if (data.error == 'dryRun') {
-            generatedPromptCache = '';
-            return;
-        }
 
         if (!data.error) {
             //const getData = await response.json();
