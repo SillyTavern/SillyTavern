@@ -1477,7 +1477,22 @@ export async function reloadCurrentChat() {
  */
 export function sendTextareaMessage() {
     if (is_send_press) return;
-    Generate();
+
+    let generateType;
+    // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
+    // message was sent from a character (not the user or the system).
+    const textareaText = String($('#send_textarea').val());
+    if (power_user.continue_on_send &&
+        !textareaText  &&
+        !selected_group &&
+        chat.length &&
+        !chat[chat.length - 1]['is_user'] &&
+        !chat[chat.length - 1]['is_system']
+    ) {
+        generateType = 'continue';
+    }
+
+    Generate(generateType);
 }
 
 function messageFormatting(mes, ch_name, isSystem, isUser) {
@@ -3053,10 +3068,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             });
             await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
         }
-    }
-
-    if (!type && !textareaText && power_user.continue_on_send && !selected_group && chat.length && !chat[chat.length - 1]['is_user'] && !chat[chat.length - 1]['is_system']) {
-        type = 'continue';
     }
 
     const isContinue = type == 'continue';
