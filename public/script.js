@@ -1472,6 +1472,14 @@ export async function reloadCurrentChat() {
     showSwipeButtons();
 }
 
+/**
+ * Send the message currently typed into the chat box.
+ */
+export function sendTextareaMessage() {
+    if (is_send_press) return;
+    Generate();
+}
+
 function messageFormatting(mes, ch_name, isSystem, isUser) {
     if (!mes) {
         return '';
@@ -7971,12 +7979,7 @@ jQuery(async function () {
     });
 
     $('#send_but').on('click', function () {
-        if (is_send_press == false) {
-            // This prevents from running /trigger command with a send button
-            // But send on Enter doesn't set is_send_press (it is done by the Generate itself)
-            // is_send_press = true;
-            Generate();
-        }
+        sendTextareaMessage();
     });
 
     //menu buttons setup

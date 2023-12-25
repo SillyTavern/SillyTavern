@@ -1,5 +1,4 @@
 import {
-    Generate,
     characters,
     online_status,
     main_api,
@@ -18,6 +17,7 @@ import {
     menu_type,
     substituteParams,
     callPopup,
+    sendTextareaMessage,
 } from '../script.js';
 
 import {
@@ -954,9 +954,9 @@ export function initRossMods() {
         //Enter to send when send_textarea in focus
         if ($(':focus').attr('id') === 'send_textarea') {
             const sendOnEnter = shouldSendOnEnter();
-            if (!event.shiftKey && !event.ctrlKey && !event.altKey && event.key == 'Enter' && is_send_press == false && sendOnEnter) {
+            if (!event.shiftKey && !event.ctrlKey && !event.altKey && event.key == 'Enter' && sendOnEnter) {
                 event.preventDefault();
-                Generate();
+                sendTextareaMessage();
             }
         }
         if ($(':focus').attr('id') === 'dialogue_popup_input' && !isMobile()) {
