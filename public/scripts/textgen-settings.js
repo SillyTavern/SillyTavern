@@ -769,6 +769,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
             'logit_bias': logitBiasArray,
             // Conflicts with ooba's grammar_string
             'grammar': settings.grammar_string,
+            'cache_prompt': true,
         };
         params = Object.assign(params, llamaCppParams);
     }
