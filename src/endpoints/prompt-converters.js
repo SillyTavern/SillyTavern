@@ -57,15 +57,15 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
 
     // Convert messages to the prompt.
     let requestPrompt = messages.map((v, i) => {
-        // Set prefix according to the role.
-        // Claude doesn't support message names, so we'll just add them to the message content.
+        // Set prefix according to the role. Also, when "Exclude Human/Assistant prefixes" is checked, names are added via the system prefix.
         let prefix = {
-            'assistant': `\n\nAssistant: ${v.name ? `${v.name}: ` : ''}`,
-            'user': `\n\nHuman: ${v.name ? `${v.name}: ` : ''}`,
+            'assistant': '\n\nAssistant: ',
+            'user': '\n\nHuman: ',
             'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : excludePrefixes && v.name ? `\n\n${v.name}: ` : '\n\n',
-            'FixHumMsg': `\n\nFirst message: ${v.name ? `${v.name}: ` : ''}`,
+            'FixHumMsg': '\n\nFirst message: ',
         }[v.role] ?? '';
-        return `${prefix}${v.content}`;
+        // Claude doesn't support message names, so we'll just add them to the message content.
+        return `${prefix}${v.name && v.role !== 'system' ? `${v.name}: ` : ''}${v.content}`;
     }).join('');
 
     return requestPrompt;
