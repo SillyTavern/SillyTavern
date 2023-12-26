@@ -171,19 +171,23 @@ const init = async () => {
         }
     };
 
+    quickReplyApi = new QuickReplyApi(settings, manager);
+    const slash = new SlashCommandHandler(quickReplyApi);
+    slash.init();
+
     if (settings.isEnabled) {
         const qrList = [
             ...settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnStartup)).flat(),
             ...(settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnStartup))?.flat() ?? []),
         ];
         for (const qr of qrList) {
-            await qr.onExecute();
+            try {
+                await qr.onExecute();
+            } catch (ex) {
+                warn(ex);
+            }
         }
     }
-
-    quickReplyApi = new QuickReplyApi(settings, manager);
-    const slash = new SlashCommandHandler(quickReplyApi);
-    slash.init();
 };
 eventSource.on(event_types.APP_READY, init);
 
@@ -203,7 +207,11 @@ const onChatChanged = async (chatIdx) => {
             ...(settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnChatChange))?.flat() ?? []),
         ];
         for (const qr of qrList) {
-            await qr.onExecute();
+            try {
+                await qr.onExecute();
+            } catch (ex) {
+                warn(ex);
+            }
         }
     }
 };
@@ -216,7 +224,11 @@ const onUserMessage = async () => {
             ...(settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnUser))?.flat() ?? []),
         ];
         for (const qr of qrList) {
-            await qr.onExecute();
+            try {
+                await qr.onExecute();
+            } catch (ex) {
+                warn(ex);
+            }
         }
     }
 };
@@ -229,7 +241,11 @@ const onAiMessage = async () => {
             ...(settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnAi))?.flat() ?? []),
         ];
         for (const qr of qrList) {
-            await qr.onExecute();
+            try {
+                await qr.onExecute();
+            } catch (ex) {
+                warn(ex);
+            }
         }
     }
 };
