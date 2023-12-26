@@ -233,8 +233,8 @@ export class SettingsUi {
         }
         if (this.settings.chatConfig) {
             for (let i = this.settings.chatConfig.setList.length - 1; i >= 0; i--) {
-                if (this.settings.config.setList[i].set == qrs) {
-                    this.settings.config.setList.splice(i, 1);
+                if (this.settings.chatConfig.setList[i].set == qrs) {
+                    this.settings.chatConfig.setList.splice(i, 1);
                 }
             }
         }
