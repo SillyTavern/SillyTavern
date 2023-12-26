@@ -3861,100 +3861,100 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         if (!data) return;
         let messageChunk = '';
 
-        if (!data.error) {
-            //const getData = await response.json();
-            let getMessage = extractMessageFromData(data);
-            let title = extractTitleFromData(data);
-            kobold_horde_model = title;
-
-            const swipes = extractMultiSwipes(data, type);
-
-            messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
-
-            if (isContinue) {
-                getMessage = continue_mag + getMessage;
-            }
-
-            //Formating
-            const displayIncomplete = type === 'quiet' && !quietToLoud;
-            getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
-
-            if (getMessage.length > 0) {
-                if (isImpersonate) {
-                    $('#send_textarea').val(getMessage).trigger('input');
-                    generatedPromptCache = '';
-                    await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
-                }
-                else if (type == 'quiet') {
-                    unblockGeneration();
-                    return getMessage;
-                }
-                else {
-                    // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
-                    if (originalType !== 'continue') {
-                        ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
-                    }
-                    else {
-                        ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
-                    }
-                }
-
-                if (type !== 'quiet') {
-                    playMessageSound();
-                }
-            } else {
-                // If maxLoops is not passed in (e.g. first time generating), set it to MAX_GENERATION_LOOPS
-                maxLoops ??= MAX_GENERATION_LOOPS;
-
-                if (maxLoops === 0) {
-                    if (type !== 'quiet') {
-                        throwCircuitBreakerError();
-                    }
-                    throw new Error('Generate circuit breaker interruption');
-                }
-
-                // regenerate with character speech reenforced
-                // to make sure we leave on swipe type while also adding the name2 appendage
-                await delay(1000);
-                // The first await is for waiting for the generate to start. The second one is waiting for it to finish
-                const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
-                return result;
-            }
-
-            if (power_user.auto_swipe) {
-                console.debug('checking for autoswipeblacklist on non-streaming message');
-                function containsBlacklistedWords(getMessage, blacklist, threshold) {
-                    console.debug('checking blacklisted words');
-                    const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
-                    const matches = getMessage.match(regex) || [];
-                    return matches.length >= threshold;
-                }
-
-                const generatedTextFiltered = (getMessage) => {
-                    if (power_user.auto_swipe_blacklist_threshold) {
-                        if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
-                            console.debug('Generated text has blacklisted words');
-                            return true;
-                        }
-                    }
-
-                    return false;
-                };
-                if (generatedTextFiltered(getMessage)) {
-                    console.debug('swiping right automatically');
-                    is_send_press = false;
-                    swipe_right();
-                    // TODO: do we want to resolve after an auto-swipe?
-                    return;
-                }
-            }
-        } else {
+        if (data.error) {
             generatedPromptCache = '';
 
             if (data?.response) {
                 toastr.error(data.response, 'API Error');
             }
             throw data?.response;
+        }
+
+        //const getData = await response.json();
+        let getMessage = extractMessageFromData(data);
+        let title = extractTitleFromData(data);
+        kobold_horde_model = title;
+
+        const swipes = extractMultiSwipes(data, type);
+
+        messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+
+        if (isContinue) {
+            getMessage = continue_mag + getMessage;
+        }
+
+        //Formating
+        const displayIncomplete = type === 'quiet' && !quietToLoud;
+        getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
+
+        if (getMessage.length > 0) {
+            if (isImpersonate) {
+                $('#send_textarea').val(getMessage).trigger('input');
+                generatedPromptCache = '';
+                await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
+            }
+            else if (type == 'quiet') {
+                unblockGeneration();
+                return getMessage;
+            }
+            else {
+                // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
+                if (originalType !== 'continue') {
+                    ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
+                }
+                else {
+                    ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
+                }
+            }
+
+            if (type !== 'quiet') {
+                playMessageSound();
+            }
+        } else {
+            // If maxLoops is not passed in (e.g. first time generating), set it to MAX_GENERATION_LOOPS
+            maxLoops ??= MAX_GENERATION_LOOPS;
+
+            if (maxLoops === 0) {
+                if (type !== 'quiet') {
+                    throwCircuitBreakerError();
+                }
+                throw new Error('Generate circuit breaker interruption');
+            }
+
+            // regenerate with character speech reenforced
+            // to make sure we leave on swipe type while also adding the name2 appendage
+            await delay(1000);
+            // The first await is for waiting for the generate to start. The second one is waiting for it to finish
+            const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
+            return result;
+        }
+
+        if (power_user.auto_swipe) {
+            console.debug('checking for autoswipeblacklist on non-streaming message');
+            function containsBlacklistedWords(getMessage, blacklist, threshold) {
+                console.debug('checking blacklisted words');
+                const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
+                const matches = getMessage.match(regex) || [];
+                return matches.length >= threshold;
+            }
+
+            const generatedTextFiltered = (getMessage) => {
+                if (power_user.auto_swipe_blacklist_threshold) {
+                    if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
+                        console.debug('Generated text has blacklisted words');
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+            if (generatedTextFiltered(getMessage)) {
+                console.debug('swiping right automatically');
+                is_send_press = false;
+                swipe_right();
+                // TODO: do we want to resolve after an auto-swipe?
+                return;
+            }
         }
 
         console.debug('/api/chats/save called by /Generate');
