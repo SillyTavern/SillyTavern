@@ -24,6 +24,7 @@ export class QuickReply {
 
     /**@type {QuickReplyContextLink[]}*/ contextList;
 
+    /**@type {Boolean}*/ preventAutoExecute = true;
     /**@type {Boolean}*/ isHidden = false;
     /**@type {Boolean}*/ executeOnStartup = false;
     /**@type {Boolean}*/ executeOnUser = false;
@@ -311,6 +312,13 @@ export class QuickReply {
 
             // auto-exec
             /**@type {HTMLInputElement}*/
+            const preventAutoExecute = dom.querySelector('#qr--preventAutoExecute');
+            preventAutoExecute.checked = this.preventAutoExecute;
+            preventAutoExecute.addEventListener('click', ()=>{
+                this.preventAutoExecute = preventAutoExecute.checked;
+                this.updateContext();
+            });
+            /**@type {HTMLInputElement}*/
             const isHidden = dom.querySelector('#qr--isHidden');
             isHidden.checked = this.isHidden;
             isHidden.addEventListener('click', ()=>{
@@ -462,6 +470,7 @@ export class QuickReply {
             title: this.title,
             message: this.message,
             contextList: this.contextList,
+            preventAutoExecute: this.preventAutoExecute,
             isHidden: this.isHidden,
             executeOnStartup: this.executeOnStartup,
             executeOnUser: this.executeOnUser,

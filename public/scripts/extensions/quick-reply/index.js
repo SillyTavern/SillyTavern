@@ -1,6 +1,7 @@
 import { chat_metadata, eventSource, event_types, getRequestHeaders } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { QuickReplyApi } from './api/QuickReplyApi.js';
+import { AutoExecuteHandler } from './src/AutoExecuteHandler.js';
 import { QuickReply } from './src/QuickReply.js';
 import { QuickReplyConfig } from './src/QuickReplyConfig.js';
 import { QuickReplyContextLink } from './src/QuickReplyContextLink.js';
@@ -64,6 +65,8 @@ let settings;
 let manager;
 /** @type {ButtonUi} */
 let buttons;
+/** @type {AutoExecuteHandler} */
+let autoExec;
 /** @type {QuickReplyApi} */
 export let quickReplyApi;
 
@@ -174,20 +177,9 @@ const init = async () => {
     quickReplyApi = new QuickReplyApi(settings, manager);
     const slash = new SlashCommandHandler(quickReplyApi);
     slash.init();
+    autoExec = new AutoExecuteHandler(settings);
 
-    if (settings.isEnabled) {
-        const qrList = [
-            ...settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnStartup)).flat(),
-            ...(settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnStartup))?.flat() ?? []),
-        ];
-        for (const qr of qrList) {
-            try {
-                await qr.onExecute();
-            } catch (ex) {
-                warn(ex);
-            }
-        }
-    }
+    autoExec.handleStartup();
 };
 eventSource.on(event_types.APP_READY, init);
 
@@ -201,52 +193,16 @@ const onChatChanged = async (chatIdx) => {
     manager.rerender();
     buttons.refresh();
 
-    if (settings.isEnabled) {
-        const qrList = [
-            ...settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnChatChange)).flat(),
-            ...(settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnChatChange))?.flat() ?? []),
-        ];
-        for (const qr of qrList) {
-            try {
-                await qr.onExecute();
-            } catch (ex) {
-                warn(ex);
-            }
-        }
-    }
+    autoExec.handleChatChanged;
 };
 eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 
 const onUserMessage = async () => {
-    if (settings.isEnabled) {
-        const qrList = [
-            ...settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnUser)).flat(),
-            ...(settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnUser))?.flat() ?? []),
-        ];
-        for (const qr of qrList) {
-            try {
-                await qr.onExecute();
-            } catch (ex) {
-                warn(ex);
-            }
-        }
-    }
+    autoExec.handleUser();
 };
 eventSource.on(event_types.USER_MESSAGE_RENDERED, onUserMessage);
 
 const onAiMessage = async () => {
-    if (settings.isEnabled) {
-        const qrList = [
-            ...settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnAi)).flat(),
-            ...(settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnAi))?.flat() ?? []),
-        ];
-        for (const qr of qrList) {
-            try {
-                await qr.onExecute();
-            } catch (ex) {
-                warn(ex);
-            }
-        }
-    }
+    autoExec.handleAi();
 };
 eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, onAiMessage);
