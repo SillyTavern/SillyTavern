@@ -16,7 +16,7 @@
 #qr--bar > #qr--popoutTrigger {
   position: absolute;
   right: 0.25em;
-  top: 0.25em;
+  top: 0;
 }
 #qr--popout {
   display: flex;
