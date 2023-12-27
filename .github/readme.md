@@ -85,7 +85,7 @@ SillyTavern has extensibility support, with some additional AI modules hosted vi
 * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 
-A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/extras/extensions/).
+A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/).
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
