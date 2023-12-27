@@ -161,7 +161,12 @@ Installing via ZIP download (discouraged)
   5. Once the server has prepared everything for you, it will open a tab in your browser.
 
 ### Linux
-
+#### Debian/ubuntu
+  1. This installation method, is basically a clone of the AUR, but for debs.
+  2. Install makedeb, instructions: https://www.makedeb.org/
+  3. build the package, instructions: https://mpr.makedeb.org/packages/sillytavern and install it.
+  4. You might need to manually manage your node.js version, like in the manual method.
+#### Manual
   1. Ensure you have Node.js v18 or higher (the latest [LTS version](https://nodejs.org/en/download/) is recommended) installed by running `node -v`.
 Alternatively, use the [Node Version Manager](https://github.com/nvm-sh/nvm#installing-and-updating) script to quickly and easily manage your Node installations.
   2. Run the `start.sh` script.
