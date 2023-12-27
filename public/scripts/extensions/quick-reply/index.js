@@ -155,7 +155,7 @@ const init = async () => {
     buttons.show();
     settings.onSave = ()=>buttons.refresh();
 
-    window['executeQuickReplyByName'] = async(name) => {
+    window['executeQuickReplyByName'] = async(name, args = {}) => {
         let qr = [...settings.config.setList, ...(settings.chatConfig?.setList ?? [])]
             .map(it=>it.set.qrList)
             .flat()
@@ -170,7 +170,7 @@ const init = async () => {
             }
         }
         if (qr && qr.onExecute) {
-            return await qr.onExecute();
+            return await qr.execute(args);
         }
     };
 

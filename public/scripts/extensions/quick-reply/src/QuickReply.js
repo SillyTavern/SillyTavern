@@ -85,9 +85,7 @@ export class QuickReply {
                         this.showEditor();
                         return;
                     }
-                    if (this.message?.length > 0 && this.onExecute) {
-                        this.onExecute(this);
-                    }
+                    this.execute();
                 });
                 const lbl = document.createElement('div'); {
                     this.domLabel = lbl;
@@ -370,7 +368,7 @@ export class QuickReply {
                     document.querySelector('#shadow_popup').classList.add('qr--hide');
                 }
                 try {
-                    executePromise = this.onExecute();
+                    executePromise = this.execute();
                     await executePromise;
                 } catch (ex) {
                     executeErrors.textContent = ex.message;
@@ -457,6 +455,16 @@ export class QuickReply {
         if (this.contextList.length) {
             this.contextList.splice(0, this.contextList.length);
             this.updateContext();
+        }
+    }
+
+
+    async execute(args = {}) {
+        if (this.message?.length > 0 && this.onExecute) {
+            const message = this.message.replace(/\{\{arg::([^}]+)\}\}/g, (_, key) => {
+                return args[key] ?? '';
+            });
+            this.onExecute(this, message);
         }
     }
 
