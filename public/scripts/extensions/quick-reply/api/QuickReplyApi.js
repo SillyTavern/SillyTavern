@@ -66,6 +66,21 @@ export class QuickReplyApi {
         }
     }
 
+    /**
+     * Executes an existing quick reply.
+     *
+     * @param {String} setName name of the existing quick reply set
+     * @param {String} label label of the existing quick reply (text on the button)
+     * @param {Object} [args] optional arguments
+     */
+    async executeQuickReply(setName, label, args = {}) {
+        const qr = this.getQrByLabel(setName, label);
+        if (!qr) {
+            throw new Error(`No quick reply with label "${label}" in set "${setName}" found.`);
+        }
+        return await qr.execute(args);
+    }
+
 
     /**
      * Adds or removes a quick reply set to the list of globally active quick reply sets.
