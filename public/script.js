@@ -3655,6 +3655,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 scenario,
                 char: name2,
                 user: name1,
+                worldInfoBefore,
+                worldInfoAfter,
                 beforeScenarioAnchor,
                 afterScenarioAnchor,
                 mesExmString,
