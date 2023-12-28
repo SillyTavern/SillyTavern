@@ -4130,6 +4130,7 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
 
     if (messageBias) {
         message.extra.bias = messageBias;
+        message.mes = removeMacros(message.mes);
     }
 
     await populateFileAttachment(message);
