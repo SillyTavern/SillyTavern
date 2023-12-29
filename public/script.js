@@ -3670,12 +3670,13 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             return !data.combinedPrompt ? combine() : data.combinedPrompt;
         }
 
-        // Get the negative prompt first since it has the unmodified mesSend array
-        let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
-        let finalPrompt = getCombinedPrompt(false);
-
         // Include the entire guidance scale object
-        const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
+		let cfgValues = null;
+		if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
+			cfgValues = { guidanceScale: cfgGuidanceScale, negativePrompt: main_api == 'textgenerationwebui' ? getCfgPrompt(cfgGuidanceScale, true).value : undefined };
+		}
+
+        let finalPrompt = getCombinedPrompt(false);
 
         let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
         let thisPromptBits = [];
