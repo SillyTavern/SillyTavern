@@ -12,7 +12,7 @@ const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sente
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
-
+const API_MISTRAL = 'https://api.mistral.ai/v1';
 /**
  * Sends a request to Claude API.
  * @param {express.Request} request Express request
@@ -431,7 +431,8 @@ async function sendAI21Request(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendMistralAIRequest(request, response) {
-    const apiKey = readSecret(SECRET_KEYS.MISTRALAI);
+    const apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.MISTRALAI);
 
     if (!apiKey) {
         console.log('MistralAI API key is missing.');
@@ -495,7 +496,7 @@ async function sendMistralAIRequest(request, response) {
 
         console.log('MisralAI request:', requestBody);
 
-        const generateResponse = await fetch('https://api.mistral.ai/v1/chat/completions', config);
+        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
         if (request.body.stream) {
             forwardFetchResponse(generateResponse, response);
         } else {
@@ -538,8 +539,8 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
-        api_url = 'https://api.mistral.ai/v1';
-        api_key_openai = readSecret(SECRET_KEYS.MISTRALAI);
+        api_url = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
+        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.MISTRALAI);
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         api_url = request.body.custom_url;
         api_key_openai = readSecret(SECRET_KEYS.CUSTOM);
