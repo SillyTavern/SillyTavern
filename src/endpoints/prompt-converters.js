@@ -66,6 +66,53 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
 }
 
 /**
+ * Convert ChatML objects into working with Anthropic's new Messaging API.
+ * @param {object[]} messages Array of messages
+ * @param {boolean}  addAssistantPostfix Add Assistant postfix.
+ * @param {string}   addAssistantPrefill Add Assistant prefill after the assistant postfix.
+ * @param {boolean}  withSysPromptSupport Indicates if the Claude model supports the system prompt format.
+ * @param {string}   addSysHumanMsg Add Human message between system prompt and assistant.
+ */
+function convertClaudeMessages(messages, addAssistantPostfix, addAssistantPrefill, addSysHumanMsg) {
+    // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
+    let systemPrompt = '';
+    let i;
+    for (i = 0; i < messages.length; i++) {
+        if (messages[i].role !== 'system') {
+            break;
+        }
+        systemPrompt += `${messages[i].content}\n\n`;
+    }
+
+    messages.splice(0, i);
+
+    // Check if the first message in the array is of type user, if not, interject with addSysHumanMsg or a blank message.
+    if (messages.length > 0 && messages[0].role !== 'user') {
+        messages.unshift({
+            role: 'user',
+            content: addSysHumanMsg || '',
+        });
+    }
+
+    // Now replace all further messages that have the role 'system' with the role 'user'.
+    messages.forEach((message) => {
+        if (message.role === 'system') {
+            message.role = 'user';
+        }
+    });
+
+    // Postfix and prefill
+    if (addAssistantPostfix) {
+        messages.push({
+            role: 'assistant',
+            content: addAssistantPrefill || '',
+        });
+    }
+
+    return { messages: messages, systemPrompt: systemPrompt.trim() };
+}
+
+/**
  * Convert a prompt from the ChatML objects to the format used by Google MakerSuite models.
  * @param {object[]} messages Array of messages
  * @param {string} model Model name
@@ -154,6 +201,7 @@ function convertTextCompletionPrompt(messages) {
 
 module.exports = {
     convertClaudePrompt,
+    convertClaudeMessages,
     convertGooglePrompt,
     convertTextCompletionPrompt,
 };
