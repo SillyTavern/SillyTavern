@@ -88,6 +88,8 @@ export {
     resetSelectedGroup,
     select_group_chats,
     getGroupChatNames,
+    current_group_member_names,
+    current_group_member_chids,
 };
 
 let is_group_generating = false; // Group generation flag
@@ -99,6 +101,8 @@ let group_generation_id = null;
 let fav_grp_checked = false;
 let openGroupId = null;
 let newGroupMembers = [];
+let current_group_member_names = [];
+let current_group_member_chids = [];
 
 export const group_activation_strategy = {
     NATURAL: 0,
@@ -1243,6 +1247,13 @@ function select_group_chats(groupId, skipAnimation) {
     // render characters list
     printGroupCandidates();
     printGroupMembers();
+
+    if(group) {
+        current_group_member_names = group.members;
+        current_group_member_chids = current_group_member_names
+            .map((x) => characters.findIndex((y) => y.avatar === x))
+            .filter((x) => x !== -1);
+    }
 
     const groupHasMembers = !!$('#rm_group_members').children().length;
     $('#rm_group_submit').prop('disabled', !groupHasMembers);
