@@ -5,7 +5,7 @@
     "optional": [],
     "generate_interceptor": "vectors_rearrangeChat",
     "js": "index.js",
-    "css": "",
+    "css": "style.css",
     "author": "Cohee#1207",
     "version": "1.0.0",
     "homePage": "https://github.com/SillyTavern/SillyTavern"
