@@ -198,7 +198,7 @@ const onChatChanged = async (chatIdx) => {
     manager.rerender();
     buttons.refresh();
 
-    autoExec.handleChatChanged;
+    autoExec.handleChatChanged();
 };
 eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 
