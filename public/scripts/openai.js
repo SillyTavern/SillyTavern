@@ -482,7 +482,10 @@ function setOpenAIMessageExamples(mesExamplesArray) {
  */
 function setupChatCompletionPromptManager(openAiSettings) {
     // Do not set up prompt manager more than once
-    if (promptManager) return promptManager;
+    if (promptManager) {
+        promptManager.render(false);
+        return promptManager;
+    }
 
     promptManager = new PromptManager();
 
@@ -1030,9 +1033,6 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
         const jbReplacement = promptManager.preparePrompt(jailbreakPrompt, jbOriginalContent);
         prompts.set(jbReplacement, prompts.index('jailbreak'));
     }
-
-    // Allow subscribers to manipulate the prompts object
-    eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
 
     return prompts;
 }
