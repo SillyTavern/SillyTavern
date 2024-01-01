@@ -103,12 +103,12 @@ export class QuickReplySet {
      * @param {QuickReply} qr
      * @param {String} [message] - optional altered message to be used
      */
-    async execute(qr, message = null) {
+    async execute(qr, message = null, isAutoExecute = false) {
         /**@type {HTMLTextAreaElement}*/
         const ta = document.querySelector('#send_textarea');
         const finalMessage = message ?? qr.message;
         let input = ta.value;
-        if (this.injectInput && input.length > 0) {
+        if (!isAutoExecute && this.injectInput && input.length > 0) {
             if (this.placeBeforeInput) {
                 input = `${finalMessage} ${input}`;
             } else {
@@ -152,7 +152,7 @@ export class QuickReplySet {
     }
 
     hookQuickReply(qr) {
-        qr.onExecute = (_, message)=>this.execute(qr, message);
+        qr.onExecute = (_, message, isAutoExecute)=>this.execute(qr, message, isAutoExecute);
         qr.onDelete = ()=>this.removeQuickReply(qr);
         qr.onUpdate = ()=>this.save();
     }

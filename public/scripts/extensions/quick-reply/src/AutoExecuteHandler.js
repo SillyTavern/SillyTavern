@@ -28,7 +28,7 @@ export class AutoExecuteHandler {
         for (const qr of qrList) {
             this.preventAutoExecuteStack.push(qr.preventAutoExecute);
             try {
-                await qr.onExecute();
+                await qr.execute({ isAutoExecute:true });
             } catch (ex) {
                 warn(ex);
             } finally {
