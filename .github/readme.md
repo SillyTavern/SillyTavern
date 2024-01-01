@@ -162,12 +162,14 @@ Installing via ZIP download (discouraged)
 
 ### Linux
 
-#### Unofficial Debian/ubuntu PKGBUILD
+#### Unofficial Debian/Ubuntu PKGBUILD
 
-  1. This installation method, is unofficial and not supported by the project. The method, is basically a clone of the AUR, but for debs.
-  2. Install [makedeb](https://www.makedeb.org/).
-  3. Ensure you have Node.js v18 or higher installed by running `node -v`. If you need to upgrade, you can install a [node.js repo](https://mpr.makedeb.org/packages/nodejs-repo) (you'll might need to edit the version inside the PKGBUILD). An alternative, is to install and configure [nvm](https://mpr.makedeb.org/packages/nvm) to manage multiple node.js installations. Finally, you can [install node.js manually](https://nodejs.org/en/download), you will need to manage the PATH of your environment, manually.
-  4. Now build the [sillytavern package](https://mpr.makedeb.org/packages/sillytavern). The build needs to run, with the corect node.js version.
+> **This installation method is unofficial and not supported by the project. Report any issues to the PKGBUILD maintainer.**  
+> The method is intended for Debian-based distributions (Ubuntu, Mint, etc).
+
+1. Install [makedeb](https://www.makedeb.org/).
+2. Ensure you have Node.js v18 or higher installed by running `node -v`. If you need to upgrade, you can install a [node.js repo](https://mpr.makedeb.org/packages/nodejs-repo) (you'll might need to edit the version inside the PKGBUILD). As an alternative, install and configure [nvm](https://mpr.makedeb.org/packages/nvm) to manage multiple node.js installations. Finally, you can [install node.js manually](https://nodejs.org/en/download), but you will need to update the PATH variable of your environment.
+3. Now build the [sillytavern package](https://mpr.makedeb.org/packages/sillytavern). The build needs to run with the correct node.js version.
 
 #### Manual
 
