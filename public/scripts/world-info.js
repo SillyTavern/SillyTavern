@@ -39,6 +39,7 @@ const world_info_logic = {
     AND_ANY: 0,
     NOT_ALL: 1,
     NOT_ANY: 2,
+    AND_ALL: 3,
 };
 
 let world_info = {};
@@ -1789,6 +1790,7 @@ async function checkWorldInfo(chat, maxContext) {
                         ) {
                             console.debug(`WI UID:${entry.uid} found. Checking logic: ${entry.selectiveLogic}`);
                             let hasAnyMatch = false;
+                            let hasAllMatch = true;
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
                                 const hasSecondaryMatch = secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim());
@@ -1796,6 +1798,10 @@ async function checkWorldInfo(chat, maxContext) {
 
                                 if (hasSecondaryMatch) {
                                     hasAnyMatch = true;
+                                }
+
+                                if (!hasSecondaryMatch) {
+                                    hasAllMatch = false;
                                 }
 
                                 // Simplified AND ANY / NOT ALL if statement. (Proper fix for PR#1356 by Bronya)
@@ -1815,6 +1821,12 @@ async function checkWorldInfo(chat, maxContext) {
                             // Handle NOT ANY logic
                             if (selectiveLogic === world_info_logic.NOT_ANY && !hasAnyMatch) {
                                 console.debug(`(NOT ANY Check) Activating WI Entry ${entry.uid}, no secondary keywords found.`);
+                                activatedNow.add(entry);
+                            }
+
+                            // Handle AND ALL logic
+                            if (selectiveLogic === world_info_logic.AND_ALL && hasAllMatch) {
+                                console.debug(`(AND ALL Check) Activating WI Entry ${entry.uid}, all secondary keywords found.`);
                                 activatedNow.add(entry);
                             }
                         } else {

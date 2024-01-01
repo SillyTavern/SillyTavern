@@ -1,6 +1,6 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js';
-import { delay, escapeRegex, getStringHash } from '../../utils.js';
+import { delay, escapeRegex, getStringHash, onlyUnique } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
@@ -463,13 +463,25 @@ function saveLastValues() {
 }
 
 async function tts(text, voiceId, char) {
+    async function processResponse(response) {
+        // RVC injection
+        if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
+            response = await window['rvcVoiceConversion'](response, char, text);
+
+        await addAudioJob(response);
+    }
+
     let response = await ttsProvider.generateTts(text, voiceId);
 
-    // RVC injection
-    if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
-        response = await window['rvcVoiceConversion'](response, char, text);
+    // If async generator, process every chunk as it comes in
+    if (typeof response[Symbol.asyncIterator] === 'function') {
+        for await (const chunk of response) {
+            await processResponse(chunk);
+        }
+    } else {
+        await processResponse(response);
+    }
 
-    addAudioJob(response);
     completeTtsJob();
 }
 
@@ -733,7 +745,7 @@ function getCharacters(unrestricted) {
     if (unrestricted) {
         const names = context.characters.map(char => char.name);
         names.unshift(DEFAULT_VOICE_MARKER);
-        return names;
+        return names.filter(onlyUnique);
     }
 
     let characters = [];
@@ -748,14 +760,13 @@ function getCharacters(unrestricted) {
         characters.push(context.name1);
         const group = context.groups.find(group => context.groupId == group.id);
         for (let member of group.members) {
-            // Remove suffix
-            if (member.endsWith('.png')) {
-                member = member.slice(0, -4);
+            const character = context.characters.find(char => char.avatar == member);
+            if (character) {
+                characters.push(character.name);
             }
-            characters.push(member);
         }
     }
-    return characters;
+    return characters.filter(onlyUnique);
 }
 
 function sanitizeId(input) {
