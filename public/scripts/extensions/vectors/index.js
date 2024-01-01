@@ -1,6 +1,6 @@
 import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplate } from '../../extensions.js';
-import { collapseNewlines, power_user, ui_mode } from '../../power-user.js';
+import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
 
@@ -21,6 +21,7 @@ const settings = {
     protect: 5,
     insert: 3,
     query: 2,
+    message_chunk_size: 400,
 
     // For files
     enabled_files: false,
@@ -87,6 +88,29 @@ async function onVectorizeAllClick() {
 
 let syncBlocked = false;
 
+/**
+ * Splits messages into chunks before inserting them into the vector index.
+ * @param {object[]} items Array of vector items
+ * @returns {object[]} Array of vector items (possibly chunked)
+ */
+function splitByChunks(items) {
+    if (settings.message_chunk_size <= 0) {
+        return items;
+    }
+
+    const chunkedItems = [];
+
+    for (const item of items) {
+        const chunks = splitRecursive(item.text, settings.message_chunk_size);
+        for (const chunk of chunks) {
+            const chunkedItem = { ...item, text: chunk };
+            chunkedItems.push(chunkedItem);
+        }
+    }
+
+    return chunkedItems;
+}
+
 async function synchronizeChat(batchSize = 5) {
     if (!settings.enabled_chats) {
         return -1;
@@ -116,8 +140,9 @@ async function synchronizeChat(batchSize = 5) {
         const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
 
         if (newVectorItems.length > 0) {
+            const chunkedBatch = splitByChunks(newVectorItems.slice(0, batchSize));
             console.log(`Vectors: Found ${newVectorItems.length} new items. Processing ${batchSize}...`);
-            await insertVectorItems(chatId, newVectorItems.slice(0, batchSize));
+            await insertVectorItems(chatId, chunkedBatch);
         }
 
         if (deletedHashes.length > 0) {
@@ -492,6 +517,43 @@ function toggleSettings() {
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
 }
 
+async function onPurgeClick() {
+    const chatId = getCurrentChatId();
+    if (!chatId) {
+        toastr.info('No chat selected', 'Purge aborted');
+        return;
+    }
+    await purgeVectorIndex(chatId);
+    toastr.success('Vector index purged', 'Purge successful');
+}
+
+async function onViewStatsClick() {
+    const chatId = getCurrentChatId();
+    if (!chatId) {
+        toastr.info('No chat selected');
+        return;
+    }
+
+    const hashesInCollection = await getSavedHashes(chatId);
+    const totalHashes = hashesInCollection.length;
+    const uniqueHashes = hashesInCollection.filter(onlyUnique).length;
+
+    toastr.info(`Total hashes: <b>${totalHashes}</b><br>
+    Unique hashes: <b>${uniqueHashes}</b><br><br>
+    I'll mark collected messages with a green circle.`,
+    `Stats for chat ${chatId}`,
+    { timeOut: 10000, escapeHtml: false });
+
+    const chat = getContext().chat;
+    for (const message of chat) {
+        if (hashesInCollection.includes(getStringHash(message.mes))) {
+            const messageElement = $(`.mes[mesid="${chat.indexOf(message)}"]`);
+            messageElement.addClass('vectorized');
+        }
+    }
+
+}
+
 jQuery(async () => {
     if (!extension_settings.vectors) {
         extension_settings.vectors = settings;
@@ -554,9 +616,9 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
-    $('#vectors_advanced_settings').toggleClass('displayNone', power_user.ui_mode === ui_mode.SIMPLE);
-
     $('#vectors_vectorize_all').on('click', onVectorizeAllClick);
+    $('#vectors_purge').on('click', onPurgeClick);
+    $('#vectors_view_stats').on('click', onViewStatsClick);
 
     $('#vectors_size_threshold').val(settings.size_threshold).on('input', () => {
         settings.size_threshold = Number($('#vectors_size_threshold').val());
@@ -578,6 +640,12 @@ jQuery(async () => {
 
     $('#vectors_include_wi').prop('checked', settings.include_wi).on('input', () => {
         settings.include_wi = !!$('#vectors_include_wi').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_message_chunk_size').val(settings.message_chunk_size).on('input', () => {
+        settings.message_chunk_size = Number($('#vectors_message_chunk_size').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

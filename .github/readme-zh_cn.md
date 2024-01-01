@@ -1,4 +1,4 @@
-[English](readme.md) | 中文
+[English](readme.md) | 中文 | [日本語](readme-ja_jp.md)
 
 ![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
 
@@ -82,7 +82,7 @@ SillyTavern 支持扩展服务，一些额外的人工智能模块可通过 [Sil
 * 文本图像生成（5 预设，以及 "自由模式"）
 * 聊天信息的文字转语音（通过 ElevenLabs、Silero 或操作系统的语音生成）
 
-扩展服务的完整功能介绍和使用教程，请参阅 [Docs](https://docs.sillytavern.app/extras/extensions/)。
+扩展服务的完整功能介绍和使用教程，请参阅 [Docs](https://docs.sillytavern.app/)。
 
 ## 界面/CSS/性能，由 RossAscends 调整并优化
 
