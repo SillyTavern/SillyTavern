@@ -275,7 +275,7 @@ DOMPurify.addHook('afterSanitizeAttributes', function (node) {
     }
 });
 
-DOMPurify.addHook("uponSanitizeAttribute", (_, data, config) => {
+DOMPurify.addHook('uponSanitizeAttribute', (_, data, config) => {
     if (!config['MESSAGE_SANITIZE']) {
         return;
     }
@@ -287,7 +287,7 @@ DOMPurify.addHook("uponSanitizeAttribute", (_, data, config) => {
                         return v;
                     }
 
-                    return "custom-" + v;
+                    return 'custom-' + v;
                 }).join(' ');
             }
             break;
