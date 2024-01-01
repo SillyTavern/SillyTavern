@@ -1,4 +1,4 @@
-English | [中文](readme-zh_cn.md)
+English | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md)
 
 ![SillyTavern-Banner](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
 
