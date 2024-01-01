@@ -1420,6 +1420,7 @@ async function _save(name, data) {
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: name, data: data }),
     });
+    eventSource.emit(event_types.WORLDINFO_UPDATED, name, data);
 }
 
 async function saveWorldInfo(name, data, immediately) {
