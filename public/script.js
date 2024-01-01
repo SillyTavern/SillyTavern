@@ -5452,20 +5452,7 @@ function changeMainAPI() {
         getHordeModels();
     }
 
-    switch (oai_settings.chat_completion_source) {
-        case chat_completion_sources.SCALE:
-        case chat_completion_sources.OPENROUTER:
-        case chat_completion_sources.WINDOWAI:
-        case chat_completion_sources.CLAUDE:
-        case chat_completion_sources.OPENAI:
-        case chat_completion_sources.AI21:
-        case chat_completion_sources.MAKERSUITE:
-        case chat_completion_sources.MISTRALAI:
-        case chat_completion_sources.CUSTOM:
-        default:
-            setupChatCompletionPromptManager(oai_settings);
-            break;
-    }
+    setupChatCompletionPromptManager(oai_settings);
 }
 
 ////////////////////////////////////////////////////

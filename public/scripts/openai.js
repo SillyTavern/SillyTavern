@@ -482,7 +482,10 @@ function setOpenAIMessageExamples(mesExamplesArray) {
  */
 function setupChatCompletionPromptManager(openAiSettings) {
     // Do not set up prompt manager more than once
-    if (promptManager) return promptManager;
+    if (promptManager) {
+        promptManager.render(false);
+        return promptManager;
+    }
 
     promptManager = new PromptManager();
 
