@@ -443,7 +443,7 @@ async function sendMistralAIRequest(request, response) {
         const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
         const lastMsg = messages[messages.length - 1];
         if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
-            if (lastMsg.role === 'assistant') {
+            if (lastMsg.role === 'assistant' && lastMsg.name) {
                 lastMsg.content = lastMsg.name + ': ' + lastMsg.content;
             } else if (lastMsg.role === 'system') {
                 lastMsg.content = '[INST] ' + lastMsg.content + ' [/INST]';
