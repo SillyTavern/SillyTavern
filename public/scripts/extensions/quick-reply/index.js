@@ -53,7 +53,7 @@ const defaultConfig = {
 };
 
 const defaultSettings = {
-    isEnabled: true,
+    isEnabled: false,
     isCombined: false,
     config: defaultConfig,
 };
@@ -129,7 +129,12 @@ const loadSettings = async () => {
                 isEnabled: extension_settings.quickReply.quickReplyEnabled ?? false,
                 isCombined: false,
                 isPopout: false,
-                config: extension_settings.quickReply.selectedPreset ?? extension_settings.quickReply.name ?? 'Default',
+                config: {
+                    setList: [{
+                        set: extension_settings.quickReply.selectedPreset ?? extension_settings.quickReply.name ?? 'Default',
+                        isVisible: true,
+                    }],
+                },
             };
         }
     }
