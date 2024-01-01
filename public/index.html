@@ -1550,16 +1550,15 @@
                                             <span data-i18n="Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.">Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.</span>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden class="range-block" data-source="claude">
+                                    <div data-newbie-hidden class="range-block flexGap5" data-source="claude">
                                         <label for="claude_exclude_prefixes" title="Exclude Human/Assistant prefixes" class="checkbox_label widthFreeExpand">
                                             <input id="claude_exclude_prefixes" type="checkbox" />
                                             <span data-i18n="Exclude Human/Assistant prefixes">Exclude Human/Assistant prefixes</span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
                                             <span data-i18n="Exclude Human/Assistant prefixes from being added to the prompt.">
-                                                Exclude Human/Assistant prefixes from being added to the prompt.
-                                                (Exeptions: very first/last prompt in prompts, Assistant suffix, Sysprompt human message).
-                                                (Requires: 'Add character names' checked, advanced prompting skill.).
+                                                Exclude Human/Assistant prefixes from being added to the prompt, except very first/last message and Assistant suffix.
+                                                Requires 'Add character names' checked.
                                             </span>
                                         </div>
                                         <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
@@ -1568,7 +1567,7 @@
                                         </label>
                                         <div class="toggle-description justifyLeft">
                                             <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">
-                                                Exclude the assistant suffix from being added to the end of prompt (Requires jailbreak with 'Assistant:' in it).
+                                                Exclude the assistant suffix from being added to the end of prompt. Requires jailbreak with 'Assistant:' in it.
                                             </span>
                                         </div>
                                         <div id="claude_assistant_prefill_block" class="wide100p">
