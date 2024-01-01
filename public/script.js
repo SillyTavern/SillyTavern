@@ -324,6 +324,7 @@ export const event_types = {
     OAI_PRESET_CHANGED_BEFORE: 'oai_preset_changed_before',
     OAI_PRESET_CHANGED_AFTER: 'oai_preset_changed_after',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
+    WORLDINFO_UPDATED: 'worldinfo_updated',
     CHARACTER_EDITED: 'character_edited',
     CHARACTER_PAGE_LOADED: 'character_page_loaded',
     CHARACTER_GROUP_OVERLAY_STATE_CHANGE_BEFORE: 'character_group_overlay_state_change_before',
