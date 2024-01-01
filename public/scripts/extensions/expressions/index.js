@@ -49,6 +49,7 @@ let lastMessage = null;
 let spriteCache = {};
 let inApiCall = false;
 let lastServerResponseTime = 0;
+export let lastExpression = {};
 
 function isVisualNovelMode() {
     return Boolean(!isMobile() && power_user.waifuMode && getContext().groupId);
@@ -692,6 +693,7 @@ function getFolderNameByMessage(message) {
 }
 
 async function sendExpressionCall(name, expression, force, vnMode) {
+    lastExpression[name.split('/')[0]] = expression;
     if (!vnMode) {
         vnMode = isVisualNovelMode();
     }
@@ -1476,6 +1478,7 @@ function setExpressionOverrideHtml(forceClear = false) {
         // character changed
         removeExpression();
         spriteCache = {};
+        lastExpression = {};
 
         //clear expression
         let imgElement = document.getElementById('expression-image');
@@ -1501,4 +1504,5 @@ function setExpressionOverrideHtml(forceClear = false) {
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
     registerSlashCommand('sprite', setSpriteSlashCommand, ['emote'], '<span class="monospace">(spriteId)</span> – force sets the sprite for the current character', true, true);
     registerSlashCommand('spriteoverride', setSpriteSetCommand, ['costume'], '<span class="monospace">(optional folder)</span> – sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.', true, true);
+    registerSlashCommand('lastsprite', (_, value) => lastExpression[value.trim()] ?? '', [], '<span class="monospace">(charName)</span> – Returns the last set sprite / expression for the named character.', true, true);
 })();

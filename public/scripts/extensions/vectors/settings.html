@@ -75,7 +75,7 @@
             </label>
 
             <div id="vectors_chats_settings">
-                <div id="vectors_advanced_settings" data-newbie-hidden>
+                <div id="vectors_advanced_settings">
                     <label for="vectors_template">
                         Insertion Template
                     </label>
@@ -97,17 +97,23 @@
                         </label>
                     </div>
                     <div class="flex-container">
+                        <div class="flex1" title="Can increase the retrieval quality for the cost of processing. 0 = disabled.">
+                            <label for="vectors_message_chunk_size">
+                                <small>Chunk size (chars)</small>
+                            </label>
+                            <input id="vectors_message_chunk_size" type="number" class="text_pole widthUnset" min="0" max="9999" />
+                        </div>
                         <div class="flex1" title="Prevents last N messages from being placed out of order.">
                             <label for="vectors_protect">
                                 <small>Retain#</small>
                             </label>
-                            <input type="number" id="vectors_protect" class="text_pole widthUnset" min="1" max="99" />
+                            <input type="number" id="vectors_protect" class="text_pole widthUnset" min="1" max="9999" />
                         </div>
                         <div class="flex1" title="How many past messages to insert as memories.">
                             <label for="vectors_insert">
                                 <small>Insert#</small>
                             </label>
-                            <input type="number" id="vectors_insert" class="text_pole widthUnset" min="1" max="99" />
+                            <input type="number" id="vectors_insert" class="text_pole widthUnset" min="1" max="9999" />
                         </div>
                     </div>
                 </div>
@@ -115,8 +121,16 @@
                     Old messages are vectorized gradually as you chat.
                     To process all previous messages, click the button below.
                 </small>
-                <div id="vectors_vectorize_all" class="menu_button menu_button_icon">
-                    Vectorize All
+                <div class="flex-container">
+                    <div id="vectors_vectorize_all" class="menu_button menu_button_icon">
+                        Vectorize All
+                    </div>
+                    <div id="vectors_purge" class="menu_button menu_button_icon">
+                        Purge Vectors
+                    </div>
+                    <div id="vectors_view_stats" class="menu_button menu_button_icon">
+                        View Stats
+                    </div>
                 </div>
                 <div id="vectorize_progress" style="display: none;">
                     <small>

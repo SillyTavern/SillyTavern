@@ -1353,7 +1353,7 @@ class PromptManager {
             footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
 
             // Add prompt export dialogue and options
-            const exportForCharacter =`
+            const exportForCharacter = `
             <div class="row">
                 <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
                 <span class="tooltip fa-solid fa-info-circle" title="Export prompts for this character, including their order."></span>
