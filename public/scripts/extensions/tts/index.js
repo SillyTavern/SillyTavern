@@ -463,13 +463,25 @@ function saveLastValues() {
 }
 
 async function tts(text, voiceId, char) {
+    async function processResponse(response) {
+        // RVC injection
+        if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
+            response = await window['rvcVoiceConversion'](response, char, text);
+
+        await addAudioJob(response);
+    }
+
     let response = await ttsProvider.generateTts(text, voiceId);
 
-    // RVC injection
-    if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
-        response = await window['rvcVoiceConversion'](response, char, text);
+    // If async generator, process every chunk as it comes in
+    if (typeof response[Symbol.asyncIterator] === 'function') {
+        for await (const chunk of response) {
+            await processResponse(chunk);
+        }
+    } else {
+        await processResponse(response);
+    }
 
-    addAudioJob(response);
     completeTtsJob();
 }
 

@@ -342,7 +342,9 @@ router.post('/generate-voice', jsonParser, async (request, response) => {
         });
 
         if (!result.ok) {
-            return response.sendStatus(result.status);
+            const errorText = await result.text();
+            console.log('NovelAI returned an error.', result.statusText, errorText);
+            return response.sendStatus(500);
         }
 
         const chunks = await readAllChunks(result.body);
