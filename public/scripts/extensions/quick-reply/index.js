@@ -4,7 +4,6 @@ import { QuickReplyApi } from './api/QuickReplyApi.js';
 import { AutoExecuteHandler } from './src/AutoExecuteHandler.js';
 import { QuickReply } from './src/QuickReply.js';
 import { QuickReplyConfig } from './src/QuickReplyConfig.js';
-import { QuickReplyContextLink } from './src/QuickReplyContextLink.js';
 import { QuickReplySet } from './src/QuickReplySet.js';
 import { QuickReplySettings } from './src/QuickReplySettings.js';
 import { SlashCommandHandler } from './src/SlashCommandHandler.js';
