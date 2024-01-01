@@ -85,7 +85,7 @@ SillyTavern has extensibility support, with some additional AI modules hosted vi
 * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 
-A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/extras/extensions/).
+A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/).
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
@@ -161,6 +161,15 @@ Installing via ZIP download (discouraged)
   5. Once the server has prepared everything for you, it will open a tab in your browser.
 
 ### Linux
+
+#### Unofficial Debian/ubuntu PKGBUILD
+
+  1. This installation method, is unofficial and not supported by the project. The method, is basically a clone of the AUR, but for debs.
+  2. Install [makedeb](https://www.makedeb.org/).
+  3. Ensure you have Node.js v18 or higher installed by running `node -v`. If you need to upgrade, you can install a [node.js repo](https://mpr.makedeb.org/packages/nodejs-repo) (you'll might need to edit the version inside the PKGBUILD). An alternative, is to install and configure [nvm](https://mpr.makedeb.org/packages/nvm) to manage multiple node.js installations. Finally, you can [install node.js manually](https://nodejs.org/en/download), you will need to manage the PATH of your environment, manually.
+  4. Now build the [sillytavern package](https://mpr.makedeb.org/packages/sillytavern). The build needs to run, with the corect node.js version.
+
+#### Manual
 
   1. Ensure you have Node.js v18 or higher (the latest [LTS version](https://nodejs.org/en/download/) is recommended) installed by running `node -v`.
 Alternatively, use the [Node Version Manager](https://github.com/nvm-sh/nvm#installing-and-updating) script to quickly and easily manage your Node installations.
