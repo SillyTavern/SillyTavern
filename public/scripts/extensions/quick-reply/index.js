@@ -83,16 +83,14 @@ const loadSets = async () => {
     if (response.ok) {
         const setList = (await response.json()).quickReplyPresets ?? [];
         for (const set of setList) {
-            if (set.version == 2) {
-                QuickReplySet.list.push(QuickReplySet.from(JSON.parse(JSON.stringify(set))));
-            } else {
-                const qrs = new QuickReplySet();
-                qrs.name = set.name;
-                qrs.disableSend = set.quickActionEnabled ?? false;
-                qrs.placeBeforeInput = set.placeBeforeInputEnabled ?? false;
-                qrs.injectInput = set.AutoInputInject ?? false;
-                qrs.qrList = set.quickReplySlots.map((slot,idx)=>{
-                    const qr = new QuickReply();
+            if (set.version !== 2) {
+                // migrate old QR set
+                set.version = 2;
+                set.disableSend = set.quickActionEnabled ?? false;
+                set.placeBeforeInput = set.placeBeforeInputEnabled ?? false;
+                set.injectInput = set.AutoInputInject ?? false;
+                set.qrList = set.quickReplySlots.map((slot,idx)=>{
+                    const qr = {};
                     qr.id = idx + 1;
                     qr.label = slot.label;
                     qr.title = slot.title;
@@ -102,16 +100,18 @@ const loadSets = async () => {
                     qr.executeOnUser = slot.autoExecute_userMessage ?? false;
                     qr.executeOnAi = slot.autoExecute_botMessage ?? false;
                     qr.executeOnChatChange = slot.autoExecute_chatLoad ?? false;
-                    qr.contextList = (slot.contextMenu ?? []).map(it=>(QuickReplyContextLink.from({
+                    qr.contextList = (slot.contextMenu ?? []).map(it=>({
                         set: it.preset,
                         isChained: it.chain,
-                    })));
+                    }));
                     return qr;
                 });
-                QuickReplySet.list.push(qrs);
-                await qrs.save();
+            }
+            if (set.version == 2) {
+                QuickReplySet.list.push(QuickReplySet.from(JSON.parse(JSON.stringify(set))));
             }
         }
+        // need to load QR lists after all sets are loaded to be able to resolve context menu entries
         setList.forEach((set, idx)=>{
             QuickReplySet.list[idx].qrList = set.qrList.map(it=>QuickReply.from(it));
             QuickReplySet.list[idx].init();
