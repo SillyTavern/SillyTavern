@@ -1113,14 +1113,29 @@ async function setExpression(character, expression, force) {
 
         talkingHeadCheck().then(result => {
             if (result) {
-                // Find the <img> element with id="expression-image" and class="expression"
-                const imgElement = document.querySelector('img#expression-image.expression');
-                //console.log("searching");
-                if (imgElement && imgElement instanceof HTMLImageElement) {
-                    //console.log("setting value");
-                    imgElement.src = getApiUrl() + '/api/talkinghead/result_feed';
-                }
-
+                // Set the talkinghead emotion to the specified expression
+                // TODO: For now, talkinghead emote only supported when VN mode is off; see also updateVisualNovelMode.
+                const url = new URL(getApiUrl());
+                url.pathname = '/api/talkinghead/set_emotion';
+                doExtrasFetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ emotion_name: expression }),
+                })
+                    .then(response => {
+                        // Find the <img> element with id="expression-image" and class="expression"
+                        const imgElement = document.querySelector('img#expression-image.expression');
+                        //console.log("searching");
+                        if (imgElement && imgElement instanceof HTMLImageElement) {
+                            //console.log("setting value");
+                            imgElement.src = getApiUrl() + '/api/talkinghead/result_feed';
+                        }
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    })
             } else {
                 //console.log("The fetch failed!");
             }
