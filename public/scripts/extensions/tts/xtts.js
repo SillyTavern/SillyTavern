@@ -66,8 +66,7 @@ class XTTSTtsProvider {
 
         html += `
         </select>
-
-        <label">XTTS Settings:</label>
+        <label">XTTS Settings:</label><br/>
         <label for="xtts_speed">Speed: <span id="xtts_tts_speed_output">${this.defaultSettings.speed}</span></label>
         <input id="xtts_speed" type="range" value="${this.defaultSettings.speed}" min="0.5" max="2" step="0.1" />
 
