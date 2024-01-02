@@ -43,6 +43,7 @@ class XTTSTtsProvider {
         top_p : 0.85,
         speed : 1,
         enable_text_splitting: true,
+        stream_chunk_size: 100,
         voiceMap: {},
         streaming: false,
     }
@@ -85,6 +86,9 @@ class XTTSTtsProvider {
         <label for="xtts_top_p">Top P: <span id="xtts_top_p_output">${this.defaultSettings.top_p}</span></label>
         <input id="xtts_top_p" type="range" value="${this.defaultSettings.top_p}" min="0" max="1" step="0.01" />
 
+        <label for="xtts_stream_chunk_size">Stream Chunk Size: <span id="xtts_stream_chunk_size_output">${this.defaultSettings.stream_chunk_size}</span></label>
+        <input id="xtts_stream_chunk_size" type="range" value="${this.defaultSettings.stream_chunk_size}" min="100" max="250" step="1" />
+
         <label for="xtts_enable_text_splitting">Enable Text Splitting:</label>
         <input id="xtts_enable_text_splitting" type="checkbox" ${this.defaultSettings.enable_text_splitting ? 'checked' : ''} />
 
@@ -95,7 +99,6 @@ class XTTSTtsProvider {
             <input id="xtts_tts_streaming" type="checkbox" />
             <span>Streaming <small>(RVC not supported)</small></span>
         </label>
-
         `;
 
         html += `
@@ -118,6 +121,7 @@ class XTTSTtsProvider {
         this.settings.repetition_penalty = $('#xtts_repetition_penalty').val();
         this.settings.top_k = $('#xtts_top_k').val();
         this.settings.top_p = $('#xtts_top_p').val();
+        this.settings.stream_chunk_size = $('#xtts_stream_chunk_size').val();
         this.settings.enable_text_splitting = $('#xtts_enable_text_splitting').is(':checked');
         this.settings.streaming = $('#xtts_tts_streaming').is(':checked');
         
@@ -128,6 +132,7 @@ class XTTSTtsProvider {
         $('#xtts_repetition_penalty_output').text(this.settings.repetition_penalty);
         $('#xtts_top_k_output').text(this.settings.top_k);
         $('#xtts_top_p_output').text(this.settings.top_p);
+        $('#xtts_stream_chunk_size_output').text(this.settings.stream_chunk_size);
         
         saveTtsProviderSettings()
         this.changeTTSSetting()
@@ -185,6 +190,7 @@ class XTTSTtsProvider {
         $('#xtts_top_p').on("input", () => { this.onSettingsChange() });
         $('#xtts_enable_text_splitting').on("change", () => { this.onSettingsChange() });
 
+        $('#xtts_stream_chunk_size').on("input", () => { this.onSettingsChange() });
         $('#xtts_tts_streaming').prop('checked', this.settings.streaming);
         $('#xtts_tts_streaming').on('change', () => { this.onSettingsChange(); });
 
@@ -255,6 +261,7 @@ class XTTSTtsProvider {
                     "top_p": this.settings.top_p,
                     "top_k": this.settings.top_k,
                     "enable_text_splitting": this.settings.enable_text_splitting,
+                    "stream_chunk_size": this.settings.stream_chunk_size
                 })
             }
         )
