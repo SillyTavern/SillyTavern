@@ -87,7 +87,7 @@ class XTTSTtsProvider {
         <input id="xtts_top_p" type="range" value="${this.defaultSettings.top_p}" min="0" max="1" step="0.01" />
 
         <label for="xtts_stream_chunk_size">Stream Chunk Size: <span id="xtts_stream_chunk_size_output">${this.defaultSettings.stream_chunk_size}</span></label>
-        <input id="xtts_stream_chunk_size" type="range" value="${this.defaultSettings.stream_chunk_size}" min="100" max="250" step="1" />
+        <input id="xtts_stream_chunk_size" type="range" value="${this.defaultSettings.stream_chunk_size}" min="100" max="400" step="1" />
 
         <label for="xtts_enable_text_splitting">Enable Text Splitting:</label>
         <input id="xtts_enable_text_splitting" type="checkbox" ${this.defaultSettings.enable_text_splitting ? 'checked' : ''} />
