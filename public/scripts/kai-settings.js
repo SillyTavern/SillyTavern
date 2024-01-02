@@ -4,7 +4,6 @@ import {
     getStoppingStrings,
     substituteParams,
     api_server,
-    main_api,
 } from '../script.js';
 
 import {
@@ -142,7 +141,6 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         sampler_seed: kai_settings.seed >= 0 ? kai_settings.seed : undefined,
 
         api_server,
-        main_api,
     };
     return generate_data;
 }
