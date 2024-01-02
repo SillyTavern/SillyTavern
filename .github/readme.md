@@ -282,8 +282,9 @@ You can find them archived here:
 
 ## Screenshots
 
-<img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649245-8061c60f-63dc-488e-9325-f151b7a3ec2d.png">
-<img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649856-fbdeef05-d727-4d5a-be80-266cbbc6b811.png">
+<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/e902c7a2-45a6-4415-97aa-c59c597669c1"> 
+<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/f8a79c47-4fe9-4564-9e4a-bf247ed1c961">
+
 
 ## License and credits
 
