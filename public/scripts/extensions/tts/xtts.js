@@ -258,10 +258,6 @@ class XTTSTtsProvider {
                 })
             }
         )
-        if (!response.ok) {
-            toastr.error(response.statusText, 'An error occurred when changing TTS settings');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
         return response
     }
 
