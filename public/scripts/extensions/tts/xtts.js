@@ -52,6 +52,7 @@ class XTTSTtsProvider {
         provider_endpoint: 'http://localhost:8020',
         language: 'en',
         voiceMap: {},
+        streaming: false,
     };
 
     get settingsHtml() {
@@ -75,7 +76,10 @@ class XTTSTtsProvider {
         </select>
         <label for="xtts_tts_endpoint">Provider Endpoint:</label>
         <input id="xtts_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
-
+        <label for="xtts_tts_streaming" class="checkbox_label">
+            <input id="xtts_tts_streaming" type="checkbox" />
+            <span>Streaming <small>(RVC not supported)</small></span>
+        </label>
         `;
 
         html += `
@@ -90,6 +94,7 @@ class XTTSTtsProvider {
         // Used when provider settings are updated from UI
         this.settings.provider_endpoint = $('#xtts_tts_endpoint').val();
         this.settings.language = $('#xtts_api_language').val();
+        this.settings.streaming = $('#xtts_tts_streaming').is(':checked');
         saveTtsProviderSettings();
     }
 
@@ -125,6 +130,8 @@ class XTTSTtsProvider {
         $('#xtts_tts_endpoint').on('input', () => { this.onSettingsChange(); });
         $('#xtts_api_language').val(this.settings.language);
         $('#xtts_api_language').on('change', () => { this.onSettingsChange(); });
+        $('#xtts_tts_streaming').prop('checked', this.settings.streaming);
+        $('#xtts_tts_streaming').on('change', () => { this.onSettingsChange(); });
 
         await this.checkReady();
 
@@ -176,6 +183,15 @@ class XTTSTtsProvider {
 
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`);
+
+        if (this.settings.streaming) {
+            const params = new URLSearchParams();
+            params.append('text', inputText);
+            params.append('speaker_wav', voiceId);
+            params.append('language', this.settings.language);
+            return `${this.settings.provider_endpoint}/tts_stream/?${params.toString()}`;
+        }
+
         const response = await doExtrasFetch(
             `${this.settings.provider_endpoint}/tts_to_audio/`,
             {
