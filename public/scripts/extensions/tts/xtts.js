@@ -83,6 +83,10 @@ class XTTSTtsProvider {
         html += `
         </select>
         <label">XTTS Settings:</label><br/>
+        <label for="xtts_tts_streaming" class="checkbox_label">
+            <input id="xtts_tts_streaming" type="checkbox" />
+            <span>Streaming <small>(RVC not supported)</small></span>
+        </label>
         <label for="xtts_speed">Speed: <span id="xtts_tts_speed_output">${this.defaultSettings.speed}</span></label>
         <input id="xtts_speed" type="range" value="${this.defaultSettings.speed}" min="0.5" max="2" step="0.01" />
 
@@ -104,15 +108,13 @@ class XTTSTtsProvider {
         <label for="xtts_stream_chunk_size">Stream Chunk Size: <span id="xtts_stream_chunk_size_output">${this.defaultSettings.stream_chunk_size}</span></label>
         <input id="xtts_stream_chunk_size" type="range" value="${this.defaultSettings.stream_chunk_size}" min="100" max="400" step="1" />
 
-        <label for="xtts_enable_text_splitting">Enable Text Splitting:</label>
-        <input id="xtts_enable_text_splitting" type="checkbox" ${this.defaultSettings.enable_text_splitting ? 'checked' : ''} />
+        <label for="xtts_enable_text_splitting" class="checkbox_label">
+            <input id="xtts_enable_text_splitting" type="checkbox" ${this.defaultSettings.enable_text_splitting ? 'checked' : ''} />
+            Enable Text Splitting
+        </label>
 
         <label for="xtts_tts_endpoint">Provider Endpoint:</label>
         <input id="xtts_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
-        <label for="xtts_tts_streaming" class="checkbox_label">
-            <input id="xtts_tts_streaming" type="checkbox" />
-            <span>Streaming <small>(RVC not supported)</small></span>
-        </label>
         `;
 
         html += `
