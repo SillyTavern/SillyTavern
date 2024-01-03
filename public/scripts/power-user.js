@@ -1849,7 +1849,7 @@ export function renderStoryString(params) {
         output = substituteParams(output, params.user, params.char);
 
         // remove leading whitespace
-        output = output.trimStart();
+        // output = output.trimStart();
 
         // add a newline to the end of the story string if it doesn't have one
         if (output.length > 0 && !output.endsWith('\n')) {
