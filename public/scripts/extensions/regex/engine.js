@@ -62,7 +62,13 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
     return finalString;
 }
 
-// Runs the provided regex script on the given string
+/**
+ * Runs the provided regex script on the given string
+ * @param {object} regexScript The regex script to run
+ * @param {string} rawString The string to run the regex script on
+ * @param {object} params The parameters to use for the regex script
+ * @returns {string} The new string
+ */
 function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     let newString = rawString;
     if (!regexScript || !!(regexScript.disabled) || !regexScript?.findRegex || !rawString) {
@@ -102,9 +108,9 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
             },
         );
         if (!newString) {
-            newString = rawString.replace(fencedMatch, subReplaceString);
+            newString = rawString.slice(0, match.index) + rawString.slice(match.index).replace(fencedMatch, subReplaceString);
         } else {
-            newString = newString.replace(fencedMatch, subReplaceString);
+            newString = newString.slice(0, match.index) + newString.slice(match.index).replace(fencedMatch, subReplaceString);
         }
 
         // If the regex isn't global, break out of the loop
