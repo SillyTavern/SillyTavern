@@ -84,7 +84,7 @@ class XTTSTtsProvider {
         </select>
         <label">XTTS Settings:</label><br/>
         <label for="xtts_speed">Speed: <span id="xtts_tts_speed_output">${this.defaultSettings.speed}</span></label>
-        <input id="xtts_speed" type="range" value="${this.defaultSettings.speed}" min="0.5" max="2" step="0.1" />
+        <input id="xtts_speed" type="range" value="${this.defaultSettings.speed}" min="0.5" max="2" step="0.01" />
 
         <label for="xtts_temperature">Temperature: <span id="xtts_tts_temperature_output">${this.defaultSettings.temperature}</span></label>
         <input id="xtts_temperature" type="range" value="${this.defaultSettings.temperature}" min="0.01" max="1" step="0.01" />
