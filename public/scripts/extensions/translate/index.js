@@ -1,4 +1,4 @@
-export {translate};
+export { translate };
 
 import {
     callPopup,
@@ -9,9 +9,10 @@ import {
     saveSettingsDebounced,
     substituteParams,
     updateMessageBlock,
-} from "../../../script.js";
-import { extension_settings, getContext } from "../../extensions.js";
-import { secret_state, writeSecret } from "../../secrets.js";
+} from '../../../script.js';
+import { extension_settings, getContext } from '../../extensions.js';
+import { secret_state, writeSecret } from '../../secrets.js';
+import { splitRecursive } from '../../utils.js';
 
 export const autoModeOptions = {
     NONE: 'none',
@@ -143,15 +144,15 @@ const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx'];
 function showKeysButton() {
     const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
     const providerOptionalUrl = LOCAL_URL.includes(extension_settings.translate.provider);
-    $("#translate_key_button").toggle(providerRequiresKey);
-    $("#translate_key_button").toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
-    $("#translate_url_button").toggle(providerOptionalUrl);
-    $("#translate_url_button").toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + "_url"]));
+    $('#translate_key_button').toggle(providerRequiresKey);
+    $('#translate_key_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
+    $('#translate_url_button').toggle(providerOptionalUrl);
+    $('#translate_url_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + '_url']));
 }
 
 function loadSettings() {
     for (const key in defaultSettings) {
-        if (!extension_settings.translate.hasOwnProperty(key)) {
+        if (!Object.hasOwn(extension_settings.translate, key)) {
             extension_settings.translate[key] = defaultSettings[key];
         }
     }
@@ -164,7 +165,7 @@ function loadSettings() {
 
 async function translateImpersonate(text) {
     const translatedText = await translate(text, extension_settings.translate.target_language);
-    $("#send_textarea").val(translatedText);
+    $('#send_textarea').val(translatedText);
 }
 
 async function translateIncomingMessage(messageId) {
@@ -316,6 +317,28 @@ async function translateProviderBing(text, lang) {
 }
 
 /**
+ * Splits text into chunks and translates each chunk separately
+ * @param {string} text Text to translate
+ * @param {string} lang Target language code
+ * @param {(text: string, lang: string) => Promise<string>} translateFn Function to translate a single chunk (must return a Promise)
+ * @param {number} chunkSize Maximum chunk size
+ * @returns {Promise<string>} Translated text
+ */
+async function chunkedTranslate(text, lang, translateFn, chunkSize = 5000) {
+    if (text.length <= chunkSize) {
+        return await translateFn(text, lang);
+    }
+
+    const chunks = splitRecursive(text, chunkSize);
+
+    let result = '';
+    for (const chunk of chunks) {
+        result += await translateFn(chunk, lang);
+    }
+    return result;
+}
+
+/**
  * Translates text using the selected translation provider
  * @param {string} text Text to translate
  * @param {string} lang Target language code
@@ -331,15 +354,15 @@ async function translate(text, lang) {
             case 'libre':
                 return await translateProviderLibre(text, lang);
             case 'google':
-                return await translateProviderGoogle(text, lang);
+                return await chunkedTranslate(text, lang, translateProviderGoogle, 5000);
             case 'deepl':
                 return await translateProviderDeepl(text, lang);
             case 'deeplx':
-                return await translateProviderDeepLX(text, lang);
+                return await chunkedTranslate(text, lang, translateProviderDeepLX, 1500);
             case 'oneringtranslator':
                 return await translateProviderOneRing(text, lang);
             case 'bing':
-                return await translateProviderBing(text, lang);
+                return await chunkedTranslate(text, lang, translateProviderBing, 1000);
             default:
                 console.error('Unknown translation provider', extension_settings.translate.provider);
                 return text;
@@ -540,7 +563,7 @@ jQuery(() => {
 
         await writeSecret(extension_settings.translate.provider, key);
         toastr.success('API Key saved');
-        $("#translate_key_button").addClass('success');
+        $('#translate_key_button').addClass('success');
     });
     $('#translate_url_button').on('click', async () => {
         const optionText = $('#translation_provider option:selected').text();
@@ -556,9 +579,9 @@ jQuery(() => {
             return;
         }
 
-        await writeSecret(extension_settings.translate.provider + "_url", url);
+        await writeSecret(extension_settings.translate.provider + '_url', url);
         toastr.success('API URL saved');
-        $("#translate_url_button").addClass('success');
+        $('#translate_url_button').addClass('success');
     });
 
     loadSettings();

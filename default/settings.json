@@ -2,8 +2,6 @@
     "firstRun": true,
     "username": "User",
     "api_server": "http://127.0.0.1:5000/api",
-    "api_server_textgenerationwebui": "http://127.0.0.1:5000/api",
-    "api_use_mancer_webui": false,
     "preset_settings": "RecoveredRuins",
     "user_avatar": "user-default.png",
     "amount_gen": 250,
@@ -18,7 +16,7 @@
         "world_info_recursive": true,
         "world_info_overflow_alert": false,
         "world_info_case_sensitive": false,
-        "world_info_match_whole_words": false,
+        "world_info_match_whole_words": true,
         "world_info_character_strategy": 1,
         "world_info_budget_cap": 0
     },
@@ -151,7 +149,8 @@
             "preset": "Default",
             "story_string": "{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}",
             "chat_start": "***",
-            "example_separator": "***"
+            "example_separator": "***",
+            "use_stop_strings": true
         },
         "personas": {},
         "default_persona": null,
@@ -595,7 +594,6 @@
         "openrouter_model": "OR_Website",
         "jailbreak_system": true,
         "reverse_proxy": "",
-        "legacy_streaming": false,
         "chat_completion_source": "openai",
         "max_context_unlocked": false,
         "api_url_scale": "",

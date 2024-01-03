@@ -1,17 +1,32 @@
-import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js"
-import { saveTtsProviderSettings } from "./index.js"
+import { doExtrasFetch, getApiUrl, modules } from '../../extensions.js';
+import { saveTtsProviderSettings } from './index.js';
 
-export { XTTSTtsProvider }
+export { XTTSTtsProvider };
 
 class XTTSTtsProvider {
     //########//
     // Config //
     //########//
 
-    settings
-    ready = false
-    voices = []
-    separator = '. '
+    settings;
+    ready = false;
+    voices = [];
+    separator = '. ';
+
+    /**
+     * Perform any text processing before passing to TTS engine.
+     * @param {string} text Input text
+     * @returns {string} Processed text
+     */
+    processText(text) {
+        // Replace fancy ellipsis with "..."
+        text = text.replace(/…/g, '...');
+        // Remove quotes
+        text = text.replace(/["“”‘’]/g, '');
+        // Replace multiple "." with single "."
+        text = text.replace(/\.+/g, '.');
+        return text;
+    }
 
     languageLabels = {
         "Arabic": "ar",
@@ -32,7 +47,7 @@ class XTTSTtsProvider {
         "Hungarian": "hu",
         "Hindi": "hi",
     }
-   
+
     defaultSettings = {
         provider_endpoint: "http://localhost:8020",
         language: "en",
@@ -58,7 +73,7 @@ class XTTSTtsProvider {
 
             if (this.languageLabels[language] == this.settings?.language) {
                 html += `<option value="${this.languageLabels[language]}" selected="selected">${language}</option>`;
-                continue
+                continue;
             }
 
             html += `<option value="${this.languageLabels[language]}">${language}</option>`;
@@ -94,7 +109,6 @@ class XTTSTtsProvider {
 
         <label for="xtts_tts_endpoint">Provider Endpoint:</label>
         <input id="xtts_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
-
         <label for="xtts_tts_streaming" class="checkbox_label">
             <input id="xtts_tts_streaming" type="checkbox" />
             <span>Streaming <small>(RVC not supported)</small></span>
@@ -124,7 +138,7 @@ class XTTSTtsProvider {
         this.settings.stream_chunk_size = $('#xtts_stream_chunk_size').val();
         this.settings.enable_text_splitting = $('#xtts_enable_text_splitting').is(':checked');
         this.settings.streaming = $('#xtts_tts_streaming').is(':checked');
-        
+
         // Update the UI to reflect changes
         $('#xtts_tts_speed_output').text(this.settings.speed);
         $('#xtts_tts_temperature_output').text(this.settings.temperature);
@@ -133,7 +147,7 @@ class XTTSTtsProvider {
         $('#xtts_top_k_output').text(this.settings.top_k);
         $('#xtts_top_p_output').text(this.settings.top_p);
         $('#xtts_stream_chunk_size_output').text(this.settings.stream_chunk_size);
-        
+
         saveTtsProviderSettings()
         this.changeTTSSetting()
     }
@@ -142,17 +156,17 @@ class XTTSTtsProvider {
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings")
+            console.info('Using default TTS Provider settings');
         }
 
         // Only accept keys defined in defaultSettings
-        this.settings = this.defaultSettings
+        this.settings = this.defaultSettings;
 
         for (const key in settings) {
             if (key in this.settings) {
-                this.settings[key] = settings[key]
+                this.settings[key] = settings[key];
             } else {
-                throw `Invalid setting passed to TTS Provider: ${key}`
+                throw `Invalid setting passed to TTS Provider: ${key}`;
             }
         }
 
@@ -167,10 +181,12 @@ class XTTSTtsProvider {
             }
         }, 2000);
 
-        $('#xtts_tts_endpoint').val(this.settings.provider_endpoint)
-        $('#xtts_tts_endpoint').on("input", () => { this.onSettingsChange() })
-        $('#xtts_api_language').val(this.settings.language)
-        $('#xtts_api_language').on("change", () => { this.onSettingsChange() })
+        $('#xtts_tts_endpoint').val(this.settings.provider_endpoint);
+        $('#xtts_tts_endpoint').on('input', () => { this.onSettingsChange(); });
+        $('#xtts_api_language').val(this.settings.language);
+        $('#xtts_api_language').on('change', () => { this.onSettingsChange(); });
+        $('#xtts_tts_streaming').prop('checked', this.settings.streaming);
+        $('#xtts_tts_streaming').on('change', () => { this.onSettingsChange(); });
 
         // Set initial values from the settings
         $('#xtts_speed').val(this.settings.speed);
@@ -194,19 +210,18 @@ class XTTSTtsProvider {
         $('#xtts_tts_streaming').prop('checked', this.settings.streaming);
         $('#xtts_tts_streaming').on('change', () => { this.onSettingsChange(); });
 
-        await this.checkReady()
+        await this.checkReady();
 
-        console.debug("XTTS: Settings loaded")
+        console.debug('XTTS: Settings loaded');
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady() {
-
-        const response = await this.fetchTtsVoiceObjects()
+        await this.fetchTtsVoiceObjects();
     }
 
     async onRefreshClick() {
-        return
+        return;
     }
 
     //#################//
@@ -215,32 +230,32 @@ class XTTSTtsProvider {
 
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
-            this.voices = await this.fetchTtsVoiceObjects()
+            this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
-            XTTSVoice => XTTSVoice.name == voiceName
-        )[0]
+            XTTSVoice => XTTSVoice.name == voiceName,
+        )[0];
         if (!match) {
-            throw `TTS Voice name ${voiceName} not found`
+            throw `TTS Voice name ${voiceName} not found`;
         }
-        return match
+        return match;
     }
 
     async generateTts(text, voiceId) {
-        const response = await this.fetchTtsGeneration(text, voiceId)
-        return response
+        const response = await this.fetchTtsGeneration(text, voiceId);
+        return response;
     }
 
     //###########//
     // API CALLS //
     //###########//
     async fetchTtsVoiceObjects() {
-        const response = await doExtrasFetch(`${this.settings.provider_endpoint}/speakers`)
+        const response = await doExtrasFetch(`${this.settings.provider_endpoint}/speakers`);
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            throw new Error(`HTTP ${response.status}: ${await response.json()}`);
         }
-        const responseJson = await response.json()
-        return responseJson
+        const responseJson = await response.json();
+        return responseJson;
     }
 
     // Each time a parameter is changed, we change the configuration
@@ -285,20 +300,20 @@ class XTTSTtsProvider {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache'  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
+                    'Cache-Control': 'no-cache',  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
                 },
                 body: JSON.stringify({
-                    "text": inputText,
-                    "speaker_wav": voiceId,
-                    "language": this.settings.language
-                })
-            }
-        )
+                    'text': inputText,
+                    'speaker_wav': voiceId,
+                    'language': this.settings.language,
+                }),
+            },
+        );
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
-        return response
+        return response;
     }
 
     // Interface not used by XTTS TTS

@@ -23,6 +23,10 @@
                 <input type="checkbox" id="quickReply_hidden" >
                 <span><i class="fa-solid fa-fw fa-eye-slash"></i> Invisible (auto-execute only)</span>
             </label>
+            <label class="checkbox_label" for="quickReply_autoExecute_appStartup">
+                <input type="checkbox" id="quickReply_autoExecute_appStartup" >
+                <span><i class="fa-solid fa-fw fa-rocket"></i> Execute on app startup</span>
+            </label>
             <label class="checkbox_label" for="quickReply_autoExecute_userMessage">
                 <input type="checkbox" id="quickReply_autoExecute_userMessage" >
                 <span><i class="fa-solid fa-fw fa-user"></i> Execute on user message</span>
@@ -35,6 +39,11 @@
                 <input type="checkbox" id="quickReply_autoExecute_chatLoad" >
                 <span><i class="fa-solid fa-fw fa-message"></i> Execute on opening chat</span>
             </label>
+        </div>
+        <h3><strong>UI Options</strong></h3>
+        <div class="flex-container flexFlowColumn">
+            <label for="quickReply_ui_title">Title (tooltip, leave empty to show the message or /command)</label>
+            <input type="text" class="text_pole" id="quickReply_ui_title">
         </div>
     </div>
 </div>

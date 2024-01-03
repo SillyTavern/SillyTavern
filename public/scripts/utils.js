@@ -1,6 +1,7 @@
-import { getContext } from "./extensions.js";
-import { getRequestHeaders } from "../script.js";
-import { isMobile } from "./RossAscends-mods.js";
+import { getContext } from './extensions.js';
+import { getRequestHeaders } from '../script.js';
+import { isMobile } from './RossAscends-mods.js';
+import { collapseNewlines } from './power-user.js';
 
 /**
  * Pagination status string template.
@@ -12,7 +13,10 @@ export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> of <%= tot
  * Navigation options for pagination.
  * @enum {number}
  */
-export const navigation_option = { none: -2000, previous: -1000, };
+export const navigation_option = {
+    none: -2000,
+    previous: -1000,
+};
 
 export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -88,9 +92,9 @@ export function getSortableDelay() {
 export async function bufferToBase64(buffer) {
     // use a FileReader to generate a base64 data URI:
     const base64url = await new Promise(resolve => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result)
-        reader.readAsDataURL(new Blob([buffer]))
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(new Blob([buffer]));
     });
     // remove the `data:...;base64,` part from the start
     return base64url.slice(base64url.indexOf(',') + 1);
@@ -125,7 +129,7 @@ export function shuffle(array) {
  * @param {string} contentType File content type.
  */
 export function download(content, fileName, contentType) {
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     const file = new Blob([content], { type: contentType });
     a.href = URL.createObjectURL(file);
     a.download = fileName;
@@ -243,7 +247,7 @@ export function getStringHash(str, seed = 0) {
     h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
 
     return 4294967296 * (2097151 & h2) + (h1 >>> 0);
-};
+}
 
 /**
  * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
@@ -282,7 +286,7 @@ export function throttle(func, limit = 300) {
  * @returns {boolean} True if the element is in the viewport, false otherwise.
  */
 export function isElementInViewport(el) {
-    if (typeof jQuery === "function" && el instanceof jQuery) {
+    if (typeof jQuery === 'function' && el instanceof jQuery) {
         el = el[0];
     }
     var rect = el.getBoundingClientRect();
@@ -343,7 +347,7 @@ export function incrementString(str) {
     // Take the substring up until where the integer was matched
     // Concatenate it to the matched count incremented by 1
     return str.substring(0, count.index) + (Number(count[0]) + 1);
-};
+}
 
 /**
  * Formats a string using the specified arguments.
@@ -357,10 +361,9 @@ export function stringFormat(format) {
     return format.replace(/{(\d+)}/g, function (match, number) {
         return typeof args[number] != 'undefined'
             ? args[number]
-            : match
-            ;
+            : match;
     });
-};
+}
 
 /**
  * Save the caret position in a contenteditable element.
@@ -387,7 +390,7 @@ export function saveCaretPosition(element) {
     // Return an object with the start and end offsets of the range
     const position = {
         start: range.startOffset,
-        end: range.endOffset
+        end: range.endOffset,
     };
 
     console.debug('Caret saved', position);
@@ -434,16 +437,16 @@ export async function resetScrollHeight(element) {
 export async function initScrollHeight(element) {
     await delay(1);
 
-    const curHeight = Number($(element).css("height").replace('px', ''));
-    const curScrollHeight = Number($(element).prop("scrollHeight"));
+    const curHeight = Number($(element).css('height').replace('px', ''));
+    const curScrollHeight = Number($(element).prop('scrollHeight'));
     const diff = curScrollHeight - curHeight;
 
-    if (diff < 3) { return } //happens when the div isn't loaded yet
+    if (diff < 3) { return; } //happens when the div isn't loaded yet
 
     const newHeight = curHeight + diff + 3; //the +3 here is to account for padding/line-height on text inputs
     //console.log(`init height to ${newHeight}`);
-    $(element).css("height", "");
-    $(element).css("height", `${newHeight}px`);
+    $(element).css('height', '');
+    $(element).css('height', `${newHeight}px`);
     //resetScrollHeight(element);
 }
 
@@ -493,10 +496,10 @@ export function trimToEndSentence(input, include_newline = false) {
 }
 
 export function trimToStartSentence(input) {
-    let p1 = input.indexOf(".");
-    let p2 = input.indexOf("!");
-    let p3 = input.indexOf("?");
-    let p4 = input.indexOf("\n");
+    let p1 = input.indexOf('.');
+    let p2 = input.indexOf('!');
+    let p3 = input.indexOf('?');
+    let p4 = input.indexOf('\n');
     let first = p1;
     let skip1 = false;
     if (p2 > 0 && p2 < first) { first = p2; }
@@ -571,7 +574,7 @@ export function countOccurrences(string, character) {
  * @returns {boolean} True if the string is true, false otherwise.
  */
 export function isTrueBoolean(arg) {
-    return ['on', 'true', '1'].includes(arg);
+    return ['on', 'true', '1'].includes(arg?.trim()?.toLowerCase());
 }
 
 /**
@@ -580,7 +583,7 @@ export function isTrueBoolean(arg) {
  * @returns {boolean} True if the string is false, false otherwise.
  */
 export function isFalseBoolean(arg) {
-    return ['off', 'false', '0'].includes(arg);
+    return ['off', 'false', '0'].includes(arg?.trim()?.toLowerCase());
 }
 
 /**
@@ -608,7 +611,7 @@ export function timestampToMoment(timestamp) {
     // ST "humanized" format pattern
     const pattern1 = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
     const replacement1 = (match, year, month, day, hour, minute, second, millisecond) => {
-        return `${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hour.padStart(2, "0")}:${minute.padStart(2, "0")}:${second.padStart(2, "0")}.${millisecond.padStart(3, "0")}Z`;
+        return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.${millisecond.padStart(3, '0')}Z`;
     };
     const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
     if (moment(isoTimestamp1).isValid()) {
@@ -618,9 +621,9 @@ export function timestampToMoment(timestamp) {
     // New format pattern: "June 19, 2023 4:13pm"
     const pattern2 = /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i;
     const replacement2 = (match, month, day, year, hour, minute, meridiem) => {
-        const monthNum = moment().month(month).format("MM");
+        const monthNum = moment().month(month).format('MM');
         const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
-        return `${year}-${monthNum}-${day.padStart(2, "0")}T${hour24.toString().padStart(2, "0")}:${minute.padStart(2, "0")}:00`;
+        return `${year}-${monthNum}-${day.padStart(2, '0')}T${hour24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}:00`;
     };
     const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
     if (moment(isoTimestamp2).isValid()) {
@@ -693,7 +696,7 @@ export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '
  * isDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...'); // true
  */
 export function isDataURL(str) {
-    const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@\/?#]+)?$/i;
+    const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@/?#]+)?$/i;
     return regex.test(str);
 }
 
@@ -702,7 +705,7 @@ export function getCharaFilename(chid) {
     const fileName = context.characters[chid ?? context.characterId].avatar;
 
     if (fileName) {
-        return fileName.replace(/\.[^/.]+$/, "")
+        return fileName.replace(/\.[^/.]+$/, '');
     }
 }
 
@@ -736,6 +739,38 @@ export function extractAllWords(value) {
  */
 export function escapeRegex(string) {
     return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+export class Stopwatch {
+    /**
+     * Initializes a Stopwatch class.
+     * @param {number} interval Update interval in milliseconds. Must be a finite number above zero.
+     */
+    constructor(interval) {
+        if (isNaN(interval) || !isFinite(interval) || interval <= 0) {
+            console.warn('Invalid interval for Stopwatch, setting to 1');
+            interval = 1;
+        }
+
+        this.interval = interval;
+        this.lastAction = Date.now();
+    }
+
+    /**
+     * Executes a function if the interval passed.
+     * @param {(arg0: any) => any} action Action function
+     * @returns Promise<void>
+     */
+    async tick(action) {
+        const passed = (Date.now() - this.lastAction);
+
+        if (passed < this.interval) {
+            return;
+        }
+
+        await action();
+        this.lastAction = Date.now();
+    }
 }
 
 /**
@@ -805,13 +840,13 @@ export class RateLimiter {
  * @returns {object} The extracted JSON object.
  */
 export function extractDataFromPng(data, identifier = 'chara') {
-    console.log("Attempting PNG import...");
+    console.log('Attempting PNG import...');
     let uint8 = new Uint8Array(4);
     let uint32 = new Uint32Array(uint8.buffer);
 
     //check if png header is valid
     if (!data || data[0] !== 0x89 || data[1] !== 0x50 || data[2] !== 0x4E || data[3] !== 0x47 || data[4] !== 0x0D || data[5] !== 0x0A || data[6] !== 0x1A || data[7] !== 0x0A) {
-        console.log("PNG header invalid")
+        console.log('PNG header invalid');
         return null;
     }
 
@@ -854,7 +889,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
             ended = true;
             chunks.push({
                 name: name,
-                data: new Uint8Array(0)
+                data: new Uint8Array(0),
             });
             break;
         }
@@ -878,7 +913,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
 
         chunks.push({
             name: name,
-            data: chunkData
+            data: chunkData,
         });
     }
 
@@ -888,7 +923,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
 
     //find the chunk with the chara name, just check first and last letter
     let found = chunks.filter(x => (
-        x.name == "tEXt"
+        x.name == 'tEXt'
         && x.data.length > identifier.length
         && x.data.slice(0, identifier.length).every((v, i) => String.fromCharCode(v) == identifier[i])));
 
@@ -897,7 +932,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
         return null;
     } else {
         try {
-            let b64buf = "";
+            let b64buf = '';
             let bytes = found[0].data; //skip the chara
             for (let i = identifier.length + 1; i < bytes.length; i++) {
                 b64buf += String.fromCharCode(bytes[i]);
@@ -906,7 +941,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
             console.log(decoded);
             return decoded;
         } catch (e) {
-            console.log("Error decoding b64 in image: " + e);
+            console.log('Error decoding b64 in image: ' + e);
             return null;
         }
     }
@@ -922,7 +957,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
  * @returns {Promise<string>} - Resolves to the saved image's path on the server.
  *                              Rejects with an error if the upload fails.
  */
-export async function saveBase64AsFile(base64Data, characterName, filename = "", ext) {
+export async function saveBase64AsFile(base64Data, characterName, filename = '', ext) {
     // Construct the full data URL
     const format = ext; // Extract the file extension (jpg, png, webp)
     const dataURL = `data:image/${format};base64,${base64Data}`;
@@ -931,7 +966,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = "",
     const requestBody = {
         image: dataURL,
         ch_name: characterName,
-        filename: filename
+        filename: filename,
     };
 
     // Send the data URL to your backend using fetch
@@ -940,14 +975,14 @@ export async function saveBase64AsFile(base64Data, characterName, filename = "",
         body: JSON.stringify(requestBody),
         headers: {
             ...getRequestHeaders(),
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
         },
     });
 
     // If the response is successful, get the saved image path from the server's response
     if (response.ok) {
         const responseData = await response.json();
-        return responseData.path.replace(/\\/g, '/'); // Replace backslashes with forward slashes
+        return responseData.path;
     } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to upload the image to the server');
@@ -965,22 +1000,22 @@ export function loadFileToDocument(url, type) {
     return new Promise((resolve, reject) => {
         let element;
 
-        if (type === "css") {
-            element = document.createElement("link");
-            element.rel = "stylesheet";
+        if (type === 'css') {
+            element = document.createElement('link');
+            element.rel = 'stylesheet';
             element.href = url;
-        } else if (type === "js") {
-            element = document.createElement("script");
+        } else if (type === 'js') {
+            element = document.createElement('script');
             element.src = url;
         } else {
-            reject("Invalid type specified");
+            reject('Invalid type specified');
             return;
         }
 
         element.onload = resolve;
         element.onerror = reject;
 
-        type === "css"
+        type === 'css'
             ? document.head.appendChild(element)
             : document.body.appendChild(element);
     });
@@ -995,6 +1030,11 @@ export function loadFileToDocument(url, type) {
  * @returns {Promise<string>} A promise that resolves to the thumbnail data URL.
  */
 export function createThumbnail(dataUrl, maxWidth, maxHeight, type = 'image/jpeg') {
+    // Someone might pass in a base64 encoded string without the data URL prefix
+    if (!dataUrl.includes('data:')) {
+        dataUrl = `data:image/jpeg;base64,${dataUrl}`;
+    }
+
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.src = dataUrl;
@@ -1065,4 +1105,102 @@ export function uuidv4() {
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
+}
+
+function postProcessText(text) {
+    // Collapse multiple newlines into one
+    text = collapseNewlines(text);
+    // Trim leading and trailing whitespace, and remove empty lines
+    text = text.split('\n').map(l => l.trim()).filter(Boolean).join('\n');
+    // Remove carriage returns
+    text = text.replace(/\r/g, '');
+    // Normalize unicode spaces
+    text = text.replace(/\u00A0/g, ' ');
+    // Collapse multiple spaces into one (except for newlines)
+    text = text.replace(/ {2,}/g, ' ');
+    // Remove leading and trailing spaces
+    text = text.trim();
+    return text;
+}
+
+/**
+ * Use pdf.js to load and parse text from PDF pages
+ * @param {Blob} blob PDF file blob
+ * @returns {Promise<string>} A promise that resolves to the parsed text.
+ */
+export async function extractTextFromPDF(blob) {
+    async function initPdfJs() {
+        const promises = [];
+
+        const workerPromise = new Promise((resolve, reject) => {
+            const workerScript = document.createElement('script');
+            workerScript.type = 'module';
+            workerScript.async = true;
+            workerScript.src = 'lib/pdf.worker.mjs';
+            workerScript.onload = resolve;
+            workerScript.onerror = reject;
+            document.head.appendChild(workerScript);
+        });
+
+        promises.push(workerPromise);
+
+        const pdfjsPromise = new Promise((resolve, reject) => {
+            const pdfjsScript = document.createElement('script');
+            pdfjsScript.type = 'module';
+            pdfjsScript.async = true;
+            pdfjsScript.src = 'lib/pdf.mjs';
+            pdfjsScript.onload = resolve;
+            pdfjsScript.onerror = reject;
+            document.head.appendChild(pdfjsScript);
+        });
+
+        promises.push(pdfjsPromise);
+
+        return Promise.all(promises);
+    }
+
+    if (!('pdfjsLib' in window)) {
+        await initPdfJs();
+    }
+
+    const buffer = await getFileBuffer(blob);
+    const pdf = await pdfjsLib.getDocument(buffer).promise;
+    const pages = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const text = textContent.items.map(item => item.str).join(' ');
+        pages.push(text);
+    }
+    return postProcessText(pages.join('\n'));
+}
+
+/**
+ * Use DOMParser to load and parse text from HTML
+ * @param {Blob} blob HTML content blob
+ * @returns {Promise<string>} A promise that resolves to the parsed text.
+ */
+export async function extractTextFromHTML(blob, textSelector = 'body') {
+    const html = await blob.text();
+    const domParser = new DOMParser();
+    const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
+    const elements = document.querySelectorAll(textSelector);
+    const rawText = Array.from(elements).map(e => e.textContent).join('\n');
+    const text = postProcessText(rawText);
+    return text;
+}
+
+/**
+ * Use showdown to load and parse text from Markdown
+ * @param {Blob} blob Markdown content blob
+ * @returns {Promise<string>} A promise that resolves to the parsed text.
+ */
+export async function extractTextFromMarkdown(blob) {
+    const markdown = await blob.text();
+    const converter = new showdown.Converter();
+    const html = converter.makeHtml(markdown);
+    const domParser = new DOMParser();
+    const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
+    const text = postProcessText(document.body.textContent);
+    return text;
 }

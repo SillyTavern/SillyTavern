@@ -1,0 +1,17 @@
+{
+    "system_prompt": "Write {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\nWrite 1 reply only, italicize actions, and avoid quotation marks. Use markdown. Be proactive, creative, and drive the plot and conversation forward. Include dialog as well as narration.",
+    "input_sequence": "",
+    "output_sequence": "",
+    "first_output_sequence": "<START OF ROLEPLAY>",
+    "last_output_sequence": "\n### Response:",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "stop_sequence": "",
+    "separator_sequence": "",
+    "wrap": true,
+    "macro": true,
+    "names": false,
+    "names_force_groups": true,
+    "activation_regex": "",
+    "name": "Alpaca-Single-Turn"
+}

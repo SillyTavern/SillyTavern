@@ -1,4 +1,4 @@
-English | [中文](readme-zh_cn.md)
+English | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md)
 
 ![SillyTavern-Banner](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
 
@@ -66,7 +66,7 @@ Get in touch with the developers directly:
 * A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
 * Swipes
 * Group chats: multi-bot rooms for characters to talk to you or each other
-* Chat bookmarks / branching (duplicates the dialogue in its current state)
+* Chat checkpoints / branching
 * Advanced KoboldAI / TextGen generation settings with a lot of community-made presets
 * World Info support: create rich lore or save tokens on your character card
 * [OpenRouter](https://openrouter.ai) connection for various APIs (Claude, GPT-4/3.5 and more)
@@ -85,7 +85,7 @@ SillyTavern has extensibility support, with some additional AI modules hosted vi
 * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 
-A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/extras/extensions/).
+A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/).
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
@@ -162,8 +162,21 @@ Installing via ZIP download (discouraged)
 
 ### Linux
 
-  1. Run the `start.sh` script.
-  2. Enjoy.
+#### Unofficial Debian/Ubuntu PKGBUILD
+
+> **This installation method is unofficial and not supported by the project. Report any issues to the PKGBUILD maintainer.**  
+> The method is intended for Debian-based distributions (Ubuntu, Mint, etc).
+
+1. Install [makedeb](https://www.makedeb.org/).
+2. Ensure you have Node.js v18 or higher installed by running `node -v`. If you need to upgrade, you can install a [node.js repo](https://mpr.makedeb.org/packages/nodejs-repo) (you'll might need to edit the version inside the PKGBUILD). As an alternative, install and configure [nvm](https://mpr.makedeb.org/packages/nvm) to manage multiple node.js installations. Finally, you can [install node.js manually](https://nodejs.org/en/download), but you will need to update the PATH variable of your environment.
+3. Now build the [sillytavern package](https://mpr.makedeb.org/packages/sillytavern). The build needs to run with the correct node.js version.
+
+#### Manual
+
+  1. Ensure you have Node.js v18 or higher (the latest [LTS version](https://nodejs.org/en/download/) is recommended) installed by running `node -v`.
+Alternatively, use the [Node Version Manager](https://github.com/nvm-sh/nvm#installing-and-updating) script to quickly and easily manage your Node installations.
+  2. Run the `start.sh` script.
+  3. Enjoy.
 
 ## API keys management
 
@@ -173,7 +186,7 @@ By default, they will not be exposed to a frontend after you enter them and relo
 
 In order to enable viewing your keys by clicking a button in the API block:
 
-1. Set the value of `allowKeysExposure` to `true` in `config.conf` file.
+1. Set the value of `allowKeysExposure` to `true` in `config.yaml` file.
 2. Restart the SillyTavern server.
 
 ## Remote connections
@@ -211,7 +224,7 @@ CIDR masks are also accepted (eg. 10.0.0.0/24).
 
 Now devices which have the IP specified in the file will be able to connect.
 
-*Note: `config.conf` also has a `whitelist` array, which you can use in the same way, but this array will be ignored if `whitelist.txt` exists.*
+*Note: `config.yaml` also has a `whitelist` array, which you can use in the same way, but this array will be ignored if `whitelist.txt` exists.*
 
 ### 2. Getting the IP for the ST host machine
 
@@ -237,19 +250,19 @@ Use http:// NOT https://
 
 ### Opening your ST to all IPs
 
-We do not recommend doing this, but you can open `config.conf` and change `whitelist` to `false`.
+We do not recommend doing this, but you can open `config.yaml` and change `whitelistMode` to `false`.
 
 You must remove (or rename) `whitelist.txt` in the SillyTavern base install folder if it exists.
 
 This is usually an insecure practice, so we require you to set a username and password when you do this.
 
-The username and password are set in `config.conf`.
+The username and password are set in `config.yaml`.
 
 After restarting your ST server, any device will be able to connect to it, regardless of their IP as long as they know the username and password.
 
 ### Still Unable To Connect?
 
-* Create an inbound/outbound firewall rule for the port found in `config.conf`. Do NOT mistake this for port-forwarding on your router, otherwise, someone could find your chat logs and that's a big no-no.
+* Create an inbound/outbound firewall rule for the port found in `config.yaml`. Do NOT mistake this for port-forwarding on your router, otherwise, someone could find your chat logs and that's a big no-no.
 * Enable the Private Network profile type in Settings > Network and Internet > Ethernet. This is VERY important for Windows 11, otherwise, you would be unable to connect even with the aforementioned firewall rules.
 
 ## Performance issues?

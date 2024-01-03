@@ -5,25 +5,26 @@ import {
     eventSource,
     event_types,
     saveSettingsDebounced,
-} from "../script.js";
-import { extension_settings, saveMetadataDebounced } from "./extensions.js"
-import { selected_group } from "./group-chats.js";
-import { getCharaFilename, delay } from "./utils.js";
-import { power_user } from "./power-user.js";
+    animation_duration,
+} from '../script.js';
+import { extension_settings, saveMetadataDebounced } from './extensions.js';
+import { selected_group } from './group-chats.js';
+import { getCharaFilename, delay } from './utils.js';
+import { power_user } from './power-user.js';
 
 const extensionName = 'cfg';
 const defaultSettings = {
     global: {
-        "guidance_scale": 1,
-        "negative_prompt": ''
+        'guidance_scale': 1,
+        'negative_prompt': '',
     },
-    chara: []
+    chara: [],
 };
 const settingType = {
     guidance_scale: 0,
     negative_prompt: 1,
-    positive_prompt: 2
-}
+    positive_prompt: 2,
+};
 
 // Used for character and chat CFG values
 function updateSettings() {
@@ -36,18 +37,18 @@ function setCharCfg(tempValue, setting) {
 
     // Assign temp object
     let tempCharaCfg = {
-        name: avatarName
+        name: avatarName,
     };
 
     switch(setting) {
         case settingType.guidance_scale:
-            tempCharaCfg["guidance_scale"] = Number(tempValue);
+            tempCharaCfg['guidance_scale'] = Number(tempValue);
             break;
         case settingType.negative_prompt:
-            tempCharaCfg["negative_prompt"] = tempValue;
+            tempCharaCfg['negative_prompt'] = tempValue;
             break;
         case settingType.positive_prompt:
-            tempCharaCfg["positive_prompt"] = tempValue;
+            tempCharaCfg['positive_prompt'] = tempValue;
             break;
         default:
             return false;
@@ -74,12 +75,12 @@ function setCharCfg(tempValue, setting) {
         }
     } else if (avatarName && tempValue.length > 0) {
         if (!extension_settings.cfg.chara) {
-            extension_settings.cfg.chara = []
+            extension_settings.cfg.chara = [];
         }
 
         extension_settings.cfg.chara.push(tempCharaCfg);
     } else {
-        console.debug("Character CFG error: No avatar name key could be found.");
+        console.debug('Character CFG error: No avatar name key could be found.');
 
         // Don't save settings if something went wrong
         return false;
@@ -114,46 +115,46 @@ function setChatCfg(tempValue, setting) {
 function onCfgMenuItemClick() {
     if (selected_group || this_chid) {
         //show CFG config if it's hidden
-        if ($("#cfgConfig").css("display") !== 'flex') {
-            $("#cfgConfig").addClass('resizing')
-            $("#cfgConfig").css("display", "flex");
-            $("#cfgConfig").css("opacity", 0.0);
-            $("#cfgConfig").transition({
+        if ($('#cfgConfig').css('display') !== 'flex') {
+            $('#cfgConfig').addClass('resizing');
+            $('#cfgConfig').css('display', 'flex');
+            $('#cfgConfig').css('opacity', 0.0);
+            $('#cfgConfig').transition({
                 opacity: 1.0,
-                duration: 250,
+                duration: animation_duration,
             }, async function () {
                 await delay(50);
-                $("#cfgConfig").removeClass('resizing')
+                $('#cfgConfig').removeClass('resizing');
             });
 
             //auto-open the main AN inline drawer
-            if ($("#CFGBlockToggle")
+            if ($('#CFGBlockToggle')
                 .siblings('.inline-drawer-content')
                 .css('display') !== 'block') {
-                $("#floatingPrompt").addClass('resizing')
-                $("#CFGBlockToggle").click();
+                $('#floatingPrompt').addClass('resizing');
+                $('#CFGBlockToggle').click();
             }
         } else {
             //hide AN if it's already displayed
-            $("#cfgConfig").addClass('resizing')
-            $("#cfgConfig").transition({
+            $('#cfgConfig').addClass('resizing');
+            $('#cfgConfig').transition({
                 opacity: 0.0,
-                duration: 250,
+                duration: animation_duration,
             },
-                async function () {
-                    await delay(50);
-                    $("#cfgConfig").removeClass('resizing')
-                });
+            async function () {
+                await delay(50);
+                $('#cfgConfig').removeClass('resizing');
+            });
             setTimeout(function () {
-                $("#cfgConfig").hide();
-            }, 250);
+                $('#cfgConfig').hide();
+            }, animation_duration);
 
         }
         //duplicate options menu close handler from script.js
         //because this listener takes priority
-        $("#options").stop().fadeOut(250);
+        $('#options').stop().fadeOut(animation_duration);
     } else {
-        toastr.warning(`Select a character before trying to configure CFG`, '', { timeOut: 2000 });
+        toastr.warning('Select a character before trying to configure CFG', '', { timeOut: 2000 });
     }
 }
 
@@ -165,11 +166,11 @@ async function onChatChanged() {
 // Rearrange the panel if a group chat is present
 async function modifyCharaHtml() {
     if (selected_group) {
-        $("#chara_cfg_container").hide();
-        $("#groupchat_cfg_use_chara_container").show();
+        $('#chara_cfg_container').hide();
+        $('#groupchat_cfg_use_chara_container').show();
     } else {
-        $("#chara_cfg_container").show();
-        $("#groupchat_cfg_use_chara_container").hide();
+        $('#chara_cfg_container').show();
+        $('#groupchat_cfg_use_chara_container').hide();
         // TODO: Remove chat checkbox here
     }
 }
@@ -185,7 +186,7 @@ function loadSettings() {
     if (chat_metadata[metadataKeys.prompt_combine]?.length > 0) {
         chat_metadata[metadataKeys.prompt_combine].forEach((element) => {
             $(`input[name="cfg_prompt_combine"][value="${element}"]`)
-                .prop("checked", true);
+                .prop('checked', true);
         });
     }
 
@@ -194,12 +195,12 @@ function loadSettings() {
     const promptSeparator = chat_metadata[metadataKeys.prompt_separator];
     if (promptSeparator) {
         promptSeparatorDisplay.push(promptSeparator);
-        if (!promptSeparator.startsWith(`"`)) {
-            promptSeparatorDisplay.unshift(`"`);
+        if (!promptSeparator.startsWith('"')) {
+            promptSeparatorDisplay.unshift('"');
         }
 
-        if (!promptSeparator.endsWith(`"`)) {
-            promptSeparatorDisplay.push(`"`);
+        if (!promptSeparator.endsWith('"')) {
+            promptSeparatorDisplay.push('"');
         }
     }
 
@@ -249,21 +250,21 @@ function migrateSettings() {
         performSettingsSave = true;
     }
 
-    if (chat_metadata["cfg_negative_combine"]) {
-        chat_metadata[metadataKeys.prompt_combine] = chat_metadata["cfg_negative_combine"];
-        chat_metadata["cfg_negative_combine"] = undefined;
+    if (chat_metadata['cfg_negative_combine']) {
+        chat_metadata[metadataKeys.prompt_combine] = chat_metadata['cfg_negative_combine'];
+        chat_metadata['cfg_negative_combine'] = undefined;
         performMetaSave = true;
     }
 
-    if (chat_metadata["cfg_negative_insertion_depth"]) {
-        chat_metadata[metadataKeys.prompt_insertion_depth] = chat_metadata["cfg_negative_insertion_depth"];
-        chat_metadata["cfg_negative_insertion_depth"] = undefined;
+    if (chat_metadata['cfg_negative_insertion_depth']) {
+        chat_metadata[metadataKeys.prompt_insertion_depth] = chat_metadata['cfg_negative_insertion_depth'];
+        chat_metadata['cfg_negative_insertion_depth'] = undefined;
         performMetaSave = true;
     }
 
-    if (chat_metadata["cfg_negative_separator"]) {
-        chat_metadata[metadataKeys.prompt_separator] = chat_metadata["cfg_negative_separator"];
-        chat_metadata["cfg_negative_separator"] = undefined;
+    if (chat_metadata['cfg_negative_separator']) {
+        chat_metadata[metadataKeys.prompt_separator] = chat_metadata['cfg_negative_separator'];
+        chat_metadata['cfg_negative_separator'] = undefined;
         performMetaSave = true;
     }
 
@@ -279,12 +280,12 @@ function migrateSettings() {
 // This function is called when the extension is loaded
 export function initCfg() {
     $('#CFGClose').on('click', function () {
-        $("#cfgConfig").transition({
+        $('#cfgConfig').transition({
             opacity: 0,
-            duration: 200,
+            duration: animation_duration,
             easing: 'ease-in-out',
         });
-        setTimeout(function () { $('#cfgConfig').hide() }, 200);
+        setTimeout(function () { $('#cfgConfig').hide(); }, animation_duration);
     });
 
     $('#chat_cfg_guidance_scale').on('input', function() {
@@ -335,10 +336,10 @@ export function initCfg() {
         saveSettingsDebounced();
     });
 
-    $(`input[name="cfg_prompt_combine"]`).on('input', function() {
-        const values = $('#cfgConfig').find(`input[name="cfg_prompt_combine"]`)
-            .filter(":checked")
-            .map(function() { return Number($(this).val()) })
+    $('input[name="cfg_prompt_combine"]').on('input', function() {
+        const values = $('#cfgConfig').find('input[name="cfg_prompt_combine"]')
+            .filter(':checked')
+            .map(function() { return Number($(this).val()); })
             .get()
             .filter((e) => !Number.isNaN(e)) || [];
 
@@ -346,22 +347,22 @@ export function initCfg() {
         saveMetadataDebounced();
     });
 
-    $(`#cfg_prompt_insertion_depth`).on('input', function() {
+    $('#cfg_prompt_insertion_depth').on('input', function() {
         chat_metadata[metadataKeys.prompt_insertion_depth] = Number($(this).val());
         saveMetadataDebounced();
     });
 
-    $(`#cfg_prompt_separator`).on('input', function() {
+    $('#cfg_prompt_separator').on('input', function() {
         chat_metadata[metadataKeys.prompt_separator] = $(this).val();
         saveMetadataDebounced();
     });
 
     $('#groupchat_cfg_use_chara').on('input', function() {
         const checked = !!$(this).prop('checked');
-        chat_metadata[metadataKeys.groupchat_individual_chars] = checked
+        chat_metadata[metadataKeys.groupchat_individual_chars] = checked;
 
         if (checked) {
-            toastr.info("You can edit character CFG values in their respective character chats.");
+            toastr.info('You can edit character CFG values in their respective character chats.');
         }
 
         saveMetadataDebounced();
@@ -384,24 +385,24 @@ export function initCfg() {
 export const cfgType = {
     chat: 0,
     chara: 1,
-    global: 2
-}
+    global: 2,
+};
 
 export const metadataKeys = {
-    guidance_scale: "cfg_guidance_scale",
-    negative_prompt: "cfg_negative_prompt",
-    positive_prompt: "cfg_positive_prompt",
-    prompt_combine: "cfg_prompt_combine",
-    groupchat_individual_chars: "cfg_groupchat_individual_chars",
-    prompt_insertion_depth: "cfg_prompt_insertion_depth",
-    prompt_separator: "cfg_prompt_separator"
-}
+    guidance_scale: 'cfg_guidance_scale',
+    negative_prompt: 'cfg_negative_prompt',
+    positive_prompt: 'cfg_positive_prompt',
+    prompt_combine: 'cfg_prompt_combine',
+    groupchat_individual_chars: 'cfg_groupchat_individual_chars',
+    prompt_insertion_depth: 'cfg_prompt_insertion_depth',
+    prompt_separator: 'cfg_prompt_separator',
+};
 
 // Gets the CFG guidance scale
 // If the guidance scale is 1, ignore the CFG prompt(s) since it won't be used anyways
 export function getGuidanceScale() {
     if (!extension_settings.cfg) {
-        console.warn("CFG extension is not enabled. Skipping CFG guidance.");
+        console.warn('CFG extension is not enabled. Skipping CFG guidance.');
         return;
     }
 
@@ -412,21 +413,21 @@ export function getGuidanceScale() {
     if (chatGuidanceScale && chatGuidanceScale !== 1 && !groupchatCharOverride) {
         return {
             type: cfgType.chat,
-            value: chatGuidanceScale
+            value: chatGuidanceScale,
         };
     }
 
     if ((!selected_group && charaCfg || groupchatCharOverride) && charaCfg?.guidance_scale !== 1) {
         return {
             type: cfgType.chara,
-            value: charaCfg.guidance_scale
+            value: charaCfg.guidance_scale,
         };
     }
 
     if (extension_settings.cfg.global && extension_settings.cfg.global?.guidance_scale !== 1) {
         return {
             type: cfgType.global,
-            value: extension_settings.cfg.global.guidance_scale
+            value: extension_settings.cfg.global.guidance_scale,
         };
     }
 }
@@ -436,7 +437,7 @@ export function getGuidanceScale() {
  * @returns {string} The CFG prompt separator
  */
 function getCustomSeparator() {
-    const defaultSeparator = "\n";
+    const defaultSeparator = '\n';
 
     try {
         if (chat_metadata[metadataKeys.prompt_separator]) {
@@ -445,7 +446,7 @@ function getCustomSeparator() {
 
         return defaultSeparator;
     } catch {
-        console.warn("Invalid JSON detected for prompt separator. Using default separator.");
+        console.warn('Invalid JSON detected for prompt separator. Using default separator.');
         return defaultSeparator;
     }
 }
@@ -458,8 +459,8 @@ export function getCfgPrompt(guidanceScale, isNegative) {
     if (guidanceScale.type === cfgType.chat || cfgPromptCombine.includes(cfgType.chat)) {
         splitCfgPrompt.unshift(
             substituteParams(
-                chat_metadata[isNegative ? metadataKeys.negative_prompt : metadataKeys.positive_prompt]
-            )
+                chat_metadata[isNegative ? metadataKeys.negative_prompt : metadataKeys.positive_prompt],
+            ),
         );
     }
 
@@ -467,16 +468,16 @@ export function getCfgPrompt(guidanceScale, isNegative) {
     if (guidanceScale.type === cfgType.chara || cfgPromptCombine.includes(cfgType.chara)) {
         splitCfgPrompt.unshift(
             substituteParams(
-                isNegative ? charaCfg.negative_prompt : charaCfg.positive_prompt
-            )
+                isNegative ? charaCfg.negative_prompt : charaCfg.positive_prompt,
+            ),
         );
     }
 
     if (guidanceScale.type === cfgType.global || cfgPromptCombine.includes(cfgType.global)) {
         splitCfgPrompt.unshift(
             substituteParams(
-                isNegative ? extension_settings.cfg.global.negative_prompt : extension_settings.cfg.global.positive_prompt
-            )
+                isNegative ? extension_settings.cfg.global.negative_prompt : extension_settings.cfg.global.positive_prompt,
+            ),
         );
     }
 
@@ -487,6 +488,6 @@ export function getCfgPrompt(guidanceScale, isNegative) {
 
     return {
         value: combinedCfgPrompt,
-        depth: insertionDepth
+        depth: insertionDepth,
     };
 }

@@ -1,10 +1,23 @@
-import { callPopup, chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl } from "../script.js";
-import { saveMetadataDebounced } from "./extensions.js";
-import { registerSlashCommand } from "./slash-commands.js";
-import { stringFormat } from "./utils.js";
+import { callPopup, chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl, saveSettingsDebounced } from '../script.js';
+import { saveMetadataDebounced } from './extensions.js';
+import { registerSlashCommand } from './slash-commands.js';
+import { stringFormat } from './utils.js';
 
 const BG_METADATA_KEY = 'custom_background';
 const LIST_METADATA_KEY = 'chat_backgrounds';
+
+export let background_settings = {
+    name: '__transparent.png',
+    url: generateUrlParameter('__transparent.png', false),
+};
+
+export function loadBackgroundSettings(settings) {
+    let backgroundSettings = settings.background;
+    if (!backgroundSettings || !backgroundSettings.name || !backgroundSettings.url) {
+        backgroundSettings = background_settings;
+    }
+    setBackground(backgroundSettings.name, backgroundSettings.url);
+}
 
 /**
  * Sets the background for the current chat and adds it to the list of custom backgrounds.
@@ -66,7 +79,7 @@ function highlightLockedBackground() {
         return;
     }
 
-    $(`.bg_example`).each(function () {
+    $('.bg_example').each(function () {
         const url = $(this).data('url');
         if (url === lockedBackground) {
             $(this).addClass('locked');
@@ -116,15 +129,15 @@ function setCustomBackground() {
     const file = chat_metadata[BG_METADATA_KEY];
 
     // bg already set
-    if (document.getElementById("bg_custom").style.backgroundImage == file) {
+    if (document.getElementById('bg_custom').style.backgroundImage == file) {
         return;
     }
 
-    $("#bg_custom").css("background-image", file);
+    $('#bg_custom').css('background-image', file);
 }
 
 function unsetCustomBackground() {
-    $("#bg_custom").css("background-image", 'none');
+    $('#bg_custom').css('background-image', 'none');
 }
 
 function onSelectBackgroundClick() {
@@ -141,9 +154,8 @@ function onSelectBackgroundClick() {
         saveBackgroundMetadata(relativeBgImage);
         setCustomBackground();
         highlightLockedBackground();
-    } else {
-        highlightLockedBackground();
     }
+    highlightLockedBackground();
 
     const customBg = window.getComputedStyle(document.getElementById('bg_custom')).backgroundImage;
 
@@ -152,13 +164,12 @@ function onSelectBackgroundClick() {
         return;
     }
 
-    const bgFile = $(this).attr("bgfile");
+    const bgFile = $(this).attr('bgfile');
     const backgroundUrl = getBackgroundPath(bgFile);
 
     // Fetching to browser memory to reduce flicker
     fetch(backgroundUrl).then(() => {
-        $("#bg1").css("background-image", relativeBgImage);
-        setBackground(bgFile);
+        setBackground(bgFile, relativeBgImage);
     }).catch(() => {
         console.log('Background could not be set: ' + backgroundUrl);
     });
@@ -238,7 +249,7 @@ async function onRenameBackgroundClick(e) {
     }
 
     const data = { old_bg: bgNames.oldBg, new_bg: bgNames.newBg };
-    const response = await fetch('/renamebackground', {
+    const response = await fetch('/api/backgrounds/rename', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(data),
@@ -258,7 +269,7 @@ async function onDeleteBackgroundClick(e) {
     const bgToDelete = $(this).closest('.bg_example');
     const url = bgToDelete.data('url');
     const isCustom = bgToDelete.attr('custom') === 'true';
-    const confirm = await callPopup("<h3>Delete the background?</h3>", 'confirm');
+    const confirm = await callPopup('<h3>Delete the background?</h3>', 'confirm');
     const bg = bgToDelete.attr('bgfile');
 
     if (confirm) {
@@ -299,7 +310,7 @@ async function onDeleteBackgroundClick(e) {
     }
 }
 
-const autoBgPrompt = `Pause your roleplay and choose a location ONLY from the provided list that is the most suitable for the current scene. Do not output any other text:\n{0}`;
+const autoBgPrompt = 'Pause your roleplay and choose a location ONLY from the provided list that is the most suitable for the current scene. Do not output any other text:\n{0}';
 
 async function autoBackgroundCommand() {
     /** @type {HTMLElement[]} */
@@ -326,32 +337,36 @@ async function autoBackgroundCommand() {
 }
 
 export async function getBackgrounds() {
-    const response = await fetch("/getbackgrounds", {
-        method: "POST",
+    const response = await fetch('/api/backgrounds/all', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
-            "": "",
+            '': '',
         }),
     });
-    if (response.ok === true) {
+    if (response.ok) {
         const getData = await response.json();
         //background = getData;
         //console.log(getData.length);
-        $("#bg_menu_content").children('div').remove();
+        $('#bg_menu_content').children('div').remove();
         for (const bg of getData) {
             const template = getBackgroundFromTemplate(bg, false);
-            $("#bg_menu_content").append(template);
+            $('#bg_menu_content').append(template);
         }
     }
 }
 
 /**
- * Gets the URL of the background
+ * Gets the CSS URL of the background
  * @param {Element} block
  * @returns {string} URL of the background
  */
 function getUrlParameter(block) {
-    return $(block).closest(".bg_example").data("url");
+    return $(block).closest('.bg_example').data('url');
+}
+
+function generateUrlParameter(bg, isCustom) {
+    return isCustom ? `url("${encodeURI(bg)}")` : `url("${getBackgroundPath(bg)}")`;
 }
 
 /**
@@ -363,7 +378,7 @@ function getUrlParameter(block) {
 function getBackgroundFromTemplate(bg, isCustom) {
     const template = $('#background_template .bg_example').clone();
     const thumbPath = isCustom ? bg : getThumbnailUrl('bg', bg);
-    const url = isCustom ? `url("${encodeURI(bg)}")` : `url("${getBackgroundPath(bg)}")`;
+    const url = generateUrlParameter(bg, isCustom);
     const title = isCustom ? bg.split('/').pop() : bg;
     const friendlyTitle = title.slice(0, title.lastIndexOf('.'));
     template.attr('title', title);
@@ -375,31 +390,16 @@ function getBackgroundFromTemplate(bg, isCustom) {
     return template;
 }
 
-async function setBackground(bg) {
-    jQuery.ajax({
-        type: "POST", //
-        url: "/setbackground", //
-        data: JSON.stringify({
-            bg: bg,
-        }),
-        beforeSend: function () {
-
-        },
-        cache: false,
-        dataType: "json",
-        contentType: "application/json",
-        //processData: false,
-        success: function (html) { },
-        error: function (jqXHR, exception) {
-            console.log(exception);
-            console.log(jqXHR);
-        },
-    });
+async function setBackground(bg, url) {
+    $('#bg1').css('background-image', url);
+    background_settings.name = bg;
+    background_settings.url = url;
+    saveSettingsDebounced();
 }
 
 async function delBackground(bg) {
-    const response = await fetch("/delbackground", {
-        method: "POST",
+    await fetch('/api/backgrounds/delete', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
             bg: bg,
@@ -408,7 +408,7 @@ async function delBackground(bg) {
 }
 
 function onBackgroundUploadSelected() {
-    const form = $("#form_bg_download").get(0);
+    const form = $('#form_bg_download').get(0);
 
     if (!(form instanceof HTMLFormElement)) {
         console.error('form_bg_download is not a form');
@@ -426,8 +426,8 @@ function onBackgroundUploadSelected() {
  */
 function uploadBackground(formData) {
     jQuery.ajax({
-        type: "POST",
-        url: "/downloadbackground",
+        type: 'POST',
+        url: '/api/backgrounds/upload',
         data: formData,
         beforeSend: function () {
         },
@@ -435,8 +435,7 @@ function uploadBackground(formData) {
         contentType: false,
         processData: false,
         success: async function (bg) {
-            setBackground(bg);
-            $("#bg1").css("background-image", `url("${getBackgroundPath(bg)}"`);
+            setBackground(bg, generateUrlParameter(bg, false));
             await getBackgrounds();
             highlightNewBackground(bg);
         },
@@ -460,9 +459,9 @@ function highlightNewBackground(bg) {
 
 function onBackgroundFilterInput() {
     const filterValue = String($(this).val()).toLowerCase();
-    $("#bg_menu_content > div").each(function () {
+    $('#bg_menu_content > div').each(function () {
         const $bgContent = $(this);
-        if ($bgContent.attr("title").toLowerCase().includes(filterValue)) {
+        if ($bgContent.attr('title').toLowerCase().includes(filterValue)) {
             $bgContent.show();
         } else {
             $bgContent.hide();
@@ -473,16 +472,16 @@ function onBackgroundFilterInput() {
 export function initBackgrounds() {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.on(event_types.FORCE_SET_BACKGROUND, forceSetBackground);
-    $(document).on("click", '.bg_example', onSelectBackgroundClick);
+    $(document).on('click', '.bg_example', onSelectBackgroundClick);
     $(document).on('click', '.bg_example_lock', onLockBackgroundClick);
     $(document).on('click', '.bg_example_unlock', onUnlockBackgroundClick);
     $(document).on('click', '.bg_example_edit', onRenameBackgroundClick);
-    $(document).on("click", '.bg_example_cross', onDeleteBackgroundClick);
-    $(document).on("click", '.bg_example_copy', onCopyToSystemBackgroundClick);
-    $('#auto_background').on("click", autoBackgroundCommand);
-    $("#add_bg_button").on('change', onBackgroundUploadSelected);
-    $("#bg-filter").on("input", onBackgroundFilterInput);
-    registerSlashCommand('lockbg', onLockBackgroundClick, ['bglock'], "– locks a background for the currently selected chat", true, true);
+    $(document).on('click', '.bg_example_cross', onDeleteBackgroundClick);
+    $(document).on('click', '.bg_example_copy', onCopyToSystemBackgroundClick);
+    $('#auto_background').on('click', autoBackgroundCommand);
+    $('#add_bg_button').on('change', onBackgroundUploadSelected);
+    $('#bg-filter').on('input', onBackgroundFilterInput);
+    registerSlashCommand('lockbg', onLockBackgroundClick, ['bglock'], '– locks a background for the currently selected chat', true, true);
     registerSlashCommand('unlockbg', onUnlockBackgroundClick, ['bgunlock'], '– unlocks a background for the currently selected chat', true, true);
     registerSlashCommand('autobg', autoBackgroundCommand, ['bgauto'], '– automatically changes the background based on the chat context using the AI request prompt', true, true);
 }

@@ -1,5 +1,5 @@
-import { characters, getCharacters, handleDeleteCharacter, callPopup } from "../script.js";
-import {BulkEditOverlay, BulkEditOverlayState} from "./BulkEditOverlay.js";
+import { characters, getCharacters, handleDeleteCharacter, callPopup } from '../script.js';
+import { BulkEditOverlay, BulkEditOverlayState } from './BulkEditOverlay.js';
 
 
 let is_bulk_edit = false;
@@ -8,17 +8,17 @@ const enableBulkEdit = () => {
     enableBulkSelect();
     (new BulkEditOverlay()).selectState();
     // show the delete button
-    $("#bulkDeleteButton").show();
+    $('#bulkDeleteButton').show();
     is_bulk_edit = true;
-}
+};
 
 const disableBulkEdit = () => {
     disableBulkSelect();
     (new BulkEditOverlay()).browseState();
     // hide the delete button
-    $("#bulkDeleteButton").hide();
+    $('#bulkDeleteButton').hide();
     is_bulk_edit = false;
-}
+};
 
 const toggleBulkEditMode = (isBulkEdit) => {
     if (isBulkEdit) {
@@ -26,7 +26,7 @@ const toggleBulkEditMode = (isBulkEdit) => {
     } else {
         enableBulkEdit();
     }
-}
+};
 
 (new BulkEditOverlay()).addStateChangeCallback((state) => {
     if (state === BulkEditOverlayState.select) enableBulkEdit();
@@ -37,7 +37,7 @@ const toggleBulkEditMode = (isBulkEdit) => {
  * Toggles bulk edit mode on/off when the edit button is clicked.
  */
 function onEditButtonClick() {
-    console.log("Edit button clicked");
+    console.log('Edit button clicked');
     toggleBulkEditMode(is_bulk_edit);
 }
 
@@ -47,19 +47,19 @@ function onEditButtonClick() {
  * @param {string} this_chid - The chid of the character to delete.
  */
 async function deleteCharacter(this_chid) {
-    await handleDeleteCharacter("del_ch", this_chid, false);
+    await handleDeleteCharacter('del_ch', this_chid, false);
 }
 
 /**
  * Deletes all characters that have been selected via the bulk checkboxes.
  */
 async function onDeleteButtonClick() {
-    console.log("Delete button clicked");
+    console.log('Delete button clicked');
 
     // Create a mapping of chid to avatar
     let toDelete = [];
-    $(".bulk_select_checkbox:checked").each((i, el) => {
-        const chid = $(el).parent().attr("chid");
+    $('.bulk_select_checkbox:checked').each((i, el) => {
+        const chid = $(el).parent().attr('chid');
         const avatar = characters[chid].avatar;
         // Add the avatar to the list of avatars to delete
         toDelete.push(avatar);
@@ -88,17 +88,16 @@ async function onDeleteButtonClick() {
  * Enables bulk selection by adding a checkbox next to each character.
  */
 function enableBulkSelect() {
-    $("#rm_print_characters_block .character_select").each((i, el) => {
-        const character = $(el).text();
-        const checkbox = $("<input type='checkbox' class='bulk_select_checkbox'>");
-        checkbox.on("change", () => {
+    $('#rm_print_characters_block .character_select').each((i, el) => {
+        const checkbox = $('<input type=\'checkbox\' class=\'bulk_select_checkbox\'>');
+        checkbox.on('change', () => {
             // Do something when the checkbox is changed
         });
         $(el).prepend(checkbox);
     });
-    $("#rm_print_characters_block").addClass("bulk_select");
+    $('#rm_print_characters_block').addClass('bulk_select');
     // We also need to disable the default click event for the character_select divs
-    $(document).on("click", ".bulk_select_checkbox", function (event) {
+    $(document).on('click', '.bulk_select_checkbox', function (event) {
         event.stopImmediatePropagation();
     });
 }
@@ -107,14 +106,14 @@ function enableBulkSelect() {
  * Disables bulk selection by removing the checkboxes.
  */
 function disableBulkSelect() {
-    $(".bulk_select_checkbox").remove();
-    $("#rm_print_characters_block").removeClass("bulk_select");
+    $('.bulk_select_checkbox').remove();
+    $('#rm_print_characters_block').removeClass('bulk_select');
 }
 
 /**
  * Entry point that runs on page load.
  */
 jQuery(() => {
-    $("#bulkEditButton").on("click", onEditButtonClick);
-    $("#bulkDeleteButton").on("click", onDeleteButtonClick);
+    $('#bulkEditButton').on('click', onEditButtonClick);
+    $('#bulkDeleteButton').on('click', onDeleteButtonClick);
 });

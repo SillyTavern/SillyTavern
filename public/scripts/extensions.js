@@ -1,6 +1,6 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate, animation_duration } from "../script.js";
-import { hideLoader, showLoader } from "./loader.js";
-import { isSubsetOf } from "./utils.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate, animation_duration } from '../script.js';
+import { hideLoader, showLoader } from './loader.js';
+import { isSubsetOf } from './utils.js';
 export {
     getContext,
     getApiUrl,
@@ -14,9 +14,11 @@ export {
 
 export let extensionNames = [];
 let manifests = {};
-const defaultUrl = "http://localhost:5100";
+const defaultUrl = 'http://localhost:5100';
 
 let saveMetadataTimeout = null;
+
+let requiresReload = false;
 
 export function saveMetadataDebounced() {
     const context = getContext();
@@ -47,8 +49,6 @@ export function saveMetadataDebounced() {
     }, 1000);
 }
 
-export const extensionsHandlebars = Handlebars.create();
-
 /**
  * Provides an ability for extensions to render HTML templates.
  * Templates sanitation and localization is forced.
@@ -59,40 +59,6 @@ export const extensionsHandlebars = Handlebars.create();
  */
 export function renderExtensionTemplate(extensionName, templateId, templateData = {}, sanitize = true, localize = true) {
     return renderTemplate(`scripts/extensions/${extensionName}/${templateId}.html`, templateData, sanitize, localize, true);
-}
-
-/**
- * Registers a Handlebars helper for use in extensions.
- * @param {string} name Handlebars helper name
- * @param {function} helper Handlebars helper function
- */
-export function registerExtensionHelper(name, helper) {
-    extensionsHandlebars.registerHelper(name, helper);
-}
-
-/**
- * Applies handlebars extension helpers to a message.
- * @param {number} messageId Message index in the chat.
- */
-export function processExtensionHelpers(messageId) {
-    const context = getContext();
-    const message = context.chat[messageId];
-
-    if (!message?.mes || typeof message.mes !== 'string') {
-        return;
-    }
-
-    // Don't waste time if there are no mustaches
-    if (!substituteParams(message.mes).includes('{{')) {
-        return;
-    }
-
-    try {
-        const template = extensionsHandlebars.compile(substituteParams(message.mes), { noEscape: true });
-        message.mes = template({});
-    } catch {
-        // Ignore
-    }
 }
 
 // Disables parallel updates
@@ -146,6 +112,7 @@ const extension_settings = {
     sd: {
         prompts: {},
         character_prompts: {},
+        character_negative_prompts: {},
     },
     chromadb: {},
     translate: {},
@@ -190,7 +157,7 @@ const menuInterval = setInterval(showHideExtensionsMenu, 1000);
 
 async function doExtrasFetch(endpoint, args) {
     if (!args) {
-        args = {}
+        args = {};
     }
 
     if (!args.method) {
@@ -198,7 +165,7 @@ async function doExtrasFetch(endpoint, args) {
     }
 
     if (!args.headers) {
-        args.headers = {}
+        args.headers = {};
     }
     Object.assign(args.headers, {
         'Authorization': `Bearer ${extension_settings.apiKey}`,
@@ -228,24 +195,32 @@ async function discoverExtensions() {
 
 function onDisableExtensionClick() {
     const name = $(this).data('name');
-    disableExtension(name);
+    disableExtension(name, false);
 }
 
 function onEnableExtensionClick() {
     const name = $(this).data('name');
-    enableExtension(name);
+    enableExtension(name, false);
 }
 
-async function enableExtension(name) {
+async function enableExtension(name, reload = true) {
     extension_settings.disabledExtensions = extension_settings.disabledExtensions.filter(x => x !== name);
     await saveSettings();
-    location.reload();
+    if (reload) {
+        location.reload();
+    } else {
+        requiresReload = true;
+    }
 }
 
-async function disableExtension(name) {
+async function disableExtension(name, reload = true) {
     extension_settings.disabledExtensions.push(name);
     await saveSettings();
-    location.reload();
+    if (reload) {
+        location.reload();
+    } else {
+        requiresReload = true;
+    }
 }
 
 async function getManifests(names) {
@@ -321,9 +296,9 @@ async function activateExtensions() {
 }
 
 async function connectClickHandler() {
-    const baseUrl = $("#extensions_url").val();
+    const baseUrl = $('#extensions_url').val();
     extension_settings.apiUrl = String(baseUrl);
-    const testApiKey = $("#extensions_api_key").val();
+    const testApiKey = $('#extensions_api_key').val();
     extension_settings.apiKey = String(testApiKey);
     saveSettingsDebounced();
     await connectToApi(baseUrl);
@@ -334,7 +309,7 @@ function autoConnectInputHandler() {
     extension_settings.autoConnect = !!value;
 
     if (value && !connectedToApi) {
-        $("#extensions_connect").trigger('click');
+        $('#extensions_connect').trigger('click');
     }
 
     saveSettingsDebounced();
@@ -342,8 +317,8 @@ function autoConnectInputHandler() {
 
 function addExtensionsButtonAndMenu() {
     const buttonHTML =
-        `<div id="extensionsMenuButton" style="display: none;" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>`;
-    const extensionsMenuHTML = `<div id="extensionsMenu" class="options-content" style="display: none;"></div>`;
+        '<div id="extensionsMenuButton" style="display: none;" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>';
+    const extensionsMenuHTML = '<div id="extensionsMenu" class="options-content" style="display: none;"></div>';
 
     $(document.body).append(extensionsMenuHTML);
 
@@ -358,15 +333,17 @@ function addExtensionsButtonAndMenu() {
     });
 
     $(button).on('click', function () {
-        popper.update()
-        if (!dropdown.is(':visible')) {
+        if (dropdown.is(':visible')) {
+            dropdown.fadeOut(animation_duration);
+        } else {
             dropdown.fadeIn(animation_duration);
         }
+        popper.update();
     });
 
-    $("html").on('touchstart mousedown', function (e) {
+    $('html').on('click', function (e) {
         const clickTarget = $(e.target);
-        const noCloseTargets = ['#sd_gen'];
+        const noCloseTargets = ['#sd_gen', '#extensionsMenuButton'];
         if (dropdown.is(':visible') && !noCloseTargets.some(id => clickTarget.closest(id).length > 0)) {
             $(dropdown).fadeOut(animation_duration);
         }
@@ -438,15 +415,15 @@ function addExtensionStyle(name, manifest) {
             if ($(`link[id="${name}"]`).length === 0) {
                 const link = document.createElement('link');
                 link.id = name;
-                link.rel = "stylesheet";
-                link.type = "text/css";
+                link.rel = 'stylesheet';
+                link.type = 'text/css';
                 link.href = url;
                 link.onload = function () {
                     resolve();
-                }
+                };
                 link.onerror = function (e) {
                     reject(e);
-                }
+                };
                 document.head.appendChild(link);
             }
         });
@@ -500,7 +477,7 @@ function addExtensionScript(name, manifest) {
  */
 async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass) {
     const displayName = manifest.display_name;
-    let displayVersion = manifest.version ? ` v${manifest.version}` : "";
+    let displayVersion = manifest.version ? ` v${manifest.version}` : '';
     let isUpToDate = true;
     let updateButton = '';
     let originHtml = '';
@@ -508,7 +485,7 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
         let data = await getExtensionVersion(name.replace('third-party', ''));
         let branch = data.currentBranchName;
         let commitHash = data.currentCommitHash;
-        let origin = data.remoteUrl
+        let origin = data.remoteUrl;
         isUpToDate = data.isUpToDate;
         displayVersion = ` (${branch}-${commitHash.substring(0, 7)})`;
         updateButton = isUpToDate ?
@@ -530,7 +507,7 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
             ${updateButton}
             ${deleteButton}
             ${originHtml}
-            <span class="${isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing"}">
+            <span class="${isActive ? 'extension_enabled' : isDisabled ? 'extension_disabled' : 'extension_missing'}">
                 ${DOMPurify.sanitize(displayName)}${displayVersion}
             </span>
             ${isExternal ? '</a>' : ''}
@@ -568,7 +545,7 @@ async function getExtensionData(extension) {
     const isDisabled = extension_settings.disabledExtensions.includes(name);
     const isExternal = name.startsWith('third-party');
 
-    const checkboxClass = isDisabled ? "checkbox_disabled" : "";
+    const checkboxClass = isDisabled ? 'checkbox_disabled' : '';
 
     const extensionHtml = await generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass);
 
@@ -593,6 +570,7 @@ function getModuleInformation() {
  * Generates the HTML strings for all extensions and displays them in a popup.
  */
 async function showExtensionsDetails() {
+    let popupPromise;
     try {
         showLoader();
         let htmlDefault = '<h3>Built-in Extensions:</h3>';
@@ -623,12 +601,19 @@ async function showExtensionsDetails() {
             ${htmlDefault}
             ${htmlExternal}
         `;
-        callPopup(`<div class="extensions_info">${html}</div>`, 'text');
+        popupPromise = callPopup(`<div class="extensions_info">${html}</div>`, 'text');
     } catch (error) {
         toastr.error('Error loading extensions. See browser console for details.');
         console.error(error);
     } finally {
         hideLoader();
+    }
+    if (popupPromise) {
+        await popupPromise;
+    }
+    if (requiresReload) {
+        showLoader();
+        location.reload();
     }
 }
 
@@ -655,7 +640,7 @@ async function updateExtension(extensionName, quiet) {
         const response = await fetch('/api/extensions/update', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ extensionName })
+            body: JSON.stringify({ extensionName }),
         });
 
         const data = await response.json();
@@ -689,14 +674,14 @@ async function onDeleteClick() {
     if (confirmation) {
         await deleteExtension(extensionName);
     }
-};
+}
 
 export async function deleteExtension(extensionName) {
     try {
-        const response = await fetch('/api/extensions/delete', {
+        await fetch('/api/extensions/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ extensionName })
+            body: JSON.stringify({ extensionName }),
         });
     } catch (error) {
         console.error('Error:', error);
@@ -721,7 +706,7 @@ async function getExtensionVersion(extensionName) {
         const response = await fetch('/api/extensions/version', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ extensionName })
+            body: JSON.stringify({ extensionName }),
         });
 
         const data = await response.json();
@@ -771,15 +756,15 @@ async function loadExtensionSettings(settings, versionChanged) {
         Object.assign(extension_settings, settings.extension_settings);
     }
 
-    $("#extensions_url").val(extension_settings.apiUrl);
-    $("#extensions_api_key").val(extension_settings.apiKey);
-    $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect);
-    $("#extensions_notify_updates").prop('checked', extension_settings.notifyUpdates);
+    $('#extensions_url').val(extension_settings.apiUrl);
+    $('#extensions_api_key').val(extension_settings.apiKey);
+    $('#extensions_autoconnect').prop('checked', extension_settings.autoConnect);
+    $('#extensions_notify_updates').prop('checked', extension_settings.notifyUpdates);
 
     // Activate offline extensions
     eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
     extensionNames = await discoverExtensions();
-    manifests = await getManifests(extensionNames)
+    manifests = await getManifests(extensionNames);
 
     if (versionChanged) {
         await autoUpdateExtensions();
@@ -846,7 +831,11 @@ async function checkForExtensionUpdates(force) {
 }
 
 async function autoUpdateExtensions() {
-    toastr.info('Auto-updating extensions. This may take several minutes.', 'Please wait...', { timeOut: 10000, extendedTimeOut: 20000 });
+    if (!Object.values(manifests).some(x => x.auto_update)) {
+        return;
+    }
+
+    const banner = toastr.info('Auto-updating extensions. This may take several minutes.', 'Please wait...', { timeOut: 10000, extendedTimeOut: 10000 });
     const promises = [];
     for (const [id, manifest] of Object.entries(manifests)) {
         if (manifest.auto_update && id.startsWith('third-party')) {
@@ -855,6 +844,7 @@ async function autoUpdateExtensions() {
         }
     }
     await Promise.allSettled(promises);
+    toastr.clear(banner);
 }
 
 /**
@@ -872,7 +862,7 @@ async function runGenerationInterceptors(chat, contextSize) {
         exitImmediately = immediately;
     };
 
-    for (const manifest of Object.values(manifests)) {
+    for (const manifest of Object.values(manifests).sort((a, b) => a.loading_order - b.loading_order)) {
         const interceptorKey = manifest.generate_interceptor;
         if (typeof window[interceptorKey] === 'function') {
             try {
@@ -892,12 +882,12 @@ async function runGenerationInterceptors(chat, contextSize) {
 
 jQuery(function () {
     addExtensionsButtonAndMenu();
-    $("#extensionsMenuButton").css("display", "flex");
+    $('#extensionsMenuButton').css('display', 'flex');
 
-    $("#extensions_connect").on('click', connectClickHandler);
-    $("#extensions_autoconnect").on('input', autoConnectInputHandler);
-    $("#extensions_details").on('click', showExtensionsDetails);
-    $("#extensions_notify_updates").on('input', notifyUpdatesInputHandler);
+    $('#extensions_connect').on('click', connectClickHandler);
+    $('#extensions_autoconnect').on('input', autoConnectInputHandler);
+    $('#extensions_details').on('click', showExtensionsDetails);
+    $('#extensions_notify_updates').on('input', notifyUpdatesInputHandler);
     $(document).on('click', '.toggle_disable', onDisableExtensionClick);
     $(document).on('click', '.toggle_enable', onEnableExtensionClick);
     $(document).on('click', '.btn_update', onUpdateClick);
@@ -918,7 +908,7 @@ jQuery(function () {
     <br>
     <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
     <br>
-    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
+    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`;
         const input = await callPopup(html, 'input');
 
         if (!input) {

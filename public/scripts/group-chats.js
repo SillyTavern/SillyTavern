@@ -8,10 +8,9 @@ import {
     extractAllWords,
     saveBase64AsFile,
     PAGINATION_TEMPLATE,
-    waitUntilCondition,
     getBase64Async,
 } from './utils.js';
-import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from "./RossAscends-mods.js";
+import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { loadMovingUIState, sortEntitiesList } from './power-user.js';
 
 import {
@@ -46,7 +45,6 @@ import {
     updateChatMetadata,
     isStreamingEnabled,
     getThumbnailUrl,
-    streamingProcessor,
     getRequestHeaders,
     setMenuType,
     menu_type,
@@ -69,8 +67,9 @@ import {
     baseChatReplace,
     depth_prompt_depth_default,
     loadItemizedPrompts,
-} from "../script.js";
-import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
+    animation_duration,
+} from '../script.js';
+import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 
 export {
@@ -89,7 +88,7 @@ export {
     resetSelectedGroup,
     select_group_chats,
     getGroupChatNames,
-}
+};
 
 let is_group_generating = false; // Group generation flag
 let is_group_automode_enabled = false;
@@ -109,15 +108,23 @@ export const group_activation_strategy = {
 export const group_generation_mode = {
     SWAP: 0,
     APPEND: 1,
-}
+};
+
+const DEFAULT_AUTO_MODE_DELAY = 5;
 
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, 100));
-const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
+let autoModeWorker = null;
 const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), 500);
 
+function setAutoModeWorker() {
+    clearInterval(autoModeWorker);
+    const autoModeDelay = groups.find(x => x.id === selected_group)?.auto_mode_delay ?? DEFAULT_AUTO_MODE_DELAY;
+    autoModeWorker = setInterval(groupChatAutoModeWorker, autoModeDelay * 1000);
+}
+
 async function _save(group, reload = true) {
-    await fetch("/editgroup", {
-        method: "POST",
+    await fetch('/api/groups/edit', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(group),
     });
@@ -152,8 +159,8 @@ async function regenerateGroup() {
 }
 
 async function loadGroupChat(chatId) {
-    const response = await fetch("/getgroupchat", {
-        method: "POST",
+    const response = await fetch('/api/chats/group/get', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: chatId }),
     });
@@ -376,17 +383,17 @@ function getFirstCharacterMessage(character) {
     }
 
     const mes = {};
-    mes["is_user"] = false;
-    mes["is_system"] = false;
-    mes["name"] = character.name;
-    mes["send_date"] = getMessageTimeStamp();
-    mes["original_avatar"] = character.avatar;
-    mes["extra"] = { "gen_id": Date.now() * Math.random() * 1000000 };
-    mes["mes"] = messageText
+    mes['is_user'] = false;
+    mes['is_system'] = false;
+    mes['name'] = character.name;
+    mes['send_date'] = getMessageTimeStamp();
+    mes['original_avatar'] = character.avatar;
+    mes['extra'] = { 'gen_id': Date.now() * Math.random() * 1000000 };
+    mes['mes'] = messageText
         ? substituteParams(messageText.trim(), name1, character.name)
         : default_ch_mes;
-    mes["force_avatar"] =
-        character.avatar != "none"
+    mes['force_avatar'] =
+        character.avatar != 'none'
             ? getThumbnailUrl('avatar', character.avatar)
             : default_avatar;
     return mes;
@@ -401,8 +408,8 @@ async function saveGroupChat(groupId, shouldSaveGroup) {
     const group = groups.find(x => x.id == groupId);
     const chat_id = group.chat_id;
     group['date_last_chat'] = Date.now();
-    const response = await fetch("/savegroupchat", {
-        method: "POST",
+    const response = await fetch('/api/chats/group/save', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: chat_id, chat: [...chat] }),
     });
@@ -427,7 +434,7 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
             // Replace group member avatar id and save the changes
             group.members[memberIndex] = newAvatar;
             await editGroup(group.id, true, false);
-            console.log(`Renamed character ${newName} in group: ${group.name}`)
+            console.log(`Renamed character ${newName} in group: ${group.name}`);
 
             // Load all chats from this group
             for (const chatId of group.chats) {
@@ -455,8 +462,8 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                     }
 
                     if (hadChanges) {
-                        const saveChatResponse = await fetch("/savegroupchat", {
-                            method: "POST",
+                        const saveChatResponse = await fetch('/api/chats/group/save', {
+                            method: 'POST',
                             headers: getRequestHeaders(),
                             body: JSON.stringify({ id: chatId, chat: [...messages] }),
                         });
@@ -476,9 +483,9 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
 }
 
 async function getGroups() {
-    const response = await fetch("/getgroups", {
-        method: "POST",
-        headers: getRequestHeaders()
+    const response = await fetch('/api/groups/all', {
+        method: 'POST',
+        headers: getRequestHeaders(),
     });
 
     if (response.ok) {
@@ -499,7 +506,7 @@ async function getGroups() {
                 group.members = group.members
                     .map(x => characters.find(y => y.name == x)?.avatar)
                     .filter(x => x)
-                    .filter(onlyUnique)
+                    .filter(onlyUnique);
             }
             if (group.past_metadata == undefined) {
                 group.past_metadata = {};
@@ -515,13 +522,13 @@ async function getGroups() {
 }
 
 export function getGroupBlock(group) {
-    const template = $("#group_list_template .group_select").clone();
-    template.data("id", group.id);
-    template.attr("grid", group.id);
-    template.find(".ch_name").text(group.name);
-    template.find('.group_fav_icon').css("display", 'none');
+    const template = $('#group_list_template .group_select').clone();
+    template.data('id', group.id);
+    template.attr('grid', group.id);
+    template.find('.ch_name').text(group.name);
+    template.find('.group_fav_icon').css('display', 'none');
     template.addClass(group.fav ? 'is_fav' : '');
-    template.find(".ch_fav").val(group.fav);
+    template.find('.ch_fav').val(group.fav);
 
     // Display inline tags
     const tags = getTagsList(group.id);
@@ -530,18 +537,18 @@ export function getGroupBlock(group) {
 
     const avatar = getGroupAvatar(group);
     if (avatar) {
-        $(template).find(".avatar").replaceWith(avatar);
+        $(template).find('.avatar').replaceWith(avatar);
     }
 
     return template;
 }
 
 function updateGroupAvatar(group) {
-    $("#group_avatar_preview").empty().append(getGroupAvatar(group));
+    $('#group_avatar_preview').empty().append(getGroupAvatar(group));
 
-    $(".group_select").each(function () {
-        if ($(this).data("id") == group.id) {
-            $(this).find(".avatar").replaceWith(getGroupAvatar(group));
+    $('.group_select').each(function () {
+        if ($(this).data('id') == group.id) {
+            $(this).find('.avatar').replaceWith(getGroupAvatar(group));
         }
     });
 }
@@ -552,7 +559,7 @@ function isValidImageUrl(url) {
     if (Object.keys(url).length === 0) {
         return false;
     }
-    return isDataURL(url) || (url && url.startsWith("user"));
+    return isDataURL(url) || (url && url.startsWith('user'));
 }
 
 function getGroupAvatar(group) {
@@ -568,7 +575,7 @@ function getGroupAvatar(group) {
     if (group && Array.isArray(group.members) && group.members.length) {
         for (const member of group.members) {
             const charIndex = characters.findIndex(x => x.avatar === member);
-            if (charIndex !== -1 && characters[charIndex].avatar !== "none") {
+            if (charIndex !== -1 && characters[charIndex].avatar !== 'none') {
                 const avatar = getThumbnailUrl('avatar', characters[charIndex].avatar);
                 memberAvatars.push(avatar);
             }
@@ -584,15 +591,15 @@ function getGroupAvatar(group) {
         const groupAvatar = $(`#group_avatars_template .collage_${avatarCount}`).clone();
 
         for (let i = 0; i < avatarCount; i++) {
-            groupAvatar.find(`.img_${i + 1}`).attr("src", memberAvatars[i]);
+            groupAvatar.find(`.img_${i + 1}`).attr('src', memberAvatars[i]);
         }
 
         return groupAvatar;
     }
 
     // default avatar
-    const groupAvatar = $("#group_avatars_template .collage_1").clone();
-    groupAvatar.find(".img_1").attr("src", group.avatar_url || system_avatar);
+    const groupAvatar = $('#group_avatars_template .collage_1').clone();
+    groupAvatar.find('.img_1').attr('src', group.avatar_url || system_avatar);
     return groupAvatar;
 }
 
@@ -611,89 +618,65 @@ function getGroupChatNames(groupId) {
 }
 
 async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
-    if (online_status === "no_connection") {
+    function throwIfAborted() {
+        if (params.signal instanceof AbortSignal && params.signal.aborted) {
+            throw new Error('AbortSignal was fired. Group generation stopped');
+        }
+    }
+
+    if (online_status === 'no_connection') {
         is_group_generating = false;
         setSendButtonState(false);
-        return;
+        return Promise.resolve();
     }
 
     if (is_group_generating) {
-        return false;
+        return Promise.resolve();
     }
 
     // Auto-navigate back to group menu
-    if (menu_type !== "group_edit") {
+    if (menu_type !== 'group_edit') {
         select_group_chats(selected_group);
         await delay(1);
     }
 
     const group = groups.find((x) => x.id === selected_group);
-    let typingIndicator = $("#chat .typing_indicator");
+    let typingIndicator = $('#chat .typing_indicator');
+    let textResult = '';
 
     if (!group || !Array.isArray(group.members) || !group.members.length) {
         sendSystemMessage(system_message_types.EMPTY, '', { isSmallSys: true });
-        return;
+        return Promise.resolve();
     }
 
     try {
+        throwIfAborted();
         hideSwipeButtons();
         is_group_generating = true;
         setCharacterName('');
         setCharacterId(undefined);
-        const userInput = String($("#send_textarea").val());
+        const userInput = String($('#send_textarea').val());
 
         if (typingIndicator.length === 0 && !isStreamingEnabled()) {
             typingIndicator = $(
-                "#typing_indicator_template .typing_indicator"
+                '#typing_indicator_template .typing_indicator',
             ).clone();
             typingIndicator.hide();
-            $("#chat").append(typingIndicator);
+            $('#chat').append(typingIndicator);
         }
 
         // id of this specific batch for regeneration purposes
         group_generation_id = Date.now();
         const lastMessage = chat[chat.length - 1];
-        let messagesBefore = chat.length;
-        let lastMessageText = lastMessage?.mes || '';
-        let activationText = "";
+        let activationText = '';
         let isUserInput = false;
-        let isGenerationDone = false;
-        let isGenerationAborted = false;
 
         if (userInput?.length && !by_auto_mode) {
             isUserInput = true;
             activationText = userInput;
-            messagesBefore++;
         } else {
             if (lastMessage && !lastMessage.is_system) {
                 activationText = lastMessage.mes;
-            }
-        }
-
-        const resolveOriginal = params.resolve;
-        const rejectOriginal = params.reject;
-
-        if (params.signal instanceof AbortSignal) {
-            if (params.signal.aborted) {
-                throw new Error('Already aborted signal passed. Group generation stopped');
-            }
-
-            params.signal.onabort = () => {
-                isGenerationAborted = true;
-            };
-        }
-
-        if (typeof params.resolve === 'function') {
-            params.resolve = function () {
-                isGenerationDone = true;
-                resolveOriginal.apply(this, arguments);
-            };
-        }
-
-        if (typeof params.reject === 'function') {
-            params.reject = function () {
-                isGenerationDone = true;
-                rejectOriginal.apply(this, arguments);
             }
         }
 
@@ -703,14 +686,14 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
         if (params && typeof params.force_chid == 'number') {
             activatedMembers = [params.force_chid];
-        } else if (type === "quiet") {
+        } else if (type === 'quiet') {
             activatedMembers = activateSwipe(group.members);
 
             if (activatedMembers.length === 0) {
                 activatedMembers = activateListOrder(group.members.slice(0, 1));
             }
         }
-        else if (type === "swipe" || type === 'continue') {
+        else if (type === 'swipe' || type === 'continue') {
             activatedMembers = activateSwipe(group.members);
 
             if (activatedMembers.length === 0) {
@@ -718,8 +701,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 throw new Error('Deleted group member swiped');
             }
         }
-        else if (type === "impersonate") {
-            $("#send_textarea").attr("disabled", true);
+        else if (type === 'impersonate') {
+            $('#send_textarea').attr('disabled', true);
             activatedMembers = activateImpersonate(group.members);
         }
         else if (activationStrategy === group_activation_strategy.NATURAL) {
@@ -741,103 +724,37 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
         // now the real generation begins: cycle through every activated character
         for (const chId of activatedMembers) {
+            throwIfAborted();
             deactivateSendButtons();
-            isGenerationDone = false;
-            const generateType = type == "swipe" || type == "impersonate" || type == "quiet" || type == 'continue' ? type : "group_chat";
+            const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
-            setCharacterName(characters[chId].name)
+            setCharacterName(characters[chId].name);
 
-            await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
-
-            if (type !== "swipe" && type !== "impersonate" && !isStreamingEnabled()) {
+            if (type !== 'swipe' && type !== 'impersonate' && !isStreamingEnabled()) {
                 // update indicator and scroll down
                 typingIndicator
-                    .find(".typing_indicator_name")
+                    .find('.typing_indicator_name')
                     .text(characters[chId].name);
                 typingIndicator.show();
             }
 
-            // TODO: This is awful. Refactor this
-            while (true) {
-                deactivateSendButtons();
-                if (isGenerationAborted) {
-                    throw new Error('Group generation aborted');
-                }
-
-                // if not swipe - check if message generated already
-                if (generateType === "group_chat" && chat.length == messagesBefore) {
-                    await delay(100);
-                }
-                // if swipe - see if message changed
-                else if (type === "swipe") {
-                    if (isStreamingEnabled()) {
-                        if (streamingProcessor && !streamingProcessor.isFinished) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    else {
-                        if (lastMessageText === chat[chat.length - 1].mes) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                }
-                else if (type === "impersonate") {
-                    if (isStreamingEnabled()) {
-                        if (streamingProcessor && !streamingProcessor.isFinished) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                    else {
-                        if (!$("#send_textarea").val() || $("#send_textarea").val() == userInput) {
-                            await delay(100);
-                        }
-                        else {
-                            break;
-                        }
-                    }
-                }
-                else if (type === 'quiet') {
-                    if (isGenerationDone) {
-                        break;
-                    } else {
-                        await delay(100);
-                    }
-                }
-                else if (isStreamingEnabled()) {
-                    if (streamingProcessor && !streamingProcessor.isFinished) {
-                        await delay(100);
-                    } else {
-                        await waitUntilCondition(() => streamingProcessor == null, 1000, 10);
-                        messagesBefore++;
-                        break;
-                    }
-                }
-                else {
-                    messagesBefore++;
-                    break;
-                }
-            }
+            // Wait for generation to finish
+            const generateFinished = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
+            textResult = await generateFinished;
         }
     } finally {
         typingIndicator.hide();
 
         is_group_generating = false;
-        $("#send_textarea").attr("disabled", false);
+        $('#send_textarea').attr('disabled', false);
         setSendButtonState(false);
         setCharacterId(undefined);
         setCharacterName('');
         activateSendButtons();
         showSwipeButtons();
     }
+
+    return Promise.resolve(textResult);
 }
 
 function getLastMessageGenerationId() {
@@ -860,12 +777,35 @@ function activateImpersonate(members) {
     return memberIds;
 }
 
+/**
+ * Activates a group member based on the last message.
+ * @param {string[]} members Array of group member avatar ids
+ * @returns {number[]} Array of character ids
+ */
 function activateSwipe(members) {
     let activatedNames = [];
+    const lastMessage = chat[chat.length - 1];
+
+    if (lastMessage.is_user || lastMessage.is_system || lastMessage.extra?.type === system_message_types.NARRATOR) {
+        for (const message of chat.slice().reverse()) {
+            if (message.is_user || message.is_system || message.extra?.type === system_message_types.NARRATOR) {
+                continue;
+            }
+
+            if (message.original_avatar) {
+                activatedNames.push(message.original_avatar);
+                break;
+            }
+        }
+
+        if (activatedNames.length === 0) {
+            activatedNames.push(shuffle(members.slice())[0]);
+        }
+    }
 
     // pre-update group chat swipe
-    if (!chat[chat.length - 1].original_avatar) {
-        const matches = characters.filter(x => x.name == chat[chat.length - 1].name);
+    if (!lastMessage.original_avatar) {
+        const matches = characters.filter(x => x.name == lastMessage.name);
 
         for (const match of matches) {
             if (members.includes(match.avatar)) {
@@ -875,7 +815,7 @@ function activateSwipe(members) {
         }
     }
     else {
-        activatedNames.push(chat[chat.length - 1].original_avatar);
+        activatedNames.push(lastMessage.original_avatar);
     }
 
     const memberIds = activatedNames
@@ -909,7 +849,7 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
     if (input && input.length) {
         for (let inputWord of extractAllWords(input)) {
             for (let member of members) {
-                const character = characters.find(x => x.avatar === member)
+                const character = characters.find(x => x.avatar === member);
 
                 if (!character || character.name === bannedUser) {
                     continue;
@@ -968,8 +908,8 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
 async function deleteGroup(id) {
     const group = groups.find((x) => x.id === id);
 
-    const response = await fetch("/deletegroup", {
-        method: "POST",
+    const response = await fetch('/api/groups/delete', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: id }),
     });
@@ -988,9 +928,9 @@ async function deleteGroup(id) {
         await printMessages();
         await getCharacters();
 
-        select_rm_info("group_delete", id);
+        select_rm_info('group_delete', id);
 
-        $("#rm_button_selected_ch").children("h2").text('');
+        $('#rm_button_selected_ch').children('h2').text('');
     }
 }
 
@@ -1013,7 +953,7 @@ export async function editGroup(id, immediately, reload = true) {
 let groupAutoModeAbortController = null;
 
 async function groupChatAutoModeWorker() {
-    if (!is_group_automode_enabled || online_status === "no_connection") {
+    if (!is_group_automode_enabled || online_status === 'no_connection') {
         return;
     }
 
@@ -1032,7 +972,7 @@ async function groupChatAutoModeWorker() {
 }
 
 async function modifyGroupMember(chat_id, groupMember, isDelete) {
-    const id = groupMember.data("id");
+    const id = groupMember.data('id');
     const thisGroup = groups.find((x) => x.id == chat_id);
     const membersArray = thisGroup?.members ?? newGroupMembers;
 
@@ -1054,11 +994,11 @@ async function modifyGroupMember(chat_id, groupMember, isDelete) {
     printGroupMembers();
 
     const groupHasMembers = getGroupCharacters({ doFilter: false, onlyMembers: true }).length > 0;
-    $("#rm_group_submit").prop("disabled", !groupHasMembers);
+    $('#rm_group_submit').prop('disabled', !groupHasMembers);
 }
 
 async function reorderGroupMember(chat_id, groupMember, direction) {
-    const id = groupMember.data("id");
+    const id = groupMember.data('id');
     const thisGroup = groups.find((x) => x.id == chat_id);
     const memberArray = thisGroup?.members ?? newGroupMembers;
 
@@ -1103,11 +1043,20 @@ async function onGroupGenerationModeInput(e) {
     }
 }
 
+async function onGroupAutoModeDelayInput(e) {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        _thisGroup.auto_mode_delay = Number(e.target.value);
+        await editGroup(openGroupId, false, false);
+        setAutoModeWorker();
+    }
+}
+
 async function onGroupNameInput() {
     if (openGroupId) {
         let _thisGroup = groups.find((x) => x.id == openGroupId);
         _thisGroup.name = $(this).val();
-        $("#rm_button_selected_ch").children("h2").text(_thisGroup.name);
+        $('#rm_button_selected_ch').children('h2').text(_thisGroup.name);
         await editGroup(openGroupId);
     }
 }
@@ -1148,7 +1097,7 @@ function getGroupCharacters({ doFilter, onlyMembers } = {}) {
 
 function printGroupCandidates() {
     const storageKey = 'GroupCandidates_PerPage';
-    $("#rm_group_add_members_pagination").pagination({
+    $('#rm_group_add_members_pagination').pagination({
         dataSource: getGroupCharacters({ doFilter: true, onlyMembers: false }),
         pageRange: 1,
         position: 'top',
@@ -1159,14 +1108,14 @@ function printGroupCandidates() {
         showNavigator: true,
         showSizeChanger: true,
         pageSize: Number(localStorage.getItem(storageKey)) || 5,
-        sizeChangerOptions: [5, 10, 25, 50, 100, 200],
+        sizeChangerOptions: [5, 10, 25, 50, 100, 200, 500, 1000],
         afterSizeSelectorChange: function (e) {
             localStorage.setItem(storageKey, e.target.value);
         },
         callback: function (data) {
-            $("#rm_group_add_members").empty();
+            $('#rm_group_add_members').empty();
             for (const i of data) {
-                $("#rm_group_add_members").append(getGroupCharacterBlock(i.item));
+                $('#rm_group_add_members').append(getGroupCharacterBlock(i.item));
             }
         },
     });
@@ -1174,7 +1123,7 @@ function printGroupCandidates() {
 
 function printGroupMembers() {
     const storageKey = 'GroupMembers_PerPage';
-    $(".rm_group_members_pagination").each(function () {
+    $('.rm_group_members_pagination').each(function () {
         $(this).pagination({
             dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
             pageRange: 1,
@@ -1186,14 +1135,14 @@ function printGroupMembers() {
             showNavigator: true,
             showSizeChanger: true,
             pageSize: Number(localStorage.getItem(storageKey)) || 5,
-            sizeChangerOptions: [5, 10, 25, 50, 100, 200],
+            sizeChangerOptions: [5, 10, 25, 50, 100, 200, 500, 1000],
             afterSizeSelectorChange: function (e) {
                 localStorage.setItem(storageKey, e.target.value);
             },
             callback: function (data) {
-                $(".rm_group_members").empty();
+                $('.rm_group_members').empty();
                 for (const i of data) {
-                    $(".rm_group_members").append(getGroupCharacterBlock(i.item));
+                    $('.rm_group_members').append(getGroupCharacterBlock(i.item));
                 }
             },
         });
@@ -1202,12 +1151,12 @@ function printGroupMembers() {
 
 function getGroupCharacterBlock(character) {
     const avatar = getThumbnailUrl('avatar', character.avatar);
-    const template = $("#group_member_template .group_member").clone();
+    const template = $('#group_member_template .group_member').clone();
     const isFav = character.fav || character.fav == 'true';
-    template.data("id", character.avatar);
-    template.find(".avatar img").attr({ "src": avatar, "title": character.avatar });
-    template.find(".ch_name").text(character.name);
-    template.attr("chid", characters.indexOf(character));
+    template.data('id', character.avatar);
+    template.find('.avatar img').attr({ 'src': avatar, 'title': character.avatar });
+    template.find('.ch_name').text(character.name);
+    template.attr('chid', characters.indexOf(character));
     template.find('.ch_fav').val(isFav);
     template.toggleClass('is_fav', isFav);
     template.toggleClass('disabled', isGroupMemberDisabled(character.avatar));
@@ -1237,8 +1186,8 @@ function onDeleteGroupClick() {
         return;
     }
 
-    $("#dialogue_popup").data("group_id", openGroupId);
-    callPopup('<h3>Delete the group?</h3><p>This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.</p>', "del_group");
+    $('#dialogue_popup').data('group_id', openGroupId);
+    callPopup('<h3>Delete the group?</h3><p>This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.</p>', 'del_group');
 }
 
 async function onFavoriteGroupClick() {
@@ -1254,7 +1203,7 @@ async function onFavoriteGroupClick() {
 async function onGroupSelfResponsesClick() {
     if (openGroupId) {
         let _thisGroup = groups.find((x) => x.id == openGroupId);
-        const value = $(this).prop("checked");
+        const value = $(this).prop('checked');
         _thisGroup.allow_self_responses = value;
         await editGroup(openGroupId, false, false);
     }
@@ -1264,7 +1213,7 @@ async function onHideMutedSpritesClick(value) {
     if (openGroupId) {
         let _thisGroup = groups.find((x) => x.id == openGroupId);
         _thisGroup.hideMutedSprites = value;
-        console.log(`_thisGroup.hideMutedSprites = ${_thisGroup.hideMutedSprites}`)
+        console.log(`_thisGroup.hideMutedSprites = ${_thisGroup.hideMutedSprites}`);
         await editGroup(openGroupId, false, false);
     }
 }
@@ -1273,19 +1222,19 @@ function select_group_chats(groupId, skipAnimation) {
     openGroupId = groupId;
     newGroupMembers = [];
     const group = openGroupId && groups.find((x) => x.id == openGroupId);
-    const groupName = group?.name ?? "";
+    const groupName = group?.name ?? '';
     const replyStrategy = Number(group?.activation_strategy ?? group_activation_strategy.NATURAL);
     const generationMode = Number(group?.generation_mode ?? group_generation_mode.SWAP);
 
-    setMenuType(!!group ? 'group_edit' : 'group_create');
-    $("#group_avatar_preview").empty().append(getGroupAvatar(group));
-    $("#rm_group_restore_avatar").toggle(!!group && isValidImageUrl(group.avatar_url));
-    $("#rm_group_filter").val("").trigger("input");
-    $("#rm_group_activation_strategy").val(replyStrategy);
+    setMenuType(group ? 'group_edit' : 'group_create');
+    $('#group_avatar_preview').empty().append(getGroupAvatar(group));
+    $('#rm_group_restore_avatar').toggle(!!group && isValidImageUrl(group.avatar_url));
+    $('#rm_group_filter').val('').trigger('input');
+    $('#rm_group_activation_strategy').val(replyStrategy);
     $(`#rm_group_activation_strategy option[value="${replyStrategy}"]`).prop('selected', true);
-    $("#rm_group_generation_mode").val(generationMode);
+    $('#rm_group_generation_mode').val(generationMode);
     $(`#rm_group_generation_mode option[value="${generationMode}"]`).prop('selected', true);
-    $("#rm_group_chat_name").val(groupName);
+    $('#rm_group_chat_name').val(groupName);
 
     if (!skipAnimation) {
         selectRightMenuWithAnimation('rm_group_chats_block');
@@ -1295,36 +1244,38 @@ function select_group_chats(groupId, skipAnimation) {
     printGroupCandidates();
     printGroupMembers();
 
-    const groupHasMembers = !!$("#rm_group_members").children().length;
-    $("#rm_group_submit").prop("disabled", !groupHasMembers);
-    $("#rm_group_allow_self_responses").prop("checked", group && group.allow_self_responses);
-    $("#rm_group_hidemutedsprites").prop("checked", group && group.hideMutedSprites);
+    const groupHasMembers = !!$('#rm_group_members').children().length;
+    $('#rm_group_submit').prop('disabled', !groupHasMembers);
+    $('#rm_group_allow_self_responses').prop('checked', group && group.allow_self_responses);
+    $('#rm_group_hidemutedsprites').prop('checked', group && group.hideMutedSprites);
+    $('#rm_group_automode_delay').val(group?.auto_mode_delay ?? DEFAULT_AUTO_MODE_DELAY);
 
     // bottom buttons
     if (openGroupId) {
-        $("#rm_group_submit").hide();
-        $("#rm_group_delete").show();
-        $("#rm_group_scenario").show();
+        $('#rm_group_submit').hide();
+        $('#rm_group_delete').show();
+        $('#rm_group_scenario').show();
         $('#group-metadata-controls .chat_lorebook_button').removeClass('disabled').prop('disabled', false);
     } else {
-        $("#rm_group_submit").show();
-        if ($("#groupAddMemberListToggle .inline-drawer-content").css('display') !== 'block') {
-            $("#groupAddMemberListToggle").trigger('click');
+        $('#rm_group_submit').show();
+        if ($('#groupAddMemberListToggle .inline-drawer-content').css('display') !== 'block') {
+            $('#groupAddMemberListToggle').trigger('click');
         }
-        $("#rm_group_delete").hide();
-        $("#rm_group_scenario").hide();
+        $('#rm_group_delete').hide();
+        $('#rm_group_scenario').hide();
         $('#group-metadata-controls .chat_lorebook_button').addClass('disabled').prop('disabled', true);
     }
 
     updateFavButtonState(group?.fav ?? false);
+    setAutoModeWorker();
 
     // top bar
     if (group) {
-        $("#rm_group_automode_label").show();
-        $("#rm_button_selected_ch").children("h2").text(groupName);
+        $('#rm_group_automode_label').show();
+        $('#rm_button_selected_ch').children('h2').text(groupName);
     }
     else {
-        $("#rm_group_automode_label").hide();
+        $('#rm_group_automode_label').hide();
     }
 
     eventSource.emit('groupSelected', { detail: { id: openGroupId, group: group } });
@@ -1358,7 +1309,7 @@ async function uploadGroupAvatar(event) {
 
     let thumbnail = await createThumbnail(croppedImage, 200, 300);
     //remove data:image/whatever;base64
-    thumbnail = thumbnail.replace(/^data:image\/[a-z]+;base64,/, "");
+    thumbnail = thumbnail.replace(/^data:image\/[a-z]+;base64,/, '');
     let _thisGroup = groups.find((x) => x.id == openGroupId);
     // filename should be group id + human readable timestamp
     const filename = _thisGroup ? `${_thisGroup.id}_${humanizedDateTime()}` : humanizedDateTime();
@@ -1370,8 +1321,8 @@ async function uploadGroupAvatar(event) {
     }
 
     _thisGroup.avatar_url = thumbnailUrl;
-    $("#group_avatar_preview").empty().append(getGroupAvatar(_thisGroup));
-    $("#rm_group_restore_avatar").show();
+    $('#group_avatar_preview').empty().append(getGroupAvatar(_thisGroup));
+    $('#rm_group_restore_avatar').show();
     await editGroup(openGroupId, true, true);
 }
 
@@ -1383,15 +1334,15 @@ async function restoreGroupAvatar() {
     }
 
     if (!openGroupId) {
-        $("#group_avatar_preview img").attr("src", default_avatar);
-        $("#rm_group_restore_avatar").hide();
+        $('#group_avatar_preview img').attr('src', default_avatar);
+        $('#rm_group_restore_avatar').hide();
         return;
     }
 
     let _thisGroup = groups.find((x) => x.id == openGroupId);
     _thisGroup.avatar_url = '';
-    $("#group_avatar_preview").empty().append(getGroupAvatar(_thisGroup));
-    $("#rm_group_restore_avatar").hide();
+    $('#group_avatar_preview').empty().append(getGroupAvatar(_thisGroup));
+    $('#rm_group_restore_avatar').hide();
     await editGroup(openGroupId, true, true);
 }
 
@@ -1445,14 +1396,14 @@ async function onGroupActionClick(event) {
 
 function updateFavButtonState(state) {
     fav_grp_checked = state;
-    $("#rm_group_fav").val(fav_grp_checked);
-    $("#group_favorite_button").toggleClass('fav_on', fav_grp_checked);
-    $("#group_favorite_button").toggleClass('fav_off', !fav_grp_checked);
+    $('#rm_group_fav').val(fav_grp_checked);
+    $('#group_favorite_button').toggleClass('fav_on', fav_grp_checked);
+    $('#group_favorite_button').toggleClass('fav_off', !fav_grp_checked);
 }
 
 export async function openGroupById(groupId) {
     if (isChatSaving) {
-        toastr.info("Please wait until the chat is saved before switching characters.", "Your chat is still saving...");
+        toastr.info('Please wait until the chat is saved before switching characters.', 'Your chat is still saving...');
         return;
     }
 
@@ -1480,8 +1431,8 @@ export async function openGroupById(groupId) {
 
 function openCharacterDefinition(characterSelect) {
     if (is_group_generating) {
-        toastr.warning("Can't peek a character while group reply is being generated");
-        console.warn("Can't peek a character def while group reply is being generated");
+        toastr.warning('Can\'t peek a character while group reply is being generated');
+        console.warn('Can\'t peek a character def while group reply is being generated');
         return;
     }
 
@@ -1505,12 +1456,13 @@ function filterGroupMembers() {
 }
 
 async function createGroup() {
-    let name = $("#rm_group_chat_name").val();
-    let allowSelfResponses = !!$("#rm_group_allow_self_responses").prop("checked");
+    let name = $('#rm_group_chat_name').val();
+    let allowSelfResponses = !!$('#rm_group_allow_self_responses').prop('checked');
     let activationStrategy = Number($('#rm_group_activation_strategy').find(':selected').val()) ?? group_activation_strategy.NATURAL;
     let generationMode = Number($('#rm_group_generation_mode').find(':selected').val()) ?? group_generation_mode.SWAP;
+    let autoModeDelay = Number($('#rm_group_automode_delay').val()) ?? DEFAULT_AUTO_MODE_DELAY;
     const members = newGroupMembers;
-    const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(", ");
+    const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(', ');
 
     if (!name) {
         name = `Group: ${memberNames}`;
@@ -1521,8 +1473,8 @@ async function createGroup() {
     const chatName = humanizedDateTime();
     const chats = [chatName];
 
-    const createGroupResponse = await fetch("/creategroup", {
-        method: "POST",
+    const createGroupResponse = await fetch('/api/groups/create', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
             name: name,
@@ -1537,13 +1489,14 @@ async function createGroup() {
             fav: fav_grp_checked,
             chat_id: chatName,
             chats: chats,
+            auto_mode_delay: autoModeDelay,
         }),
     });
 
     if (createGroupResponse.ok) {
         newGroupMembers = [];
         const data = await createGroupResponse.json();
-        createTagMapFromList("#groupTagList", data.id);
+        createTagMapFromList('#groupTagList', data.id);
         await getCharacters();
         select_rm_info('group_create', data.id);
     }
@@ -1589,7 +1542,7 @@ export async function getGroupPastChats(groupId) {
     try {
         for (const chatId of group.chats) {
             const messages = await loadGroupChat(chatId);
-            let this_chat_file_size = (JSON.stringify(messages).length / 1024).toFixed(2) + "kb";
+            let this_chat_file_size = (JSON.stringify(messages).length / 1024).toFixed(2) + 'kb';
             let chat_items = messages.length;
             const lastMessage = messages.length ? messages[messages.length - 1].mes : '[The chat is empty]';
             const lastMessageDate = messages.length ? (messages[messages.length - 1].send_date || Date.now()) : Date.now();
@@ -1604,9 +1557,7 @@ export async function getGroupPastChats(groupId) {
     } catch (err) {
         console.error(err);
     }
-    finally {
-        return chats;
-    }
+    return chats;
 }
 
 export async function openGroupChat(groupId, chatId) {
@@ -1661,7 +1612,7 @@ export async function deleteGroupChat(groupId, chatId) {
     delete group.past_metadata[chatId];
     updateChatMetadata(group.chat_metadata, true);
 
-    const response = await fetch('/deletegroupchat', {
+    const response = await fetch('/api/chats/group/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: chatId }),
@@ -1680,8 +1631,8 @@ export async function deleteGroupChat(groupId, chatId) {
 
 export async function importGroupChat(formData) {
     await jQuery.ajax({
-        type: "POST",
-        url: "/importgroupchat",
+        type: 'POST',
+        url: '/api/chats/group/import',
         data: formData,
         beforeSend: function () {
         },
@@ -1701,7 +1652,7 @@ export async function importGroupChat(formData) {
             }
         },
         error: function () {
-            $("#create_button").removeAttr("disabled");
+            $('#create_button').removeAttr('disabled');
         },
     });
 }
@@ -1722,8 +1673,8 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
 
     await editGroup(groupId, true, false);
 
-    await fetch("/savegroupchat", {
-        method: "POST",
+    await fetch('/api/chats/group/save', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: name, chat: [...trimmed_chat] }),
     });
@@ -1733,7 +1684,7 @@ function onSendTextareaInput() {
     if (is_group_automode_enabled) {
         // Wait for current automode generation to finish
         is_group_automode_enabled = false;
-        $("#rm_group_automode").prop("checked", false);
+        $('#rm_group_automode').prop('checked', false);
     }
 }
 
@@ -1743,19 +1694,19 @@ function stopAutoModeGeneration() {
     }
 
     is_group_automode_enabled = false;
-    $("#rm_group_automode").prop("checked", false);
+    $('#rm_group_automode').prop('checked', false);
 }
 
 function doCurMemberListPopout() {
     //repurposes the zoomed avatar template to server as a floating group member list
-    if ($("#groupMemberListPopout").length === 0) {
-        console.debug('did not see popout yet, creating')
-        const memberListClone = $(this).parent().parent().find('.inline-drawer-content').html()
+    if ($('#groupMemberListPopout').length === 0) {
+        console.debug('did not see popout yet, creating');
+        const memberListClone = $(this).parent().parent().find('.inline-drawer-content').html();
         const template = $('#zoomed_avatar_template').html();
         const controlBarHtml = `<div class="panelControlBar flex-container">
         <div id="groupMemberListPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
         <div id="groupMemberListPopoutClose" class="fa-solid fa-circle-xmark hoverglow"></div>
-    </div>`
+    </div>`;
         const newElement = $(template);
 
         newElement.attr('id', 'groupMemberListPopout')
@@ -1763,55 +1714,56 @@ function doCurMemberListPopout() {
             .addClass('draggable')
             .empty()
             .append(controlBarHtml)
-            .append(memberListClone)
+            .append(memberListClone);
 
         // Remove pagination from popout
         newElement.find('.group_pagination').empty();
 
         $('body').append(newElement);
         loadMovingUIState();
-        $("#groupMemberListPopout").fadeIn(250)
-        dragElement(newElement)
+        $('#groupMemberListPopout').fadeIn(animation_duration);
+        dragElement(newElement);
         $('#groupMemberListPopoutClose').off('click').on('click', function () {
-            $("#groupMemberListPopout").fadeOut(250, () => { $("#groupMemberListPopout").remove() })
-        })
+            $('#groupMemberListPopout').fadeOut(animation_duration, () => { $('#groupMemberListPopout').remove(); });
+        });
 
         // Re-add pagination not working in popout
         printGroupMembers();
     } else {
-        console.debug('saw existing popout, removing')
-        $("#groupMemberListPopout").fadeOut(250, () => { $("#groupMemberListPopout").remove() });
+        console.debug('saw existing popout, removing');
+        $('#groupMemberListPopout').fadeOut(animation_duration, () => { $('#groupMemberListPopout').remove(); });
     }
 }
 
 jQuery(() => {
-    $(document).on("click", ".group_select", function () {
-        const groupId = $(this).data("id");
+    $(document).on('click', '.group_select', function () {
+        const groupId = $(this).data('id');
         openGroupById(groupId);
     });
-    $("#rm_group_filter").on("input", filterGroupMembers);
-    $("#rm_group_submit").on("click", createGroup);
-    $("#rm_group_scenario").on("click", setScenarioOverride);
-    $("#rm_group_automode").on("input", function () {
-        const value = $(this).prop("checked");
+    $('#rm_group_filter').on('input', filterGroupMembers);
+    $('#rm_group_submit').on('click', createGroup);
+    $('#rm_group_scenario').on('click', setScenarioOverride);
+    $('#rm_group_automode').on('input', function () {
+        const value = $(this).prop('checked');
         is_group_automode_enabled = value;
         eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
     });
-    $("#rm_group_hidemutedsprites").on("input", function () {
-        const value = $(this).prop("checked");
+    $('#rm_group_hidemutedsprites').on('input', function () {
+        const value = $(this).prop('checked');
         hideMutedSprites = value;
         onHideMutedSpritesClick(value);
 
     });
-    $("#send_textarea").on("keyup", onSendTextareaInput);
-    $("#groupCurrentMemberPopoutButton").on('click', doCurMemberListPopout);
-    $("#rm_group_chat_name").on("input", onGroupNameInput)
-    $("#rm_group_delete").off().on("click", onDeleteGroupClick);
-    $("#group_favorite_button").on('click', onFavoriteGroupClick);
-    $("#rm_group_allow_self_responses").on("input", onGroupSelfResponsesClick);
-    $("#rm_group_activation_strategy").on("change", onGroupActivationStrategyInput);
-    $("#rm_group_generation_mode").on("change", onGroupGenerationModeInput);
-    $("#group_avatar_button").on("input", uploadGroupAvatar);
-    $("#rm_group_restore_avatar").on("click", restoreGroupAvatar);
-    $(document).on("click", ".group_member .right_menu_button", onGroupActionClick);
+    $('#send_textarea').on('keyup', onSendTextareaInput);
+    $('#groupCurrentMemberPopoutButton').on('click', doCurMemberListPopout);
+    $('#rm_group_chat_name').on('input', onGroupNameInput);
+    $('#rm_group_delete').off().on('click', onDeleteGroupClick);
+    $('#group_favorite_button').on('click', onFavoriteGroupClick);
+    $('#rm_group_allow_self_responses').on('input', onGroupSelfResponsesClick);
+    $('#rm_group_activation_strategy').on('change', onGroupActivationStrategyInput);
+    $('#rm_group_generation_mode').on('change', onGroupGenerationModeInput);
+    $('#rm_group_automode_delay').on('input', onGroupAutoModeDelayInput);
+    $('#group_avatar_button').on('input', uploadGroupAvatar);
+    $('#rm_group_restore_avatar').on('click', restoreGroupAvatar);
+    $(document).on('click', '.group_member .right_menu_button', onGroupActionClick);
 });

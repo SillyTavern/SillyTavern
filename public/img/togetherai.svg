@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="32"
+   height="32"
+   viewBox="0 0 32 32"
+   version="1.1"
+   id="svg4"
+   sodipodi:docname="togetherai.svg"
+   inkscape:version="1.3 (0e150ed, 2023-07-21)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview4"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="7.375"
+     inkscape:cx="15.932203"
+     inkscape:cy="15.932203"
+     inkscape:window-width="1280"
+     inkscape:window-height="688"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g4" />
+  <g
+     clip-path="url(#clip0_542_18748)"
+     id="g4">
+    <path
+       id="rect1"
+       d="M 5.6464844 0 C 2.5180256 -1.1842331e-15 3.5527101e-15 2.5180256 0 5.6464844 L 0 26.353516 C -1.1842331e-15 29.481971 2.5180256 32 5.6464844 32 L 26.353516 32 C 29.481971 32 32 29.481971 32 26.353516 L 32 5.6464844 C 32 2.5180256 29.481971 3.5527101e-15 26.353516 0 L 5.6464844 0 z M 9.6464844 4 A 5.6470599 5.6470599 0 0 1 15.294922 9.6464844 A 5.6470599 5.6470599 0 0 1 9.6464844 15.294922 A 5.6470599 5.6470599 0 0 1 4 9.6464844 A 5.6470599 5.6470599 0 0 1 9.6464844 4 z M 22.824219 4 A 5.6470599 5.6470599 0 0 1 28.470703 9.6464844 A 5.6470599 5.6470599 0 0 1 22.824219 15.294922 A 5.6470599 5.6470599 0 0 1 17.175781 9.6464844 A 5.6470599 5.6470599 0 0 1 22.824219 4 z M 9.6464844 17.175781 A 5.6470599 5.6470599 0 0 1 15.294922 22.824219 A 5.6470599 5.6470599 0 0 1 9.6464844 28.470703 A 5.6470599 5.6470599 0 0 1 4 22.824219 A 5.6470599 5.6470599 0 0 1 9.6464844 17.175781 z M 22.824219 17.175781 A 5.6470599 5.6470599 0 0 1 28.470703 22.824219 A 5.6470599 5.6470599 0 0 1 22.824219 28.470703 A 5.6470599 5.6470599 0 0 1 17.175781 22.824219 A 5.6470599 5.6470599 0 0 1 22.824219 17.175781 z " />
+    <circle
+       cx="9.64706"
+       cy="9.64706"
+       r="5.64706"
+       opacity="0.45"
+       id="circle9" />
+  </g>
+  <defs
+     id="defs4">
+    <clipPath
+       id="clip0_542_18748">
+      <rect
+         width="32"
+         height="32"
+         id="rect4" />
+    </clipPath>
+  </defs>
+</svg>

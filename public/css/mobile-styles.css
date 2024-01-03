@@ -1,5 +1,9 @@
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
 @media screen and (max-width: 1000px) {
+    #send_form.compact #leftSendForm, #send_form.compact #rightSendForm {
+        flex-wrap: nowrap;
+        width: unset;
+    }
 
     .bg_button {
         font-size: 15px;
@@ -23,9 +27,7 @@
         filter: drop-shadow(2px 2px 2px #51515199);
         z-index: 30;
         overflow: hidden;
-        left: 0;
         right: 0;
-        margin: 0 auto;
         top: 50px;
         aspect-ratio: 2 / 3;
         width: fit-content;
@@ -33,6 +35,8 @@
         max-height: calc(60svh - 60px);
         max-width: 90vw;
         max-width: 90svw;
+        left: 50%;
+        transform: translateX(-50%);
     }
 
     /* .world_entry_thin_controls, */
@@ -256,6 +260,14 @@
         bottom: 0 !important;
     }
 
+    body:not(.waifuMode) #expression-wrapper {
+        visibility: hidden;
+    }
+
+    #visual-novel-wrapper {
+        position: unset !important;
+    }
+
     body.waifuMode .expression-holder {
         /*display: inline;*/
 
@@ -267,7 +279,7 @@
         left: 0;
         right: 0;
         filter: drop-shadow(2px 2px 2px #51515199);
-        z-index: 1;
+        z-index: 1 !important;
     }
 
     body.waifuMode img.expression {
@@ -346,11 +358,11 @@
         z-index: 30;
         overflow: hidden;
         display: none;
-        left: 0;
         right: 0;
-        margin: 0 auto;
         top: 50px;
         aspect-ratio: 2 / 3;
+        left: 50%;
+        transform: translateX(-50%);
     }
 
     .drawer25pWidth {
