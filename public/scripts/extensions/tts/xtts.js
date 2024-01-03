@@ -51,12 +51,12 @@ class XTTSTtsProvider {
     defaultSettings = {
         provider_endpoint: 'http://localhost:8020',
         language: 'en',
-        temperature : 0.75,
-        length_penalty : 1.0,
+        temperature: 0.75,
+        length_penalty: 1.0,
         repetition_penalty: 5.0,
-        top_k : 50,
-        top_p : 0.85,
-        speed : 1,
+        top_k: 50,
+        top_p: 0.85,
+        speed: 1,
         enable_text_splitting: true,
         stream_chunk_size: 100,
         voiceMap: {},
@@ -68,9 +68,7 @@ class XTTSTtsProvider {
         <label for="xtts_api_language">Language</label>
         <select id="xtts_api_language">`;
 
-
         for (let language in this.languageLabels) {
-
             if (this.languageLabels[language] == this.settings?.language) {
                 html += `<option value="${this.languageLabels[language]}" selected="selected">${language}</option>`;
                 continue;
@@ -79,10 +77,12 @@ class XTTSTtsProvider {
             html += `<option value="${this.languageLabels[language]}">${language}</option>`;
         }
 
-
         html += `
         </select>
         <label">XTTS Settings:</label><br/>
+        <label for="xtts_tts_endpoint">Provider Endpoint:</label>
+        <input id="xtts_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
+        <span>Use <a target="_blank" href="https://github.com/daswer123/xtts-api-server">XTTSv2 TTS Server</a>.</span>
         <label for="xtts_tts_streaming" class="checkbox_label">
             <input id="xtts_tts_streaming" type="checkbox" />
             <span>Streaming <small>(RVC not supported)</small></span>
@@ -112,19 +112,11 @@ class XTTSTtsProvider {
             <input id="xtts_enable_text_splitting" type="checkbox" ${this.defaultSettings.enable_text_splitting ? 'checked' : ''} />
             Enable Text Splitting
         </label>
-
-        <label for="xtts_tts_endpoint">Provider Endpoint:</label>
-        <input id="xtts_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
-        `;
-
-        html += `
-
-        <span>
-        <span>Use <a target="_blank" href="https://github.com/daswer123/xtts-api-server">XTTSv2 TTS Server</a>.</span>
         `;
 
         return html;
     }
+
     onSettingsChange() {
         // Used when provider settings are updated from UI
         this.settings.provider_endpoint = $('#xtts_tts_endpoint').val();
@@ -182,14 +174,9 @@ class XTTSTtsProvider {
             }
         }, 2000);
 
-        $('#xtts_tts_endpoint').val(this.settings.provider_endpoint);
-        $('#xtts_tts_endpoint').on('input', () => { this.onSettingsChange(); });
-        $('#xtts_api_language').val(this.settings.language);
-        $('#xtts_api_language').on('change', () => { this.onSettingsChange(); });
-        $('#xtts_tts_streaming').prop('checked', this.settings.streaming);
-        $('#xtts_tts_streaming').on('change', () => { this.onSettingsChange(); });
-
         // Set initial values from the settings
+        $('#xtts_tts_endpoint').val(this.settings.provider_endpoint);
+        $('#xtts_api_language').val(this.settings.language);
         $('#xtts_speed').val(this.settings.speed);
         $('#xtts_temperature').val(this.settings.temperature);
         $('#xtts_length_penalty').val(this.settings.length_penalty);
@@ -197,8 +184,21 @@ class XTTSTtsProvider {
         $('#xtts_top_k').val(this.settings.top_k);
         $('#xtts_top_p').val(this.settings.top_p);
         $('#xtts_enable_text_splitting').prop('checked', this.settings.enable_text_splitting);
+        $('#xtts_stream_chunk_size').val(this.settings.stream_chunk_size);
+        $('#xtts_tts_streaming').prop('checked', this.settings.streaming);
+
+        // Update the UI to reflect changes
+        $('#xtts_tts_speed_output').text(this.settings.speed);
+        $('#xtts_tts_temperature_output').text(this.settings.temperature);
+        $('#xtts_length_penalty_output').text(this.settings.length_penalty);
+        $('#xtts_repetition_penalty_output').text(this.settings.repetition_penalty);
+        $('#xtts_top_k_output').text(this.settings.top_k);
+        $('#xtts_top_p_output').text(this.settings.top_p);
+        $('#xtts_stream_chunk_size_output').text(this.settings.stream_chunk_size);
 
         // Register input/change event listeners to update settings on user interaction
+        $('#xtts_tts_endpoint').on('input', () => { this.onSettingsChange(); });
+        $('#xtts_api_language').on('change', () => { this.onSettingsChange(); });
         $('#xtts_speed').on('input', () => { this.onSettingsChange(); });
         $('#xtts_temperature').on('input', () => { this.onSettingsChange(); });
         $('#xtts_length_penalty').on('input', () => { this.onSettingsChange(); });
@@ -206,9 +206,7 @@ class XTTSTtsProvider {
         $('#xtts_top_k').on('input', () => { this.onSettingsChange(); });
         $('#xtts_top_p').on('input', () => { this.onSettingsChange(); });
         $('#xtts_enable_text_splitting').on('change', () => { this.onSettingsChange(); });
-
         $('#xtts_stream_chunk_size').on('input', () => { this.onSettingsChange(); });
-        $('#xtts_tts_streaming').prop('checked', this.settings.streaming);
         $('#xtts_tts_streaming').on('change', () => { this.onSettingsChange(); });
 
         await this.checkReady();
@@ -218,7 +216,7 @@ class XTTSTtsProvider {
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady() {
-        await this.fetchTtsVoiceObjects();
+        await Promise.allSettled([this.fetchTtsVoiceObjects(), this.changeTTSSettings()]);
     }
 
     async onRefreshClick() {
