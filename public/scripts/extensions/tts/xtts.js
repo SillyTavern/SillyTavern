@@ -149,9 +149,8 @@ class XTTSTtsProvider {
         $('#xtts_stream_chunk_size_output').text(this.settings.stream_chunk_size);
 
         saveTtsProviderSettings();
-        this.changeTTSSetting();
+        this.changeTTSSettings();
     }
-
 
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
@@ -259,7 +258,11 @@ class XTTSTtsProvider {
     }
 
     // Each time a parameter is changed, we change the configuration
-    async changeTTSSetting() {
+    async changeTTSSettings() {
+        if (!this.settings.provider_endpoint) {
+            return;
+        }
+
         const response = await doExtrasFetch(
             `${this.settings.provider_endpoint}/set_tts_settings`,
             {
