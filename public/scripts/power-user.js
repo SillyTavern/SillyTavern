@@ -1848,8 +1848,8 @@ export function renderStoryString(params) {
         // substitute {{macro}} params that are not defined in the story string
         output = substituteParams(output, params.user, params.char);
 
-        // remove leading whitespace
-        // output = output.trimStart();
+        // remove leading newlines
+        output = output.replace(/^\n+/, '');
 
         // add a newline to the end of the story string if it doesn't have one
         if (output.length > 0 && !output.endsWith('\n')) {
