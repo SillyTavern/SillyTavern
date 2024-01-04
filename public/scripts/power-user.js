@@ -520,7 +520,7 @@ async function switchZenSliders() {
         $('#clickSlidersTips').hide();
         $('#pro-settings-block input[type=\'number\']').hide();
         //hide number inputs that are not 'seed' inputs
-        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']),
+        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']):not([id^='n_']),
             #kobold_api-settings :input[type='number']:not([id^='seed'])`).hide();
         //hide original sliders
         $(`#textgenerationwebui_api-settings input[type='range'],
