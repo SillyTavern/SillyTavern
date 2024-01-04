@@ -165,6 +165,31 @@ async function onRegexEditorOpenClick(existingId) {
             .prop('checked', true);
     }
 
+    editorHtml.find('#regex_test_mode_toggle').on('click', function () {
+        editorHtml.find('#regex_test_mode').toggleClass('displayNone');
+        updateTestResult();
+    });
+
+    function updateTestResult() {
+        if (!editorHtml.find('#regex_test_mode').is(':visible')) {
+            return;
+        }
+
+        const testScript = {
+            scriptName: editorHtml.find('.regex_script_name').val(),
+            findRegex: editorHtml.find('.find_regex').val(),
+            replaceString: editorHtml.find('.regex_replace_string').val(),
+            trimStrings: String(editorHtml.find('.regex_trim_strings').val()).split('\n').filter((e) => e.length !== 0) || [],
+            substituteRegex: editorHtml.find('input[name="substitute_regex"]').prop('checked'),
+            replaceStrategy: Number(editorHtml.find('select[name="replace_strategy_select"]').find(':selected').val()) ?? 0,
+        };
+        const rawTestString = String(editorHtml.find('#regex_test_input').val());
+        const result = runRegexScript(testScript, rawTestString);
+        editorHtml.find('#regex_test_output').text(result);
+    }
+
+    editorHtml.find('input, textarea, select').on('input', updateTestResult);
+
     const popupResult = await callPopup(editorHtml, 'confirm', undefined, { okButton: 'Save' });
     if (popupResult) {
         const newRegexScript = {

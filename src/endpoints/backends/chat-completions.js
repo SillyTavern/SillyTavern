@@ -36,9 +36,10 @@ async function sendClaudeRequest(request, response) {
         });
 
         const isSysPromptSupported = request.body.model === 'claude-2' || request.body.model === 'claude-2.1';
-        const requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSysPromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message);
+        const requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSysPromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message, request.body.claude_exclude_prefixes);
 
         // Check Claude messages sequence and prefixes presence.
+        let sequenceError = [];
         const sequence = requestPrompt.split('\n').filter(x => x.startsWith('Human:') || x.startsWith('Assistant:'));
         const humanFound = sequence.some(line => line.startsWith('Human:'));
         const assistantFound = sequence.some(line => line.startsWith('Assistant:'));
@@ -56,20 +57,20 @@ async function sendClaudeRequest(request, response) {
         }
 
         if (!humanFound) {
-            console.log(color.red(`${divider}\nWarning: No 'Human:' prefix found in the prompt.\n${divider}`));
+            sequenceError.push(`${divider}\nWarning: No 'Human:' prefix found in the prompt.\n${divider}`);
         }
         if (!assistantFound) {
-            console.log(color.red(`${divider}\nWarning: No 'Assistant: ' prefix found in the prompt.\n${divider}`));
+            sequenceError.push(`${divider}\nWarning: No 'Assistant: ' prefix found in the prompt.\n${divider}`);
         }
-        if (!sequence[0].startsWith('Human:')) {
-            console.log(color.red(`${divider}\nWarning: The messages sequence should start with 'Human:' prefix.\nMake sure you have 'Human:' prefix at the very beggining of the prompt, or after the system prompt.\n${divider}`));
+        if (sequence[0] && !sequence[0].startsWith('Human:')) {
+            sequenceError.push(`${divider}\nWarning: The messages sequence should start with 'Human:' prefix.\nMake sure you have '\\n\\nHuman:' prefix at the very beggining of the prompt, or after the system prompt.\n${divider}`);
         }
         if (humanErrorCount > 0 || assistantErrorCount > 0) {
-            console.log(color.red(`${divider}\nWarning: Detected incorrect Prefix sequence(s).`));
-            console.log(color.red(`Incorrect "Human:" prefix(es): ${humanErrorCount}.\nIncorrect "Assistant: " prefix(es): ${assistantErrorCount}.`));
-            console.log(color.red('Check the prompt above and fix it in the SillyTavern.'));
-            console.log(color.red('\nThe correct sequence should look like this:\nSystem prompt  <-(for the sysprompt format only, else have 2 empty lines above the first human\'s  message.)'));
-            console.log(color.red(`       <-----(Each message beginning with the "Assistant:/Human:" prefix must have one empty line above.)\nHuman:\n\nAssistant:\n...\n\nHuman:\n\nAssistant:\n${divider}`));
+            sequenceError.push(`${divider}\nWarning: Detected incorrect Prefix sequence(s).`);
+            sequenceError.push(`Incorrect "Human:" prefix(es): ${humanErrorCount}.\nIncorrect "Assistant: " prefix(es): ${assistantErrorCount}.`);
+            sequenceError.push('Check the prompt above and fix it in the SillyTavern.');
+            sequenceError.push('\nThe correct sequence in the console should look like this:\n(System prompt msg) <-(for the sysprompt format only, else have \\n\\n above the first human\'s  message.)');
+            sequenceError.push(`\\n +      <-----(Each message beginning with the "Assistant:/Human:" prefix must have \\n\\n before it.)\n\\n +\nHuman: \\n +\n\\n +\nAssistant: \\n +\n...\n\\n +\nHuman: \\n +\n\\n +\nAssistant: \n${divider}`);
         }
 
         // Add custom stop sequences
@@ -90,6 +91,10 @@ async function sendClaudeRequest(request, response) {
         };
 
         console.log('Claude request:', requestBody);
+
+        sequenceError.forEach(sequenceError => {
+            console.log(color.red(sequenceError));
+        });
 
         const generateResponse = await fetch(apiUrl + '/complete', {
             method: 'POST',

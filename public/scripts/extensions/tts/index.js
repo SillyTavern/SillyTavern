@@ -1,6 +1,6 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js';
-import { delay, escapeRegex, getStringHash, onlyUnique } from '../../utils.js';
+import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
@@ -316,12 +316,14 @@ async function playAudioData(audioBlob) {
     if (currentAudioJob == null) {
         console.log('Cancelled TTS playback because currentAudioJob was null');
     }
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        const srcUrl = e.target.result;
+    if (audioBlob instanceof Blob) {
+        const srcUrl = await getBase64Async(audioBlob);
         audioElement.src = srcUrl;
-    };
-    reader.readAsDataURL(audioBlob);
+    } else if (typeof audioBlob === 'string') {
+        audioElement.src = audioBlob;
+    } else {
+        throw `TTS received invalid audio data type ${typeof audioBlob}`;
+    }
     audioElement.addEventListener('ended', completeCurrentAudioJob);
     audioElement.addEventListener('canplay', () => {
         console.debug('Starting TTS playback');
@@ -417,11 +419,15 @@ function completeCurrentAudioJob() {
  * @param {Response} response
  */
 async function addAudioJob(response) {
-    const audioData = await response.blob();
-    if (!audioData.type.startsWith('audio/')) {
-        throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioData.type}`;
+    if (typeof response === 'string') {
+        audioJobQueue.push(response);
+    } else {
+        const audioData = await response.blob();
+        if (!audioData.type.startsWith('audio/')) {
+            throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioData.type}`;
+        }
+        audioJobQueue.push(audioData);
     }
-    audioJobQueue.push(audioData);
     console.debug('Pushed audio job to queue.');
 }
 
@@ -432,7 +438,7 @@ async function processAudioJobQueue() {
     }
     try {
         audioQueueProcessorReady = false;
-        currentAudioJob = audioJobQueue.pop();
+        currentAudioJob = audioJobQueue.shift();
         playAudioData(currentAudioJob);
         talkingAnimation(true);
     } catch (error) {

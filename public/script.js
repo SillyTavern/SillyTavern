@@ -2891,7 +2891,7 @@ export async function generateRaw(prompt, api, instructOverride) {
         case 'kobold':
         case 'koboldhorde':
             if (preset_settings === 'gui') {
-                generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context };
+                generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context, api_server };
             } else {
                 const isHorde = api === 'koboldhorde';
                 const koboldSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
@@ -3724,6 +3724,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             gui_settings: true,
             max_length: maxLength,
             max_context_length: max_context,
+            api_server,
         };
 
         if (preset_settings != 'gui') {
