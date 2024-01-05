@@ -209,6 +209,17 @@
   gap: 0.5em;
   align-items: baseline;
 }
+@media screen and (max-width: 750px) {
+  body #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor {
+    flex-direction: column;
+  }
+  body #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
+    flex-direction: column;
+  }
+  body #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-message {
+    min-height: 90svh;
+  }
+}
 #dialogue_popup:has(#qr--modalEditor) {
   aspect-ratio: unset;
 }
