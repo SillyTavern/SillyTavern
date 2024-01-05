@@ -604,8 +604,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'rep_pen_range') {
         decimals = 0;
     }
-    if (sliderID == 'min_temp_textgenerationwebui' ||
-        sliderID == 'max_temp_textgenerationwebui') {
+    if (sliderID == 'dynatemp_range_textgenerationwebui') {
         decimals = 2;
     }
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
@@ -632,14 +631,13 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'tfs_textgenerationwebui' ||
         sliderID == 'min_p_textgenerationwebui' ||
         sliderID == 'temp_textgenerationwebui' ||
-        sliderID == 'temp') {
+        sliderID == 'temp' ||
+        sliderID == 'dynatemp_range_textgenerationwebui') {
         numSteps = 20;
     }
     if (sliderID == 'mirostat_eta_textgenerationwebui' ||
         sliderID == 'penalty_alpha_textgenerationwebui' ||
-        sliderID == 'length_penalty_textgenerationwebui' ||
-        sliderID == 'min_temp_textgenerationwebui' ||
-        sliderID == 'max_temp_textgenerationwebui') {
+        sliderID == 'length_penalty_textgenerationwebui') {
         numSteps = 50;
     }
     //customize off values
