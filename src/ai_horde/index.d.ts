@@ -901,6 +901,12 @@ export interface ModelGenerationInputKobold {
     min_p?: number;
     /** Typical sampling value. */
     typical?: number;
+    /** DynaTemp sampling activataion. */
+    dynatemp?: boolean;
+    /** DynaTemp minimum temperature value. */
+    min_temp?: number;
+    /** DynaTemp maximum temperature value. */
+    max_temp?: number;
     /** Array of integers representing the sampler order to be used */
     sample_order?: number[];
 }

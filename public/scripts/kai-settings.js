@@ -31,6 +31,9 @@ export const kai_settings = {
     use_default_badwordsids: false,
     grammar: '',
     seed: -1,
+    dynatemp: false,
+    min_temp: 0.1,
+    max_temp: 2.0,
 };
 
 /**
@@ -46,6 +49,7 @@ export const kai_flags = {
     can_use_mirostat: false,
     can_use_grammar: false,
     can_use_min_p: false,
+    can_use_dynatemp: false,
 };
 
 const defaultValues = Object.freeze(structuredClone(kai_settings));
@@ -139,7 +143,9 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         use_default_badwordsids: (kai_flags.can_use_default_badwordsids || isHorde) ? kai_settings.use_default_badwordsids : undefined,
         grammar: (kai_flags.can_use_grammar || isHorde) ? substituteParams(kai_settings.grammar) : undefined,
         sampler_seed: kai_settings.seed >= 0 ? kai_settings.seed : undefined,
-
+        dynatemp: (kai_flags.can_use_dynatemp || isHorde) ? kai_settings.dynatemp : false,
+        min_temp: (kai_flags.can_use_dynatemp || isHorde) ? kai_settings.min_temp : undefined,
+        max_temp: (kai_flags.can_use_dynatemp || isHorde) ? kai_settings.max_temp : undefined,
         api_server,
     };
     return generate_data;
@@ -305,6 +311,20 @@ const sliders = [
         counterId: '#seed_counter_kobold',
         format: (val) => val,
         setValue: (val) => { kai_settings.seed = Number(val); },
+    },
+    {
+        name: 'min_temp',
+        sliderId: '#min_temp_kobold',
+        counterId: '#min_temp_counter_kobold',
+        format: (val) => val,
+        setValue: (val) => { kai_settings.min_temp = Number(val); },
+    },
+    {
+        name: 'max_temp',
+        sliderId: '#max_temp_kobold',
+        counterId: '#max_temp_counter_kobold',
+        format: (val) => val,
+        setValue: (val) => { kai_settings.max_temp = Number(val); },
     },
 ];
 
