@@ -175,7 +175,7 @@ parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] (search value)
 parser.addCommand('pass', (_, arg) => arg, ['return'], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
 parser.addCommand('delay', delayCallback, ['wait', 'sleep'], '<span class="monospace">(milliseconds)</span> – delays the next command in the pipe by the specified number of milliseconds.', true, true);
 parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(default="string" large=on/off wide=on/off okButton="string" rows=number [text])</span> – Shows a popup with the provided text and an input field. The default argument is the default value of the input field, and the text argument is the text to display.', true, true);
-parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">(QR label)</span> – runs a Quick Reply with the specified name from the current preset.', true, true);
+parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">[key1=value key2=value ...] ([qrSet.]qrLabel)</span> – runs a Quick Reply with the specified name from a currently active preset or from another preset, named arguments can be referenced in a QR with {{arg::key}}.', true, true);
 parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
 parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
 parser.addCommand('popup', popupCallback, [], '<span class="monospace">(large=on/off wide=on/off okButton="string" text)</span> – shows a blocking popup with the specified text and buttons. Returns the input value into the pipe or empty string if canceled.', true, true);
@@ -445,7 +445,7 @@ function getMessagesCallback(args, value) {
     return messages.join('\n\n');
 }
 
-async function runCallback(_, name) {
+async function runCallback(args, name) {
     if (!name) {
         toastr.warning('No name provided for /run command');
         return '';
@@ -458,7 +458,7 @@ async function runCallback(_, name) {
 
     try {
         name = name.trim();
-        return await window['executeQuickReplyByName'](name);
+        return await window['executeQuickReplyByName'](name, args);
     } catch (error) {
         toastr.error(`Error running Quick Reply "${name}": ${error.message}`, 'Error');
         return '';
