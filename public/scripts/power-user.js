@@ -520,7 +520,7 @@ async function switchZenSliders() {
         $('#clickSlidersTips').hide();
         $('#pro-settings-block input[type=\'number\']').hide();
         //hide number inputs that are not 'seed' inputs
-        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']),
+        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']):not([id^='n_']),
             #kobold_api-settings :input[type='number']:not([id^='seed'])`).hide();
         //hide original sliders
         $(`#textgenerationwebui_api-settings input[type='range'],
@@ -1848,8 +1848,8 @@ export function renderStoryString(params) {
         // substitute {{macro}} params that are not defined in the story string
         output = substituteParams(output, params.user, params.char);
 
-        // remove leading whitespace
-        output = output.trimStart();
+        // remove leading newlines
+        output = output.replace(/^\n+/, '');
 
         // add a newline to the end of the story string if it doesn't have one
         if (output.length > 0 && !output.endsWith('\n')) {
