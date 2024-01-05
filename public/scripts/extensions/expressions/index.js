@@ -1109,24 +1109,38 @@ async function setExpression(character, expression, force) {
         document.getElementById('expression-holder').style.display = '';
 
     } else {
-
-
-        talkingHeadCheck().then(result => {
+        // Set the talkinghead emotion to the specified expression
+        // TODO: For now, talkinghead emote only supported when VN mode is off; see also updateVisualNovelMode.
+        try {
+            let result = await talkingHeadCheck();
             if (result) {
-                // Find the <img> element with id="expression-image" and class="expression"
-                const imgElement = document.querySelector('img#expression-image.expression');
-                //console.log("searching");
-                if (imgElement && imgElement instanceof HTMLImageElement) {
-                    //console.log("setting value");
-                    imgElement.src = getApiUrl() + '/api/talkinghead/result_feed';
-                }
-
-            } else {
-                //console.log("The fetch failed!");
+                const url = new URL(getApiUrl());
+                url.pathname = '/api/talkinghead/set_emotion';
+                await doExtrasFetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ emotion_name: expression }),
+                });
             }
-        });
+        }
+        catch (error) {
+            // `set_emotion` is not present in old versions, so let it 404.
+        }
 
-
+        try {
+            // Find the <img> element with id="expression-image" and class="expression"
+            const imgElement = document.querySelector('img#expression-image.expression');
+            //console.log("searching");
+            if (imgElement && imgElement instanceof HTMLImageElement) {
+                //console.log("setting value");
+                imgElement.src = getApiUrl() + '/api/talkinghead/result_feed';
+            }
+        }
+        catch (error) {
+            //console.log("The fetch failed!");
+        }
     }
 }
 
