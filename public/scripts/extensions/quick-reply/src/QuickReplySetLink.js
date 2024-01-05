@@ -55,6 +55,7 @@ export class QuickReplySetLink {
             }
             const visible = document.createElement('label'); {
                 visible.classList.add('qr--visible');
+                visible.title = 'Show buttons';
                 const cb = document.createElement('input'); {
                     cb.type = 'checkbox';
                     cb.checked = this.isVisible;
@@ -64,7 +65,7 @@ export class QuickReplySetLink {
                     });
                     visible.append(cb);
                 }
-                visible.append('Show buttons');
+                visible.append('Buttons');
                 item.append(visible);
             }
             const edit = document.createElement('div'); {
