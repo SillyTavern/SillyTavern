@@ -30,6 +30,9 @@ export const SENTENCEPIECE_TOKENIZERS = [
     tokenizers.LLAMA,
     tokenizers.MISTRAL,
     tokenizers.YI,
+    tokenizers.API_CURRENT,
+    tokenizers.API_KOBOLD,
+    tokenizers.API_TEXTGENERATIONWEBUI,
     // uncomment when NovelAI releases Kayra and Clio weights, lol
     //tokenizers.NERD,
     //tokenizers.NERD2,
