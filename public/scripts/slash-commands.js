@@ -1135,7 +1135,7 @@ async function goToCharacterCallback(_, name) {
         await openChat(new String(characterIndex));
         return characters[characterIndex]?.name;
     } else {
-        const group = groups.find(it=>it.name.toLowerCase() == name.toLowerCase());
+        const group = groups.find(it => it.name.toLowerCase() == name.toLowerCase());
         if (group) {
             await openGroupById(group.id);
             return group.name;
