@@ -15,7 +15,7 @@ import {
     registerDebugFunction,
 } from './power-user.js';
 import EventSourceStream from './sse-stream.js';
-import { SENTENCEPIECE_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
+import { SENTENCEPIECE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
 
 export {
@@ -47,7 +47,7 @@ let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEF
 let TOGETHERAI_SERVER = 'https://api.together.xyz';
 
 const SERVER_INPUTS = {
-    [textgen_types.OOBA]:  '#textgenerationwebui_api_url_text',
+    [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
     [textgen_types.APHRODITE]: '#aphrodite_api_url_text',
     [textgen_types.TABBY]: '#tabby_api_url_text',
     [textgen_types.KOBOLDCPP]: '#koboldcpp_api_url_text',
@@ -241,6 +241,18 @@ function convertPresets(presets) {
     return Array.isArray(presets) ? presets.map((p) => JSON.parse(p)) : [];
 }
 
+function getTokenizerForTokenIds() {
+    if (power_user.tokenizer === tokenizers.API_CURRENT && TEXTGEN_TOKENIZERS.includes(settings.type)) {
+        return tokenizers.API_CURRENT;
+    }
+
+    if (SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer)) {
+        return power_user.tokenizer;
+    }
+
+    return tokenizers.LLAMA;
+}
+
 /**
  * @returns {string} String with comma-separated banned token IDs
  */
@@ -249,7 +261,7 @@ function getCustomTokenBans() {
         return '';
     }
 
-    const tokenizer = SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer) ? power_user.tokenizer : tokenizers.LLAMA;
+    const tokenizer = getTokenizerForTokenIds();
     const result = [];
     const sequences = settings.banned_tokens
         .split('\n')
@@ -301,7 +313,7 @@ function calculateLogitBias() {
         return {};
     }
 
-    const tokenizer = SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer) ? power_user.tokenizer : tokenizers.LLAMA;
+    const tokenizer = getTokenizerForTokenIds();
     const result = {};
 
     /**

@@ -30,13 +30,12 @@ export const SENTENCEPIECE_TOKENIZERS = [
     tokenizers.LLAMA,
     tokenizers.MISTRAL,
     tokenizers.YI,
-    tokenizers.API_CURRENT,
-    tokenizers.API_KOBOLD,
-    tokenizers.API_TEXTGENERATIONWEBUI,
     // uncomment when NovelAI releases Kayra and Clio weights, lol
     //tokenizers.NERD,
     //tokenizers.NERD2,
 ];
+
+export const TEXTGEN_TOKENIZERS = [OOBA, TABBY, KOBOLDCPP, LLAMACPP];
 
 const TOKENIZER_URLS = {
     [tokenizers.GPT2]: {
@@ -193,7 +192,7 @@ export function getTokenizerBestMatch(forApi) {
         // - Tokenizer haven't reported an error previously
         const hasTokenizerError = sessionStorage.getItem(TOKENIZER_WARNING_KEY);
         const isConnected = online_status !== 'no_connection';
-        const isTokenizerSupported = [OOBA, TABBY, KOBOLDCPP, LLAMACPP].includes(textgen_settings.type);
+        const isTokenizerSupported = TEXTGEN_TOKENIZERS.includes(textgen_settings.type);
 
         if (!hasTokenizerError && isConnected) {
             if (forApi === 'kobold' && kai_flags.can_use_tokenization) {
