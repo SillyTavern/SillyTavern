@@ -37,7 +37,7 @@ import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { hideChatMessage, unhideChatMessage } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
-import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
+import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
 import { autoSelectPersona } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
@@ -149,7 +149,7 @@ parser.addCommand('single', setStoryModeCallback, ['story'], ' – sets the mess
 parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the message style to bubble chat mode', true, true);
 parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
 parser.addCommand('continue', continueChatCallback, ['cont'], ' – continues the last message in the chat', true, true);
-parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character by its name', true, true);
+parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character or group by its name', true, true);
 parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
 parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</span> – asks a specified character card a prompt', true, true);
 parser.addCommand('delname', deleteMessagesByNameCallback, ['cancel'], '<span class="monospace">(name)</span> – deletes all messages attributed to a specified name', true, true);
@@ -1135,8 +1135,14 @@ async function goToCharacterCallback(_, name) {
         await openChat(new String(characterIndex));
         return characters[characterIndex]?.name;
     } else {
-        console.warn(`No matches found for name "${name}"`);
-        return '';
+        const group = groups.find(it=>it.name.toLowerCase() == name.toLowerCase());
+        if (group) {
+            await openGroupById(group.id);
+            return group.name;
+        } else {
+            console.warn(`No matches found for name "${name}"`);
+            return '';
+        }
     }
 }
 
