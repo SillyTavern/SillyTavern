@@ -311,6 +311,8 @@ class PresetManager {
             'ollama_model',
             'server_urls',
             'type',
+            'custom_model',
+            'bypass_status_check',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 

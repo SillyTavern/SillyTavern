@@ -1850,6 +1850,7 @@
                                     <small data-i18n="Example: http://127.0.0.1:5000 ">Example: http://127.0.0.1:5000</small>
                                     <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
                                 </div>
+                                <input id="custom_model_textgenerationwebui" class="text_pole wide100p" maxlength="500" placeholder="Custom model (optional)" type="text">
                             </div>
                             <div data-tg-type="aphrodite">
                                 <div class="flex-container flexFlowColumn">
@@ -1950,6 +1951,10 @@
                             <label data-tg-type="ooba,aphrodite" class="checkbox_label margin-bot-10px" for="legacy_api_textgenerationwebui">
                                 <input type="checkbox" id="legacy_api_textgenerationwebui" />
                                 <span data-i18n="Legacy API (pre-OAI, no streaming)">Legacy API (pre-OAI, no streaming)</span>
+                            </label>
+                            <label data-tg-type="ooba" class="checkbox_label margin-bot-10px" for="bypass_status_check_textgenerationwebui">
+                                <input type="checkbox" id="bypass_status_check_textgenerationwebui" />
+                                <span data-i18n="Bypass status check">Bypass status check</span>
                             </label>
                         </form>
                         <div class="online_status">

@@ -110,6 +110,8 @@ const settings = {
     logit_bias: [],
     n: 1,
     server_urls: {},
+    custom_model: '',
+    bypass_status_check: false,
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -163,6 +165,8 @@ const setting_names = [
     'sampler_order',
     'n',
     'logit_bias',
+    'custom_model',
+    'bypass_status_check',
 ];
 
 export function validateTextGenUrl() {
@@ -665,6 +669,10 @@ function toIntArray(string) {
 }
 
 function getModel() {
+    if (settings.type === OOBA && settings.custom_model) {
+        return settings.custom_model;
+    }
+
     if (settings.type === MANCER) {
         return settings.mancer_model;
     }

@@ -954,6 +954,11 @@ async function getStatusTextgen() {
         return resultCheckStatus();
     }
 
+    if (textgen_settings.type == OOBA && textgen_settings.bypass_status_check) {
+        online_status = 'Status check bypassed';
+        return resultCheckStatus();
+    }
+
     try {
         const response = await fetch(url, {
             method: 'POST',
