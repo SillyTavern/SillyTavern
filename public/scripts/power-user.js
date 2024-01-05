@@ -608,6 +608,9 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'rep_pen_range') {
         decimals = 0;
     }
+    if (sliderID == 'dynatemp_range_textgenerationwebui') {
+        decimals = 2;
+    }
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
         sliderID == 'epsilon_cutoff_textgenerationwebui') {
         numSteps = 50;
@@ -632,7 +635,8 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'tfs_textgenerationwebui' ||
         sliderID == 'min_p_textgenerationwebui' ||
         sliderID == 'temp_textgenerationwebui' ||
-        sliderID == 'temp') {
+        sliderID == 'temp' ||
+        sliderID == 'dynatemp_range_textgenerationwebui') {
         numSteps = 20;
     }
     if (sliderID == 'mirostat_eta_textgenerationwebui' ||
