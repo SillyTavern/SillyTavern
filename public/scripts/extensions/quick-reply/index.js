@@ -91,9 +91,9 @@ const loadSets = async () => {
                 set.qrList = set.quickReplySlots.map((slot,idx)=>{
                     const qr = {};
                     qr.id = idx + 1;
-                    qr.label = slot.label;
-                    qr.title = slot.title;
-                    qr.message = slot.mes;
+                    qr.label = slot.label ?? '';
+                    qr.title = slot.title ?? '';
+                    qr.message = slot.mes ?? '';
                     qr.isHidden = slot.hidden ?? false;
                     qr.executeOnStartup = slot.autoExecute_appStartup ?? false;
                     qr.executeOnUser = slot.autoExecute_userMessage ?? false;
