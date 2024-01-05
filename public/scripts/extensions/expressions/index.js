@@ -1111,8 +1111,7 @@ async function setExpression(character, expression, force) {
     } else {
         // Set the talkinghead emotion to the specified expression
         // TODO: For now, talkinghead emote only supported when VN mode is off; see also updateVisualNovelMode.
-        try
-        {
+        try {
             let result = await talkingHeadCheck();
             if (result) {
                 const url = new URL(getApiUrl());
