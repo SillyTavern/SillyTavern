@@ -158,6 +158,7 @@ export class SettingsUi {
         // @ts-ignore
         $(qrsDom).sortable({
             delay: getSortableDelay(),
+            handle: '.drag-handle',
             stop: ()=>this.onQrListSort(),
         });
     }

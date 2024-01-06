@@ -156,6 +156,9 @@
   align-items: baseline;
   padding: 0 0.5em;
 }
+#qr--settings .qr--setList > .qr--item > .drag-handle {
+  padding: 0.75em;
+}
 #qr--settings .qr--setList > .qr--item > .qr--visible {
   flex: 0 0 auto;
   display: flex;
@@ -188,6 +191,9 @@
 }
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(5) {
   flex: 0 0 auto;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > .drag-handle {
+  padding: 0.75em;
 }
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemLabel,
 #qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--action {

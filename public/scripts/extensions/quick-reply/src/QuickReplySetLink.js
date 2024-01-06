@@ -39,6 +39,8 @@ export class QuickReplySetLink {
             }
             const set = document.createElement('select'); {
                 set.classList.add('qr--set');
+                // fix for jQuery sortable breaking childrens' touch events
+                set.addEventListener('touchstart', (evt)=>evt.stopPropagation());
                 set.addEventListener('change', ()=>{
                     this.set = QuickReplySet.get(set.value);
                     this.update();
