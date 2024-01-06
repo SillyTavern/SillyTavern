@@ -1277,7 +1277,7 @@ async function onClickExpressionUpload(event) {
         e.target.form.reset();
 
         // In talkinghead mode, when a new talkinghead image is uploaded, refresh the live char.
-        if (extension_settings.expressions.talkinghead && id === "talkinghead") {
+        if (extension_settings.expressions.talkinghead && !extension_settings.expressions.local && id === "talkinghead") {
             await loadLiveChar();
         }
     };
