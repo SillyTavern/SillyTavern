@@ -735,12 +735,12 @@ async function setSpriteSlashCommand(_, spriteId) {
     }
 
     spriteId = spriteId.trim().toLowerCase();
+    const currentLastMessage = getLastCharacterMessage();
+    const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
 
     // In talkinghead mode, don't check for the existence of the sprite
     // (emotion names are the same as for sprites, but it only needs "talkinghead.png").
     if (extension_settings.expressions.local || !extension_settings.expressions.talkinghead) {
-        const currentLastMessage = getLastCharacterMessage();
-        const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
         await validateImages(spriteFolderName);
 
         // Fuzzy search for sprite
