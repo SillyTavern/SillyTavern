@@ -6973,7 +6973,7 @@ function openAlternateGreetings() {
     });
 
     updateAlternateGreetingsHintVisibility(template);
-    callPopup(template, 'alternate_greeting');
+    callPopup(template, 'alternate_greeting', '', { wide: true, large: true });
 }
 
 function addAlternateGreeting(template, greeting, index, getArray) {
