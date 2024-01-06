@@ -611,6 +611,10 @@ async function moduleWorker() {
     }
 }
 
+/**
+ * Checks whether the current character has a talkinghead image available.
+ * @returns {Boolean}
+ */
 async function talkingHeadCheck() {
     let spriteFolderName = getSpriteFolderName();
 
