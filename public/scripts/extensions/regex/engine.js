@@ -109,19 +109,22 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
         return newString;
     }
 
-    newString = rawString.replace(findRegex, (fencedMatch) => {
-        let trimFencedMatch = filterString(fencedMatch, regexScript.trimStrings, { characterOverride });
+    // Run replacement. Currently does not support the Overlay strategy
+    newString = rawString.replace(findRegex, function(match) {
+        const args = [...arguments];
+        const replaceString = regexScript.replaceString.replace('{{match}}', '$1');
+        const replaceWithGroups = replaceString.replaceAll(/\$(\d)+/g, (_, num) => {
+            // match is found here
+            const match = args[Number(num)];
+            const filteredMatch = filterString(match, regexScript.trimStrings, { characterOverride });
 
-        const subReplaceString = substituteRegexParams(
-            regexScript.replaceString,
-            trimFencedMatch,
-            {
-                characterOverride,
-                replaceStrategy: regexScript.replaceStrategy ?? regex_replace_strategy.REPLACE,
-            },
-        );
+            // TODO: Handle overlay here
 
-        return subReplaceString;
+            return filteredMatch;
+        });
+
+        // Substitute at the end
+        return substituteParams(replaceWithGroups);
     });
 
     return newString;
@@ -136,10 +139,10 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
  */
 function filterString(rawString, trimStrings, { characterOverride } = {}) {
     let finalString = rawString;
-    trimStrings.forEach((trimString) => {
+    for (const trimString of trimStrings) {
         const subTrimString = substituteParams(trimString, undefined, characterOverride);
         finalString = finalString.replaceAll(subTrimString, '');
-    });
+    }
 
     return finalString;
 }
