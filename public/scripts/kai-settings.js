@@ -308,6 +308,11 @@ const sliders = [
     },
 ];
 
+/**
+ * Sets the supported feature flags for the KoboldAI backend.
+ * @param {string} koboldUnitedVersion Kobold United version
+ * @param {string} koboldCppVersion KoboldCPP version
+ */
 export function setKoboldFlags(koboldUnitedVersion, koboldCppVersion) {
     kai_flags.can_use_stop_sequence = versionCompare(koboldUnitedVersion, MIN_STOP_SEQUENCE_VERSION);
     kai_flags.can_use_streaming = versionCompare(koboldCppVersion, MIN_STREAMING_KCPPVERSION);
@@ -316,6 +321,8 @@ export function setKoboldFlags(koboldUnitedVersion, koboldCppVersion) {
     kai_flags.can_use_mirostat = versionCompare(koboldCppVersion, MIN_MIROSTAT_KCPPVERSION);
     kai_flags.can_use_grammar = versionCompare(koboldCppVersion, MIN_GRAMMAR_KCPPVERSION);
     kai_flags.can_use_min_p = versionCompare(koboldCppVersion, MIN_MIN_P_KCPPVERSION);
+    const isKoboldCpp = versionCompare(koboldCppVersion, '1.0.0');
+    $('#koboldcpp_hint').toggleClass('displayNone', !isKoboldCpp);
 }
 
 /**
