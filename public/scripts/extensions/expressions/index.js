@@ -736,18 +736,22 @@ async function setSpriteSlashCommand(_, spriteId) {
 
     spriteId = spriteId.trim().toLowerCase();
 
-    const currentLastMessage = getLastCharacterMessage();
-    const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
-    await validateImages(spriteFolderName);
+    // In talkinghead mode, don't check for the existence of the sprite
+    // (emotion names are the same as for sprites, but it only needs "talkinghead.png").
+    if (extension_settings.expressions.local || !extension_settings.expressions.talkinghead) {
+        const currentLastMessage = getLastCharacterMessage();
+        const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
+        await validateImages(spriteFolderName);
 
-    // Fuzzy search for sprite
-    const fuse = new Fuse(spriteCache[spriteFolderName], { keys: ['label'] });
-    const results = fuse.search(spriteId);
-    const spriteItem = results[0]?.item;
+        // Fuzzy search for sprite
+        const fuse = new Fuse(spriteCache[spriteFolderName], { keys: ['label'] });
+        const results = fuse.search(spriteId);
+        const spriteItem = results[0]?.item;
 
-    if (!spriteItem) {
-        console.log('No sprite found for search term ' + spriteId);
-        return;
+        if (!spriteItem) {
+            console.log('No sprite found for search term ' + spriteId);
+            return;
+        }
     }
 
     const vnMode = isVisualNovelMode();
