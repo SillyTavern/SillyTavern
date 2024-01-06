@@ -139,10 +139,10 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
  */
 function filterString(rawString, trimStrings, { characterOverride } = {}) {
     let finalString = rawString;
-    for (const trimString of trimStrings) {
+    trimStrings.forEach((trimString) => {
         const subTrimString = substituteParams(trimString, undefined, characterOverride);
         finalString = finalString.replaceAll(subTrimString, '');
-    }
+    });
 
     return finalString;
 }
