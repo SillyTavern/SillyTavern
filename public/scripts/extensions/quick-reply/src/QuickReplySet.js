@@ -1,4 +1,4 @@
-import { getRequestHeaders } from '../../../../script.js';
+import { getRequestHeaders, substituteParams } from '../../../../script.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
 import { debounceAsync, warn } from '../index.js';
 import { QuickReply } from './QuickReply.js';
@@ -123,7 +123,7 @@ export class QuickReplySet {
             return typeof result === 'object' ? result?.pipe : '';
         }
 
-        ta.value = input;
+        ta.value = substituteParams(input);
         ta.focus();
 
         if (!this.disableSend) {
