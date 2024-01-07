@@ -464,7 +464,7 @@ export class QuickReply {
             const message = this.message.replace(/\{\{arg::([^}]+)\}\}/g, (_, key) => {
                 return args[key] ?? '';
             });
-            this.onExecute(this, message, args.isAutoExecute ?? false);
+            return await this.onExecute(this, message, args.isAutoExecute ?? false);
         }
     }
 
