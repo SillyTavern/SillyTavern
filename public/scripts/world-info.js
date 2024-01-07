@@ -2267,7 +2267,7 @@ export async function importEmbeddedWorldInfo(skipPopup = false) {
 
 function onWorldInfoChange(args, text) {
     if (args !== '__notSlashCommand__') { // if it's a slash command
-        const silent = args.silent == 'true';
+        const silent = isTrueBoolean(args.silent);
         if (text.trim() !== '') { // and args are provided
             const slashInputSplitText = text.trim().toLowerCase().split(',');
 
