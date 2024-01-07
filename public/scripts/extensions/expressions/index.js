@@ -51,6 +51,10 @@ let inApiCall = false;
 let lastServerResponseTime = 0;
 export let lastExpression = {};
 
+function isTalkingHeadEnabled() {
+    return extension_settings.expressions.talkinghead && !extension_settings.expressions.local;
+}
+
 function isVisualNovelMode() {
     return Boolean(!isMobile() && power_user.waifuMode && getContext().groupId);
 }
@@ -381,7 +385,7 @@ function onExpressionsShowDefaultInput() {
     }
 }
 
-async function unloadLiveChar() {
+async function unloadTalkingHead() {
     if (!modules.includes('talkinghead')) {
         console.debug('talkinghead module is disabled');
         return;
@@ -400,7 +404,7 @@ async function unloadLiveChar() {
     }
 }
 
-async function loadLiveChar() {
+async function loadTalkingHead() {
     if (!modules.includes('talkinghead')) {
         console.debug('talkinghead module is disabled');
         return;
@@ -450,7 +454,7 @@ function handleImageChange() {
         return;
     }
 
-    if (extension_settings.expressions.talkinghead && !extension_settings.expressions.local) {
+    if (isTalkingHeadEnabled()) {
         // Method get IP of endpoint
         const talkingheadResultFeedSrc = `${getApiUrl()}/api/talkinghead/result_feed`;
         $('#expression-holder').css({ display: '' });
@@ -613,23 +617,21 @@ async function moduleWorker() {
 
 /**
  * Checks whether the current character has a talkinghead image available.
- * @returns {Boolean}
+ * @returns {Promise<boolean>} True if the character has a talkinghead image available, false otherwise.
  */
-async function talkingHeadCheck() {
+async function isTalkingHeadAvailable() {
     let spriteFolderName = getSpriteFolderName();
 
     try {
         await validateImages(spriteFolderName);
 
         let talkingheadObj = spriteCache[spriteFolderName].find(obj => obj.label === 'talkinghead');
-        let talkingheadPath_f = talkingheadObj ? talkingheadObj.path : null;
+        let talkingheadPath = talkingheadObj ? talkingheadObj.path : null;
 
-        if (talkingheadPath_f != null) {
-            //console.log("talkingheadPath_f " + talkingheadPath_f);
+        if (talkingheadPath != null) {
             return true;
         } else {
-            //console.log("talkingheadPath_f is null");
-            unloadLiveChar();
+            await unloadTalkingHead();
             return false;
         }
     } catch (err) {
@@ -651,22 +653,22 @@ function getSpriteFolderName(characterMessage = null, characterName = null) {
     return spriteFolderName;
 }
 
-function setTalkingHeadState(switch_var) {
-    extension_settings.expressions.talkinghead = switch_var; // Store setting
+function setTalkingHeadState(newState) {
+    extension_settings.expressions.talkinghead = newState; // Store setting
     saveSettingsDebounced();
 
     if (extension_settings.expressions.local) {
         return;
     }
 
-    talkingHeadCheck().then(result => {
+    isTalkingHeadAvailable().then(result => {
         if (result) {
             //console.log("talkinghead exists!");
 
             if (extension_settings.expressions.talkinghead) {
-                loadLiveChar();
+                loadTalkingHead();
             } else {
-                unloadLiveChar();
+                unloadTalkingHead();
             }
             handleImageChange(); // Change image as needed
 
@@ -740,8 +742,8 @@ async function setSpriteSlashCommand(_, spriteId) {
     // (emotion names are the same as for sprites, but it only needs "talkinghead.png").
     const currentLastMessage = getLastCharacterMessage();
     const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
-    let label = '';
-    if (extension_settings.expressions.local || !extension_settings.expressions.talkinghead) {
+    let label = spriteId;
+    if (!isTalkingHeadEnabled()) {
         await validateImages(spriteFolderName);
 
         // Fuzzy search for sprite
@@ -755,9 +757,6 @@ async function setSpriteSlashCommand(_, spriteId) {
         }
 
         label = spriteItem.label;
-    }
-    else {
-        label = spriteId;
     }
 
     const vnMode = isVisualNovelMode();
@@ -1126,7 +1125,7 @@ async function setExpression(character, expression, force) {
         // Set the talkinghead emotion to the specified expression
         // TODO: For now, talkinghead emote only supported when VN mode is off; see also updateVisualNovelMode.
         try {
-            let result = await talkingHeadCheck();
+            let result = await isTalkingHeadAvailable();
             if (result) {
                 const url = new URL(getApiUrl());
                 url.pathname = '/api/talkinghead/set_emotion';
@@ -1277,8 +1276,8 @@ async function onClickExpressionUpload(event) {
         e.target.form.reset();
 
         // In talkinghead mode, when a new talkinghead image is uploaded, refresh the live char.
-        if (extension_settings.expressions.talkinghead && !extension_settings.expressions.local && id === "talkinghead") {
-            await loadLiveChar();
+        if (extension_settings.expressions.talkinghead && !extension_settings.expressions.local && id === 'talkinghead') {
+            await loadTalkingHead();
         }
     };
 
