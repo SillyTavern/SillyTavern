@@ -2265,25 +2265,53 @@ export async function importEmbeddedWorldInfo(skipPopup = false) {
     setWorldInfoButtonClass(chid, true);
 }
 
-function onWorldInfoChange(_, text) {
-    if (_ !== '__notSlashCommand__') { // if it's a slash command
+function onWorldInfoChange(args, text) {
+    if (args !== '__notSlashCommand__') { // if it's a slash command
+        const silent = args.silent == 'true';
         if (text.trim() !== '') { // and args are provided
             const slashInputSplitText = text.trim().toLowerCase().split(',');
 
             slashInputSplitText.forEach((worldName) => {
                 const wiElement = getWIElement(worldName);
                 if (wiElement.length > 0) {
-                    selected_world_info.push(wiElement.text());
-                    wiElement.prop('selected', true);
-                    toastr.success(`Activated world: ${wiElement.text()}`);
+                    const name = wiElement.text();
+                    switch (args.state) {
+                        case 'off': {
+                            if (selected_world_info.includes(name)) {
+                                selected_world_info.splice(selected_world_info.indexOf(name), 1);
+                                wiElement.prop('selected', false);
+                                if (!silent) toastr.success(`Deactivated world: ${name}`);
+                            } else {
+                                if (!silent) toastr.error(`World was not active: ${name}`);
+                            }
+                            break;
+                        }
+                        case 'toggle': {
+                            if (selected_world_info.includes(name)) {
+                                selected_world_info.splice(selected_world_info.indexOf(name), 1);
+                                wiElement.prop('selected', false);
+                                if (!silent) toastr.success(`Activated world: ${name}`);
+                            } else {
+                                selected_world_info.push(name);
+                                wiElement.prop('selected', true);
+                                if (!silent) toastr.success(`Deactivated world: ${name}`);
+                            }
+                            break;
+                        }
+                        default: {
+                            selected_world_info.push(name);
+                            wiElement.prop('selected', true);
+                            if (!silent) toastr.success(`Activated world: ${name}`);
+                        }
+                    }
                 } else {
-                    toastr.error(`No world found named: ${worldName}`);
+                    if (!silent) toastr.error(`No world found named: ${worldName}`);
                 }
             });
             $('#world_info').trigger('change');
         } else { // if no args, unset all worlds
             toastr.success('Deactivated all worlds');
-            selected_world_info = [];
+            if (!silent) selected_world_info = [];
             $('#world_info').val(null).trigger('change');
         }
     } else { //if it's a pointer selection
@@ -2414,7 +2442,7 @@ function assignLorebookToChat() {
 jQuery(() => {
 
     $(document).ready(function () {
-        registerSlashCommand('world', onWorldInfoChange, [], '<span class="monospace">(optional name)</span> – sets active World, or unsets if no args provided', true, true);
+        registerSlashCommand('world', onWorldInfoChange, [], '<span class="monospace">[optional state=off|toggle] [optional silent=true] (optional name)</span> – sets active World, or unsets if no args provided, use <code>state=off</code> and <code>state=toggle</code> to deactivate or toggle a World, use <code>silent=true</code> to suppress toast messages', true, true);
     });
 
 
