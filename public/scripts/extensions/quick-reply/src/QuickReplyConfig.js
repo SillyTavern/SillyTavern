@@ -38,9 +38,10 @@ export class QuickReplyConfig {
             const qrl = new QuickReplySetLink();
             qrl.set = qrs;
             qrl.isVisible = isVisible;
+            this.hookQuickReplyLink(qrl);
             this.setList.push(qrl);
+            this.setListDom.append(qrl.renderSettings(this.setList.length - 1));
             this.update();
-            this.updateSetListDom();
         }
     }
     removeSet(qrs) {
@@ -59,12 +60,7 @@ export class QuickReplyConfig {
         /**@type {HTMLElement}*/
         this.setListDom = root.querySelector('.qr--setList');
         root.querySelector('.qr--setListAdd').addEventListener('click', ()=>{
-            const qrl = new QuickReplySetLink();
-            qrl.set = QuickReplySet.list[0];
-            this.hookQuickReplyLink(qrl);
-            this.setList.push(qrl);
-            this.setListDom.append(qrl.renderSettings(this.setList.length - 1));
-            this.update();
+            this.addSet(QuickReplySet.list[0]);
         });
         this.updateSetListDom();
     }
