@@ -757,6 +757,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
 const originalDataKeyMap = {
     'displayIndex': 'extensions.display_index',
     'excludeRecursion': 'extensions.exclude_recursion',
+    'preventRecursion': 'extensions.prevent_recursion',
     'selectiveLogic': 'selectiveLogic',
     'comment': 'comment',
     'constant': 'constant',
@@ -1326,6 +1327,18 @@ function getWorldEntry(name, data, entry) {
     });
     excludeRecursionInput.prop('checked', entry.excludeRecursion).trigger('input');
 
+    // prevent recursion
+    const preventRecursionInput = template.find('input[name="prevent_recursion"]');
+    preventRecursionInput.data('uid', entry.uid);
+    preventRecursionInput.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = $(this).prop('checked');
+        data.entries[uid].preventRecursion = value;
+        setOriginalDataValue(data, uid, 'extensions.prevent_recursion', data.entries[uid].preventRecursion);
+        saveWorldInfo(name, data);
+    });
+    preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
+
     // delete button
     const deleteButton = template.find('.delete_entry_button');
     deleteButton.data('uid', entry.uid);
@@ -1886,6 +1899,7 @@ async function checkWorldInfo(chat, maxContext) {
         if (needsToScan) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
+                .filter(x => !x.preventRecursion)
                 .map(x => x.content).join('\n');
             const currentlyActivatedText = transformString(text);
             textToScan = (currentlyActivatedText + '\n' + textToScan);
@@ -2158,6 +2172,7 @@ function convertCharacterBook(characterBook) {
             order: entry.insertion_order,
             position: entry.extensions?.position ?? (entry.position === 'before_char' ? world_info_position.before : world_info_position.after),
             excludeRecursion: entry.extensions?.exclude_recursion ?? false,
+            preventRecursion: entry.extensions?.prevent_recursion ?? false,
             disable: !entry.enabled,
             addMemo: entry.comment ? true : false,
             displayIndex: entry.extensions?.display_index ?? index,
