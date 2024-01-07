@@ -1019,7 +1019,7 @@ async function getExpressionsList() {
 }
 
 async function setExpression(character, expression, force) {
-    if (extension_settings.expressions.local || !extension_settings.expressions.talkinghead) {
+    if (!isTalkingHeadEnabled()) {
         console.debug('entered setExpressions');
         await validateImages(character);
         const img = $('img.expression');
@@ -1284,7 +1284,7 @@ async function onClickExpressionUpload(event) {
         e.target.form.reset();
 
         // In talkinghead mode, when a new talkinghead image is uploaded, refresh the live char.
-        if (extension_settings.expressions.talkinghead && !extension_settings.expressions.local && id === 'talkinghead') {
+        if (isTalkingHeadEnabled() && id === 'talkinghead') {
             await loadTalkingHead();
         }
     };
