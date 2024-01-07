@@ -10,6 +10,7 @@ export { MODULE_NAME };
 const MODULE_NAME = 'expressions';
 const UPDATE_INTERVAL = 2000;
 const STREAMING_UPDATE_INTERVAL = 6000;
+const TALKINGCHECK_UPDATE_INTERVAL = 250;
 const FALLBACK_EXPRESSION = 'joy';
 const DEFAULT_EXPRESSIONS = [
     'talkinghead',
@@ -46,6 +47,8 @@ const DEFAULT_EXPRESSIONS = [
 let expressionsList = null;
 let lastCharacter = undefined;
 let lastMessage = null;
+let lastTalkingState = false;
+let lastTalkingStateMessage = null;  // last message as seen by `updateTalkingState` (tracked separately, different timer)
 let spriteCache = {};
 let inApiCall = false;
 let lastServerResponseTime = 0;
@@ -620,6 +623,62 @@ async function moduleWorker() {
         lastCharacter = context.groupId || context.characterId;
         lastMessage = currentLastMessage.mes;
         lastServerResponseTime = Date.now();
+    }
+}
+
+/**
+  * Starts/stops talkinghead talking animation.
+  *
+  * Talking starts only when all the following conditions are met:
+  *   - The LLM is currently streaming its output.
+  *   - The AI's current last message is non-empty, and also not just '...' (as produced by a swipe).
+  *   - The AI's current last message has changed from what we saw during the previous call.
+  *
+  * In all other cases, talking stops.
+  *
+  * A talkinghead API call is made only when the talking state changes.
+  */
+async function updateTalkingState() {
+    const context = getContext();
+    const currentLastMessage = getLastCharacterMessage();
+
+    try {
+        // TODO: Not sure if we need also "&& !context.groupId" here - the classify check in `moduleWorker`
+        //       (that similarly checks the streaming processor state) does that for some reason.
+        //       Talkinghead isn't currently designed to work with groups.
+        if (isTalkingHeadEnabled()) {
+            const lastMessageChanged = !((lastCharacter === context.characterId || lastCharacter === context.groupId)
+                                         && lastTalkingStateMessage === currentLastMessage.mes);
+            const url = new URL(getApiUrl());
+            let newTalkingState;
+            if (context.streamingProcessor && !context.streamingProcessor.isFinished &&
+                currentLastMessage.mes.length !== 0 && currentLastMessage.mes !== '...' && lastMessageChanged) {
+                url.pathname = '/api/talkinghead/start_talking';
+                newTalkingState = true;
+            } else {
+                url.pathname = '/api/talkinghead/stop_talking';
+                newTalkingState = false;
+            }
+            try {
+                // Call the talkinghead API only if the talking state changed.
+                if (newTalkingState !== lastTalkingState) {
+                    console.debug(`updateTalkingState: calling ${url.pathname}`);
+                    await doExtrasFetch(url);
+                }
+            }
+            catch (error) {
+                // it's ok if not supported
+            }
+            finally {
+                lastTalkingState = newTalkingState;
+            }
+        }
+    }
+    catch (error) {
+        // console.log(error);
+    }
+    finally {
+        lastTalkingStateMessage = currentLastMessage.mes;
     }
 }
 
@@ -1513,6 +1572,11 @@ function setExpressionOverrideHtml(forceClear = false) {
     const updateFunction = wrapper.update.bind(wrapper);
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
+    // For setting the talkinghead talking animation on/off quickly enough for realtime use, we need another timer on a shorter schedule.
+    const wrapper_talkingstate = new ModuleWorkerWrapper(updateTalkingState);
+    const updateTalkingStateFunction = wrapper_talkingstate.update.bind(wrapper_talkingstate);
+    setInterval(updateTalkingStateFunction, TALKINGCHECK_UPDATE_INTERVAL);
+    updateTalkingState();
     dragElement($('#expression-holder'));
     eventSource.on(event_types.CHAT_CHANGED, () => {
         // character changed
