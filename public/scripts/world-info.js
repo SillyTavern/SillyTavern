@@ -2310,8 +2310,8 @@ function onWorldInfoChange(args, text) {
             });
             $('#world_info').trigger('change');
         } else { // if no args, unset all worlds
-            toastr.success('Deactivated all worlds');
-            if (!silent) selected_world_info = [];
+            if (!silent) toastr.success('Deactivated all worlds');
+            selected_world_info = [];
             $('#world_info').val(null).trigger('change');
         }
     } else { //if it's a pointer selection
