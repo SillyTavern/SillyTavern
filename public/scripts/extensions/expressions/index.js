@@ -385,6 +385,9 @@ function onExpressionsShowDefaultInput() {
     }
 }
 
+/**
+  * Stops animating a talkinghead.
+  */
 async function unloadTalkingHead() {
     if (!modules.includes('talkinghead')) {
         console.debug('talkinghead module is disabled');
@@ -404,6 +407,9 @@ async function unloadTalkingHead() {
     }
 }
 
+/**
+  * Posts `talkinghead.png` of the current character to the talkinghead module in SillyTavern-extras, to start animating it.
+  */
 async function loadTalkingHead() {
     if (!modules.includes('talkinghead')) {
         console.debug('talkinghead module is disabled');
