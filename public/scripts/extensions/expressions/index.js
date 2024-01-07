@@ -569,9 +569,11 @@ async function moduleWorker() {
         return;
     }
 
+    const lastMessageChanged = !((lastCharacter === context.characterId || lastCharacter === context.groupId)
+                                 && lastMessage === currentLastMessage.mes);
+
     // check if last message changed
-    if ((lastCharacter === context.characterId || lastCharacter === context.groupId)
-        && lastMessage === currentLastMessage.mes) {
+    if (!lastMessageChanged) {
         return;
     }
 
