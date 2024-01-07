@@ -2305,11 +2305,11 @@ function onWorldInfoChange(args, text) {
                             if (selected_world_info.includes(name)) {
                                 selected_world_info.splice(selected_world_info.indexOf(name), 1);
                                 wiElement.prop('selected', false);
-                                if (!silent) toastr.success(`Activated world: ${name}`);
+                                if (!silent) toastr.success(`Dectivated world: ${name}`);
                             } else {
                                 selected_world_info.push(name);
                                 wiElement.prop('selected', true);
-                                if (!silent) toastr.success(`Deactivated world: ${name}`);
+                                if (!silent) toastr.success(`Activated world: ${name}`);
                             }
                             break;
                         }
