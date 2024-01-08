@@ -42,6 +42,9 @@
         },
         "vectra": {
             "openai": "^4.17.0"
+        },
+        "axios": {
+            "follow-redirects": "^1.15.4"
         }
     },
     "name": "sillytavern",
