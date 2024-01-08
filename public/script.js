@@ -261,6 +261,7 @@ export {
     printCharacters,
     isOdd,
     countOccurrences,
+    registerMacro,
 };
 
 showLoader();
@@ -2136,6 +2137,7 @@ function getCurrentSwipeId() {
     return '';
 }
 
+export const extensionMacros = [];
 /**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
@@ -2213,7 +2215,37 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     });
     content = bannedWordsReplace(content);
     content = randomReplace(content);
+
+    // extension macros
+    for (const macro of extensionMacros) {
+        try {
+            content = content.replace(macro.find, macro.replace);
+        } catch { /* empty */ }
+    }
+
     return content;
+}
+
+/**
+ * Register a new {{macro}}.
+ * @param {RegExp} findRegex A regular expression that is used to find the {{macro}} to be replaced
+ * @param {Function} replaceCallback A synchronous callback function that returns the text to replace the {{macro}}
+ * @param {String} helpText Descriptive text to be shown on /help macros
+ */
+function registerMacro(findRegex, replaceCallback, helpMacro, helpText) {
+    extensionMacros.push({
+        find: findRegex,
+        replace: replaceCallback,
+        helpMacro: helpMacro,
+        helpText: helpText,
+    });
+}
+
+function getExtensionMacrosHelp() {
+    const escape = document.createElement('div');
+    return extensionMacros.map(macro=>`
+    <li><tt>&lcub;&lcub;${escape.textContent = macro.helpMacro,escape.innerHTML}&rcub;&rcub;</tt> – ${escape.textContent = macro.helpText,escape.innerHTML}</li>
+    `).join('\n');
 }
 
 /**
@@ -2419,6 +2451,8 @@ function sendSystemMessage(type, text, extra = {}) {
 
     if (type == system_message_types.SLASH_COMMANDS) {
         newMessage.mes = getSlashCommandsHelp();
+    } else if (type == system_message_types.MACROS) {
+        newMessage.mes = newMessage.mes.replace('<div id="REPLACE-EXTENSION-MACROS"></div>', getExtensionMacrosHelp());
     }
 
     if (!newMessage.extra) {
