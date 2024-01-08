@@ -2230,6 +2230,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
  * Register a new {{macro}}.
  * @param {RegExp} findRegex A regular expression that is used to find the {{macro}} to be replaced
  * @param {Function} replaceCallback A synchronous callback function that returns the text to replace the {{macro}}
+ * @param {String} helpMacro Sample macro (without {{ and }}) to be shown on /help macros, e.g. for {{getvar::name}} this should be getvar::name
  * @param {String} helpText Descriptive text to be shown on /help macros
  */
 function registerMacro(findRegex, replaceCallback, helpMacro, helpText) {
@@ -2241,6 +2242,10 @@ function registerMacro(findRegex, replaceCallback, helpMacro, helpText) {
     });
 }
 
+/**
+ * Generates the help HTML for all registered macros provided by extensions.
+ * @returns Items for the list of extension macros on the "/help macros" page.
+ */
 function getExtensionMacrosHelp() {
     const escape = document.createElement('div');
     return extensionMacros.map(macro=>`
