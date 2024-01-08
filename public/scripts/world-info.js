@@ -360,6 +360,8 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
+        value = value.replace(/\\([{}|])/g, '$1');
+
         const data = await loadWorldInfoData(file);
 
         if (!data || !('entries' in data)) {
