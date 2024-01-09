@@ -2004,17 +2004,17 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`Checking inclusion group '${key}' with ${group.length} entries`, group);
 
-        if (!Array.isArray(group) || group.length <= 1) {
-            console.debug('Skipping inclusion group check, only one entry');
-            continue;
-        }
-
         if (Array.from(allActivatedEntries).some(x => x.group === key)) {
             console.debug(`Skipping inclusion group check, group already activated '${key}'`);
             // We need to forcefully deactivate all other entries in the group
             for (const entry of group) {
                 newEntries.splice(newEntries.indexOf(entry), 1);
             }
+            continue;
+        }
+
+        if (!Array.isArray(group) || group.length <= 1) {
+            console.debug('Skipping inclusion group check, only one entry');
             continue;
         }
 
