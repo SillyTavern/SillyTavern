@@ -558,6 +558,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         $('#world_popup_name_button').off('click').on('click', nullWorldInfo);
         $('#world_popup_export').off('click').on('click', nullWorldInfo);
         $('#world_popup_delete').off('click').on('click', nullWorldInfo);
+        $('#world_duplicate').off('click').on('click', nullWorldInfo);
         $('#world_popup_entries_list').hide();
         $('#world_info_pagination').html('');
         return;
@@ -692,6 +693,23 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             const jsonValue = JSON.stringify(data);
             const fileName = `${name}.json`;
             download(jsonValue, fileName, 'application/json');
+        }
+    });
+
+    $('#world_duplicate').off('click').on('click', async () => {
+        const tempName = getFreeWorldName();
+        const finalName = await callPopup('<h3>Create a new World Info?</h3>Enter a name for the new file:', 'input', tempName);
+
+        if (finalName) {
+            await saveWorldInfo(finalName, data, true);
+            await updateWorldInfoList();
+
+            const selectedIndex = world_names.indexOf(finalName);
+            if (selectedIndex !== -1) {
+                $('#world_editor_select').val(selectedIndex).trigger('change');
+            } else {
+                hideWorldEditor();
+            }
         }
     });
 
