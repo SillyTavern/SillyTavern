@@ -1270,6 +1270,30 @@
                                             <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="prompt_log_probs_aphrodite" id="prompt_log_probs_aphrodite_counter_textgenerationwebui">
                                         </div>
                                     -->
+                                    <div data-newbie-hidden name="dynaTempBlock" class="wide100p">
+                                        <h4 class="wide100p textAlignCenter" data-i18n="DynaTemp">
+                                            <div class="flex-container alignitemscenter" style="justify-content: center;">
+                                                <div class="checkbox_label" for="dynatemp_textgenerationwebui">
+                                                    <input type="checkbox" id="dynatemp_textgenerationwebui" />
+                                                    <small data-i18n="dynatemp"></small>
+                                                </div>
+                                                <span style="text-align: center;">Dynamic Temperature</span>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Scales Temperature dynamically per token (based on the variation of probabilities.)"></div>
+                                            </div>
+                                        </h4>
+                                        <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
+                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                                <small data-i18n="Minimum Temp">Minimum Temp</small>
+                                                <input class="neo-range-slider" type="range" id="min_temp_textgenerationwebui" name="volume" min="0" max="5" step="0.1" />
+                                                <input class="neo-range-input" type="number" min="0" max="5" step="0.1" data-for="min_temp_textgenerationwebui" id="min_temp_counter_textgenerationwebui">
+                                            </div>
+                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                                <small data-i18n="Maximum Temp">Maximum Temp</small>
+                                                <input class="neo-range-slider" type="range" id="max_temp_textgenerationwebui" name="volume" min="0" max="5" step="0.1" />
+                                                <input class="neo-range-input" type="number" min="0" max="5" step="0.1" data-for="max_temp_textgenerationwebui" id="max_temp_counter_textgenerationwebui">
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div data-newbie-hidden name="miroStatBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat
                                             <div class=" fa-solid fa-circle-info opacity50p " title="Mode=1 is only for llama.cpp&#13;More helpful tips coming soon."></div>
@@ -1312,29 +1336,6 @@
                                                     <input type="checkbox" id="early_stopping_textgenerationwebui" />
                                                     <small data-i18n="Early Stopping">Early Stopping</small>
                                                 </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div data-newbie-hidden name="dynaTempBlock" class="wide100p">
-                                        <h4 class="wide100p textAlignCenter" data-i18n="DynaTemp">DynaTemp
-                                            <div class=" fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon."></div>
-                                        </h4>
-                                        <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
-                                            <div class="">
-                                                <label class="checkbox_label" for="dynatemp_textgenerationwebui">
-                                                    <input type="checkbox" id="dynatemp_textgenerationwebui" />
-                                                    <small data-i18n="dynatemp">Activate</small>
-                                                </label>
-                                            </div>
-                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
-                                                <small data-i18n="Min Temp">Min Temp</small>
-                                                <input class="neo-range-slider" type="range" id="min_temp_textgenerationwebui" name="volume" min="0" max="5" step="0.1" />
-                                                <input class="neo-range-input" type="number" min="0" max="5" step="0.1" data-for="min_temp_textgenerationwebui" id="min_temp_counter_textgenerationwebui">
-                                            </div>
-                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
-                                                <small data-i18n="Max Temp">Max Temp</small>
-                                                <input class="neo-range-slider" type="range" id="max_temp_textgenerationwebui" name="volume" min="0" max="5" step="0.1" />
-                                                <input class="neo-range-input" type="number" min="0" max="5" step="0.1" data-for="max_temp_textgenerationwebui" id="max_temp_counter_textgenerationwebui">
                                             </div>
                                         </div>
                                     </div>
