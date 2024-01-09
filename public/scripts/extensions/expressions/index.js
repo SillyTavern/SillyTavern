@@ -572,8 +572,7 @@ async function moduleWorker() {
         return;
     }
 
-    const lastMessageChanged = !((lastCharacter === context.characterId || lastCharacter === context.groupId)
-                                 && lastMessage === currentLastMessage.mes);
+    const lastMessageChanged = !((lastCharacter === context.characterId || lastCharacter === context.groupId) && lastMessage === currentLastMessage.mes);
 
     // check if last message changed
     if (!lastMessageChanged) {
@@ -639,6 +638,11 @@ async function moduleWorker() {
   * A talkinghead API call is made only when the talking state changes.
   */
 async function updateTalkingState() {
+    // Don't bother if talkinghead is disabled or not loaded.
+    if (!isTalkingHeadEnabled() || !modules.includes('talkinghead')) {
+        return;
+    }
+
     const context = getContext();
     const currentLastMessage = getLastCharacterMessage();
 
@@ -646,32 +650,29 @@ async function updateTalkingState() {
         // TODO: Not sure if we need also "&& !context.groupId" here - the classify check in `moduleWorker`
         //       (that similarly checks the streaming processor state) does that for some reason.
         //       Talkinghead isn't currently designed to work with groups.
-        if (isTalkingHeadEnabled()) {
-            const lastMessageChanged = !((lastCharacter === context.characterId || lastCharacter === context.groupId)
-                                         && lastTalkingStateMessage === currentLastMessage.mes);
-            const url = new URL(getApiUrl());
-            let newTalkingState;
-            if (context.streamingProcessor && !context.streamingProcessor.isFinished &&
-                currentLastMessage.mes.length !== 0 && currentLastMessage.mes !== '...' && lastMessageChanged) {
-                url.pathname = '/api/talkinghead/start_talking';
-                newTalkingState = true;
-            } else {
-                url.pathname = '/api/talkinghead/stop_talking';
-                newTalkingState = false;
+        const lastMessageChanged = !((lastCharacter === context.characterId || lastCharacter === context.groupId) && lastTalkingStateMessage === currentLastMessage.mes);
+        const url = new URL(getApiUrl());
+        let newTalkingState;
+        if (context.streamingProcessor && !context.streamingProcessor.isFinished &&
+            currentLastMessage.mes.length !== 0 && currentLastMessage.mes !== '...' && lastMessageChanged) {
+            url.pathname = '/api/talkinghead/start_talking';
+            newTalkingState = true;
+        } else {
+            url.pathname = '/api/talkinghead/stop_talking';
+            newTalkingState = false;
+        }
+        try {
+            // Call the talkinghead API only if the talking state changed.
+            if (newTalkingState !== lastTalkingState) {
+                console.debug(`updateTalkingState: calling ${url.pathname}`);
+                await doExtrasFetch(url);
             }
-            try {
-                // Call the talkinghead API only if the talking state changed.
-                if (newTalkingState !== lastTalkingState) {
-                    console.debug(`updateTalkingState: calling ${url.pathname}`);
-                    await doExtrasFetch(url);
-                }
-            }
-            catch (error) {
-                // it's ok if not supported
-            }
-            finally {
-                lastTalkingState = newTalkingState;
-            }
+        }
+        catch (error) {
+            // it's ok if not supported
+        }
+        finally {
+            lastTalkingState = newTalkingState;
         }
     }
     catch (error) {
@@ -1573,8 +1574,8 @@ function setExpressionOverrideHtml(forceClear = false) {
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
     // For setting the talkinghead talking animation on/off quickly enough for realtime use, we need another timer on a shorter schedule.
-    const wrapper_talkingstate = new ModuleWorkerWrapper(updateTalkingState);
-    const updateTalkingStateFunction = wrapper_talkingstate.update.bind(wrapper_talkingstate);
+    const wrapperTalkingState = new ModuleWorkerWrapper(updateTalkingState);
+    const updateTalkingStateFunction = wrapperTalkingState.update.bind(wrapperTalkingState);
     setInterval(updateTalkingStateFunction, TALKINGCHECK_UPDATE_INTERVAL);
     updateTalkingState();
     dragElement($('#expression-holder'));
