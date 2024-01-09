@@ -3473,7 +3473,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             // need a detection for what the quiet prompt is being asked for...
 
             // Bail out early?
-            if (quietToLoud !== true) {
+            if (!isInstruct && !quietToLoud) {
                 return lastMesString;
             }
         }
@@ -3481,7 +3481,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
         // Get instruct mode line
         if (isInstruct && !isContinue) {
-            const name = isImpersonate ? name1 : name2;
+            const name = (quiet_prompt && !quietToLoud) ? 'System' : (isImpersonate ? name1 : name2);
             lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
         }
 

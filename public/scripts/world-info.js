@@ -360,6 +360,8 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
+        value = value.replace(/\\([{}|])/g, '$1');
+
         const data = await loadWorldInfoData(file);
 
         if (!data || !('entries' in data)) {
@@ -556,6 +558,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         $('#world_popup_name_button').off('click').on('click', nullWorldInfo);
         $('#world_popup_export').off('click').on('click', nullWorldInfo);
         $('#world_popup_delete').off('click').on('click', nullWorldInfo);
+        $('#world_duplicate').off('click').on('click', nullWorldInfo);
         $('#world_popup_entries_list').hide();
         $('#world_info_pagination').html('');
         return;
@@ -690,6 +693,23 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             const jsonValue = JSON.stringify(data);
             const fileName = `${name}.json`;
             download(jsonValue, fileName, 'application/json');
+        }
+    });
+
+    $('#world_duplicate').off('click').on('click', async () => {
+        const tempName = getFreeWorldName();
+        const finalName = await callPopup('<h3>Create a new World Info?</h3>Enter a name for the new file:', 'input', tempName);
+
+        if (finalName) {
+            await saveWorldInfo(finalName, data, true);
+            await updateWorldInfoList();
+
+            const selectedIndex = world_names.indexOf(finalName);
+            if (selectedIndex !== -1) {
+                $('#world_editor_select').val(selectedIndex).trigger('change');
+            } else {
+                hideWorldEditor();
+            }
         }
     });
 
@@ -1896,6 +1916,11 @@ async function checkWorldInfo(chat, maxContext) {
             needsToScan = false;
         }
 
+        if (newEntries.length === 0) {
+            console.debug('No new entries activated, stopping');
+            needsToScan = false;
+        }
+
         if (needsToScan) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
@@ -1997,13 +2022,17 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`Checking inclusion group '${key}' with ${group.length} entries`, group);
 
-        if (!Array.isArray(group) || group.length <= 1) {
-            console.debug('Skipping inclusion group check, only one entry');
+        if (Array.from(allActivatedEntries).some(x => x.group === key)) {
+            console.debug(`Skipping inclusion group check, group already activated '${key}'`);
+            // We need to forcefully deactivate all other entries in the group
+            for (const entry of group) {
+                newEntries.splice(newEntries.indexOf(entry), 1);
+            }
             continue;
         }
 
-        if (Array.from(allActivatedEntries).some(x => x.group === key)) {
-            console.debug(`Skipping inclusion group check, group already activated '${key}'`);
+        if (!Array.isArray(group) || group.length <= 1) {
+            console.debug('Skipping inclusion group check, only one entry');
             continue;
         }
 
