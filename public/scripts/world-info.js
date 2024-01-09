@@ -1898,6 +1898,11 @@ async function checkWorldInfo(chat, maxContext) {
             needsToScan = false;
         }
 
+        if (newEntries.length === 0) {
+            console.debug('No new entries activated, stopping');
+            needsToScan = false;
+        }
+
         if (needsToScan) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
@@ -2006,6 +2011,10 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
 
         if (Array.from(allActivatedEntries).some(x => x.group === key)) {
             console.debug(`Skipping inclusion group check, group already activated '${key}'`);
+            // We need to forcefully deactivate all other entries in the group
+            for (const entry of group) {
+                newEntries.splice(newEntries.indexOf(entry), 1);
+            }
             continue;
         }
 
