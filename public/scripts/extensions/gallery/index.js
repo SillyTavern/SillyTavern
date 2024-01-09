@@ -4,7 +4,7 @@ import {
     characters,
     getRequestHeaders,
 } from '../../../script.js';
-import { selected_group } from '../../group-chats.js';
+import { groups, selected_group } from '../../group-chats.js';
 import { loadFileToDocument, delay } from '../../utils.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
@@ -416,7 +416,26 @@ function viewWithDragbox(items) {
 
 // Registers a simple command for opening the char gallery.
 registerSlashCommand('show-gallery', showGalleryCommand, ['sg'], '– shows the gallery', true, true);
+registerSlashCommand('list-gallery', listGalleryCommand, ['lg'], '<span class="monospace">[optional char=charName] [optional group=groupName]</span> – list images in the gallery of the current char / group or a specified char / group', true, true);
 
 function showGalleryCommand(args) {
     showCharGallery();
+}
+
+async function listGalleryCommand(args) {
+    try {
+        let url = args.char ?? (args.group ? groups.find(it=>it.name == args.group)?.id : null) ?? (selected_group || this_chid);
+        if (!args.char && !args.group && !selected_group && this_chid) {
+            const char = characters[this_chid];
+            url = char.avatar.replace('.png', '');
+        }
+
+        const items = await getGalleryItems(url);
+        return JSON.stringify(items.map(it=>it.src));
+
+    } catch (err) {
+        console.trace();
+        console.error(err);
+    }
+    return JSON.stringify([]);
 }
