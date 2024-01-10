@@ -3151,13 +3151,24 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
         mesExamples = '';
     }
+    const mesExamplesRaw = mesExamples;
     if (mesExamples && isInstruct) {
         mesExamples = formatInstructModeExamples(mesExamples, name1, name2);
     }
 
-    const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-    const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
-    let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+    /**
+     * Adds a block heading to the examples string.
+     * @param {string} examplesStr
+     * @returns {string[]} Examples array with block heading
+     */
+    function addBlockHeading(examplesStr) {
+        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
+        const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
+        return examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+    }
+
+    let mesExamplesArray = addBlockHeading(mesExamples);
+    let mesExamplesRawArray = addBlockHeading(mesExamplesRaw);
 
     // First message in fresh 1-on-1 chat reacts to user/character settings changes
     if (chat.length) {
@@ -3299,6 +3310,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         loreBefore: worldInfoBefore,
         loreAfter: worldInfoAfter,
         mesExamples: mesExamplesArray.join(''),
+        mesExamplesRaw: mesExamplesRawArray.join(''),
     };
 
     const storyString = renderStoryString(storyStringParams);
