@@ -51,7 +51,7 @@ Since Tavern is only a user interface, it has tiny hardware requirements, it wil
 
 Get support, share favorite characters and prompts:
 
-### [Join](https://discord.gg/RZdyAEUPvj)
+### [Join](https://discord.gg/sillytavern)
 
 ***
 
