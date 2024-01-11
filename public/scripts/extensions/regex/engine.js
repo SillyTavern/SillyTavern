@@ -112,10 +112,17 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     // Run replacement. Currently does not support the Overlay strategy
     newString = rawString.replace(findRegex, function(match) {
         const args = [...arguments];
-        const replaceString = regexScript.replaceString.replace('{{match}}', '$1');
+        const replaceString = regexScript.replaceString.replace(/{{match}}/gi, '$0');
         const replaceWithGroups = replaceString.replaceAll(/\$(\d)+/g, (_, num) => {
-            // match is found here
+            // Get a full match or a capture group
             const match = args[Number(num)];
+
+            // No match found - return the empty string
+            if (!match) {
+                return '';
+            }
+
+            // Remove trim strings from the match
             const filteredMatch = filterString(match, regexScript.trimStrings, { characterOverride });
 
             // TODO: Handle overlay here
