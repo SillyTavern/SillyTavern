@@ -56,7 +56,7 @@
                 <div>
                     <textarea
                         class="regex_replace_string text_pole wide100p textarea_compact"
-                        placeholder="Use {{match}} to include the matched text from the Find Regex"
+                        placeholder="Use {{match}} to include the matched text from the Find Regex or $1, $2, etc. for capture groups."
                         rows="2"
                     ></textarea>
                 </div>
@@ -115,9 +115,9 @@
                     <input type="checkbox" name="run_on_edit" />
                     <span data-i18n="Run On Edit">Run On Edit</span>
                 </label>
-                <label class="checkbox flex-container">
+                <label class="checkbox flex-container" title="Substitute {{macros}} in Find Regex before running it">
                     <input type="checkbox" name="substitute_regex" />
-                    <span data-i18n="Substitute Regex">Substitute Regex</span>
+                    <span data-i18n="Substitute Regex">Substitute Regex (?)</span>
                 </label>
             </div>
             <div class="flex-container flexFlowColumn alignitemsstart">
