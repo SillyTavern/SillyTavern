@@ -175,6 +175,13 @@ router.post('/generate', jsonParser, async function (req, res) {
         },
     };
 
+    // Tells the model to stop generation at '>'
+    if ('theme_textadventure' === req.body.prefix &&
+        (true === req.body.model.includes('clio') ||
+         true === req.body.model.includes('kayra'))) {
+        data.parameters.eos_token_id = 49405;
+    }
+
     console.log(util.inspect(data, { depth: 4 }));
 
     const args = {
