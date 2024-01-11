@@ -478,7 +478,7 @@ async function sendMistralAIRequest(request, response) {
             'top_p': request.body.top_p,
             'max_tokens': request.body.max_tokens,
             'stream': request.body.stream,
-            'safe_mode': request.body.safe_mode,
+            //'safe_mode': request.body.safe_mode,
             'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
         };
 
