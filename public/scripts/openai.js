@@ -62,6 +62,7 @@ import {
     formatInstructModePrompt,
     formatInstructModeSystemPrompt,
 } from './instruct-mode.js';
+import { isMobile } from './RossAscends-mods.js';
 
 export {
     openai_messages_count,
@@ -1298,6 +1299,25 @@ function getChatCompletionModel() {
     }
 }
 
+function getOpenRouterModelTemplate(option){
+    const model = model_list.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    let tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
+    let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
+
+    const price = 0 === Number(model.pricing?.prompt) ? 'Free' : `${tokens_rounded}k t/$ `;
+
+    return $((`
+        <div class="flex-container flexFlowColumn" title="${DOMPurify.sanitize(model.id)}">
+            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | ${model.context_length} ctx | <small>${price}</small></div>
+        </div>
+    `));
+}
+
 function calculateOpenRouterCost() {
     if (oai_settings.chat_completion_source !== chat_completion_sources.OPENROUTER) {
         return;
@@ -1321,7 +1341,7 @@ function calculateOpenRouterCost() {
 }
 
 function saveModelList(data) {
-    model_list = data.map((model) => ({ id: model.id, context_length: model.context_length, pricing: model.pricing, architecture: model.architecture }));
+    model_list = data.map((model) => ({ ...model }));
     model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
@@ -1376,16 +1396,10 @@ function appendOpenRouterOptions(model_list, groupModels = false, sort = false) 
     $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
 
     const appendOption = (model, parent = null) => {
-        let tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
-        let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
-
-        const price = 0 === Number(model.pricing?.prompt) ? 'Free' : `${tokens_rounded}k t/$ `;
-
-        let model_description = `${model.id} | ${price} | ${model.context_length} ctx`;
         (parent || $('#model_openrouter_select')).append(
             $('<option>', {
                 value: model.id,
-                text: model_description,
+                text: model.name,
             }));
     };
 
@@ -1414,7 +1428,7 @@ const openRouterSortBy = (data, property = 'alphabetically') => {
             return parseFloat(a.pricing.prompt) - parseFloat(b.pricing.prompt);
         } else {
             // Alphabetically
-            return a?.id && b?.id && a.id.localeCompare(b.id);
+            return a?.name && b?.name && a.name.localeCompare(b.name);
         }
     });
 };
@@ -3983,6 +3997,16 @@ $(document).ready(async function () {
     $(document).on('input', '#openai_settings .autoSetHeight', function () {
         resetScrollHeight($(this));
     });
+
+    if (!isMobile()) {
+        $('#model_openrouter_select').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getOpenRouterModelTemplate,
+        });
+    }
 
     $('#api_button_openai').on('click', onConnectButtonClick);
     $('#openai_reverse_proxy').on('input', onReverseProxyInput);
