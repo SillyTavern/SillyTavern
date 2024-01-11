@@ -10,7 +10,7 @@ const API_NOVELAI = 'https://api.novelai.net';
 // Ban bracket generation, plus defaults
 const badWordsList = [
     [3], [49356], [1431], [31715], [34387], [20765], [30702], [10691], [49333], [1266],
-    [19438], [43145], [26523], [41471], [2936], [85, 85], [49332], [7286], [1115],
+    [19438], [43145], [26523], [41471], [2936], [85, 85], [49332], [7286], [1115], [24],
 ];
 
 const hypeBotBadWordsList = [
@@ -174,6 +174,13 @@ router.post('/generate', jsonParser, async function (req, res) {
             'order': req.body.order,
         },
     };
+
+    // Tells the model to stop generation at '>'
+    if ('theme_textadventure' === req.body.prefix &&
+        (true === req.body.model.includes('clio') ||
+         true === req.body.model.includes('kayra'))) {
+        data.parameters.eos_token_id = 49405;
+    }
 
     console.log(util.inspect(data, { depth: 4 }));
 
