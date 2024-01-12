@@ -2157,10 +2157,35 @@ function scrollChatToBottom() {
  * @param {*} _name2 - The name of the character. Uses global name2 if not provided.
  * @param {*} _original - The original message for {{original}} substitution.
  * @param {*} _group - The group members list for {{group}} substitution.
+ * @param {boolean} _replaceCharacterCard - Whether to replace character card macros.
  * @returns {string} The string with substituted parameters.
  */
 function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
-    return evaluateMacros(content, _name1 ?? name1, _name2 ?? name2, _original, _group ?? name2, _replaceCharacterCard);
+    const environment = {};
+
+    environment.user = _name1 ?? name1;
+    environment.char = _name2 ?? name2;
+    environment.group = environment.charIfNotGroup = _group ?? name2;
+
+    let substitutedOriginal = false;
+    environment.original = () => {
+        // Only substitute {{original}} on its first occurrence
+        if (substitutedOriginal || typeof _original !== 'string') return '';
+        return _original;
+    };
+
+    if (_replaceCharacterCard) {
+        const fields = getCharacterCardFields();
+        environment.charPrompt = fields.system || '';
+        environment.charJailbreak = fields.jailbreak || '';
+        environment.description = fields.description || '';
+        environment.personality = fields.personality || '';
+        environment.scenario = fields.scenario || '';
+        environment.persona = fields.persona || '';
+        environment.mesExamples = fields.mesExamples || '';
+    }
+
+    return evaluateMacros(content, environment);
 }
 
 
