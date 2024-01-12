@@ -1250,49 +1250,43 @@
                                             </div>
                                         </div>
                                     </div>
-									<div data-newbie-hidden name="checkboxes" class="flex-container flexBasis48p justifyCenter flexGrow flexShrink">
-										<div style="display: flex; justify-content: space-between; width: 100%;">
-											<div class="flex-container flexFlowColumn marginTop5" style="flex: 1;">
-												<label data-forAphro=False class="checkbox_label flexGrow flexShrink" for="do_sample_textgenerationwebui">
-													<input type="checkbox" id="do_sample_textgenerationwebui" />
-													<small data-i18n="Do Sample">Do Sample</small>
-												</label>
-												<label data-forAphro=False class="checkbox_label flexGrow flexShrink" for="add_bos_token_textgenerationwebui">
-													<input type="checkbox" id="add_bos_token_textgenerationwebui" />
-													<small data-i18n="Add BOS Token">Add BOS Token
-														<div class="fa-solid fa-circle-info opacity50p" data-i18n="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative." title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
-													</small>
-												</label>
-												<label data-forAphro=False class="checkbox_label flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
-													<input type="checkbox" id="ban_eos_token_textgenerationwebui" />
-													<small data-i18n="Ban EOS Token">Ban EOS Token
-														<div class="fa-solid fa-circle-info opacity50p" data-i18n="Ban the eos_token. This forces the model to never end the generation prematurely" title="Ban the eos_token. This forces the model to never end the generation prematurely."></div>
-													</small>
-												</label>
-											</div>
-											<div class="flex-container flexFlowColumn marginTop5" style="flex: 1;">
-												<label data-tg-type="aphrodite" class="checkbox_label" for="ignore_eos_token_aphrodite_textgenerationwebui">
-													<input type="checkbox" id="ignore_eos_token_aphrodite_textgenerationwebui" />
-													<small data-i18n="Ignore EOS Token">Ignore EOS Token
-														<div class="fa-solid fa-circle-info opacity50p" data-i18n="Ignore the EOS Token even if it generates." title="Ignore the EOS Token even if it generates."></div>
-													</small>
-												</label>
-												<label class="checkbox_label flexGrow flexShrink" for="skip_special_tokens_textgenerationwebui">
-													<input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
-													<small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
-												</label>
-												<label data-forAphro=False class="checkbox_label flexGrow flexShrink" for="temperature_last_textgenerationwebui">
-													<input type="checkbox" id="temperature_last_textgenerationwebui" />
-													<small data-i18n="Temperature Last">Temperature Last
-														<div class="fa-solid fa-circle-info opacity50p" data-i18n="Use the temperature sampler last." title="Use the temperature sampler last."></div>
-													</small>
-												</label>
-												<label data-tg-type="aphrodite" class="checkbox_label" for="spaces_between_special_tokens_aphrodite_textgenerationwebui">
-													<input type="checkbox" id="spaces_between_special_tokens_aphrodite_textgenerationwebui" />
-													<small data-i18n="Spaces Between Special Tokens">Spaces Between Special Tokens</small>
-												</label>
-											</div>
-										</div>
+									<div data-newbie-hidden name="checkboxes" class="flex-container flexBasis48p flexGrow flexShrink" style="justify-content: space-around;">
+                                        <label data-forAphro=False class="checkbox_label" style="width: 45%;" for="do_sample_textgenerationwebui">
+                                            <input type="checkbox" id="do_sample_textgenerationwebui" />
+                                            <small data-i18n="Do Sample">Do Sample</small>
+                                        </label>
+                                        <label data-forAphro=False class="checkbox_label" style="width: 45%;" for="add_bos_token_textgenerationwebui">
+                                            <input type="checkbox" id="add_bos_token_textgenerationwebui" />
+                                            <small data-i18n="Add BOS Token">Add BOS Token
+                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative." title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
+                                            </small>
+                                        </label>
+                                        <label data-forAphro=False class="checkbox_label" style="width: 45%;" for="ban_eos_token_textgenerationwebui">
+                                            <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
+                                            <small data-i18n="Ban EOS Token">Ban EOS Token
+                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="Ban the eos_token. This forces the model to never end the generation prematurely" title="Ban the eos_token. This forces the model to never end the generation prematurely."></div>
+                                            </small>
+                                        </label>
+                                        <label data-tg-type="aphrodite" class="checkbox_label" for="ignore_eos_token_aphrodite_textgenerationwebui">
+                                            <input type="checkbox" id="ignore_eos_token_aphrodite_textgenerationwebui" />
+                                            <small data-i18n="Ignore EOS Token">Ignore EOS Token
+                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="Ignore the EOS Token even if it generates." title="Ignore the EOS Token even if it generates."></div>
+                                            </small>
+                                        </label>
+                                        <label class="checkbox_label" style="width: 45%;" for="skip_special_tokens_textgenerationwebui">
+                                            <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
+                                            <small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
+                                        </label>
+                                        <label data-forAphro=False class="checkbox_label" style="width: 45%;" for="temperature_last_textgenerationwebui">
+                                            <input type="checkbox" id="temperature_last_textgenerationwebui" />
+                                            <small data-i18n="Temperature Last">Temperature Last
+                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="Use the temperature sampler last." title="Use the temperature sampler last."></div>
+                                            </small>
+                                        </label>
+                                        <label data-tg-type="aphrodite" class="checkbox_label" for="spaces_between_special_tokens_aphrodite_textgenerationwebui">
+                                            <input type="checkbox" id="spaces_between_special_tokens_aphrodite_textgenerationwebui" />
+                                            <small data-i18n="Spaces Between Special Tokens">Spaces Between Special Tokens</small>
+                                        </label>
 									</div>
 								<div data-newbie-hidden class="wide100p">
 									<hr data-newbie-hidden class="width100p">
