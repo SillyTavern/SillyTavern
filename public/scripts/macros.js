@@ -205,6 +205,7 @@ function diceRollReplace(input, invalidRollPlaceholder = '') {
  * @param {*} _name2 - The name of the character.
  * @param {*} _original - The original message for {{original}} substitution.
  * @param {*} _group - The group members list for {{group}} substitution.
+ * @param {boolean} _replaceCharacterCard - Whether to replace character card macros.
  * @returns {string} The string with substituted parameters.
  */
 export function evaluateMacros(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
