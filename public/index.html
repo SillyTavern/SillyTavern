@@ -1320,7 +1320,9 @@
 												'min_length_textgenerationwebui': '0',
 												'min_length_counter_textgenerationwebui': '0',
 												'num_beams_textgenerationwebui': '1',
-												'num_beams_counter_textgenerationwebui': '1'
+												'num_beams_counter_textgenerationwebui': '1',
+												'typical_p_textgenerationwebui': '1', // Added entry
+												'typical_p_counter_textgenerationwebui': '1' // Added entry
 											};
 
 											for (const [id, value] of Object.entries(inputs)) {
@@ -1330,7 +1332,6 @@
 												const event = new Event('change', { bubbles: true });
 												inputElement.dispatchEvent(event);
 											}
-
 										}
 									</script>
 									
