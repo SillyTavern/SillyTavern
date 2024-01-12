@@ -1,8 +1,8 @@
-import { chat, main_api, getMaxContextSize, getCharacterCardFields } from '../script';
-import { timestampToMoment, isDigitsOnly } from './utils';
-import { textgenerationwebui_banned_in_macros } from './textgen-settings';
-import { replaceInstructMacros } from './instruct-mode';
-import { replaceVariableMacros } from './variables';
+import { chat, main_api, getMaxContextSize, getCharacterCardFields } from '../script.js';
+import { timestampToMoment, isDigitsOnly } from './utils.js';
+import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
+import { replaceInstructMacros } from './instruct-mode.js';
+import { replaceVariableMacros } from './variables.js';
 
 /**
  * Returns the ID of the last message in the chat.
