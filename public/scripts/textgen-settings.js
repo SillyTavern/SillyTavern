@@ -765,7 +765,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'repeat_penalty': settings.rep_pen,
         'tfs_z': settings.tfs,
         'repeat_last_n': settings.rep_pen_range,
-        'n_predict': settings.maxTokens,
+        'n_predict': maxTokens,
         'mirostat': settings.mirostat_mode,
         'ignore_eos': settings.ban_eos_token,
     };
