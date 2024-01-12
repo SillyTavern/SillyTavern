@@ -5825,8 +5825,6 @@ async function saveSettings(type) {
         return;
     }
 
-    console.log(background_settings);
-
     //console.log('Entering settings with name1 = '+name1);
 
     return jQuery.ajax({
