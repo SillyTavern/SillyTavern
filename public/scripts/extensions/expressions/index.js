@@ -422,6 +422,8 @@ async function loadTalkingHead() {
     const spriteFolderName = getSpriteFolderName();
 
     const talkingheadPath = `/characters/${encodeURIComponent(spriteFolderName)}/talkinghead.png`;
+    const emotionsSettingsPath = `/characters/${encodeURIComponent(spriteFolderName)}/_emotions.json`;
+    const animatorSettingsPath = `/characters/${encodeURIComponent(spriteFolderName)}/_animator.json`;
 
     try {
         const spriteResponse = await fetch(talkingheadPath);
@@ -450,6 +452,69 @@ async function loadTalkingHead() {
         const loadResponseText = await loadResponse.text();
         console.log(`Load talkinghead response: ${loadResponseText}`);
 
+        // Optional: per-character emotion templates
+        let emotionsSettings;
+        try {
+            const emotionsResponse = await fetch(emotionsSettingsPath);
+            if (emotionsResponse.ok) {
+                emotionsSettings = await emotionsResponse.json();
+                console.log(`Loaded ${emotionsSettingsPath}`);
+            } else {
+                throw new Error();
+            }
+        }
+        catch (error) {
+            emotionsSettings = {};  // blank -> use server defaults (to unload the previous character's customizations)
+            console.log(`No valid config at ${emotionsSettingsPath}, using server defaults`);
+        }
+        try {
+            const url = new URL(getApiUrl());
+            url.pathname = '/api/talkinghead/load_emotion_templates';
+            const apiResult = await doExtrasFetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'bypass',
+                },
+                body: JSON.stringify(emotionsSettings),
+            });
+        }
+        catch (error) {
+            // it's ok if not supported
+            console.log('Failed to send _emotions.json (backend too old?), ignoring');
+        }
+
+        // Optional: per-character animator and postprocessor config
+        let animatorSettings;
+        try {
+            const animatorResponse = await fetch(animatorSettingsPath);
+            if (animatorResponse.ok) {
+                animatorSettings = await animatorResponse.json();
+                console.log(`Loaded ${animatorSettingsPath}`);
+            } else {
+                throw new Error();
+            }
+        }
+        catch (error) {
+            animatorSettings = {};  // blank -> use server defaults (to unload the previous character's customizations)
+            console.log(`No valid config at ${animatorSettingsPath}, using server defaults`);
+        }
+        try {
+            const url = new URL(getApiUrl());
+            url.pathname = '/api/talkinghead/load_animator_settings';
+            const apiResult = await doExtrasFetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'bypass',
+                },
+                body: JSON.stringify(animatorSettings),
+            });
+        }
+        catch (error) {
+            // it's ok if not supported
+            console.log('Failed to send _animator.json (backend too old?), ignoring');
+        }
     } catch (error) {
         console.error(`Error loading talkinghead image: ${talkingheadPath} - ${error}`);
     }
