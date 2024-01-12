@@ -1486,7 +1486,7 @@ export function sendTextareaMessage() {
     // message was sent from a character (not the user or the system).
     const textareaText = String($('#send_textarea').val());
     if (power_user.continue_on_send &&
-        !textareaText  &&
+        !textareaText &&
         !selected_group &&
         chat.length &&
         !chat[chat.length - 1]['is_user'] &&
@@ -2111,11 +2111,21 @@ function getStoppingStrings(isImpersonate, isContinue) {
  * @param {boolean} quietToLoud Whether the message should be sent in a foreground (loud) or background (quiet) mode
  * @param {boolean} skipWIAN whether to skip addition of World Info and Author's Note into the prompt
  * @param {string} quietImage Image to use for the quiet prompt
+ * @param {string} quietName Name to use for the quiet prompt (defaults to "System:")
  * @returns
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null) {
     console.log('got into genQuietPrompt');
-    const generateFinished = await Generate('quiet', { quiet_prompt, quietToLoud, skipWIAN: skipWIAN, force_name2: true, quietImage: quietImage });
+    /** @type {GenerateOptions} */
+    const options = {
+        quiet_prompt,
+        quietToLoud,
+        skipWIAN: skipWIAN,
+        force_name2: true,
+        quietImage: quietImage,
+        quietName: quietName,
+    };
+    const generateFinished = await Generate('quiet', options);
     return generateFinished;
 }
 
@@ -2689,8 +2699,15 @@ export async function generateRaw(prompt, api, instructOverride) {
     return message;
 }
 
-// Returns a promise that resolves when the text is done generating.
-async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops } = {}, dryRun = false) {
+/**
+ * Runs a generation using the current chat context.
+ * @param {string} type Generation type
+ * @param {GenerateOptions} options Generation options
+ * @param {boolean} dryRun Whether to actually generate a message or just assemble the prompt
+ * @returns {Promise<any>} Returns a promise that resolves when the text is done generating.
+ * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, maxLoops?: number, quietName?: string }} GenerateOptions
+ */
+async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName } = {}, dryRun = false) {
     console.log('Generate entered');
     eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops }, dryRun);
     setGenerationProgress(0);
@@ -3230,7 +3247,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
         // Get instruct mode line
         if (isInstruct && !isContinue) {
-            const name = (quiet_prompt && !quietToLoud) ? 'System' : (isImpersonate ? name1 : name2);
+            const name = (quiet_prompt && !quietToLoud) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
             lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
         }
 
