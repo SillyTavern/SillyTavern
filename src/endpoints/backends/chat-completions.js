@@ -483,7 +483,7 @@ async function sendMistralAIRequest(request, response) {
             'top_p': request.body.top_p,
             'max_tokens': request.body.max_tokens,
             'stream': request.body.stream,
-            //'safe_mode': request.body.safe_mode,
+            'safe_prompt': request.body.safe_prompt,
             'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
         };
 
@@ -545,7 +545,7 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = 'https://api.mistral.ai/v1';
         api_key_openai = readSecret(SECRET_KEYS.MISTRALAI);
-        headers = { 'Content-Length': '0' }; // WTF?
+        headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         api_url = request.body.custom_url;
         api_key_openai = readSecret(SECRET_KEYS.CUSTOM);

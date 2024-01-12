@@ -1631,7 +1631,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isMistral) {
-        generate_data['safe_mode'] = false; // already defaults to false, but just incase they change that in the future.
+        generate_data['safe_prompt'] = false; // already defaults to false, but just incase they change that in the future.
     }
 
     if (isCustom) {
