@@ -1250,10 +1250,14 @@
                                             </div>
                                         </div>
                                     </div>
-									<div data-newbie-hidden name="checkboxes" class="flex-container flexBasis48p flexGrow flexShrink" style="justify-content: space-around;">
+									<div data-newbie-hidden name="checkboxes" class="flex-container flexBasis48p flexGrow flexShrink" style="justify-content: left;">
                                         <label data-forAphro=False class="checkbox_label" style="width: 45%;" for="do_sample_textgenerationwebui">
                                             <input type="checkbox" id="do_sample_textgenerationwebui" />
                                             <small data-i18n="Do Sample">Do Sample</small>
+                                        </label>
+                                        <label class="checkbox_label" style="width: 45%;" for="skip_special_tokens_textgenerationwebui">
+                                            <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
+                                            <small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
                                         </label>
                                         <label data-forAphro=False class="checkbox_label" style="width: 45%;" for="add_bos_token_textgenerationwebui">
                                             <input type="checkbox" id="add_bos_token_textgenerationwebui" />
@@ -1272,10 +1276,6 @@
                                             <small data-i18n="Ignore EOS Token">Ignore EOS Token
                                                 <div class="fa-solid fa-circle-info opacity50p" data-i18n="Ignore the EOS Token even if it generates." title="Ignore the EOS Token even if it generates."></div>
                                             </small>
-                                        </label>
-                                        <label class="checkbox_label" style="width: 45%;" for="skip_special_tokens_textgenerationwebui">
-                                            <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
-                                            <small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
                                         </label>
                                         <label data-forAphro=False class="checkbox_label" style="width: 45%;" for="temperature_last_textgenerationwebui">
                                             <input type="checkbox" id="temperature_last_textgenerationwebui" />
@@ -1340,7 +1340,7 @@
 										<!-- Styled Disable All Button placed next to title -->
 										<div class="menu_button menu_button_icon" title="Turn off all the older samplers." onclick="disableAllSettings()">
 											<i class="fa-solid fa-toggle-off"></i> <!-- Use whatever icon you prefer -->
-											<span>Disable All?</span>
+											<span>Disable</span>
 										</div>
 									</h4>
                                     <div data-newbie-hidden name="miroStatBlock" class="wide100p">
