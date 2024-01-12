@@ -721,6 +721,14 @@ router.post('/generate', jsonParser, function (request, response) {
         headers = { 'HTTP-Referer': request.headers.referer };
         bodyParams = { 'transforms': ['middle-out'] };
 
+        if (request.body.min_p !== undefined) {
+            bodyParams['min_p'] = request.body.min_p;
+        }
+
+        if (request.body.top_a !== undefined) {
+            bodyParams['top_a'] = request.body.top_a;
+        }
+
         if (request.body.use_fallback) {
             bodyParams['route'] = 'fallback';
         }
