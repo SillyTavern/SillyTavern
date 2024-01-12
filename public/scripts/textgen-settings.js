@@ -749,6 +749,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'sampler_order': settings.type === textgen_types.KOBOLDCPP ? settings.sampler_order : undefined,
     };
     const nonAphroditeParams = {
+        'rep_pen': settings.rep_pen,
+        'rep_pen_range': settings.rep_pen_range,
         'repetition_penalty_range': settings.rep_pen_range,
         'encoder_repetition_penalty': settings.encoder_rep_pen,
         'no_repeat_ngram_size': settings.no_repeat_ngram_size,
