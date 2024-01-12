@@ -533,13 +533,22 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
     }
 });
 
-function getUrlSync(url, cache = true) {
-    return $.ajax({
-        type: 'GET',
-        url: url,
-        cache: cache,
-        async: false,
-    }).responseText;
+/**
+ * Loads a URL content using XMLHttpRequest synchronously.
+ * @param {string} url URL to load synchronously
+ * @returns {string} Response text
+ */
+function getUrlSync(url) {
+    console.debug('Loading URL synchronously', url);
+    const request = new XMLHttpRequest();
+    request.open('GET', url, false); // `false` makes the request synchronous
+    request.send();
+
+    if (request.status >= 200 && request.status < 300) {
+        return request.responseText;
+    }
+
+    throw new Error(`Error loading ${url}: ${request.status} ${request.statusText}`);
 }
 
 const templateCache = new Map();
