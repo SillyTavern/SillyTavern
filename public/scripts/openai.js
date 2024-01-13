@@ -464,7 +464,7 @@ function setOpenAIMessages(chat) {
 }
 
 /**
- * Formats chat messages into chat completion messages.
+ * Formats chat examples into chat completion messages.
  * @param {string[]} mesExamplesArray - Array containing all examples.
  * @returns {object[]} - Array containing all examples formatted for chat completion.
  */
@@ -541,14 +541,14 @@ function parseExampleIntoIndividual(messageExampleString) {
     let cur_msg_lines = [];
     let in_user = false;
     let in_bot = false;
-    // DRY my cock and balls
+    // DRY my cock and balls :)
     function add_msg(name, role, system_name) {
         // join different newlines (we split them by \n and join by \n)
         // remove char name
         // strip to remove extra spaces
         let parsed_msg = cur_msg_lines.join('\n').replace(name + ':', '').trim();
 
-        if (selected_group && role == 'assistant') {
+        if (selected_group && ['example_user', 'example_assistant'].includes(system_name)) {
             parsed_msg = `${name}: ${parsed_msg}`;
         }
 
