@@ -334,7 +334,7 @@ async function sendMakerSuiteRequest(request, response) {
             }
 
             const responseContent = candidates[0].content ?? candidates[0].output;
-            const responseText = typeof responseContent === 'string' ? responseContent : responseContent.parts?.[0]?.text;
+            const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.[0]?.text;
             if (!responseText) {
                 let message = 'MakerSuite Candidate text empty';
                 console.log(message, generateResponseJson);
