@@ -273,6 +273,10 @@
         "type": "textgen_preset"
     },
     {
+        "filename": "presets/textgen/Mixtral8x7B-Instruct0.1-Preset1.0.json",
+        "type": "textgen_preset"
+    },
+    {
         "filename": "presets/textgen/Naive.json",
         "type": "textgen_preset"
     },

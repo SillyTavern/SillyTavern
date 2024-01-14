@@ -1,0 +1,11 @@
+{
+    "story_string": "<s> [INST] {{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}[/INST]",
+    "example_separator": "Examples:",
+    "chat_start": "",
+    "use_stop_strings": false,
+    "always_force_name2": true,
+    "trim_sentences": true,
+    "include_newline": true,
+    "single_line": false,
+    "name": "Mixtral8x7B-Instruct0.1-Preset1.0"
+}
