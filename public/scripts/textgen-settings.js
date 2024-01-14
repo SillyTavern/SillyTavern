@@ -502,6 +502,51 @@ jQuery(function () {
         selectPreset(presetName);
     });
 
+    $('#samplerResetButton').off('click').on('click', function () {
+        const inputs = {
+            'temp_textgenerationwebui': '1',
+            'top_k_textgenerationwebui': '0',
+            'top_p_textgenerationwebui': '1',
+            'min_p_textgenerationwebui': '0',
+            'rep_pen_textgenerationwebui': '1',
+            'rep_pen_range_textgenerationwebui': '0',
+            'dynatemp_textgenerationwebui': false,
+            'seed_textgenerationwebui': '-1',
+            'ban_eos_token_textgenerationwebui': false,
+            'do_sample_textgenerationwebui': true,
+            'add_bos_token_textgenerationwebui': true,
+            'temperature_last_textgenerationwebui': true,
+            'skip_special_tokens_textgenerationwebui': true,
+            'top_a_textgenerationwebui': '0',
+            'top_a_counter_textgenerationwebui': '0',
+            'mirostat_mode_textgenerationwebui': '0',
+            'mirostat_tau_textgenerationwebui': '5',
+            'mirostat_eta_textgenerationwebui': '0.1',
+            'tfs_textgenerationwebui': '1',
+            'epsilon_cutoff_textgenerationwebui': '0',
+            'eta_cutoff_textgenerationwebui': '0',
+            'encoder_rep_pen_textgenerationwebui': '1',
+            'freq_pen_textgenerationwebui': '0',
+            'presence_pen_textgenerationwebui': '0',
+            'no_repeat_ngram_size_textgenerationwebui': '0',
+            'min_length_textgenerationwebui': '0',
+            'num_beams_textgenerationwebui': '1',
+            'length_penalty_textgenerationwebui': '0',
+            'penalty_alpha_textgenerationwebui': '0',
+            'typical_p_textgenerationwebui': '1', // Added entry
+            'guidance_scale_textgenerationwebui': '1',
+        };
+
+        for (const [id, value] of Object.entries(inputs)) {
+            const inputElement = $(`#${id}`);
+            if (inputElement.prop('type') === 'checkbox') {
+                inputElement.prop('checked', value);
+            } else {
+                inputElement.val(value).trigger('input');
+            }
+        }
+    });
+
     for (const i of setting_names) {
         $(`#${i}_textgenerationwebui`).attr('x-setting-id', i);
         $(document).on('input', `#${i}_textgenerationwebui`, function () {
