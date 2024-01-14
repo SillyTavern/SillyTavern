@@ -474,6 +474,10 @@ async function tts(text, voiceId, char) {
         if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
             response = await window['rvcVoiceConversion'](response, char, text);
 
+        // VRM injection
+        if (extension_settings.vrm.enabled && typeof window['vrmLipSync'] === 'function')
+            await window['vrmLipSync'](response, char);
+
         await addAudioJob(response);
     }
 
