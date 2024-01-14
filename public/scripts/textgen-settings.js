@@ -396,12 +396,14 @@ function loadTextGenSettings(data, loadedSettings) {
     displayLogitBias(settings.logit_bias, BIAS_KEY);
     //this is needed because showTypeSpecificControls() does not handle NOT declarations
     if (settings.type === textgen_types.APHRODITE) {
-        $('[data-forAphro=False]').each(function () {
+        $('[data-forAphro="False"]').each(function () {
             $(this).hide();
         });
     } else {
-        $('[data-forAphro=False]').each(function () {
-            $(this).show();
+        $('[data-forAphro="False"]').each(function () {
+            if ($(this).css('display') !== 'none') { //if it wasn't already hidden by showTypeSpecificControls
+                $(this).show();
+            }
         });
     }
 
@@ -456,7 +458,7 @@ jQuery(function () {
 
         if (settings.type === textgen_types.APHRODITE) {
             //this is needed because showTypeSpecificControls() does not handle NOT declarations
-            $('[data-forAphro=False]').each(function () {
+            $('[data-forAphro="False"]').each(function () {
                 $(this).hide();
             });
             $('#mirostat_mode_textgenerationwebui').attr('step', 2); //Aphro disallows mode 1
@@ -470,7 +472,7 @@ jQuery(function () {
             }
         } else {
             //this is needed because showTypeSpecificControls() does not handle NOT declarations
-            $('[data-forAphro=False]').each(function () {
+            $('[data-forAphro="False"]').each(function () {
                 $(this).show();
             });
             $('#mirostat_mode_textgenerationwebui').attr('step', 1);
@@ -718,9 +720,9 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'frequency_penalty': settings.freq_pen,
         'presence_penalty': settings.presence_pen,
         'top_k': settings.top_k,
-        'min_length': settings.min_length,
+        'min_length': settings.type === OOBA ? settings.min_length : undefined,
         'min_tokens': settings.min_length,
-        'num_beams': settings.num_beams,
+        'num_beams': settings.type === OOBA ? settings.num_beams : undefined,
         'length_penalty': settings.length_penalty,
         'early_stopping': settings.early_stopping,
         'add_bos_token': settings.add_bos_token,
@@ -735,8 +737,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'skip_special_tokens': settings.skip_special_tokens,
         'top_a': settings.top_a,
         'tfs': settings.tfs,
-        'epsilon_cutoff': settings.epsilon_cutoff,
-        'eta_cutoff': settings.eta_cutoff,
+        'epsilon_cutoff': settings.type === OOBA ? settings.epsilon_cutoff : undefined,
+        'eta_cutoff': settings.type === OOBA ? settings.eta_cutoff : undefined,
         'mirostat_mode': settings.mirostat_mode,
         'mirostat_tau': settings.mirostat_tau,
         'mirostat_eta': settings.mirostat_eta,
@@ -752,11 +754,11 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'rep_pen': settings.rep_pen,
         'rep_pen_range': settings.rep_pen_range,
         'repetition_penalty_range': settings.rep_pen_range,
-        'encoder_repetition_penalty': settings.encoder_rep_pen,
-        'no_repeat_ngram_size': settings.no_repeat_ngram_size,
-        'penalty_alpha': settings.penalty_alpha,
-        'temperature_last': settings.temperature_last,
-        'do_sample': settings.do_sample,
+        'encoder_repetition_penalty': settings.type === OOBA ? settings.encoder_rep_pen : undefined,
+        'no_repeat_ngram_size': settings.type === OOBA ? settings.no_repeat_ngram_size : undefined,
+        'penalty_alpha': settings.type === OOBA ? settings.penalty_alpha : undefined,
+        'temperature_last': (settings.type === OOBA || settings.type === APHRODITE) ? settings.temperature_last : undefined,
+        'do_sample': settings.type === OOBA ? settings.do_sample : undefined,
         'seed': settings.seed,
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
