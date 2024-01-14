@@ -2286,7 +2286,7 @@ async function generateComfyImage(prompt, negativePrompt) {
         toastr.error(`Failed to load workflow.\n\n${text}`);
     }
     let workflow = (await workflowResponse.json()).replace('"%prompt%"', JSON.stringify(prompt));
-    workflow = (await workflowResponse.json()).replace('"%negative_prompt%"', JSON.stringify(negativePrompt));
+    workflow = workflow.replace('"%negative_prompt%"', JSON.stringify(negativePrompt));
     workflow = workflow.replace('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
     placeholders.forEach(ph => {
         workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
@@ -2642,7 +2642,7 @@ $('#sd_dropdown [id]').on('click', function () {
 
 jQuery(async () => {
     registerSlashCommand('imagine', generatePicture, ['sd', 'img', 'image'], helpString, true, true);
-    registerSlashCommand('imagine-comfy-workflow', changeComfyWorkflow, ['icw'], '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <tt>/imagine-comfy-workflow MyWorkflow</tt>')
+    registerSlashCommand('imagine-comfy-workflow', changeComfyWorkflow, ['icw'], '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <tt>/imagine-comfy-workflow MyWorkflow</tt>');
 
     $('#extensions_settings').append(renderExtensionTemplate('stable-diffusion', 'settings', defaultSettings));
     $('#sd_source').on('change', onSourceChange);

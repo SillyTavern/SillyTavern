@@ -1,5 +1,5 @@
 pushd %~dp0
 call npm install --no-audit
-node server.js
+node server.js %*
 pause
 popd

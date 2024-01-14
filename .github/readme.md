@@ -1,4 +1,4 @@
-English | [中文](readme-zh_cn.md)
+English | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md)
 
 ![SillyTavern-Banner](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
 
@@ -161,6 +161,17 @@ Installing via ZIP download (discouraged)
   5. Once the server has prepared everything for you, it will open a tab in your browser.
 
 ### Linux
+
+#### Unofficial Debian/Ubuntu PKGBUILD
+
+> **This installation method is unofficial and not supported by the project. Report any issues to the PKGBUILD maintainer.**  
+> The method is intended for Debian-based distributions (Ubuntu, Mint, etc).
+
+1. Install [makedeb](https://www.makedeb.org/).
+2. Ensure you have Node.js v18 or higher installed by running `node -v`. If you need to upgrade, you can install a [node.js repo](https://mpr.makedeb.org/packages/nodejs-repo) (you'll might need to edit the version inside the PKGBUILD). As an alternative, install and configure [nvm](https://mpr.makedeb.org/packages/nvm) to manage multiple node.js installations. Finally, you can [install node.js manually](https://nodejs.org/en/download), but you will need to update the PATH variable of your environment.
+3. Now build the [sillytavern package](https://mpr.makedeb.org/packages/sillytavern). The build needs to run with the correct node.js version.
+
+#### Manual
 
   1. Ensure you have Node.js v18 or higher (the latest [LTS version](https://nodejs.org/en/download/) is recommended) installed by running `node -v`.
 Alternatively, use the [Node Version Manager](https://github.com/nvm-sh/nvm#installing-and-updating) script to quickly and easily manage your Node installations.

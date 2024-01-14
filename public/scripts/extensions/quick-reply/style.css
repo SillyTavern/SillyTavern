@@ -1,114 +1,286 @@
-#quickReplyBar {
-    outline: none;
-    /*
-    padding: 5px 0;
-    border-bottom: 1px solid var(--SmartThemeBorderColor);
-    */
-    margin: 0;
-    transition: 0.3s;
-    opacity: 0.7;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    display: none;
-    max-width: 100%;
-    overflow-x: auto;
-    order: 1;
-    position: relative;
+#qr--bar {
+  outline: none;
+  margin: 0;
+  transition: 0.3s;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  order: 1;
+  padding-right: 2.5em;
+  position: relative;
 }
-
-#quickReplies {
-    margin: 0;
-    padding: 0;
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 5px;
-    width: 100%;
+#qr--bar > #qr--popoutTrigger {
+  position: absolute;
+  right: 0.25em;
+  top: 0;
 }
-
-#quickReplyPopoutButton {
-    position: absolute;
-    right: 5px;
-    top: 0px;
+#qr--popout {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  z-index: 31;
 }
-
-#quickReplies div {
-    color: var(--SmartThemeBodyColor);
-    background-color: var(--black50a);
-    border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 10px;
-    padding: 3px 5px;
-    margin: 3px 0;
-    /* width: min-content; */
-    cursor: pointer;
-    transition: 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
+#qr--popout > .qr--header {
+  flex: 0 0 auto;
+  height: 2em;
+  position: relative;
 }
-
-#quickReplies div:hover {
-    opacity: 1;
-    filter: brightness(1.2);
-    cursor: pointer;
+#qr--popout > .qr--header > .qr--controls > .qr--close {
+  height: 15px;
+  aspect-ratio: 1 / 1;
+  font-size: 20px;
+  opacity: 0.5;
+  transition: all 250ms;
 }
-
-
+#qr--popout > .qr--body {
+  overflow-y: auto;
+}
+#qr--bar > .qr--buttons,
+#qr--popout > .qr--body > .qr--buttons {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
+}
+#qr--bar > .qr--buttons > .qr--buttons,
+#qr--popout > .qr--body > .qr--buttons > .qr--buttons {
+  display: contents;
+}
+#qr--bar > .qr--buttons .qr--button,
+#qr--popout > .qr--body > .qr--buttons .qr--button {
+  color: var(--SmartThemeBodyColor);
+  border: 1px solid var(--SmartThemeBorderColor);
+  border-radius: 10px;
+  padding: 3px 5px;
+  margin: 3px 0;
+  cursor: pointer;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+#qr--bar > .qr--buttons .qr--button:hover,
+#qr--popout > .qr--body > .qr--buttons .qr--button:hover {
+  opacity: 1;
+  filter: brightness(1.2);
+}
+#qr--bar > .qr--buttons .qr--button > .qr--button-expander,
+#qr--popout > .qr--body > .qr--buttons .qr--button > .qr--button-expander {
+  display: none;
+}
+#qr--bar > .qr--buttons .qr--button.qr--hasCtx > .qr--button-expander,
+#qr--popout > .qr--body > .qr--buttons .qr--button.qr--hasCtx > .qr--button-expander {
+  display: block;
+}
+.qr--button-expander {
+  border-left: 1px solid;
+  margin-left: 1em;
+  text-align: center;
+  width: 2em;
+}
+.qr--button-expander:hover {
+  font-weight: bold;
+}
 .ctx-blocker {
-    /* backdrop-filter: blur(1px); */
-    /* background-color: rgba(0 0 0 / 10%); */
-    bottom: 0;
-    left: 0;
-    position: fixed;
-    right: 0;
-    top: 0;
-    z-index: 999;
+  /* backdrop-filter: blur(1px); */
+  /* background-color: rgba(0 0 0 / 10%); */
+  bottom: 0;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 999;
 }
-
 .ctx-menu {
-    position: absolute;
-    overflow: visible;
+  position: absolute;
+  overflow: visible;
 }
-
 .list-group .list-group-item.ctx-header {
-    font-weight: bold;
-    cursor: default;
+  font-weight: bold;
+  cursor: default;
 }
-
-.ctx-item+.ctx-header {
-    border-top: 1px solid;
+.ctx-item + .ctx-header {
+  border-top: 1px solid;
 }
-
 .ctx-item {
-    position: relative;
+  position: relative;
 }
-
 .ctx-expander {
-    border-left: 1px solid;
-    margin-left: 1em;
-    text-align: center;
-    width: 2em;
+  border-left: 1px solid;
+  margin-left: 1em;
+  text-align: center;
+  width: 2em;
 }
-
 .ctx-expander:hover {
-    font-weight: bold;
+  font-weight: bold;
 }
-
 .ctx-sub-menu {
-    position: absolute;
-    top: 0;
-    left: 100%;
+  position: absolute;
+  top: 0;
+  left: 100%;
 }
-
 @media screen and (max-width: 1000px) {
-    .ctx-blocker {
-        position: absolute;
-    }
-
-    .list-group .list-group-item.ctx-item {
-        padding: 1em;
-    }
+  .ctx-blocker {
+    position: absolute;
+  }
+  .list-group .list-group-item.ctx-item {
+    padding: 1em;
+  }
+}
+#qr--settings .qr--head {
+  display: flex;
+  align-items: baseline;
+  gap: 1em;
+}
+#qr--settings .qr--head > .qr--title {
+  font-weight: bold;
+}
+#qr--settings .qr--head > .qr--actions {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0.5em;
+}
+#qr--settings .qr--setList > .qr--item {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+  align-items: baseline;
+  padding: 0 0.5em;
+}
+#qr--settings .qr--setList > .qr--item > .drag-handle {
+  padding: 0.75em;
+}
+#qr--settings .qr--setList > .qr--item > .qr--visible {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+}
+#qr--settings #qr--set-settings #qr--injectInputContainer {
+  flex-wrap: nowrap;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents {
+  padding: 0 0.5em;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+  align-items: baseline;
+  padding: 0.25em 0;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(1) {
+  flex: 0 0 auto;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(2) {
+  flex: 1 1 25%;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(3) {
+  flex: 0 0 auto;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(4) {
+  flex: 1 1 75%;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > :nth-child(5) {
+  flex: 0 0 auto;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item > .drag-handle {
+  padding: 0.75em;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemLabel,
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--action {
+  margin: 0;
+}
+#qr--settings #qr--set-qrList .qr--set-qrListContents > .qr--set-item .qr--set-itemMessage {
+  font-size: smaller;
+}
+#qr--settings .qr--set-qrListActions {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+  justify-content: center;
+  padding-bottom: 0.5em;
+}
+#qr--qrOptions > #qr--ctxEditor .qr--ctxItem {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+  align-items: baseline;
+}
+@media screen and (max-width: 750px) {
+  body #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor {
+    flex-direction: column;
+  }
+  body #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
+    flex-direction: column;
+  }
+  body #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-message {
+    min-height: 90svh;
+  }
+}
+#dialogue_popup:has(#qr--modalEditor) {
+  aspect-ratio: unset;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text {
+  display: flex;
+  flex-direction: column;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label {
+  flex: 1 1 1px;
+  display: flex;
+  flex-direction: column;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelText {
+  flex: 1 1 auto;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelHint {
+  flex: 1 1 auto;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > input {
+  flex: 0 0 auto;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-message {
+  flex: 1 1 auto;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor #qr--modal-execute {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5em;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor #qr--modal-execute.qr--busy {
+  opacity: 0.5;
+  cursor: wait;
+}
+#shadow_popup.qr--hide {
+  opacity: 0 !important;
 }

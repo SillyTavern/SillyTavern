@@ -1,6 +1,6 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js';
-import { delay, escapeRegex, getStringHash } from '../../utils.js';
+import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
@@ -316,12 +316,14 @@ async function playAudioData(audioBlob) {
     if (currentAudioJob == null) {
         console.log('Cancelled TTS playback because currentAudioJob was null');
     }
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        const srcUrl = e.target.result;
+    if (audioBlob instanceof Blob) {
+        const srcUrl = await getBase64Async(audioBlob);
         audioElement.src = srcUrl;
-    };
-    reader.readAsDataURL(audioBlob);
+    } else if (typeof audioBlob === 'string') {
+        audioElement.src = audioBlob;
+    } else {
+        throw `TTS received invalid audio data type ${typeof audioBlob}`;
+    }
     audioElement.addEventListener('ended', completeCurrentAudioJob);
     audioElement.addEventListener('canplay', () => {
         console.debug('Starting TTS playback');
@@ -417,11 +419,15 @@ function completeCurrentAudioJob() {
  * @param {Response} response
  */
 async function addAudioJob(response) {
-    const audioData = await response.blob();
-    if (!audioData.type.startsWith('audio/')) {
-        throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioData.type}`;
+    if (typeof response === 'string') {
+        audioJobQueue.push(response);
+    } else {
+        const audioData = await response.blob();
+        if (!audioData.type.startsWith('audio/')) {
+            throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioData.type}`;
+        }
+        audioJobQueue.push(audioData);
     }
-    audioJobQueue.push(audioData);
     console.debug('Pushed audio job to queue.');
 }
 
@@ -432,7 +438,7 @@ async function processAudioJobQueue() {
     }
     try {
         audioQueueProcessorReady = false;
-        currentAudioJob = audioJobQueue.pop();
+        currentAudioJob = audioJobQueue.shift();
         playAudioData(currentAudioJob);
         talkingAnimation(true);
     } catch (error) {
@@ -463,13 +469,25 @@ function saveLastValues() {
 }
 
 async function tts(text, voiceId, char) {
+    async function processResponse(response) {
+        // RVC injection
+        if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
+            response = await window['rvcVoiceConversion'](response, char, text);
+
+        await addAudioJob(response);
+    }
+
     let response = await ttsProvider.generateTts(text, voiceId);
 
-    // RVC injection
-    if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
-        response = await window['rvcVoiceConversion'](response, char, text);
+    // If async generator, process every chunk as it comes in
+    if (typeof response[Symbol.asyncIterator] === 'function') {
+        for await (const chunk of response) {
+            await processResponse(chunk);
+        }
+    } else {
+        await processResponse(response);
+    }
 
-    addAudioJob(response);
     completeTtsJob();
 }
 
@@ -733,7 +751,7 @@ function getCharacters(unrestricted) {
     if (unrestricted) {
         const names = context.characters.map(char => char.name);
         names.unshift(DEFAULT_VOICE_MARKER);
-        return names;
+        return names.filter(onlyUnique);
     }
 
     let characters = [];
@@ -748,14 +766,13 @@ function getCharacters(unrestricted) {
         characters.push(context.name1);
         const group = context.groups.find(group => context.groupId == group.id);
         for (let member of group.members) {
-            // Remove suffix
-            if (member.endsWith('.png')) {
-                member = member.slice(0, -4);
+            const character = context.characters.find(char => char.avatar == member);
+            if (character) {
+                characters.push(character.name);
             }
-            characters.push(member);
         }
     }
-    return characters;
+    return characters.filter(onlyUnique);
 }
 
 function sanitizeId(input) {

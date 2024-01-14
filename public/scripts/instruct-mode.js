@@ -331,7 +331,7 @@ export function formatInstructModeExamples(mesExamples, name1, name2) {
  * @returns {string} Formatted instruct mode last prompt line.
  */
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
-    const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
+    const includeNames = name && (power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups));
     const getOutputSequence = () => power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
     let sequence = isImpersonate ? power_user.instruct.input_sequence : getOutputSequence();
 

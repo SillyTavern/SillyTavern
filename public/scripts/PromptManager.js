@@ -1294,34 +1294,6 @@ class PromptManager {
     }
 
     /**
-     * Populates legacy token counts
-     *
-     * @deprecated This might serve no purpose and should be evaluated for removal
-     *
-     * @param {MessageCollection} messages
-     */
-    populateLegacyTokenCounts(messages) {
-        // Update general token counts
-        const chatHistory = messages.getItemByIdentifier('chatHistory');
-        const startChat = chatHistory?.getCollection()[0]?.getTokens() || 0;
-        const continueNudge = chatHistory?.getCollection().find(message => message.identifier === 'continueNudge')?.getTokens() || 0;
-
-        this.tokenHandler.counts = {
-            ...this.tokenHandler.counts,
-            ...{
-                'start_chat': startChat,
-                'prompt': 0,
-                'bias': this.tokenHandler.counts.bias ?? 0,
-                'nudge': continueNudge,
-                'jailbreak': this.tokenHandler.counts.jailbreak ?? 0,
-                'impersonate': 0,
-                'examples': this.tokenHandler.counts.dialogueExamples ?? 0,
-                'conversation': this.tokenHandler.counts.chatHistory ?? 0,
-            },
-        };
-    }
-
-    /**
      * Empties, then re-assembles the container containing the prompt list.
      */
     renderPromptManager() {
@@ -1381,7 +1353,7 @@ class PromptManager {
             footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
 
             // Add prompt export dialogue and options
-            const exportForCharacter =`
+            const exportForCharacter = `
             <div class="row">
                 <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
                 <span class="tooltip fa-solid fa-info-circle" title="Export prompts for this character, including their order."></span>

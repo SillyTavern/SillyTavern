@@ -37,7 +37,7 @@ import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { hideChatMessage, unhideChatMessage } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
-import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
+import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
 import { autoSelectPersona } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
@@ -149,7 +149,7 @@ parser.addCommand('single', setStoryModeCallback, ['story'], ' – sets the mess
 parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the message style to bubble chat mode', true, true);
 parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
 parser.addCommand('continue', continueChatCallback, ['cont'], ' – continues the last message in the chat', true, true);
-parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character by its name', true, true);
+parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character or group by its name', true, true);
 parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
 parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</span> – asks a specified character card a prompt', true, true);
 parser.addCommand('delname', deleteMessagesByNameCallback, ['cancel'], '<span class="monospace">(name)</span> – deletes all messages attributed to a specified name', true, true);
@@ -167,7 +167,7 @@ parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message in
 parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
 parser.addCommand('echo', echoCallback, [], '<span class="monospace">(title=string severity=info/warning/error/success [text])</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
 //parser.addCommand('#', (_, value) => '', [], ' – a comment, does nothing, e.g. <tt>/# the next three commands switch variables a and b</tt>', true, true);
-parser.addCommand('gen', generateCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating.', true, true);
+parser.addCommand('gen', generateCallback, [], '<span class="monospace">(lock=on/off name="System" [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating and allowing to configure the in-prompt name for instruct mode (default = "System").', true, true);
 parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
@@ -175,7 +175,7 @@ parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] (search value)
 parser.addCommand('pass', (_, arg) => arg, ['return'], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
 parser.addCommand('delay', delayCallback, ['wait', 'sleep'], '<span class="monospace">(milliseconds)</span> – delays the next command in the pipe by the specified number of milliseconds.', true, true);
 parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(default="string" large=on/off wide=on/off okButton="string" rows=number [text])</span> – Shows a popup with the provided text and an input field. The default argument is the default value of the input field, and the text argument is the text to display.', true, true);
-parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">(QR label)</span> – runs a Quick Reply with the specified name from the current preset.', true, true);
+parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">[key1=value key2=value ...] ([qrSet.]qrLabel)</span> – runs a Quick Reply with the specified name from a currently active preset or from another preset, named arguments can be referenced in a QR with {{arg::key}}.', true, true);
 parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
 parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
 parser.addCommand('popup', popupCallback, [], '<span class="monospace">(large=on/off wide=on/off okButton="string" text)</span> – shows a blocking popup with the specified text and buttons. Returns the input value into the pipe or empty string if canceled.', true, true);
@@ -445,7 +445,7 @@ function getMessagesCallback(args, value) {
     return messages.join('\n\n');
 }
 
-async function runCallback(_, name) {
+async function runCallback(args, name) {
     if (!name) {
         toastr.warning('No name provided for /run command');
         return '';
@@ -458,7 +458,7 @@ async function runCallback(_, name) {
 
     try {
         name = name.trim();
-        return await window['executeQuickReplyByName'](name);
+        return await window['executeQuickReplyByName'](name, args);
     } catch (error) {
         toastr.error(`Error running Quick Reply "${name}": ${error.message}`, 'Error');
         return '';
@@ -587,7 +587,8 @@ async function generateCallback(args, value) {
         }
 
         setEphemeralStopStrings(resolveVariable(args?.stop));
-        const result = await generateQuietPrompt(value, false, false, '');
+        const name = args?.name;
+        const result = await generateQuietPrompt(value, false, false, '', name);
         return result;
     } finally {
         if (lock) {
@@ -1135,8 +1136,14 @@ async function goToCharacterCallback(_, name) {
         await openChat(new String(characterIndex));
         return characters[characterIndex]?.name;
     } else {
-        console.warn(`No matches found for name "${name}"`);
-        return '';
+        const group = groups.find(it => it.name.toLowerCase() == name.toLowerCase());
+        if (group) {
+            await openGroupById(group.id);
+            return group.name;
+        } else {
+            console.warn(`No matches found for name "${name}"`);
+            return '';
+        }
     }
 }
 

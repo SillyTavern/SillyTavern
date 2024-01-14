@@ -523,6 +523,32 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div data-newbie-hidden class="range-block" data-source="openrouter">
+                                    <div class="range-block-title" data-i18n="Min P">
+                                        Min P
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="min_p_openai" name="volume" min="0" max="1" step="0.001">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" min="0" max="1" step="0.001" data-for="min_p_openai" id="min_p_counter_openai">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div data-newbie-hidden class="range-block" data-source="openrouter">
+                                    <div class="range-block-title" data-i18n="Top A">
+                                        Top A
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_a_openai" name="volume" min="0" max="1" step="0.001">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" min="0" max="1" step="0.001" data-for="top_a_openai" id="top_a_counter_openai">
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="inline-drawer m-t-1 wide100p">
                                     <div class="inline-drawer-toggle inline-drawer-header">
                                         <b data-i18n="Quick Edit">Quick Prompts Edit</b>
@@ -1151,6 +1177,12 @@
                                 </div>
                             </div><!-- end of novel settings-->
                             <div id="textgenerationwebui_api-settings">
+                                <div data-newbie-hidden class="flex-container justifyCenter">
+                                    <small class="flex-container alignitemscenter">
+                                        <div id="samplerResetButton" class="menu_button whitespacenowrap">Neutralize Samplers</div>
+                                        <div class="fa-solid fa-circle-info opacity50p" title="Sets all samplers to their neutral/disabled state."></div>
+                                    </small>
+                                </div>
                                 <div data-newbie-hidden data-tg-type="aphrodite" class="flex-container flexFlowColumn alignitemscenter flexBasis100p flexGrow flexShrink gap0">
                                     <small data-i18n="Multiple swipes per generation">Multiple swipes per generation</small>
                                     <input type="number" id="n_textgenerationwebui" class="text_pole textAlignCenter" min="1" value="1" />
@@ -1161,8 +1193,8 @@
                                             <span data-i18n="temperature">Temperature</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="4.0" step="0.01" x-setting-id="temp">
-                                        <input class="neo-range-input" type="number" min="0.0" max="4.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="5.0" step="0.01" x-setting-id="temp">
+                                        <input class="neo-range-input" type="number" min="0.0" max="5.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
@@ -1190,8 +1222,8 @@
                                             <span data-i18n="Min P">Min P</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="min_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.05" data-for="min_p_textgenerationwebui" id="min_p_counter_textgenerationwebui">
+                                        <input class="neo-range-slider" type="range" id="min_p_textgenerationwebui" name="volume" min="0" max="1" step="0.001">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="min_p_textgenerationwebui" id="min_p_counter_textgenerationwebui">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Top A">Top A</small>
@@ -1203,12 +1235,12 @@
                                         <input class="neo-range-slider" type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-newbie-hidden data-tg-type="ooba" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Epsilon Cutoff">Epsilon Cutoff</small>
                                         <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-newbie-hidden data-tg-type="ooba" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Eta Cutoff">Eta Cutoff</small>
                                         <input class="neo-range-slider" type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
@@ -1218,12 +1250,12 @@
                                         <input class="neo-range-slider" type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="3" step="0.01">
                                         <input class="neo-range-input" type="number" min="1" max="3" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
                                     </div>
-                                    <div data-forAphro=False class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-forAphro="False" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="rep.pen range">Repetition Penalty Range</small>
                                         <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="-1" max="8192" step="1">
                                         <input class="neo-range-input" type="number" min="-1" max="8192" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
                                     </div>
-                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-forAphro="False" data-tg-type="ooba" data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Encoder Rep. Pen.">Encoder Penalty</small>
                                         <input class="neo-range-slider" type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
                                         <input class="neo-range-input" type="number" min="0.8" max="1.5" step="0.01" data-for="encoder_rep_pen_textgenerationwebui" id="encoder_rep_pen_counter_textgenerationwebui">
@@ -1238,12 +1270,12 @@
                                         <input class="neo-range-slider" type="range" id="presence_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
                                         <input class="neo-range-input" type="number" min="-2" max="2" step="0.01" data-for="presence_pen_textgenerationwebui" id="presence_pen_counter_textgenerationwebui">
                                     </div>
-                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-forAphro="False" data-tg-type="ooba" data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="No Repeat Ngram Size">No Repeat Ngram Size</small>
                                         <input class="neo-range-slider" type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-newbie-hidden data-tg-type="ooba" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Min Length">Min Length</small>
                                         <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
@@ -1270,6 +1302,30 @@
                                             <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="prompt_log_probs_aphrodite" id="prompt_log_probs_aphrodite_counter_textgenerationwebui">
                                         </div>
                                     -->
+                                    <div data-newbie-hidden name="dynaTempBlock" class="wide100p">
+                                        <h4 class="wide100p textAlignCenter" data-i18n="DynaTemp">
+                                            <div class="flex-container alignitemscenter" style="justify-content: center;">
+                                                <div class="checkbox_label" for="dynatemp_textgenerationwebui">
+                                                    <input type="checkbox" id="dynatemp_textgenerationwebui" />
+                                                    <small data-i18n="dynatemp"></small>
+                                                </div>
+                                                <span style="text-align: center;">Dynamic Temperature</span>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Scales Temperature dynamically per token (based on the variation of probabilities.)"></div>
+                                            </div>
+                                        </h4>
+                                        <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
+                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                                <small data-i18n="Minimum Temp">Minimum Temp</small>
+                                                <input class="neo-range-slider" type="range" id="min_temp_textgenerationwebui" name="volume" min="0" max="5" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="5" step="0.01" data-for="min_temp_textgenerationwebui" id="min_temp_counter_textgenerationwebui">
+                                            </div>
+                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                                <small data-i18n="Maximum Temp">Maximum Temp</small>
+                                                <input class="neo-range-slider" type="range" id="max_temp_textgenerationwebui" name="volume" min="0" max="5" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="5" step="0.01" data-for="max_temp_textgenerationwebui" id="max_temp_counter_textgenerationwebui">
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div data-newbie-hidden name="miroStatBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat
                                             <div class=" fa-solid fa-circle-info opacity50p " title="Mode=1 is only for llama.cpp&#13;More helpful tips coming soon."></div>
@@ -1292,7 +1348,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden name="beamSearchBlock" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="ooba" name="beamSearchBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" span data-i18n="Beam search">Beam Search
                                             <div class=" fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon."></div>
                                         </h4>
@@ -1315,7 +1371,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-forAphro=False data-newbie-hidden name="contrastiveSearchBlock" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-forAphro="False" data-tg-type="ooba" data-newbie-hidden name="contrastiveSearchBlock" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <h4 class="textAlignCenter" data-i18n="Contrastive search">Contrast Search
                                             <div class=" fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon."></div>
                                         </h4>
@@ -1327,17 +1383,17 @@
                                     </div>
                                     <div data-newbie-hidden name="checkboxes" class="flex-container flexBasis48p justifyCenter flexGrow flexShrink ">
                                         <div class="flex-container flexFlowColumn marginTop5">
-                                            <label data-forAphro=False class="checkbox_label  flexGrow flexShrink" for="do_sample_textgenerationwebui">
+                                            <label data-forAphro="False" data-tg-type="ooba" class="checkbox_label  flexGrow flexShrink" for="do_sample_textgenerationwebui">
                                                 <input type="checkbox" id="do_sample_textgenerationwebui" />
                                                 <small data-i18n="Do Sample">Do Sample</small>
                                             </label>
-                                            <label data-forAphro=False class="checkbox_label  flexGrow flexShrink" for="add_bos_token_textgenerationwebui">
+                                            <label data-forAphro="False" data-tg-type="ooba" class="checkbox_label  flexGrow flexShrink" for="add_bos_token_textgenerationwebui">
                                                 <input type="checkbox" id="add_bos_token_textgenerationwebui" />
                                                 <small data-i18n="Add BOS Token">Add BOS Token
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative." title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
                                                 </small>
                                             </label>
-                                            <label data-forAphro=False class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
+                                            <label data-forAphro="False" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
                                                 <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
                                                 <small data-i18n="Ban EOS Token">Ban EOS Token
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="Ban the eos_token. This forces the model to never end the generation prematurely" title="Ban the eos_token. This forces the model to never end the generation prematurely."></div>
@@ -1351,11 +1407,11 @@
                                                 </small>
                                             </label>
 
-                                            <label class="checkbox_label  flexGrow flexShrink" for="skip_special_tokens_textgenerationwebui">
+                                            <label class="checkbox_label flexGrow flexShrink" for="skip_special_tokens_textgenerationwebui">
                                                 <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
                                                 <small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
                                             </label>
-                                            <label data-forAphro=False class="checkbox_label  flexGrow flexShrink" for="temperature_last_textgenerationwebui">
+                                            <label data-forAphro="False" data-tg-type="ooba, aphrodite" class="checkbox_label  flexGrow flexShrink" for="temperature_last_textgenerationwebui">
                                                 <input type="checkbox" id="temperature_last_textgenerationwebui" />
                                                 <small data-i18n="Temperature Last">Temperature Last
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="Use the temperature sampler last." title="Use the temperature sampler last."></div>
@@ -1366,10 +1422,9 @@
                                                 <input type="checkbox" id="spaces_between_special_tokens_aphrodite_textgenerationwebui" />
                                                 <small data-i18n="Spaces Between Special Tokens">Spaces Between Special Tokens</small>
                                             </label>
-
                                         </div>
                                     </div>
-                                    <div data-forAphro=False data-newbie-hidden class="flex-container flexFlowColumn alignitemscenter flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-forAphro="False" data-newbie-hidden class="flex-container flexFlowColumn alignitemscenter flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Seed" class="textAlignCenter">Seed</small>
                                         <input type="number" id="seed_textgenerationwebui" class="text_pole textAlignCenter" min="-1" value="-1" maxlength="100" />
                                     </div>
@@ -1398,8 +1453,8 @@
                                             <div class="logit_bias_list"></div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-forAphro=False class="wide100p">
-                                        <hr  class="width100p">
+                                    <div data-newbie-hidden data-forAphro="False" class="wide100p">
+                                        <hr class="width100p">
                                         <h4 data-i18n="CFG" class="textAlignCenter">CFG
                                             <div class="margin5 fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon."></div>
                                         </h4>
@@ -1420,7 +1475,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-forAphro=False id="grammar_block_ooba" class="wide100p">
+                                    <div data-newbie-hidden data-forAphro="False" id="grammar_block_ooba" class="wide100p">
                                         <hr class="wide100p">
                                         <h4 class="wide100p textAlignCenter" data-i18n="GBNF Grammar">GBNF Grammar
                                             <a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">
@@ -1551,13 +1606,23 @@
                                         </div>
                                     </div>
                                     <div data-newbie-hidden class="range-block" data-source="claude">
+                                        <label for="claude_exclude_prefixes" title="Exclude Human/Assistant prefixes" class="checkbox_label widthFreeExpand">
+                                            <input id="claude_exclude_prefixes" type="checkbox" />
+                                            <span data-i18n="Exclude Human/Assistant prefixes">Exclude Human/Assistant prefixes</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft marginBot5">
+                                            <span data-i18n="Exclude Human/Assistant prefixes from being added to the prompt.">
+                                                Exclude Human/Assistant prefixes from being added to the prompt, except very first/last message, system prompt Human message and Assistant suffix.
+                                                Requires 'Add character names' checked.
+                                            </span>
+                                        </div>
                                         <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
                                             <input id="exclude_assistant" type="checkbox" />
                                             <span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
                                         </label>
-                                        <div class="toggle-description justifyLeft">
+                                        <div class="toggle-description justifyLeft marginBot5">
                                             <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">
-                                                Exclude the assistant suffix from being added to the end of prompt (Requires jailbreak with 'Assistant:' in it).
+                                                Exclude the assistant suffix from being added to the end of prompt. Requires jailbreak with 'Assistant:' in it.
                                             </span>
                                         </div>
                                         <div id="claude_assistant_prefill_block" class="wide100p">
@@ -1570,7 +1635,7 @@
                                                 Use system prompt (Claude 2.1+ only)
                                             </span>
                                         </label>
-                                        <div class="toggle-description justifyLeft">
+                                        <div class="toggle-description justifyLeft marginBot5">
                                             <span data-i18n="Exclude the 'Human: ' prefix from being added to the beginning of the prompt.">
                                                 Exclude the 'Human: ' prefix from being added to the beginning of the prompt.
                                                 Instead, place it between the system prompt and the first message with the role 'assistant' (right before 'Chat History' by default).
@@ -1643,11 +1708,11 @@
                 <div class="flex-container flexFlowColumn">
                     <div id="main-API-selector-block">
                         <select id="main_api">
-                            <option value="kobold"><span data-i18n="KoboldAI">KoboldAI Classic</span></option>
-                            <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
-                            <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
                             <option value="textgenerationwebui"><span data-i18n="Text Completion">Text Completion</span></option>
                             <option value="openai"><span data-i18n="Chat Completion">Chat Completion</span></option>
+                            <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
+                            <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
+                            <option value="kobold"><span data-i18n="KoboldAI">KoboldAI Classic</span></option>
                         </select>
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
@@ -1717,6 +1782,9 @@
                                 <h4 data-i18n="API url">API url</h4>
                                 <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
                                 <input id="api_url_text" name="api_url" class="text_pole" placeholder="http://127.0.0.1:5000/api" maxlength="500" value="" autocomplete="off" data-server-history="kobold">
+                                <div id="koboldcpp_hint" class="neutral_warning displayNone">
+                                    We have a dedicated KoboldCpp support under Text Completion ⇒ KoboldCpp.
+                                </div>
                                 <div class="flex-container">
                                     <div id="api_button" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="kobold">Connect</div>
                                     <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
@@ -1840,6 +1908,7 @@
                                     <small data-i18n="Example: http://127.0.0.1:5000 ">Example: http://127.0.0.1:5000</small>
                                     <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
                                 </div>
+                                <input id="custom_model_textgenerationwebui" class="text_pole wide100p" maxlength="500" placeholder="Custom model (optional)" type="text">
                             </div>
                             <div data-tg-type="aphrodite">
                                 <div class="flex-container flexFlowColumn">
@@ -1887,7 +1956,8 @@
                                 </div>
                                 <div class="flex1">
                                     <h4>
-                                        <span data-i18n="Ollama Model">Ollama Model</h4>
+                                        <span data-i18n="Ollama Model">Ollama Model
+                                    </h4>
                                     </h4>
                                     <select id="ollama_model">
                                         <option>
@@ -1940,6 +2010,10 @@
                             <label data-tg-type="ooba,aphrodite" class="checkbox_label margin-bot-10px" for="legacy_api_textgenerationwebui">
                                 <input type="checkbox" id="legacy_api_textgenerationwebui" />
                                 <span data-i18n="Legacy API (pre-OAI, no streaming)">Legacy API (pre-OAI, no streaming)</span>
+                            </label>
+                            <label data-tg-type="ooba" class="checkbox_label margin-bot-10px" for="bypass_status_check_textgenerationwebui">
+                                <input type="checkbox" id="bypass_status_check_textgenerationwebui" />
+                                <span data-i18n="Bypass status check">Bypass status check</span>
                             </label>
                         </form>
                         <div class="online_status">
@@ -2290,10 +2364,10 @@
                             <div class="flex-container">
                                 <input id="custom_model_id" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" placeholder="Example: gpt-3.5-turbo">
                             </div>
-                                <h4 data-i18n="Available Models">Available Models</h4>
-                                <div class="flex-container">
-                                    <select id="model_custom_select" class="text_pole"></select>
-                                </div>
+                            <h4 data-i18n="Available Models">Available Models</h4>
+                            <div class="flex-container">
+                                <select id="model_custom_select" class="text_pole"></select>
+                            </div>
                         </form>
                         <div class="flex-container flex">
                             <div id="api_button_openai" class="api_button menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
@@ -2770,10 +2844,10 @@
                                             </div>
                                             <div class="range-block-range-and-counter">
                                                 <div class="range-block-range paddingLeftRight5">
-                                                    <input type="range" id="world_info_depth" name="volume" min="0" max="100" step="1">
+                                                    <input class="neo-range-slider" type="range" id="world_info_depth" name="volume" min="0" max="100" step="1">
                                                 </div>
                                                 <div class="range-block-counter margin0">
-                                                    <input type="number" data-for="world_info_depth" id="world_info_depth_counter">
+                                                    <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_depth" id="world_info_depth_counter">
                                                 </div>
                                             </div>
                                         </div>
@@ -2783,10 +2857,10 @@
                                             </div>
                                             <div class="range-block-range-and-counter ">
                                                 <div class="range-block-range paddingLeftRight5">
-                                                    <input type="range" id="world_info_budget" name="volume" min="1" max="100" step="1">
+                                                    <input class="neo-range-slider" type="range" id="world_info_budget" name="volume" min="1" max="100" step="1">
                                                 </div>
                                                 <div class="range-block-counter margin0">
-                                                    <input type="number" min="1" max="100" step="1" data-for="world_info_budget" id="world_info_budget_counter">
+                                                    <input class="neo-range-input" type="number" min="1" max="100" step="1" data-for="world_info_budget" id="world_info_budget_counter">
                                                 </div>
                                             </div>
                                         </div>
@@ -2796,10 +2870,10 @@
                                             </div>
                                             <div class="range-block-range-and-counter ">
                                                 <div class="range-block-range paddingLeftRight5">
-                                                    <input type="range" id="world_info_budget_cap" name="volume" min="0" max="8192" step="1">
+                                                    <input class="neo-range-slider" type="range" id="world_info_budget_cap" name="volume" min="0" max="8192" step="1">
                                                 </div>
                                                 <div class="range-block-counter margin0">
-                                                    <input type="number" min="0" max="8192" step="1" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
+                                                    <input class="neo-range-input" type="number" min="0" max="8192" step="1" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
                                                 </div>
                                             </div>
                                             <div class="budget_cap_note">
@@ -2812,10 +2886,10 @@
                                             </div>
                                             <div class="range-block-range-and-counter">
                                                 <div class="range-block-range paddingLeftRight5">
-                                                    <input type="range" id="world_info_min_activations" name="volume" min="0" max="100" step="1">
+                                                    <input class="neo-range-slider" type="range" id="world_info_min_activations" name="volume" min="0" max="100" step="1">
                                                 </div>
                                                 <div class="range-block-counter margin0">
-                                                    <input type="number" data-for="world_info_min_activations" id="world_info_min_activations_counter">
+                                                    <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations" id="world_info_min_activations_counter">
                                                 </div>
                                             </div>
                                         </div>
@@ -2825,10 +2899,10 @@
                                             </div>
                                             <div class="range-block-range-and-counter">
                                                 <div class="range-block-range paddingLeftRight5">
-                                                    <input type="range" id="world_info_min_activations_depth_max" name="volume" min="0" max="100" step="1">
+                                                    <input class="neo-range-slider" type="range" id="world_info_min_activations_depth_max" name="volume" min="0" max="100" step="1">
                                                 </div>
                                                 <div class="range-block-counter margin0">
-                                                    <input type="number" data-for="world_info_min_activations_depth_max" id="world_info_min_activations_depth_max_counter">
+                                                    <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations_depth_max" id="world_info_min_activations_depth_max_counter">
                                                 </div>
                                             </div>
                                             <div class="budget_cap_note">
@@ -2885,6 +2959,7 @@
                             <div id="world_backfill_memos" class="menu_button fa-solid fa-notes-medical" title="Fill empty Memo/Titles with Keywords" data-i18n="[title]Fill empty Memo/Titles with Keywords"></div>
                             <div id="world_import_button" class="menu_button fa-solid fa-file-import" title="Import World Info" data-i18n="[title]Import World Info"></div>
                             <div id="world_popup_export" class="menu_button fa-solid fa-file-export" title="Export World Info" data-i18n="[title]Export World Info"></div>
+                            <div id="world_duplicate" class="menu_button fa-solid fa-paste" title="Duplicate World Info" data-i18n="[title]Duplicate World Info"></div>
                             <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG" title="Delete World Info" data-i18n="[title]Delete World Info"></div>
                             <input type="search" class="text_pole textarea_compact" data-i18n="[placeholder]Search..." id="world_info_search" placeholder="Search...">
                             <select id="world_info_sort_order" class="margin0">
@@ -4274,6 +4349,7 @@
                                     <small class="textAlignCenter">Logic</small>
                                     <select name="entryLogicType" class="widthFitContent margin0">
                                         <option value="0">AND ANY</option>
+                                        <option value="3">AND ALL</option>
                                         <option value="1">NOT ALL</option>
                                         <option value="2">NOT ANY</option>
                                     </select>
@@ -4306,7 +4382,13 @@
                                                     <label class="checkbox flex-container alignitemscenter flexNoGap">
                                                         <input type="checkbox" name="exclude_recursion" />
                                                         <span data-i18n="Exclude from recursion">
-                                                            Non-recursable
+                                                            Non-recursable (this entry will not be activated by another)
+                                                        </span>
+                                                    </label>
+                                                    <label class="checkbox flex-container alignitemscenter flexNoGap">
+                                                        <input type="checkbox" name="prevent_recursion" />
+                                                        <span data-i18n="Prevent further recursion (this entry will not activate others)">
+                                                            Prevent further recursion (this entry will not activate others)
                                                         </span>
                                                     </label>
                                                 </div>
@@ -4330,7 +4412,7 @@
                                     <label for="characterFilter" class="">
                                         <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
                                     </label>
-                                    <label class="checkbox flex-container alignitemscenter">
+                                    <label class="checkbox_label flexNoGap">
                                         <input type="checkbox" name="character_exclusion" />
                                         <span data-i18n="Character Exclusion">
                                             <small>Character Exclusion</small>
@@ -4409,7 +4491,7 @@
     <div id="logit_bias_template" class="template_element">
         <div class="logit_bias_form">
             <input class="logit_bias_text text_pole" data-i18n="[placeholder]Type here..." placeholder="type here..." />
-            <input class="logit_bias_value text_pole" type="number" min="-2" value="0" max="2" step="0.01" />
+            <input class="logit_bias_value text_pole" type="number" min="-100" value="0" max="100" step="0.01" />
             <i class="menu_button fa-solid fa-xmark logit_bias_remove"></i>
         </div>
     </div>
@@ -4676,10 +4758,10 @@
                 <h3><span data-i18n="Alternate Greetings">Alternate Greetings</span></h3>
                 <div title="Add" class="menu_button fa-solid fa-plus add_alternate_greeting" data-i18n="[title]Add"></div>
             </div>
-            <div class="justifyLeft" data-i18n="Alternate Greetings Subtitle">
+            <small class="justifyLeft" data-i18n="Alternate Greetings Subtitle">
                 These will be displayed as swipes on the first message when starting a new chat.
                 Group members can select one of them to initiate the conversation.
-            </div>
+            </small>
             <hr>
             <div class="alternate_greetings_list flexFlowColumn flex-container wide100p">
                 <strong class="alternate_grettings_hint margin-bot-10px" data-i18n="Alternate Greetings Hint">
@@ -4694,7 +4776,7 @@
                 <strong>Alternate Greeting #<span class="greeting_index"></span></strong>
                 <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
             </div>
-            <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="12"></textarea>
+            <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="16"></textarea>
         </div>
     </div>
     <!-- chat and input bar -->

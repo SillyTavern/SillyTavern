@@ -310,12 +310,12 @@ class CoquiTtsProvider {
             modelDict = coquiApiModelsFull;
 
         if (model_setting_language == null & 'languages' in modelDict[model_language][model_dataset][model_label]) {
-            toastr.error('Model language not selected, please select one.', DEBUG_PREFIX+' voice mapping model language', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            toastr.error('Model language not selected, please select one.', DEBUG_PREFIX + ' voice mapping model language', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             return;
         }
 
         if (model_setting_speaker == null & 'speakers' in modelDict[model_language][model_dataset][model_label]) {
-            toastr.error('Model speaker not selected, please select one.', DEBUG_PREFIX+' voice mapping model speaker', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            toastr.error('Model speaker not selected, please select one.', DEBUG_PREFIX + ' voice mapping model speaker', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             return;
         }
 

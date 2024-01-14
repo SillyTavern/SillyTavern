@@ -1,4 +1,4 @@
-[English](readme.md) | 中文
+[English](readme.md) | 中文 | [日本語](readme-ja_jp.md)
 
 ![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
 
@@ -47,7 +47,7 @@ SillyTavern 本身并无用处，因为它只是一个用户聊天界面。你�
 
 获取支持，或分享喜爱的角色和 Prompt：
 
-### [加入 Discord 社区](https://discord.gg/RZdyAEUPvj)
+### [加入 Discord 社区](https://discord.gg/sillytavern)
 
 ***
 

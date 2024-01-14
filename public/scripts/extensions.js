@@ -18,6 +18,8 @@ const defaultUrl = 'http://localhost:5100';
 
 let saveMetadataTimeout = null;
 
+let requiresReload = false;
+
 export function saveMetadataDebounced() {
     const context = getContext();
     const groupId = context.groupId;
@@ -193,24 +195,32 @@ async function discoverExtensions() {
 
 function onDisableExtensionClick() {
     const name = $(this).data('name');
-    disableExtension(name);
+    disableExtension(name, false);
 }
 
 function onEnableExtensionClick() {
     const name = $(this).data('name');
-    enableExtension(name);
+    enableExtension(name, false);
 }
 
-async function enableExtension(name) {
+async function enableExtension(name, reload = true) {
     extension_settings.disabledExtensions = extension_settings.disabledExtensions.filter(x => x !== name);
     await saveSettings();
-    location.reload();
+    if (reload) {
+        location.reload();
+    } else {
+        requiresReload = true;
+    }
 }
 
-async function disableExtension(name) {
+async function disableExtension(name, reload = true) {
     extension_settings.disabledExtensions.push(name);
     await saveSettings();
-    location.reload();
+    if (reload) {
+        location.reload();
+    } else {
+        requiresReload = true;
+    }
 }
 
 async function getManifests(names) {
@@ -560,6 +570,7 @@ function getModuleInformation() {
  * Generates the HTML strings for all extensions and displays them in a popup.
  */
 async function showExtensionsDetails() {
+    let popupPromise;
     try {
         showLoader();
         let htmlDefault = '<h3>Built-in Extensions:</h3>';
@@ -590,12 +601,19 @@ async function showExtensionsDetails() {
             ${htmlDefault}
             ${htmlExternal}
         `;
-        callPopup(`<div class="extensions_info">${html}</div>`, 'text');
+        popupPromise = callPopup(`<div class="extensions_info">${html}</div>`, 'text');
     } catch (error) {
         toastr.error('Error loading extensions. See browser console for details.');
         console.error(error);
     } finally {
         hideLoader();
+    }
+    if (popupPromise) {
+        await popupPromise;
+    }
+    if (requiresReload) {
+        showLoader();
+        location.reload();
     }
 }
 
@@ -636,7 +654,7 @@ async function updateExtension(extensionName, quiet) {
                 toastr.success('Extension is already up to date');
             }
         } else {
-            toastr.success(`Extension ${extensionName} updated to ${data.shortCommitHash}`);
+            toastr.success(`Extension ${extensionName} updated to ${data.shortCommitHash}`, 'Reload the page to apply updates');
         }
     } catch (error) {
         console.error('Error:', error);
