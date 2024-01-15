@@ -4412,7 +4412,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     }
 
     if (nameToTrim && getMessage.indexOf(`${nameToTrim}:`) == 0) {
-        getMessage = getMessage.substring(0, getMessage.indexOf(`${nameToTrim}:`));
+        getMessage = getMessage.substring(`${nameToTrim}:`.length);
     }
     if (nameToTrim && getMessage.indexOf(`\n${nameToTrim}:`) >= 0) {
         getMessage = getMessage.substring(0, getMessage.indexOf(`\n${nameToTrim}:`));
