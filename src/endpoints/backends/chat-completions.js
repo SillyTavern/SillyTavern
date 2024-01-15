@@ -36,9 +36,10 @@ async function sendClaudeRequest(request, response) {
         });
 
         const isSysPromptSupported = request.body.model === 'claude-2' || request.body.model === 'claude-2.1';
-        const requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSysPromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message);
+        const requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSysPromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message, request.body.claude_exclude_prefixes);
 
         // Check Claude messages sequence and prefixes presence.
+        let sequenceError = [];
         const sequence = requestPrompt.split('\n').filter(x => x.startsWith('Human:') || x.startsWith('Assistant:'));
         const humanFound = sequence.some(line => line.startsWith('Human:'));
         const assistantFound = sequence.some(line => line.startsWith('Assistant:'));
@@ -56,20 +57,20 @@ async function sendClaudeRequest(request, response) {
         }
 
         if (!humanFound) {
-            console.log(color.red(`${divider}\nWarning: No 'Human:' prefix found in the prompt.\n${divider}`));
+            sequenceError.push(`${divider}\nWarning: No 'Human:' prefix found in the prompt.\n${divider}`);
         }
         if (!assistantFound) {
-            console.log(color.red(`${divider}\nWarning: No 'Assistant: ' prefix found in the prompt.\n${divider}`));
+            sequenceError.push(`${divider}\nWarning: No 'Assistant: ' prefix found in the prompt.\n${divider}`);
         }
-        if (!sequence[0].startsWith('Human:')) {
-            console.log(color.red(`${divider}\nWarning: The messages sequence should start with 'Human:' prefix.\nMake sure you have 'Human:' prefix at the very beggining of the prompt, or after the system prompt.\n${divider}`));
+        if (sequence[0] && !sequence[0].startsWith('Human:')) {
+            sequenceError.push(`${divider}\nWarning: The messages sequence should start with 'Human:' prefix.\nMake sure you have '\\n\\nHuman:' prefix at the very beggining of the prompt, or after the system prompt.\n${divider}`);
         }
         if (humanErrorCount > 0 || assistantErrorCount > 0) {
-            console.log(color.red(`${divider}\nWarning: Detected incorrect Prefix sequence(s).`));
-            console.log(color.red(`Incorrect "Human:" prefix(es): ${humanErrorCount}.\nIncorrect "Assistant: " prefix(es): ${assistantErrorCount}.`));
-            console.log(color.red('Check the prompt above and fix it in the SillyTavern.'));
-            console.log(color.red('\nThe correct sequence should look like this:\nSystem prompt  <-(for the sysprompt format only, else have 2 empty lines above the first human\'s  message.)'));
-            console.log(color.red(`       <-----(Each message beginning with the "Assistant:/Human:" prefix must have one empty line above.)\nHuman:\n\nAssistant:\n...\n\nHuman:\n\nAssistant:\n${divider}`));
+            sequenceError.push(`${divider}\nWarning: Detected incorrect Prefix sequence(s).`);
+            sequenceError.push(`Incorrect "Human:" prefix(es): ${humanErrorCount}.\nIncorrect "Assistant: " prefix(es): ${assistantErrorCount}.`);
+            sequenceError.push('Check the prompt above and fix it in the SillyTavern.');
+            sequenceError.push('\nThe correct sequence in the console should look like this:\n(System prompt msg) <-(for the sysprompt format only, else have \\n\\n above the first human\'s  message.)');
+            sequenceError.push(`\\n +      <-----(Each message beginning with the "Assistant:/Human:" prefix must have \\n\\n before it.)\n\\n +\nHuman: \\n +\n\\n +\nAssistant: \\n +\n...\n\\n +\nHuman: \\n +\n\\n +\nAssistant: \n${divider}`);
         }
 
         // Add custom stop sequences
@@ -90,6 +91,10 @@ async function sendClaudeRequest(request, response) {
         };
 
         console.log('Claude request:', requestBody);
+
+        sequenceError.forEach(sequenceError => {
+            console.log(color.red(sequenceError));
+        });
 
         const generateResponse = await fetch(apiUrl + '/complete', {
             method: 'POST',
@@ -329,7 +334,7 @@ async function sendMakerSuiteRequest(request, response) {
             }
 
             const responseContent = candidates[0].content ?? candidates[0].output;
-            const responseText = typeof responseContent === 'string' ? responseContent : responseContent.parts?.[0]?.text;
+            const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.[0]?.text;
             if (!responseText) {
                 let message = 'MakerSuite Candidate text empty';
                 console.log(message, generateResponseJson);
@@ -443,7 +448,7 @@ async function sendMistralAIRequest(request, response) {
         const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
         const lastMsg = messages[messages.length - 1];
         if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
-            if (lastMsg.role === 'assistant') {
+            if (lastMsg.role === 'assistant' && lastMsg.name) {
                 lastMsg.content = lastMsg.name + ': ' + lastMsg.content;
             } else if (lastMsg.role === 'system') {
                 lastMsg.content = '[INST] ' + lastMsg.content + ' [/INST]';
@@ -478,7 +483,7 @@ async function sendMistralAIRequest(request, response) {
             'top_p': request.body.top_p,
             'max_tokens': request.body.max_tokens,
             'stream': request.body.stream,
-            //'safe_mode': request.body.safe_mode,
+            'safe_prompt': request.body.safe_prompt,
             'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
         };
 
@@ -540,7 +545,7 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = 'https://api.mistral.ai/v1';
         api_key_openai = readSecret(SECRET_KEYS.MISTRALAI);
-        headers = { 'Content-Length': '0' }; // WTF?
+        headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         api_url = request.body.custom_url;
         api_key_openai = readSecret(SECRET_KEYS.CUSTOM);
@@ -716,6 +721,14 @@ router.post('/generate', jsonParser, function (request, response) {
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
         bodyParams = { 'transforms': ['middle-out'] };
+
+        if (request.body.min_p !== undefined) {
+            bodyParams['min_p'] = request.body.min_p;
+        }
+
+        if (request.body.top_a !== undefined) {
+            bodyParams['top_a'] = request.body.top_a;
+        }
 
         if (request.body.use_fallback) {
             bodyParams['route'] = 'fallback';

@@ -286,6 +286,7 @@ jQuery(function () {
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'google' && secret_state[SECRET_KEYS.MAKERSUITE]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ollama' && textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'llamacpp' && textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) ||
+                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ooba' && textgenerationwebui_settings.server_urls[textgen_types.OOBA]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'custom') ||
                 extension_settings.caption.source === 'local' ||
                 extension_settings.caption.source === 'horde';
@@ -351,6 +352,7 @@ jQuery(function () {
                             <label for="caption_multimodal_api">API</label>
                             <select id="caption_multimodal_api" class="flex1 text_pole">
                                 <option value="llamacpp">llama.cpp</option>
+                                <option value="ooba">Text Generation WebUI (oobabooga)</option>
                                 <option value="ollama">Ollama</option>
                                 <option value="openai">OpenAI</option>
                                 <option value="openrouter">OpenRouter</option>
@@ -369,6 +371,7 @@ jQuery(function () {
                                 <option data-type="ollama" value="bakllava:latest">bakllava:latest</option>
                                 <option data-type="ollama" value="llava:latest">llava:latest</option>
                                 <option data-type="llamacpp" value="llamacpp_current">[Currently loaded]</option>
+                                <option data-type="ooba" value="ooba_current">[Currently loaded]</option>
                                 <option data-type="custom" value="custom_current">[Currently selected]</option>
                             </select>
                         </div>

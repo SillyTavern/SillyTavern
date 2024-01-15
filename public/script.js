@@ -16,7 +16,6 @@ import {
     generateTextGenWithStreaming,
     getTextGenGenerationData,
     textgen_types,
-    textgenerationwebui_banned_in_macros,
     getTextGenServer,
     validateTextGenUrl,
 } from './scripts/textgen-settings.js';
@@ -134,7 +133,6 @@ import {
     download,
     isDataURL,
     getCharaFilename,
-    isDigitsOnly,
     PAGINATION_TEMPLATE,
     waitUntilCondition,
     escapeRegex,
@@ -180,7 +178,6 @@ import {
     getInstructStoppingSequences,
     autoSelectInstructPreset,
     formatInstructModeSystemPrompt,
-    replaceInstructMacros,
 } from './scripts/instruct-mode.js';
 import { applyLocale, initLocales } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
@@ -190,8 +187,8 @@ import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels, loadOllamaModels, loadTogetherAIModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
-import { replaceVariableMacros } from './scripts/variables.js';
 import { initPresetManager } from './scripts/preset-manager.js';
+import { evaluateMacros } from './scripts/macros.js';
 
 //exporting functions and vars for mods
 export {
@@ -275,7 +272,7 @@ DOMPurify.addHook('afterSanitizeAttributes', function (node) {
     }
 });
 
-DOMPurify.addHook("uponSanitizeAttribute", (_, data, config) => {
+DOMPurify.addHook('uponSanitizeAttribute', (_, data, config) => {
     if (!config['MESSAGE_SANITIZE']) {
         return;
     }
@@ -287,7 +284,7 @@ DOMPurify.addHook("uponSanitizeAttribute", (_, data, config) => {
                         return v;
                     }
 
-                    return "custom-" + v;
+                    return 'custom-' + v;
                 }).join(' ');
             }
             break;
@@ -320,10 +317,10 @@ export const event_types = {
     SETTINGS_LOADED_AFTER: 'settings_loaded_after',
     CHATCOMPLETION_SOURCE_CHANGED: 'chatcompletion_source_changed',
     CHATCOMPLETION_MODEL_CHANGED: 'chatcompletion_model_changed',
-    OAI_BEFORE_CHATCOMPLETION: 'oai_before_chatcompletion',
     OAI_PRESET_CHANGED_BEFORE: 'oai_preset_changed_before',
     OAI_PRESET_CHANGED_AFTER: 'oai_preset_changed_after',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
+    WORLDINFO_UPDATED: 'worldinfo_updated',
     CHARACTER_EDITED: 'character_edited',
     CHARACTER_PAGE_LOADED: 'character_page_loaded',
     CHARACTER_GROUP_OVERLAY_STATE_CHANGE_BEFORE: 'character_group_overlay_state_change_before',
@@ -536,13 +533,22 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
     }
 });
 
-function getUrlSync(url, cache = true) {
-    return $.ajax({
-        type: 'GET',
-        url: url,
-        cache: cache,
-        async: false,
-    }).responseText;
+/**
+ * Loads a URL content using XMLHttpRequest synchronously.
+ * @param {string} url URL to load synchronously
+ * @returns {string} Response text
+ */
+function getUrlSync(url) {
+    console.debug('Loading URL synchronously', url);
+    const request = new XMLHttpRequest();
+    request.open('GET', url, false); // `false` makes the request synchronous
+    request.send();
+
+    if (request.status >= 200 && request.status < 300) {
+        return request.responseText;
+    }
+
+    throw new Error(`Error loading ${url}: ${request.status} ${request.statusText}`);
 }
 
 const templateCache = new Map();
@@ -951,6 +957,11 @@ async function getStatusTextgen() {
     if (!endpoint) {
         console.warn('No endpoint for status check');
         online_status = 'no_connection';
+        return resultCheckStatus();
+    }
+
+    if (textgen_settings.type == OOBA && textgen_settings.bypass_status_check) {
+        online_status = 'Status check bypassed';
         return resultCheckStatus();
     }
 
@@ -1471,6 +1482,29 @@ export async function reloadCurrentChat() {
 
     hideSwipeButtons();
     showSwipeButtons();
+}
+
+/**
+ * Send the message currently typed into the chat box.
+ */
+export function sendTextareaMessage() {
+    if (is_send_press) return;
+
+    let generateType;
+    // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
+    // message was sent from a character (not the user or the system).
+    const textareaText = String($('#send_textarea').val());
+    if (power_user.continue_on_send &&
+        !textareaText &&
+        !selected_group &&
+        chat.length &&
+        !chat[chat.length - 1]['is_user'] &&
+        !chat[chat.length - 1]['is_system']
+    ) {
+        generateType = 'continue';
+    }
+
+    Generate(generateType);
 }
 
 function messageFormatting(mes, ch_name, isSystem, isUser) {
@@ -2002,7 +2036,7 @@ function formatGenerationTimer(gen_started, gen_finished, tokenCount) {
         tokenCount > 0 ? `Token rate: ${Number(tokenCount / seconds).toFixed(1)} t/s` : '',
     ].join('\n');
 
-    if (isNaN(seconds)) {
+    if (isNaN(seconds) || seconds < 0) {
         return { timerValue: '', timerTitle };
     }
 
@@ -2027,88 +2061,6 @@ function scrollChatToBottom() {
 }
 
 /**
- * Returns the ID of the last message in the chat.
- * @returns {string} The ID of the last message in the chat.
- */
-function getLastMessageId() {
-    const index = chat?.length - 1;
-
-    if (!isNaN(index) && index >= 0) {
-        return String(index);
-    }
-
-    return '';
-}
-
-/**
- * Returns the ID of the first message included in the context.
- * @returns {string} The ID of the first message in the context.
- */
-function getFirstIncludedMessageId() {
-    const index = document.querySelector('.lastInContext')?.getAttribute('mesid');
-
-    if (!isNaN(index) && index >= 0) {
-        return String(index);
-    }
-
-    return '';
-}
-
-/**
- * Returns the last message in the chat.
- * @returns {string} The last message in the chat.
- */
-function getLastMessage() {
-    const index = chat?.length - 1;
-
-    if (!isNaN(index) && index >= 0) {
-        return chat[index].mes;
-    }
-
-    return '';
-}
-
-/**
- * Returns the ID of the last swipe.
- * @returns {string} The 1-based ID of the last swipe
- */
-function getLastSwipeId() {
-    const index = chat?.length - 1;
-
-    if (!isNaN(index) && index >= 0) {
-        const swipes = chat[index].swipes;
-
-        if (!Array.isArray(swipes) || swipes.length === 0) {
-            return '';
-        }
-
-        return String(swipes.length);
-    }
-
-    return '';
-}
-
-/**
- * Returns the ID of the current swipe.
- * @returns {string} The 1-based ID of the current swipe.
- */
-function getCurrentSwipeId() {
-    const index = chat?.length - 1;
-
-    if (!isNaN(index) && index >= 0) {
-        const swipeId = chat[index].swipe_id;
-
-        if (swipeId === undefined || isNaN(swipeId)) {
-            return '';
-        }
-
-        return String(swipeId + 1);
-    }
-
-    return '';
-}
-
-/**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
  * @param {*} _name1 - The name of the user. Uses global name1 if not provided.
@@ -2118,187 +2070,9 @@ function getCurrentSwipeId() {
  * @returns {string} The string with substituted parameters.
  */
 function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
-    _name1 = _name1 ?? name1;
-    _name2 = _name2 ?? name2;
-    _group = _group ?? name2;
-
-    if (!content) {
-        return '';
-    }
-
-    // Replace {{original}} with the original message
-    // Note: only replace the first instance of {{original}}
-    // This will hopefully prevent the abuse
-    if (typeof _original === 'string') {
-        content = content.replace(/{{original}}/i, _original);
-    }
-    content = diceRollReplace(content);
-    content = replaceInstructMacros(content);
-    content = replaceVariableMacros(content);
-    content = content.replace(/{{newline}}/gi, '\n');
-    content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));
-
-    if (_replaceCharacterCard) {
-        const fields = getCharacterCardFields();
-        content = content.replace(/{{charPrompt}}/gi, fields.system || '');
-        content = content.replace(/{{charJailbreak}}/gi, fields.jailbreak || '');
-        content = content.replace(/{{description}}/gi, fields.description || '');
-        content = content.replace(/{{personality}}/gi, fields.personality || '');
-        content = content.replace(/{{scenario}}/gi, fields.scenario || '');
-        content = content.replace(/{{persona}}/gi, fields.persona || '');
-        content = content.replace(/{{mesExamples}}/gi, fields.mesExamples || '');
-    }
-
-    content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
-    content = content.replace(/{{user}}/gi, _name1);
-    content = content.replace(/{{char}}/gi, _name2);
-    content = content.replace(/{{charIfNotGroup}}/gi, _group);
-    content = content.replace(/{{group}}/gi, _group);
-    content = content.replace(/{{lastMessage}}/gi, getLastMessage());
-    content = content.replace(/{{lastMessageId}}/gi, getLastMessageId());
-    content = content.replace(/{{firstIncludedMessageId}}/gi, getFirstIncludedMessageId());
-    content = content.replace(/{{lastSwipeId}}/gi, getLastSwipeId());
-    content = content.replace(/{{currentSwipeId}}/gi, getCurrentSwipeId());
-
-    content = content.replace(/<USER>/gi, _name1);
-    content = content.replace(/<BOT>/gi, _name2);
-    content = content.replace(/<CHARIFNOTGROUP>/gi, _group);
-    content = content.replace(/<GROUP>/gi, _group);
-
-    content = content.replace(/\{\{\/\/([\s\S]*?)\}\}/gm, '');
-
-    content = content.replace(/{{time}}/gi, moment().format('LT'));
-    content = content.replace(/{{date}}/gi, moment().format('LL'));
-    content = content.replace(/{{weekday}}/gi, moment().format('dddd'));
-    content = content.replace(/{{isotime}}/gi, moment().format('HH:mm'));
-    content = content.replace(/{{isodate}}/gi, moment().format('YYYY-MM-DD'));
-
-    content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
-        const formattedTime = moment().format(format);
-        return formattedTime;
-    });
-    content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
-    content = content.replace(/{{time_UTC([-+]\d+)}}/gi, (_, offset) => {
-        const utcOffset = parseInt(offset, 10);
-        const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
-        return utcTime;
-    });
-    content = bannedWordsReplace(content);
-    content = randomReplace(content);
-    return content;
+    return evaluateMacros(content, _name1 ?? name1, _name2 ?? name2, _original, _group ?? name2, _replaceCharacterCard);
 }
 
-/**
- * Replaces banned words in macros with an empty string.
- * Adds them to textgenerationwebui ban list.
- * @param {string} inText Text to replace banned words in
- * @returns {string} Text without the "banned" macro
- */
-function bannedWordsReplace(inText) {
-    if (!inText) {
-        return '';
-    }
-
-    const banPattern = /{{banned "(.*)"}}/gi;
-
-    if (main_api == 'textgenerationwebui') {
-        const bans = inText.matchAll(banPattern);
-        if (bans) {
-            for (const banCase of bans) {
-                console.log('Found banned words in macros: ' + banCase[1]);
-                textgenerationwebui_banned_in_macros.push(banCase[1]);
-            }
-        }
-    }
-
-    inText = inText.replaceAll(banPattern, '');
-    return inText;
-}
-
-function getTimeSinceLastMessage() {
-    const now = moment();
-
-    if (Array.isArray(chat) && chat.length > 0) {
-        let lastMessage;
-        let takeNext = false;
-
-        for (let i = chat.length - 1; i >= 0; i--) {
-            const message = chat[i];
-
-            if (message.is_system) {
-                continue;
-            }
-
-            if (message.is_user && takeNext) {
-                lastMessage = message;
-                break;
-            }
-
-            takeNext = true;
-        }
-
-        if (lastMessage?.send_date) {
-            const lastMessageDate = timestampToMoment(lastMessage.send_date);
-            const duration = moment.duration(now.diff(lastMessageDate));
-            return duration.humanize();
-        }
-    }
-
-    return 'just now';
-}
-
-function randomReplace(input, emptyListPlaceholder = '') {
-    const randomPatternNew = /{{random\s?::\s?([^}]+)}}/gi;
-    const randomPatternOld = /{{random\s?:\s?([^}]+)}}/gi;
-
-    if (randomPatternNew.test(input)) {
-        return input.replace(randomPatternNew, (match, listString) => {
-            //split on double colons instead of commas to allow for commas inside random items
-            const list = listString.split('::').filter(item => item.length > 0);
-            if (list.length === 0) {
-                return emptyListPlaceholder;
-            }
-            var rng = new Math.seedrandom('added entropy.', { entropy: true });
-            const randomIndex = Math.floor(rng() * list.length);
-            //trim() at the end to allow for empty random values
-            return list[randomIndex].trim();
-        });
-    } else if (randomPatternOld.test(input)) {
-        return input.replace(randomPatternOld, (match, listString) => {
-            const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
-            if (list.length === 0) {
-                return emptyListPlaceholder;
-            }
-            var rng = new Math.seedrandom('added entropy.', { entropy: true });
-            const randomIndex = Math.floor(rng() * list.length);
-            return list[randomIndex];
-        });
-    } else {
-        return input;
-    }
-}
-
-function diceRollReplace(input, invalidRollPlaceholder = '') {
-    const rollPattern = /{{roll[ : ]([^}]+)}}/gi;
-
-    return input.replace(rollPattern, (match, matchValue) => {
-        let formula = matchValue.trim();
-
-        if (isDigitsOnly(formula)) {
-            formula = `1d${formula}`;
-        }
-
-        const isValid = droll.validate(formula);
-
-        if (!isValid) {
-            console.debug(`Invalid roll formula: ${formula}`);
-            return invalidRollPlaceholder;
-        }
-
-        const result = droll.roll(formula);
-        return new String(result.total);
-    });
-}
 
 /**
  * Gets stopping sequences for the prompt.
@@ -2346,19 +2120,25 @@ function getStoppingStrings(isImpersonate, isContinue) {
  * @param {boolean} quietToLoud Whether the message should be sent in a foreground (loud) or background (quiet) mode
  * @param {boolean} skipWIAN whether to skip addition of World Info and Author's Note into the prompt
  * @param {string} quietImage Image to use for the quiet prompt
+ * @param {string} quietName Name to use for the quiet prompt (defaults to "System:")
  * @returns
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null) {
     console.log('got into genQuietPrompt');
-    const generateFinished = await Generate('quiet', { quiet_prompt, quietToLoud, skipWIAN: skipWIAN, force_name2: true, quietImage: quietImage });
+    /** @type {GenerateOptions} */
+    const options = {
+        quiet_prompt,
+        quietToLoud,
+        skipWIAN: skipWIAN,
+        force_name2: true,
+        quietImage: quietImage,
+        quietName: quietName,
+    };
+    const generateFinished = await Generate('quiet', options);
     return generateFinished;
 }
 
-async function processCommands(message, type, dryRun) {
-    if (dryRun || type == 'regenerate' || type == 'swipe' || type == 'quiet') {
-        return null;
-    }
-
+async function processCommands(message) {
     const previousText = String($('#send_textarea').val());
     const result = await executeSlashCommands(message);
 
@@ -2545,7 +2325,7 @@ export function baseChatReplace(value, name1, name2) {
  * Returns the character card fields for the current character.
  * @returns {{system: string, mesExamples: string, description: string, personality: string, persona: string, scenario: string, jailbreak: string}}
  */
-function getCharacterCardFields() {
+export function getCharacterCardFields() {
     const result = { system: '', mesExamples: '', description: '', personality: '', persona: '', scenario: '', jailbreak: '' };
     const character = characters[this_chid];
 
@@ -2872,7 +2652,7 @@ export async function generateRaw(prompt, api, instructOverride) {
         case 'kobold':
         case 'koboldhorde':
             if (preset_settings === 'gui') {
-                generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context };
+                generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context, api_server };
             } else {
                 const isHorde = api === 'koboldhorde';
                 const koboldSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
@@ -2928,8 +2708,15 @@ export async function generateRaw(prompt, api, instructOverride) {
     return message;
 }
 
-// Returns a promise that resolves when the text is done generating.
-async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops } = {}, dryRun = false) {
+/**
+ * Runs a generation using the current chat context.
+ * @param {string} type Generation type
+ * @param {GenerateOptions} options Generation options
+ * @param {boolean} dryRun Whether to actually generate a message or just assemble the prompt
+ * @returns {Promise<any>} Returns a promise that resolves when the text is done generating.
+ * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, maxLoops?: number, quietName?: string }} GenerateOptions
+ */
+async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName } = {}, dryRun = false) {
     console.log('Generate entered');
     eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops }, dryRun);
     setGenerationProgress(0);
@@ -2946,12 +2733,14 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     let message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
-    const interruptedByCommand = await processCommands($('#send_textarea').val(), type, dryRun);
+    if (!(dryRun || type == 'regenerate' || type == 'swipe' || type == 'quiet')) {
+        const interruptedByCommand = await processCommands($('#send_textarea').val());
 
-    if (interruptedByCommand) {
-        //$("#send_textarea").val('').trigger('input');
-        unblockGeneration();
-        return Promise.resolve();
+        if (interruptedByCommand) {
+            //$("#send_textarea").val('').trigger('input');
+            unblockGeneration();
+            return Promise.resolve();
+        }
     }
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
@@ -2974,15 +2763,19 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         return Promise.resolve();
     }
 
-    // Hide swipes if not in a dry run.
     if (!dryRun) {
+        // Hide swipes if not in a dry run.
         hideSwipeButtons();
+        // If generated any message, set the flag to indicate it can't be recreated again.
+        chat_metadata['tainted'] = true;
     }
 
-    if (selected_group && !is_group_generating && !dryRun) {
-        // Returns the promise that generateGroupWrapper returns; resolves when generation is done
-        return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, maxLoops });
-    } else if (selected_group && !is_group_generating && dryRun) {
+    if (selected_group && !is_group_generating) {
+        if (!dryRun) {
+            // Returns the promise that generateGroupWrapper returns; resolves when generation is done
+            return generateGroupWrapper(false, type, { quiet_prompt, force_chid, signal: abortController.signal, quietImage, maxLoops });
+        }
+
         const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
         const group = groups.find((x) => x.id === selected_group);
 
@@ -3014,946 +2807,957 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         quiet_prompt = main_api == 'novel' && !quietToLoud ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
     }
 
-    if (true === dryRun ||
-        (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id')) {
-        let textareaText;
-        if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun) {
-            is_send_press = true;
-            textareaText = String($('#send_textarea').val());
-            $('#send_textarea').val('').trigger('input');
-        } else {
-            textareaText = '';
-            if (chat.length && chat[chat.length - 1]['is_user']) {
-                //do nothing? why does this check exist?
-            }
-            else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && chat.length) {
-                chat.length = chat.length - 1;
-                count_view_mes -= 1;
-                $('#chat').children().last().hide(250, function () {
-                    $(this).remove();
-                });
-                await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
-            }
-        }
-
-        if (!type && !textareaText && power_user.continue_on_send && !selected_group && chat.length && !chat[chat.length - 1]['is_user'] && !chat[chat.length - 1]['is_system']) {
-            type = 'continue';
-        }
-
-        const isContinue = type == 'continue';
-
-        // Rewrite the generation timer to account for the time passed for all the continuations.
-        if (isContinue && chat.length) {
-            const prevFinished = chat[chat.length - 1]['gen_finished'];
-            const prevStarted = chat[chat.length - 1]['gen_started'];
-
-            if (prevFinished && prevStarted) {
-                const timePassed = prevFinished - prevStarted;
-                generation_started = new Date(Date.now() - timePassed);
-                chat[chat.length - 1]['gen_started'] = generation_started;
-            }
-        }
-
-        if (!dryRun) {
-            deactivateSendButtons();
-        }
-
-        let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
-
-        //*********************************
-        //PRE FORMATING STRING
-        //*********************************
-
-        //for normal messages sent from user..
-        if ((textareaText != '' || hasPendingFileAttachment()) && !automatic_trigger && type !== 'quiet' && !dryRun) {
-            // If user message contains no text other than bias - send as a system message
-            if (messageBias && !removeMacros(textareaText)) {
-                sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
-            }
-            else {
-                await sendMessageAsUser(textareaText, messageBias);
-            }
-        }
-        else if (textareaText == '' && !automatic_trigger && !dryRun && type === undefined && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0) {
-            // Use send_if_empty if set and the user message is empty. Only when sending messages normally
-            await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
-        }
-
-        let {
-            description,
-            personality,
-            persona,
-            scenario,
-            mesExamples,
-            system,
-            jailbreak,
-        } = getCharacterCardFields();
-
-        if (isInstruct) {
-            system = power_user.prefer_character_prompt && system ? system : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
-            system = formatInstructModeSystemPrompt(substituteParams(system, name1, name2, power_user.instruct.system_prompt));
-        }
-
-        // Depth prompt (character-specific A/N)
-        removeDepthPrompts();
-        const groupDepthPrompts = getGroupDepthPrompts(selected_group, Number(this_chid));
-
-        if (selected_group && Array.isArray(groupDepthPrompts) && groupDepthPrompts.length > 0) {
-            groupDepthPrompts.forEach((value, index) => {
-                setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan);
-            });
-        } else {
-            const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
-            const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
-            setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan);
-        }
-
-        // Parse example messages
-        if (!mesExamples.startsWith('<START>')) {
-            mesExamples = '<START>\n' + mesExamples.trim();
-        }
-        if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
-            mesExamples = '';
-        }
-        if (mesExamples && isInstruct) {
-            mesExamples = formatInstructModeExamples(mesExamples, name1, name2);
-        }
-
-        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-        const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
-        let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
-
-        // First message in fresh 1-on-1 chat reacts to user/character settings changes
-        if (chat.length) {
-            chat[0].mes = substituteParams(chat[0].mes);
-        }
-
-        // Collect messages with usable content
-        let coreChat = chat.filter(x => !x.is_system);
-        if (type === 'swipe') {
-            coreChat.pop();
-        }
-
-        coreChat = await Promise.all(coreChat.map(async (chatItem, index) => {
-            let message = chatItem.mes;
-            let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
-            let options = { isPrompt: true };
-
-            let regexedMessage = getRegexedString(message, regexType, options);
-            regexedMessage = await appendFileContent(chatItem, regexedMessage);
-
-            return {
-                ...chatItem,
-                mes: regexedMessage,
-                index,
-            };
-        }));
-
-        // Determine token limit
-        let this_max_context = getMaxContextSize();
-
-        if (!dryRun && type !== 'quiet') {
-            console.debug('Running extension interceptors');
-            const aborted = await runGenerationInterceptors(coreChat, this_max_context);
-
-            if (aborted) {
-                console.debug('Generation aborted by extension interceptors');
-                unblockGeneration();
-                return Promise.resolve();
-            }
-        } else {
-            console.debug('Skipping extension interceptors for dry run');
-        }
-
-        console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
-
-        // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
-        if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || main_api == 'novel') {
-            force_name2 = true;
-        }
-
-        if (isImpersonate) {
-            force_name2 = false;
-        }
-
-        //////////////////////////////////
-
-        let chat2 = [];
-        let continue_mag = '';
-        for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
-            // For OpenAI it's only used in WI
-            if (main_api == 'openai' && (!world_info || world_info.length === 0)) {
-                console.debug('No WI, skipping chat2 for OAI');
-                break;
-            }
-
-            chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, false);
-
-            if (j === 0 && isInstruct) {
-                // Reformat with the first output sequence (if any)
-                chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.FIRST);
-            }
-
-            // Do not suffix the message for continuation
-            if (i === 0 && isContinue) {
-                if (isInstruct) {
-                    // Reformat with the last output sequence (if any)
-                    chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.LAST);
-                }
-
-                chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
-                continue_mag = coreChat[j].mes;
-            }
-        }
-
-        // Adjust token limit for Horde
-        let adjustedParams;
-        if (main_api == 'koboldhorde' && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
-            try {
-                adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
-            }
-            catch {
-                unblockGeneration();
-                return Promise.resolve();
-            }
-            if (horde_settings.auto_adjust_context_length) {
-                this_max_context = (adjustedParams.maxContextLength - adjustedParams.maxLength);
-            }
-        }
-
-        // Extension added strings
-        // Set non-WI AN
-        setFloatingPrompt();
-        // Add WI to prompt (and also inject WI to AN value via hijack)
-
-        let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chat2, this_max_context);
-
-        if (skipWIAN !== true) {
-            console.log('skipWIAN not active, adding WIAN');
-            // Add all depth WI entries to prompt
-            flushWIDepthInjections();
-            if (Array.isArray(worldInfoDepth)) {
-                worldInfoDepth.forEach((e) => {
-                    const joinedEntries = e.entries.join('\n');
-                    setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth);
-                });
-            }
-        } else {
-            console.log('skipping WIAN');
-        }
-
-        // Add persona description to prompt
-        addPersonaDescriptionExtensionPrompt();
-        // Call combined AN into Generate
-        let allAnchors = getAllExtensionPrompts();
-        const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
-        const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
-        let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
-
-        const storyStringParams = {
-            description: description,
-            personality: personality,
-            persona: persona,
-            scenario: scenario,
-            system: isInstruct ? system : '',
-            char: name2,
-            user: name1,
-            wiBefore: worldInfoBefore,
-            wiAfter: worldInfoAfter,
-            loreBefore: worldInfoBefore,
-            loreAfter: worldInfoAfter,
-            mesExamples: mesExamplesArray.join(''),
-        };
-
-        const storyString = renderStoryString(storyStringParams);
-
-        // Story string rendered, safe to remove
-        if (power_user.strip_examples) {
-            mesExamplesArray = [];
-        }
-
-        let oaiMessages = [];
-        let oaiMessageExamples = [];
-
-        if (main_api === 'openai') {
-            message_already_generated = '';
-            oaiMessages = setOpenAIMessages(coreChat);
-            oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray);
-        }
-
-        // hack for regeneration of the first message
-        if (chat2.length == 0) {
-            chat2.push('');
-        }
-
-        let examplesString = '';
-        let chatString = '';
-        let cyclePrompt = '';
-
-        function getMessagesTokenCount() {
-            const encodeString = [
-                storyString,
-                examplesString,
-                chatString,
-                allAnchors,
-                quiet_prompt,
-                cyclePrompt,
-            ].join('').replace(/\r/gm, '');
-            return getTokenCount(encodeString, power_user.token_padding);
-        }
-
-        // Force pinned examples into the context
-        let pinExmString;
-        if (power_user.pin_examples) {
-            pinExmString = examplesString = mesExamplesArray.join('');
-        }
-
-        // Only add the chat in context if past the greeting message
-        if (isContinue && (chat2.length > 1 || main_api === 'openai')) {
-            cyclePrompt = chat2.shift();
-        }
-
-        // Collect enough messages to fill the context
-        let arrMes = [];
-        let tokenCount = getMessagesTokenCount();
-        for (let item of chat2) {
-            // not needed for OAI prompting
-            if (main_api == 'openai') {
-                break;
-            }
-
-            tokenCount += getTokenCount(item.replace(/\r/gm, ''));
-            chatString = item + chatString;
-            if (tokenCount < this_max_context) {
-                arrMes[arrMes.length] = item;
-            } else {
-                break;
-            }
-
-            // Prevent UI thread lock on tokenization
-            await delay(1);
-        }
-
-        if (main_api !== 'openai') {
-            setInContextMessages(arrMes.length, type);
-        }
-
-        // Estimate how many unpinned example messages fit in the context
-        tokenCount = getMessagesTokenCount();
-        let count_exm_add = 0;
-        if (!power_user.pin_examples) {
-            for (let example of mesExamplesArray) {
-                tokenCount += getTokenCount(example.replace(/\r/gm, ''));
-                examplesString += example;
-                if (tokenCount < this_max_context) {
-                    count_exm_add++;
-                } else {
-                    break;
-                }
-                await delay(1);
-            }
-        }
-
-        let mesSend = [];
-        console.debug('calling runGenerate');
-
-        if (isContinue) {
-            // Coping mechanism for OAI spacing
-            const isForceInstruct = isOpenRouterWithInstruct();
-            if (main_api === 'openai' && !isForceInstruct && !cyclePrompt.endsWith(' ')) {
-                cyclePrompt += ' ';
-                continue_mag += ' ';
-            }
-            message_already_generated = continue_mag;
-        }
-
-        const originalType = type;
-
-        if (!dryRun) {
-            is_send_press = true;
-        }
-
-        generatedPromptCache += cyclePrompt;
-        if (generatedPromptCache.length == 0 || type === 'continue') {
-            console.debug('generating prompt');
-            chatString = '';
-            arrMes = arrMes.reverse();
-            arrMes.forEach(function (item, i, arr) {// For added anchors and others
-                // OAI doesn't need all of this
-                if (main_api === 'openai') {
-                    return;
-                }
-
-                // Cohee: I'm not even sure what this is for anymore
-                if (i === arrMes.length - 1 && type !== 'continue') {
-                    item = item.replace(/\n?$/, '');
-                }
-
-                mesSend[mesSend.length] = { message: item, extensionPrompts: [] };
-            });
-        }
-
-        let mesExmString = '';
-
-        function setPromptString() {
-            if (main_api == 'openai') {
-                return;
-            }
-
-            console.debug('--setting Prompt string');
-            mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
-
-            if (mesSend.length) {
-                mesSend[mesSend.length - 1].message = modifyLastPromptLine(mesSend[mesSend.length - 1].message);
-            }
-        }
-
-        function modifyLastPromptLine(lastMesString) {
-            //#########QUIET PROMPT STUFF PT2##############
-
-            // Add quiet generation prompt at depth 0
-            if (quiet_prompt && quiet_prompt.length) {
-
-                // here name1 is forced for all quiet prompts..why?
-                const name = name1;
-                //checks if we are in instruct, if so, formats the chat as such, otherwise just adds the quiet prompt
-                const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${quiet_prompt}`;
-
-                //This begins to fix quietPrompts (particularly /sysgen) for instruct
-                //previously instruct input sequence was being appended to the last chat message w/o '\n'
-                //and no output sequence was added after the input's content.
-                //TODO: respect output_sequence vs last_output_sequence settings
-                //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
-                if (isInstruct) {
-                    lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
-                } else {
-                    lastMesString += quietAppend;
-                }
-
-
-                // Ross: bailing out early prevents quiet prompts from respecting other instruct prompt toggles
-                // for sysgen, SD, and summary this is desireable as it prevents the AI from responding as char..
-                // but for idle prompting, we want the flexibility of the other prompt toggles, and to respect them as per settings in the extension
-                // need a detection for what the quiet prompt is being asked for...
-
-                // Bail out early?
-                if (quietToLoud !== true) {
-                    return lastMesString;
-                }
-            }
-
-
-            // Get instruct mode line
-            if (isInstruct && !isContinue) {
-                const name = isImpersonate ? name1 : name2;
-                lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
-            }
-
-            // Get non-instruct impersonation line
-            if (!isInstruct && isImpersonate && !isContinue) {
-                const name = name1;
-                if (!lastMesString.endsWith('\n')) {
-                    lastMesString += '\n';
-                }
-                lastMesString += name + ':';
-            }
-
-            // Add character's name
-            // Force name append on continue (if not continuing on user message)
-            if (!isInstruct && force_name2) {
-                if (!lastMesString.endsWith('\n')) {
-                    lastMesString += '\n';
-                }
-                if (!isContinue || !(chat[chat.length - 1]?.is_user)) {
-                    lastMesString += `${name2}:`;
-                }
-            }
-
-            return lastMesString;
-        }
-
-        // Clean up the already generated prompt for seamless addition
-        function cleanupPromptCache(promptCache) {
-            // Remove the first occurrance of character's name
-            if (promptCache.trimStart().startsWith(`${name2}:`)) {
-                promptCache = promptCache.replace(`${name2}:`, '').trimStart();
-            }
-
-            // Remove the first occurrance of prompt bias
-            if (promptCache.trimStart().startsWith(promptBias)) {
-                promptCache = promptCache.replace(promptBias, '');
-            }
-
-            // Add a space if prompt cache doesn't start with one
-            if (!/^\s/.test(promptCache) && !isInstruct && !isContinue) {
-                promptCache = ' ' + promptCache;
-            }
-
-            return promptCache;
-        }
-
-        function checkPromptSize() {
-            console.debug('---checking Prompt size');
-            setPromptString();
-            const prompt = [
-                storyString,
-                mesExmString,
-                mesSend.join(''),
-                generatedPromptCache,
-                allAnchors,
-                quiet_prompt,
-            ].join('').replace(/\r/gm, '');
-            let thisPromptContextSize = getTokenCount(prompt, power_user.token_padding);
-
-            if (thisPromptContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
-                if (count_exm_add > 0) {                            // ..and we have example mesages..
-                    count_exm_add--;                            // remove the example messages...
-                    checkPromptSize();                            // and try agin...
-                } else if (mesSend.length > 0) {                    // if the chat history is longer than 0
-                    mesSend.shift();                            // remove the first (oldest) chat entry..
-                    checkPromptSize();                            // and check size again..
-                } else {
-                    //end
-                    console.debug(`---mesSend.length = ${mesSend.length}`);
-                }
-            }
-        }
-
-        if (generatedPromptCache.length > 0 && main_api !== 'openai') {
-            console.debug('---Generated Prompt Cache length: ' + generatedPromptCache.length);
-            checkPromptSize();
-        } else {
-            console.debug('---calling setPromptString ' + generatedPromptCache.length);
-            setPromptString();
-        }
-
-        // Fetches the combined prompt for both negative and positive prompts
-        const cfgGuidanceScale = getGuidanceScale();
-
-        // For prompt bit itemization
-        let mesSendString = '';
-
-        function getCombinedPrompt(isNegative) {
-            // Only return if the guidance scale doesn't exist or the value is 1
-            // Also don't return if constructing the neutral prompt
-            if (isNegative && (!cfgGuidanceScale || cfgGuidanceScale?.value === 1)) {
-                return;
-            }
-
-            // OAI has its own prompt manager. No need to do anything here
-            if (main_api === 'openai') {
-                return '';
-            }
-
-            // Deep clone
-            let finalMesSend = structuredClone(mesSend);
-
-            // TODO: Rewrite getExtensionPrompt to not require multiple for loops
-            // Set all extension prompts where insertion depth > mesSend length
-            if (finalMesSend.length) {
-                for (let upperDepth = MAX_INJECTION_DEPTH; upperDepth >= finalMesSend.length; upperDepth--) {
-                    const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
-                    if (upperAnchor && upperAnchor.length) {
-                        finalMesSend[0].extensionPrompts.push(upperAnchor);
-                    }
-                }
-            }
-
-            finalMesSend.forEach((mesItem, index) => {
-                if (index === 0) {
-                    return;
-                }
-
-                const anchorDepth = Math.abs(index - finalMesSend.length);
-                // NOTE: Depth injected here!
-                const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
-
-                if (anchorDepth >= 0 && extensionAnchor && extensionAnchor.length) {
-                    mesItem.extensionPrompts.push(extensionAnchor);
-                }
-            });
-
-            // TODO: Move zero-depth anchor append to work like CFG and bias appends
-            if (zeroDepthAnchor?.length && !isContinue) {
-                console.debug(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)));
-                finalMesSend[finalMesSend.length - 1].message +=
-                    /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
-                        ? zeroDepthAnchor
-                        : `${zeroDepthAnchor}`;
-            }
-
-            let cfgPrompt = {};
-            if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
-                cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
-            }
-
-            if (cfgPrompt && cfgPrompt?.value) {
-                if (cfgPrompt?.depth === 0) {
-                    finalMesSend[finalMesSend.length - 1].message +=
-                        /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
-                            ? cfgPrompt.value
-                            : ` ${cfgPrompt.value}`;
-                } else {
-                    // TODO: Make all extension prompts use an array/splice method
-                    const lengthDiff = mesSend.length - cfgPrompt.depth;
-                    const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
-                    finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
-                }
-            }
-
-            // Add prompt bias after everything else
-            // Always run with continue
-            if (!isInstruct && !isImpersonate) {
-                if (promptBias.trim().length !== 0) {
-                    finalMesSend[finalMesSend.length - 1].message +=
-                        /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
-                            ? promptBias.trimStart()
-                            : ` ${promptBias.trimStart()}`;
-                }
-            }
-
-            // Prune from prompt cache if it exists
-            if (generatedPromptCache.length !== 0) {
-                generatedPromptCache = cleanupPromptCache(generatedPromptCache);
-            }
-
-            // Flattens the multiple prompt objects to a string.
-            const combine = () => {
-                // Right now, everything is suffixed with a newline
-                mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
-
-                // add a custom dingus (if defined)
-                mesSendString = addChatsSeparator(mesSendString);
-
-                // add chat preamble
-                mesSendString = addChatsPreamble(mesSendString);
-
-                let combinedPrompt = beforeScenarioAnchor +
-                    storyString +
-                    afterScenarioAnchor +
-                    mesExmString +
-                    mesSendString +
-                    generatedPromptCache;
-
-                combinedPrompt = combinedPrompt.replace(/\r/gm, '');
-
-                if (power_user.collapse_newlines) {
-                    combinedPrompt = collapseNewlines(combinedPrompt);
-                }
-
-                return combinedPrompt;
-            };
-
-            let data = {
-                api: main_api,
-                combinedPrompt: null,
-                description,
-                personality,
-                persona,
-                scenario,
-                char: name2,
-                user: name1,
-                beforeScenarioAnchor,
-                afterScenarioAnchor,
-                mesExmString,
-                finalMesSend,
-                generatedPromptCache,
-                main: system,
-                jailbreak,
-                naiPreamble: nai_settings.preamble,
-            };
-
-            // Before returning the combined prompt, give available context related information to all subscribers.
-            eventSource.emitAndWait(event_types.GENERATE_BEFORE_COMBINE_PROMPTS, data);
-
-            // If one or multiple subscribers return a value, forfeit the responsibillity of flattening the context.
-            return !data.combinedPrompt ? combine() : data.combinedPrompt;
-        }
-
-        // Get the negative prompt first since it has the unmodified mesSend array
-        let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
-        let finalPrompt = getCombinedPrompt(false);
-
-        // Include the entire guidance scale object
-        const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
-
-        let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
-        let thisPromptBits = [];
-
-        // TODO: Make this a switch
-        if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
-            maxLength = Math.min(maxLength, adjustedParams.maxLength);
-            maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
-        }
-
-        let generate_data;
-        if (main_api == 'koboldhorde' || main_api == 'kobold') {
-            generate_data = {
-                prompt: finalPrompt,
-                gui_settings: true,
-                max_length: maxLength,
-                max_context_length: max_context,
-            };
-
-            if (preset_settings != 'gui') {
-                const isHorde = main_api == 'koboldhorde';
-                const presetSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
-                const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
-                generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
-            }
-        }
-        else if (main_api == 'textgenerationwebui') {
-            generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
-        }
-        else if (main_api == 'novel') {
-            const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-            generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
-        }
-        else if (main_api == 'openai') {
-            let [prompt, counts] = await prepareOpenAIMessages({
-                name2: name2,
-                charDescription: description,
-                charPersonality: personality,
-                Scenario: scenario,
-                worldInfoBefore: worldInfoBefore,
-                worldInfoAfter: worldInfoAfter,
-                extensionPrompts: extension_prompts,
-                bias: promptBias,
-                type: type,
-                quietPrompt: quiet_prompt,
-                quietImage: quietImage,
-                cyclePrompt: cyclePrompt,
-                systemPromptOverride: system,
-                jailbreakPromptOverride: jailbreak,
-                personaDescription: persona,
-                messages: oaiMessages,
-                messageExamples: oaiMessageExamples,
-            }, dryRun);
-            generate_data = { prompt: prompt };
-
-            // counts will return false if the user has not enabled the token breakdown feature
-            if (counts) {
-                parseTokenCounts(counts, thisPromptBits);
-            }
-
-            if (!dryRun) {
-                setInContextMessages(openai_messages_count, type);
-            }
-        }
-
-        async function finishGenerating() {
-            if (dryRun) return { error: 'dryRun' };
-
-            if (power_user.console_log_prompts) {
-                console.log(generate_data.prompt);
-            }
-
-            console.debug('rungenerate calling API');
-
-            showStopButton();
-
-            //set array object for prompt token itemization of this message
-            let currentArrayEntry = Number(thisPromptBits.length - 1);
-            let additionalPromptStuff = {
-                ...thisPromptBits[currentArrayEntry],
-                rawPrompt: generate_data.prompt || generate_data.input,
-                mesId: getNextMessageId(type),
-                allAnchors: allAnchors,
-                summarizeString: (extension_prompts['1_memory']?.value || ''),
-                authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
-                smartContextString: (extension_prompts['chromadb']?.value || ''),
-                worldInfoString: worldInfoString,
-                storyString: storyString,
-                beforeScenarioAnchor: beforeScenarioAnchor,
-                afterScenarioAnchor: afterScenarioAnchor,
-                examplesString: examplesString,
-                mesSendString: mesSendString,
-                generatedPromptCache: generatedPromptCache,
-                promptBias: promptBias,
-                finalPrompt: finalPrompt,
-                charDescription: description,
-                charPersonality: personality,
-                scenarioText: scenario,
-                this_max_context: this_max_context,
-                padding: power_user.token_padding,
-                main_api: main_api,
-                instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.instruct.system_prompt) : '',
-                userPersona: (power_user.persona_description || ''),
-            };
-
-            thisPromptBits = additionalPromptStuff;
-
-            //console.log(thisPromptBits);
-            const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === thisPromptBits['mesId']);
-
-            if (itemizedIndex !== -1) {
-                itemizedPrompts[itemizedIndex] = thisPromptBits;
-            }
-            else {
-                itemizedPrompts.push(thisPromptBits);
-            }
-
-            console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
-
-            if (isStreamingEnabled() && type !== 'quiet') {
-                streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, message_already_generated);
-                if (isContinue) {
-                    // Save reply does add cycle text to the prompt, so it's not needed here
-                    streamingProcessor.firstMessageText = '';
-                }
-
-                streamingProcessor.generator = await sendStreamingRequest(type, generate_data);
-
-                hideSwipeButtons();
-                let getMessage = await streamingProcessor.generate();
-                let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
-
-                if (isContinue) {
-                    getMessage = continue_mag + getMessage;
-                }
-
-                if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
-                    await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
-                    streamingProcessor = null;
-                    triggerAutoContinue(messageChunk, isImpersonate);
-                }
-            } else {
-                return await sendGenerationRequest(type, generate_data);
-            }
-        }
-
-        return finishGenerating().then(onSuccess, onError);
-
-        async function onSuccess(data) {
-            if (!data) return;
-            let messageChunk = '';
-
-            if (data.error == 'dryRun') {
-                generatedPromptCache = '';
-                return;
-            }
-
-            if (!data.error) {
-                //const getData = await response.json();
-                let getMessage = extractMessageFromData(data);
-                let title = extractTitleFromData(data);
-                kobold_horde_model = title;
-
-                const swipes = extractMultiSwipes(data, type);
-
-                messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
-
-                if (isContinue) {
-                    getMessage = continue_mag + getMessage;
-                }
-
-                //Formating
-                const displayIncomplete = type === 'quiet' && !quietToLoud;
-                getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
-
-                if (getMessage.length > 0) {
-                    if (isImpersonate) {
-                        $('#send_textarea').val(getMessage).trigger('input');
-                        generatedPromptCache = '';
-                        await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
-                    }
-                    else if (type == 'quiet') {
-                        unblockGeneration();
-                        return getMessage;
-                    }
-                    else {
-                        // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
-                        if (originalType !== 'continue') {
-                            ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
-                        }
-                        else {
-                            ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
-                        }
-                    }
-
-                    if (type !== 'quiet') {
-                        playMessageSound();
-                    }
-                } else {
-                    // If maxLoops is not passed in (e.g. first time generating), set it to MAX_GENERATION_LOOPS
-                    maxLoops ??= MAX_GENERATION_LOOPS;
-
-                    if (maxLoops === 0) {
-                        if (type !== 'quiet') {
-                            throwCircuitBreakerError();
-                        }
-                        throw new Error('Generate circuit breaker interruption');
-                    }
-
-                    // regenerate with character speech reenforced
-                    // to make sure we leave on swipe type while also adding the name2 appendage
-                    await delay(1000);
-                    // The first await is for waiting for the generate to start. The second one is waiting for it to finish
-                    const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
-                    return result;
-                }
-
-                if (power_user.auto_swipe) {
-                    console.debug('checking for autoswipeblacklist on non-streaming message');
-                    function containsBlacklistedWords(getMessage, blacklist, threshold) {
-                        console.debug('checking blacklisted words');
-                        const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
-                        const matches = getMessage.match(regex) || [];
-                        return matches.length >= threshold;
-                    }
-
-                    const generatedTextFiltered = (getMessage) => {
-                        if (power_user.auto_swipe_blacklist_threshold) {
-                            if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
-                                console.debug('Generated text has blacklisted words');
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    };
-                    if (generatedTextFiltered(getMessage)) {
-                        console.debug('swiping right automatically');
-                        is_send_press = false;
-                        swipe_right();
-                        // TODO: do we want to resolve after an auto-swipe?
-                        return;
-                    }
-                }
-            } else {
-                generatedPromptCache = '';
-
-                if (data?.response) {
-                    toastr.error(data.response, 'API Error');
-                }
-                throw data?.response;
-            }
-
-            console.debug('/api/chats/save called by /Generate');
-            await saveChatConditional();
-            unblockGeneration();
-            streamingProcessor = null;
-
-            if (type !== 'quiet') {
-                triggerAutoContinue(messageChunk, isImpersonate);
-            }
-        }
-
-        function onError(exception) {
-            if (typeof exception?.error?.message === 'string') {
-                toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
-            }
-
-            unblockGeneration();
-            console.log(exception);
-            streamingProcessor = null;
-            throw exception;
-        }
-    } else {    //generate's primary loop ends, after this is error handling for no-connection or safety-id
+    const isChatValid = online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id';
+
+    // We can't do anything because we're not in a chat right now. (Unless it's a dry run, in which case we need to
+    // assemble the prompt so we can count its tokens regardless of whether a chat is active.)
+    if (!dryRun && !isChatValid) {
         if (this_chid === undefined || this_chid === 'invalid-safety-id') {
             toastr.warning('Сharacter is not selected');
         }
         is_send_press = false;
+        return Promise.resolve();
+    }
+
+    let textareaText;
+    if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun) {
+        is_send_press = true;
+        textareaText = String($('#send_textarea').val());
+        $('#send_textarea').val('').trigger('input');
+    } else {
+        textareaText = '';
+        if (chat.length && chat[chat.length - 1]['is_user']) {
+            //do nothing? why does this check exist?
+        }
+        else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && chat.length) {
+            chat.length = chat.length - 1;
+            count_view_mes -= 1;
+            $('#chat').children().last().hide(250, function () {
+                $(this).remove();
+            });
+            await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+        }
+    }
+
+    const isContinue = type == 'continue';
+
+    // Rewrite the generation timer to account for the time passed for all the continuations.
+    if (isContinue && chat.length) {
+        const prevFinished = chat[chat.length - 1]['gen_finished'];
+        const prevStarted = chat[chat.length - 1]['gen_started'];
+
+        if (prevFinished && prevStarted) {
+            const timePassed = prevFinished - prevStarted;
+            generation_started = new Date(Date.now() - timePassed);
+            chat[chat.length - 1]['gen_started'] = generation_started;
+        }
+    }
+
+    if (!dryRun) {
+        deactivateSendButtons();
+    }
+
+    let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
+
+    //*********************************
+    //PRE FORMATING STRING
+    //*********************************
+
+    //for normal messages sent from user..
+    if ((textareaText != '' || hasPendingFileAttachment()) && !automatic_trigger && type !== 'quiet' && !dryRun) {
+        // If user message contains no text other than bias - send as a system message
+        if (messageBias && !removeMacros(textareaText)) {
+            sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
+        }
+        else {
+            await sendMessageAsUser(textareaText, messageBias);
+        }
+    }
+    else if (textareaText == '' && !automatic_trigger && !dryRun && type === undefined && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0) {
+        // Use send_if_empty if set and the user message is empty. Only when sending messages normally
+        await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
+    }
+
+    let {
+        description,
+        personality,
+        persona,
+        scenario,
+        mesExamples,
+        system,
+        jailbreak,
+    } = getCharacterCardFields();
+
+    if (isInstruct) {
+        system = power_user.prefer_character_prompt && system ? system : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
+        system = formatInstructModeSystemPrompt(substituteParams(system, name1, name2, power_user.instruct.system_prompt));
+    }
+
+    // Depth prompt (character-specific A/N)
+    removeDepthPrompts();
+    const groupDepthPrompts = getGroupDepthPrompts(selected_group, Number(this_chid));
+
+    if (selected_group && Array.isArray(groupDepthPrompts) && groupDepthPrompts.length > 0) {
+        groupDepthPrompts.forEach((value, index) => {
+            setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan);
+        });
+    } else {
+        const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
+        const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
+        setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan);
+    }
+
+    // Parse example messages
+    if (!mesExamples.startsWith('<START>')) {
+        mesExamples = '<START>\n' + mesExamples.trim();
+    }
+    if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
+        mesExamples = '';
+    }
+    const mesExamplesRaw = mesExamples;
+    if (mesExamples && isInstruct) {
+        mesExamples = formatInstructModeExamples(mesExamples, name1, name2);
+    }
+
+    /**
+     * Adds a block heading to the examples string.
+     * @param {string} examplesStr
+     * @returns {string[]} Examples array with block heading
+     */
+    function addBlockHeading(examplesStr) {
+        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
+        const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
+        return examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+    }
+
+    let mesExamplesArray = addBlockHeading(mesExamples);
+    let mesExamplesRawArray = addBlockHeading(mesExamplesRaw);
+
+    // First message in fresh 1-on-1 chat reacts to user/character settings changes
+    if (chat.length) {
+        chat[0].mes = substituteParams(chat[0].mes);
+    }
+
+    // Collect messages with usable content
+    let coreChat = chat.filter(x => !x.is_system);
+    if (type === 'swipe') {
+        coreChat.pop();
+    }
+
+    coreChat = await Promise.all(coreChat.map(async (chatItem, index) => {
+        let message = chatItem.mes;
+        let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
+        let options = { isPrompt: true };
+
+        let regexedMessage = getRegexedString(message, regexType, options);
+        regexedMessage = await appendFileContent(chatItem, regexedMessage);
+
+        return {
+            ...chatItem,
+            mes: regexedMessage,
+            index,
+        };
+    }));
+
+    // Determine token limit
+    let this_max_context = getMaxContextSize();
+
+    if (!dryRun && type !== 'quiet') {
+        console.debug('Running extension interceptors');
+        const aborted = await runGenerationInterceptors(coreChat, this_max_context);
+
+        if (aborted) {
+            console.debug('Generation aborted by extension interceptors');
+            unblockGeneration();
+            return Promise.resolve();
+        }
+    } else {
+        console.debug('Skipping extension interceptors for dry run');
+    }
+
+    console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
+
+    // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
+    if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || main_api == 'novel') {
+        force_name2 = true;
+    }
+
+    if (isImpersonate) {
+        force_name2 = false;
+    }
+
+    //////////////////////////////////
+
+    let chat2 = [];
+    let continue_mag = '';
+    for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
+        // For OpenAI it's only used in WI
+        if (main_api == 'openai' && (!world_info || world_info.length === 0)) {
+            console.debug('No WI, skipping chat2 for OAI');
+            break;
+        }
+
+        chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, false);
+
+        if (j === 0 && isInstruct) {
+            // Reformat with the first output sequence (if any)
+            chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.FIRST);
+        }
+
+        // Do not suffix the message for continuation
+        if (i === 0 && isContinue) {
+            if (isInstruct) {
+                // Reformat with the last output sequence (if any)
+                chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.LAST);
+            }
+
+            chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
+            continue_mag = coreChat[j].mes;
+        }
+    }
+
+    // Adjust token limit for Horde
+    let adjustedParams;
+    if (main_api == 'koboldhorde' && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
+        try {
+            adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
+        }
+        catch {
+            unblockGeneration();
+            return Promise.resolve();
+        }
+        if (horde_settings.auto_adjust_context_length) {
+            this_max_context = (adjustedParams.maxContextLength - adjustedParams.maxLength);
+        }
+    }
+
+    // Extension added strings
+    // Set non-WI AN
+    setFloatingPrompt();
+    // Add WI to prompt (and also inject WI to AN value via hijack)
+
+    let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chat2, this_max_context);
+
+    if (skipWIAN !== true) {
+        console.log('skipWIAN not active, adding WIAN');
+        // Add all depth WI entries to prompt
+        flushWIDepthInjections();
+        if (Array.isArray(worldInfoDepth)) {
+            worldInfoDepth.forEach((e) => {
+                const joinedEntries = e.entries.join('\n');
+                setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth);
+            });
+        }
+    } else {
+        console.log('skipping WIAN');
+    }
+
+    // Add persona description to prompt
+    addPersonaDescriptionExtensionPrompt();
+    // Call combined AN into Generate
+    let allAnchors = getAllExtensionPrompts();
+    const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
+    const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
+    let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
+
+    const storyStringParams = {
+        description: description,
+        personality: personality,
+        persona: persona,
+        scenario: scenario,
+        system: isInstruct ? system : '',
+        char: name2,
+        user: name1,
+        wiBefore: worldInfoBefore,
+        wiAfter: worldInfoAfter,
+        loreBefore: worldInfoBefore,
+        loreAfter: worldInfoAfter,
+        mesExamples: mesExamplesArray.join(''),
+        mesExamplesRaw: mesExamplesRawArray.join(''),
+    };
+
+    const storyString = renderStoryString(storyStringParams);
+
+    // Story string rendered, safe to remove
+    if (power_user.strip_examples) {
+        mesExamplesArray = [];
+    }
+
+    let oaiMessages = [];
+    let oaiMessageExamples = [];
+
+    if (main_api === 'openai') {
+        message_already_generated = '';
+        oaiMessages = setOpenAIMessages(coreChat);
+        oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray);
+    }
+
+    // hack for regeneration of the first message
+    if (chat2.length == 0) {
+        chat2.push('');
+    }
+
+    let examplesString = '';
+    let chatString = '';
+    let cyclePrompt = '';
+
+    function getMessagesTokenCount() {
+        const encodeString = [
+            storyString,
+            examplesString,
+            chatString,
+            allAnchors,
+            quiet_prompt,
+            cyclePrompt,
+        ].join('').replace(/\r/gm, '');
+        return getTokenCount(encodeString, power_user.token_padding);
+    }
+
+    // Force pinned examples into the context
+    let pinExmString;
+    if (power_user.pin_examples) {
+        pinExmString = examplesString = mesExamplesArray.join('');
+    }
+
+    // Only add the chat in context if past the greeting message
+    if (isContinue && (chat2.length > 1 || main_api === 'openai')) {
+        cyclePrompt = chat2.shift();
+    }
+
+    // Collect enough messages to fill the context
+    let arrMes = [];
+    let tokenCount = getMessagesTokenCount();
+    for (let item of chat2) {
+        // not needed for OAI prompting
+        if (main_api == 'openai') {
+            break;
+        }
+
+        tokenCount += getTokenCount(item.replace(/\r/gm, ''));
+        chatString = item + chatString;
+        if (tokenCount < this_max_context) {
+            arrMes[arrMes.length] = item;
+        } else {
+            break;
+        }
+
+        // Prevent UI thread lock on tokenization
+        await delay(1);
+    }
+
+    if (main_api !== 'openai') {
+        setInContextMessages(arrMes.length, type);
+    }
+
+    // Estimate how many unpinned example messages fit in the context
+    tokenCount = getMessagesTokenCount();
+    let count_exm_add = 0;
+    if (!power_user.pin_examples) {
+        for (let example of mesExamplesArray) {
+            tokenCount += getTokenCount(example.replace(/\r/gm, ''));
+            examplesString += example;
+            if (tokenCount < this_max_context) {
+                count_exm_add++;
+            } else {
+                break;
+            }
+            await delay(1);
+        }
+    }
+
+    let mesSend = [];
+    console.debug('calling runGenerate');
+
+    if (isContinue) {
+        // Coping mechanism for OAI spacing
+        const isForceInstruct = isOpenRouterWithInstruct();
+        if (main_api === 'openai' && !isForceInstruct && !cyclePrompt.endsWith(' ')) {
+            cyclePrompt += ' ';
+            continue_mag += ' ';
+        }
+        message_already_generated = continue_mag;
+    }
+
+    const originalType = type;
+
+    if (!dryRun) {
+        is_send_press = true;
+    }
+
+    generatedPromptCache += cyclePrompt;
+    if (generatedPromptCache.length == 0 || type === 'continue') {
+        console.debug('generating prompt');
+        chatString = '';
+        arrMes = arrMes.reverse();
+        arrMes.forEach(function (item, i, arr) {// For added anchors and others
+            // OAI doesn't need all of this
+            if (main_api === 'openai') {
+                return;
+            }
+
+            // Cohee: I'm not even sure what this is for anymore
+            if (i === arrMes.length - 1 && type !== 'continue') {
+                item = item.replace(/\n?$/, '');
+            }
+
+            mesSend[mesSend.length] = { message: item, extensionPrompts: [] };
+        });
+    }
+
+    let mesExmString = '';
+
+    function setPromptString() {
+        if (main_api == 'openai') {
+            return;
+        }
+
+        console.debug('--setting Prompt string');
+        mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
+
+        if (mesSend.length) {
+            mesSend[mesSend.length - 1].message = modifyLastPromptLine(mesSend[mesSend.length - 1].message);
+        }
+    }
+
+    function modifyLastPromptLine(lastMesString) {
+        //#########QUIET PROMPT STUFF PT2##############
+
+        // Add quiet generation prompt at depth 0
+        if (quiet_prompt && quiet_prompt.length) {
+
+            // here name1 is forced for all quiet prompts..why?
+            const name = name1;
+            //checks if we are in instruct, if so, formats the chat as such, otherwise just adds the quiet prompt
+            const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${quiet_prompt}`;
+
+            //This begins to fix quietPrompts (particularly /sysgen) for instruct
+            //previously instruct input sequence was being appended to the last chat message w/o '\n'
+            //and no output sequence was added after the input's content.
+            //TODO: respect output_sequence vs last_output_sequence settings
+            //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
+            if (isInstruct) {
+                lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
+            } else {
+                lastMesString += quietAppend;
+            }
+
+
+            // Ross: bailing out early prevents quiet prompts from respecting other instruct prompt toggles
+            // for sysgen, SD, and summary this is desireable as it prevents the AI from responding as char..
+            // but for idle prompting, we want the flexibility of the other prompt toggles, and to respect them as per settings in the extension
+            // need a detection for what the quiet prompt is being asked for...
+
+            // Bail out early?
+            if (!isInstruct && !quietToLoud) {
+                return lastMesString;
+            }
+        }
+
+
+        // Get instruct mode line
+        if (isInstruct && !isContinue) {
+            const name = (quiet_prompt && !quietToLoud) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
+            lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
+        }
+
+        // Get non-instruct impersonation line
+        if (!isInstruct && isImpersonate && !isContinue) {
+            const name = name1;
+            if (!lastMesString.endsWith('\n')) {
+                lastMesString += '\n';
+            }
+            lastMesString += name + ':';
+        }
+
+        // Add character's name
+        // Force name append on continue (if not continuing on user message)
+        if (!isInstruct && force_name2) {
+            if (!lastMesString.endsWith('\n')) {
+                lastMesString += '\n';
+            }
+            if (!isContinue || !(chat[chat.length - 1]?.is_user)) {
+                lastMesString += `${name2}:`;
+            }
+        }
+
+        return lastMesString;
+    }
+
+    // Clean up the already generated prompt for seamless addition
+    function cleanupPromptCache(promptCache) {
+        // Remove the first occurrance of character's name
+        if (promptCache.trimStart().startsWith(`${name2}:`)) {
+            promptCache = promptCache.replace(`${name2}:`, '').trimStart();
+        }
+
+        // Remove the first occurrance of prompt bias
+        if (promptCache.trimStart().startsWith(promptBias)) {
+            promptCache = promptCache.replace(promptBias, '');
+        }
+
+        // Add a space if prompt cache doesn't start with one
+        if (!/^\s/.test(promptCache) && !isInstruct && !isContinue) {
+            promptCache = ' ' + promptCache;
+        }
+
+        return promptCache;
+    }
+
+    function checkPromptSize() {
+        console.debug('---checking Prompt size');
+        setPromptString();
+        const prompt = [
+            storyString,
+            mesExmString,
+            mesSend.join(''),
+            generatedPromptCache,
+            allAnchors,
+            quiet_prompt,
+        ].join('').replace(/\r/gm, '');
+        let thisPromptContextSize = getTokenCount(prompt, power_user.token_padding);
+
+        if (thisPromptContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
+            if (count_exm_add > 0) {                            // ..and we have example mesages..
+                count_exm_add--;                            // remove the example messages...
+                checkPromptSize();                            // and try agin...
+            } else if (mesSend.length > 0) {                    // if the chat history is longer than 0
+                mesSend.shift();                            // remove the first (oldest) chat entry..
+                checkPromptSize();                            // and check size again..
+            } else {
+                //end
+                console.debug(`---mesSend.length = ${mesSend.length}`);
+            }
+        }
+    }
+
+    if (generatedPromptCache.length > 0 && main_api !== 'openai') {
+        console.debug('---Generated Prompt Cache length: ' + generatedPromptCache.length);
+        checkPromptSize();
+    } else {
+        console.debug('---calling setPromptString ' + generatedPromptCache.length);
+        setPromptString();
+    }
+
+    // Fetches the combined prompt for both negative and positive prompts
+    const cfgGuidanceScale = getGuidanceScale();
+
+    // For prompt bit itemization
+    let mesSendString = '';
+
+    function getCombinedPrompt(isNegative) {
+        // Only return if the guidance scale doesn't exist or the value is 1
+        // Also don't return if constructing the neutral prompt
+        if (isNegative && (!cfgGuidanceScale || cfgGuidanceScale?.value === 1)) {
+            return;
+        }
+
+        // OAI has its own prompt manager. No need to do anything here
+        if (main_api === 'openai') {
+            return '';
+        }
+
+        // Deep clone
+        let finalMesSend = structuredClone(mesSend);
+
+        // TODO: Rewrite getExtensionPrompt to not require multiple for loops
+        // Set all extension prompts where insertion depth > mesSend length
+        if (finalMesSend.length) {
+            for (let upperDepth = MAX_INJECTION_DEPTH; upperDepth >= finalMesSend.length; upperDepth--) {
+                const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
+                if (upperAnchor && upperAnchor.length) {
+                    finalMesSend[0].extensionPrompts.push(upperAnchor);
+                }
+            }
+        }
+
+        finalMesSend.forEach((mesItem, index) => {
+            if (index === 0) {
+                return;
+            }
+
+            const anchorDepth = Math.abs(index - finalMesSend.length);
+            // NOTE: Depth injected here!
+            const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
+
+            if (anchorDepth >= 0 && extensionAnchor && extensionAnchor.length) {
+                mesItem.extensionPrompts.push(extensionAnchor);
+            }
+        });
+
+        // TODO: Move zero-depth anchor append to work like CFG and bias appends
+        if (zeroDepthAnchor?.length && !isContinue) {
+            console.debug(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)));
+            finalMesSend[finalMesSend.length - 1].message +=
+                /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
+                    ? zeroDepthAnchor
+                    : `${zeroDepthAnchor}`;
+        }
+
+        let cfgPrompt = {};
+        if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
+            cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
+        }
+
+        if (cfgPrompt && cfgPrompt?.value) {
+            if (cfgPrompt?.depth === 0) {
+                finalMesSend[finalMesSend.length - 1].message +=
+                    /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
+                        ? cfgPrompt.value
+                        : ` ${cfgPrompt.value}`;
+            } else {
+                // TODO: Make all extension prompts use an array/splice method
+                const lengthDiff = mesSend.length - cfgPrompt.depth;
+                const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
+                finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+            }
+        }
+
+        // Add prompt bias after everything else
+        // Always run with continue
+        if (!isInstruct && !isImpersonate) {
+            if (promptBias.trim().length !== 0) {
+                finalMesSend[finalMesSend.length - 1].message +=
+                    /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
+                        ? promptBias.trimStart()
+                        : ` ${promptBias.trimStart()}`;
+            }
+        }
+
+        // Prune from prompt cache if it exists
+        if (generatedPromptCache.length !== 0) {
+            generatedPromptCache = cleanupPromptCache(generatedPromptCache);
+        }
+
+        // Flattens the multiple prompt objects to a string.
+        const combine = () => {
+            // Right now, everything is suffixed with a newline
+            mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
+
+            // add a custom dingus (if defined)
+            mesSendString = addChatsSeparator(mesSendString);
+
+            // add chat preamble
+            mesSendString = addChatsPreamble(mesSendString);
+
+            let combinedPrompt = beforeScenarioAnchor +
+                storyString +
+                afterScenarioAnchor +
+                mesExmString +
+                mesSendString +
+                generatedPromptCache;
+
+            combinedPrompt = combinedPrompt.replace(/\r/gm, '');
+
+            if (power_user.collapse_newlines) {
+                combinedPrompt = collapseNewlines(combinedPrompt);
+            }
+
+            return combinedPrompt;
+        };
+
+        let data = {
+            api: main_api,
+            combinedPrompt: null,
+            description,
+            personality,
+            persona,
+            scenario,
+            char: name2,
+            user: name1,
+            beforeScenarioAnchor,
+            afterScenarioAnchor,
+            mesExmString,
+            finalMesSend,
+            generatedPromptCache,
+            main: system,
+            jailbreak,
+            naiPreamble: nai_settings.preamble,
+        };
+
+        // Before returning the combined prompt, give available context related information to all subscribers.
+        eventSource.emitAndWait(event_types.GENERATE_BEFORE_COMBINE_PROMPTS, data);
+
+        // If one or multiple subscribers return a value, forfeit the responsibillity of flattening the context.
+        return !data.combinedPrompt ? combine() : data.combinedPrompt;
+    }
+
+    // Get the negative prompt first since it has the unmodified mesSend array
+    let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
+    let finalPrompt = getCombinedPrompt(false);
+
+    // Include the entire guidance scale object
+    const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
+
+    let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
+    let thisPromptBits = [];
+
+    // TODO: Make this a switch
+    if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
+        maxLength = Math.min(maxLength, adjustedParams.maxLength);
+        maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
+    }
+
+    let generate_data;
+    if (main_api == 'koboldhorde' || main_api == 'kobold') {
+        generate_data = {
+            prompt: finalPrompt,
+            gui_settings: true,
+            max_length: maxLength,
+            max_context_length: max_context,
+            api_server,
+        };
+
+        if (preset_settings != 'gui') {
+            const isHorde = main_api == 'koboldhorde';
+            const presetSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
+            const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
+            generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
+        }
+    }
+    else if (main_api == 'textgenerationwebui') {
+        generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
+    }
+    else if (main_api == 'novel') {
+        const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
+        generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
+    }
+    else if (main_api == 'openai') {
+        let [prompt, counts] = await prepareOpenAIMessages({
+            name2: name2,
+            charDescription: description,
+            charPersonality: personality,
+            Scenario: scenario,
+            worldInfoBefore: worldInfoBefore,
+            worldInfoAfter: worldInfoAfter,
+            extensionPrompts: extension_prompts,
+            bias: promptBias,
+            type: type,
+            quietPrompt: quiet_prompt,
+            quietImage: quietImage,
+            cyclePrompt: cyclePrompt,
+            systemPromptOverride: system,
+            jailbreakPromptOverride: jailbreak,
+            personaDescription: persona,
+            messages: oaiMessages,
+            messageExamples: oaiMessageExamples,
+        }, dryRun);
+        generate_data = { prompt: prompt };
+
+        // counts will return false if the user has not enabled the token breakdown feature
+        if (counts) {
+            parseTokenCounts(counts, thisPromptBits);
+        }
+
+        if (!dryRun) {
+            setInContextMessages(openai_messages_count, type);
+        }
+    }
+
+    if (dryRun) {
+        generatedPromptCache = '';
+        return Promise.resolve();
+    }
+
+    async function finishGenerating() {
+        if (power_user.console_log_prompts) {
+            console.log(generate_data.prompt);
+        }
+
+        console.debug('rungenerate calling API');
+
+        showStopButton();
+
+        //set array object for prompt token itemization of this message
+        let currentArrayEntry = Number(thisPromptBits.length - 1);
+        let additionalPromptStuff = {
+            ...thisPromptBits[currentArrayEntry],
+            rawPrompt: generate_data.prompt || generate_data.input,
+            mesId: getNextMessageId(type),
+            allAnchors: allAnchors,
+            summarizeString: (extension_prompts['1_memory']?.value || ''),
+            authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
+            smartContextString: (extension_prompts['chromadb']?.value || ''),
+            worldInfoString: worldInfoString,
+            storyString: storyString,
+            beforeScenarioAnchor: beforeScenarioAnchor,
+            afterScenarioAnchor: afterScenarioAnchor,
+            examplesString: examplesString,
+            mesSendString: mesSendString,
+            generatedPromptCache: generatedPromptCache,
+            promptBias: promptBias,
+            finalPrompt: finalPrompt,
+            charDescription: description,
+            charPersonality: personality,
+            scenarioText: scenario,
+            this_max_context: this_max_context,
+            padding: power_user.token_padding,
+            main_api: main_api,
+            instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.instruct.system_prompt) : '',
+            userPersona: (power_user.persona_description || ''),
+        };
+
+        thisPromptBits = additionalPromptStuff;
+
+        //console.log(thisPromptBits);
+        const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === thisPromptBits['mesId']);
+
+        if (itemizedIndex !== -1) {
+            itemizedPrompts[itemizedIndex] = thisPromptBits;
+        }
+        else {
+            itemizedPrompts.push(thisPromptBits);
+        }
+
+        console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
+
+        if (isStreamingEnabled() && type !== 'quiet') {
+            streamingProcessor = new StreamingProcessor(type, force_name2, generation_started, message_already_generated);
+            if (isContinue) {
+                // Save reply does add cycle text to the prompt, so it's not needed here
+                streamingProcessor.firstMessageText = '';
+            }
+
+            streamingProcessor.generator = await sendStreamingRequest(type, generate_data);
+
+            hideSwipeButtons();
+            let getMessage = await streamingProcessor.generate();
+            let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+
+            if (isContinue) {
+                getMessage = continue_mag + getMessage;
+            }
+
+            if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
+                await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
+                streamingProcessor = null;
+                triggerAutoContinue(messageChunk, isImpersonate);
+            }
+        } else {
+            return await sendGenerationRequest(type, generate_data);
+        }
+    }
+
+    return finishGenerating().then(onSuccess, onError);
+
+    async function onSuccess(data) {
+        if (!data) return;
+        let messageChunk = '';
+
+        if (data.error) {
+            generatedPromptCache = '';
+
+            if (data?.response) {
+                toastr.error(data.response, 'API Error');
+            }
+            throw data?.response;
+        }
+
+        //const getData = await response.json();
+        let getMessage = extractMessageFromData(data);
+        let title = extractTitleFromData(data);
+        kobold_horde_model = title;
+
+        const swipes = extractMultiSwipes(data, type);
+
+        messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+
+        if (isContinue) {
+            getMessage = continue_mag + getMessage;
+        }
+
+        //Formating
+        const displayIncomplete = type === 'quiet' && !quietToLoud;
+        getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
+
+        if (getMessage.length > 0) {
+            if (isImpersonate) {
+                $('#send_textarea').val(getMessage).trigger('input');
+                generatedPromptCache = '';
+                await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
+            }
+            else if (type == 'quiet') {
+                unblockGeneration();
+                return getMessage;
+            }
+            else {
+                // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
+                if (originalType !== 'continue') {
+                    ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
+                }
+                else {
+                    ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
+                }
+            }
+
+            if (type !== 'quiet') {
+                playMessageSound();
+            }
+        } else {
+            // If maxLoops is not passed in (e.g. first time generating), set it to MAX_GENERATION_LOOPS
+            maxLoops ??= MAX_GENERATION_LOOPS;
+
+            if (maxLoops === 0) {
+                if (type !== 'quiet') {
+                    throwCircuitBreakerError();
+                }
+                throw new Error('Generate circuit breaker interruption');
+            }
+
+            // regenerate with character speech reenforced
+            // to make sure we leave on swipe type while also adding the name2 appendage
+            await delay(1000);
+            // The first await is for waiting for the generate to start. The second one is waiting for it to finish
+            const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
+            return result;
+        }
+
+        if (power_user.auto_swipe) {
+            console.debug('checking for autoswipeblacklist on non-streaming message');
+            function containsBlacklistedWords(getMessage, blacklist, threshold) {
+                console.debug('checking blacklisted words');
+                const regex = new RegExp(`\\b(${blacklist.join('|')})\\b`, 'gi');
+                const matches = getMessage.match(regex) || [];
+                return matches.length >= threshold;
+            }
+
+            const generatedTextFiltered = (getMessage) => {
+                if (power_user.auto_swipe_blacklist_threshold) {
+                    if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
+                        console.debug('Generated text has blacklisted words');
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+            if (generatedTextFiltered(getMessage)) {
+                console.debug('swiping right automatically');
+                is_send_press = false;
+                swipe_right();
+                // TODO: do we want to resolve after an auto-swipe?
+                return;
+            }
+        }
+
+        console.debug('/api/chats/save called by /Generate');
+        await saveChatConditional();
+        unblockGeneration();
+        streamingProcessor = null;
+
+        if (type !== 'quiet') {
+            triggerAutoContinue(messageChunk, isImpersonate);
+        }
+    }
+
+    function onError(exception) {
+        if (typeof exception?.error?.message === 'string') {
+            toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
+        }
+
+        unblockGeneration();
+        console.log(exception);
+        streamingProcessor = null;
+        throw exception;
     }
 }
 
@@ -4128,6 +3932,7 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
 
     if (messageBias) {
         message.extra.bias = messageBias;
+        message.mes = removeMacros(message.mes);
     }
 
     await populateFileAttachment(message);
@@ -4148,7 +3953,7 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     }
 }
 
-function getMaxContextSize() {
+export function getMaxContextSize() {
     let this_max_context = 1487;
     if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui') {
         this_max_context = (max_context - amount_gen);
@@ -5429,20 +5234,7 @@ function changeMainAPI() {
         getHordeModels();
     }
 
-    switch (oai_settings.chat_completion_source) {
-        case chat_completion_sources.SCALE:
-        case chat_completion_sources.OPENROUTER:
-        case chat_completion_sources.WINDOWAI:
-        case chat_completion_sources.CLAUDE:
-        case chat_completion_sources.OPENAI:
-        case chat_completion_sources.AI21:
-        case chat_completion_sources.MAKERSUITE:
-        case chat_completion_sources.MISTRALAI:
-        case chat_completion_sources.CUSTOM:
-        default:
-            setupChatCompletionPromptManager(oai_settings);
-            break;
-    }
+    setupChatCompletionPromptManager(oai_settings);
 }
 
 ////////////////////////////////////////////////////
@@ -5795,8 +5587,6 @@ async function saveSettings(type) {
         console.warn('Settings not ready, aborting save');
         return;
     }
-
-    console.log(background_settings);
 
     //console.log('Entering settings with name1 = '+name1);
 
@@ -6956,7 +6746,7 @@ function openAlternateGreetings() {
     });
 
     updateAlternateGreetingsHintVisibility(template);
-    callPopup(template, 'alternate_greeting');
+    callPopup(template, 'alternate_greeting', '', { wide: true, large: true });
 }
 
 function addAlternateGreeting(template, greeting, index, getArray) {
@@ -7105,7 +6895,8 @@ async function createOrEditCharacter(e) {
                 crop_data = undefined;
                 eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: this_chid, character: characters[this_chid] } });
 
-                if (chat.length === 1 && !selected_group) {
+                // Recreate the chat if it hasn't been used at least once (i.e. with continue).
+                if (chat.length === 1 && !selected_group && !chat_metadata['tainted']) {
                     const firstMessage = getFirstMessage();
                     chat[0] = firstMessage;
 
@@ -7965,12 +7756,7 @@ jQuery(async function () {
     });
 
     $('#send_but').on('click', function () {
-        if (is_send_press == false) {
-            // This prevents from running /trigger command with a send button
-            // But send on Enter doesn't set is_send_press (it is done by the Generate itself)
-            // is_send_press = true;
-            Generate();
-        }
+        sendTextareaMessage();
     });
 
     //menu buttons setup

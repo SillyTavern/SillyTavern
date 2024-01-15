@@ -1,0 +1,83 @@
+<div id="qr--modalEditor">
+	<div id="qr--main">
+		<h3>Labels and Message</h3>
+		<div class="qr--labels">
+			<label>
+				<span class="qr--labelText">Label</span>
+				<input type="text" class="text_pole" id="qr--modal-label">
+			</label>
+			<label>
+				<span class="qr--labelText">Title</span>
+				<small class="qr--labelHint">(tooltip, leave empty to show message or /command)</small>
+				<input type="text" class="text_pole" id="qr--modal-title">
+			</label>
+		</div>
+		<div class="qr--modal-messageContainer">
+			<label for="qr--modal-message">Message / Command:</label>
+			<textarea class="monospace" id="qr--modal-message"></textarea>
+		</div>
+	</div>
+
+
+
+	<div id="qr--qrOptions">
+		<h3>Context Menu</h3>
+		<div id="qr--ctxEditor">
+			<template id="qr--ctxItem">
+				<div class="qr--ctxItem" data-order="0">
+					<div class="drag-handle ui-sortable-handle">☰</div>
+					<select class="qr--set"></select>
+					<label class="qr--isChainedLabel checkbox_label" title="When enabled, the current Quick Reply will be sent together with (before) the clicked QR from the context menu.">
+						Chaining:
+						<input type="checkbox" class="qr--isChained">
+					</label>
+					<div class="qr--delete menu_button menu_button_icon fa-solid fa-trash-can" title="Remove entry"></div>
+				</div>
+			</template>
+		</div>
+		<div class="qr--ctxEditorActions">
+			<span id="qr--ctxAdd" class="menu_button menu_button_icon fa-solid fa-plus" title="Add quick reply set to context menu"></span>
+		</div>
+
+
+		<h3>Auto-Execute</h3>
+		<div class="flex-container flexFlowColumn">
+			<label class="checkbox_label" title="Prevent this quick reply from triggering other auto-executed quick replies while auto-executing (i.e., prevent recursive auto-execution)">
+				<input type="checkbox" id="qr--preventAutoExecute" >
+				<span><i class="fa-solid fa-fw fa-plane-slash"></i> Don't trigger auto-execute</span>
+			</label>
+			<label class="checkbox_label">
+				<input type="checkbox" id="qr--isHidden" >
+				<span><i class="fa-solid fa-fw fa-eye-slash"></i> Invisible (auto-execute only)</span>
+			</label>
+			<label class="checkbox_label">
+				<input type="checkbox" id="qr--executeOnStartup" >
+				<span><i class="fa-solid fa-fw fa-rocket"></i> Execute on app startup</span>
+			</label>
+			<label class="checkbox_label">
+				<input type="checkbox" id="qr--executeOnUser" >
+				<span><i class="fa-solid fa-fw fa-user"></i> Execute on user message</span>
+			</label>
+			<label class="checkbox_label">
+				<input type="checkbox" id="qr--executeOnAi" >
+				<span><i class="fa-solid fa-fw fa-robot"></i> Execute on AI message</span>
+			</label>
+			<label class="checkbox_label">
+				<input type="checkbox" id="qr--executeOnChatChange" >
+				<span><i class="fa-solid fa-fw fa-message"></i> Execute on opening chat</span>
+			</label>
+		</div>
+
+
+		<h3>Testing</h3>
+		<div id="qr--modal-execute" class="menu_button" title="Execute the quick reply now">
+			<i class="fa-solid fa-play"></i>
+			Execute
+		</div>
+		<label class="checkbox_label">
+			<input type="checkbox" id="qr--modal-executeHide">
+			<span> Hide editor while executing</span>
+		</label>
+		<div id="qr--modal-executeErrors"></div>
+	</div>
+</div>

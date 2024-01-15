@@ -6,20 +6,33 @@ export {
     runRegexScript,
 };
 
+/**
+ * @enum {number} Where the regex script should be applied
+ */
 const regex_placement = {
-    // MD Display is deprecated. Do not use.
+    /**
+     * @deprecated MD Display is deprecated. Do not use.
+     */
     MD_DISPLAY: 0,
     USER_INPUT: 1,
     AI_OUTPUT: 2,
     SLASH_COMMAND: 3,
 };
 
+/**
+ * @enum {number} How the regex script should replace the matched string
+ */
 const regex_replace_strategy = {
     REPLACE: 0,
     OVERLAY: 1,
 };
 
-// Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
+/**
+ * Instantiates a regular expression from a string.
+ * @param {string} input The input string.
+ * @returns {RegExp} The regular expression instance.
+ * @copyright Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
+ */
 function regexFromString(input) {
     try {
         // Parse input
@@ -37,8 +50,21 @@ function regexFromString(input) {
     }
 }
 
-// Parent function to fetch a regexed version of a raw string
+/**
+ * Parent function to fetch a regexed version of a raw string
+ * @param {string} rawString The raw string to be regexed
+ * @param {regex_placement} placement The placement of the string
+ * @param {RegexParams} params The parameters to use for the regex script
+ * @returns {string} The regexed string
+ * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean }} RegexParams The parameters to use for the regex script
+ */
 function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt } = {}) {
+    // WTF have you passed me?
+    if (typeof rawString !== 'string') {
+        console.warn('getRegexedString: rawString is not a string. Returning empty string.');
+        return '';
+    }
+
     let finalString = rawString;
     if (extension_settings.disabledExtensions.includes('regex') || !rawString || placement === undefined) {
         return finalString;
@@ -62,14 +88,20 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
     return finalString;
 }
 
-// Runs the provided regex script on the given string
+/**
+ * Runs the provided regex script on the given string
+ * @param {object} regexScript The regex script to run
+ * @param {string} rawString The string to run the regex script on
+ * @param {RegexScriptParams} params The parameters to use for the regex script
+ * @returns {string} The new string
+ * @typedef {{characterOverride?: string}} RegexScriptParams The parameters to use for the regex script
+ */
 function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     let newString = rawString;
     if (!regexScript || !!(regexScript.disabled) || !regexScript?.findRegex || !rawString) {
         return newString;
     }
 
-    let match;
     const findRegex = regexFromString(regexScript.substituteRegex ? substituteParams(regexScript.findRegex) : regexScript.findRegex);
 
     // The user skill issued. Return with nothing.
@@ -77,46 +109,41 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
         return newString;
     }
 
-    while ((match = findRegex.exec(rawString)) !== null) {
-        const fencedMatch = match[0];
-        const capturedMatch = match[1];
+    // Run replacement. Currently does not support the Overlay strategy
+    newString = rawString.replace(findRegex, function(match) {
+        const args = [...arguments];
+        const replaceString = regexScript.replaceString.replace(/{{match}}/gi, '$0');
+        const replaceWithGroups = replaceString.replaceAll(/\$(\d)+/g, (_, num) => {
+            // Get a full match or a capture group
+            const match = args[Number(num)];
 
-        let trimCapturedMatch;
-        let trimFencedMatch;
-        if (capturedMatch) {
-            const tempTrimCapture = filterString(capturedMatch, regexScript.trimStrings, { characterOverride });
-            trimFencedMatch = fencedMatch.replaceAll(capturedMatch, tempTrimCapture);
-            trimCapturedMatch = tempTrimCapture;
-        } else {
-            trimFencedMatch = filterString(fencedMatch, regexScript.trimStrings, { characterOverride });
-        }
+            // No match found - return the empty string
+            if (!match) {
+                return '';
+            }
 
-        // TODO: Use substrings for replacement. But not necessary at this time.
-        // A substring is from match.index to match.index + match[0].length or fencedMatch.length
-        const subReplaceString = substituteRegexParams(
-            regexScript.replaceString,
-            trimCapturedMatch ?? trimFencedMatch,
-            {
-                characterOverride,
-                replaceStrategy: regexScript.replaceStrategy ?? regex_replace_strategy.REPLACE,
-            },
-        );
-        if (!newString) {
-            newString = rawString.replace(fencedMatch, subReplaceString);
-        } else {
-            newString = newString.replace(fencedMatch, subReplaceString);
-        }
+            // Remove trim strings from the match
+            const filteredMatch = filterString(match, regexScript.trimStrings, { characterOverride });
 
-        // If the regex isn't global, break out of the loop
-        if (!findRegex.flags.includes('g')) {
-            break;
-        }
-    }
+            // TODO: Handle overlay here
+
+            return filteredMatch;
+        });
+
+        // Substitute at the end
+        return substituteParams(replaceWithGroups);
+    });
 
     return newString;
 }
 
-// Filters anything to trim from the regex match
+/**
+ * Filters anything to trim from the regex match
+ * @param {string} rawString The raw string to filter
+ * @param {string[]} trimStrings The strings to trim
+ * @param {RegexScriptParams} params The parameters to use for the regex filter
+ * @returns {string} The filtered string
+ */
 function filterString(rawString, trimStrings, { characterOverride } = {}) {
     let finalString = rawString;
     trimStrings.forEach((trimString) => {
@@ -127,7 +154,14 @@ function filterString(rawString, trimStrings, { characterOverride } = {}) {
     return finalString;
 }
 
-// Substitutes regex-specific and normal parameters
+/**
+ * Substitutes regex-specific and normal parameters
+ * @param {string} rawString
+ * @param {string} regexMatch
+ * @param {RegexSubstituteParams} params The parameters to use for the regex substitution
+ * @returns {string} The substituted string
+ * @typedef {{characterOverride?: string, replaceStrategy?: number}} RegexSubstituteParams The parameters to use for the regex substitution
+ */
 function substituteRegexParams(rawString, regexMatch, { characterOverride, replaceStrategy } = {}) {
     let finalString = rawString;
     finalString = substituteParams(finalString, undefined, characterOverride);
@@ -182,8 +216,13 @@ function substituteRegexParams(rawString, regexMatch, { characterOverride, repla
     return finalString;
 }
 
-// Splices common sentence symbols and whitespace from the beginning and end of a string
-// Using a for loop due to sequential ordering
+/**
+ * Splices common sentence symbols and whitespace from the beginning and end of a string.
+ * Using a for loop due to sequential ordering.
+ * @param {string} rawString The raw string to splice
+ * @param {boolean} isSuffix String is a suffix
+ * @returns {string} The spliced string
+ */
 function spliceSymbols(rawString, isSuffix) {
     let offset = 0;
 

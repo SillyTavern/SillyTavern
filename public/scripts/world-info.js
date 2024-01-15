@@ -39,6 +39,7 @@ const world_info_logic = {
     AND_ANY: 0,
     NOT_ALL: 1,
     NOT_ANY: 2,
+    AND_ALL: 3,
 };
 
 let world_info = {};
@@ -359,6 +360,8 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
+        value = value.replace(/\\([{}|])/g, '$1');
+
         const data = await loadWorldInfoData(file);
 
         if (!data || !('entries' in data)) {
@@ -555,6 +558,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         $('#world_popup_name_button').off('click').on('click', nullWorldInfo);
         $('#world_popup_export').off('click').on('click', nullWorldInfo);
         $('#world_popup_delete').off('click').on('click', nullWorldInfo);
+        $('#world_duplicate').off('click').on('click', nullWorldInfo);
         $('#world_popup_entries_list').hide();
         $('#world_info_pagination').html('');
         return;
@@ -692,6 +696,23 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         }
     });
 
+    $('#world_duplicate').off('click').on('click', async () => {
+        const tempName = getFreeWorldName();
+        const finalName = await callPopup('<h3>Create a new World Info?</h3>Enter a name for the new file:', 'input', tempName);
+
+        if (finalName) {
+            await saveWorldInfo(finalName, data, true);
+            await updateWorldInfoList();
+
+            const selectedIndex = world_names.indexOf(finalName);
+            if (selectedIndex !== -1) {
+                $('#world_editor_select').val(selectedIndex).trigger('change');
+            } else {
+                hideWorldEditor();
+            }
+        }
+    });
+
     $('#world_popup_delete').off('click').on('click', async () => {
         const confirmation = await callPopup(`<h3>Delete the World/Lorebook: "${name}"?</h3>This action is irreversible!`, 'confirm');
 
@@ -756,6 +777,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
 const originalDataKeyMap = {
     'displayIndex': 'extensions.display_index',
     'excludeRecursion': 'extensions.exclude_recursion',
+    'preventRecursion': 'extensions.prevent_recursion',
     'selectiveLogic': 'selectiveLogic',
     'comment': 'comment',
     'constant': 'constant',
@@ -1325,6 +1347,18 @@ function getWorldEntry(name, data, entry) {
     });
     excludeRecursionInput.prop('checked', entry.excludeRecursion).trigger('input');
 
+    // prevent recursion
+    const preventRecursionInput = template.find('input[name="prevent_recursion"]');
+    preventRecursionInput.data('uid', entry.uid);
+    preventRecursionInput.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = $(this).prop('checked');
+        data.entries[uid].preventRecursion = value;
+        setOriginalDataValue(data, uid, 'extensions.prevent_recursion', data.entries[uid].preventRecursion);
+        saveWorldInfo(name, data);
+    });
+    preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
+
     // delete button
     const deleteButton = template.find('.delete_entry_button');
     deleteButton.data('uid', entry.uid);
@@ -1420,6 +1454,7 @@ async function _save(name, data) {
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: name, data: data }),
     });
+    eventSource.emit(event_types.WORLDINFO_UPDATED, name, data);
 }
 
 async function saveWorldInfo(name, data, immediately) {
@@ -1788,6 +1823,7 @@ async function checkWorldInfo(chat, maxContext) {
                         ) {
                             console.debug(`WI UID:${entry.uid} found. Checking logic: ${entry.selectiveLogic}`);
                             let hasAnyMatch = false;
+                            let hasAllMatch = true;
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
                                 const hasSecondaryMatch = secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim());
@@ -1795,6 +1831,10 @@ async function checkWorldInfo(chat, maxContext) {
 
                                 if (hasSecondaryMatch) {
                                     hasAnyMatch = true;
+                                }
+
+                                if (!hasSecondaryMatch) {
+                                    hasAllMatch = false;
                                 }
 
                                 // Simplified AND ANY / NOT ALL if statement. (Proper fix for PR#1356 by Bronya)
@@ -1814,6 +1854,12 @@ async function checkWorldInfo(chat, maxContext) {
                             // Handle NOT ANY logic
                             if (selectiveLogic === world_info_logic.NOT_ANY && !hasAnyMatch) {
                                 console.debug(`(NOT ANY Check) Activating WI Entry ${entry.uid}, no secondary keywords found.`);
+                                activatedNow.add(entry);
+                            }
+
+                            // Handle AND ALL logic
+                            if (selectiveLogic === world_info_logic.AND_ALL && hasAllMatch) {
+                                console.debug(`(AND ALL Check) Activating WI Entry ${entry.uid}, all secondary keywords found.`);
                                 activatedNow.add(entry);
                             }
                         } else {
@@ -1870,9 +1916,15 @@ async function checkWorldInfo(chat, maxContext) {
             needsToScan = false;
         }
 
+        if (newEntries.length === 0) {
+            console.debug('No new entries activated, stopping');
+            needsToScan = false;
+        }
+
         if (needsToScan) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
+                .filter(x => !x.preventRecursion)
                 .map(x => x.content).join('\n');
             const currentlyActivatedText = transformString(text);
             textToScan = (currentlyActivatedText + '\n' + textToScan);
@@ -1970,13 +2022,17 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`Checking inclusion group '${key}' with ${group.length} entries`, group);
 
-        if (!Array.isArray(group) || group.length <= 1) {
-            console.debug('Skipping inclusion group check, only one entry');
+        if (Array.from(allActivatedEntries).some(x => x.group === key)) {
+            console.debug(`Skipping inclusion group check, group already activated '${key}'`);
+            // We need to forcefully deactivate all other entries in the group
+            for (const entry of group) {
+                newEntries.splice(newEntries.indexOf(entry), 1);
+            }
             continue;
         }
 
-        if (Array.from(allActivatedEntries).some(x => x.group === key)) {
-            console.debug(`Skipping inclusion group check, group already activated '${key}'`);
+        if (!Array.isArray(group) || group.length <= 1) {
+            console.debug('Skipping inclusion group check, only one entry');
             continue;
         }
 
@@ -2145,6 +2201,7 @@ function convertCharacterBook(characterBook) {
             order: entry.insertion_order,
             position: entry.extensions?.position ?? (entry.position === 'before_char' ? world_info_position.before : world_info_position.after),
             excludeRecursion: entry.extensions?.exclude_recursion ?? false,
+            preventRecursion: entry.extensions?.prevent_recursion ?? false,
             disable: !entry.enabled,
             addMemo: entry.comment ? true : false,
             displayIndex: entry.extensions?.display_index ?? index,
@@ -2252,24 +2309,52 @@ export async function importEmbeddedWorldInfo(skipPopup = false) {
     setWorldInfoButtonClass(chid, true);
 }
 
-function onWorldInfoChange(_, text) {
-    if (_ !== '__notSlashCommand__') { // if it's a slash command
+function onWorldInfoChange(args, text) {
+    if (args !== '__notSlashCommand__') { // if it's a slash command
+        const silent = isTrueBoolean(args.silent);
         if (text.trim() !== '') { // and args are provided
             const slashInputSplitText = text.trim().toLowerCase().split(',');
 
             slashInputSplitText.forEach((worldName) => {
                 const wiElement = getWIElement(worldName);
                 if (wiElement.length > 0) {
-                    selected_world_info.push(wiElement.text());
-                    wiElement.prop('selected', true);
-                    toastr.success(`Activated world: ${wiElement.text()}`);
+                    const name = wiElement.text();
+                    switch (args.state) {
+                        case 'off': {
+                            if (selected_world_info.includes(name)) {
+                                selected_world_info.splice(selected_world_info.indexOf(name), 1);
+                                wiElement.prop('selected', false);
+                                if (!silent) toastr.success(`Deactivated world: ${name}`);
+                            } else {
+                                if (!silent) toastr.error(`World was not active: ${name}`);
+                            }
+                            break;
+                        }
+                        case 'toggle': {
+                            if (selected_world_info.includes(name)) {
+                                selected_world_info.splice(selected_world_info.indexOf(name), 1);
+                                wiElement.prop('selected', false);
+                                if (!silent) toastr.success(`Deactivated world: ${name}`);
+                            } else {
+                                selected_world_info.push(name);
+                                wiElement.prop('selected', true);
+                                if (!silent) toastr.success(`Activated world: ${name}`);
+                            }
+                            break;
+                        }
+                        default: {
+                            selected_world_info.push(name);
+                            wiElement.prop('selected', true);
+                            if (!silent) toastr.success(`Activated world: ${name}`);
+                        }
+                    }
                 } else {
-                    toastr.error(`No world found named: ${worldName}`);
+                    if (!silent) toastr.error(`No world found named: ${worldName}`);
                 }
             });
             $('#world_info').trigger('change');
         } else { // if no args, unset all worlds
-            toastr.success('Deactivated all worlds');
+            if (!silent) toastr.success('Deactivated all worlds');
             selected_world_info = [];
             $('#world_info').val(null).trigger('change');
         }
@@ -2401,7 +2486,7 @@ function assignLorebookToChat() {
 jQuery(() => {
 
     $(document).ready(function () {
-        registerSlashCommand('world', onWorldInfoChange, [], '<span class="monospace">(optional name)</span> – sets active World, or unsets if no args provided', true, true);
+        registerSlashCommand('world', onWorldInfoChange, [], '<span class="monospace">[optional state=off|toggle] [optional silent=true] (optional name)</span> – sets active World, or unsets if no args provided, use <code>state=off</code> and <code>state=toggle</code> to deactivate or toggle a World, use <code>silent=true</code> to suppress toast messages', true, true);
     });
 
 

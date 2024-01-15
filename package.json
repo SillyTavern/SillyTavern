@@ -42,6 +42,9 @@
         },
         "vectra": {
             "openai": "^4.17.0"
+        },
+        "axios": {
+            "follow-redirects": "^1.15.4"
         }
     },
     "name": "sillytavern",
@@ -51,7 +54,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.11.1",
+    "version": "1.11.2",
     "scripts": {
         "start": "node server.js",
         "start-multi": "node server.js --disableCsrf",
