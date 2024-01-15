@@ -511,7 +511,7 @@ jQuery(function () {
             'rep_pen_textgenerationwebui': 1,
             'rep_pen_range_textgenerationwebui': 0,
             'dynatemp_textgenerationwebui': false,
-            'seed_textgenerationwebui': 1,
+            'seed_textgenerationwebui': -1,
             'ban_eos_token_textgenerationwebui': false,
             'do_sample_textgenerationwebui': true,
             'add_bos_token_textgenerationwebui': true,
@@ -595,7 +595,7 @@ jQuery(function () {
 
 function showTypeSpecificControls(type) {
     $('[data-tg-type]').each(function () {
-        const tgTypes = $(this).attr('data-tg-type').split(',');
+        const tgTypes = $(this).attr('data-tg-type').split(',').map(x => x.trim());
         for (const tgType of tgTypes) {
             if (tgType === type || tgType == 'all') {
                 $(this).show();

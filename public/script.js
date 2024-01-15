@@ -3464,9 +3464,13 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             scenario,
             char: name2,
             user: name1,
+            worldInfoBefore,
+            worldInfoAfter,
             beforeScenarioAnchor,
             afterScenarioAnchor,
+            storyString,
             mesExmString,
+            mesSendString,
             finalMesSend,
             generatedPromptCache,
             main: system,
@@ -9292,13 +9296,16 @@ jQuery(async function () {
 
     $(document).keyup(function (e) {
         if (e.key === 'Escape') {
-            if (power_user.auto_save_msg_edits === false) {
+            const isEditVisible = $('#curEditTextarea').is(':visible');
+            if (isEditVisible && power_user.auto_save_msg_edits === false) {
                 closeMessageEditor();
                 $('#send_textarea').focus();
+                return;
             }
-            if (power_user.auto_save_msg_edits === true) {
+            if (isEditVisible && power_user.auto_save_msg_edits === true) {
                 $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).click();
                 $('#send_textarea').focus();
+                return;
             }
             if (!this_edit_mes_id && $('#mes_stop').is(':visible')) {
                 $('#mes_stop').trigger('click');
