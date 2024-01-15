@@ -183,7 +183,7 @@ const init = async () => {
     slash.init();
     autoExec = new AutoExecuteHandler(settings);
 
-    autoExec.handleStartup();
+    await autoExec.handleStartup();
 };
 eventSource.on(event_types.APP_READY, init);
 
@@ -197,16 +197,16 @@ const onChatChanged = async (chatIdx) => {
     manager.rerender();
     buttons.refresh();
 
-    autoExec.handleChatChanged();
+    await autoExec.handleChatChanged();
 };
 eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 
 const onUserMessage = async () => {
-    autoExec.handleUser();
+    await autoExec.handleUser();
 };
 eventSource.on(event_types.USER_MESSAGE_RENDERED, onUserMessage);
 
 const onAiMessage = async () => {
-    autoExec.handleAi();
+    await autoExec.handleAi();
 };
 eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, onAiMessage);
