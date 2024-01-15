@@ -109,19 +109,29 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
         return newString;
     }
 
-    newString = rawString.replace(findRegex, (fencedMatch) => {
-        let trimFencedMatch = filterString(fencedMatch, regexScript.trimStrings, { characterOverride });
+    // Run replacement. Currently does not support the Overlay strategy
+    newString = rawString.replace(findRegex, function(match) {
+        const args = [...arguments];
+        const replaceString = regexScript.replaceString.replace(/{{match}}/gi, '$0');
+        const replaceWithGroups = replaceString.replaceAll(/\$(\d)+/g, (_, num) => {
+            // Get a full match or a capture group
+            const match = args[Number(num)];
 
-        const subReplaceString = substituteRegexParams(
-            regexScript.replaceString,
-            trimFencedMatch,
-            {
-                characterOverride,
-                replaceStrategy: regexScript.replaceStrategy ?? regex_replace_strategy.REPLACE,
-            },
-        );
+            // No match found - return the empty string
+            if (!match) {
+                return '';
+            }
 
-        return subReplaceString;
+            // Remove trim strings from the match
+            const filteredMatch = filterString(match, regexScript.trimStrings, { characterOverride });
+
+            // TODO: Handle overlay here
+
+            return filteredMatch;
+        });
+
+        // Substitute at the end
+        return substituteParams(replaceWithGroups);
     });
 
     return newString;

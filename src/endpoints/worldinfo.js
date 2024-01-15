@@ -7,8 +7,14 @@ const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser, urlencodedParser } = require('../express-common');
 const { DIRECTORIES, UPLOADS_PATH } = require('../constants');
 
-function readWorldInfoFile(worldInfoName) {
-    const dummyObject = { entries: {} };
+/**
+ * Reads a World Info file and returns its contents
+ * @param {string} worldInfoName Name of the World Info file
+ * @param {boolean} allowDummy If true, returns an empty object if the file doesn't exist
+ * @returns {object} World Info file contents
+ */
+function readWorldInfoFile(worldInfoName, allowDummy) {
+    const dummyObject = allowDummy ? { entries: {} } : null;
 
     if (!worldInfoName) {
         return dummyObject;
@@ -34,7 +40,7 @@ router.post('/get', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
 
-    const file = readWorldInfoFile(request.body.name);
+    const file = readWorldInfoFile(request.body.name, true);
 
     return response.send(file);
 });

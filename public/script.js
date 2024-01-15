@@ -16,7 +16,6 @@ import {
     generateTextGenWithStreaming,
     getTextGenGenerationData,
     textgen_types,
-    textgenerationwebui_banned_in_macros,
     getTextGenServer,
     validateTextGenUrl,
 } from './scripts/textgen-settings.js';
@@ -134,7 +133,6 @@ import {
     download,
     isDataURL,
     getCharaFilename,
-    isDigitsOnly,
     PAGINATION_TEMPLATE,
     waitUntilCondition,
     escapeRegex,
@@ -180,7 +178,6 @@ import {
     getInstructStoppingSequences,
     autoSelectInstructPreset,
     formatInstructModeSystemPrompt,
-    replaceInstructMacros,
 } from './scripts/instruct-mode.js';
 import { applyLocale, initLocales } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
@@ -190,8 +187,8 @@ import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels, loadOllamaModels, loadTogetherAIModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
-import { replaceVariableMacros } from './scripts/variables.js';
 import { initPresetManager } from './scripts/preset-manager.js';
+import { evaluateMacros } from './scripts/macros.js';
 
 //exporting functions and vars for mods
 export {
@@ -536,13 +533,22 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
     }
 });
 
-function getUrlSync(url, cache = true) {
-    return $.ajax({
-        type: 'GET',
-        url: url,
-        cache: cache,
-        async: false,
-    }).responseText;
+/**
+ * Loads a URL content using XMLHttpRequest synchronously.
+ * @param {string} url URL to load synchronously
+ * @returns {string} Response text
+ */
+function getUrlSync(url) {
+    console.debug('Loading URL synchronously', url);
+    const request = new XMLHttpRequest();
+    request.open('GET', url, false); // `false` makes the request synchronous
+    request.send();
+
+    if (request.status >= 200 && request.status < 300) {
+        return request.responseText;
+    }
+
+    throw new Error(`Error loading ${url}: ${request.status} ${request.statusText}`);
 }
 
 const templateCache = new Map();
@@ -951,6 +957,11 @@ async function getStatusTextgen() {
     if (!endpoint) {
         console.warn('No endpoint for status check');
         online_status = 'no_connection';
+        return resultCheckStatus();
+    }
+
+    if (textgen_settings.type == OOBA && textgen_settings.bypass_status_check) {
+        online_status = 'Status check bypassed';
         return resultCheckStatus();
     }
 
@@ -1484,7 +1495,7 @@ export function sendTextareaMessage() {
     // message was sent from a character (not the user or the system).
     const textareaText = String($('#send_textarea').val());
     if (power_user.continue_on_send &&
-        !textareaText  &&
+        !textareaText &&
         !selected_group &&
         chat.length &&
         !chat[chat.length - 1]['is_user'] &&
@@ -2050,88 +2061,6 @@ function scrollChatToBottom() {
 }
 
 /**
- * Returns the ID of the last message in the chat.
- * @returns {string} The ID of the last message in the chat.
- */
-function getLastMessageId() {
-    const index = chat?.length - 1;
-
-    if (!isNaN(index) && index >= 0) {
-        return String(index);
-    }
-
-    return '';
-}
-
-/**
- * Returns the ID of the first message included in the context.
- * @returns {string} The ID of the first message in the context.
- */
-function getFirstIncludedMessageId() {
-    const index = document.querySelector('.lastInContext')?.getAttribute('mesid');
-
-    if (!isNaN(index) && index >= 0) {
-        return String(index);
-    }
-
-    return '';
-}
-
-/**
- * Returns the last message in the chat.
- * @returns {string} The last message in the chat.
- */
-function getLastMessage() {
-    const index = chat?.length - 1;
-
-    if (!isNaN(index) && index >= 0) {
-        return chat[index].mes;
-    }
-
-    return '';
-}
-
-/**
- * Returns the ID of the last swipe.
- * @returns {string} The 1-based ID of the last swipe
- */
-function getLastSwipeId() {
-    const index = chat?.length - 1;
-
-    if (!isNaN(index) && index >= 0) {
-        const swipes = chat[index].swipes;
-
-        if (!Array.isArray(swipes) || swipes.length === 0) {
-            return '';
-        }
-
-        return String(swipes.length);
-    }
-
-    return '';
-}
-
-/**
- * Returns the ID of the current swipe.
- * @returns {string} The 1-based ID of the current swipe.
- */
-function getCurrentSwipeId() {
-    const index = chat?.length - 1;
-
-    if (!isNaN(index) && index >= 0) {
-        const swipeId = chat[index].swipe_id;
-
-        if (swipeId === undefined || isNaN(swipeId)) {
-            return '';
-        }
-
-        return String(swipeId + 1);
-    }
-
-    return '';
-}
-
-/**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
  * @param {*} _name1 - The name of the user. Uses global name1 if not provided.
@@ -2141,187 +2070,9 @@ function getCurrentSwipeId() {
  * @returns {string} The string with substituted parameters.
  */
 function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
-    _name1 = _name1 ?? name1;
-    _name2 = _name2 ?? name2;
-    _group = _group ?? name2;
-
-    if (!content) {
-        return '';
-    }
-
-    // Replace {{original}} with the original message
-    // Note: only replace the first instance of {{original}}
-    // This will hopefully prevent the abuse
-    if (typeof _original === 'string') {
-        content = content.replace(/{{original}}/i, _original);
-    }
-    content = diceRollReplace(content);
-    content = replaceInstructMacros(content);
-    content = replaceVariableMacros(content);
-    content = content.replace(/{{newline}}/gi, '\n');
-    content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));
-
-    if (_replaceCharacterCard) {
-        const fields = getCharacterCardFields();
-        content = content.replace(/{{charPrompt}}/gi, fields.system || '');
-        content = content.replace(/{{charJailbreak}}/gi, fields.jailbreak || '');
-        content = content.replace(/{{description}}/gi, fields.description || '');
-        content = content.replace(/{{personality}}/gi, fields.personality || '');
-        content = content.replace(/{{scenario}}/gi, fields.scenario || '');
-        content = content.replace(/{{persona}}/gi, fields.persona || '');
-        content = content.replace(/{{mesExamples}}/gi, fields.mesExamples || '');
-    }
-
-    content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
-    content = content.replace(/{{user}}/gi, _name1);
-    content = content.replace(/{{char}}/gi, _name2);
-    content = content.replace(/{{charIfNotGroup}}/gi, _group);
-    content = content.replace(/{{group}}/gi, _group);
-    content = content.replace(/{{lastMessage}}/gi, getLastMessage());
-    content = content.replace(/{{lastMessageId}}/gi, getLastMessageId());
-    content = content.replace(/{{firstIncludedMessageId}}/gi, getFirstIncludedMessageId());
-    content = content.replace(/{{lastSwipeId}}/gi, getLastSwipeId());
-    content = content.replace(/{{currentSwipeId}}/gi, getCurrentSwipeId());
-
-    content = content.replace(/<USER>/gi, _name1);
-    content = content.replace(/<BOT>/gi, _name2);
-    content = content.replace(/<CHARIFNOTGROUP>/gi, _group);
-    content = content.replace(/<GROUP>/gi, _group);
-
-    content = content.replace(/\{\{\/\/([\s\S]*?)\}\}/gm, '');
-
-    content = content.replace(/{{time}}/gi, moment().format('LT'));
-    content = content.replace(/{{date}}/gi, moment().format('LL'));
-    content = content.replace(/{{weekday}}/gi, moment().format('dddd'));
-    content = content.replace(/{{isotime}}/gi, moment().format('HH:mm'));
-    content = content.replace(/{{isodate}}/gi, moment().format('YYYY-MM-DD'));
-
-    content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
-        const formattedTime = moment().format(format);
-        return formattedTime;
-    });
-    content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
-    content = content.replace(/{{time_UTC([-+]\d+)}}/gi, (_, offset) => {
-        const utcOffset = parseInt(offset, 10);
-        const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
-        return utcTime;
-    });
-    content = bannedWordsReplace(content);
-    content = randomReplace(content);
-    return content;
+    return evaluateMacros(content, _name1 ?? name1, _name2 ?? name2, _original, _group ?? name2, _replaceCharacterCard);
 }
 
-/**
- * Replaces banned words in macros with an empty string.
- * Adds them to textgenerationwebui ban list.
- * @param {string} inText Text to replace banned words in
- * @returns {string} Text without the "banned" macro
- */
-function bannedWordsReplace(inText) {
-    if (!inText) {
-        return '';
-    }
-
-    const banPattern = /{{banned "(.*)"}}/gi;
-
-    if (main_api == 'textgenerationwebui') {
-        const bans = inText.matchAll(banPattern);
-        if (bans) {
-            for (const banCase of bans) {
-                console.log('Found banned words in macros: ' + banCase[1]);
-                textgenerationwebui_banned_in_macros.push(banCase[1]);
-            }
-        }
-    }
-
-    inText = inText.replaceAll(banPattern, '');
-    return inText;
-}
-
-function getTimeSinceLastMessage() {
-    const now = moment();
-
-    if (Array.isArray(chat) && chat.length > 0) {
-        let lastMessage;
-        let takeNext = false;
-
-        for (let i = chat.length - 1; i >= 0; i--) {
-            const message = chat[i];
-
-            if (message.is_system) {
-                continue;
-            }
-
-            if (message.is_user && takeNext) {
-                lastMessage = message;
-                break;
-            }
-
-            takeNext = true;
-        }
-
-        if (lastMessage?.send_date) {
-            const lastMessageDate = timestampToMoment(lastMessage.send_date);
-            const duration = moment.duration(now.diff(lastMessageDate));
-            return duration.humanize();
-        }
-    }
-
-    return 'just now';
-}
-
-function randomReplace(input, emptyListPlaceholder = '') {
-    const randomPatternNew = /{{random\s?::\s?([^}]+)}}/gi;
-    const randomPatternOld = /{{random\s?:\s?([^}]+)}}/gi;
-
-    if (randomPatternNew.test(input)) {
-        return input.replace(randomPatternNew, (match, listString) => {
-            //split on double colons instead of commas to allow for commas inside random items
-            const list = listString.split('::').filter(item => item.length > 0);
-            if (list.length === 0) {
-                return emptyListPlaceholder;
-            }
-            var rng = new Math.seedrandom('added entropy.', { entropy: true });
-            const randomIndex = Math.floor(rng() * list.length);
-            //trim() at the end to allow for empty random values
-            return list[randomIndex].trim();
-        });
-    } else if (randomPatternOld.test(input)) {
-        return input.replace(randomPatternOld, (match, listString) => {
-            const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
-            if (list.length === 0) {
-                return emptyListPlaceholder;
-            }
-            var rng = new Math.seedrandom('added entropy.', { entropy: true });
-            const randomIndex = Math.floor(rng() * list.length);
-            return list[randomIndex];
-        });
-    } else {
-        return input;
-    }
-}
-
-function diceRollReplace(input, invalidRollPlaceholder = '') {
-    const rollPattern = /{{roll[ : ]([^}]+)}}/gi;
-
-    return input.replace(rollPattern, (match, matchValue) => {
-        let formula = matchValue.trim();
-
-        if (isDigitsOnly(formula)) {
-            formula = `1d${formula}`;
-        }
-
-        const isValid = droll.validate(formula);
-
-        if (!isValid) {
-            console.debug(`Invalid roll formula: ${formula}`);
-            return invalidRollPlaceholder;
-        }
-
-        const result = droll.roll(formula);
-        return new String(result.total);
-    });
-}
 
 /**
  * Gets stopping sequences for the prompt.
@@ -2369,11 +2120,21 @@ function getStoppingStrings(isImpersonate, isContinue) {
  * @param {boolean} quietToLoud Whether the message should be sent in a foreground (loud) or background (quiet) mode
  * @param {boolean} skipWIAN whether to skip addition of World Info and Author's Note into the prompt
  * @param {string} quietImage Image to use for the quiet prompt
+ * @param {string} quietName Name to use for the quiet prompt (defaults to "System:")
  * @returns
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null) {
     console.log('got into genQuietPrompt');
-    const generateFinished = await Generate('quiet', { quiet_prompt, quietToLoud, skipWIAN: skipWIAN, force_name2: true, quietImage: quietImage });
+    /** @type {GenerateOptions} */
+    const options = {
+        quiet_prompt,
+        quietToLoud,
+        skipWIAN: skipWIAN,
+        force_name2: true,
+        quietImage: quietImage,
+        quietName: quietName,
+    };
+    const generateFinished = await Generate('quiet', options);
     return generateFinished;
 }
 
@@ -2564,7 +2325,7 @@ export function baseChatReplace(value, name1, name2) {
  * Returns the character card fields for the current character.
  * @returns {{system: string, mesExamples: string, description: string, personality: string, persona: string, scenario: string, jailbreak: string}}
  */
-function getCharacterCardFields() {
+export function getCharacterCardFields() {
     const result = { system: '', mesExamples: '', description: '', personality: '', persona: '', scenario: '', jailbreak: '' };
     const character = characters[this_chid];
 
@@ -2947,8 +2708,15 @@ export async function generateRaw(prompt, api, instructOverride) {
     return message;
 }
 
-// Returns a promise that resolves when the text is done generating.
-async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops } = {}, dryRun = false) {
+/**
+ * Runs a generation using the current chat context.
+ * @param {string} type Generation type
+ * @param {GenerateOptions} options Generation options
+ * @param {boolean} dryRun Whether to actually generate a message or just assemble the prompt
+ * @returns {Promise<any>} Returns a promise that resolves when the text is done generating.
+ * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, maxLoops?: number, quietName?: string }} GenerateOptions
+ */
+async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName } = {}, dryRun = false) {
     console.log('Generate entered');
     eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops }, dryRun);
     setGenerationProgress(0);
@@ -3146,13 +2914,24 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
         mesExamples = '';
     }
+    const mesExamplesRaw = mesExamples;
     if (mesExamples && isInstruct) {
         mesExamples = formatInstructModeExamples(mesExamples, name1, name2);
     }
 
-    const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-    const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
-    let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+    /**
+     * Adds a block heading to the examples string.
+     * @param {string} examplesStr
+     * @returns {string[]} Examples array with block heading
+     */
+    function addBlockHeading(examplesStr) {
+        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
+        const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
+        return examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+    }
+
+    let mesExamplesArray = addBlockHeading(mesExamples);
+    let mesExamplesRawArray = addBlockHeading(mesExamplesRaw);
 
     // First message in fresh 1-on-1 chat reacts to user/character settings changes
     if (chat.length) {
@@ -3294,6 +3073,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         loreBefore: worldInfoBefore,
         loreAfter: worldInfoAfter,
         mesExamples: mesExamplesArray.join(''),
+        mesExamplesRaw: mesExamplesRawArray.join(''),
     };
 
     const storyString = renderStoryString(storyStringParams);
@@ -3468,7 +3248,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             // need a detection for what the quiet prompt is being asked for...
 
             // Bail out early?
-            if (quietToLoud !== true) {
+            if (!isInstruct && !quietToLoud) {
                 return lastMesString;
             }
         }
@@ -3476,7 +3256,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
         // Get instruct mode line
         if (isInstruct && !isContinue) {
-            const name = isImpersonate ? name1 : name2;
+            const name = (quiet_prompt && !quietToLoud) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
             lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
         }
 
@@ -3684,9 +3464,13 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             scenario,
             char: name2,
             user: name1,
+            worldInfoBefore,
+            worldInfoAfter,
             beforeScenarioAnchor,
             afterScenarioAnchor,
+            storyString,
             mesExmString,
+            mesSendString,
             finalMesSend,
             generatedPromptCache,
             main: system,
@@ -4173,7 +3957,7 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     }
 }
 
-function getMaxContextSize() {
+export function getMaxContextSize() {
     let this_max_context = 1487;
     if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui') {
         this_max_context = (max_context - amount_gen);
@@ -5808,8 +5592,6 @@ async function saveSettings(type) {
         return;
     }
 
-    console.log(background_settings);
-
     //console.log('Entering settings with name1 = '+name1);
 
     return jQuery.ajax({
@@ -6968,7 +6750,7 @@ function openAlternateGreetings() {
     });
 
     updateAlternateGreetingsHintVisibility(template);
-    callPopup(template, 'alternate_greeting');
+    callPopup(template, 'alternate_greeting', '', { wide: true, large: true });
 }
 
 function addAlternateGreeting(template, greeting, index, getArray) {
@@ -9514,13 +9296,16 @@ jQuery(async function () {
 
     $(document).keyup(function (e) {
         if (e.key === 'Escape') {
-            if (power_user.auto_save_msg_edits === false) {
+            const isEditVisible = $('#curEditTextarea').is(':visible');
+            if (isEditVisible && power_user.auto_save_msg_edits === false) {
                 closeMessageEditor();
                 $('#send_textarea').focus();
+                return;
             }
-            if (power_user.auto_save_msg_edits === true) {
+            if (isEditVisible && power_user.auto_save_msg_edits === true) {
                 $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).click();
                 $('#send_textarea').focus();
+                return;
             }
             if (!this_edit_mes_id && $('#mes_stop').is(':visible')) {
                 $('#mes_stop').trigger('click');

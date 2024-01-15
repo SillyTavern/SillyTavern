@@ -654,7 +654,7 @@ async function updateExtension(extensionName, quiet) {
                 toastr.success('Extension is already up to date');
             }
         } else {
-            toastr.success(`Extension ${extensionName} updated to ${data.shortCommitHash}`);
+            toastr.success(`Extension ${extensionName} updated to ${data.shortCommitHash}`, 'Reload the page to apply updates');
         }
     } catch (error) {
         console.error('Error:', error);

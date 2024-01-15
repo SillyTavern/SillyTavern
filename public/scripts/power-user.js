@@ -235,6 +235,8 @@ let power_user = {
     restore_user_input: true,
     reduced_motion: false,
     compact_input_area: true,
+    auto_connect: false,
+    auto_load_chat: false,
 };
 
 let themes = [];
@@ -277,6 +279,8 @@ const storage_keys = {
     enableLabMode: 'enableLabMode',
     reduced_motion: 'reduced_motion',
     compact_input_area: 'compact_input_area',
+    auto_connect_legacy: 'AutoConnectEnabled',
+    auto_load_chat_legacy: 'AutoLoadChatEnabled',
 };
 
 const contextControls = [
@@ -604,6 +608,10 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'rep_pen_range') {
         decimals = 0;
     }
+    if (sliderID == 'min_temp_textgenerationwebui' ||
+        sliderID == 'max_temp_textgenerationwebui') {
+        decimals = 2;
+    }
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
         sliderID == 'epsilon_cutoff_textgenerationwebui') {
         numSteps = 50;
@@ -633,7 +641,9 @@ async function CreateZenSliders(elmnt) {
     }
     if (sliderID == 'mirostat_eta_textgenerationwebui' ||
         sliderID == 'penalty_alpha_textgenerationwebui' ||
-        sliderID == 'length_penalty_textgenerationwebui') {
+        sliderID == 'length_penalty_textgenerationwebui' ||
+        sliderID == 'min_temp_textgenerationwebui' ||
+        sliderID == 'max_temp_textgenerationwebui') {
         numSteps = 50;
     }
     //customize off values
@@ -1377,6 +1387,19 @@ function loadPowerUserSettings(settings, data) {
     const expandMessageActions = localStorage.getItem(storage_keys.expand_message_actions);
     const enableZenSliders = localStorage.getItem(storage_keys.enableZenSliders);
     const enableLabMode = localStorage.getItem(storage_keys.enableLabMode);
+    const autoLoadChat = localStorage.getItem(storage_keys.auto_load_chat_legacy);
+    const autoConnect = localStorage.getItem(storage_keys.auto_connect_legacy);
+
+    if (autoLoadChat) {
+        power_user.auto_load_chat = autoLoadChat === 'true';
+        localStorage.removeItem(storage_keys.auto_load_chat_legacy);
+    }
+
+    if (autoConnect) {
+        power_user.auto_connect = autoConnect === 'true';
+        localStorage.removeItem(storage_keys.auto_connect_legacy);
+    }
+
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == 'true';
     power_user.movingUI = movingUI === null ? false : movingUI == 'true';
     power_user.noShadows = noShadows === null ? false : noShadows == 'true';
@@ -1504,6 +1527,8 @@ function loadPowerUserSettings(settings, data) {
     $('#border-color-picker').attr('color', power_user.border_color);
     $('#ui_mode_select').val(power_user.ui_mode).find(`option[value="${power_user.ui_mode}"]`).attr('selected', true);
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
+    $('#auto-connect-checkbox').prop('checked', power_user.auto_connect);
+    $('#auto-load-chat-checkbox').prop('checked', power_user.auto_load_chat);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -3196,6 +3221,16 @@ $(document).ready(() => {
         power_user.compact_input_area = !!$(this).prop('checked');
         localStorage.setItem(storage_keys.compact_input_area, String(power_user.compact_input_area));
         switchCompactInputArea();
+        saveSettingsDebounced();
+    });
+
+    $('#auto-connect-checkbox').on('input', function () {
+        power_user.auto_connect = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#auto-load-chat-checkbox').on('input', function () {
+        power_user.auto_load_chat = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

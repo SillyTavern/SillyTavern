@@ -47,7 +47,7 @@ SillyTavern 本身并无用处，因为它只是一个用户聊天界面。你�
 
 获取支持，或分享喜爱的角色和 Prompt：
 
-### [加入 Discord 社区](https://discord.gg/RZdyAEUPvj)
+### [加入 Discord 社区](https://discord.gg/sillytavern)
 
 ***
 

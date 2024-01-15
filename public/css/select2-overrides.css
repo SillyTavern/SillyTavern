@@ -107,6 +107,12 @@
     position: relative;
 }
 
+.select2-results .select2-results__option--group {
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--SmartThemeBlurTintColor);
+    position: relative;
+}
+
 /* Customize the hovered option list item */
 .select2-results .select2-results__option--highlighted.select2-results__option--selectable {
     color: var(--SmartThemeBodyColor);
@@ -114,10 +120,18 @@
     opacity: 1;
 }
 
+.select2-results__option.select2-results__option--group::before {
+    display: none;
+}
+
 /* Customize the option list item */
 .select2-results__option {
     padding-left: 30px;
     /* Add some padding to make room for the checkbox */
+}
+
+.select2-results .select2-results__option--group .select2-results__options--nested .select2-results__option {
+    padding-left: 2em;
 }
 
 /* Add the custom checkbox */

@@ -334,7 +334,7 @@ async function sendMakerSuiteRequest(request, response) {
             }
 
             const responseContent = candidates[0].content ?? candidates[0].output;
-            const responseText = typeof responseContent === 'string' ? responseContent : responseContent.parts?.[0]?.text;
+            const responseText = typeof responseContent === 'string' ? responseContent : responseContent?.parts?.[0]?.text;
             if (!responseText) {
                 let message = 'MakerSuite Candidate text empty';
                 console.log(message, generateResponseJson);
@@ -483,7 +483,7 @@ async function sendMistralAIRequest(request, response) {
             'top_p': request.body.top_p,
             'max_tokens': request.body.max_tokens,
             'stream': request.body.stream,
-            'safe_mode': request.body.safe_mode,
+            'safe_prompt': request.body.safe_prompt,
             'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
         };
 
@@ -545,6 +545,7 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = 'https://api.mistral.ai/v1';
         api_key_openai = readSecret(SECRET_KEYS.MISTRALAI);
+        headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         api_url = request.body.custom_url;
         api_key_openai = readSecret(SECRET_KEYS.CUSTOM);
@@ -720,6 +721,14 @@ router.post('/generate', jsonParser, function (request, response) {
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
         bodyParams = { 'transforms': ['middle-out'] };
+
+        if (request.body.min_p !== undefined) {
+            bodyParams['min_p'] = request.body.min_p;
+        }
+
+        if (request.body.top_a !== undefined) {
+            bodyParams['top_a'] = request.body.top_a;
+        }
 
         if (request.body.use_fallback) {
             bodyParams['route'] = 'fallback';
