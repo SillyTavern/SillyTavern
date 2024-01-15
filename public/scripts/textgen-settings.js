@@ -595,7 +595,7 @@ jQuery(function () {
 
 function showTypeSpecificControls(type) {
     $('[data-tg-type]').each(function () {
-        const tgTypes = $(this).attr('data-tg-type').split(',');
+        const tgTypes = $(this).attr('data-tg-type').split(',').map(x => x.trim());
         for (const tgType of tgTypes) {
             if (tgType === type || tgType == 'all') {
                 $(this).show();
