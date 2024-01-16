@@ -311,13 +311,18 @@ let currentAudioJob;
 let audioPaused = false;
 let audioQueueProcessorReady = true;
 
-async function playAudioData(audioBlob) {
+async function playAudioData(audioJob) {
+    const audioBlob = audioJob["audioBlob"];
     // Since current audio job can be cancelled, don't playback if it is null
     if (currentAudioJob == null) {
         console.log('Cancelled TTS playback because currentAudioJob was null');
     }
     if (audioBlob instanceof Blob) {
         const srcUrl = await getBase64Async(audioBlob);
+        // VRM inject
+        if (extension_settings.vrm.enabled && typeof window['vrmLipSync'] === 'function') {
+            await window['vrmLipSync'](audioBlob, audioJob["char"]);
+        }
         audioElement.src = srcUrl;
     } else if (typeof audioBlob === 'string') {
         audioElement.src = audioBlob;
@@ -418,15 +423,15 @@ function completeCurrentAudioJob() {
  * Accepts an HTTP response containing audio/mpeg data, and puts the data as a Blob() on the queue for playback
  * @param {Response} response
  */
-async function addAudioJob(response) {
+async function addAudioJob(response, char) {
     if (typeof response === 'string') {
-        audioJobQueue.push(response);
+        audioJobQueue.push({"audioBlob":response, "char":char});
     } else {
         const audioData = await response.blob();
         if (!audioData.type.startsWith('audio/')) {
             throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioData.type}`;
         }
-        audioJobQueue.push(audioData);
+        audioJobQueue.push({"audioBlob":audioData, "char":char});
     }
     console.debug('Pushed audio job to queue.');
 }
@@ -474,11 +479,12 @@ async function tts(text, voiceId, char) {
         if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
             response = await window['rvcVoiceConversion'](response, char, text);
 
-        // VRM injection
-        if (extension_settings.vrm.enabled && typeof window['vrmLipSync'] === 'function')
+        /*/ VRM injection
+        if (extension_settings.vrm.enabled && typeof window['vrmLipSync'] === 'function') {
             await window['vrmLipSync'](response, char);
+        }*/
 
-        await addAudioJob(response);
+        await addAudioJob(response, char);
     }
 
     let response = await ttsProvider.generateTts(text, voiceId);
