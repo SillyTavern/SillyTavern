@@ -35,7 +35,7 @@ export class SlashCommandHandler {
         user     - bool   - auto execute on user message, e.g., user=true
         bot      - bool   - auto execute on AI message, e.g., bot=true
         load     - bool   - auto execute on chat load, e.g., load=true
-        title    - bool   - title / tooltip to be shown on button, e.g., title="My Fancy Button"
+        title    - string - title / tooltip to be shown on button, e.g., title="My Fancy Button"
         `.trim();
         const qrUpdateArgs = `
         newlabel - string - new text for the button, e.g. newlabel=MyRenamedButton
