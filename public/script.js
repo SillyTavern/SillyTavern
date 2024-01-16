@@ -4411,8 +4411,9 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
         nameToTrim = power_user.allow_name1_display ? '' : name1;
     }
 
-    if (nameToTrim && getMessage.indexOf(`${nameToTrim}:`) == 0) {
-        getMessage = getMessage.substring(`${nameToTrim}:`.length);
+    if (nameToTrim && getMessage.startsWith(nameToTrim + ':')) {
+        getMessage = getMessage.replace(nameToTrim + ':', '');
+        getMessage = getMessage.trimStart();
     }
     if (nameToTrim && getMessage.indexOf(`\n${nameToTrim}:`) >= 0) {
         getMessage = getMessage.substring(0, getMessage.indexOf(`\n${nameToTrim}:`));
