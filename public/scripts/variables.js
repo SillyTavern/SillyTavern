@@ -116,7 +116,7 @@ function addLocalVariable(name, value) {
         const parsedValue = JSON.parse(currentValue);
         if (Array.isArray(parsedValue)) {
             parsedValue.push(value);
-            setGlobalVariable(name, JSON.stringify(parsedValue));
+            setLocalVariable(name, JSON.stringify(parsedValue));
             return parsedValue;
         }
     } catch {
