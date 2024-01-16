@@ -1,4 +1,5 @@
 import { registerSlashCommand } from '../../../slash-commands.js';
+import { isTrueBoolean } from '../../../utils.js';
 // eslint-disable-next-line no-unused-vars
 import { QuickReplyApi } from '../api/QuickReplyApi.js';
 
@@ -162,11 +163,11 @@ export class SlashCommandHandler {
                     newLabel: args.newlabel,
                     message: (message ?? '').trim().length > 0 ? message : undefined,
                     title: args.title,
-                    isHidden: args.hidden,
-                    executeOnStartup: args.startup,
-                    executeOnUser: args.user,
-                    executeOnAi: args.bot,
-                    executeOnChatChange: args.load,
+                    isHidden: args.hidden === undefined ? undefined : isTrueBoolean(args.hidden),
+                    executeOnStartup: args.startup === undefined ? undefined : isTrueBoolean(args.startup),
+                    executeOnUser: args.user === undefined ? undefined : isTrueBoolean(args.user),
+                    executeOnAi: args.bot === undefined ? undefined : isTrueBoolean(args.bot),
+                    executeOnChatChange: args.load === undefined ? undefined : isTrueBoolean(args.load),
                 },
             );
         } catch (ex) {
