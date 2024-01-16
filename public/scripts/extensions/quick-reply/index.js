@@ -185,7 +185,7 @@ const init = async () => {
 
     await autoExec.handleStartup();
 };
-eventSource.on(event_types.APP_READY, init);
+await init();
 
 const onChatChanged = async (chatIdx) => {
     log('CHAT_CHANGED', chatIdx);
