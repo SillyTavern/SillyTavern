@@ -650,7 +650,6 @@ function onAutoGenerationClick() {
 function onNarrateDialoguesClick() {
     extension_settings.tts.narrate_dialogues_only = !!$('#tts_narrate_dialogues').prop('checked');
     saveSettingsDebounced();
-    console.log("setting narrate changed", extension_settings.tts.narrate_dialogues_only)
 }
 
 function onNarrateUserClick() {
@@ -661,7 +660,6 @@ function onNarrateUserClick() {
 function onNarrateQuotedClick() {
     extension_settings.tts.narrate_quoted_only = !!$('#tts_narrate_quoted').prop('checked');
     saveSettingsDebounced();
-    console.log("setting narrate quoted changed", extension_settings.tts.narrate_quoted_only)
 }
 
 

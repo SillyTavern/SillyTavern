@@ -3,92 +3,33 @@ import { saveTtsProviderSettings } from './index.js';
 
 export { AllTalkTtsProvider };
 
-const css = `
-.settings-row {
-    display: flex;
-    justify-content: space-between; /* Distribute space evenly between the children */
-    align-items: center;
-    width: 100%; /* Full width to spread out the children */
-}
-
-.settings-option {
-    flex: 1; /* Each child will take equal space */
-    margin: 0 10px; /* Adjust spacing as needed */
-}
-
-.endpoint-option {
-    flex: 1; /* Each child will take equal space */
-    margin: 0 10px; /* Adjust spacing as needed */
-    margin-right: 25px;
-    width: 38%; /* Full width to spread out the children */
-}
-
-.website-row {
-    display: flex;
-    justify-content: start; /* Aligns items to the start of the row */
-    align-items: center;
-    margin-top: 10px; /* Top margin */
-    margin-bottom: 10px; /* Bottom margin */
-}
-
-.website-option {
-    flex: 1; /* Allows each option to take equal space */
-    margin-right: 10px; /* Spacing between the two options, adjust as needed */
-    margin-left: 10px; /* Adjust this value to align as desired */
-    /* Remove the individual margin top and bottom declarations if they are set globally on the .settings-row */
-}
-
-.settings-separator {
-    margin-top: 10px;
-    margin-bottom: 10px;
-    padding: 18x;
-    font-weight: bold;
-    border-top: 1px solid #e1e1e1; /* Grey line */
-    border-bottom: 1px solid #e1e1e1; /* Grey line */
-    text-align: center;
-}
-
-.status-message {
-    flex: 1; /* Adjust as needed */
-    margin: 0 10px;
-    /* Additional styling */
-}
-
-.model-endpoint-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-}
-
-.model-option, .endpoint-option {
-    flex: 1;
-    margin: 0 10px;
-    margin-left: 10px; /* Adjust this value to align as desired */
-    /* Adjust width as needed to fit in one line */
-}
-
-.endpoint-option {
-    /* Adjust width to align with model dropdown */
-    width: 38%;
-}
-
-#status_info {
-    color: lightgreen; /* Or any specific shade of green you prefer */
-}
-`;
-
-const style = document.createElement('style');
-style.type = 'text/css';
-style.appendChild(document.createTextNode(css));
-document.head.appendChild(style);
-
 class AllTalkTtsProvider {
     //########//
     // Config //
     //########//
 
-    settings;
+    settings = {};
+    constructor() {
+        // Initialize with default settings if they are not already set
+        this.settings = {
+            provider_endpoint: this.settings.provider_endpoint || 'http://localhost:7851',
+            language: this.settings.language || 'en',
+            voiceMap: this.settings.voiceMap || {},
+            at_generation_method: this.settings.at_generation_method || 'standard_generation',
+            narrator_enabled: this.settings.narrator_enabled || 'false',
+            at_narrator_text_not_inside: this.settings.at_narrator_text_not_inside || 'narrator',
+            narrator_voice_gen: this.settings.narrator_voice_gen || 'female_01.wav',
+            finetuned_model: this.settings.finetuned_model || 'false'
+        };
+        // Separate property for dynamically updated settings from the server
+        this.dynamicSettings = {
+            modelsAvailable: [],
+            currentModel: '',
+            deepspeed_available: false,
+            deepSpeedEnabled: false,
+            lowVramEnabled: false,
+        };
+    }
     ready = false;
     voices = [];
     separator = '. ';
@@ -114,23 +55,12 @@ class AllTalkTtsProvider {
         'Hindi': 'hi',
     };
 
-    Settings = {
-        provider_endpoint: 'http://localhost:7851',
-        language: 'en',
-        voiceMap: {},
-        at_generation_method: 'standard_generation',
-        narrator_enabled: 'false',
-        at_narrator_text_not_inside: 'narrator',
-        narrator_voice_gen: 'female_01.wav',
-        finetuned_model: 'false'
-    };
-
     get settingsHtml() {
-        let html = `<div class="settings-separator">AllTalk Settings</div>`;
+        let html = `<div class="at-settings-separator">AllTalk Settings</div>`;
 
-        html += `<div class="settings-row">
+        html += `<div class="at-settings-row">
 
-        <div class="settings-option">
+        <div class="at-settings-option">
             <label for="at_generation_method">AllTalk TTS Generation Method</label>
                 <select id="at_generation_method">
                 <option value="standard_generation">Standard Audio Generation (AT Narrator - Optional)</option>
@@ -139,9 +69,9 @@ class AllTalkTtsProvider {
         </div>
         </div>`;
 
-        html += `<div class="settings-row">
+        html += `<div class="at-settings-row">
 
-        <div class="settings-option">
+        <div class="at-settings-option">
             <label for="at_narrator_enabled">AT Narrator</label>
                 <select id="at_narrator_enabled">
                 <option value="true">Enabled</option>
@@ -149,7 +79,7 @@ class AllTalkTtsProvider {
         </select>
         </div>
 
-        <div class="settings-option">
+        <div class="at-settings-option">
             <label for="at_narrator_text_not_inside">Text Not Inside * or " is</label>
                 <select id="at_narrator_text_not_inside">
                 <option value="narrator">Narrator</option>
@@ -159,8 +89,8 @@ class AllTalkTtsProvider {
 
     </div>`;
 
-        html += `<div class="settings-row">
-        <div class="settings-option">
+        html += `<div class="at-settings-row">
+        <div class="at-settings-option">
             <label for="narrator_voice">Narrator Voice</label>
             <select id="narrator_voice">`;
         if (this.voices) {
@@ -170,7 +100,7 @@ class AllTalkTtsProvider {
         }
         html += `</select>
         </div>
-        <div class="settings-option">
+        <div class="at-settings-option">
             <label for="language_options">Language</label>
             <select id="language_options">`;
         for (let language in this.languageLabels) {
@@ -181,8 +111,8 @@ class AllTalkTtsProvider {
     </div>`;
 
 
-        html += `<div class="model-endpoint-row">
-    <div class="model-option">
+        html += `<div class="at-model-endpoint-row">
+    <div class="at-model-option">
             <label for="switch_model">Switch Model</label>
             <select id="switch_model">
             <option value="api_tts">API TTS</option>
@@ -191,48 +121,46 @@ class AllTalkTtsProvider {
         </select>
         </div>
 
-        <div class="endpoint-option">
+        <div class="at-endpoint-option">
             <label for="at_server">AllTalk Endpoint:</label>
-            <input id="at_server" type="text" class="text_pole" maxlength="80" value="${this.Settings.provider_endpoint}"/>
+            <input id="at_server" type="text" class="text_pole" maxlength="80" value="${this.settings.provider_endpoint}"/>
         </div>
    </div>`;
 
 
-        html += `<div class="model-endpoint-row">
-    <div class="settings-option">
+        html += `<div class="at-model-endpoint-row">
+    <div class="at-settings-option">
         <label for="low_vram">Low VRAM</label>
         <input id="low_vram" type="checkbox"/>
     </div>
-    <div class="settings-option">
+    <div class="at-settings-option">
         <label for="deepspeed">DeepSpeed</label>
         <input id="deepspeed" type="checkbox"/>
     </div>
-    <div class="settings-option status-option">
+    <div class="at-settings-option status-option">
         <span>Status: <span id="status_info">Ready</span></span>
     </div>
-    <div class="settings-option empty-option">
+    <div class="at-settings-option empty-option">
         <!-- This div remains empty for spacing -->
     </div>
 </div>`;
 
 
-        html += `<div class="website-row">
-        <div class="website-option">
-        <span>AllTalk <a target="_blank" href="${this.Settings.provider_endpoint}">Config & Docs</a>.</span>
+        html += `<div class="at-website-row">
+        <div class="at-website-option">
+        <span>AllTalk <a target="_blank" href="${this.settings.provider_endpoint}">Config & Docs</a>.</span>
     </div>
 
-    <div class="website-option">
+    <div class="at-website-option">
         <span>AllTalk <a target="_blank" href="https://github.com/erew123/alltalk_tts/">Website</a>.</span>
     </div>
 </div>`;
 
-html += `<div class="website-row">
-<div class="website-option">
+        html += `<div class="at-website-row">
+<div class="at-website-option">
 <span><strong>Text-generation-webui</strong> users - Uncheck <strong>Enable TTS</strong> in Text-generation-webui.</span>
 </div>
 </div>`;
-
-
 
         return html;
     }
@@ -244,14 +172,35 @@ html += `<div class="website-row">
 
     async loadSettings(settings) {
         updateStatus('Offline');
-        // Use default settings if no settings are provided
-        this.settings = Object.keys(settings).length === 0 ? this.Settings : settings;
 
+        if (Object.keys(settings).length === 0) {
+            console.info('Using default AllTalk TTS Provider settings');
+        } else {
+            // Populate settings with provided values, ignoring server-provided settings
+            for (const key in settings) {
+                if (key in this.settings) {
+                    this.settings[key] = settings[key];
+                } else {
+                    console.debug(`Ignoring non-user-configurable setting: ${key}`);
+                }
+            }
+        }
+
+        // Update UI elements to reflect the loaded settings
+        $('#at_server').val(this.settings.provider_endpoint);
+        $('#language_options').val(this.settings.language);
+        //$('#voicemap').val(this.settings.voiceMap);
+        $('#at_generation_method').val(this.settings.at_generation_method);
+        $('#at_narrator_enabled').val(this.settings.narrator_enabled);
+        $('#at_narrator_text_not_inside').val(this.settings.at_narrator_text_not_inside);
+        $('#narrator_voice').val(this.settings.narrator_voice_gen);
+
+        console.debug('AllTalkTTS: Settings loaded');
         try {
             // Check if TTS provider is ready
             await this.checkReady();
+            await this.updateSettingsFromServer(); // Fetch dynamic settings from the TTS server
             await this.fetchTtsVoiceObjects(); // Fetch voices only if service is ready
-            await this.updateSettingsFromServer();
             this.updateNarratorVoicesDropdown();
             this.updateLanguageDropdown();
             this.setupEventListeners();
@@ -259,29 +208,23 @@ html += `<div class="website-row">
             updateStatus('Ready');
         } catch (error) {
             console.error("Error loading settings:", error);
-            // Set status to Error if there is an issue in loading settings
             updateStatus('Offline');
         }
     }
 
     applySettingsToHTML() {
-        // Load AllTalk specific settings first
-        const loadedSettings = loadAllTalkSettings();
         // Apply loaded settings or use defaults
-        this.settings = loadedSettings ? { ...this.Settings, ...loadedSettings } : this.Settings;
         const narratorVoiceSelect = document.getElementById('narrator_voice');
         const atNarratorSelect = document.getElementById('at_narrator_enabled');
         const textNotInsideSelect = document.getElementById('at_narrator_text_not_inside');
         const generationMethodSelect = document.getElementById('at_generation_method');
+        this.settings.narrator_voice = this.settings.narrator_voice_gen;
         // Apply settings to Narrator Voice dropdown
         if (narratorVoiceSelect && this.settings.narrator_voice) {
             narratorVoiceSelect.value = this.settings.narrator_voice.replace('.wav', '');
-            this.settings.narrator_voice_gen = this.settings.narrator_voice;
-            //console.log(this.settings.narrator_voice_gen)
         }
         // Apply settings to AT Narrator Enabled dropdown
         if (atNarratorSelect) {
-            //console.log(this.settings.narrator_enabled)
             // Sync the state with the checkbox in index.js
             const ttsPassAsterisksCheckbox = document.getElementById('tts_pass_asterisks'); // Access the checkbox from index.js
             const ttsNarrateQuotedCheckbox = document.getElementById('tts_narrate_quoted'); // Access the checkbox from index.js
@@ -314,18 +257,15 @@ html += `<div class="website-row">
         const languageSelect = document.getElementById('language_options');
         if (languageSelect && this.settings.language) {
             languageSelect.value = this.settings.language;
-            //console.log(this.settings.language)
         }
         // Apply settings to Text Not Inside dropdown
         if (textNotInsideSelect && this.settings.text_not_inside) {
             textNotInsideSelect.value = this.settings.text_not_inside;
             this.settings.at_narrator_text_not_inside = this.settings.text_not_inside;
-            //console.log(this.settings.at_narrator_text_not_inside)
         }
         // Apply settings to Generation Method dropdown
         if (generationMethodSelect && this.settings.at_generation_method) {
             generationMethodSelect.value = this.settings.at_generation_method;
-            //console.log(this.settings.at_generation_method)
         }
         // Additional logic to disable/enable dropdowns based on the selected generation method
         const isStreamingEnabled = this.settings.at_generation_method === 'streaming_enabled';
@@ -347,7 +287,6 @@ html += `<div class="website-row">
             ftOption.textContent = 'XTTSv2 FT';
             modelSelect.appendChild(ftOption);
         }
-        //console.log("Settings applied to HTML.");
     }
 
     //##############################//
@@ -486,7 +425,7 @@ html += `<div class="website-row">
         const languageSelect = document.getElementById('language_options');
         if (languageSelect) {
             // Ensure default language is set
-            this.settings.language = this.Settings.language;
+            this.settings.language = this.settings.language;
 
             languageSelect.innerHTML = '';
             for (let language in this.languageLabels) {
@@ -610,7 +549,7 @@ html += `<div class="website-row">
         if (narratorVoiceSelect) {
             narratorVoiceSelect.addEventListener('change', (event) => {
                 this.settings.narrator_voice_gen = `${event.target.value}.wav`;
-                this.onSettingsChangeAllTalk(); // Save the settings after change
+                this.onSettingsChange(); // Save the settings after change
             });
         }
 
@@ -618,7 +557,7 @@ html += `<div class="website-row">
         if (textNotInsideSelect) {
             textNotInsideSelect.addEventListener('change', (event) => {
                 this.settings.text_not_inside = event.target.value;
-                this.onSettingsChangeAllTalk(); // Save the settings after change
+                this.onSettingsChange(); // Save the settings after change
             });
         }
 
@@ -656,10 +595,9 @@ html += `<div class="website-row">
                     $('#tts_narrate_dialogues').click();
                     $('#tts_narrate_dialogues').trigger('change');
                 }
-                this.onSettingsChangeAllTalk(); // Save the settings after change
+                this.onSettingsChange(); // Save the settings after change
             });
         }
-
 
 
         // Event Listener for AT Generation Method Dropdown
@@ -680,7 +618,7 @@ html += `<div class="website-row">
                     atNarratorEnabledSelect.disabled = false;
                 }
                 this.settings.at_generation_method = selectedMethod; // Update the setting here
-                this.onSettingsChangeAllTalk(); // Save the settings after change
+                this.onSettingsChange(); // Save the settings after change
             });
         }
 
@@ -689,9 +627,19 @@ html += `<div class="website-row">
         if (languageSelect) {
             languageSelect.addEventListener('change', (event) => {
                 this.settings.language = event.target.value;
-                this.onSettingsChangeAllTalk(); // Save the settings after change
+                this.onSettingsChange(); // Save the settings after change
             });
         }
+
+        // Listener for AllTalk Endpoint Input
+        const atServerInput = document.getElementById('at_server');
+        if (atServerInput) {
+            atServerInput.addEventListener('input', (event) => {
+                this.settings.provider_endpoint = event.target.value;
+                this.onSettingsChange(); // Save the settings after change
+            });
+        }
+
     }
 
     //#############################//
@@ -699,30 +647,16 @@ html += `<div class="website-row">
     //#############################//
 
     onSettingsChange() {
-        // Update settings that SillyTavern will save
-        this.settings.provider_endpoint = $('#at_server').val();
+        // Update settings based on the UI elements
+        //this.settings.provider_endpoint = $('#at_server').val();
         this.settings.language = $('#language_options').val();
-        saveTtsProviderSettings(); // This function should save settings handled by SillyTavern
-        // Call the function to handle AllTalk specific settings
-        this.onSettingsChangeAllTalk(); // Save the settings after change
-    }
-
-    onSettingsChangeAllTalk() {
-        // Update AllTalk specific settings and save to localStorage
-        this.settings.narrator_enabled = $('#at_narrator_enabled').val() === 'true';
-        this.settings.narrator_voice = $('#narrator_voice').val() + '.wav'; // assuming you need to append .wav
-        this.settings.text_not_inside = $('#at_narrator_text_not_inside').val(); // "character" or "narrator"
-        this.settings.at_generation_method = $('#at_generation_method').val(); // Streaming or standard
-        this.settings.language = $('#language_options').val(); // Streaming or standard
-
-        // Call the save function with the current settings
-        saveAllTalkSettings({
-            narrator_voice: this.settings.narrator_voice,
-            narrator_enabled: this.settings.narrator_enabled,
-            text_not_inside: this.settings.text_not_inside,
-            at_generation_method: this.settings.at_generation_method,
-            language: this.settings.language
-        });
+        //this.settings.voiceMap = $('#voicemap').val();
+        this.settings.at_generation_method = $('#at_generation_method').val();
+        this.settings.narrator_enabled = $('#at_narrator_enabled').val();
+        this.settings.at_narrator_text_not_inside = $('#at_narrator_text_not_inside').val();
+        this.settings.narrator_voice_gen = $('#narrator_voice').val();
+        // Save the updated settings
+        saveTtsProviderSettings();
     }
 
     //#########################//
@@ -802,44 +736,27 @@ html += `<div class="website-row">
     async generateTts(inputText, voiceId) {
         try {
             if (this.settings.at_generation_method === 'streaming_enabled') {
-                // For streaming method
+                // Construct the streaming URL
                 const streamingUrl = `${this.settings.provider_endpoint}/api/tts-generate-streaming?text=${encodeURIComponent(inputText)}&voice=${encodeURIComponent(voiceId)}.wav&language=${encodeURIComponent(this.settings.language)}&output_file=stream_output.wav`;
-                const audioElement = new Audio(streamingUrl);
-                audioElement.play(); // Play the audio stream directly
                 console.log("Streaming URL:", streamingUrl);
-                return new Response(null, {
-                    status: 200,
-                    statusText: "OK",
-                    headers: {
-                        "Content-Type": "audio/wav",
-                        "Content-Location": streamingUrl
-                    }
-                });
+        
+                // Return the streaming URL directly
+                return streamingUrl; 
             } else {
                 // For standard method
                 const outputUrl = await this.fetchTtsGeneration(inputText, voiceId);
-                // Fetch the audio data as a blob from the URL
                 const audioResponse = await fetch(outputUrl);
                 if (!audioResponse.ok) {
                     throw new Error(`HTTP ${audioResponse.status}: Failed to fetch audio data`);
                 }
-                const audioBlob = await audioResponse.blob();
-                if (!audioBlob.type.startsWith('audio/')) {
-                    throw new Error(`Invalid audio data format. Expecting audio/*, got ${audioBlob.type}`);
-                }
-                return new Response(audioBlob, {
-                    status: 200,
-                    statusText: "OK",
-                    headers: {
-                        "Content-Type": audioBlob.type
-                    }
-                });
+                return audioResponse; // Return the fetch response directly
             }
         } catch (error) {
             console.error("Error in generateTts:", error);
             throw error;
         }
     }
+
 
     //####################//
     //  Generate Standard //
@@ -852,8 +769,8 @@ html += `<div class="website-row">
             'text_filtering': "standard",
             'character_voice_gen': voiceId + ".wav",
             'narrator_enabled': this.settings.narrator_enabled,
-            'narrator_voice_gen': this.settings.narrator_voice_gen,
-            'text_not_inside': this.settings.text_not_inside,
+            'narrator_voice_gen': this.settings.narrator_voice_gen + ".wav",
+            'text_not_inside': this.settings.at_narrator_text_not_inside,
             'language': this.settings.language,
             'output_file_name': "st_output",
             'output_file_timestamp': "true",
@@ -877,7 +794,6 @@ html += `<div class="website-row">
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error(`[fetchTtsGeneration] Error Response Text:`, errorText);
-                // Uncomment the following line if you have a UI element for displaying errors
                 // toastr.error(response.statusText, 'TTS Generation Failed');
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
@@ -912,27 +828,6 @@ function updateStatus(message) {
             case 'Error':
                 statusElement.style.color = 'red';
                 break;
-            // Add more cases as needed
         }
     }
-}
-
-//########################//
-//  Save/load AT Settings //
-//########################//
-
-function saveAllTalkSettings(settingsToSave) {
-    // Save the specific settings to localStorage
-    console.log("settings", settingsToSave)
-    localStorage.setItem('AllTalkSettings', JSON.stringify(settingsToSave));
-}
-
-function loadAllTalkSettings() {
-    // Retrieve the settings from localStorage
-    const settings = localStorage.getItem('AllTalkSettings');
-    // If settings exist, parse them back into an object
-    if (settings) {
-        return JSON.parse(settings);
-    }
-    return null;
 }
