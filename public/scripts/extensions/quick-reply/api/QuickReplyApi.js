@@ -248,9 +248,9 @@ export class QuickReplyApi {
         if (!qr) {
             throw new Error(`No quick reply with label "${label}" in set "${setName}" found.`);
         }
-        qr.label = newLabel ?? qr.label;
-        qr.message = message ?? qr.message;
-        qr.title = title ?? qr.title;
+        qr.updateLabel(newLabel ?? qr.label);
+        qr.updateMessage(message ?? qr.message);
+        qr.updateTitle(title ?? qr.title);
         qr.isHidden = isHidden ?? qr.isHidden;
         qr.executeOnStartup = executeOnStartup ?? qr.executeOnStartup;
         qr.executeOnUser = executeOnUser ?? qr.executeOnUser;
