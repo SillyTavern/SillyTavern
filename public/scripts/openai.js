@@ -190,6 +190,7 @@ const default_settings = {
     top_k_openai: 0,
     min_p_openai: 0,
     top_a_openai: 1,
+    repetition_penalty_openai: 1,
     stream_openai: false,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
@@ -257,6 +258,7 @@ const oai_settings = {
     top_k_openai: 0,
     min_p_openai: 0,
     top_a_openai: 1,
+    repetition_penalty_openai: 1,
     stream_openai: false,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
@@ -1605,6 +1607,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     if (isOpenRouter) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['min_p'] = Number(oai_settings.min_p_openai);
+        generate_data['repetition_penalty'] = Number(oai_settings.repetition_penalty_openai);
         generate_data['top_a'] = Number(oai_settings.top_a_openai);
         generate_data['use_fallback'] = oai_settings.openrouter_use_fallback;
 
@@ -2369,6 +2372,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.top_k_openai = settings.top_k_openai ?? default_settings.top_k_openai;
     oai_settings.top_a_openai = settings.top_a_openai ?? default_settings.top_a_openai;
     oai_settings.min_p_openai = settings.min_p_openai ?? default_settings.min_p_openai;
+    oai_settings.repetition_penalty_openai = settings.repetition_penalty_openai ?? default_settings.repetition_penalty_openai;
     oai_settings.stream_openai = settings.stream_openai ?? default_settings.stream_openai;
     oai_settings.openai_max_context = settings.openai_max_context ?? default_settings.openai_max_context;
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
@@ -2504,6 +2508,8 @@ function loadOpenAISettings(data, settings) {
     $('#top_a_counter_openai').val(Number(oai_settings.top_a_openai));
     $('#min_p_openai').val(oai_settings.min_p_openai);
     $('#min_p_counter_openai').val(Number(oai_settings.min_p_openai));
+    $('#repetition_penalty_openai').val(oai_settings.repetition_penalty_openai);
+    $('#repetition_penalty_counter_openai').val(Number(oai_settings.repetition_penalty_openai));
     $('#seed_openai').val(oai_settings.seed);
 
     if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
@@ -2650,6 +2656,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         top_k: settings.top_k_openai,
         top_a: settings.top_a_openai,
         min_p: settings.min_p_openai,
+        repetition_penalty: settings.repetition_penalty_openai,
         openai_max_context: settings.openai_max_context,
         openai_max_tokens: settings.openai_max_tokens,
         wrap_in_quotes: settings.wrap_in_quotes,
@@ -3011,6 +3018,7 @@ function onSettingsPresetChange() {
         top_k: ['#top_k_openai', 'top_k_openai', false],
         top_a: ['#top_a_openai', 'top_a_openai', false],
         min_p: ['#min_p_openai', 'min_p_openai', false],
+        repetition_penalty: ['#repetition_penalty_openai', 'repetition_penalty_openai', false],
         max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
         openai_model: ['#model_openai_select', 'openai_model', false],
         claude_model: ['#model_claude_select', 'claude_model', false],
@@ -3744,6 +3752,12 @@ $(document).ready(async function () {
     $('#min_p_openai').on('input', function () {
         oai_settings.min_p_openai = Number($(this).val());
         $('#min_p_counter_openai').val(Number($(this).val()));
+        saveSettingsDebounced();
+    });
+
+    $('#repetition_penalty_openai').on('input', function () {
+        oai_settings.repetition_penalty_openai = Number($(this).val());
+        $('#repetition_penalty_counter_openai').val(Number($(this).val()));
         saveSettingsDebounced();
     });
 
