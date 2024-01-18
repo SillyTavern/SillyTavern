@@ -198,7 +198,7 @@ const init = async () => {
     slash.init();
     autoExec = new AutoExecuteHandler(settings);
 
-    eventSource.on(event_types.APP_READY, ()=>finalizeInit());
+    eventSource.on(event_types.APP_READY, async()=>await finalizeInit());
 };
 const finalizeInit = async () => {
     log('executing startup');
