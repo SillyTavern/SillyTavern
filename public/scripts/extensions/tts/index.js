@@ -11,6 +11,7 @@ import { power_user } from '../../power-user.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { OpenAITtsProvider } from './openai.js';
 import { XTTSTtsProvider } from './xtts.js';
+import { AllTalkTtsProvider } from './alltalk.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
@@ -74,6 +75,7 @@ let ttsProviders = {
     Edge: EdgeTtsProvider,
     Novel: NovelTtsProvider,
     OpenAI: OpenAITtsProvider,
+    AllTalk: AllTalkTtsProvider,
 };
 let ttsProvider;
 let ttsProviderName;
@@ -506,9 +508,11 @@ async function processTtsQueue() {
         text = text.replace(/```.*?```/gs, '').trim();
     }
 
-    text = extension_settings.tts.narrate_dialogues_only
-        ? text.replace(/\*[^*]*?(\*|$)/g, '').trim() // remove asterisks content
-        : text.replaceAll('*', '').trim(); // remove just the asterisks
+    if (!extension_settings.tts.pass_asterisks) {
+        text = extension_settings.tts.narrate_dialogues_only
+            ? text.replace(/\*[^*]*?(\*|$)/g, '').trim() // remove asterisks content
+            : text.replaceAll('*', '').trim(); // remove just the asterisks
+    }
 
     if (extension_settings.tts.narrate_quoted_only) {
         const special_quotes = /[“”]/g; // Extend this regex to include other special quotes
@@ -590,6 +594,7 @@ function loadSettings() {
     $('#tts_auto_generation').prop('checked', extension_settings.tts.auto_generation);
     $('#tts_narrate_translated_only').prop('checked', extension_settings.tts.narrate_translated_only);
     $('#tts_narrate_user').prop('checked', extension_settings.tts.narrate_user);
+    $('#tts_pass_asterisks').prop('checked', extension_settings.tts.pass_asterisks);
     $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
 
@@ -666,6 +671,12 @@ function onNarrateTranslatedOnlyClick() {
 function onSkipCodeblocksClick() {
     extension_settings.tts.skip_codeblocks = !!$('#tts_skip_codeblocks').prop('checked');
     saveSettingsDebounced();
+}
+
+function onPassAsterisksClick() {
+    extension_settings.tts.pass_asterisks = !!$('#tts_pass_asterisks').prop('checked');
+    saveSettingsDebounced();
+    console.log("setting pass asterisks", extension_settings.tts.pass_asterisks)
 }
 
 //##############//
@@ -985,6 +996,10 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_skip_codeblocks">
                             <small>Skip codeblocks</small>
                         </label>
+                        <label class="checkbox_label" for="tts_pass_asterisks">
+                        <input type="checkbox" id="tts_pass_asterisks">
+                        <small>Pass Asterisks to TTS Engine</small>
+                        </label>
                     </div>
                     <div id="tts_voicemap_block">
                     </div>
@@ -1006,6 +1021,7 @@ $(document).ready(function () {
         $('#tts_narrate_quoted').on('click', onNarrateQuotedClick);
         $('#tts_narrate_translated_only').on('click', onNarrateTranslatedOnlyClick);
         $('#tts_skip_codeblocks').on('click', onSkipCodeblocksClick);
+        $('#tts_pass_asterisks').on('click', onPassAsterisksClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
         $('#tts_voices').on('click', onTtsVoicesClick);
