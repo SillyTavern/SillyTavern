@@ -7433,7 +7433,7 @@ async function connectAPISlash(_, text) {
     toastr.info(`API set to ${text}, trying to connect..`);
 
     try {
-        await waitUntilCondition(() => online_status !== 'no_connection', 5000, 100);
+        await waitUntilCondition(() => online_status !== 'no_connection', 10000, 100);
         console.log('Connection successful');
     } catch {
         console.log('Could not connect after 5 seconds, skipping.');
