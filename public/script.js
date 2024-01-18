@@ -78,6 +78,7 @@ import {
     ui_mode,
     switchSimpleMode,
     flushEphemeralStoppingStrings,
+    context_presets,
 } from './scripts/power-user.js';
 
 import {
@@ -178,6 +179,9 @@ import {
     getInstructStoppingSequences,
     autoSelectInstructPreset,
     formatInstructModeSystemPrompt,
+    selectInstructPreset,
+    instruct_presets,
+    selectContextPreset,
 } from './scripts/instruct-mode.js';
 import { applyLocale, initLocales } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
@@ -7401,6 +7405,54 @@ const CONNECT_API_MAP = {
     },
 };
 
+async function selectContextCallback(_, name) {
+    if (!name) {
+        toastr.warning('Context preset name is required');
+        return '';
+    }
+
+    const contextNames = context_presets.map(preset => preset.name);
+    const fuse = new Fuse(contextNames);
+    const result = fuse.search(name);
+
+    if (result.length === 0) {
+        toastr.warning(`Context preset "${name}" not found`);
+        return '';
+    }
+
+    const foundName = result[0].item;
+    selectContextPreset(foundName);
+    return foundName;
+}
+
+async function selectInstructCallback(_, name) {
+    if (!name) {
+        toastr.warning('Instruct preset name is required');
+        return '';
+    }
+
+    const instructNames = instruct_presets.map(preset => preset.name);
+    const fuse = new Fuse(instructNames);
+    const result = fuse.search(name);
+
+    if (result.length === 0) {
+        toastr.warning(`Instruct preset "${name}" not found`);
+        return '';
+    }
+
+    const foundName = result[0].item;
+    selectInstructPreset(foundName);
+    return foundName;
+}
+
+async function enableInstructCallback() {
+    $('#instruct_enabled').prop('checked', true).trigger('change');
+}
+
+async function disableInstructCallback() {
+    $('#instruct_enabled').prop('checked', false).trigger('change');
+}
+
 /**
  * @param {string} text API name
  */
@@ -7698,6 +7750,10 @@ jQuery(async function () {
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
     registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
     registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
+    registerSlashCommand('instruct', selectInstructCallback, [], '<span class="monospace">(name)</span> – selects instruct mode preset by name', true, true);
+    registerSlashCommand('instruct-on', enableInstructCallback, [], '– enables instruct mode', true, true);
+    registerSlashCommand('instruct-off', disableInstructCallback, [], '– disables instruct mode', true, true);
+    registerSlashCommand('context', selectContextCallback, [], '<span class="monospace">(name)</span> – selects context template by name', true, true);
 
     setTimeout(function () {
         $('#groupControlsToggle').trigger('click');
