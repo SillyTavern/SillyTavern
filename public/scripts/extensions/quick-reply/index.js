@@ -198,6 +198,9 @@ const init = async () => {
     slash.init();
     autoExec = new AutoExecuteHandler(settings);
 
+    eventSource.on(event_types.APP_READY, async()=>await finalizeInit());
+};
+const finalizeInit = async () => {
     log('executing startup');
     await autoExec.handleStartup();
     log('/executing startup');
@@ -211,7 +214,7 @@ const init = async () => {
     isReady = true;
     log('READY');
 };
-init();
+await init();
 
 const onChatChanged = async (chatIdx) => {
     log('CHAT_CHANGED', chatIdx);
