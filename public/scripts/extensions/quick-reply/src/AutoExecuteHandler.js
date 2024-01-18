@@ -73,4 +73,13 @@ export class AutoExecuteHandler {
         ];
         await this.performAutoExecute(qrList);
     }
+
+    async handleGroupMemberDraft() {
+        if (!this.checkExecute()) return;
+        const qrList = [
+            ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.executeOnGroupMemberDraft)).flat(),
+            ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.executeOnGroupMemberDraft))?.flat() ?? []),
+        ];
+        await this.performAutoExecute(qrList);
+    }
 }

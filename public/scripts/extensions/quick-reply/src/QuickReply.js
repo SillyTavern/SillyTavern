@@ -30,6 +30,7 @@ export class QuickReply {
     /**@type {Boolean}*/ executeOnUser = false;
     /**@type {Boolean}*/ executeOnAi = false;
     /**@type {Boolean}*/ executeOnChatChange = false;
+    /**@type {Boolean}*/ executeOnGroupMemberDraft = false;
 
     /**@type {Function}*/ onExecute;
     /**@type {Function}*/ onDelete;
@@ -351,7 +352,13 @@ export class QuickReply {
                 this.executeOnChatChange = executeOnChatChange.checked;
                 this.updateContext();
             });
-
+            /**@type {HTMLInputElement}*/
+            const executeOnGroupMemberDraft = dom.querySelector('#qr--executeOnGroupMemberDraft');
+            executeOnGroupMemberDraft.checked = this.executeOnGroupMemberDraft;
+            executeOnGroupMemberDraft.addEventListener('click', ()=>{
+                this.executeOnGroupMemberDraft = executeOnGroupMemberDraft.checked;
+                this.updateContext();
+            });
 
             /**@type {HTMLElement}*/
             const executeErrors = dom.querySelector('#qr--modal-executeErrors');
@@ -484,6 +491,7 @@ export class QuickReply {
             executeOnUser: this.executeOnUser,
             executeOnAi: this.executeOnAi,
             executeOnChatChange: this.executeOnChatChange,
+            executeOnGroupMemberDraft: this.executeOnGroupMemberDraft,
         };
     }
 }

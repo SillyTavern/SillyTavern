@@ -190,6 +190,7 @@ export class QuickReplyApi {
      * @param {Boolean} [props.executeOnUser] whether to execute the quick reply after a user has sent a message
      * @param {Boolean} [props.executeOnAi] whether to execute the quick reply after the AI has sent a message
      * @param {Boolean} [props.executeOnChatChange] whether to execute the quick reply when a new chat is loaded
+     * @param {Boolean} [props.executeOnGroupMemberDraft] whether to execute the quick reply when a group member is selected
      * @returns {QuickReply} the new quick reply
      */
     createQuickReply(setName, label, {
@@ -200,6 +201,7 @@ export class QuickReplyApi {
         executeOnUser,
         executeOnAi,
         executeOnChatChange,
+        executeOnGroupMemberDraft,
     } = {}) {
         const set = this.getSetByName(setName);
         if (!set) {
@@ -214,6 +216,7 @@ export class QuickReplyApi {
         qr.executeOnUser = executeOnUser ?? false;
         qr.executeOnAi = executeOnAi ?? false;
         qr.executeOnChatChange = executeOnChatChange ?? false;
+        qr.executeOnGroupMemberDraft = executeOnGroupMemberDraft ?? false;
         qr.onUpdate();
         return qr;
     }
@@ -232,6 +235,7 @@ export class QuickReplyApi {
      * @param {Boolean} [props.executeOnUser] whether to execute the quick reply after a user has sent a message
      * @param {Boolean} [props.executeOnAi] whether to execute the quick reply after the AI has sent a message
      * @param {Boolean} [props.executeOnChatChange] whether to execute the quick reply when a new chat is loaded
+     * @param {Boolean} [props.executeOnGroupMemberDraft] whether to execute the quick reply when a group member is selected
      * @returns {QuickReply} the altered quick reply
      */
     updateQuickReply(setName, label, {
@@ -243,6 +247,7 @@ export class QuickReplyApi {
         executeOnUser,
         executeOnAi,
         executeOnChatChange,
+        executeOnGroupMemberDraft,
     } = {}) {
         const qr = this.getQrByLabel(setName, label);
         if (!qr) {
@@ -256,6 +261,7 @@ export class QuickReplyApi {
         qr.executeOnUser = executeOnUser ?? qr.executeOnUser;
         qr.executeOnAi = executeOnAi ?? qr.executeOnAi;
         qr.executeOnChatChange = executeOnChatChange ?? qr.executeOnChatChange;
+        qr.executeOnGroupMemberDraft = executeOnGroupMemberDraft ?? qr.executeOnGroupMemberDraft;
         qr.onUpdate();
         return qr;
     }

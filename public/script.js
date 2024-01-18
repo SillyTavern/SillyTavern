@@ -335,6 +335,7 @@ export const event_types = {
     CHAT_DELETED: 'chat_deleted',
     GROUP_CHAT_DELETED: 'group_chat_deleted',
     GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
+    GROUP_MEMBER_DRAFTED: 'group_member_drafted',
 };
 
 export const eventSource = new EventEmitter();

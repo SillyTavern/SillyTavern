@@ -36,6 +36,7 @@ export class SlashCommandHandler {
         user     - bool   - auto execute on user message, e.g., user=true
         bot      - bool   - auto execute on AI message, e.g., bot=true
         load     - bool   - auto execute on chat load, e.g., load=true
+        group    - bool   - auto execute on group member selection, e.g., group=true
         title    - string - title / tooltip to be shown on button, e.g., title="My Fancy Button"
         `.trim();
         const qrUpdateArgs = `
@@ -148,6 +149,7 @@ export class SlashCommandHandler {
                     executeOnUser: isTrueBoolean(args.user),
                     executeOnAi: isTrueBoolean(args.bot),
                     executeOnChatChange: isTrueBoolean(args.load),
+                    executeOnGroupMemberDraft: isTrueBoolean(args.group),
                 },
             );
         } catch (ex) {
@@ -168,6 +170,7 @@ export class SlashCommandHandler {
                     executeOnUser: args.user === undefined ? undefined : isTrueBoolean(args.user),
                     executeOnAi: args.bot === undefined ? undefined : isTrueBoolean(args.bot),
                     executeOnChatChange: args.load === undefined ? undefined : isTrueBoolean(args.load),
+                    executeOnGroupMemberDraft: args.group === undefined ? undefined : isTrueBoolean(args.group),
                 },
             );
         } catch (ex) {
