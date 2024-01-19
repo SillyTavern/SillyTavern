@@ -321,10 +321,12 @@ async function playAudioData(audioJob) {
     }
     if (audioBlob instanceof Blob) {
         const srcUrl = await getBase64Async(audioBlob);
-        // VRM inject
+
+        // VRM lip sync
         if (extension_settings.vrm.enabled && typeof window['vrmLipSync'] === 'function') {
             await window['vrmLipSync'](audioBlob, audioJob["char"]);
         }
+
         audioElement.src = srcUrl;
     } else if (typeof audioBlob === 'string') {
         audioElement.src = audioBlob;
@@ -480,11 +482,6 @@ async function tts(text, voiceId, char) {
         // RVC injection
         if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
             response = await window['rvcVoiceConversion'](response, char, text);
-
-        /*/ VRM injection
-        if (extension_settings.vrm.enabled && typeof window['vrmLipSync'] === 'function') {
-            await window['vrmLipSync'](response, char);
-        }*/
 
         await addAudioJob(response, char);
     }
