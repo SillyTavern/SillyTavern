@@ -83,7 +83,7 @@ function highlightDefaultPreset() {
  * Select context template if not already selected.
  * @param {string} preset Preset name.
  */
-function selectContextPreset(preset) {
+export function selectContextPreset(preset) {
     // If context template is not already selected, select it
     if (preset !== power_user.context.preset) {
         $('#context_presets').val(preset).trigger('change');

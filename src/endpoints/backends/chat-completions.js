@@ -730,6 +730,10 @@ router.post('/generate', jsonParser, function (request, response) {
             bodyParams['top_a'] = request.body.top_a;
         }
 
+        if (request.body.repetition_penalty !== undefined) {
+            bodyParams['repetition_penalty'] = request.body.repetition_penalty;
+        }
+
         if (request.body.use_fallback) {
             bodyParams['route'] = 'fallback';
         }

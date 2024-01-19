@@ -1,4 +1,5 @@
 import { registerSlashCommand } from '../../../slash-commands.js';
+import { isTrueBoolean } from '../../../utils.js';
 // eslint-disable-next-line no-unused-vars
 import { QuickReplyApi } from '../api/QuickReplyApi.js';
 
@@ -35,7 +36,8 @@ export class SlashCommandHandler {
         user     - bool   - auto execute on user message, e.g., user=true
         bot      - bool   - auto execute on AI message, e.g., bot=true
         load     - bool   - auto execute on chat load, e.g., load=true
-        title    - bool   - title / tooltip to be shown on button, e.g., title="My Fancy Button"
+        group    - bool   - auto execute on group member selection, e.g., group=true
+        title    - string - title / tooltip to be shown on button, e.g., title="My Fancy Button"
         `.trim();
         const qrUpdateArgs = `
         newlabel - string - new text for the button, e.g. newlabel=MyRenamedButton
@@ -90,14 +92,14 @@ export class SlashCommandHandler {
 
     toggleGlobalSet(name, args = {}) {
         try {
-            this.api.toggleGlobalSet(name, JSON.parse(args.visible ?? 'true') === true);
+            this.api.toggleGlobalSet(name, isTrueBoolean(args.visible ?? 'true'));
         } catch (ex) {
             toastr.error(ex.message);
         }
     }
     addGlobalSet(name, args = {}) {
         try {
-            this.api.addGlobalSet(name, JSON.parse(args.visible ?? 'true') === true);
+            this.api.addGlobalSet(name, isTrueBoolean(args.visible ?? 'true'));
         } catch (ex) {
             toastr.error(ex.message);
         }
@@ -113,14 +115,14 @@ export class SlashCommandHandler {
 
     toggleChatSet(name, args = {}) {
         try {
-            this.api.toggleChatSet(name, JSON.parse(args.visible ?? 'true') === true);
+            this.api.toggleChatSet(name, isTrueBoolean(args.visible ?? 'true'));
         } catch (ex) {
             toastr.error(ex.message);
         }
     }
     addChatSet(name, args = {}) {
         try {
-            this.api.addChatSet(name, JSON.parse(args.visible ?? 'true') === true);
+            this.api.addChatSet(name, isTrueBoolean(args.visible ?? 'true'));
         } catch (ex) {
             toastr.error(ex.message);
         }
@@ -142,11 +144,12 @@ export class SlashCommandHandler {
                 {
                     message: message ?? '',
                     title: args.title,
-                    isHidden: JSON.parse(args.hidden ?? 'false') === true,
-                    executeOnStartup: JSON.parse(args.startup ?? 'false') === true,
-                    executeOnUser: JSON.parse(args.user ?? 'false') === true,
-                    executeOnAi: JSON.parse(args.bot ?? 'false') === true,
-                    executeOnChatChange: JSON.parse(args.load ?? 'false') === true,
+                    isHidden: isTrueBoolean(args.hidden),
+                    executeOnStartup: isTrueBoolean(args.startup),
+                    executeOnUser: isTrueBoolean(args.user),
+                    executeOnAi: isTrueBoolean(args.bot),
+                    executeOnChatChange: isTrueBoolean(args.load),
+                    executeOnGroupMemberDraft: isTrueBoolean(args.group),
                 },
             );
         } catch (ex) {
@@ -162,11 +165,12 @@ export class SlashCommandHandler {
                     newLabel: args.newlabel,
                     message: (message ?? '').trim().length > 0 ? message : undefined,
                     title: args.title,
-                    isHidden: args.hidden,
-                    executeOnStartup: args.startup,
-                    executeOnUser: args.user,
-                    executeOnAi: args.bot,
-                    executeOnChatChange: args.load,
+                    isHidden: args.hidden === undefined ? undefined : isTrueBoolean(args.hidden),
+                    executeOnStartup: args.startup === undefined ? undefined : isTrueBoolean(args.startup),
+                    executeOnUser: args.user === undefined ? undefined : isTrueBoolean(args.user),
+                    executeOnAi: args.bot === undefined ? undefined : isTrueBoolean(args.bot),
+                    executeOnChatChange: args.load === undefined ? undefined : isTrueBoolean(args.load),
+                    executeOnGroupMemberDraft: args.group === undefined ? undefined : isTrueBoolean(args.group),
                 },
             );
         } catch (ex) {
@@ -188,7 +192,7 @@ export class SlashCommandHandler {
                 args.set,
                 args.label,
                 name,
-                JSON.parse(args.chain ?? 'false') === true,
+                isTrueBoolean(args.chain),
             );
         }  catch (ex) {
             toastr.error(ex.message);
@@ -215,9 +219,9 @@ export class SlashCommandHandler {
             this.api.createSet(
                 args.name ?? name ?? '',
                 {
-                    disableSend: JSON.parse(args.nosend ?? 'false') === true,
-                    placeBeforeInput: JSON.parse(args.before ?? 'false') === true,
-                    injectInput: JSON.parse(args.inject ?? 'false') === true,
+                    disableSend: isTrueBoolean(args.nosend),
+                    placeBeforeInput: isTrueBoolean(args.before),
+                    injectInput: isTrueBoolean(args.inject),
                 },
             );
         } catch (ex) {
@@ -229,9 +233,9 @@ export class SlashCommandHandler {
             this.api.updateSet(
                 args.name ?? name ?? '',
                 {
-                    disableSend: args.nosend !== undefined ? JSON.parse(args.nosend ?? 'false') === true : undefined,
-                    placeBeforeInput: args.before !== undefined ? JSON.parse(args.before ?? 'false') === true : undefined,
-                    injectInput: args.inject !== undefined ? JSON.parse(args.inject ?? 'false') === true : undefined,
+                    disableSend: args.nosend !== undefined ? isTrueBoolean(args.nosend) : undefined,
+                    placeBeforeInput: args.before !== undefined ? isTrueBoolean(args.before) : undefined,
+                    injectInput: args.inject !== undefined ? isTrueBoolean(args.inject) : undefined,
                 },
             );
         } catch (ex) {

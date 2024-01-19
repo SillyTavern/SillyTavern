@@ -58,6 +58,10 @@ const defaultSettings = {
 };
 
 
+/** @type {Boolean}*/
+let isReady = false;
+/** @type {Function[]}*/
+let executeQueue = [];
 /** @type {QuickReplySettings}*/
 let settings;
 /** @type {SettingsUi} */
@@ -99,6 +103,7 @@ const loadSets = async () => {
                     qr.executeOnUser = slot.autoExecute_userMessage ?? false;
                     qr.executeOnAi = slot.autoExecute_botMessage ?? false;
                     qr.executeOnChatChange = slot.autoExecute_chatLoad ?? false;
+                    qr.executeOnGroupMemberDraft = slot.autoExecute_groupMemberDraft ?? false;
                     qr.contextList = (slot.contextMenu ?? []).map(it=>({
                         set: it.preset,
                         isChained: it.chain,
@@ -144,6 +149,16 @@ const loadSettings = async () => {
     }
 };
 
+const executeIfReadyElseQueue = async (functionToCall, args) => {
+    if (isReady) {
+        log('calling', { functionToCall, args });
+        await functionToCall(...args);
+    } else {
+        log('queueing', { functionToCall, args });
+        executeQueue.push(async()=>await functionToCall(...args));
+    }
+};
+
 
 
 
@@ -183,9 +198,23 @@ const init = async () => {
     slash.init();
     autoExec = new AutoExecuteHandler(settings);
 
-    await autoExec.handleStartup();
+    eventSource.on(event_types.APP_READY, async()=>await finalizeInit());
 };
-eventSource.on(event_types.APP_READY, init);
+const finalizeInit = async () => {
+    log('executing startup');
+    await autoExec.handleStartup();
+    log('/executing startup');
+
+    log(`executing queue (${executeQueue.length} items)`);
+    while (executeQueue.length > 0) {
+        const func = executeQueue.shift();
+        await func();
+    }
+    log('/executing queue');
+    isReady = true;
+    log('READY');
+};
+await init();
 
 const onChatChanged = async (chatIdx) => {
     log('CHAT_CHANGED', chatIdx);
@@ -199,14 +228,19 @@ const onChatChanged = async (chatIdx) => {
 
     await autoExec.handleChatChanged();
 };
-eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+eventSource.on(event_types.CHAT_CHANGED, (...args)=>executeIfReadyElseQueue(onChatChanged, args));
 
 const onUserMessage = async () => {
     await autoExec.handleUser();
 };
-eventSource.on(event_types.USER_MESSAGE_RENDERED, onUserMessage);
+eventSource.on(event_types.USER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onUserMessage, args));
 
 const onAiMessage = async () => {
     await autoExec.handleAi();
 };
-eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, onAiMessage);
+eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onAiMessage, args));
+
+const onGroupMemberDraft = async () => {
+    await autoExec.handleGroupMemberDraft();
+};
+eventSource.on(event_types.GROUP_MEMBER_DRAFTED, (...args) => executeIfReadyElseQueue(onGroupMemberDraft, args));
