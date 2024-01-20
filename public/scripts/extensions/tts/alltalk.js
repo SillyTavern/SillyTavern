@@ -312,6 +312,7 @@ class AllTalkTtsProvider {
         } catch (error) {
             console.error('Error checking TTS service readiness:', error);
             this.ready = false; // Ensure ready flag is set to false in case of error
+            throw error; // Rethrow the error for further handling
         }
     }
 
