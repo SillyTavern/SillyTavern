@@ -5866,6 +5866,7 @@ export async function getPastCharacterChats(characterId = null) {
  */
 export async function displayPastChats() {
     $('#select_chat_div').empty();
+    $('#select_chat_search').val('').off('input');
 
     const group = selected_group ? groups.find(x => x.id === selected_group) : null;
     const data = await (selected_group ? getGroupPastChats(selected_group) : getPastCharacterChats());
@@ -5895,25 +5896,25 @@ export async function displayPastChats() {
             return chatContent && Object.values(chatContent).some(message => message?.mes?.toLowerCase()?.includes(searchQuery.toLowerCase()));
         });
 
-        console.log(filteredData);
-        for (const key in filteredData) {
+        console.debug(filteredData);
+        for (const value of filteredData.values()) {
             let strlen = 300;
-            let mes = filteredData[key]['mes'];
+            let mes = value['mes'];
 
             if (mes !== undefined) {
                 if (mes.length > strlen) {
                     mes = '...' + mes.substring(mes.length - strlen);
                 }
-                const chat_items = data[key]['chat_items'];
-                const file_size = data[key]['file_size'];
-                const fileName = data[key]['file_name'];
-                const timestamp = timestampToMoment(data[key]['last_mes']).format('lll');
+                const fileSize = value['file_size'];
+                const fileName = value['file_name'];
+                const chatItems = rawChats[fileName].length;
+                const timestamp = timestampToMoment(value['last_mes']).format('lll');
                 const template = $('#past_chat_template .select_chat_block_wrapper').clone();
                 template.find('.select_chat_block').attr('file_name', fileName);
                 template.find('.avatar img').attr('src', avatarImg);
                 template.find('.select_chat_block_filename').text(fileName);
-                template.find('.chat_file_size').text(`(${file_size},`);
-                template.find('.chat_messages_num').text(`${chat_items}💬)`);
+                template.find('.chat_file_size').text(`(${fileSize},`);
+                template.find('.chat_messages_num').text(`${chatItems}💬)`);
                 template.find('.select_chat_block_mes').text(mes);
                 template.find('.PastChat_cross').attr('file_name', fileName);
                 template.find('.chat_messages_date').text(timestamp);
@@ -8380,7 +8381,7 @@ jQuery(async function () {
 
         if (id == 'option_select_chat') {
             if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
-                displayPastChats();
+                await displayPastChats();
                 //this is just to avoid the shadow for past chat view when using /delchat
                 //however, the dialog popup still gets one..
                 if (!fromSlashCommand) {
