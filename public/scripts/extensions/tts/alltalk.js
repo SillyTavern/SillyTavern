@@ -1,4 +1,4 @@
-import { doExtrasFetch, getApiUrl, modules } from '../../extensions.js';
+import { doExtrasFetch } from '../../extensions.js';
 import { saveTtsProviderSettings } from './index.js';
 
 export { AllTalkTtsProvider };
@@ -19,7 +19,7 @@ class AllTalkTtsProvider {
             narrator_enabled: this.settings.narrator_enabled || 'false',
             at_narrator_text_not_inside: this.settings.at_narrator_text_not_inside || 'narrator',
             narrator_voice_gen: this.settings.narrator_voice_gen || 'female_01.wav',
-            finetuned_model: this.settings.finetuned_model || 'false'
+            finetuned_model: this.settings.finetuned_model || 'false',
         };
         // Separate property for dynamically updated settings from the server
         this.dynamicSettings = {
@@ -56,7 +56,7 @@ class AllTalkTtsProvider {
     };
 
     get settingsHtml() {
-        let html = `<div class="at-settings-separator">AllTalk Settings</div>`;
+        let html = '<div class="at-settings-separator">AllTalk Settings</div>';
 
         html += `<div class="at-settings-row">
 
@@ -207,7 +207,7 @@ class AllTalkTtsProvider {
             this.applySettingsToHTML();
             updateStatus('Ready');
         } catch (error) {
-            console.error("Error loading settings:", error);
+            console.error('Error loading settings:', error);
             updateStatus('Offline');
         }
     }
@@ -332,7 +332,7 @@ class AllTalkTtsProvider {
                 name: voiceName,
                 voice_id: voiceName,
                 preview_url: null, // Preview URL will be dynamically generated
-                lang: 'en' // Default language
+                lang: 'en', // Default language
             };
         });
         this.voices = voices; // Assign to the class property
@@ -357,7 +357,7 @@ class AllTalkTtsProvider {
             this.settings.deepspeed_available = currentSettings.deepspeed_available;
             this.settings.deepSpeedEnabled = currentSettings.deepspeed_status;
             this.settings.lowVramEnabled = currentSettings.low_vram_status;
-            this.settings.finetuned_model = currentSettings.finetuned_model
+            this.settings.finetuned_model = currentSettings.finetuned_model;
             // Update HTML elements
             this.updateModelDropdown();
             this.updateCheckboxes();
@@ -451,24 +451,24 @@ class AllTalkTtsProvider {
 
         // Define the event handler function
         const onModelSelectChange = async (event) => {
-            console.log("Model select change event triggered"); // Debugging statement
+            console.log('Model select change event triggered'); // Debugging statement
             const selectedModel = event.target.value;
-            console.log(`Selected model: ${selectedModel}`); // Debugging statement 
+            console.log(`Selected model: ${selectedModel}`); // Debugging statement
             // Set status to Processing
             updateStatus('Processing');
             try {
                 const response = await fetch(`${this.settings.provider_endpoint}/api/reload?tts_method=${encodeURIComponent(selectedModel)}`, {
-                    method: 'POST'
+                    method: 'POST',
                 });
                 if (!response.ok) {
                     throw new Error(`HTTP Error: ${response.status}`);
                 }
                 const data = await response.json();
-                console.log("POST response data:", data); // Debugging statement 
+                console.log('POST response data:', data); // Debugging statement
                 // Set status to Ready if successful
                 updateStatus('Ready');
             } catch (error) {
-                console.error("POST request error:", error); // Debugging statement
+                console.error('POST request error:', error); // Debugging statement
                 // Set status to Error in case of failure
                 updateStatus('Error');
             }
@@ -501,17 +501,17 @@ class AllTalkTtsProvider {
                 updateStatus('Processing');
                 try {
                     const response = await fetch(`${this.settings.provider_endpoint}/api/deepspeed?new_deepspeed_value=${deepSpeedValue}`, {
-                        method: 'POST'
+                        method: 'POST',
                     });
                     if (!response.ok) {
                         throw new Error(`HTTP Error: ${response.status}`);
                     }
                     const data = await response.json();
-                    console.log("POST response data:", data); // Debugging statement
+                    console.log('POST response data:', data); // Debugging statement
                     // Set status to Ready if successful
                     updateStatus('Ready');
                 } catch (error) {
-                    console.error("POST request error:", error); // Debugging statement
+                    console.error('POST request error:', error); // Debugging statement
                     // Set status to Error in case of failure
                     updateStatus('Error');
                 }
@@ -527,17 +527,17 @@ class AllTalkTtsProvider {
                 updateStatus('Processing');
                 try {
                     const response = await fetch(`${this.settings.provider_endpoint}/api/lowvramsetting?new_low_vram_value=${lowVramValue}`, {
-                        method: 'POST'
+                        method: 'POST',
                     });
                     if (!response.ok) {
                         throw new Error(`HTTP Error: ${response.status}`);
                     }
                     const data = await response.json();
-                    console.log("POST response data:", data); // Debugging statement
+                    console.log('POST response data:', data); // Debugging statement
                     // Set status to Ready if successful
                     updateStatus('Ready');
                 } catch (error) {
-                    console.error("POST request error:", error); // Debugging statement
+                    console.error('POST request error:', error); // Debugging statement
                     // Set status to Error in case of failure
                     updateStatus('Error');
                 }
@@ -677,18 +677,18 @@ class AllTalkTtsProvider {
         try {
             // Prepare data for POST request
             const postData = new URLSearchParams();
-            postData.append("voice", `${voiceName}.wav`);
+            postData.append('voice', `${voiceName}.wav`);
             // Making the POST request
             const response = await fetch(`${this.settings.provider_endpoint}/api/previewvoice/`, {
-                method: "POST",
+                method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: postData,
             });
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[previewTtsVoice] Error Response Text:`, errorText);
+                console.error('[previewTtsVoice] Error Response Text:', errorText);
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
             // Assuming the server returns a URL to the .wav file
@@ -696,14 +696,14 @@ class AllTalkTtsProvider {
             if (data.output_file_url) {
                 // Use an audio element to play the .wav file
                 const audioElement = new Audio(data.output_file_url);
-                audioElement.play().catch(e => console.error("Error playing audio:", e));
+                audioElement.play().catch(e => console.error('Error playing audio:', e));
             } else {
-                console.warn("[previewTtsVoice] No output file URL received in the response");
-                throw new Error("No output file URL received in the response");
+                console.warn('[previewTtsVoice] No output file URL received in the response');
+                throw new Error('No output file URL received in the response');
             }
 
         } catch (error) {
-            console.error("[previewTtsVoice] Exception caught during preview generation:", error);
+            console.error('[previewTtsVoice] Exception caught during preview generation:', error);
             throw error;
         }
     }
@@ -738,10 +738,10 @@ class AllTalkTtsProvider {
             if (this.settings.at_generation_method === 'streaming_enabled') {
                 // Construct the streaming URL
                 const streamingUrl = `${this.settings.provider_endpoint}/api/tts-generate-streaming?text=${encodeURIComponent(inputText)}&voice=${encodeURIComponent(voiceId)}.wav&language=${encodeURIComponent(this.settings.language)}&output_file=stream_output.wav`;
-                console.log("Streaming URL:", streamingUrl);
-        
+                console.log('Streaming URL:', streamingUrl);
+
                 // Return the streaming URL directly
-                return streamingUrl; 
+                return streamingUrl;
             } else {
                 // For standard method
                 const outputUrl = await this.fetchTtsGeneration(inputText, voiceId);
@@ -752,7 +752,7 @@ class AllTalkTtsProvider {
                 return audioResponse; // Return the fetch response directly
             }
         } catch (error) {
-            console.error("Error in generateTts:", error);
+            console.error('Error in generateTts:', error);
             throw error;
         }
     }
@@ -766,16 +766,16 @@ class AllTalkTtsProvider {
         // Prepare the request payload
         const requestBody = new URLSearchParams({
             'text_input': inputText,
-            'text_filtering': "standard",
-            'character_voice_gen': voiceId + ".wav",
+            'text_filtering': 'standard',
+            'character_voice_gen': voiceId + '.wav',
             'narrator_enabled': this.settings.narrator_enabled,
-            'narrator_voice_gen': this.settings.narrator_voice_gen + ".wav",
+            'narrator_voice_gen': this.settings.narrator_voice_gen + '.wav',
             'text_not_inside': this.settings.at_narrator_text_not_inside,
             'language': this.settings.language,
-            'output_file_name': "st_output",
-            'output_file_timestamp': "true",
-            'autoplay': "false",
-            'autoplay_volume': "0.8"
+            'output_file_name': 'st_output',
+            'output_file_timestamp': 'true',
+            'autoplay': 'false',
+            'autoplay_volume': '0.8',
         }).toString();
 
         try {
@@ -787,13 +787,13 @@ class AllTalkTtsProvider {
                         'Content-Type': 'application/x-www-form-urlencoded',
                         'Cache-Control': 'no-cache',
                     },
-                    body: requestBody
-                }
+                    body: requestBody,
+                },
             );
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[fetchTtsGeneration] Error Response Text:`, errorText);
+                console.error('[fetchTtsGeneration] Error Response Text:', errorText);
                 // toastr.error(response.statusText, 'TTS Generation Failed');
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
@@ -801,7 +801,7 @@ class AllTalkTtsProvider {
             const outputUrl = data.output_file_url;
             return outputUrl; // Return only the output_file_url
         } catch (error) {
-            console.error("[fetchTtsGeneration] Exception caught:", error);
+            console.error('[fetchTtsGeneration] Exception caught:', error);
             throw error; // Rethrow the error for further handling
         }
     }

@@ -676,7 +676,7 @@ function onSkipCodeblocksClick() {
 function onPassAsterisksClick() {
     extension_settings.tts.pass_asterisks = !!$('#tts_pass_asterisks').prop('checked');
     saveSettingsDebounced();
-    console.log("setting pass asterisks", extension_settings.tts.pass_asterisks)
+    console.log('setting pass asterisks', extension_settings.tts.pass_asterisks);
 }
 
 //##############//

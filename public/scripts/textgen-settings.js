@@ -547,7 +547,7 @@ jQuery(function () {
                 inputElement.val(value).trigger('input');
                 if (power_user.enableZenSliders) {
                     let masterElementID = inputElement.prop('id');
-                    console.log(masterElementID)
+                    console.log(masterElementID);
                     let zenSlider = $(`#${masterElementID}_zenslider`).slider();
                     zenSlider.slider('option', 'value', value);
                     zenSlider.slider('option', 'slide')
