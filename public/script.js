@@ -3314,7 +3314,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         const prompt = [
             storyString,
             mesExmString,
-            mesSend.join(''),
+            mesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join(''),
+            '\n',
             generatedPromptCache,
             allAnchors,
             quiet_prompt,
