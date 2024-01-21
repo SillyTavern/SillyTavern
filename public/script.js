@@ -3275,8 +3275,9 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         }
 
         // Add character's name
-        // Force name append on continue (if not continuing on user message)
-        if (!isInstruct && force_name2) {
+        // Force name append on continue (if not continuing on user message or first message)
+        const isContinuingOnFirstMessage = chat.length === 1 && isContinue;
+        if (!isInstruct && force_name2 && !isContinuingOnFirstMessage) {
             if (!lastMesString.endsWith('\n')) {
                 lastMesString += '\n';
             }
