@@ -323,7 +323,7 @@ async function playAudioData(audioJob) {
         const srcUrl = await getBase64Async(audioBlob);
 
         // VRM lip sync
-        if (extension_settings.vrm.enabled && typeof window['vrmLipSync'] === 'function') {
+        if (extension_settings.vrm?.enabled && typeof window['vrmLipSync'] === 'function') {
             await window['vrmLipSync'](audioBlob, audioJob["char"]);
         }
 
