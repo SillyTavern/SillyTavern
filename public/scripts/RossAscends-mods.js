@@ -60,6 +60,16 @@ const observer = new MutationObserver(function (mutations) {
             RA_checkOnlineStatus();
         } else if (mutation.target.parentNode === SelectedCharacterTab) {
             setTimeout(RA_CountCharTokens, 200);
+        } else if (mutation.target.classList.contains('mes_text')) {
+            if (mutation.target instanceof HTMLElement) {
+                for (const element of mutation.target.getElementsByTagName('math')) {
+                    element.childNodes.forEach(function (child) {
+                        if (child.nodeType === Node.TEXT_NODE) {
+                            child.textContent = '';
+                        }
+                    });
+                }
+            }
         }
     });
 });
@@ -1006,7 +1016,7 @@ export function initRossMods() {
                         <input type="checkbox" id="regenerateWithCtrlEnter">
                         Don't ask again
                     </label>`;
-                    callPopup(popupText, 'confirm').then(result =>{
+                    callPopup(popupText, 'confirm').then(result => {
                         if (!result) {
                             return;
                         }
