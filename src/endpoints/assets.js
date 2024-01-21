@@ -108,7 +108,7 @@ router.post('/get', jsonParser, async (_, response) => {
 
                 // VRM assets
                 if (folder == 'vrm') {
-                    output[folder] = {'model':[], 'animation':[]};
+                    output[folder] = { 'model': [], 'animation': [] };
                     // Extract models
                     const vrm_model_folder = path.normalize(path.join(folderPath, 'vrm', 'model'));
                     let files = getFiles(vrm_model_folder);

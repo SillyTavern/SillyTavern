@@ -298,7 +298,7 @@ function debugTtsPlayback() {
         },
     ));
 }
-window.debugTtsPlayback = debugTtsPlayback;
+window['debugTtsPlayback'] = debugTtsPlayback;
 
 //##################//
 //   Audio Control  //
@@ -308,13 +308,25 @@ let audioElement = new Audio();
 audioElement.id = 'tts_audio';
 audioElement.autoplay = true;
 
+/**
+ * @type AudioJob[] Audio job queue
+ * @typedef {{audioBlob: Blob | string, char: string}} AudioJob Audio job object
+ */
 let audioJobQueue = [];
+/**
+ * @type AudioJob Current audio job
+ */
 let currentAudioJob;
 let audioPaused = false;
 let audioQueueProcessorReady = true;
 
+/**
+ * Play audio data from audio job object.
+ * @param {AudioJob} audioJob Audio job object
+ * @returns {Promise<void>} Promise that resolves when audio playback is started
+ */
 async function playAudioData(audioJob) {
-    const audioBlob = audioJob["audioBlob"];
+    const { audioBlob, char } = audioJob;
     // Since current audio job can be cancelled, don't playback if it is null
     if (currentAudioJob == null) {
         console.log('Cancelled TTS playback because currentAudioJob was null');
@@ -324,7 +336,7 @@ async function playAudioData(audioJob) {
 
         // VRM lip sync
         if (extension_settings.vrm?.enabled && typeof window['vrmLipSync'] === 'function') {
-            await window['vrmLipSync'](audioBlob, audioJob["char"]);
+            await window['vrmLipSync'](audioBlob, char);
         }
 
         audioElement.src = srcUrl;
@@ -343,7 +355,7 @@ async function playAudioData(audioJob) {
 window['tts_preview'] = function (id) {
     const audio = document.getElementById(id);
 
-    if (audio && !$(audio).data('disabled')) {
+    if (audio instanceof HTMLAudioElement && !$(audio).data('disabled')) {
         audio.play();
     }
     else {
@@ -429,13 +441,13 @@ function completeCurrentAudioJob() {
  */
 async function addAudioJob(response, char) {
     if (typeof response === 'string') {
-        audioJobQueue.push({"audioBlob":response, "char":char});
+        audioJobQueue.push({ audioBlob: response, char: char });
     } else {
         const audioData = await response.blob();
         if (!audioData.type.startsWith('audio/')) {
             throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioData.type}`;
         }
-        audioJobQueue.push({"audioBlob":audioData, "char":char});
+        audioJobQueue.push({ audioBlob: audioData, char: char });
     }
     console.debug('Pushed audio job to queue.');
 }
@@ -576,7 +588,7 @@ async function playFullConversation() {
     const chat = context.chat;
     ttsJobQueue = chat;
 }
-window.playFullConversation = playFullConversation;
+window['playFullConversation'] = playFullConversation;
 
 //#############################//
 //  Extension UI and Settings  //
