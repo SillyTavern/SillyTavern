@@ -145,9 +145,6 @@ class WorldInfoBuffer {
             depth = MAX_SCAN_DEPTH;
         }
 
-        // Legacy compatibility with interpreting scan as pairs.
-        depth = depth * 2 || 1;
-
         let result = this.#depthBuffer.slice(0, depth).join('\n');
 
         if (this.#recurseBuffer.length > 0) {
@@ -1900,7 +1897,7 @@ async function checkWorldInfo(chat, maxContext) {
     const buffer = new WorldInfoBuffer(chat);
 
     // Combine the chat
-    let minActivationMsgIndex = world_info_depth * 2 || 1; // tracks chat index to satisfy `world_info_min_activations`
+    let minActivationMsgIndex = world_info_depth; // tracks chat index to satisfy `world_info_min_activations`
 
     // Add the depth or AN if enabled
     // Put this code here since otherwise, the chat reference is modified
