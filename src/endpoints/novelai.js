@@ -172,6 +172,7 @@ router.post('/generate', jsonParser, async function (req, res) {
             'return_full_text': req.body.return_full_text,
             'prefix': req.body.prefix,
             'order': req.body.order,
+            'num_logprobs': req.body.num_logprobs,
         },
     };
 
@@ -215,7 +216,7 @@ router.post('/generate', jsonParser, async function (req, res) {
             }
 
             const data = await response.json();
-            console.log(data);
+            console.log("NovelAI Output", data?.output);
             return res.send(data);
         }
     } catch (error) {

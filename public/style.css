@@ -4,6 +4,7 @@
 @import url(css/loader.css);
 @import url(css/character-group-overlay.css);
 @import url(css/file-form.css);
+@import url(css/logprobs.css);
 
 :root {
     --doc-height: 100%;
@@ -1342,7 +1343,7 @@ input[type="file"] {
     line-height: 1.2;
 }
 
-#ANClose {
+.floating_panel_close {
     height: 15px;
     aspect-ratio: 1 / 1;
     font-size: 20px;
@@ -1350,7 +1351,7 @@ input[type="file"] {
     transition: all 250ms;
 }
 
-#ANClose:hover {
+.floating_panel_close:hover {
     cursor: pointer;
     opacity: 1;
 }

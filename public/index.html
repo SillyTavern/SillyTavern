@@ -3440,6 +3440,10 @@
                                     <input id="console_log_prompts" type="checkbox" />
                                     <span data-i18n="Log prompts to console">Log prompts to console</span>
                                 </label>
+                                <label data-newbie-hidden class="checkbox_label" for="request_token_probabilities" title="Requests logprobs from the API for the Token Probabilities feature.">
+                                    <input id="request_token_probabilities" type="checkbox" />
+                                    <span data-i18n="Request token probabilities">Request token probabilities</span>
+                                </label>
                                 <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
                                     <div class="inline-drawer-toggle inline-drawer-header">
                                         <b><span data-i18n="Auto-swipe">Auto-swipe</span></b>
@@ -4809,7 +4813,7 @@
         <div id="floatingPrompt" class="drawer-content flexGap5">
             <div class="panelControlBar flex-container">
                 <div id="floatingPromptheader" class="fa-solid fa-grip drag-grabber"></div>
-                <div id="ANClose" class="fa-solid fa-circle-xmark"></div>
+                <div id="ANClose" class="fa-solid fa-circle-xmark floating_panel_close"></div>
             </div>
             <div name="floatingPromptHolder" class="scrollY">
                 <div class="inline-drawer">
@@ -4922,7 +4926,7 @@
         <div id="cfgConfig" class="drawer-content flexGap5">
             <div class="panelControlBar flex-container">
                 <div id="cfgConfigHeader" class="fa-solid fa-grip drag-grabber"></div>
-                <div id="CFGClose" class="fa-solid fa-circle-xmark"></div>
+                <div id="CFGClose" class="fa-solid fa-circle-xmark floating_panel_close"></div>
             </div>
             <div name="cfgConfigHolder" class="scrollY">
                 <div id="chat_cfg_container">
@@ -5082,6 +5086,26 @@
                 </div>
             </div>
         </div>
+        <div id="logprobsViewer" class="drawer-content inline-drawer flexGap5">
+            <div class="logprobs_panel_header">
+                <div class="logprobs_panel_header">
+                    <b data-i18n="Token Probabilities">Token Probabilities</b>
+                </div>
+                <div class="logprobs_panel_controls">
+                    <div id="logprovsViewerBlockToggle" class="logprobs_panel_control_button inline-drawer-toggle inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    <div id="logprobsViewerClose" class="logprobs_panel_control_button inline-drawer-icon fa-solid fa-circle-xmark "></div>
+                </div>
+            </div>
+            <div class="logprobs_panel_content inline-drawer-content flex-container flexFlowColumn">
+                <small>
+                    <b data-i18n="Select a token to see alternatives considered by the AI.">Select a token to see alternatives considered by the AI.</b>
+                </small>
+                <hr>
+                <div id="logprobs_generation_output"></div>
+                <div id="logprobs_selected_top_logprobs" class="logprobs_candidate_list"></div>
+            </div>
+        </div>
+
     </div>
     <div id="sheld">
         <div id="sheldheader" class="fa-solid fa-grip drag-grabber"></div>
@@ -5139,6 +5163,10 @@
             <a data-newbie-hidden id="option_toggle_CFG">
                 <i class="fa-lg fa-solid fa-scale-balanced"></i>
                 <span data-i18n="CFG Scale">CFG Scale</span>
+            </a>
+            <a data-newbie-hidden id="option_toggle_logprobs">
+                <i class="fa-lg fa-solid fa-pie-chart"></i>
+                <span data-i18n="Token Probabilities">Token Probabilities</span>
             </a>
             <a id="option_back_to_main">
                 <i class="fa-lg fa-solid fa-left-long"></i>
