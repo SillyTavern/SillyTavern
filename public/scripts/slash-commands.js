@@ -1553,7 +1553,7 @@ async function executeSlashCommands(text, unescape = false) {
                     value = substituteParams(value.trim());
 
                     if (/{{pipe}}/i.test(value)) {
-                        value = value.replace(/{{pipe}}/i, pipeResult || '');
+                        value = value.replace(/{{pipe}}/i, pipeResult ?? '');
                     }
 
                     result.args[key] = value;
