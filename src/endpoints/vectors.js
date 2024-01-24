@@ -145,12 +145,11 @@ async function queryCollection(collectionId, source, sourceSettings, searchText,
 
 /**
  * Extracts settings for the vectorization sources from the HTTP request headers.
+ * @param {string} source - Which source to extract settings for.
  * @param {object} request - The HTTP request object.
  * @returns {object} - An object that can be used as `sourceSettings` in functions that take that parameter.
  */
-function extractSourceSettings(request) {
-    const source = String(request.body.source) || 'transformers';
-
+function extractSourceSettings(source, request) {
     // Extras API settings to connect to the Extras embeddings provider
     let extrasUrl = '';
     let extrasKey = '';
@@ -158,11 +157,11 @@ function extractSourceSettings(request) {
         extrasUrl = String(request.headers['x-extras-url']);
         extrasKey = String(request.headers['x-extras-key']);
     }
+
     const sourceSettings = {
         extrasUrl: extrasUrl,
         extrasKey: extrasKey
     };
-
     return sourceSettings;
 }
 
@@ -178,7 +177,7 @@ router.post('/query', jsonParser, async (req, res) => {
         const searchText = String(req.body.searchText);
         const topK = Number(req.body.topK) || 10;
         const source = String(req.body.source) || 'transformers';
-        const sourceSettings = extractSourceSettings(req);
+        const sourceSettings = extractSourceSettings(source, req);
 
         const results = await queryCollection(collectionId, source, sourceSettings, searchText, topK);
         return res.json(results);
@@ -197,7 +196,7 @@ router.post('/insert', jsonParser, async (req, res) => {
         const collectionId = String(req.body.collectionId);
         const items = req.body.items.map(x => ({ hash: x.hash, text: x.text, index: x.index }));
         const source = String(req.body.source) || 'transformers';
-        const sourceSettings = extractSourceSettings(req);
+        const sourceSettings = extractSourceSettings(source, req);
 
         await insertVectorItems(collectionId, source, sourceSettings, items);
         return res.sendStatus(200);
