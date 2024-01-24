@@ -81,7 +81,7 @@ class WorldInfoBuffer {
     // End typedef area
 
     /**
-     * @type {string[]} Key is the depth, value is an array of messages
+     * @type {string[]} Array of messages sorted by ascending depth
      */
     #depthBuffer = [];
 
@@ -91,7 +91,7 @@ class WorldInfoBuffer {
     #recurseBuffer = [];
 
     /**
-     * @type {number} The skew of the buffer. Used in "min activations"
+     * @type {number} The skew of the global scan depth. Used in "min activations"
      */
     #skew = 0;
 
@@ -154,7 +154,6 @@ class WorldInfoBuffer {
         return this.#transformString(result, entry);
     }
 
-
     /**
      * Matches the given string against the buffer.
      * @param {string} haystack The string to search in
@@ -178,7 +177,6 @@ class WorldInfoBuffer {
                     return true;
                 }
             }
-
         } else {
             return haystack.includes(transformedString);
         }
