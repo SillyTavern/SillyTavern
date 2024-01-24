@@ -2,28 +2,34 @@ const fetch = require('node-fetch').default;
 
 /**
  * Gets the vector for the given text from SillyTavern-extras
- * @param {string[]} texts - The array of texts to get the vector for
+ * @param {string[]} texts - The array of texts to get the vectors for
  * @param {string} apiUrl - The Extras API URL
  * @param {string} - The Extras API key, or empty string if API key not enabled
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 async function getExtrasBatchVector(texts, apiUrl, apiKey) {
-    return getExtrasVector(texts, apiUrl, apiKey);  // The implementation supports batches transparently.
+    return getExtrasVectorImpl(texts, apiUrl, apiKey);
 }
-
-module.exports = {
-    getExtrasVector,
-    getExtrasBatchVector,
-};
 
 /**
  * Gets the vector for the given text from SillyTavern-extras
- * @param {string|string[]} text - The text or texts to get the vector for
+ * @param {string} text - The text to get the vector for
+ * @param {string} apiUrl - The Extras API URL
+ * @param {string} - The Extras API key, or empty string if API key not enabled
+ * @returns {Promise<number[]>} - The vector for the text
+ */
+async function getExtrasVector(text, apiUrl, apiKey) {
+    return getExtrasVectorImpl(text, apiUrl, apiKey);
+}
+
+/**
+ * Gets the vector for the given text from SillyTavern-extras
+ * @param {string|string[]} text - The text or texts to get the vector(s) for
  * @param {string} apiUrl - The Extras API URL
  * @param {string} - The Extras API key, or empty string if API key not enabled
  * @returns {Promise<number[]>|Promise<number[][]>} - The vector for a single text, or the array of vectors for multiple texts
  */
-async function getExtrasVector(text, apiUrl, apiKey) {
+async function getExtrasVectorImpl(text, apiUrl, apiKey) {
     let url;
     try {
         url = new URL(apiUrl);
@@ -65,3 +71,8 @@ async function getExtrasVector(text, apiUrl, apiKey) {
 
     return vector;
 }
+
+module.exports = {
+    getExtrasVector,
+    getExtrasBatchVector,
+};
