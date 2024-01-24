@@ -149,7 +149,7 @@ async function queryCollection(collectionId, source, sourceSettings, searchText,
  * @returns {object} - An object that can be used as `sourceSettings` in functions that take that parameter.
  */
 function extractSourceSettings(request) {
-    const source = String(req.body.source) || 'transformers';
+    const source = String(request.body.source) || 'transformers';
 
     // Extras API settings to connect to the Extras embeddings provider
     let extrasUrl = '';
