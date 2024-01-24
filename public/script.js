@@ -301,17 +301,48 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
         return;
     }
 
+    if (!power_user.forbid_external_images) {
+        return;
+    }
+
     switch (node.tagName) {
+        case 'AUDIO':
+        case 'VIDEO':
+        case 'SOURCE':
+        case 'TRACK':
+        case 'EMBED':
+        case 'OBJECT':
         case 'IMG': {
             const isExternalUrl = (url) => (url.indexOf('://') > 0 || url.indexOf('//') === 0) && !url.startsWith(window.location.origin);
             const src = node.getAttribute('src');
+            const data = node.getAttribute('data');
+            const srcset = node.getAttribute('srcset');
 
-            if (power_user.forbid_external_images && isExternalUrl(src)) {
-                console.warn('External image blocked', src);
+            if (srcset) {
+                const srcsetUrls = srcset.split(',');
+
+                for (const srcsetUrl of srcsetUrls) {
+                    const [url] = srcsetUrl.trim().split(' ');
+
+                    if (isExternalUrl(url)) {
+                        console.warn('External media blocked', url);
+                        node.remove();
+                        break;
+                    }
+                }
+            }
+
+            if (src && isExternalUrl(src)) {
+                console.warn('External media blocked', src);
+                node.remove();
+            }
+
+            if (data && isExternalUrl(data)) {
+                console.warn('External media blocked', data);
                 node.remove();
             }
         }
-        break;
+            break;
     }
 });
 
@@ -1586,7 +1617,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     } else if (!isSystem) {
         // Save double quotes in tags as a special character to prevent them from being encoded
         if (!power_user.encode_tags) {
-            mes = mes.replace(/<([^>]+)>/g, function(_, contents){
+            mes = mes.replace(/<([^>]+)>/g, function (_, contents) {
                 return '<' + contents.replace(/"/g, '\ufffe') + '>';
             });
         }
