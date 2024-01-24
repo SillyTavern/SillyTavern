@@ -237,6 +237,7 @@ let power_user = {
     compact_input_area: true,
     auto_connect: false,
     auto_load_chat: false,
+    forbid_external_images: false,
 };
 
 let themes = [];
@@ -1529,6 +1530,7 @@ function loadPowerUserSettings(settings, data) {
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
     $('#auto-connect-checkbox').prop('checked', power_user.auto_connect);
     $('#auto-load-chat-checkbox').prop('checked', power_user.auto_load_chat);
+    $('#forbid_external_images').prop('checked', power_user.forbid_external_images);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -3232,6 +3234,12 @@ $(document).ready(() => {
     $('#auto-load-chat-checkbox').on('input', function () {
         power_user.auto_load_chat = !!$(this).prop('checked');
         saveSettingsDebounced();
+    });
+
+    $('#forbid_external_images').on('input', function () {
+        power_user.forbid_external_images = !!$(this).prop('checked');
+        saveSettingsDebounced();
+        reloadCurrentChat();
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {

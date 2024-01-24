@@ -831,7 +831,7 @@ router.post('/generate', jsonParser, function (request, response) {
                 let json = await fetchResponse.json();
                 response.send(json);
                 console.log(json);
-                console.log(json?.choices[0]?.message);
+                console.log(json?.choices?.[0]?.message);
             } else if (fetchResponse.status === 429 && retries > 0) {
                 console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {

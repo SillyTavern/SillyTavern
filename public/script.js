@@ -296,6 +296,25 @@ DOMPurify.addHook('uponSanitizeAttribute', (_, data, config) => {
     }
 });
 
+DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
+    if (!config['MESSAGE_SANITIZE']) {
+        return;
+    }
+
+    switch (node.tagName) {
+        case 'IMG': {
+            const isExternalUrl = (url) => (url.indexOf('://') > 0 || url.indexOf('//') === 0) && !url.startsWith(window.location.origin);
+            const src = node.getAttribute('src');
+
+            if (power_user.forbid_external_images && isExternalUrl(src)) {
+                console.warn('External image blocked', src);
+                node.remove();
+            }
+        }
+        break;
+    }
+});
+
 // API OBJECT FOR EXTERNAL WIRING
 window['SillyTavern'] = {};
 
@@ -1447,6 +1466,7 @@ async function printMessages() {
 }
 
 async function clearChat() {
+    closeMessageEditor();
     count_view_mes = 0;
     extension_prompts = {};
     if (is_delete_mode) {

@@ -388,6 +388,9 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 selectiveLogic: entry.selectiveLogic ?? 0,
                 group: entry.group ?? '',
                 prevent_recursion: entry.preventRecursion ?? false,
+                scan_depth: entry.scanDepth ?? null,
+                match_whole_words: entry.matchWholeWords ?? null,
+                case_sensitive: entry.caseSensitive ?? null,
             },
         };
 

@@ -1,6 +1,7 @@
 const TASK = 'feature-extraction';
 
 /**
+ * Gets the vectorized text in form of an array of numbers.
  * @param {string} text - The text to vectorize
  * @returns {Promise<number[]>} - The vectorized text in form of an array of numbers
  */
@@ -12,6 +13,20 @@ async function getTransformersVector(text) {
     return vector;
 }
 
+/**
+ * Gets the vectorized texts in form of an array of arrays of numbers.
+ * @param {string[]} texts - The texts to vectorize
+ * @returns {Promise<number[][]>} - The vectorized texts in form of an array of arrays of numbers
+ */
+async function getTransformersBatchVector(texts) {
+    const result = [];
+    for (const text of texts) {
+        result.push(await getTransformersVector(text));
+    }
+    return result;
+}
+
 module.exports = {
     getTransformersVector,
+    getTransformersBatchVector,
 };

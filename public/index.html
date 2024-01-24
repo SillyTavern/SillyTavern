@@ -3448,6 +3448,10 @@
                                         <span class="fa-solid fa-circle-question note-link-span"></span>
                                     </a>
                                 </label>
+                                <label class="checkbox_label" for="forbid_external_images" title="Disalow embedded images from other domains in chat messages.">
+                                    <input id="forbid_external_images" type="checkbox" />
+                                    <span data-i18n="Forbid External Images">Forbid External Images</span>
+                                </label>
                                 <label data-newbie-hidden class="checkbox_label" for="allow_name2_display">
                                     <input id="allow_name2_display" type="checkbox" />
                                     <span data-i18n="Allow {{char}}: in bot messages">Show {{char}}: in responses</span>
@@ -4388,7 +4392,7 @@
                                 </div>
                                 <div class="world_entry_form_control">
                                     <small class="textAlignCenter">Logic</small>
-                                    <select name="entryLogicType" class="widthFitContent margin0">
+                                    <select name="entryLogicType" class="text_pole widthFitContent margin0">
                                         <option value="0">AND ANY</option>
                                         <option value="3">AND ALL</option>
                                         <option value="1">NOT ALL</option>
@@ -4405,6 +4409,28 @@
                                     <div class="flex-container flexFlowRow alignitemscenter">
                                         <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="2000"></textarea>
                                     </div>
+                                </div>
+                            </div>
+                            <div name="perEntryOverridesBlock" class="flex-container wide100p alignitemscenter">
+                                <div class="world_entry_form_control flex1">
+                                    <small class="textAlignCenter">Scan Depth</small>
+                                    <input class="text_pole" name="scanDepth" type="number" placeholder="Use global setting" max="100">
+                                </div>
+                                <div class="world_entry_form_control flex1">
+                                    <small class="textAlignCenter">Case-Sensitive</small>
+                                    <select name="caseSensitive" class="text_pole widthNatural margin0">
+                                        <option value="null">Use global setting</option>
+                                        <option value="true">Yes</option>
+                                        <option value="false">No</option>
+                                    </select>
+                                </div>
+                                <div class="world_entry_form_control flex1">
+                                    <small class="textAlignCenter">Match Whole Words</small>
+                                    <select name="matchWholeWords" class="text_pole widthNatural margin0">
+                                        <option value="null">Use global setting</option>
+                                        <option value="true">Yes</option>
+                                        <option value="false">No</option>
+                                    </select>
                                 </div>
                             </div>
                             <div name="contentAndCharFilterBlock" class="world_entry_thin_controls flex2">
