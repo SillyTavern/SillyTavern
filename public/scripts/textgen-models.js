@@ -4,6 +4,7 @@ import { textgenerationwebui_settings as textgen_settings, textgen_types } from 
 
 let mancerModels = [];
 let togetherModels = [];
+let infermaticAIModels = [];
 
 export async function loadOllamaModels(data) {
     if (!Array.isArray(data)) {
@@ -52,6 +53,32 @@ export async function loadTogetherAIModels(data) {
     }
 }
 
+export async function loadInfermaticAIModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid Infermatic AI models data', data);
+        return;
+    }
+
+    infermaticAIModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.infermaticai_model)) {
+        textgen_settings.infermaticai_model = data[0]?.id || '';
+    }
+
+    $('#model_infermaticai_select').empty();
+    for (const model of data) {
+        if (model.display_type === 'image') {
+            continue;
+        }
+
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.infermaticai_model;
+        $('#model_infermaticai_select').append(option);
+    }
+}
+
 export async function loadMancerModels(data) {
     if (!Array.isArray(data)) {
         console.error('Invalid Mancer models data', data);
@@ -91,6 +118,14 @@ function onTogetherModelSelect() {
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 
+function onInfermaticAIModelSelect() {
+    const modelName = String($('#model_infermaticai_select').val());
+    textgen_settings.infermaticai_model = modelName;
+    $('#api_button_openai').trigger('click');
+    const model = infermaticAIModels.find(x => x.id === modelName);
+    setGenerationParamsFromPreset({ max_length: model.context_length });
+}
+
 function onOllamaModelSelect() {
     const modelId = String($('#ollama_model').val());
     textgen_settings.ollama_model = modelId;
@@ -126,6 +161,20 @@ function getTogetherModelTemplate(option) {
         <div class="flex-container flexFlowColumn">
             <div><strong>${DOMPurify.sanitize(model.name)}</strong> | <span>${model.context_length || '???'} tokens</span></div>
             <div><small>${DOMPurify.sanitize(model.description)}</small></div>
+        </div>
+    `));
+}
+
+function getInfermaticAIModelTemplate(option) {
+    const model = infermaticAIModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
         </div>
     `));
 }
@@ -174,6 +223,7 @@ async function downloadOllamaModel() {
 jQuery(function () {
     $('#mancer_model').on('change', onMancerModelSelect);
     $('#model_togetherai_select').on('change', onTogetherModelSelect);
+    $('#model_infermaticai_select').on('change', onInfermaticAIModelSelect);
     $('#ollama_model').on('change', onOllamaModelSelect);
     $('#ollama_download_model').on('click', downloadOllamaModel);
 
@@ -197,6 +247,13 @@ jQuery(function () {
             searchInputPlaceholder: 'Search models...',
             searchInputCssClass: 'text_pole',
             width: '100%',
+        });
+        $('#model_infermaticai_select').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getInfermaticAIModelTemplate,
         });
     }
 });

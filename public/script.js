@@ -20,7 +20,7 @@ import {
     validateTextGenUrl,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI } = textgen_types;
 
 import {
     world_info,
@@ -185,7 +185,7 @@ import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescriptio
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadOllamaModels, loadTogetherAIModels } from './scripts/textgen-models.js';
+import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
@@ -988,6 +988,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === OLLAMA) {
             loadOllamaModels(data?.data);
             online_status = textgen_settings.ollama_model || 'Connected';
+        } else if (textgen_settings.type === INFERMATICAI) {
+            loadInfermaticAIModels(data?.data);
+            online_status = textgen_settings.infermaticai_model;
         } else {
             online_status = data?.result;
         }
@@ -7399,6 +7402,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.CUSTOM,
     },
+    'infermaticai': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        type: textgen_types.INFERMATICAI,
+    },
 };
 
 /**
@@ -8244,6 +8252,11 @@ jQuery(async function () {
         const togetherKey = String($('#api_key_togetherai').val()).trim();
         if (togetherKey.length) {
             await writeSecret(SECRET_KEYS.TOGETHERAI, togetherKey);
+        }
+
+        const infermaticAIKey = String($('#api_key_infermaticai').val()).trim();
+        if (infermaticAIKey.length) {
+            await writeSecret(SECRET_KEYS.INFERMATICAI, infermaticAIKey);
         }
 
         validateTextGenUrl();

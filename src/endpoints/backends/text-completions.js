@@ -4,7 +4,7 @@ const _ = require('lodash');
 const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
-const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS } = require('../../constants');
+const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS, INFERMATICAI_KEYS } = require('../../constants');
 const { forwardFetchResponse, trimV1 } = require('../../util');
 const { setAdditionalHeaders } = require('../../additional-headers');
 
@@ -116,6 +116,9 @@ router.post('/status', jsonParser, async function (request, response) {
                     break;
                 case TEXTGEN_TYPES.TOGETHERAI:
                     url += '/api/models?&info';
+                    break;
+                case TEXTGEN_TYPES.INFERMATICAI:
+                    url += '/models';
                     break;
                 case TEXTGEN_TYPES.OLLAMA:
                     url += '/api/tags';
@@ -242,6 +245,9 @@ router.post('/generate', jsonParser, async function (request, response) {
                     break;
                 case TEXTGEN_TYPES.OLLAMA:
                     url += '/api/generate';
+                    break;
+                case TEXTGEN_TYPES.INFERMATICAI:
+                    url += '/completions';
                     break;
             }
         }
