@@ -149,7 +149,7 @@ async function queryCollection(collectionId, source, sourceSettings, searchText,
  * @param {object} request - The HTTP request object.
  * @returns {object} - An object that can be used as `sourceSettings` in functions that take that parameter.
  */
-function extractSourceSettings(source, request) {
+function getSourceSettings(source, request) {
     // Extras API settings to connect to the Extras embeddings provider
     let extrasUrl = '';
     let extrasKey = '';
@@ -177,7 +177,7 @@ router.post('/query', jsonParser, async (req, res) => {
         const searchText = String(req.body.searchText);
         const topK = Number(req.body.topK) || 10;
         const source = String(req.body.source) || 'transformers';
-        const sourceSettings = extractSourceSettings(source, req);
+        const sourceSettings = getSourceSettings(source, req);
 
         const results = await queryCollection(collectionId, source, sourceSettings, searchText, topK);
         return res.json(results);
@@ -196,7 +196,7 @@ router.post('/insert', jsonParser, async (req, res) => {
         const collectionId = String(req.body.collectionId);
         const items = req.body.items.map(x => ({ hash: x.hash, text: x.text, index: x.index }));
         const source = String(req.body.source) || 'transformers';
-        const sourceSettings = extractSourceSettings(source, req);
+        const sourceSettings = getSourceSettings(source, req);
 
         await insertVectorItems(collectionId, source, sourceSettings, items);
         return res.sendStatus(200);
