@@ -664,7 +664,7 @@ function randValuesCallback(from, to, args) {
     if (args.round == 'floor') {
         return Math.floor(value);
     }
-    return value;
+    return String(value);
 }
 
 export function registerVariableCommands() {
