@@ -32,6 +32,7 @@ async function getExtrasVector(text, apiUrl, apiKey) {
     catch (error) {
         console.log('Failed to set up Extras API call:', error);
         console.log('Extras API URL given was:', apiUrl);
+        throw error;
     }
 
     const headers = {

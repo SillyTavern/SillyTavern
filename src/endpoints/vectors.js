@@ -143,6 +143,27 @@ async function queryCollection(collectionId, source, sourceSettings, searchText,
     return { metadata, hashes };
 }
 
+/**
+ * Extracts settings for the vectorization sources from the HTTP request headers.
+ * @param {object} request - The HTTP request object.
+ * @returns {object} - An object that can be used as `sourceSettings` in functions that take that parameter.
+ */
+function extractSourceSettings(request) {
+    // Extras API settings to connect to the Extras embeddings provider
+    let extrasUrl = '';
+    let extrasKey = '';
+    if (source === 'extras') {
+        extrasUrl = String(request.headers['x-extras-url']);
+        extrasKey = String(request.headers['x-extras-key']);
+    }
+    const sourceSettings = {
+        extrasUrl: extrasUrl,
+        extrasKey: extrasKey
+    };
+
+    return sourceSettings;
+}
+
 const router = express.Router();
 
 router.post('/query', jsonParser, async (req, res) => {
@@ -155,18 +176,7 @@ router.post('/query', jsonParser, async (req, res) => {
         const searchText = String(req.body.searchText);
         const topK = Number(req.body.topK) || 10;
         const source = String(req.body.source) || 'transformers';
-
-        // API settings for Extras embeddings provider
-        let extrasUrl = '';
-        let extrasKey = '';
-        if (source === 'extras') {
-            extrasUrl = String(req.headers['x-extras-url']);
-            extrasKey = String(req.headers['x-extras-key']);
-        }
-        const sourceSettings = {
-            extrasUrl: extrasUrl,
-            extrasKey: extrasKey
-        };
+        const sourceSettings = extractSourceSettings(req);
 
         const results = await queryCollection(collectionId, source, sourceSettings, searchText, topK);
         return res.json(results);
@@ -185,18 +195,7 @@ router.post('/insert', jsonParser, async (req, res) => {
         const collectionId = String(req.body.collectionId);
         const items = req.body.items.map(x => ({ hash: x.hash, text: x.text, index: x.index }));
         const source = String(req.body.source) || 'transformers';
-
-        // API settings for Extras embeddings provider
-        let extrasUrl = '';
-        let extrasKey = '';
-        if (source === 'extras') {
-            extrasUrl = String(req.headers['x-extras-url']);
-            extrasKey = String(req.headers['x-extras-key']);
-        }
-        const sourceSettings = {
-            extrasUrl: extrasUrl,
-            extrasKey: extrasKey
-        };
+        const sourceSettings = extractSourceSettings(req);
 
         await insertVectorItems(collectionId, source, sourceSettings, items);
         return res.sendStatus(200);
