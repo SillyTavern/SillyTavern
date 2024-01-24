@@ -1540,7 +1540,7 @@ function getWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, 'extensions.case_sensitive', data.entries[uid].caseSensitive);
         saveWorldInfo(name, data);
     });
-    caseSensitiveSelect.val(entry.caseSensitive === null ? 'null' : entry.caseSensitive ? 'true' : 'false').trigger('input');
+    caseSensitiveSelect.val((entry.caseSensitive === null || entry.caseSensitive === undefined) ? 'null' : entry.caseSensitive ? 'true' : 'false').trigger('input');
 
     // match whole words select
     const matchWholeWordsSelect = template.find('select[name="matchWholeWords"]');
@@ -1553,7 +1553,7 @@ function getWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, 'extensions.match_whole_words', data.entries[uid].matchWholeWords);
         saveWorldInfo(name, data);
     });
-    matchWholeWordsSelect.val(entry.matchWholeWords === null ? 'null' : entry.matchWholeWords ? 'true' : 'false').trigger('input');
+    matchWholeWordsSelect.val((entry.matchWholeWords === null || entry.matchWholeWords === undefined) ? 'null' : entry.matchWholeWords ? 'true' : 'false').trigger('input');
 
     template.find('.inline-drawer-content').css('display', 'none'); //entries start collapsed
 
