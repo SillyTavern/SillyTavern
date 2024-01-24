@@ -1563,7 +1563,16 @@ export function sendTextareaMessage() {
     Generate(generateType);
 }
 
-function messageFormatting(mes, ch_name, isSystem, isUser) {
+/**
+ * Formats the message text into an HTML string using Markdown and other formatting.
+ * @param {string} mes Message text
+ * @param {string} ch_name Character name
+ * @param {boolean} isSystem If the message was sent by the system
+ * @param {boolean} isUser If the message was sent by the user
+ * @param {number} messageId Message index in chat array
+ * @returns {string} HTML string
+ */
+function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     if (!mes) {
         return '';
     }
@@ -1595,10 +1604,14 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
             regexPlacement = regex_placement.AI_OUTPUT;
         }
 
+        const usableMessages = chat.map((x, index) => ({ message: x, index: index })).filter(x => !x.message.is_system);
+        const depth = messageId >= 0 && usableMessages.some(x => x.index === messageId) ? (usableMessages.length - messageId - 1) : undefined;
+
         // Always override the character name
         mes = getRegexedString(mes, regexPlacement, {
             characterOverride: ch_name,
             isMarkdown: true,
+            depth: depth,
         });
     }
 
@@ -1775,7 +1788,7 @@ function getMessageFromTemplate({
 export function updateMessageBlock(messageId, message) {
     const messageElement = $(`#chat [mesid="${messageId}"]`);
     const text = message?.extra?.display_text ?? message.mes;
-    messageElement.find('.mes_text').html(messageFormatting(text, message.name, message.is_system, message.is_user));
+    messageElement.find('.mes_text').html(messageFormatting(text, message.name, message.is_system, message.is_user, messageId));
     addCopyToCodeBlocks(messageElement);
     appendMediaToMessage(message, messageElement);
 }
@@ -1891,8 +1904,9 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         mes.name,
         isSystem,
         mes.is_user,
+        chat.indexOf(mes),
     );
-    const bias = messageFormatting(mes.extra?.bias ?? '');
+    const bias = messageFormatting(mes.extra?.bias ?? '', '', false, false, -1);
     let bookmarkLink = mes?.extra?.bookmark_link ?? '';
     // Verify bookmarked chat still exists
     // Cohee: Commented out for now. I'm worried of performance issues.
@@ -2545,6 +2559,7 @@ class StreamingProcessor {
                 chat[messageId].name,
                 chat[messageId].is_system,
                 chat[messageId].is_user,
+                messageId,
             );
             const mesText = $(`#chat .mes[mesid="${messageId}"] .mes_text`);
             mesText.html(formattedText);
@@ -3015,7 +3030,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     coreChat = await Promise.all(coreChat.map(async (chatItem, index) => {
         let message = chatItem.mes;
         let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
-        let options = { isPrompt: true };
+        let options = { isPrompt: true, depth: (coreChat.length - index - 1) };
 
         let regexedMessage = getRegexedString(message, regexType, options);
         regexedMessage = await appendFileContent(chatItem, regexedMessage);
@@ -5803,6 +5818,7 @@ function messageEditAuto(div) {
         this_edit_mes_chname,
         mes.is_system,
         mes.is_user,
+        this_edit_mes_id,
     ));
     saveChatDebounced();
 }
@@ -5822,10 +5838,11 @@ async function messageEditDone(div) {
             this_edit_mes_chname,
             mes.is_system,
             mes.is_user,
+            this_edit_mes_id,
         ),
     );
     mesBlock.find('.mes_bias').empty();
-    mesBlock.find('.mes_bias').append(messageFormatting(bias));
+    mesBlock.find('.mes_bias').append(messageFormatting(bias, '', false, false, -1));
     appendMediaToMessage(mes, div.closest('.mes'));
     addCopyToCodeBlocks(div.closest('.mes'));
     await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
@@ -8920,6 +8937,7 @@ jQuery(async function () {
                 this_edit_mes_chname,
                 chat[this_edit_mes_id].is_system,
                 chat[this_edit_mes_id].is_user,
+                this_edit_mes_id,
             ));
         appendMediaToMessage(chat[this_edit_mes_id], $(this).closest('.mes'));
         addCopyToCodeBlocks($(this).closest('.mes'));

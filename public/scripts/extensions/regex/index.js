@@ -81,6 +81,7 @@ async function loadRegexScripts() {
         scriptHtml.find('.disable_regex').prop('checked', script.disabled ?? false)
             .on('input', function () {
                 script.disabled = !!$(this).prop('checked');
+                reloadCurrentChat();
                 saveSettingsDebounced();
             });
         scriptHtml.find('.regex-toggle-on').on('click', function () {
@@ -126,21 +127,13 @@ async function onRegexEditorOpenClick(existingId) {
             editorHtml.find('.find_regex').val(existingScript.findRegex || '');
             editorHtml.find('.regex_replace_string').val(existingScript.replaceString || '');
             editorHtml.find('.regex_trim_strings').val(existingScript.trimStrings?.join('\n') || []);
-            editorHtml
-                .find('input[name="disabled"]')
-                .prop('checked', existingScript.disabled ?? false);
-            editorHtml
-                .find('input[name="only_format_display"]')
-                .prop('checked', existingScript.markdownOnly ?? false);
-            editorHtml
-                .find('input[name="only_format_prompt"]')
-                .prop('checked', existingScript.promptOnly ?? false);
-            editorHtml
-                .find('input[name="run_on_edit"]')
-                .prop('checked', existingScript.runOnEdit ?? false);
-            editorHtml
-                .find('input[name="substitute_regex"]')
-                .prop('checked', existingScript.substituteRegex ?? false);
+            editorHtml.find('input[name="disabled"]').prop('checked', existingScript.disabled ?? false);
+            editorHtml.find('input[name="only_format_display"]').prop('checked', existingScript.markdownOnly ?? false);
+            editorHtml.find('input[name="only_format_prompt"]').prop('checked', existingScript.promptOnly ?? false);
+            editorHtml.find('input[name="run_on_edit"]').prop('checked', existingScript.runOnEdit ?? false);
+            editorHtml.find('input[name="substitute_regex"]').prop('checked', existingScript.substituteRegex ?? false);
+            editorHtml.find('input[name="min_depth"]').val(existingScript.minDepth ?? '');
+            editorHtml.find('input[name="max_depth"]').val(existingScript.maxDepth ?? '');
 
             existingScript.placement.forEach((element) => {
                 editorHtml
@@ -200,26 +193,13 @@ async function onRegexEditorOpenClick(existingId) {
                     .map(function () { return parseInt($(this).val()); })
                     .get()
                     .filter((e) => !isNaN(e)) || [],
-            disabled:
-                editorHtml
-                    .find('input[name="disabled"]')
-                    .prop('checked'),
-            markdownOnly:
-                editorHtml
-                    .find('input[name="only_format_display"]')
-                    .prop('checked'),
-            promptOnly:
-                editorHtml
-                    .find('input[name="only_format_prompt"]')
-                    .prop('checked'),
-            runOnEdit:
-                editorHtml
-                    .find('input[name="run_on_edit"]')
-                    .prop('checked'),
-            substituteRegex:
-                editorHtml
-                    .find('input[name="substitute_regex"]')
-                    .prop('checked'),
+            disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
+            markdownOnly: editorHtml.find('input[name="only_format_display"]').prop('checked'),
+            promptOnly: editorHtml.find('input[name="only_format_prompt"]').prop('checked'),
+            runOnEdit: editorHtml.find('input[name="run_on_edit"]').prop('checked'),
+            substituteRegex: editorHtml.find('input[name="substitute_regex"]').prop('checked'),
+            minDepth: parseInt(String(editorHtml.find('input[name="min_depth"]').val())),
+            maxDepth: parseInt(String(editorHtml.find('input[name="max_depth"]').val())),
         };
 
         saveRegexScript(newRegexScript, existingScriptIndex);

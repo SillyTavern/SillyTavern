@@ -48,9 +48,9 @@ function regexFromString(input) {
  * @param {regex_placement} placement The placement of the string
  * @param {RegexParams} params The parameters to use for the regex script
  * @returns {string} The regexed string
- * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean }} RegexParams The parameters to use for the regex script
+ * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean, depth?: number }} RegexParams The parameters to use for the regex script
  */
-function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt } = {}) {
+function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, depth } = {}) {
     // WTF have you passed me?
     if (typeof rawString !== 'string') {
         console.warn('getRegexedString: rawString is not a string. Returning empty string.');
@@ -71,6 +71,19 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
             // Script applies to all cases when neither "only"s are true, but there's no need to do it when `isMarkdown`, the as source (chat history) should already be changed beforehand
             (!script.markdownOnly && !script.promptOnly && !isMarkdown)
         ) {
+            // Check if the depth is within the min/max depth
+            if (typeof depth === 'number' && depth >= 0) {
+                if (!isNaN(script.minDepth) && script.minDepth >= 0 && depth < script.minDepth) {
+                    console.debug(`getRegexedString: Skipping script ${script.scriptName} because depth ${depth} is less than minDepth ${script.minDepth}`);
+                    return;
+                }
+
+                if (!isNaN(script.maxDepth) && script.maxDepth >= 0 && depth > script.maxDepth) {
+                    console.debug(`getRegexedString: Skipping script ${script.scriptName} because depth ${depth} is greater than maxDepth ${script.maxDepth}`);
+                    return;
+                }
+            }
+
             if (script.placement.includes(placement)) {
                 finalString = runRegexScript(script, finalString, { characterOverride });
             }
