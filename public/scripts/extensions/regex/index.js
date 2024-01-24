@@ -141,9 +141,6 @@ async function onRegexEditorOpenClick(existingId) {
             editorHtml
                 .find('input[name="substitute_regex"]')
                 .prop('checked', existingScript.substituteRegex ?? false);
-            editorHtml
-                .find('select[name="replace_strategy_select"]')
-                .val(existingScript.replaceStrategy ?? 0);
 
             existingScript.placement.forEach((element) => {
                 editorHtml
@@ -181,7 +178,6 @@ async function onRegexEditorOpenClick(existingId) {
             replaceString: editorHtml.find('.regex_replace_string').val(),
             trimStrings: String(editorHtml.find('.regex_trim_strings').val()).split('\n').filter((e) => e.length !== 0) || [],
             substituteRegex: editorHtml.find('input[name="substitute_regex"]').prop('checked'),
-            replaceStrategy: Number(editorHtml.find('select[name="replace_strategy_select"]').find(':selected').val()) ?? 0,
         };
         const rawTestString = String(editorHtml.find('#regex_test_input').val());
         const result = runRegexScript(testScript, rawTestString);
@@ -224,11 +220,6 @@ async function onRegexEditorOpenClick(existingId) {
                 editorHtml
                     .find('input[name="substitute_regex"]')
                     .prop('checked'),
-            replaceStrategy:
-                parseInt(editorHtml
-                    .find('select[name="replace_strategy_select"]')
-                    .find(':selected')
-                    .val()) ?? 0,
         };
 
         saveRegexScript(newRegexScript, existingScriptIndex);
