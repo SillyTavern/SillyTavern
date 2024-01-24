@@ -7,16 +7,19 @@ const { jsonParser } = require('../express-common');
 /**
  * Gets the vector for the given text from the given source.
  * @param {string} source - The source of the vector
+ * @param {Object} sourceSettings - Settings for the source, if it needs any
  * @param {string} text - The text to get the vector for
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getVector(source, text) {
+async function getVector(source, sourceSettings, text) {
     switch (source) {
         case 'mistral':
         case 'openai':
             return require('../openai-vectors').getOpenAIVector(text, source);
         case 'transformers':
             return require('../embedding').getTransformersVector(text);
+        case 'extras':
+            return require('../extras-vectors').getExtrasVector(text, sourceSettings.extrasUrl, sourceSettings.extrasKey);
         case 'palm':
             return require('../makersuite-vectors').getMakerSuiteVector(text);
     }
@@ -45,9 +48,10 @@ async function getIndex(collectionId, source, create = true) {
  * Inserts items into the vector collection
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
+ * @param {Object} sourceSettings - Settings for the source, if it needs any
  * @param {{ hash: number; text: string; index: number; }[]} items - The items to insert
  */
-async function insertVectorItems(collectionId, source, items) {
+async function insertVectorItems(collectionId, source, sourceSettings, items) {
     const store = await getIndex(collectionId, source);
 
     await store.beginUpdate();
@@ -56,7 +60,7 @@ async function insertVectorItems(collectionId, source, items) {
         const text = item.text;
         const hash = item.hash;
         const index = item.index;
-        const vector = await getVector(source, text);
+        const vector = await getVector(source, sourceSettings, text);
         await store.upsertItem({ vector: vector, metadata: { hash, text, index } });
     }
 
@@ -101,13 +105,14 @@ async function deleteVectorItems(collectionId, source, hashes) {
  * Gets the hashes of the items in the vector collection that match the search text
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
+ * @param {Object} sourceSettings - Settings for the source, if it needs any
  * @param {string} searchText - The text to search for
  * @param {number} topK - The number of results to return
  * @returns {Promise<{hashes: number[], metadata: object[]}>} - The metadata of the items that match the search text
  */
-async function queryCollection(collectionId, source, searchText, topK) {
+async function queryCollection(collectionId, source, sourceSettings, searchText, topK) {
     const store = await getIndex(collectionId, source);
-    const vector = await getVector(source, searchText);
+    const vector = await getVector(source, sourceSettings, searchText);
 
     const result = await store.queryItems(vector, topK);
     const metadata = result.map(x => x.item.metadata);
@@ -128,7 +133,19 @@ router.post('/query', jsonParser, async (req, res) => {
         const topK = Number(req.body.topK) || 10;
         const source = String(req.body.source) || 'transformers';
 
-        const results = await queryCollection(collectionId, source, searchText, topK);
+        // API settings for Extras embeddings provider
+        let extrasUrl = '';
+        let extrasKey = '';
+        if (source === 'extras') {
+            extrasUrl = String(req.headers['x-extras-url']);
+            extrasKey = String(req.headers['x-extras-key']);
+        }
+        const sourceSettings = {
+            extrasUrl: extrasUrl,
+            extrasKey: extrasKey
+        };
+
+        const results = await queryCollection(collectionId, source, sourceSettings, searchText, topK);
         return res.json(results);
     } catch (error) {
         console.error(error);
@@ -146,7 +163,19 @@ router.post('/insert', jsonParser, async (req, res) => {
         const items = req.body.items.map(x => ({ hash: x.hash, text: x.text, index: x.index }));
         const source = String(req.body.source) || 'transformers';
 
-        await insertVectorItems(collectionId, source, items);
+        // API settings for Extras embeddings provider
+        let extrasUrl = '';
+        let extrasKey = '';
+        if (source === 'extras') {
+            extrasUrl = String(req.headers['x-extras-url']);
+            extrasKey = String(req.headers['x-extras-key']);
+        }
+        const sourceSettings = {
+            extrasUrl: extrasUrl,
+            extrasKey: extrasKey
+        };
+
+        await insertVectorItems(collectionId, source, sourceSettings, items);
         return res.sendStatus(200);
     } catch (error) {
         console.error(error);

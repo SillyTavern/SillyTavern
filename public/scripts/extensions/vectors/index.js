@@ -424,9 +424,18 @@ async function insertVectorItems(collectionId, items) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
+    const headers = getRequestHeaders();
+    if (settings.source === 'extras') {
+        console.log(`Vector source is extras, populating API URL: ${extension_settings.apiUrl}`);
+        Object.assign(headers, {
+            'X-Extras-Url': extension_settings.apiUrl,
+            'X-Extras-Key': extension_settings.apiKey
+        });
+    }
+
     const response = await fetch('/api/vector/insert', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: headers,
         body: JSON.stringify({
             collectionId: collectionId,
             items: items,
@@ -468,9 +477,18 @@ async function deleteVectorItems(collectionId, hashes) {
  * @returns {Promise<{ hashes: number[], metadata: object[]}>} - Hashes of the results
  */
 async function queryCollection(collectionId, searchText, topK) {
+    const headers = getRequestHeaders();
+    if (settings.source === 'extras') {
+        console.log(`Vector source is extras, populating API URL: ${extension_settings.apiUrl}`);
+        Object.assign(headers, {
+            'X-Extras-Url': extension_settings.apiUrl,
+            'X-Extras-Key': extension_settings.apiKey
+        });
+    }
+
     const response = await fetch('/api/vector/query', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: headers,
         body: JSON.stringify({
             collectionId: collectionId,
             searchText: searchText,
