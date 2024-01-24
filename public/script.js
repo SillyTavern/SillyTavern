@@ -1584,6 +1584,13 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
             .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
             .replace(/\n/g, '<br/>');
     } else if (!isSystem) {
+        // Save double quotes in tags as a special character to prevent them from being encoded
+        if (!power_user.encode_tags) {
+            mes = mes.replace(/<([^>]+)>/g, function(_, contents){
+                return '<' + contents.replace(/"/g, '\ufffe') + '>';
+            });
+        }
+
         mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(".+?")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
             if (p1) {
                 return '<q>"' + p1.replace(/"/g, '') + '"</q>';
@@ -1593,6 +1600,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
                 return match;
             }
         });
+
+        // Restore double quotes in tags
+        if (!power_user.encode_tags) {
+            mes = mes.replace(/\ufffe/g, '"');
+        }
 
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
