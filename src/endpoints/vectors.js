@@ -30,16 +30,19 @@ async function getVector(source, sourceSettings, text) {
 /**
  * Gets the vector for the given text batch from the given source.
  * @param {string} source - The source of the vector
+ * @param {Object} sourceSettings - Settings for the source, if it needs any
  * @param {string[]} texts - The array of texts to get the vector for
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getBatchVector(source, texts) {
+async function getBatchVector(source, sourceSettings, texts) {
     switch (source) {
         case 'mistral':
         case 'openai':
             return require('../openai-vectors').getOpenAIBatchVector(texts, source);
         case 'transformers':
             return require('../embedding').getTransformersBatchVector(texts);
+        case 'extras':
+            return require('../extras-vectors').getExtrasBatchVector(texts, sourceSettings.extrasUrl, sourceSettings.extrasKey);
         case 'palm':
             return require('../makersuite-vectors').getMakerSuiteBatchVector(texts);
     }
@@ -76,7 +79,7 @@ async function insertVectorItems(collectionId, source, sourceSettings, items) {
 
     await store.beginUpdate();
 
-    const vectors = await getBatchVector(source, items.map(x => x.text));
+    const vectors = await getBatchVector(source, sourceSettings, items.map(x => x.text));
 
     for (let i = 0; i < items.length; i++) {
         const item = items[i];

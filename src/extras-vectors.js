@@ -2,10 +2,26 @@ const fetch = require('node-fetch').default;
 
 /**
  * Gets the vector for the given text from SillyTavern-extras
- * @param {string|Array} text - The text or texts to get the vector for
+ * @param {string[]} texts - The array of texts to get the vector for
  * @param {string} apiUrl - The Extras API URL
  * @param {string} - The Extras API key, or empty string if API key not enabled
- * @returns {Promise<number[]>} - The vector for a single text, or the array of vectors for multiple texts
+ * @returns {Promise<number[][]>} - The array of vectors for the texts
+ */
+async function getExtrasBatchVector(texts, apiUrl, apiKey) {
+    return getExtrasVector(texts, apiUrl, apiKey);  // The implementation supports batches transparently.
+}
+
+module.exports = {
+    getExtrasVector,
+    getExtrasBatchVector,
+};
+
+/**
+ * Gets the vector for the given text from SillyTavern-extras
+ * @param {string|string[]} text - The text or texts to get the vector for
+ * @param {string} apiUrl - The Extras API URL
+ * @param {string} - The Extras API key, or empty string if API key not enabled
+ * @returns {Promise<number[]>|Promise<number[][]>} - The vector for a single text, or the array of vectors for multiple texts
  */
 async function getExtrasVector(text, apiUrl, apiKey) {
     let url;
@@ -33,7 +49,7 @@ async function getExtrasVector(text, apiUrl, apiKey) {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
-            text: text,  // The backend accepts {string|Array} for one or multiple text items, respectively.
+            text: text,  // The backend accepts {string|string[]} for one or multiple text items, respectively.
         }),
     });
 
@@ -44,11 +60,7 @@ async function getExtrasVector(text, apiUrl, apiKey) {
     }
 
     const data = await response.json();
-    const vector = data.embedding;  // `embedding`: Array (one text item), or Array of Array (multiple text items).
+    const vector = data.embedding;  // `embedding`: number[] (one text item), or number[][] (multiple text items).
 
     return vector;
 }
-
-module.exports = {
-    getExtrasVector,
-};
