@@ -1447,6 +1447,7 @@ async function printMessages() {
 }
 
 async function clearChat() {
+    closeMessageEditor();
     count_view_mes = 0;
     extension_prompts = {};
     if (is_delete_mode) {

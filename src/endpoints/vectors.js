@@ -28,6 +28,26 @@ async function getVector(source, sourceSettings, text) {
 }
 
 /**
+ * Gets the vector for the given text batch from the given source.
+ * @param {string} source - The source of the vector
+ * @param {string[]} texts - The array of texts to get the vector for
+ * @returns {Promise<number[][]>} - The array of vectors for the texts
+ */
+async function getBatchVector(source, texts) {
+    switch (source) {
+        case 'mistral':
+        case 'openai':
+            return require('../openai-vectors').getOpenAIBatchVector(texts, source);
+        case 'transformers':
+            return require('../embedding').getTransformersBatchVector(texts);
+        case 'palm':
+            return require('../makersuite-vectors').getMakerSuiteBatchVector(texts);
+    }
+
+    throw new Error(`Unknown vector source ${source}`);
+}
+
+/**
  * Gets the index for the vector collection
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
@@ -56,12 +76,12 @@ async function insertVectorItems(collectionId, source, sourceSettings, items) {
 
     await store.beginUpdate();
 
-    for (const item of items) {
-        const text = item.text;
-        const hash = item.hash;
-        const index = item.index;
-        const vector = await getVector(source, sourceSettings, text);
-        await store.upsertItem({ vector: vector, metadata: { hash, text, index } });
+    const vectors = await getBatchVector(source, items.map(x => x.text));
+
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const vector = vectors[i];
+        await store.upsertItem({ vector: vector, metadata: { hash: item.hash, text: item.text, index: item.index } });
     }
 
     await store.endUpdate();

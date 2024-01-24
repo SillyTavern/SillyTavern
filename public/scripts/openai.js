@@ -1160,6 +1160,7 @@ function tryParseStreamingError(response, decoded) {
         }
 
         checkQuotaError(data);
+        checkModerationError(data);
 
         if (data.error) {
             toastr.error(data.error.message || response.statusText, 'Chat Completion API');
@@ -1184,6 +1185,15 @@ function checkQuotaError(data) {
     if (data.quota_error) {
         callPopup(errorText, 'text');
         throw new Error(data);
+    }
+}
+
+function checkModerationError(data) {
+    const moderationError = data?.error?.message?.includes('requires moderation');
+    if (moderationError) {
+        const moderationReason = `Reasons: ${data?.error?.metadata?.reasons?.join(', ') ?? '(N/A)'}`;
+        const flaggedText = data?.error?.metadata?.flagged_input ?? '(N/A)';
+        toastr.info(flaggedText, moderationReason, { timeOut: 10000 });
     }
 }
 
@@ -1688,6 +1698,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         const data = await response.json();
 
         checkQuotaError(data);
+        checkModerationError(data);
 
         if (data.error) {
             toastr.error(data.error.message || response.statusText, 'API returned an error');
