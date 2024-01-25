@@ -1562,7 +1562,7 @@ async function executeSlashCommands(text, unescape = false) {
         }
 
         if (typeof unnamedArg === 'string' && /{{pipe}}/i.test(unnamedArg)) {
-            unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult || '');
+            unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult ?? '');
         }
 
         pipeResult = await result.command.callback(result.args, unnamedArg);
