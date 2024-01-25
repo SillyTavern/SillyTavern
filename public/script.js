@@ -1605,7 +1605,8 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
         }
 
         const usableMessages = chat.map((x, index) => ({ message: x, index: index })).filter(x => !x.message.is_system);
-        const depth = messageId >= 0 && usableMessages.some(x => x.index === messageId) ? (usableMessages.length - messageId - 1) : undefined;
+        const indexOf = usableMessages.findIndex(x => x.index === Number(messageId));
+        const depth = messageId >= 0 && indexOf !== -1 ? (usableMessages.length - indexOf - 1) : undefined;
 
         // Always override the character name
         mes = getRegexedString(mes, regexPlacement, {
