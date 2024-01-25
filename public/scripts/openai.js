@@ -89,7 +89,7 @@ const default_enhance_definitions_prompt = 'If you have more knowledge of {{char
 const default_wi_format = '[Details of the fictional world the RP is set in:\n{0}]\n';
 const default_new_chat_prompt = '[Start a new Chat]';
 const default_new_group_chat_prompt = '[Start a new group chat. Group members: {{group}}]';
-const default_new_example_chat_prompt = '[Start a new Chat]';
+const default_new_example_chat_prompt = '[Example Chat]';
 const default_claude_human_sysprompt_message = 'Let\'s get started. Please generate your response based on the information and instructions provided above.';
 const default_continue_nudge_prompt = '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message: {{lastChatMessage}}]';
 const default_bias = 'Default (none)';
@@ -466,7 +466,7 @@ function setOpenAIMessages(chat) {
 }
 
 /**
- * Formats chat messages into chat completion messages.
+ * Formats chat examples into chat completion messages.
  * @param {string[]} mesExamplesArray - Array containing all examples.
  * @returns {object[]} - Array containing all examples formatted for chat completion.
  */
@@ -543,14 +543,14 @@ function parseExampleIntoIndividual(messageExampleString) {
     let cur_msg_lines = [];
     let in_user = false;
     let in_bot = false;
-    // DRY my cock and balls
+    // DRY my cock and balls :)
     function add_msg(name, role, system_name) {
         // join different newlines (we split them by \n and join by \n)
         // remove char name
         // strip to remove extra spaces
         let parsed_msg = cur_msg_lines.join('\n').replace(name + ':', '').trim();
 
-        if (selected_group && role == 'assistant') {
+        if (selected_group && ['example_user', 'example_assistant'].includes(system_name)) {
             parsed_msg = `${name}: ${parsed_msg}`;
         }
 
