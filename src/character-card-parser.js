@@ -22,7 +22,9 @@ const parse = async (cardUrl, format) => {
                 throw new Error('No PNG metadata.');
             }
 
-            return Buffer.from(textChunks[0].text, 'base64').toString('utf8');
+            let index = textChunks.findIndex((chunk) => chunk.keyword.toLowerCase() == 'chara');
+
+            return Buffer.from(textChunks[index].text, 'base64').toString('utf8');
         }
         default:
             break;
