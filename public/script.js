@@ -362,6 +362,7 @@ export const event_types = {
     CHAT_CHANGED: 'chat_id_changed',
     GENERATION_STARTED: 'generation_started',
     GENERATION_STOPPED: 'generation_stopped',
+    GENERATION_ENDED: 'generation_ended',
     EXTENSIONS_FIRST_LOAD: 'extensions_first_load',
     SETTINGS_LOADED: 'settings_loaded',
     SETTINGS_UPDATED: 'settings_updated',
@@ -2453,7 +2454,11 @@ function showStopButton() {
 }
 
 function hideStopButton() {
-    $('#mes_stop').css({ 'display': 'none' });
+    // prevent NOOP, because hideStopButton() gets called multiple times
+    if($('#mes_stop').css('display') !== 'none') {
+        $('#mes_stop').css({ 'display': 'none' });
+        eventSource.emit(event_types.GENERATION_ENDED, chat.length);
+    }
 }
 
 class StreamingProcessor {
