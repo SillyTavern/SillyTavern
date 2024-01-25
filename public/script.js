@@ -1418,6 +1418,7 @@ async function replaceCurrentChat() {
 
     if (chatsResponse.ok) {
         const chats = Object.values(await chatsResponse.json());
+        chats.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
 
         // pick existing chat
         if (chats.length && typeof chats[0] === 'object') {
@@ -7839,7 +7840,7 @@ jQuery(async function () {
     registerSlashCommand('instruct-on', enableInstructCallback, [], '– enables instruct mode', true, true);
     registerSlashCommand('instruct-off', disableInstructCallback, [], '– disables instruct mode', true, true);
     registerSlashCommand('context', selectContextCallback, [], '<span class="monospace">(name)</span> – selects context template by name', true, true);
-    registerSlashCommand('chat-manager', () => $('#option_select_chat').trigger('click'), ['chat-history',  'manage-chats'], '– opens the chat manager for the current character/group', true, true);
+    registerSlashCommand('chat-manager', () => $('#option_select_chat').trigger('click'), ['chat-history', 'manage-chats'], '– opens the chat manager for the current character/group', true, true);
 
     setTimeout(function () {
         $('#groupControlsToggle').trigger('click');
