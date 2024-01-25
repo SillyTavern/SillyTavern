@@ -3122,6 +3122,9 @@ function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
     }
+    else if (value.includes('gpt-4-turbo')) {
+        return max_128k;
+    }
     else if (value.includes('gpt-4-1106')) {
         return max_128k;
     }
