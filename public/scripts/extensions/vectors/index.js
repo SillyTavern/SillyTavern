@@ -263,7 +263,7 @@ async function retrieveFileChunks(queryText, collectionId) {
     console.debug(`Vectors: Retrieving file chunks for collection ${collectionId}`, queryText);
     const queryResults = await queryCollection(collectionId, queryText, settings.chunk_count);
     console.debug(`Vectors: Retrieved ${queryResults.hashes.length} file chunks for collection ${collectionId}`, queryResults);
-    const metadata = queryResults.metadata.filter(x => x.text).sort((a, b) => a.index - b.index).map(x => x.text);
+    const metadata = queryResults.metadata.filter(x => x.text).sort((a, b) => a.index - b.index).map(x => x.text).filter(onlyUnique);
     const fileText = metadata.join('\n');
 
     return fileText;
