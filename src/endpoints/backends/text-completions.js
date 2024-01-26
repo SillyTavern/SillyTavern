@@ -257,11 +257,7 @@ router.post('/generate', jsonParser, async function (request, response) {
         setAdditionalHeaders(request, args, baseUrl);
 
         if (request.body.api_type === TEXTGEN_TYPES.TOGETHERAI) {
-            const stop = Array.isArray(request.body.stop) ? request.body.stop[0] : '';
             request.body = _.pickBy(request.body, (_, key) => TOGETHERAI_KEYS.includes(key));
-            if (typeof stop === 'string' && stop.length > 0) {
-                request.body.stop = stop;
-            }
             args.body = JSON.stringify(request.body);
         }
 
