@@ -712,6 +712,7 @@ function parseTextgenLogprobs(token, logprobs) {
     }
 
     switch (settings.type) {
+        case APHRODITE:
         case OOBA: {
              /** @type {Record<string, number>[]} */
             const topLogprobs = logprobs.top_logprobs;
