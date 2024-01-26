@@ -354,8 +354,8 @@ function trimTokensCallback(arg, value) {
         }
 
         const sliceTokens = direction === 'start' ? textTokens.slice(0, limit) : textTokens.slice(-limit);
-        const decodedText = decodeTextTokens(tokenizerId, sliceTokens);
-        return decodedText;
+        const { text } = decodeTextTokens(tokenizerId, sliceTokens);
+        return text;
     } catch (error) {
         console.warn('WARN: Tokenization failed for /trimtokens command, returning original', error);
         return value;

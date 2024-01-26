@@ -705,12 +705,21 @@ router.post('/generate', jsonParser, function (request, response) {
     let apiKey;
     let headers;
     let bodyParams;
+    const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(request.body.model)) || typeof request.body.messages === 'string';
 
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
-        bodyParams = {};
+        bodyParams = {
+            logprobs: request.body.logprobs,
+        };
+
+        // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
+        if (!isTextCompletion && bodyParams.logprobs > 0) {
+            bodyParams.top_logprobs = bodyParams.logprobs;
+            bodyParams.logprobs = true
+        }
 
         if (getConfigValue('openai.randomizeUserId', false)) {
             bodyParams['user'] = uuidv4();
@@ -759,7 +768,6 @@ router.post('/generate', jsonParser, function (request, response) {
         bodyParams['stop'] = request.body.stop;
     }
 
-    const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(request.body.model)) || typeof request.body.messages === 'string';
     const textPrompt = isTextCompletion ? convertTextCompletionPrompt(request.body.messages) : '';
     const endpointUrl = isTextCompletion && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.OPENROUTER ?
         `${apiUrl}/completions` :

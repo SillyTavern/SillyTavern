@@ -164,6 +164,7 @@ let power_user = {
     auto_fix_generated_markdown: true,
     send_on_enter: send_on_enter_options.AUTO,
     console_log_prompts: false,
+    request_token_probabilities: false,
     render_formulas: false,
     allow_name1_display: false,
     allow_name2_display: false,
@@ -1454,6 +1455,7 @@ function loadPowerUserSettings(settings, data) {
     $(`#example_messages_behavior option[value="${getExampleMessagesBehavior()}"]`).prop('selected', true);
 
     $('#console_log_prompts').prop('checked', power_user.console_log_prompts);
+    $('#request_token_probabilities').prop('checked', power_user.request_token_probabilities);
     $('#auto_fix_generated_markdown').prop('checked', power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop('checked', power_user.auto_scroll_chat_to_bottom);
     $('#bogus_folders').prop('checked', power_user.bogus_folders);
@@ -2951,6 +2953,11 @@ $(document).ready(() => {
 
     $('#console_log_prompts').on('input', function () {
         power_user.console_log_prompts = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#request_token_probabilities').on('input', function () {
+        power_user.request_token_probabilities = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

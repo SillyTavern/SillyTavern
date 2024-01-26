@@ -1,0 +1,127 @@
+#logprobsViewer {
+    overflow-y: auto;
+    max-width: 90svw;
+    max-height: 90svh;
+    min-width: 100px;
+    min-height: 50px;
+    border-radius: 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    position: fixed;
+    padding: 10px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 0 10px var(--black70a);
+    z-index: 3000;
+    left: 0;
+    top: 0;
+    margin: 0;
+    right: unset;
+    width: calc(((100svw - var(--sheldWidth)) / 2) - 1px);
+}
+
+.logprobs_panel_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logprobs_panel_title {
+    font-weight: bold;
+}
+
+.logprobs_panel_controls {
+    display: flex;
+    align-items: center;
+}
+
+.logprobs_panel_content {
+    overflow-y: auto;
+}
+
+.logprobs_panel_control_button {
+    width: 25px;
+    height: 25px;
+    margin-left: 5px;
+}
+
+#logprobs_generation_output {
+    user-select: none;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.logprobs_empty_state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.5;
+    min-height: 100px;
+    text-align: center;
+}
+
+.logprobs_output_prefix {
+    opacity: 0.5;
+}
+
+.logprobs_candidate_list {
+    grid-row-start: 3;
+    grid-row-end: 4;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 2px;
+    padding: 2px;
+    border-top: 1px solid var(--SmartThemeBodyColor);
+    text-align: center;
+}
+
+.logprobs_top_candidate {
+    border: none;
+    background-color: transparent;
+    color: inherit;
+    font: inherit;
+}
+
+.logprobs_top_candidate:not([disabled]) {
+    cursor: pointer;
+}
+
+.logprobs_top_candidate.selected {
+    background-color: rgba(0, 255, 0, 0.2);
+    font-weight: bold;
+}
+
+.logprobs_top_candidate:not([disabled]):hover, .logprobs_top_candidate:not([disabled]):focus {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.logprobs_tint_0 {
+    background-color: rgba(255, 255, 0, 0.05);
+}
+
+.logprobs_tint_0:hover, .logprobs_tint_0.selected {
+    background-color: rgba(255, 255, 0, 0.4);
+}
+
+.logprobs_tint_1 {
+    background-color: rgba(255, 0, 255, 0.05);
+}
+
+.logprobs_tint_1:hover, .logprobs_tint_1.selected {
+    background-color: rgba(255, 0, 255, 0.4);
+}
+
+.logprobs_tint_2 {
+    background-color: rgba(0, 255, 255, 0.05);
+}
+
+.logprobs_tint_2:hover, .logprobs_tint_2.selected {
+    background-color: rgba(0, 255, 255, 0.4);
+}
+
+.logprobs_tint_3 {
+    background-color: rgba(50, 205, 50, 0.05);
+}
+
+.logprobs_tint_3:hover, .logprobs_tint_3.selected {
+    background-color: rgba(50, 205, 50, 0.4);
+}

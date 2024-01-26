@@ -298,11 +298,13 @@ function createSentencepieceDecodingHandler(tokenizer) {
 
             const ids = request.body.ids || [];
             const instance = await tokenizer?.get();
-            const text = await instance?.decodeIds(ids);
-            return response.send({ text });
+            const ops = ids.map(id => instance.decodeIds([id]));
+            const chunks = await Promise.all(ops);
+            const text = chunks.join('');
+            return response.send({ text, chunks });
         } catch (error) {
             console.log(error);
-            return response.send({ text: '' });
+            return response.send({ text: '', chunks: [] });
         }
     };
 }
