@@ -492,7 +492,7 @@ async function executeSubCommands(command) {
         command = command.slice(0, -1);
     }
 
-    const unescape = true;
+    const unescape = false;
     const result = await executeSlashCommands(command, unescape);
 
     if (!result || typeof result !== 'object') {
