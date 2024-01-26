@@ -747,47 +747,69 @@
                                     </div>
                                 </div>
                                 <hr data-source="openai,claude">
-                                <div class="range-block" data-source="openai,claude">
-                                    <div class="range-block-title justifyLeft" data-i18n="OpenAI Reverse Proxy">
-                                        OpenAI / Claude Reverse Proxy
+                                <div data-newbie-hidden class="inline-drawer wide100p" data-source="openai,claude">
+                                    <div class="inline-drawer-toggle inline-drawer-header">
+                                        <b data-i18n="Reverse Proxy">Reverse Proxy</b>
+                                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                     </div>
-                                    <div class="toggle-description justifyLeft">
-                                        <span data-i18n="Alternative server URL (leave empty to use the default value).">
-                                            Alternative server URL (leave empty to use the default value).<br>
-                                        </span>
-                                        <div id="ReverseProxyWarningMessage" class="reverse_proxy_warning">
-                                            <b data-i18n="Remove your real OAI API Key from the API panel BEFORE typing anything into this box">
-                                                Remove your real OAI API Key from the API panel BEFORE typing anything
-                                                into this box.
-                                            </b>
-                                            <hr>
-                                            <b data-i18n="We cannot provide support for problems encountered while using an unofficial OpenAI proxy">
-                                                We cannot provide support for problems encountered while using an
-                                                unofficial OpenAI proxy.
-                                            </b>
+                                    <div class="inline-drawer-content">
+                                        <div class="range-block-title justifyLeft" data-i18n="Proxy Name">
+                                            Proxy Name
+                                        </div>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="This will show up as your saved preset.">
+                                                This will show up as your saved preset.<br>
+                                            </span>
+                                        </div>
+                                        <div class="wide100p">
+                                            <input id="openai_reverse_proxy_name" type="text" class="text_pole" placeholder="..." maxlength="100" />
+                                        </div>
+                                        <div class="range-block-title justifyLeft" data-i18n="Proxy Server URL">
+                                            Proxy Server URL
+                                        </div>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Alternative server URL (leave empty to use the default value).">
+                                                Alternative server URL (leave empty to use the default value).<br>
+                                            </span>
+                                            <div id="ReverseProxyWarningMessage" class="reverse_proxy_warning">
+                                                <b data-i18n="Remove your real OAI API Key from the API panel BEFORE typing anything into this box">
+                                                    Remove your real OAI API Key from the API panel BEFORE typing anything
+                                                    into this box.
+                                                </b>
+                                                <hr>
+                                                <b data-i18n="We cannot provide support for problems encountered while using an unofficial OpenAI proxy">
+                                                    We cannot provide support for problems encountered while using an
+                                                    unofficial OpenAI proxy.
+                                                </b>
+                                            </div>
+                                        </div>
+                                        <div class="wide100p">
+                                            <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="500" />
+                                            <small class="reverse_proxy_warning">
+                                                Doesn't work? Try adding <code>/v1</code> at the end!
+                                            </small>
+                                        </div>
+                                        <div class="range-block-title justifyLeft" data-i18n="Proxy Password">
+                                            Proxy Password
+                                        </div>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Will be used as a password for the proxy instead of API key.">
+                                                Will be used as a password for the proxy instead of API key.<br>
+                                            </span>
+                                        </div>
+                                        <div class="flex-container width100p">
+                                            <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="500" form="openai_form" />
+                                            <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
+                                        </div>
+                                        <div class="openai_logit_bias_preset_form">
+                                            <select id="openai_proxy_preset">
+                                            </select>
+                                            <i id="save_proxy" class="menu_button fa-solid fa-save" title="Save Proxy" data-i18n="[title]Save Proxy"></i>
+                                            <i id="delete_proxy" class="menu_button fa-solid fa-trash" title="Delete Proxy" data-i18n="[title]Delete Proxy"></i>
                                         </div>
                                     </div>
-                                    <div class="wide100p">
-                                        <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="500" />
-                                        <small class="reverse_proxy_warning">
-                                            Doesn't work? Try adding <code>/v1</code> at the end!
-                                        </small>
-                                    </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude">
-                                    <div class="range-block-title justifyLeft" data-i18n="Proxy Password">
-                                        Proxy Password
-                                    </div>
-                                    <div class="toggle-description justifyLeft">
-                                        <span data-i18n="Will be used as a password for the proxy instead of API key.">
-                                            Will be used as a password for the proxy instead of API key.<br>
-                                        </span>
-                                    </div>
-                                    <div class="flex-container width100p">
-                                        <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="500" form="openai_form" />
-                                        <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
-                                    </div>
-                                </div>
+                                <hr data-source="openai,claude">
                                 <div data-newbie-hidden class="range-block" data-source="openai,openrouter,mistralai,custom">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
