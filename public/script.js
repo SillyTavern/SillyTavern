@@ -1924,7 +1924,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         }
     }*/
     let params = {
-        mesId: forceId ?? chat.length,
+        mesId: forceId ?? chat.length - 1,
         characterName: mes.name,
         isUser: mes.is_user,
         avatarImg: avatarImg,
@@ -1963,7 +1963,8 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
             return forceId;
         }
 
-        return type == 'swipe' ? chat.length - 1 : chat.length;
+        // Callers push the new message to chat before calling addOneMessage
+        return chat.length - 1;
     }
 
     const newMessageId = getMessageId();
@@ -2041,7 +2042,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
             swipeMessage.find('.tokenCounterDisplay').html('');
         }
     } else {
-        const messageId = forceId ?? chat.length;
+        const messageId = forceId ?? chat.length - 1;
         $('#chat').find(`[mesid="${messageId}"]`).find('.mes_text').append(messageText);
         appendMediaToMessage(mes, newMessage);
         hideSwipeButtons(getMessageId());
@@ -6495,7 +6496,7 @@ function showSwipeButtons(id = chat.length - 1) {
         $('.mes:last').attr('mesid') < 0 ||
         chat[chat.length - 1].is_user ||
         chat[chat.length - 1].extra?.image ||
-        id < 1 ||
+        id < 0 ||
         (selected_group && is_group_generating)
     ) { return; }
 
