@@ -2163,10 +2163,6 @@ function scrollChatToBottom() {
 function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
     const environment = {};
 
-    environment.user = _name1 ?? name1;
-    environment.char = _name2 ?? name2;
-    environment.group = environment.charIfNotGroup = _group ?? name2;
-
     let substitutedOriginal = false;
     environment.original = () => {
         // Only substitute {{original}} on its first occurrence
@@ -2184,6 +2180,12 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
         environment.persona = fields.persona || '';
         environment.mesExamples = fields.mesExamples || '';
     }
+
+    // Must be substituted last so that they're replaced inside {{description}}
+    // TODO: evaluate macros recursively so we don't need to rely on substitution order
+    environment.user = _name1 ?? name1;
+    environment.char = _name2 ?? name2;
+    environment.group = environment.charIfNotGroup = _group ?? name2;
 
     return evaluateMacros(content, environment);
 }
