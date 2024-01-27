@@ -1958,16 +1958,9 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         }
     }
 
-    function getMessageId() {
-        if (typeof forceId == 'number') {
-            return forceId;
-        }
+    // Callers push the new message to chat before calling addOneMessage
+    const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
 
-        // Callers push the new message to chat before calling addOneMessage
-        return chat.length - 1;
-    }
-
-    const newMessageId = getMessageId();
     const newMessage = $(`#chat [mesid="${newMessageId}"]`);
     const isSmallSys = mes?.extra?.isSmallSys;
     newMessage.data('isSystem', isSystem);
@@ -2045,7 +2038,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         const messageId = forceId ?? chat.length - 1;
         $('#chat').find(`[mesid="${messageId}"]`).find('.mes_text').append(messageText);
         appendMediaToMessage(mes, newMessage);
-        hideSwipeButtons(getMessageId());
+        hideSwipeButtons(newMessageId);
     }
 
     addCopyToCodeBlocks(newMessage);
@@ -2055,8 +2048,8 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         $('#chat .mes').last().addClass('last_mes');
         $('#chat .mes').eq(-2).removeClass('last_mes');
 
-        hideSwipeButtons(getMessageId());
-        showSwipeButtons(getMessageId());
+        hideSwipeButtons(newMessageId);
+        showSwipeButtons(newMessageId);
         scrollChatToBottom();
     }
 }
