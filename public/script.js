@@ -1900,9 +1900,6 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         avatarImg = mes['force_avatar'];
     }
 
-    if (chat.length == 0) {
-        messageText = substituteParams(messageText);
-    }
     messageText = messageFormatting(
         messageText,
         mes.name,
