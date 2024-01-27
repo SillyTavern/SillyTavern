@@ -127,6 +127,9 @@ const j2_max_pres = 5.0;
 const openrouter_website_model = 'OR_Website';
 const openai_max_stop_strings = 4;
 
+const updateInput = (selector, value) => $(selector).val(value).trigger('input');
+const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
+
 const textCompletionModels = [
     'gpt-3.5-turbo-instruct',
     'gpt-3.5-turbo-instruct-0914',
@@ -211,29 +214,8 @@ const default_settings = {
     group_nudge_prompt: default_group_nudge_prompt,
     scenario_format: default_scenario_format,
     personality_format: default_personality_format,
-    openai_model: 'gpt-3.5-turbo',
-    claude_model: 'claude-instant-v1',
-    google_model: 'gemini-pro',
-    ai21_model: 'j2-ultra',
-    mistralai_model: 'mistral-medium',
-    custom_model: '',
-    custom_url: '',
-    custom_include_body: '',
-    custom_exclude_body: '',
-    custom_include_headers: '',
-    windowai_model: '',
-    openrouter_model: openrouter_website_model,
-    openrouter_use_fallback: false,
-    openrouter_force_instruct: false,
-    openrouter_group_models: false,
-    openrouter_sort_models: 'alphabetically',
     jailbreak_system: false,
-    reverse_proxy: '',
-    chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
-    api_url_scale: '',
-    show_external_models: false,
-    proxy_password: '',
     assistant_prefill: '',
     human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
@@ -241,12 +223,38 @@ const default_settings = {
     exclude_assistant: false,
     claude_use_sysprompt: false,
     claude_exclude_prefixes: false,
-    use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
-    bypass_status_check: false,
     continue_prefill: false,
     seed: -1,
+
+    // Quick Connect settings
+    chat_completion_source: chat_completion_sources.OPENAI,
+    openai_model: 'gpt-3.5-turbo',
+    claude_model: 'claude-instant-v1',
+    google_model: 'gemini-pro',
+    ai21_model: 'j2-ultra',
+    mistralai_model: 'mistral-medium',
+    windowai_model: '',
+    show_external_models: false,
+    bypass_status_check: false,
+    custom_model: '',
+    custom_url: '',
+    custom_include_body: '',
+    custom_exclude_body: '',
+    custom_include_headers: '',
+    openrouter_model: openrouter_website_model,
+    openrouter_use_fallback: false,
+    openrouter_force_instruct: false,
+    openrouter_group_models: false,
+    openrouter_sort_models: 'alphabetically',
+    use_alt_scale: false,
+    api_url_scale: '',
+    reverse_proxy: '',
+    proxy_password: '',
+
+    quick_connect: [],
+    quick_connect_migrated: false,
 };
 
 const oai_settings = {
@@ -279,29 +287,8 @@ const oai_settings = {
     group_nudge_prompt: default_group_nudge_prompt,
     scenario_format: default_scenario_format,
     personality_format: default_personality_format,
-    openai_model: 'gpt-3.5-turbo',
-    claude_model: 'claude-instant-v1',
-    google_model: 'gemini-pro',
-    ai21_model: 'j2-ultra',
-    mistralai_model: 'mistral-medium',
-    custom_model: '',
-    custom_url: '',
-    custom_include_body: '',
-    custom_exclude_body: '',
-    custom_include_headers: '',
-    windowai_model: '',
-    openrouter_model: openrouter_website_model,
-    openrouter_use_fallback: false,
-    openrouter_force_instruct: false,
-    openrouter_group_models: false,
-    openrouter_sort_models: 'alphabetically',
     jailbreak_system: false,
-    reverse_proxy: '',
-    chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
-    api_url_scale: '',
-    show_external_models: false,
-    proxy_password: '',
     assistant_prefill: '',
     human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
@@ -309,22 +296,39 @@ const oai_settings = {
     exclude_assistant: false,
     claude_use_sysprompt: false,
     claude_exclude_prefixes: false,
-    use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
-    bypass_status_check: false,
     continue_prefill: false,
     seed: -1,
-};
 
-export let proxies = [
-    {
-        name: 'None',
-        url: '',
-        password: '',
-    },
-];
-export let selected_proxy = proxies[0];
+    // Quick Connect settings
+    chat_completion_source: chat_completion_sources.OPENAI,
+    openai_model: 'gpt-3.5-turbo',
+    claude_model: 'claude-instant-v1',
+    google_model: 'gemini-pro',
+    ai21_model: 'j2-ultra',
+    mistralai_model: 'mistral-medium',
+    windowai_model: '',
+    show_external_models: false,
+    bypass_status_check: false,
+    custom_model: '',
+    custom_url: '',
+    custom_include_body: '',
+    custom_exclude_body: '',
+    custom_include_headers: '',
+    openrouter_model: openrouter_website_model,
+    openrouter_force_instruct: false,
+    openrouter_use_fallback: false,
+    openrouter_group_models: false,
+    openrouter_sort_models: 'alphabetically',
+    use_alt_scale: false,
+    api_url_scale: '',
+    reverse_proxy: '',
+    proxy_password: '',
+
+    quick_connect: [],
+    quick_connect_migrated: false,
+};
 
 let openai_setting_names;
 let openai_settings;
@@ -1765,7 +1769,7 @@ function parseChatCompletionLogprobs(data) {
                 ? parseOpenAITextLogprobs(data.choices[0]?.logprobs)
                 : parseOpenAIChatLogprobs(data.choices[0]?.logprobs);
         default:
-            // implement other chat completion sources here
+        // implement other chat completion sources here
     }
     return null;
 }
@@ -2651,7 +2655,210 @@ function loadOpenAISettings(data, settings) {
 
     $('#chat_completion_source').val(oai_settings.chat_completion_source).trigger('change');
     $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);
+
+    initQuickConnect(settings);
 }
+
+/**
+ * Initialize the quick connect settings.
+ * @param {object} settings OpenAI settings
+ */
+function initQuickConnect(settings) {
+    oai_settings.quick_connect = settings.quick_connect ?? default_settings.quick_connect;
+    oai_settings.quick_connect_migrated = settings.quick_connect_migrated ?? default_settings.quick_connect_migrated;
+
+    if (!oai_settings.quick_connect_migrated) {
+        migrateQuickConnect();
+    }
+
+    renderQuickConnect();
+}
+
+/**
+ * Display the list of available quick connects.
+ */
+function renderQuickConnect() {
+    $('#quick_connect').empty();
+
+    for (const preset of oai_settings.quick_connect) {
+        const option = document.createElement('option');
+        option.innerText = preset.name;
+        option.value = preset.name;
+        option.selected = preset.selected;
+        $('#quick_connect').append(option);
+    }
+}
+
+/**
+ * Migrates quick connects from old-format setting presets.
+ */
+function migrateQuickConnect() {
+    for (const name of Object.keys(openai_setting_names)) {
+        const index = openai_setting_names[name];
+        const settings = openai_settings[index];
+        saveQuickConnectSettings(name, settings);
+    }
+
+    const currentPreset = oai_settings.quick_connect.find(x => x.name === oai_settings.preset_settings_openai);
+    if (currentPreset) {
+        oai_settings.quick_connect.forEach(obj => obj.selected = false);
+        currentPreset.selected = true;
+    } else if (oai_settings.quick_connect.length > 0) {
+        oai_settings.quick_connect[0].selected = true;
+    } else {
+        console.warn('No quick connects found, creating default');
+        saveQuickConnectSettings('Default', oai_settings);
+    }
+
+    oai_settings.quick_connect_migrated = true;
+    saveSettingsDebounced();
+}
+
+/**
+ * Saves quick connect settings.
+ * @param {string} name Preset name
+ * @param {object} settings Settings object
+ */
+function saveQuickConnectSettings(name, settings) {
+    const presetBody = {
+        name: name,
+        selected: true,
+
+        chat_completion_source: settings.chat_completion_source,
+        openai_model: settings.openai_model,
+        claude_model: settings.claude_model,
+        google_model: settings.google_model,
+        ai21_model: settings.ai21_model,
+        mistralai_model: settings.mistralai_model,
+        windowai_model: settings.windowai_model,
+        show_external_models: settings.show_external_models,
+        bypass_status_check: settings.bypass_status_check,
+        custom_model: settings.custom_model,
+        custom_url: settings.custom_url,
+        custom_include_body: settings.custom_include_body,
+        custom_exclude_body: settings.custom_exclude_body,
+        custom_include_headers: settings.custom_include_headers,
+        openrouter_model: settings.openrouter_model,
+        openrouter_force_instruct: settings.openrouter_force_instruct,
+        openrouter_use_fallback: settings.openrouter_use_fallback,
+        openrouter_group_models: settings.openrouter_group_models,
+        openrouter_sort_models: settings.openrouter_sort_models,
+        use_alt_scale: settings.use_alt_scale,
+        api_url_scale: settings.api_url_scale,
+        reverse_proxy: settings.reverse_proxy,
+        proxy_password: settings.proxy_password,
+    };
+
+    const existingObject = oai_settings.quick_connect.find(obj => obj.name === name);
+
+    if (existingObject) {
+        Object.assign(existingObject, presetBody);
+    } else {
+        oai_settings.quick_connect.push(presetBody);
+    }
+
+    oai_settings.quick_connect.forEach(obj => obj.selected = obj.name === name);
+
+    saveSettingsDebounced();
+}
+
+/**
+ * Loads the quick connect settings with the given name
+ * @param {string} name Quick connect preset name
+ */
+function loadQuickConnectSettings(name) {
+    const preset = oai_settings.quick_connect.find(obj => obj.name === name);
+
+    if (!preset) {
+        toastr.error('Quick Connect preset not found');
+        console.trace('Preset not found');
+        return;
+    }
+
+    oai_settings.quick_connect.forEach(obj => obj.selected = obj.name === name);
+    const settingsToUpdate = {
+        chat_completion_source: ['#chat_completion_source', 'chat_completion_source', false],
+        openai_model: ['#model_openai_select', 'openai_model', false],
+        claude_model: ['#model_claude_select', 'claude_model', false],
+        google_model: ['#model_google_select', 'google_model', false],
+        ai21_model: ['#model_ai21_select', 'ai21_model', false],
+        mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
+        windowai_model: ['#model_windowai_select', 'windowai_model', false],
+        show_external_models: ['#openai_show_external_models', 'show_external_models', true],
+        bypass_status_check: ['#openai_bypass_status_check', 'bypass_status_check', true],
+        custom_model: ['#custom_model_id', 'custom_model', false],
+        custom_url: ['#custom_api_url_text', 'custom_url', false],
+        custom_include_body: ['#custom_include_body', 'custom_include_body', false],
+        custom_exclude_body: ['#custom_exclude_body', 'custom_exclude_body', false],
+        custom_include_headers: ['#custom_include_headers', 'custom_include_headers', false],
+        openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
+        openrouter_force_instruct: ['#openrouter_force_instruct', 'openrouter_force_instruct', true],
+        openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true],
+        openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
+        openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
+        use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
+        api_url_scale: ['#api_url_scale', 'api_url_scale', false],
+        reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
+        proxy_password: ['#openai_proxy_password', 'proxy_password', false],
+    };
+
+    for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
+        if (preset[key] !== undefined) {
+            if (isCheckbox) {
+                updateCheckbox(selector, preset[key]);
+            } else {
+                updateInput(selector, preset[key]);
+            }
+            oai_settings[String(setting)] = preset[key];
+        }
+    }
+
+    $('#chat_completion_source').trigger('change');
+    saveSettingsDebounced();
+}
+
+$('#quick_connect').on('change', function () {
+    const name = String($(this).val());
+    loadQuickConnectSettings(name);
+});
+
+$('#quick_connect_update').on('click', function () {
+    const name = String($('#quick_connect').val());
+    saveQuickConnectSettings(name, oai_settings);
+    renderQuickConnect();
+    toastr.success('Quick Connect updated');
+});
+
+$('#quick_connect_delete').on('click', async function () {
+    const name = String($('#quick_connect').val());
+    const index = oai_settings.quick_connect.findIndex(obj => obj.name === name);
+
+    const confirm = await callPopup('Are you sure you want to delete this Quick Connect?', 'confirm', '', { okButton: 'Delete' });
+
+    if (confirm) {
+        oai_settings.quick_connect.splice(index, 1);
+        if (oai_settings.quick_connect.length > 0) {
+            oai_settings.quick_connect[0].selected = true;
+            loadQuickConnectSettings(oai_settings.quick_connect[0].name);
+        }
+        renderQuickConnect();
+        saveSettingsDebounced();
+    }
+});
+
+$('#quick_connect_new').on('click', async function () {
+    const selected = String($('#quick_connect').val());
+    const name = await callPopup('Enter a name for the new Quick Connect', 'input', selected, { okButton: 'Create' });
+
+    if (!name) {
+        console.debug('User cancelled Quick Connect creation');
+        return;
+    }
+
+    saveQuickConnectSettings(name, oai_settings);
+    renderQuickConnect();
+    toastr.success('Quick Connect created');
+});
 
 async function getStatusOpen() {
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
@@ -2748,23 +2955,6 @@ function showWindowExtensionError() {
  */
 async function saveOpenAIPreset(name, settings, triggerUi = true) {
     const presetBody = {
-        chat_completion_source: settings.chat_completion_source,
-        openai_model: settings.openai_model,
-        claude_model: settings.claude_model,
-        windowai_model: settings.windowai_model,
-        openrouter_model: settings.openrouter_model,
-        openrouter_use_fallback: settings.openrouter_use_fallback,
-        openrouter_force_instruct: settings.openrouter_force_instruct,
-        openrouter_group_models: settings.openrouter_group_models,
-        openrouter_sort_models: settings.openrouter_sort_models,
-        ai21_model: settings.ai21_model,
-        mistralai_model: settings.mistralai_model,
-        custom_model: settings.custom_model,
-        custom_url: settings.custom_url,
-        custom_include_body: settings.custom_include_body,
-        custom_exclude_body: settings.custom_exclude_body,
-        custom_include_headers: settings.custom_include_headers,
-        google_model: settings.google_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
@@ -2787,8 +2977,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         new_example_chat_prompt: settings.new_example_chat_prompt,
         continue_nudge_prompt: settings.continue_nudge_prompt,
         bias_preset_selected: settings.bias_preset_selected,
-        reverse_proxy: settings.reverse_proxy,
-        proxy_password: settings.proxy_password,
         max_context_unlocked: settings.max_context_unlocked,
         wi_format: settings.wi_format,
         scenario_format: settings.scenario_format,
@@ -2797,8 +2985,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         stream_openai: settings.stream_openai,
         prompts: settings.prompts,
         prompt_order: settings.prompt_order,
-        api_url_scale: settings.api_url_scale,
-        show_external_models: settings.show_external_models,
         assistant_prefill: settings.assistant_prefill,
         human_sysprompt_message: settings.human_sysprompt_message,
         use_ai21_tokenizer: settings.use_ai21_tokenizer,
@@ -2806,10 +2992,8 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         exclude_assistant: settings.exclude_assistant,
         claude_use_sysprompt: settings.claude_use_sysprompt,
         claude_exclude_prefixes: settings.claude_exclude_prefixes,
-        use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
-        bypass_status_check: settings.bypass_status_check,
         continue_prefill: settings.continue_prefill,
         seed: settings.seed,
     };
@@ -3126,7 +3310,6 @@ async function onLogitBiasPresetDeleteClick() {
 // Load OpenAI preset settings
 function onSettingsPresetChange() {
     const settingsToUpdate = {
-        chat_completion_source: ['#chat_completion_source', 'chat_completion_source', false],
         temperature: ['#temp_openai', 'temp_openai', false],
         frequency_penalty: ['#freq_pen_openai', 'freq_pen_openai', false],
         presence_penalty: ['#pres_pen_openai', 'pres_pen_openai', false],
@@ -3137,22 +3320,6 @@ function onSettingsPresetChange() {
         min_p: ['#min_p_openai', 'min_p_openai', false],
         repetition_penalty: ['#repetition_penalty_openai', 'repetition_penalty_openai', false],
         max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
-        openai_model: ['#model_openai_select', 'openai_model', false],
-        claude_model: ['#model_claude_select', 'claude_model', false],
-        windowai_model: ['#model_windowai_select', 'windowai_model', false],
-        openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
-        openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true],
-        openrouter_force_instruct: ['#openrouter_force_instruct', 'openrouter_force_instruct', true],
-        openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
-        openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
-        ai21_model: ['#model_ai21_select', 'ai21_model', false],
-        mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
-        custom_model: ['#custom_model_id', 'custom_model', false],
-        custom_url: ['#custom_api_url_text', 'custom_url', false],
-        custom_include_body: ['#custom_include_body', 'custom_include_body', false],
-        custom_exclude_body: ['#custom_exclude_body', 'custom_exclude_body', false],
-        custom_include_headers: ['#custom_include_headers', 'custom_include_headers', false],
-        google_model: ['#model_google_select', 'google_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
         wrap_in_quotes: ['#wrap_in_quotes', 'wrap_in_quotes', true],
@@ -3164,7 +3331,6 @@ function onSettingsPresetChange() {
         new_example_chat_prompt: ['#newexamplechat_prompt_textarea', 'new_example_chat_prompt', false],
         continue_nudge_prompt: ['#continue_nudge_prompt_textarea', 'continue_nudge_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
-        reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
         wi_format: ['#wi_format_textarea', 'wi_format', false],
         scenario_format: ['#scenario_format_textarea', 'scenario_format', false],
         personality_format: ['#personality_format_textarea', 'personality_format', false],
@@ -3172,9 +3338,6 @@ function onSettingsPresetChange() {
         stream_openai: ['#stream_toggle', 'stream_openai', true],
         prompts: ['', 'prompts', false],
         prompt_order: ['', 'prompt_order', false],
-        api_url_scale: ['#api_url_scale', 'api_url_scale', false],
-        show_external_models: ['#openai_show_external_models', 'show_external_models', true],
-        proxy_password: ['#openai_proxy_password', 'proxy_password', false],
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
         human_sysprompt_message: ['#claude_human_sysprompt_textarea', 'human_sysprompt_message', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', true],
@@ -3182,7 +3345,6 @@ function onSettingsPresetChange() {
         exclude_assistant: ['#exclude_assistant', 'exclude_assistant', true],
         claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true],
         claude_exclude_prefixes: ['#claude_exclude_prefixes', 'claude_exclude_prefixes', true],
-        use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
         image_inlining: ['#openai_image_inlining', 'image_inlining', true],
         continue_prefill: ['#continue_prefill', 'continue_prefill', true],
@@ -3193,9 +3355,6 @@ function onSettingsPresetChange() {
     oai_settings.preset_settings_openai = presetName;
 
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
-
-    const updateInput = (selector, value) => $(selector).val(value).trigger('input');
-    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
 
     // Allow subscribers to alter the preset before applying deltas
     eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
@@ -3216,7 +3375,7 @@ function onSettingsPresetChange() {
             }
         }
 
-        $('#chat_completion_source').trigger('change');
+        //$('#chat_completion_source').trigger('change');
         $('#openai_logit_bias_preset').trigger('change');
 
         saveSettingsDebounced();
@@ -3818,110 +3977,6 @@ export function isImageInliningSupported() {
     }
 }
 
-/**
- * Proxy stuff
- */
-export function loadProxyPresets(settings) {
-    let proxyPresets = settings.proxies;
-    selected_proxy = settings.selected_proxy || selected_proxy;
-    if (!Array.isArray(proxyPresets) || proxyPresets.length === 0) {
-        proxyPresets = proxies;
-    } else {
-        proxies = proxyPresets;
-    }
-
-    $('#openai_proxy_preset').empty();
-
-    for (const preset of proxyPresets) {
-        const option = document.createElement('option');
-        option.innerText = preset.name;
-        option.value = preset.name;
-        option.selected = preset.name === 'None';
-        $('#openai_proxy_preset').append(option);
-    }
-    $('#openai_proxy_preset').val(selected_proxy.name);
-    setProxyPreset(selected_proxy.name, selected_proxy.url, selected_proxy.password);
-}
-
-function setProxyPreset(name, url, password) {
-    const preset = proxies.find(p => p.name === name);
-    if (preset) {
-        preset.url = url;
-        preset.password = password;
-        selected_proxy = preset;
-    } else {
-        let new_proxy = { name, url, password };
-        proxies.push(new_proxy);
-        selected_proxy = new_proxy;
-    }
-
-    $('#openai_reverse_proxy_name').val(name);
-    oai_settings.reverse_proxy = url;
-    $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
-    oai_settings.proxy_password = password;
-    $('#openai_proxy_password').val(oai_settings.proxy_password);
-    reconnectOpenAi();
-}
-
-function onProxyPresetChange() {
-    const value = String($('#openai_proxy_preset').find(':selected').val());
-    const selectedPreset = proxies.find(preset => preset.name === value);
-
-    if (selectedPreset) {
-        setProxyPreset(selectedPreset.name, selectedPreset.url, selectedPreset.password);
-    } else {
-        console.error(`Proxy preset "${value}" not found in proxies array.`);
-    }
-    saveSettingsDebounced();
-}
-
-$('#save_proxy').on('click', async function () {
-    const presetName = $('#openai_reverse_proxy_name').val();
-    const reverseProxy = $('#openai_reverse_proxy').val();
-    const proxyPassword = $('#openai_proxy_password').val();
-
-    setProxyPreset(presetName, reverseProxy, proxyPassword);
-    saveSettingsDebounced();
-    toastr.success('Proxy Saved');
-    if($('#openai_proxy_preset').val() !== presetName) {
-        const option = document.createElement('option');
-        option.text = presetName;
-        option.value = presetName;
-
-        $('#openai_proxy_preset').append(option);
-    }
-    $('#openai_proxy_preset').val(presetName);
-});
-
-$('#delete_proxy').on('click', async function () {
-    const presetName = $('#openai_reverse_proxy_name').val();
-    const index = proxies.findIndex(preset => preset.name === presetName);
-
-    if (index !== -1) {
-        proxies.splice(index, 1);
-        $('#openai_proxy_preset option[value="' + presetName + '"]').remove();
-
-        if (proxies.length > 0) {
-            const newIndex = Math.max(0, index - 1);
-            selected_proxy = proxies[newIndex];
-        } else {
-            selected_proxy = { name: 'None', url: '', password: '' };
-        }
-
-        $('#openai_reverse_proxy_name').val(selected_proxy.name);
-        oai_settings.reverse_proxy = selected_proxy.url;
-        $('#openai_reverse_proxy').val(selected_proxy.url);
-        oai_settings.proxy_password = selected_proxy.password;
-        $('#openai_proxy_password').val(selected_proxy.password);
-
-        saveSettingsDebounced();
-        $('#openai_proxy_preset').val(selected_proxy.name);
-        toastr.success('Proxy Deleted');
-    } else {
-        toastr.error(`Could not find proxy with name "${presetName}"`);
-    }
-});
-
 $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
 
@@ -4302,5 +4357,4 @@ $(document).ready(async function () {
     $('#import_oai_preset').on('click', onImportPresetClick);
     $('#openai_proxy_password_show').on('click', onProxyPasswordShowClick);
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
-    $('#openai_proxy_preset').on('change', onProxyPresetChange);
 });

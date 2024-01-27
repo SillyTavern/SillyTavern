@@ -93,9 +93,6 @@ import {
     chat_completion_sources,
     getChatCompletionModel,
     isOpenRouterWithInstruct,
-    proxies,
-    loadProxyPresets,
-    selected_proxy,
 } from './scripts/openai.js';
 
 import {
@@ -5653,9 +5650,6 @@ async function getSettings() {
         // Load background
         loadBackgroundSettings(settings);
 
-        // Load proxy presets
-        loadProxyPresets(settings);
-
         // Allow subscribers to mutate settings
         eventSource.emit(event_types.SETTINGS_LOADED_AFTER, settings);
 
@@ -5761,8 +5755,6 @@ async function saveSettings(type) {
             kai_settings: kai_settings,
             oai_settings: oai_settings,
             background: background_settings,
-            proxies: proxies,
-            selected_proxy: selected_proxy,
         }, null, 4),
         beforeSend: function () { },
         cache: false,
