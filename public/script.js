@@ -2163,12 +2163,9 @@ function scrollChatToBottom() {
 function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
     const environment = {};
 
-    let substitutedOriginal = false;
-    environment.original = () => {
-        // Only substitute {{original}} on its first occurrence
-        if (substitutedOriginal || typeof _original !== 'string') return '';
-        return _original;
-    };
+    if (typeof _original === 'string') {
+        environment.original = _original;
+    }
 
     if (_replaceCharacterCard) {
         const fields = getCharacterCardFields();
@@ -2487,7 +2484,7 @@ function showStopButton() {
 
 function hideStopButton() {
     // prevent NOOP, because hideStopButton() gets called multiple times
-    if($('#mes_stop').css('display') !== 'none') {
+    if ($('#mes_stop').css('display') !== 'none') {
         $('#mes_stop').css({ 'display': 'none' });
         eventSource.emit(event_types.GENERATION_ENDED, chat.length);
     }
