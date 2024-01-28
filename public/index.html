@@ -1330,7 +1330,23 @@
                                             <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="prompt_log_probs_aphrodite" id="prompt_log_probs_aphrodite_counter_textgenerationwebui">
                                         </div>
                                     -->
-                                    <div data-newbie-hidden data-tg-type="ooba, koboldcpp" name="dynaTempBlock" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="ooba, koboldcpp, llamacpp" name="Kalo Zone" class="wide100p">
+                                        <h4 class="range-block-title justifyCenter">
+                                            <span data-i18n="Kalo Zone">Kalo Zone</span>
+                                            <div class="margin5 fa-solid fa-circle-info opacity50p " title="Enter the Kalo Zone."></div>
+                                        </h4>
+                                        <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                            <small data-i18n="Randomization Factor">Randomization Factor</small>
+                                            <input class="neo-range-slider" type="range" id="randomization_factor_textgenerationwebui" name="volume" min="0" max="5" step="0.01" />
+                                            <input class="neo-range-input" type="number" min="0" max="5" step="0.01" data-for="randomization_factor_textgenerationwebui" id="randomization_factor_counter_textgenerationwebui">
+                                        </div>
+                                        <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                            <small data-i18n="Smoothing Factor">Smoothing Factor</small>
+                                            <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="5" step="0.01" />
+                                            <input class="neo-range-input" type="number" min="0" max="5" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
+                                        </div>
+                                    </div>
+                                    <div data-newbie-hidden data-tg-type="ooba, koboldcpp, llamacpp" name="dynaTempBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" data-i18n="DynaTemp">
                                             <div class="flex-container alignitemscenter" style="justify-content: center;">
                                                 <div class="checkbox_label" for="dynatemp_textgenerationwebui">
@@ -1351,6 +1367,11 @@
                                                 <small data-i18n="Maximum Temp">Maximum Temp</small>
                                                 <input class="neo-range-slider" type="range" id="max_temp_textgenerationwebui" name="volume" min="0" max="5" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="0" max="5" step="0.01" data-for="max_temp_textgenerationwebui" id="max_temp_counter_textgenerationwebui">
+                                            </div>
+                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
+                                                <small data-i18n="Exponent">Exponent</small>
+                                                <input class="neo-range-slider" type="range" id="dynatemp_exponent_textgenerationwebui" name="volume" min="1" max="10" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="1" max="10" step="0.01" data-for="dynatemp_exponent_textgenerationwebui" id="dynatemp_exponent_counter_textgenerationwebui">
                                             </div>
                                         </div>
                                     </div>
