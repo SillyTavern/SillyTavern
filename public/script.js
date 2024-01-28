@@ -436,7 +436,6 @@ let settingsReady = false;
 let currentVersion = '0.0.0';
 
 const default_ch_mes = 'Hello';
-let count_view_mes = 0;
 let generatedPromptCache = '';
 let generation_started = new Date();
 let characters = [];
@@ -1470,14 +1469,13 @@ async function printMessages() {
     let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
 
     if (chat.length > count) {
-        count_view_mes = chat.length - count;
-        startIndex = count_view_mes;
+        startIndex = chat.length - count;
         $('#chat').append('<div id="show_more_messages">Show more messages</div>');
     }
 
     for (let i = startIndex; i < chat.length; i++) {
         const item = chat[i];
-        addOneMessage(item, { scroll: i === chat.length - 1 });
+        addOneMessage(item, { scroll: i === chat.length - 1, forceId: i });
     }
 
     // Scroll to bottom when all images are loaded
@@ -1505,7 +1503,6 @@ async function printMessages() {
 
 async function clearChat() {
     closeMessageEditor();
-    count_view_mes = 0;
     extension_prompts = {};
     if (is_delete_mode) {
         $('#dialogue_del_mes_cancel').trigger('click');
@@ -1521,7 +1518,6 @@ async function clearChat() {
 }
 
 async function deleteLastMessage() {
-    count_view_mes--;
     chat.length = chat.length - 1;
     $('#chat').children('.mes').last().remove();
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
@@ -1904,9 +1900,6 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         avatarImg = mes['force_avatar'];
     }
 
-    if (count_view_mes == 0) {
-        messageText = substituteParams(messageText);
-    }
     messageText = messageFormatting(
         messageText,
         mes.name,
@@ -1928,7 +1921,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         }
     }*/
     let params = {
-        mesId: forceId ?? count_view_mes,
+        mesId: forceId ?? chat.length - 1,
         characterName: mes.name,
         isUser: mes.is_user,
         avatarImg: avatarImg,
@@ -1962,15 +1955,9 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         }
     }
 
-    function getMessageId() {
-        if (typeof forceId == 'number') {
-            return forceId;
-        }
+    // Callers push the new message to chat before calling addOneMessage
+    const newMessageId = typeof forceId == 'number' ? forceId : chat.length - 1;
 
-        return type == 'swipe' ? count_view_mes - 1 : count_view_mes;
-    }
-
-    const newMessageId = getMessageId();
     const newMessage = $(`#chat [mesid="${newMessageId}"]`);
     const isSmallSys = mes?.extra?.isSmallSys;
     newMessage.data('isSystem', isSystem);
@@ -2026,7 +2013,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
     });
 
     if (type === 'swipe') {
-        const swipeMessage = $('#chat').find(`[mesid="${count_view_mes - 1}"]`);
+        const swipeMessage = $('#chat').find(`[mesid="${chat.length - 1}"]`);
         swipeMessage.find('.mes_text').html('');
         swipeMessage.find('.mes_text').append(messageText);
         appendMediaToMessage(mes, swipeMessage);
@@ -2044,27 +2031,23 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
             swipeMessage.find('.mes_timer').html('');
             swipeMessage.find('.tokenCounterDisplay').html('');
         }
-    } else if (typeof forceId == 'number') {
-        $('#chat').find(`[mesid="${forceId}"]`).find('.mes_text').append(messageText);
-        appendMediaToMessage(mes, newMessage);
-        hideSwipeButtons();
-        showSwipeButtons();
     } else {
-        $('#chat').find(`[mesid="${count_view_mes}"]`).find('.mes_text').append(messageText);
+        const messageId = forceId ?? chat.length - 1;
+        $('#chat').find(`[mesid="${messageId}"]`).find('.mes_text').append(messageText);
         appendMediaToMessage(mes, newMessage);
         hideSwipeButtons();
-        count_view_mes++;
     }
 
     addCopyToCodeBlocks(newMessage);
 
+    $('#chat .mes').last().addClass('last_mes');
+    $('#chat .mes').eq(-2).removeClass('last_mes');
+
+    hideSwipeButtons();
+    showSwipeButtons();
+
     // Don't scroll if not inserting last
     if (!insertAfter && !insertBefore && scroll) {
-        $('#chat .mes').last().addClass('last_mes');
-        $('#chat .mes').eq(-2).removeClass('last_mes');
-
-        hideSwipeButtons();
-        showSwipeButtons();
         scrollChatToBottom();
     }
 }
@@ -2534,7 +2517,7 @@ class StreamingProcessor {
         }
         else {
             await saveReply(this.type, text, true);
-            messageId = count_view_mes - 1;
+            messageId = chat.length - 1;
             this.showMessageButtons(messageId);
         }
 
@@ -2957,7 +2940,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         }
         else if (type !== 'quiet' && type !== 'swipe' && !isImpersonate && !dryRun && chat.length) {
             chat.length = chat.length - 1;
-            count_view_mes -= 1;
             $('#chat').children().last().hide(250, function () {
                 $(this).remove();
             });
@@ -3916,7 +3898,7 @@ function unblockGeneration() {
 }
 
 export function getNextMessageId(type) {
-    return type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes);
+    return type == 'swipe' ? chat.length - 1 : chat.length;
 }
 
 /**
@@ -6526,10 +6508,9 @@ function showSwipeButtons() {
     if (
         chat[chat.length - 1].is_system ||
         !swipes ||
-        $('.mes:last').attr('mesid') < 0 ||
+        Number($('.mes:last').attr('mesid')) < 0 ||
         chat[chat.length - 1].is_user ||
         chat[chat.length - 1].extra?.image ||
-        count_view_mes < 1 ||
         (selected_group && is_group_generating)
     ) { return; }
 
@@ -6548,7 +6529,7 @@ function showSwipeButtons() {
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
     }
 
-    const currentMessage = $('#chat').children().filter(`[mesid="${count_view_mes - 1}"]`);
+    const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
     const swipeId = chat[chat.length - 1].swipe_id;
     var swipesCounterHTML = (`${(swipeId + 1)}/${(chat[chat.length - 1].swipes.length)}`);
 
@@ -6575,8 +6556,8 @@ function showSwipeButtons() {
 
 function hideSwipeButtons() {
     //console.log('hideswipebuttons entered');
-    $('#chat').children().filter(`[mesid="${count_view_mes - 1}"]`).children('.swipe_right').css('display', 'none');
-    $('#chat').children().filter(`[mesid="${count_view_mes - 1}"]`).children('.swipe_left').css('display', 'none');
+    $('#chat').find('.swipe_right').css('display', 'none');
+    $('#chat').find('.swipe_left').css('display', 'none');
 }
 
 export async function saveMetadata() {
@@ -7195,7 +7176,7 @@ function swipe_left() {      // when we swipe left..but no generation.
                         chat[chat.length - 1].extra = {};
                     }
 
-                    const swipeMessage = $('#chat').find(`[mesid="${count_view_mes - 1}"]`);
+                    const swipeMessage = $('#chat').find(`[mesid="${chat.length - 1}"]`);
                     const tokenCount = getTokenCount(chat[chat.length - 1].mes, 0);
                     chat[chat.length - 1]['extra']['token_count'] = tokenCount;
                     swipeMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
@@ -7339,7 +7320,7 @@ const swipe_right = () => {
         run_swipe_right = true; //then prepare to do normal right swipe to show next message
     }
 
-    const currentMessage = $('#chat').children().filter(`[mesid="${count_view_mes - 1}"]`);
+    const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
     let this_div = currentMessage.children('.swipe_right');
     let this_mes_div = this_div.parent();
 
@@ -7370,7 +7351,7 @@ const swipe_right = () => {
                 const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop('scrollHeight') - $('#chat').outerHeight()) - 10);
                 //console.log(parseInt(chat[chat.length-1]['swipe_id']));
                 //console.log(chat[chat.length-1]['swipes'].length);
-                const swipeMessage = $('#chat').find('[mesid="' + (count_view_mes - 1) + '"]');
+                const swipeMessage = $('#chat').find('[mesid="' + (chat.length - 1) + '"]');
                 if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
                     //shows "..." while generating
                     swipeMessage.find('.mes_text').html('...');
@@ -8688,7 +8669,6 @@ jQuery(async function () {
                 .remove();
             $('.mes[mesid=\'' + this_del_mes + '\']').remove();
             chat.length = this_del_mes;
-            count_view_mes = this_del_mes;
             await saveChatConditional();
             var $textchat = $('#chat');
             $textchat.scrollTop($textchat[0].scrollHeight);
@@ -8888,7 +8868,7 @@ jQuery(async function () {
             let chatScrollPosition = $('#chat').scrollTop();
             if (this_edit_mes_id !== undefined) {
                 let mes_edited = $(`#chat [mesid="${this_edit_mes_id}"]`).find('.mes_edit_done');
-                if (Number(edit_mes_id) == count_view_mes - 1) { //if the generating swipe (...)
+                if (Number(edit_mes_id) == chat.length - 1) { //if the generating swipe (...)
                     let run_edit = true;
                     if (chat[edit_mes_id]['swipe_id'] !== undefined) {
                         if (chat[edit_mes_id]['swipes'].length === chat[edit_mes_id]['swipe_id']) {
@@ -8935,7 +8915,7 @@ jQuery(async function () {
                 edit_textarea.val().length,
                 edit_textarea.val().length,
             );
-            if (this_edit_mes_id == count_view_mes - 1) {
+            if (this_edit_mes_id == chat.length - 1) {
                 $('#chat').scrollTop(chatScrollPosition);
             }
 
@@ -9130,7 +9110,6 @@ jQuery(async function () {
         } else {
             chat.splice(this_edit_mes_id, 1);
             mes.remove();
-            count_view_mes--;
         }
 
         let startFromZero = Number(this_edit_mes_id) === 0;
@@ -9143,7 +9122,7 @@ jQuery(async function () {
         hideSwipeButtons();
         showSwipeButtons();
 
-        await eventSource.emit(event_types.MESSAGE_DELETED, count_view_mes);
+        await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
     });
 
     $(document).on('click', '.mes_edit_done', async function () {
