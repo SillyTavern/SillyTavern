@@ -2140,10 +2140,42 @@ function scrollChatToBottom() {
  * @param {*} _name2 - The name of the character. Uses global name2 if not provided.
  * @param {*} _original - The original message for {{original}} substitution.
  * @param {*} _group - The group members list for {{group}} substitution.
+ * @param {boolean} _replaceCharacterCard - Whether to replace character card macros.
  * @returns {string} The string with substituted parameters.
  */
 function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
-    return evaluateMacros(content, _name1 ?? name1, _name2 ?? name2, _original, _group ?? name2, _replaceCharacterCard);
+    const environment = {};
+
+    if (typeof _original === 'string') {
+        let originalSubstituted = false;
+        environment.original = () => {
+            if (originalSubstituted) {
+                return '';
+            }
+
+            originalSubstituted = true;
+            return _original;
+        };
+    }
+
+    if (_replaceCharacterCard) {
+        const fields = getCharacterCardFields();
+        environment.charPrompt = fields.system || '';
+        environment.charJailbreak = fields.jailbreak || '';
+        environment.description = fields.description || '';
+        environment.personality = fields.personality || '';
+        environment.scenario = fields.scenario || '';
+        environment.persona = fields.persona || '';
+        environment.mesExamples = fields.mesExamples || '';
+    }
+
+    // Must be substituted last so that they're replaced inside {{description}}
+    // TODO: evaluate macros recursively so we don't need to rely on substitution order
+    environment.user = _name1 ?? name1;
+    environment.char = _name2 ?? name2;
+    environment.group = environment.charIfNotGroup = _group ?? name2;
+
+    return evaluateMacros(content, environment);
 }
 
 
@@ -2443,7 +2475,7 @@ function showStopButton() {
 
 function hideStopButton() {
     // prevent NOOP, because hideStopButton() gets called multiple times
-    if($('#mes_stop').css('display') !== 'none') {
+    if ($('#mes_stop').css('display') !== 'none') {
         $('#mes_stop').css({ 'display': 'none' });
         eventSource.emit(event_types.GENERATION_ENDED, chat.length);
     }
