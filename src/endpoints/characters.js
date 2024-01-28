@@ -1007,7 +1007,7 @@ router.post('/export', jsonParser, async function (request, response) {
                 let json = await charaRead(filename);
                 if (json === undefined) return response.sendStatus(400);
                 let jsonObject = getCharaCardV2(JSON.parse(json));
-                return response.type('json').send(jsonObject);
+                return response.type('json').send(JSON.stringify(jsonObject, null, 4));
             }
             catch {
                 return response.sendStatus(400);
