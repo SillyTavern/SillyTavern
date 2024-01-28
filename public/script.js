@@ -2147,7 +2147,15 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     const environment = {};
 
     if (typeof _original === 'string') {
-        environment.original = _original;
+        let originalSubstituted = false;
+        environment.original = () => {
+            if (originalSubstituted) {
+                return '';
+            }
+
+            originalSubstituted = true;
+            return _original;
+        };
     }
 
     if (_replaceCharacterCard) {

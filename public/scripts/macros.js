@@ -221,8 +221,7 @@ export function evaluateMacros(content, env) {
         if (!Object.hasOwn(env, varName)) continue;
 
         const param = env[varName];
-        const paramValue = typeof param === 'function' ? param() : param;
-        content = content.replace(new RegExp(`{{${varName}}}`, 'gi'), paramValue);
+        content = content.replace(new RegExp(`{{${varName}}}`, 'gi'), param);
     }
 
     content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
