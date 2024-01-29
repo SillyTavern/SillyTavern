@@ -2035,18 +2035,19 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         const messageId = forceId ?? chat.length - 1;
         $('#chat').find(`[mesid="${messageId}"]`).find('.mes_text').append(messageText);
         appendMediaToMessage(mes, newMessage);
-        hideSwipeButtons(newMessageId);
+        hideSwipeButtons();
     }
 
     addCopyToCodeBlocks(newMessage);
 
+    $('#chat .mes').last().addClass('last_mes');
+    $('#chat .mes').eq(-2).removeClass('last_mes');
+
+    hideSwipeButtons();
+    showSwipeButtons();
+
     // Don't scroll if not inserting last
     if (!insertAfter && !insertBefore && scroll) {
-        $('#chat .mes').last().addClass('last_mes');
-        $('#chat .mes').eq(-2).removeClass('last_mes');
-
-        hideSwipeButtons(newMessageId);
-        showSwipeButtons(newMessageId);
         scrollChatToBottom();
     }
 }
@@ -2139,10 +2140,42 @@ function scrollChatToBottom() {
  * @param {*} _name2 - The name of the character. Uses global name2 if not provided.
  * @param {*} _original - The original message for {{original}} substitution.
  * @param {*} _group - The group members list for {{group}} substitution.
+ * @param {boolean} _replaceCharacterCard - Whether to replace character card macros.
  * @returns {string} The string with substituted parameters.
  */
 function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
-    return evaluateMacros(content, _name1 ?? name1, _name2 ?? name2, _original, _group ?? name2, _replaceCharacterCard);
+    const environment = {};
+
+    if (typeof _original === 'string') {
+        let originalSubstituted = false;
+        environment.original = () => {
+            if (originalSubstituted) {
+                return '';
+            }
+
+            originalSubstituted = true;
+            return _original;
+        };
+    }
+
+    if (_replaceCharacterCard) {
+        const fields = getCharacterCardFields();
+        environment.charPrompt = fields.system || '';
+        environment.charJailbreak = fields.jailbreak || '';
+        environment.description = fields.description || '';
+        environment.personality = fields.personality || '';
+        environment.scenario = fields.scenario || '';
+        environment.persona = fields.persona || '';
+        environment.mesExamples = fields.mesExamples || '';
+    }
+
+    // Must be substituted last so that they're replaced inside {{description}}
+    // TODO: evaluate macros recursively so we don't need to rely on substitution order
+    environment.user = _name1 ?? name1;
+    environment.char = _name2 ?? name2;
+    environment.group = environment.charIfNotGroup = _group ?? name2;
+
+    return evaluateMacros(content, environment);
 }
 
 
@@ -2442,7 +2475,7 @@ function showStopButton() {
 
 function hideStopButton() {
     // prevent NOOP, because hideStopButton() gets called multiple times
-    if($('#mes_stop').css('display') !== 'none') {
+    if ($('#mes_stop').css('display') !== 'none') {
         $('#mes_stop').css({ 'display': 'none' });
         eventSource.emit(event_types.GENERATION_ENDED, chat.length);
     }
@@ -6475,7 +6508,7 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } 
     });
 }
 
-function showSwipeButtons(id = chat.length - 1) {
+function showSwipeButtons() {
     if (chat.length === 0) {
         return;
     }
@@ -6483,10 +6516,9 @@ function showSwipeButtons(id = chat.length - 1) {
     if (
         chat[chat.length - 1].is_system ||
         !swipes ||
-        $('.mes:last').attr('mesid') < 0 ||
+        Number($('.mes:last').attr('mesid')) < 0 ||
         chat[chat.length - 1].is_user ||
         chat[chat.length - 1].extra?.image ||
-        id < 0 ||
         (selected_group && is_group_generating)
     ) { return; }
 
@@ -6505,7 +6537,7 @@ function showSwipeButtons(id = chat.length - 1) {
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
     }
 
-    const currentMessage = $('#chat').children().filter(`[mesid="${id}"]`);
+    const currentMessage = $('#chat').children().filter(`[mesid="${chat.length - 1}"]`);
     const swipeId = chat[chat.length - 1].swipe_id;
     var swipesCounterHTML = (`${(swipeId + 1)}/${(chat[chat.length - 1].swipes.length)}`);
 
@@ -6530,10 +6562,10 @@ function showSwipeButtons(id = chat.length - 1) {
     //console.log(chat[chat.length - 1].swipes.length);
 }
 
-function hideSwipeButtons(id = chat.length - 1) {
+function hideSwipeButtons() {
     //console.log('hideswipebuttons entered');
-    $('#chat').children().filter(`[mesid="${id}"]`).children('.swipe_right').css('display', 'none');
-    $('#chat').children().filter(`[mesid="${id}"]`).children('.swipe_left').css('display', 'none');
+    $('#chat').find('.swipe_right').css('display', 'none');
+    $('#chat').find('.swipe_left').css('display', 'none');
 }
 
 export async function saveMetadata() {

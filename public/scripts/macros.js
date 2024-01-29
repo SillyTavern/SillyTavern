@@ -1,4 +1,4 @@
-import { chat, main_api, getMaxContextSize, getCharacterCardFields } from '../script.js';
+import { chat, main_api, getMaxContextSize } from '../script.js';
 import { timestampToMoment, isDigitsOnly } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
@@ -201,56 +201,41 @@ function diceRollReplace(input, invalidRollPlaceholder = '') {
 /**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
- * @param {*} _name1 - The name of the user.
- * @param {*} _name2 - The name of the character.
- * @param {*} _original - The original message for {{original}} substitution.
- * @param {*} _group - The group members list for {{group}} substitution.
- * @param {boolean} _replaceCharacterCard - Whether to replace character card macros.
+ * @param {Object<string, *>} env - Map of macro names to the values they'll be substituted with. If the param
+ * values are functions, those functions will be called and their return values are used.
  * @returns {string} The string with substituted parameters.
  */
-export function evaluateMacros(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
+export function evaluateMacros(content, env) {
     if (!content) {
         return '';
     }
 
-    // Replace {{original}} with the original message
-    // Note: only replace the first instance of {{original}}
-    // This will hopefully prevent the abuse
-    if (typeof _original === 'string') {
-        content = content.replace(/{{original}}/i, _original);
-    }
     content = diceRollReplace(content);
     content = replaceInstructMacros(content);
     content = replaceVariableMacros(content);
     content = content.replace(/{{newline}}/gi, '\n');
     content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));
 
-    if (_replaceCharacterCard) {
-        const fields = getCharacterCardFields();
-        content = content.replace(/{{charPrompt}}/gi, fields.system || '');
-        content = content.replace(/{{charJailbreak}}/gi, fields.jailbreak || '');
-        content = content.replace(/{{description}}/gi, fields.description || '');
-        content = content.replace(/{{personality}}/gi, fields.personality || '');
-        content = content.replace(/{{scenario}}/gi, fields.scenario || '');
-        content = content.replace(/{{persona}}/gi, fields.persona || '');
-        content = content.replace(/{{mesExamples}}/gi, fields.mesExamples || '');
+    // Substitute passed-in variables
+    for (const varName in env) {
+        if (!Object.hasOwn(env, varName)) continue;
+
+        const param = env[varName];
+        content = content.replace(new RegExp(`{{${varName}}}`, 'gi'), param);
     }
 
     content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
-    content = content.replace(/{{user}}/gi, _name1);
-    content = content.replace(/{{char}}/gi, _name2);
-    content = content.replace(/{{charIfNotGroup}}/gi, _group);
-    content = content.replace(/{{group}}/gi, _group);
     content = content.replace(/{{lastMessage}}/gi, getLastMessage());
     content = content.replace(/{{lastMessageId}}/gi, getLastMessageId());
     content = content.replace(/{{firstIncludedMessageId}}/gi, getFirstIncludedMessageId());
     content = content.replace(/{{lastSwipeId}}/gi, getLastSwipeId());
     content = content.replace(/{{currentSwipeId}}/gi, getCurrentSwipeId());
 
-    content = content.replace(/<USER>/gi, _name1);
-    content = content.replace(/<BOT>/gi, _name2);
-    content = content.replace(/<CHARIFNOTGROUP>/gi, _group);
-    content = content.replace(/<GROUP>/gi, _group);
+    // Legacy non-macro substitutions
+    content = content.replace(/<USER>/gi, typeof env.user === 'function' ? env.user() : env.user);
+    content = content.replace(/<BOT>/gi, typeof env.char === 'function' ? env.char() : env.char);
+    content = content.replace(/<CHARIFNOTGROUP>/gi, typeof env.group === 'function' ? env.group() : env.group);
+    content = content.replace(/<GROUP>/gi, typeof env.group === 'function' ? env.group() : env.group);
 
     content = content.replace(/\{\{\/\/([\s\S]*?)\}\}/gm, '');
 
