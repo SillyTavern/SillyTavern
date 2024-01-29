@@ -374,6 +374,11 @@ function withVirtualWhitespace(text, span) {
  * @param {string | null} continueFrom  - for 'continue' generations, the prompt
  */
 export function saveLogprobsForActiveMessage(logprobs, continueFrom) {
+    if (!logprobs) {
+        // non-streaming APIs could return null data
+        return;
+    }
+
     convertTokenIdLogprobsToText(logprobs);
 
     const msgId = chat.length - 1;
