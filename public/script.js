@@ -444,6 +444,7 @@ let generation_started = new Date();
 let characters = [];
 let this_chid;
 let saveCharactersPage = 0;
+let savePersonasPage = 0;
 const default_avatar = 'img/ai4.png';
 export const system_avatar = 'img/five.png';
 export const comment_avatar = 'img/quill.png';
@@ -790,6 +791,7 @@ var PromptArrayItemForRawPromptDisplay;
 export let active_character = '';
 export let active_group = '';
 export const entitiesFilter = new FilterHelper(debounce(printCharacters, 100));
+export const personasFilter = new FilterHelper(debounce(getUserAvatars, 100));
 
 export function getRequestHeaders() {
     return {
@@ -5395,47 +5397,85 @@ function changeMainAPI() {
 
 ////////////////////////////////////////////////////
 
-export async function getUserAvatars() {
+/**
+ * Gets a list of user avatars.
+ * @param {boolean} doRender Whether to render the list
+ * @returns {Promise<string[]>} List of avatar file names
+ */
+export async function getUserAvatars(doRender = true) {
     const response = await fetch('/getuseravatars', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({
-            '': '',
-        }),
     });
-    if (response.ok === true) {
-        const getData = await response.json();
-        $('#user_avatar_block').html(''); //RossAscends: necessary to avoid doubling avatars each refresh.
-        $('#user_avatar_block').append('<div class="avatar_upload">+</div>');
+    if (response.ok) {
+        const allEntities = await response.json();
 
-        for (var i = 0; i < getData.length; i++) {
-            appendUserAvatar(getData[i]);
+        if (!doRender) {
+            return allEntities;
         }
 
-        return getData;
+        const entities = personasFilter.applyFilters(allEntities);
+
+        const storageKey = 'Personas_PerPage';
+        const listId = '#user_avatar_block';
+
+        $('#persona_pagination_container').pagination({
+            dataSource: entities,
+            pageSize: Number(localStorage.getItem(storageKey)) || per_page_default,
+            sizeChangerOptions: [10, 25, 50, 100, 250, 500, 1000],
+            pageRange: 1,
+            pageNumber: savePersonasPage || 1,
+            position: 'top',
+            showPageNumbers: false,
+            showSizeChanger: true,
+            prevText: '<',
+            nextText: '>',
+            formatNavigator: PAGINATION_TEMPLATE,
+            showNavigator: true,
+            callback: function (data) {
+                $(listId).empty();
+                for (const item of data) {
+                    $(listId).append(getUserAvatarBlock(item));
+                }
+                highlightSelectedAvatar();
+            },
+            afterSizeSelectorChange: function (e) {
+                localStorage.setItem(storageKey, e.target.value);
+            },
+            afterPaging: function (e) {
+                savePersonasPage = e;
+            },
+            afterRender: function () {
+                $(listId).scrollTop(0);
+            },
+        });
+
+        return allEntities;
     }
 }
 
 function highlightSelectedAvatar() {
-    $('#user_avatar_block').find('.avatar').removeClass('selected');
-    $('#user_avatar_block')
-        .find(`.avatar[imgfile='${user_avatar}']`)
-        .addClass('selected');
+    $('#user_avatar_block .avatar-container').removeClass('selected');
+    $('#user_avatar_block').find(`.avatar-container[imgfile='${user_avatar}']`).addClass('selected');
 }
 
-function appendUserAvatar(name) {
+/**
+ * Gets a rendered avatar block.
+ * @param {string} name Avatar file name
+ * @returns {JQuery<HTMLElement>} Avatar block
+ */
+function getUserAvatarBlock(name) {
     const template = $('#user_avatar_template .avatar-container').clone();
     const personaName = power_user.personas[name];
-    if (personaName) {
-        template.attr('title', personaName);
-    } else {
-        template.attr('title', '[Unnamed Persona]');
-    }
+    const personaDescription = power_user.persona_descriptions[name]?.description;
+    template.find('.ch_name').text(personaName || '[Unnamed Persona]');
+    template.find('.ch_description').text(personaDescription || '[No description]').toggleClass('text_muted', !personaDescription);
+    template.attr('imgfile', name);
     template.find('.avatar').attr('imgfile', name);
     template.toggleClass('default_persona', name === power_user.default_persona);
     template.find('img').attr('src', getUserAvatar(name));
     $('#user_avatar_block').append(template);
-    highlightSelectedAvatar();
+    return template;
 }
 
 function reloadUserAvatar(force = false) {
@@ -5463,8 +5503,12 @@ export function setUserName(value) {
     saveSettingsDebounced();
 }
 
-function setUserAvatar() {
-    user_avatar = $(this).attr('imgfile');
+/**
+ * Sets a user avatar file
+ * @param {string} imgfile Link to an image file
+ */
+export function setUserAvatar(imgfile) {
+    user_avatar = imgfile && typeof imgfile === 'string' ? imgfile : $(this).attr('imgfile');
     reloadUserAvatar();
     highlightSelectedAvatar();
     selectCurrentPersona();
@@ -7966,6 +8010,11 @@ jQuery(async function () {
         entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
     });
 
+    $('#persona_search_bar').on('input', function () {
+        const searchValue = String($(this).val()).toLowerCase();
+        personasFilter.setFilterData(FILTER_TYPES.PERSONA_SEARCH, searchValue);
+    });
+
     $('#mes_continue').on('click', function () {
         $('#option_continue').trigger('click');
     });
@@ -8067,7 +8116,7 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('click', '#user_avatar_block .avatar', setUserAvatar);
+    $(document).on('click', '#user_avatar_block .avatar, #user_avatar_block .avatar-container', setUserAvatar);
     $(document).on('click', '#user_avatar_block .avatar_upload', function () {
         $('#avatar_upload_overwrite').val('');
         $('#avatar_upload_file').trigger('click');

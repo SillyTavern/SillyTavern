@@ -11,6 +11,7 @@ import {
     name1,
     saveMetadata,
     saveSettingsDebounced,
+    setUserAvatar,
     setUserName,
     this_chid,
     user_avatar,
@@ -187,7 +188,7 @@ export function autoSelectPersona(name) {
     for (const [key, value] of Object.entries(power_user.personas)) {
         if (value === name) {
             console.log(`Auto-selecting persona ${key} for name ${name}`);
-            $(`.avatar[imgfile="${key}"]`).trigger('click');
+            setUserAvatar(key);
             return;
         }
     }
@@ -400,6 +401,9 @@ function onPersonaDescriptionInput() {
         object.description = power_user.persona_description;
     }
 
+    $(`.avatar-container[imgfile="${user_avatar}"] .ch_description`)
+        .text(power_user.persona_description || '[No description]')
+        .toggleClass('text_muted', !power_user.persona_description);
     saveSettingsDebounced();
 }
 
@@ -481,7 +485,7 @@ function updateUserLockIcon() {
     $('#lock_user_name').toggleClass('fa-lock', hasLock);
 }
 
-function setChatLockedPersona() {
+async function setChatLockedPersona() {
     // Define a persona for this chat
     let chatPersona = '';
 
@@ -502,10 +506,10 @@ function setChatLockedPersona() {
     }
 
     // Find the avatar file
-    const personaAvatar = $(`.avatar[imgfile="${chatPersona}"]`).trigger('click');
+    const userAvatars = await getUserAvatars(false);
 
     // Avatar missing (persona deleted)
-    if (chat_metadata['persona'] && personaAvatar.length == 0) {
+    if (chat_metadata['persona'] && !userAvatars.includes(chatPersona)) {
         console.warn('Persona avatar not found, unlocking persona');
         delete chat_metadata['persona'];
         updateUserLockIcon();
@@ -513,7 +517,7 @@ function setChatLockedPersona() {
     }
 
     // Default persona missing
-    if (power_user.default_persona && personaAvatar.length == 0) {
+    if (power_user.default_persona && !userAvatars.includes(power_user.default_persona)) {
         console.warn('Default persona avatar not found, clearing default persona');
         power_user.default_persona = null;
         saveSettingsDebounced();
@@ -521,7 +525,7 @@ function setChatLockedPersona() {
     }
 
     // Persona avatar found, select it
-    personaAvatar.trigger('click');
+    setUserAvatar(chatPersona);
     updateUserLockIcon();
 }
 
@@ -560,7 +564,7 @@ async function onPersonasRestoreInput(e) {
         return;
     }
 
-    const avatarsList = await getUserAvatars();
+    const avatarsList = await getUserAvatars(false);
     const warnings = [];
 
     // Merge personas with existing ones

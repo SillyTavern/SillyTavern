@@ -3659,7 +3659,20 @@
                             <input id="personas_restore_input" type="file" accept=".json" hidden>
                         </div>
                     </div>
-                    <div id="persona-management-block" class="flex-container wide100p">
+                    <div id="persona-management-block" class="flex-container wide100p flexGap10">
+                        <div class="flex1">
+                            <div class="flex-container marginBot10 alignitemscenter">
+                                <input id="persona_search_bar" class="text_pole width100p flex1" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100">
+                                <div id="persona_pagination_container" class="flex1"></div>
+                            </div>
+                            <div id="user_avatar_block">
+                                <div class="avatar_upload">+</div>
+                            </div>
+                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
+                                <input type="hidden" id="avatar_upload_overwrite" name="overwrite_name" value="">
+                            </form>
+                        </div>
                         <div class="flex1">
                             <h4 data-i18n="Name">Name</h4>
                             <div class="change_name">
@@ -3694,18 +3707,6 @@
                                     </span>
                                 </label>
                             </div>
-                        </div>
-                        <div class="flex1">
-                            <h4 class="title_restorable">
-                                <span data-i18n="Your Persona">Your Persona</span>
-                            </h4>
-                            <div id="user_avatar_block">
-                                <div class="avatar_upload">+</div>
-                            </div>
-                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
-                                <input type="hidden" id="avatar_upload_overwrite" name="overwrite_name" value="">
-                            </form>
                         </div>
                     </div>
                 </div>
@@ -5319,25 +5320,29 @@
         <div id="rawPromptWrapper" class="tokenItemizingSubclass"></div>
     </div>
     <div id="user_avatar_template" class="template_element">
-        <div class="avatar-container">
+        <div class="avatar-container wide100p">
             <div imgfile="" class="avatar">
                 <img src="" alt="User Avatar">
             </div>
-            <div class="avatar-buttons avatar-buttons-top">
-                <button class="menu_button bind_user_name" title="Bind user name to that avatar" data-i18n="[title]Bind user name to that avatar">
-                    <i class="fa-solid fa-user-edit"></i>
-                </button>
-                <button class="menu_button set_default_persona" title="Select this as default persona for the new chats." data-i18n="[title]Select this as default persona for the new chats.">
-                    <i class="fa-solid fa-crown"></i>
-                </button>
-            </div>
-            <div class="avatar-buttons avatar-buttons-bottom">
-                <button class="menu_button set_persona_image" title="Change persona image" data-i18n="[title]Change persona image">
-                    <i class="fa-solid fa-image"></i>
-                </button>
-                <button class="menu_button delete_avatar" title="Delete persona" data-i18n="[title]Delete persona">
-                    <i class="fa-solid fa-trash-alt"></i>
-                </button>
+            <div class="flex-container wide100pLess70px character_select_container">
+                <div class="wide100p character_name_block">
+                    <span class="ch_name">Kagari</span>
+                    <div class="avatar-buttons">
+                        <button class="menu_button bind_user_name" title="Bind user name to that avatar" data-i18n="[title]Bind user name to that avatar">
+                            <i class="fa-fw fa-solid fa-user-edit"></i>
+                        </button>
+                        <button class="menu_button set_persona_image" title="Change persona image" data-i18n="[title]Change persona image">
+                            <i class="fa-fw fa-solid fa-image"></i>
+                        </button>
+                        <button class="menu_button set_default_persona" title="Select this as default persona for the new chats." data-i18n="[title]Select this as default persona for the new chats.">
+                            <i class="fa-fw fa-solid fa-crown"></i>
+                        </button>
+                        <button class="menu_button delete_avatar" title="Delete persona" data-i18n="[title]Delete persona">
+                            <i class="fa-fw fa-solid fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="ch_description">Kagari From Rewrite Visual Novel. This is meant to be played for the user be named as Kotarou or Kotarou Tennouji. World Info/Lorebook is included. Enabling 'Prefer Char. Prompt is recommeded </div>
             </div>
         </div>
     </div>
