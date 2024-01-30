@@ -210,7 +210,8 @@ export async function updatePersonaNameIfExists(avatarId, newName) {
     }
 }
 
-async function bindUserNameToPersona() {
+async function bindUserNameToPersona(e) {
+    e?.stopPropagation();
     const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
 
     if (!avatarId) {
@@ -332,7 +333,8 @@ async function lockUserNameToChat() {
     updateUserLockIcon();
 }
 
-async function deleteUserAvatar() {
+async function deleteUserAvatar(e) {
+    e?.stopPropagation();
     const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
 
     if (!avatarId) {
@@ -429,7 +431,8 @@ function onPersonaDescriptionPositionInput() {
     saveSettingsDebounced();
 }
 
-async function setDefaultPersona() {
+async function setDefaultPersona(e) {
+    e?.stopPropagation();
     const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
 
     if (!avatarId) {

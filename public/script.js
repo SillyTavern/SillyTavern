@@ -5456,7 +5456,7 @@ export async function getUserAvatars(doRender = true) {
 
 function highlightSelectedAvatar() {
     $('#user_avatar_block .avatar-container').removeClass('selected');
-    $('#user_avatar_block').find(`.avatar-container[imgfile='${user_avatar}']`).addClass('selected');
+    $(`#user_avatar_block .avatar-container[imgfile='${user_avatar}']`).addClass('selected');
 }
 
 /**
@@ -8116,12 +8116,13 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('click', '#user_avatar_block .avatar, #user_avatar_block .avatar-container', setUserAvatar);
+    $(document).on('click', '#user_avatar_block .avatar-container', setUserAvatar);
     $(document).on('click', '#user_avatar_block .avatar_upload', function () {
         $('#avatar_upload_overwrite').val('');
         $('#avatar_upload_file').trigger('click');
     });
-    $(document).on('click', '#user_avatar_block .set_persona_image', function () {
+    $(document).on('click', '#user_avatar_block .set_persona_image', function (e) {
+        e.stopPropagation();
         const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
 
         if (!avatarId) {

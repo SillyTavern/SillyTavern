@@ -1834,10 +1834,6 @@ grammarly-extension {
     z-index: 35;
 }
 
-.avatar-container .ch_name {
-    flex: 1;
-}
-
 .avatar-container .avatar-buttons {
     display: flex;
     flex-direction: row;
@@ -1848,10 +1844,6 @@ grammarly-extension {
 
 .avatar-container .avatar-buttons:hover {
     opacity: 1;
-}
-
-.avatar-buttons .menu_button {
-    pointer-events: all;
 }
 
 /* Ross should be able to handle this later */
@@ -2289,10 +2281,6 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     height: 64px;
     border-radius: 50%;
     align-self: center;
-}
-
-#user_avatar_block .ch_description {
-    white-space: unset;
 }
 
 .avatar-container {
