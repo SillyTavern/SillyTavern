@@ -139,7 +139,7 @@ const languageCodes = {
 };
 
 const KEY_REQUIRED = ['deepl', 'libre'];
-const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx'];
+const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx', 'lingva'];
 
 function showKeysButton() {
     const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
@@ -236,6 +236,27 @@ async function translateProviderLibre(text, lang) {
  */
 async function translateProviderGoogle(text, lang) {
     const response = await fetch('/api/translate/google', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ text: text, lang: lang }),
+    });
+
+    if (response.ok) {
+        const result = await response.text();
+        return result;
+    }
+
+    throw new Error(response.statusText);
+}
+
+/**
+ * Translates text using an instance of the Lingva Translate
+ * @param {string} text Text to translate
+ * @param {string} lang Target language code
+ * @returns {Promise<string>} Translated text
+ */
+async function translateProviderLingva(text, lang) {
+    const response = await fetch('/api/translate/lingva', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ text: text, lang: lang }),
@@ -355,6 +376,8 @@ async function translate(text, lang) {
                 return await translateProviderLibre(text, lang);
             case 'google':
                 return await chunkedTranslate(text, lang, translateProviderGoogle, 5000);
+            case 'lingva':
+                return await chunkedTranslate(text, lang, translateProviderLingva, 5000);
             case 'deepl':
                 return await translateProviderDeepl(text, lang);
             case 'deeplx':
@@ -507,6 +530,7 @@ jQuery(() => {
                     <select id="translation_provider" name="provider" class="margin0">
                         <option value="libre">Libre</option>
                         <option value="google">Google</option>
+                        <option value="lingva">Lingva</option>
                         <option value="deepl">DeepL</option>
                         <option value="deeplx">DeepLX</option>
                         <option value="bing">Bing</option>
@@ -569,6 +593,7 @@ jQuery(() => {
         const optionText = $('#translation_provider option:selected').text();
         const exampleURLs = {
             'libre': 'http://127.0.0.1:5000/translate',
+            'lingva': 'https://lingva.ml/api/v1',
             'oneringtranslator': 'http://127.0.0.1:4990/translate',
             'deeplx': 'http://127.0.0.1:1188/translate',
         };
