@@ -5456,7 +5456,7 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
             const avatarIndex = entities.indexOf(openPageAt);
             const page = Math.floor(avatarIndex / perPage) + 1;
 
-            if (avatarIndex !== -1 && page > 1) {
+            if (avatarIndex !== -1) {
                 $('#persona_pagination_container').pagination('go', page);
             }
         }
