@@ -1828,6 +1828,23 @@ export function fuzzySearchWorldInfo(data, searchValue) {
     return results.map(x => x.item?.uid);
 }
 
+export function fuzzySearchPersonas(data, searchValue) {
+    data = data.map(x => ({ key: x, description: power_user.persona_descriptions[x]?.description ?? '', name: power_user.personas[x] ?? '' }));
+    const fuse = new Fuse(data, {
+        keys: [
+            { name: 'name', weight: 4 },
+            { name: 'description', weight: 1 },
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2,
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('Personas fuzzy search results for ' + searchValue, results);
+    return results.map(x => x.item?.key);
+}
+
 export function fuzzySearchTags(searchValue) {
     const fuse = new Fuse(tags, {
         keys: [

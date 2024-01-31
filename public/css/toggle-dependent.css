@@ -148,7 +148,8 @@ body.big-avatars .avatar_collage {
     aspect-ratio: 2 / 3;
 }
 
-body.big-avatars .ch_description {
+body.big-avatars .ch_description,
+.avatar-container .ch_description {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
