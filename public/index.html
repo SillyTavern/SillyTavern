@@ -2117,7 +2117,7 @@
                                     </span>
                                 </div>
                                 <div class="flex-container width100p">
-                                    <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="500" form="openai_form" />
+                                    <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="500" form="openai_form" autocomplete="off" />
                                     <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                 </div>
                             </div>
@@ -3652,7 +3652,7 @@
                 <div class="drawer-icon fa-solid fa-face-smile closedIcon" title="Persona Management" data-i18n="[title]Persona Management"></div>
             </div>
             <div class="drawer-content closedDrawer">
-                <div class="flex-container wide100p alignitemscenter spaceBetween">
+                <div class="flex-container wide100p alignitemscenter spaceBetween flexNoGap">
                     <div class="flex-container alignItemsBaseline wide100p">
                         <div class="flex1 flex-container alignItemsBaseline">
                             <h3 class="margin0" data-i18n="Persona Management">Persona Management</h3>
@@ -3673,14 +3673,27 @@
                                 <i class="fa-solid fa-file-import"></i>
                                 <span data-i18n="Restore">Restore</span>
                             </div>
-                            <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona" data-i18n="[title]Create a dummy persona">
-                                <i class="fa-solid fa-person-circle-question fa-fw"></i>
-                                <span data-i18n="Create">Create</span>
-                            </div>
                             <input id="personas_restore_input" type="file" accept=".json" hidden>
                         </div>
                     </div>
-                    <div id="persona-management-block" class="flex-container wide100p">
+                    <div id="persona-management-block" class="flex-container wide100p flexGap10">
+                        <div class="flex1">
+                            <div class="flex-container marginBot10 alignitemscenter">
+                                <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona" data-i18n="[title]Create a dummy persona">
+                                    <i class="fa-solid fa-person-circle-question fa-fw"></i>
+                                    <span data-i18n="Create">Create</span>
+                                </div>
+                                <input id="persona_search_bar" class="text_pole width100p flex1 margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100">
+                                <div id="persona_pagination_container" class="flex1"></div>
+                            </div>
+                            <div id="user_avatar_block">
+                                <div class="avatar_upload">+</div>
+                            </div>
+                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
+                                <input type="hidden" id="avatar_upload_overwrite" name="overwrite_name" value="">
+                            </form>
+                        </div>
                         <div class="flex1">
                             <h4 data-i18n="Name">Name</h4>
                             <div class="change_name">
@@ -3715,18 +3728,6 @@
                                     </span>
                                 </label>
                             </div>
-                        </div>
-                        <div class="flex1">
-                            <h4 class="title_restorable">
-                                <span data-i18n="Your Persona">Your Persona</span>
-                            </h4>
-                            <div id="user_avatar_block">
-                                <div class="avatar_upload">+</div>
-                            </div>
-                            <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                <input type="file" id="avatar_upload_file" accept="image/*" name="avatar">
-                                <input type="hidden" id="avatar_upload_overwrite" name="overwrite_name" value="">
-                            </form>
                         </div>
                     </div>
                 </div>
@@ -3958,7 +3959,8 @@
                                             </div>
                                             <select id="rm_group_generation_mode">
                                                 <option value="0" data-i18n="Swap character cards">Swap character cards</option>
-                                                <option value="1" data-i18n="Join character cards">Join character cards</option>
+                                                <option value="1" data-i18n="Join character cards (exclude muted)">Join character cards (exclude muted)</option>
+                                                <option value="2" data-i18n="Join character cards (include muted)">Join character cards (include muted)</option>
                                             </select>
                                         </div>
                                     </div>
@@ -4245,9 +4247,8 @@
     </div>
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
-            <div name="selectChatPopupHeader" class="flex-container alignitemscenter justifySpaceBetween">
+            <div name="selectChatPopupHeader" class="flex-container alignitemscenter justifySpaceBetween flexGap10">
                 <div id="select_chat_import"> <!-- import chat popup header -->
-                    <div id="chat_import_button" class="fa-solid fa-file-import opacity50p hoverglow fontsize120p"></div>
                     <form id="form_import_chat" action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
                         <input type="file" id="chat_import_file" accept=".json, .jsonl" name="avatar">
                         <input id="chat_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
@@ -4259,8 +4260,15 @@
                     <span id="ChatHistoryCharName"></span><span data-i18n="Chat History">Chat History</span>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/chatfilemanagement/#chat-import" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
                 </div>
-                <div class="fa-solid fa-plus menu_button" title="New Chat" id="newChatFromManageScreenButton"></div>
-                <input type="text" id="select_chat_search" class="menu_button" placeholder="Search..." autocomplete="off">
+                <div id="newChatFromManageScreenButton" class="menu_button menu_button_icon" >
+                    <i class="fa-solid fa-plus"></i>
+                    <span data-i18n="New Chat">New Chat</span>
+                </div>
+                <div id="chat_import_button" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span data-i18n="Import Chat">Import Chat</span>
+                </div>
+                <input type="text" id="select_chat_search" class="text_pole flex1" placeholder="Search..." autocomplete="off">
                 <div id="select_chat_cross" class="opacity50p hoverglow fa-solid fa-circle-xmark fontsize120p" alt="Close Past Chat Popup"></div>
             </div>
             <div id="select_chat_div"></div>
@@ -5339,25 +5347,29 @@
         <div id="rawPromptWrapper" class="tokenItemizingSubclass"></div>
     </div>
     <div id="user_avatar_template" class="template_element">
-        <div class="avatar-container">
+        <div class="avatar-container wide100p">
             <div imgfile="" class="avatar">
                 <img src="" alt="User Avatar">
             </div>
-            <div class="avatar-buttons avatar-buttons-top">
-                <button class="menu_button bind_user_name" title="Bind user name to that avatar" data-i18n="[title]Bind user name to that avatar">
-                    <i class="fa-solid fa-user-edit"></i>
-                </button>
-                <button class="menu_button set_default_persona" title="Select this as default persona for the new chats." data-i18n="[title]Select this as default persona for the new chats.">
-                    <i class="fa-solid fa-crown"></i>
-                </button>
-            </div>
-            <div class="avatar-buttons avatar-buttons-bottom">
-                <button class="menu_button set_persona_image" title="Change persona image" data-i18n="[title]Change persona image">
-                    <i class="fa-solid fa-image"></i>
-                </button>
-                <button class="menu_button delete_avatar" title="Delete persona" data-i18n="[title]Delete persona">
-                    <i class="fa-solid fa-trash-alt"></i>
-                </button>
+            <div class="flex-container wide100pLess70px character_select_container">
+                <div class="wide100p character_name_block">
+                    <span class="ch_name flex1"></span>
+                    <div class="avatar-buttons">
+                        <button class="menu_button bind_user_name" title="Bind user name to that avatar" data-i18n="[title]Bind user name to that avatar">
+                            <i class="fa-fw fa-solid fa-user-edit"></i>
+                        </button>
+                        <button class="menu_button set_persona_image" title="Change persona image" data-i18n="[title]Change persona image">
+                            <i class="fa-fw fa-solid fa-image"></i>
+                        </button>
+                        <button class="menu_button set_default_persona" title="Select this as default persona for the new chats." data-i18n="[title]Select this as default persona for the new chats.">
+                            <i class="fa-fw fa-solid fa-crown"></i>
+                        </button>
+                        <button class="menu_button delete_avatar" title="Delete persona" data-i18n="[title]Delete persona">
+                            <i class="fa-fw fa-solid fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="ch_description"></div>
             </div>
         </div>
     </div>
