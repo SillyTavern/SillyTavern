@@ -821,7 +821,7 @@ async function firstLoadInit() {
     await readSecretState();
     await getClientVersion();
     await getSettings();
-    await getUserAvatars();
+    await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
     await initTokenizers();
@@ -5400,9 +5400,10 @@ function changeMainAPI() {
 /**
  * Gets a list of user avatars.
  * @param {boolean} doRender Whether to render the list
+ * @param {string} openPageAt Item to be opened at
  * @returns {Promise<string[]>} List of avatar file names
  */
-export async function getUserAvatars(doRender = true) {
+export async function getUserAvatars(doRender = true, openPageAt = '') {
     const response = await fetch('/getuseravatars', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -5418,10 +5419,11 @@ export async function getUserAvatars(doRender = true) {
 
         const storageKey = 'Personas_PerPage';
         const listId = '#user_avatar_block';
+        const perPage = Number(localStorage.getItem(storageKey)) || 5;
 
         $('#persona_pagination_container').pagination({
             dataSource: entities,
-            pageSize: Number(localStorage.getItem(storageKey)) || 5,
+            pageSize: perPage,
             sizeChangerOptions: [5, 10, 25, 50, 100, 250, 500, 1000],
             pageRange: 1,
             pageNumber: savePersonasPage || 1,
@@ -5449,6 +5451,15 @@ export async function getUserAvatars(doRender = true) {
                 $(listId).scrollTop(0);
             },
         });
+
+        if (openPageAt) {
+            const avatarIndex = entities.indexOf(openPageAt);
+            const page = Math.floor(avatarIndex / perPage) + 1;
+
+            if (avatarIndex !== -1 && page > 1) {
+                $('#persona_pagination_container').pagination('go', page);
+            }
+        }
 
         return allEntities;
     }
@@ -5563,7 +5574,7 @@ async function uploadUserAvatar(e) {
             }
 
             crop_data = undefined;
-            await getUserAvatars();
+            await getUserAvatars(true, name || data.path);
         },
         error: (jqXHR, exception) => { },
     });

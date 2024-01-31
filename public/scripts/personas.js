@@ -47,7 +47,7 @@ async function uploadUserAvatar(url, name) {
         contentType: false,
         processData: false,
         success: async function () {
-            await getUserAvatars();
+            await getUserAvatars(true, name);
         },
     });
 }
@@ -157,7 +157,7 @@ export async function convertCharacterToPersona(characterId = null) {
     toastr.success(`You can now select ${name} as a persona in the Persona Management menu.`, 'Persona Created');
 
     // Refresh the persona selector
-    await getUserAvatars();
+    await getUserAvatars(true, overwriteName);
     // Reload the persona description
     setPersonaDescription();
 }
@@ -202,7 +202,7 @@ export function autoSelectPersona(name) {
 export async function updatePersonaNameIfExists(avatarId, newName) {
     if (avatarId in power_user.personas) {
         power_user.personas[avatarId] = newName;
-        await getUserAvatars();
+        await getUserAvatars(true, avatarId);
         saveSettingsDebounced();
         console.log(`Updated persona name for ${avatarId} to ${newName}`);
     } else {
@@ -256,7 +256,7 @@ async function bindUserNameToPersona(e) {
     }
 
     saveSettingsDebounced();
-    await getUserAvatars();
+    await getUserAvatars(true, avatarId);
     setPersonaDescription();
 }
 
@@ -479,7 +479,7 @@ async function setDefaultPersona(e) {
     }
 
     saveSettingsDebounced();
-    await getUserAvatars();
+    await getUserAvatars(true, avatarId);
 }
 
 function updateUserLockIcon() {
