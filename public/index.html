@@ -4226,9 +4226,8 @@
     </div>
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
-            <div name="selectChatPopupHeader" class="flex-container alignitemscenter justifySpaceBetween">
+            <div name="selectChatPopupHeader" class="flex-container alignitemscenter justifySpaceBetween flexGap10">
                 <div id="select_chat_import"> <!-- import chat popup header -->
-                    <div id="chat_import_button" class="fa-solid fa-file-import opacity50p hoverglow fontsize120p"></div>
                     <form id="form_import_chat" action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
                         <input type="file" id="chat_import_file" accept=".json, .jsonl" name="avatar">
                         <input id="chat_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
@@ -4240,8 +4239,15 @@
                     <span id="ChatHistoryCharName"></span><span data-i18n="Chat History">Chat History</span>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/chatfilemanagement/#chat-import" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
                 </div>
-                <div class="fa-solid fa-plus menu_button" title="New Chat" id="newChatFromManageScreenButton"></div>
-                <input type="text" id="select_chat_search" class="menu_button" placeholder="Search..." autocomplete="off">
+                <div id="newChatFromManageScreenButton" class="menu_button menu_button_icon" >
+                    <i class="fa-solid fa-plus"></i>
+                    <span data-i18n="New Chat">New Chat</span>
+                </div>
+                <div id="chat_import_button" class="menu_button menu_button_icon">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span data-i18n="Import Chat">Import Chat</span>
+                </div>
+                <input type="text" id="select_chat_search" class="text_pole flex1" placeholder="Search..." autocomplete="off">
                 <div id="select_chat_cross" class="opacity50p hoverglow fa-solid fa-circle-xmark fontsize120p" alt="Close Past Chat Popup"></div>
             </div>
             <div id="select_chat_div"></div>
