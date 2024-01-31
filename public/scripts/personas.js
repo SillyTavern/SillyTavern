@@ -21,6 +21,13 @@ import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCount } from './tokenizers.js';
 import { debounce, delay, download, parseJsonFile } from './utils.js';
 
+const GRID_STORAGE_KEY = 'Personas_GridView';
+
+function switchPersonaGridView() {
+    const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
+    $('#user_avatar_block').toggleClass('gridView', state);
+}
+
 /**
  * Uploads an avatar file to the server
  * @param {string} url URL for the avatar file
@@ -633,6 +640,11 @@ export function initPersonas() {
     $('#personas_backup').on('click', onBackupPersonas);
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);
+    $('#persona_grid_toggle').on('click', () => {
+        const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
+        localStorage.setItem(GRID_STORAGE_KEY, String(!state));
+        switchPersonaGridView();
+    });
 
     eventSource.on('charManagementDropdown', (target) => {
         if (target === 'convert_to_persona') {
@@ -640,4 +652,5 @@ export function initPersonas() {
         }
     });
     eventSource.on(event_types.CHAT_CHANGED, setChatLockedPersona);
+    switchPersonaGridView();
 }
