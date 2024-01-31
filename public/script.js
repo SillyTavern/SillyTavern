@@ -5421,8 +5421,8 @@ export async function getUserAvatars(doRender = true) {
 
         $('#persona_pagination_container').pagination({
             dataSource: entities,
-            pageSize: Number(localStorage.getItem(storageKey)) || per_page_default,
-            sizeChangerOptions: [10, 25, 50, 100, 250, 500, 1000],
+            pageSize: Number(localStorage.getItem(storageKey)) || 5,
+            sizeChangerOptions: [5, 10, 25, 50, 100, 250, 500, 1000],
             pageRange: 1,
             pageNumber: savePersonasPage || 1,
             position: 'top',
