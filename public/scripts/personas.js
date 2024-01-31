@@ -21,6 +21,13 @@ import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCount } from './tokenizers.js';
 import { debounce, delay, download, parseJsonFile } from './utils.js';
 
+const GRID_STORAGE_KEY = 'Personas_GridView';
+
+function switchPersonaGridView() {
+    const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
+    $('#user_avatar_block').toggleClass('gridView', state);
+}
+
 /**
  * Uploads an avatar file to the server
  * @param {string} url URL for the avatar file
@@ -47,7 +54,7 @@ async function uploadUserAvatar(url, name) {
         contentType: false,
         processData: false,
         success: async function () {
-            await getUserAvatars();
+            await getUserAvatars(true, name);
         },
     });
 }
@@ -157,7 +164,7 @@ export async function convertCharacterToPersona(characterId = null) {
     toastr.success(`You can now select ${name} as a persona in the Persona Management menu.`, 'Persona Created');
 
     // Refresh the persona selector
-    await getUserAvatars();
+    await getUserAvatars(true, overwriteName);
     // Reload the persona description
     setPersonaDescription();
 }
@@ -202,7 +209,7 @@ export function autoSelectPersona(name) {
 export async function updatePersonaNameIfExists(avatarId, newName) {
     if (avatarId in power_user.personas) {
         power_user.personas[avatarId] = newName;
-        await getUserAvatars();
+        await getUserAvatars(true, avatarId);
         saveSettingsDebounced();
         console.log(`Updated persona name for ${avatarId} to ${newName}`);
     } else {
@@ -256,7 +263,7 @@ async function bindUserNameToPersona(e) {
     }
 
     saveSettingsDebounced();
-    await getUserAvatars();
+    await getUserAvatars(true, avatarId);
     setPersonaDescription();
 }
 
@@ -479,7 +486,7 @@ async function setDefaultPersona(e) {
     }
 
     saveSettingsDebounced();
-    await getUserAvatars();
+    await getUserAvatars(true, avatarId);
 }
 
 function updateUserLockIcon() {
@@ -633,6 +640,11 @@ export function initPersonas() {
     $('#personas_backup').on('click', onBackupPersonas);
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);
+    $('#persona_grid_toggle').on('click', () => {
+        const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
+        localStorage.setItem(GRID_STORAGE_KEY, String(!state));
+        switchPersonaGridView();
+    });
 
     eventSource.on('charManagementDropdown', (target) => {
         if (target === 'convert_to_persona') {
@@ -640,4 +652,5 @@ export function initPersonas() {
         }
     });
     eventSource.on(event_types.CHAT_CHANGED, setChatLockedPersona);
+    switchPersonaGridView();
 }
