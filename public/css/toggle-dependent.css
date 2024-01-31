@@ -89,7 +89,8 @@ body.charListGrid #rm_print_characters_block .ch_avatar_url {
 
 /*big avatars mode page-wide changes*/
 
-body.big-avatars .character_select .avatar {
+body.big-avatars .character_select .avatar,
+body.big-avatars .bogus_folder_select .avatar {
     flex: unset;
 }
 
