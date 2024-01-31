@@ -104,6 +104,13 @@ router.post('/google', jsonParser, async (request, response) => {
 
 router.post('/lingva', jsonParser, async (request, response) => {
     try {
+        const baseUrl = readSecret(SECRET_KEYS.LINGVA_URL);
+
+        if (!baseUrl) {
+            console.log('Lingva URL is not configured.');
+            return response.sendStatus(400);
+        }
+
         const text = request.body.text;
         const lang = request.body.lang;
 
@@ -112,9 +119,8 @@ router.post('/lingva', jsonParser, async (request, response) => {
         }
 
         console.log('Input text: ' + text);
-                
-        const url  = readSecret(SECRET_KEYS.LINGVA_URL) + "/auto/" + lang + "/" + encodeURIComponent(text);
-        
+        const url = `${baseUrl}/auto/${lang}/${encodeURIComponent(text)}`;
+
         https.get(url, (resp) => {
             let data = '';
 
@@ -124,7 +130,7 @@ router.post('/lingva', jsonParser, async (request, response) => {
 
             resp.on('end', () => {
                 try {
-                    const result = JSON.parse(data)
+                    const result = JSON.parse(data);
                     console.log('Translated text: ' + result.translation);
                     return response.send(result.translation);
                 } catch (error) {
