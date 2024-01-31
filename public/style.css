@@ -1521,6 +1521,10 @@ select option:not(:checked) {
     height: auto;
 }
 
+#persona_search_bar {
+    min-width: 80px;
+}
+
 input[type=search]::-webkit-search-cancel-button {
     -webkit-appearance: none;
     height: 1em;
