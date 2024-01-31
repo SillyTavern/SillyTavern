@@ -1837,6 +1837,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     border: 2px solid transparent;
 }
 
+.avatar-container .character_select_container {
+    flex-grow: 1;
+}
+
 grammarly-extension {
     z-index: 35;
 }
@@ -2284,11 +2288,10 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 
 .avatar-container .avatar {
     cursor: pointer;
-    width: 64px;
-    height: 64px;
     border-radius: 50%;
     align-self: center;
     outline: 2px solid transparent;
+    flex: unset;
 }
 
 .avatar-container.selected {
@@ -2301,11 +2304,6 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 
 .avatar-container.default_persona .set_default_persona {
     color: var(--golden);
-}
-
-#user_avatar_block .avatar img {
-    width: 64px;
-    height: 64px;
 }
 
 #user_avatar_block .avatar_upload {
