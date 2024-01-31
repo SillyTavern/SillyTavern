@@ -2275,12 +2275,13 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     justify-content: space-evenly;
 }
 
-#user_avatar_block .avatar {
+.avatar-container .avatar {
     cursor: pointer;
     width: 64px;
     height: 64px;
     border-radius: 50%;
     align-self: center;
+    outline: 2px solid transparent;
 }
 
 .avatar-container {
@@ -2292,7 +2293,7 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     border: 2px solid rgba(255, 255, 255, 0.7);
 }
 
-.avatar-container.default_persona {
+.avatar-container.default_persona .avatar {
     outline: 2px solid var(--golden);
 }
 
