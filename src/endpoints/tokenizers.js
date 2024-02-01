@@ -628,6 +628,10 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
                     url += '/tokenize';
                     args.body = JSON.stringify({ 'content': text });
                     break;
+                case TEXTGEN_TYPES.APHRODITE:
+                    url += '/v1/tokenize';
+                    args.body = JSON.stringify({ 'prompt': text });
+                    break;
                 default:
                     url += '/v1/internal/encode';
                     args.body = JSON.stringify({ 'text': text });

@@ -35,7 +35,7 @@ export const SENTENCEPIECE_TOKENIZERS = [
     //tokenizers.NERD2,
 ];
 
-export const TEXTGEN_TOKENIZERS = [OOBA, TABBY, KOBOLDCPP, LLAMACPP];
+export const TEXTGEN_TOKENIZERS = [OOBA, TABBY, KOBOLDCPP, LLAMACPP, APHRODITE];
 
 const TOKENIZER_URLS = {
     [tokenizers.GPT2]: {
