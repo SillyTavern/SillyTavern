@@ -2519,7 +2519,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
-    oai_settings.proxy_password = settings.proxy_password ?? default_settings.proxy_password;
     oai_settings.assistant_prefill = settings.assistant_prefill ?? default_settings.assistant_prefill;
     oai_settings.human_sysprompt_message = settings.human_sysprompt_message ?? default_settings.human_sysprompt_message;
     oai_settings.image_inlining = settings.image_inlining ?? default_settings.image_inlining;
@@ -2546,7 +2545,6 @@ function loadOpenAISettings(data, settings) {
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
-    $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
     $('#claude_human_sysprompt_textarea').val(oai_settings.human_sysprompt_message);
     $('#openai_image_inlining').prop('checked', oai_settings.image_inlining);
@@ -2628,11 +2626,6 @@ function loadOpenAISettings(data, settings) {
     $('#repetition_penalty_openai').val(oai_settings.repetition_penalty_openai);
     $('#repetition_penalty_counter_openai').val(Number(oai_settings.repetition_penalty_openai));
     $('#seed_openai').val(oai_settings.seed);
-
-    if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
-    $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
-
-    $('.reverse_proxy_warning').toggle(oai_settings.reverse_proxy !== '');
 
     $('#openai_logit_bias_preset').empty();
     for (const preset of Object.keys(oai_settings.bias_presets)) {
@@ -2787,8 +2780,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         new_example_chat_prompt: settings.new_example_chat_prompt,
         continue_nudge_prompt: settings.continue_nudge_prompt,
         bias_preset_selected: settings.bias_preset_selected,
-        reverse_proxy: settings.reverse_proxy,
-        proxy_password: settings.proxy_password,
         max_context_unlocked: settings.max_context_unlocked,
         wi_format: settings.wi_format,
         scenario_format: settings.scenario_format,
@@ -3164,7 +3155,6 @@ function onSettingsPresetChange() {
         new_example_chat_prompt: ['#newexamplechat_prompt_textarea', 'new_example_chat_prompt', false],
         continue_nudge_prompt: ['#continue_nudge_prompt_textarea', 'continue_nudge_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
-        reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
         wi_format: ['#wi_format_textarea', 'wi_format', false],
         scenario_format: ['#scenario_format_textarea', 'scenario_format', false],
         personality_format: ['#personality_format_textarea', 'personality_format', false],
@@ -3174,7 +3164,6 @@ function onSettingsPresetChange() {
         prompt_order: ['', 'prompt_order', false],
         api_url_scale: ['#api_url_scale', 'api_url_scale', false],
         show_external_models: ['#openai_show_external_models', 'show_external_models', true],
-        proxy_password: ['#openai_proxy_password', 'proxy_password', false],
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
         human_sysprompt_message: ['#claude_human_sysprompt_textarea', 'human_sysprompt_message', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', true],
@@ -3855,6 +3844,7 @@ function setProxyPreset(name, url, password) {
     oai_settings.proxy_password = password;
     $('#openai_proxy_password').val(oai_settings.proxy_password);
     reconnectOpenAi();
+    $('.reverse_proxy_warning').toggle(oai_settings.reverse_proxy !== '');
 }
 
 function onProxyPresetChange() {
