@@ -501,6 +501,11 @@ async function switchLabMode() {
         $('#labModeWarning').removeClass('displayNone');
         //$("#advanced-ai-config-block input[type='range']").hide()
 
+        $('#amount_gen').attr('min', '1')
+            .attr('max', '99999')
+            .attr('step', '1');
+
+
     } else {
         //re apply the original sliders values to each input
         originalSliderValues.forEach(function (slider) {
@@ -512,6 +517,10 @@ async function switchLabMode() {
         });
         $('#advanced-ai-config-block input[type=\'range\']').show();
         $('#labModeWarning').addClass('displayNone');
+
+        $('#amount_gen').attr('min', '16')
+            .attr('max', '2048')
+            .attr('step', '1');
     }
 }
 
