@@ -33,6 +33,11 @@ const tasks = {
         pipeline: null,
         configField: 'extras.promptExpansionModel',
     },
+    'automatic-speech-recognition': {
+        defaultModel: 'Xenova/whisper-small',
+        pipeline: null,
+        configField: 'extras.speechToTextModel',
+    },
 }
 
 /**
@@ -72,16 +77,17 @@ function getModelForTask(task) {
 
 /**
  * Gets the transformers.js pipeline for a given task.
- * @param {string} task The task to get the pipeline for
+ * @param {import('sillytavern-transformers').PipelineType} task The task to get the pipeline for
+ * @param {string} forceModel The model to use for the pipeline, if any
  * @returns {Promise<Pipeline>} Pipeline for the task
  */
-async function getPipeline(task) {
+async function getPipeline(task, forceModel = '') {
     if (tasks[task].pipeline) {
         return tasks[task].pipeline;
     }
 
     const cache_dir = path.join(process.cwd(), 'cache');
-    const model = getModelForTask(task);
+    const model = forceModel || getModelForTask(task);
     const localOnly = getConfigValue('extras.disableAutoDownload', false);
     console.log('Initializing transformers.js pipeline for task', task, 'with model', model);
     const instance = await pipeline(task, model, { cache_dir, quantized: true, local_files_only: localOnly });
