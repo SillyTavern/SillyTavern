@@ -17,26 +17,37 @@ const tasks = {
         defaultModel: 'Cohee/distilbert-base-uncased-go-emotions-onnx',
         pipeline: null,
         configField: 'extras.classificationModel',
+        quantized: true,
     },
     'image-to-text': {
         defaultModel: 'Xenova/vit-gpt2-image-captioning',
         pipeline: null,
         configField: 'extras.captioningModel',
+        quantized: true,
     },
     'feature-extraction': {
         defaultModel: 'Xenova/all-mpnet-base-v2',
         pipeline: null,
         configField: 'extras.embeddingModel',
+        quantized: true,
     },
     'text-generation': {
         defaultModel: 'Cohee/fooocus_expansion-onnx',
         pipeline: null,
         configField: 'extras.promptExpansionModel',
+        quantized: true,
     },
     'automatic-speech-recognition': {
         defaultModel: 'Xenova/whisper-small',
         pipeline: null,
         configField: 'extras.speechToTextModel',
+        quantized: true,
+    },
+    'text-to-speech': {
+        defaultModel: 'Xenova/speecht5_tts',
+        pipeline: null,
+        configField: 'extras.textToSpeechModel',
+        quantized: false,
     },
 }
 
@@ -90,7 +101,7 @@ async function getPipeline(task, forceModel = '') {
     const model = forceModel || getModelForTask(task);
     const localOnly = getConfigValue('extras.disableAutoDownload', false);
     console.log('Initializing transformers.js pipeline for task', task, 'with model', model);
-    const instance = await pipeline(task, model, { cache_dir, quantized: true, local_files_only: localOnly });
+    const instance = await pipeline(task, model, { cache_dir, quantized: tasks[task].quantized ?? true, local_files_only: localOnly });
     tasks[task].pipeline = instance;
     return instance;
 }

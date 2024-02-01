@@ -54,17 +54,25 @@ router.post('/recognize', jsonParser, async (req, res) => {
 
 router.post('/synthesize', jsonParser, async (req, res) => {
     try {
+        const wavefile = require('wavefile');
         const TASK = 'text-to-speech';
-        const { model, text, lang } = req.body;
+        const { text, model, speaker } = req.body;
         const module = await import('../transformers.mjs');
         const pipe = await module.default.getPipeline(TASK, model);
+        const speaker_embeddings = speaker
+            ? new Float32Array(new Uint8Array(Buffer.from(speaker.split(',')[1], 'base64')).buffer)
+            : null;
         const start = performance.now();
-        const result = await pipe(text, { language: lang || null });
+        const result = await pipe(text, { speaker_embeddings: speaker_embeddings });
         const end = performance.now();
         console.log(`Execution duration: ${(end - start) / 1000} seconds`);
-        console.log('Synthesized audio:', result.audio);
 
-        return res.json({ audio: result.audio });
+        const wav = new wavefile.WaveFile();
+        wav.fromScratch(1, result.sampling_rate, '32f', result.audio);
+        const buffer = wav.toBuffer();
+
+        res.set('Content-Type', 'audio/wav');
+        return res.send(Buffer.from(buffer));
     } catch (error) {
         console.error(error);
         return res.sendStatus(500);
