@@ -5416,7 +5416,11 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
         }
 
         const entities = personasFilter.applyFilters(allEntities);
-        entities.sort((a, b) => power_user.persona_sort_order === 'asc' ? a.localeCompare(b) : b.localeCompare(a));
+        entities.sort((a, b) => {
+            const aName = String(power_user.personas[a]);
+            const bName = String(power_user.personas[b]);
+            return power_user.persona_sort_order === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
+        });
 
         const storageKey = 'Personas_PerPage';
         const listId = '#user_avatar_block';
