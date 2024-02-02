@@ -225,6 +225,7 @@ let power_user = {
     persona_description: '',
     persona_description_position: persona_description_positions.IN_PROMPT,
     persona_show_notifications: true,
+    persona_sort_order: 'asc',
 
     custom_stopping_strings: '',
     custom_stopping_strings_macro: true,

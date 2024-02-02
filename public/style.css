@@ -1525,6 +1525,10 @@ select option:not(:checked) {
     min-width: 80px;
 }
 
+#persona_sort_order {
+    max-width: 4em;
+}
+
 input[type=search]::-webkit-search-cancel-button {
     -webkit-appearance: none;
     height: 1em;

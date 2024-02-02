@@ -5416,6 +5416,7 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
         }
 
         const entities = personasFilter.applyFilters(allEntities);
+        entities.sort((a, b) => power_user.persona_sort_order === 'asc' ? a.localeCompare(b) : b.localeCompare(a));
 
         const storageKey = 'Personas_PerPage';
         const listId = '#user_avatar_block';

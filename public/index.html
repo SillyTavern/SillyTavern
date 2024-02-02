@@ -3660,9 +3660,13 @@
                             <div class="flex-container marginBot10 alignitemscenter">
                                 <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona" data-i18n="[title]Create a dummy persona">
                                     <i class="fa-solid fa-person-circle-question fa-fw"></i>
-                                    <span data-i18n="Create">Create</span>
+                                    <div data-i18n="Create">Create</div>
                                 </div>
                                 <input id="persona_search_bar" class="text_pole width100p flex1 margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100">
+                                <select id="persona_sort_order" class="margin0">
+                                    <option value="asc">A-Z</option>
+                                    <option value="desc">Z-A</option>
+                                </select>
                                 <div id="persona_pagination_container" class="flex1"></div>
                                 <i id="persona_grid_toggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle grid view"></i>
                             </div>
