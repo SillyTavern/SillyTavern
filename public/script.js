@@ -5483,7 +5483,7 @@ function getUserAvatarBlock(name) {
     template.find('.ch_name').text(personaName || '[Unnamed Persona]');
     template.find('.ch_description').text(personaDescription || '[No description]').toggleClass('text_muted', !personaDescription);
     template.attr('imgfile', name);
-    template.find('.avatar').attr('imgfile', name);
+    template.find('.avatar').attr('imgfile', name).attr('title', name);
     template.toggleClass('default_persona', name === power_user.default_persona);
     template.find('img').attr('src', getUserAvatar(name));
     $('#user_avatar_block').append(template);
