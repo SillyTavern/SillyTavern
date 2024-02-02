@@ -478,7 +478,7 @@ export function trimToEndSentence(input, include_newline = false) {
         const char = input[i];
 
         if (punctuation.has(char)) {
-            if (i > 0 && (input[i - 1] === ' ' || input[i - 1] === '\n')) {
+            if (i > 0 && /[\s\n]/.test(input[i - 1])) {
                 last = i - 1;
             } else {
                 last = i;
