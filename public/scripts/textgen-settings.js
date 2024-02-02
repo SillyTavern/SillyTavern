@@ -718,7 +718,7 @@ function parseTextgenLogprobs(token, logprobs) {
     switch (settings.type) {
         case APHRODITE:
         case OOBA: {
-             /** @type {Record<string, number>[]} */
+            /** @type {Record<string, number>[]} */
             const topLogprobs = logprobs.top_logprobs;
             if (!topLogprobs?.length) {
                 return null;
@@ -803,7 +803,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'model': getModel(),
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
-        'logprobs': power_user.request_token_probabilities ? 10: undefined,
+        'logprobs': power_user.request_token_probabilities ? 10 : undefined,
         'temperature': settings.dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
         'top_p': settings.top_p,
         'typical_p': settings.typical_p,
@@ -870,6 +870,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'best_of': canMultiSwipe ? settings.n : 1,
         'ignore_eos': settings.ignore_eos_token_aphrodite,
         'spaces_between_special_tokens': settings.spaces_between_special_tokens_aphrodite,
+        'grammar': settings.grammar_string,
         //'logits_processors': settings.logits_processors_aphrodite,
         //'logprobs': settings.log_probs_aphrodite,
         //'prompt_logprobs': settings.prompt_log_probs_aphrodite,
