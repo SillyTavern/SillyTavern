@@ -1565,6 +1565,19 @@ async function executeSlashCommands(text, unescape = false) {
             unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult ?? '');
         }
 
+        unnamedArg = unnamedArg
+            ?.replace(/\\\|/g, '|')
+            ?.replace(/\\\{/g, '{')
+            ?.replace(/\\\}/g, '}')
+        ;
+        for (const [key, value] of Object.entries(result.args)) {
+            result.args[key] = value
+                .replace(/\\\|/g, '|')
+                .replace(/\\\{/g, '{')
+                .replace(/\\\}/g, '}')
+            ;
+        }
+
         pipeResult = await result.command.callback(result.args, unnamedArg);
 
         if (result.command.interruptsGeneration) {
