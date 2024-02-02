@@ -225,6 +225,7 @@ let power_user = {
     persona_description: '',
     persona_description_position: persona_description_positions.IN_PROMPT,
     persona_show_notifications: true,
+    persona_sort_order: 'asc',
 
     custom_stopping_strings: '',
     custom_stopping_strings_macro: true,
@@ -501,6 +502,11 @@ async function switchLabMode() {
         $('#labModeWarning').removeClass('displayNone');
         //$("#advanced-ai-config-block input[type='range']").hide()
 
+        $('#amount_gen').attr('min', '1')
+            .attr('max', '99999')
+            .attr('step', '1');
+
+
     } else {
         //re apply the original sliders values to each input
         originalSliderValues.forEach(function (slider) {
@@ -512,6 +518,10 @@ async function switchLabMode() {
         });
         $('#advanced-ai-config-block input[type=\'range\']').show();
         $('#labModeWarning').addClass('displayNone');
+
+        $('#amount_gen').attr('min', '16')
+            .attr('max', '2048')
+            .attr('step', '1');
     }
 }
 
@@ -611,7 +621,9 @@ async function CreateZenSliders(elmnt) {
         decimals = 0;
     }
     if (sliderID == 'min_temp_textgenerationwebui' ||
-        sliderID == 'max_temp_textgenerationwebui') {
+        sliderID == 'max_temp_textgenerationwebui' ||
+        sliderID == 'dynatemp_exponent_textgenerationwebui' ||
+        sliderID == 'smoothing_factor_textgenerationwebui') {
         decimals = 2;
     }
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
@@ -1826,6 +1838,23 @@ export function fuzzySearchWorldInfo(data, searchValue) {
     const results = fuse.search(searchValue);
     console.debug('World Info fuzzy search results for ' + searchValue, results);
     return results.map(x => x.item?.uid);
+}
+
+export function fuzzySearchPersonas(data, searchValue) {
+    data = data.map(x => ({ key: x, description: power_user.persona_descriptions[x]?.description ?? '', name: power_user.personas[x] ?? '' }));
+    const fuse = new Fuse(data, {
+        keys: [
+            { name: 'name', weight: 4 },
+            { name: 'description', weight: 1 },
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2,
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('Personas fuzzy search results for ' + searchValue, results);
+    return results.map(x => x.item?.key);
 }
 
 export function fuzzySearchTags(searchValue) {

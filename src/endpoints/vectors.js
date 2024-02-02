@@ -35,19 +35,31 @@ async function getVector(source, sourceSettings, text) {
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
 async function getBatchVector(source, sourceSettings, texts) {
-    switch (source) {
-        case 'mistral':
-        case 'openai':
-            return require('../openai-vectors').getOpenAIBatchVector(texts, source);
-        case 'transformers':
-            return require('../embedding').getTransformersBatchVector(texts);
-        case 'extras':
-            return require('../extras-vectors').getExtrasBatchVector(texts, sourceSettings.extrasUrl, sourceSettings.extrasKey);
-        case 'palm':
-            return require('../makersuite-vectors').getMakerSuiteBatchVector(texts);
+    const batchSize = 10;
+    const batches = Array(Math.ceil(texts.length / batchSize)).fill(undefined).map((_, i) => texts.slice(i * batchSize, i * batchSize + batchSize));
+
+    let results = [];
+    for (let batch of batches) {
+        switch (source) {
+            case 'mistral':
+            case 'openai':
+                results.push(...await require('../openai-vectors').getOpenAIBatchVector(batch, source));
+                break;
+            case 'transformers':
+                results.push(...await require('../embedding').getTransformersBatchVector(batch));
+                break;
+            case 'extras':
+                results.push(...await require('../extras-vectors').getExtrasBatchVector(batch, sourceSettings.extrasUrl, sourceSettings.extrasKey));
+                break;
+            case 'palm':
+                results.push(...await require('../makersuite-vectors').getMakerSuiteBatchVector(batch));
+                break;
+            default:
+                throw new Error(`Unknown vector source ${source}`);
+        }
     }
 
-    throw new Error(`Unknown vector source ${source}`);
+    return results;
 }
 
 /**
