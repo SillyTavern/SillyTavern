@@ -1525,6 +1525,10 @@ select option:not(:checked) {
     min-width: 80px;
 }
 
+#persona_sort_order {
+    max-width: 4em;
+}
+
 input[type=search]::-webkit-search-cancel-button {
     -webkit-appearance: none;
     height: 1em;
@@ -1835,6 +1839,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     width: 100%;
     outline: 2px solid transparent;
     border: 2px solid transparent;
+}
+
+.avatar-container .character_select_container {
+    flex-grow: 1;
 }
 
 grammarly-extension {
@@ -2284,11 +2292,10 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 
 .avatar-container .avatar {
     cursor: pointer;
-    width: 64px;
-    height: 64px;
     border-radius: 50%;
     align-self: center;
     outline: 2px solid transparent;
+    flex: unset;
 }
 
 .avatar-container.selected {
@@ -2301,11 +2308,6 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 
 .avatar-container.default_persona .set_default_persona {
     color: var(--golden);
-}
-
-#user_avatar_block .avatar img {
-    width: 64px;
-    height: 64px;
 }
 
 #user_avatar_block .avatar_upload {

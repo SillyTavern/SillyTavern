@@ -225,6 +225,7 @@ let power_user = {
     persona_description: '',
     persona_description_position: persona_description_positions.IN_PROMPT,
     persona_show_notifications: true,
+    persona_sort_order: 'asc',
 
     custom_stopping_strings: '',
     custom_stopping_strings_macro: true,
@@ -501,6 +502,11 @@ async function switchLabMode() {
         $('#labModeWarning').removeClass('displayNone');
         //$("#advanced-ai-config-block input[type='range']").hide()
 
+        $('#amount_gen').attr('min', '1')
+            .attr('max', '99999')
+            .attr('step', '1');
+
+
     } else {
         //re apply the original sliders values to each input
         originalSliderValues.forEach(function (slider) {
@@ -512,6 +518,10 @@ async function switchLabMode() {
         });
         $('#advanced-ai-config-block input[type=\'range\']').show();
         $('#labModeWarning').addClass('displayNone');
+
+        $('#amount_gen').attr('min', '16')
+            .attr('max', '2048')
+            .attr('step', '1');
     }
 }
 

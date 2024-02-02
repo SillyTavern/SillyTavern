@@ -640,6 +640,11 @@ export function initPersonas() {
     $('#personas_backup').on('click', onBackupPersonas);
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);
+    $('#persona_sort_order').val(power_user.persona_sort_order).on('input', function () {
+        power_user.persona_sort_order = String($(this).val());
+        getUserAvatars(true, user_avatar);
+        saveSettingsDebounced();
+    });
     $('#persona_grid_toggle').on('click', () => {
         const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
         localStorage.setItem(GRID_STORAGE_KEY, String(!state));
