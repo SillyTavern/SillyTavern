@@ -621,7 +621,9 @@ async function CreateZenSliders(elmnt) {
         decimals = 0;
     }
     if (sliderID == 'min_temp_textgenerationwebui' ||
-        sliderID == 'max_temp_textgenerationwebui') {
+        sliderID == 'max_temp_textgenerationwebui' ||
+        sliderID == 'dynatemp_exponent_textgenerationwebui' ||
+        sliderID == 'smoothing_factor_textgenerationwebui') {
         decimals = 2;
     }
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
