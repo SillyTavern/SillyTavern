@@ -147,7 +147,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
         const sprites = spriteCache[spriteFolderName];
         const expressionImage = container.find(`.expression-holder[data-avatar="${avatar}"]`);
         // Adding support for multiple images per expression
-        const matchingFallbackSprites = sprites.filter(x => x.label.startsWith(FALLBACK_EXPRESSION));
+        const matchingFallbackSprites = sprites.filter(x => new RegExp(`^${FALLBACK_EXPRESSION}(\\d*)$`).test(x.label));
         const defaultSpritePath = matchingFallbackSprites.length > 0 ? matchingFallbackSprites[Math.floor(Math.random() * matchingFallbackSprites.length)].path : '';
         // End of changes for multiple images per expression
         const noSprites = sprites.length === 0;
@@ -157,7 +157,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
                 await validateImages(spriteFolderName, true);
                 setExpressionOverrideHtml(true); // <= force clear expression override input
                 // Adding support for multiple images per expression
-                const matchingSprites = sprites.filter(x => x.label.startsWith(expression));
+                const matchingSprites = sprites.filter(x => new RegExp(`^${expression}(\\d*)$`).test(x.label));
                 const currentSpritePath = matchingSprites.length > 0 ? matchingSprites[Math.floor(Math.random() * matchingSprites.length)].path : '';
                 // End of changes for multiple images per expression
                 const path = currentSpritePath || defaultSpritePath || '';
@@ -284,7 +284,7 @@ async function setLastMessageSprite(img, avatar, labels) {
         const label = await getExpressionLabel(text);
 
         // Filter sprites to include all that match the base expression label
-        const matchingSprites = sprites.filter(sprite => sprite.label.startsWith(label));
+        const matchingSprites = sprites.filter(x => new RegExp(`^${label}(\\d*)$`).test(x.label));
 
         if (matchingSprites.length > 0) {
             // Select a random path from the matching sprites
@@ -1041,7 +1041,7 @@ function drawSpritesList(character, labels, sprites) {
     // Adding support for multiple images per expression
     labels.sort().forEach((baseLabel) => {
         // Find all sprites that start with the baseLabel
-        const matchingSprites = sprites.filter(sprite => sprite.label.startsWith(baseLabel));
+        const matchingSprites = sprites.filter(sprite => new RegExp(`^${baseLabel}(\\d*)$`).test(sprite.label));
 
         matchingSprites.forEach(sprite => {
             const isCustom = extension_settings.expressions.custom.includes(sprite.label);
@@ -1169,7 +1169,7 @@ async function setExpression(character, expression, force) {
         const expressionClone = img.clone();
 
         // Add support for multiple images per expression
-        const matchingSprites = spriteCache[character] ? spriteCache[character].filter(sprite => sprite.label.startsWith(expression)) : [];
+        const matchingSprites = spriteCache[character] ? spriteCache[character].filter(sprite => new RegExp(`^${expression}(\\d*)$`).test(sprite.label)) : [];
 
         if (matchingSprites.length > 0) {
             const randomIndex = Math.floor(Math.random() * matchingSprites.length);
