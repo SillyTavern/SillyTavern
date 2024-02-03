@@ -1561,21 +1561,26 @@ async function executeSlashCommands(text, unescape = false) {
             }
         }
 
-        if (typeof unnamedArg === 'string' && /{{pipe}}/i.test(unnamedArg)) {
-            unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult ?? '');
+        if (typeof unnamedArg === 'string') {
+            if (/{{pipe}}/i.test(unnamedArg)) {
+                unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult ?? '');
+            }
+
+            unnamedArg = unnamedArg
+                ?.replace(/\\\|/g, '|')
+                ?.replace(/\\\{/g, '{')
+                ?.replace(/\\\}/g, '}')
+            ;
         }
 
-        unnamedArg = unnamedArg
-            ?.replace(/\\\|/g, '|')
-            ?.replace(/\\\{/g, '{')
-            ?.replace(/\\\}/g, '}')
-        ;
         for (const [key, value] of Object.entries(result.args)) {
-            result.args[key] = value
-                .replace(/\\\|/g, '|')
-                .replace(/\\\{/g, '{')
-                .replace(/\\\}/g, '}')
-            ;
+            if (typeof value === 'string') {
+                result.args[key] = value
+                    .replace(/\\\|/g, '|')
+                    .replace(/\\\{/g, '{')
+                    .replace(/\\\}/g, '}')
+                ;
+            }
         }
 
         pipeResult = await result.command.callback(result.args, unnamedArg);

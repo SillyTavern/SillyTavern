@@ -649,7 +649,19 @@ function lenValuesCallback(value) {
     } catch {
         // could not parse
     }
-    return parsedValue.length;
+    if (Array.isArray(parsedValue)) {
+        return parsedValue.length;
+    }
+    switch (typeof parsedValue) {
+        case 'string':
+            return parsedValue.length;
+        case 'object':
+            return Object.keys(parsedValue).length;
+        case 'number':
+            return String(parsedValue).length;
+        default:
+            return 0;
+    }
 }
 
 function randValuesCallback(from, to, args) {
