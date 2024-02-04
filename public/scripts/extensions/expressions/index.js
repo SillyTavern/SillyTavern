@@ -530,8 +530,8 @@ function handleImageChange() {
         return;
     }
 
-    if (isTalkingHeadEnabled()) {
         // Method get IP of endpoint
+    if (isTalkingHeadEnabled() && modules.includes('talkinghead')) {
         const talkingheadResultFeedSrc = `${getApiUrl()}/api/talkinghead/result_feed`;
         $('#expression-holder').css({ display: '' });
         if (imgElement.src !== talkingheadResultFeedSrc) {
@@ -882,7 +882,7 @@ async function setSpriteSlashCommand(_, spriteId) {
     const currentLastMessage = getLastCharacterMessage();
     const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
     let label = spriteId;
-    if (!isTalkingHeadEnabled()) {
+    if (!isTalkingHeadEnabled() || !modules.includes('talkinghead')) {
         await validateImages(spriteFolderName);
 
         // Fuzzy search for sprite
@@ -1150,7 +1150,7 @@ async function getExpressionsList() {
 }
 
 async function setExpression(character, expression, force) {
-    if (!isTalkingHeadEnabled()) {
+    if (!isTalkingHeadEnabled() || !modules.includes('talkinghead')) {
         console.debug('entered setExpressions');
         await validateImages(character);
         const img = $('img.expression');
@@ -1415,8 +1415,8 @@ async function onClickExpressionUpload(event) {
         // Reset the input
         e.target.form.reset();
 
-        if (isTalkingHeadEnabled() && id === 'talkinghead') {
         // In Talkinghead mode, when a new talkinghead image is uploaded, refresh the live char.
+        if (id === 'talkinghead' && isTalkingHeadEnabled() && modules.includes('talkinghead')) {
             await loadTalkingHead();
         }
     };
