@@ -694,7 +694,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
             } else {
                 const newText = data?.choices?.[0]?.text || data?.content || '';
                 text += newText;
-                logprobs = parseTextgenLogprobs(newText, data.choices[0]?.logprobs);
+                logprobs = parseTextgenLogprobs(newText, data.choices?.[0]?.logprobs);
             }
 
             yield { text, swipes, logprobs };
