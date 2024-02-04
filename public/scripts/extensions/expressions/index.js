@@ -396,6 +396,7 @@ async function unloadTalkingHead() {
         console.debug('talkinghead module is disabled');
         return;
     }
+    console.debug('expressions: Stopping Talkinghead');
 
     try {
         const url = new URL(getApiUrl());
@@ -418,6 +419,7 @@ async function loadTalkingHead() {
         console.debug('talkinghead module is disabled');
         return;
     }
+    console.debug('expressions: Starting Talkinghead');
 
     const spriteFolderName = getSpriteFolderName();
 
