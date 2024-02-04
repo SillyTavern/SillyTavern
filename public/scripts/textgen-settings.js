@@ -33,7 +33,7 @@ export const textgen_types = {
     OLLAMA: 'ollama',
 };
 
-const { MANCER, APHRODITE, TOGETHERAI, OOBA, OLLAMA, LLAMACPP } = textgen_types;
+const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP } = textgen_types;
 const BIAS_KEY = '#textgenerationwebui_api-settings';
 
 // Maybe let it be configurable in the future?
@@ -819,10 +819,10 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'early_stopping': settings.early_stopping,
         'add_bos_token': settings.add_bos_token,
         'dynamic_temperature': settings.dynatemp,
-        'dynatemp_low': settings.min_temp,
-        'dynatemp_high': settings.max_temp,
+        'dynatemp_low': settings.dynatemp ? settings.min_temp : 0,
+        'dynatemp_high': settings.dynatemp ? settings.max_temp : 0,
         'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : 0,
-        'dynatemp_exponent': settings.dynatemp_exponent,
+        'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : 1,
         'smoothing_factor': settings.smoothing_factor,
         'stopping_strings': getStoppingStrings(isImpersonate, isContinue),
         'stop': getStoppingStrings(isImpersonate, isContinue),
@@ -851,7 +851,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'encoder_repetition_penalty': settings.type === OOBA ? settings.encoder_rep_pen : undefined,
         'no_repeat_ngram_size': settings.type === OOBA ? settings.no_repeat_ngram_size : undefined,
         'penalty_alpha': settings.type === OOBA ? settings.penalty_alpha : undefined,
-        'temperature_last': (settings.type === OOBA || settings.type === APHRODITE) ? settings.temperature_last : undefined,
+        'temperature_last': (settings.type === OOBA || settings.type === APHRODITE || settings.type == TABBY) ? settings.temperature_last : undefined,
         'do_sample': settings.type === OOBA ? settings.do_sample : undefined,
         'seed': settings.seed,
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
