@@ -1617,7 +1617,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     // Add logprobs request (currently OpenAI only, max 5 on their side)
-    if (useLogprobs && isOAI) {
+    if (useLogprobs && (isOAI || isCustom)) {
         generate_data['logprobs'] = 5;
     }
 
@@ -1768,6 +1768,7 @@ function parseChatCompletionLogprobs(data) {
 
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
+        case chat_completion_sources.CUSTOM:
             if (!data.choices?.length) {
                 return null;
             }
