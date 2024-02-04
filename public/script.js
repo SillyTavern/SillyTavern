@@ -4466,11 +4466,11 @@ function extractMessageFromData(data) {
         case 'koboldhorde':
             return data.text;
         case 'textgenerationwebui':
-            return data.choices?.[0]?.text ?? data.content ?? data.response;
+            return data.choices?.[0]?.text ?? data.content ?? data.response ?? '';
         case 'novel':
             return data.output;
         case 'openai':
-            return data;
+            return data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? '';
         default:
             return '';
     }
@@ -4485,11 +4485,19 @@ function extractMessageFromData(data) {
 function extractMultiSwipes(data, type) {
     const swipes = [];
 
+    if (!data) {
+        return swipes;
+    }
+
     if (type === 'continue' || type === 'impersonate' || type === 'quiet') {
         return swipes;
     }
 
-    if (main_api === 'textgenerationwebui' && textgen_settings.type === textgen_types.APHRODITE) {
+    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && textgen_settings.type === textgen_types.APHRODITE)) {
+        if (!Array.isArray(data.choices)) {
+            return swipes;
+        }
+
         const multiSwipeCount = data.choices.length - 1;
 
         if (multiSwipeCount <= 0) {
@@ -4497,8 +4505,9 @@ function extractMultiSwipes(data, type) {
         }
 
         for (let i = 1; i < data.choices.length; i++) {
-            const text = cleanUpMessage(data.choices[i].text, false, false, false);
-            swipes.push(text);
+            const text = data?.choices[i]?.message?.content ?? data?.choices[i]?.text ?? '';
+            const cleanedText = cleanUpMessage(text, false, false, false);
+            swipes.push(cleanedText);
         }
     }
 

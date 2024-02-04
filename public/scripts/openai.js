@@ -247,6 +247,7 @@ const default_settings = {
     bypass_status_check: false,
     continue_prefill: false,
     seed: -1,
+    n: 1,
 };
 
 const oai_settings = {
@@ -315,6 +316,7 @@ const oai_settings = {
     bypass_status_check: false,
     continue_prefill: false,
     seed: -1,
+    n: 1,
 };
 
 export let proxies = [
@@ -1545,6 +1547,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isContinue = type === 'continue';
     const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !(isGoogle && oai_settings.google_model.includes('bison'));
     const useLogprobs = !!power_user.request_token_probabilities;
+    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom);
 
     if (isTextCompletion && isOpenRouter) {
         messages = convertChatCompletionToInstruct(messages, type);
@@ -1592,6 +1595,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         'logit_bias': logit_bias,
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
         'chat_completion_source': oai_settings.chat_completion_source,
+        'n': canMultiSwipe ? oai_settings.n : undefined,
     };
 
     // Empty array will produce a validation error
@@ -1699,6 +1703,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         return async function* streamData() {
             let text = '';
             let utf8Decoder = new TextDecoder();
+            const swipes = [];
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
@@ -1706,8 +1711,15 @@ async function sendOpenAIRequest(type, messages, signal) {
                 if (isSSEStream && rawData === '[DONE]') return;
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
-                text += getStreamingReply(parsed);
-                yield { text, swipes: [], logprobs: parseChatCompletionLogprobs(parsed) };
+
+                if (Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
+                    const swipeIndex = parsed.choices[0].index - 1;
+                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed);
+                } else {
+                    text += getStreamingReply(parsed);
+                }
+
+                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed) };
             }
         };
     }
@@ -1729,7 +1741,7 @@ async function sendOpenAIRequest(type, messages, signal) {
             delay(1).then(() => saveLogprobsForActiveMessage(logprobs, null));
         }
 
-        return !isTextCompletion ? data.choices[0]['message']['content'] : data.choices[0]['text'];
+        return data;
     }
 }
 
@@ -1765,7 +1777,7 @@ function parseChatCompletionLogprobs(data) {
                 ? parseOpenAITextLogprobs(data.choices[0]?.logprobs)
                 : parseOpenAIChatLogprobs(data.choices[0]?.logprobs);
         default:
-            // implement other chat completion sources here
+        // implement other chat completion sources here
     }
     return null;
 }
@@ -2524,6 +2536,8 @@ function loadOpenAISettings(data, settings) {
     oai_settings.human_sysprompt_message = settings.human_sysprompt_message ?? default_settings.human_sysprompt_message;
     oai_settings.image_inlining = settings.image_inlining ?? default_settings.image_inlining;
     oai_settings.bypass_status_check = settings.bypass_status_check ?? default_settings.bypass_status_check;
+    oai_settings.seed = settings.seed ?? default_settings.seed;
+    oai_settings.n = settings.n ?? default_settings.n;
 
     oai_settings.prompts = settings.prompts ?? default_settings.prompts;
     oai_settings.prompt_order = settings.prompt_order ?? default_settings.prompt_order;
@@ -2628,6 +2642,7 @@ function loadOpenAISettings(data, settings) {
     $('#repetition_penalty_openai').val(oai_settings.repetition_penalty_openai);
     $('#repetition_penalty_counter_openai').val(Number(oai_settings.repetition_penalty_openai));
     $('#seed_openai').val(oai_settings.seed);
+    $('#n_openai').val(oai_settings.n);
 
     if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
@@ -2812,6 +2827,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         bypass_status_check: settings.bypass_status_check,
         continue_prefill: settings.continue_prefill,
         seed: settings.seed,
+        n: settings.n,
     };
 
     const savePresetSettings = await fetch(`/api/presets/save-openai?name=${name}`, {
@@ -3187,6 +3203,7 @@ function onSettingsPresetChange() {
         image_inlining: ['#openai_image_inlining', 'image_inlining', true],
         continue_prefill: ['#continue_prefill', 'continue_prefill', true],
         seed: ['#seed_openai', 'seed', false],
+        n: ['#n_openai', 'n', false],
     };
 
     const presetName = $('#settings_preset_openai').find(':selected').text();
@@ -3877,7 +3894,7 @@ $('#save_proxy').on('click', async function () {
     setProxyPreset(presetName, reverseProxy, proxyPassword);
     saveSettingsDebounced();
     toastr.success('Proxy Saved');
-    if($('#openai_proxy_preset').val() !== presetName) {
+    if ($('#openai_proxy_preset').val() !== presetName) {
         const option = document.createElement('option');
         option.text = presetName;
         option.value = presetName;
@@ -4241,6 +4258,11 @@ $(document).ready(async function () {
 
     $('#seed_openai').on('input', function () {
         oai_settings.seed = Number($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#n_openai').on('input', function () {
+        oai_settings.n = Number($(this).val());
         saveSettingsDebounced();
     });
 

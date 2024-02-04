@@ -794,6 +794,7 @@ router.post('/generate', jsonParser, function (request, response) {
         'stop': isTextCompletion === false ? request.body.stop : undefined,
         'logit_bias': request.body.logit_bias,
         'seed': request.body.seed,
+        'n': request.body.n,
         ...bodyParams,
     };
 
