@@ -60,7 +60,7 @@ router.post('/synthesize', jsonParser, async (req, res) => {
         const module = await import('../transformers.mjs');
         const pipe = await module.default.getPipeline(TASK, model);
         const speaker_embeddings = speaker
-            ? new Float32Array(new Uint8Array(Buffer.from(speaker.split(',')[1], 'base64')).buffer)
+            ? new Float32Array(new Uint8Array(Buffer.from(speaker.startsWith('data:') ? speaker.split(',')[1] : speaker, 'base64')).buffer)
             : null;
         const start = performance.now();
         const result = await pipe(text, { speaker_embeddings: speaker_embeddings });

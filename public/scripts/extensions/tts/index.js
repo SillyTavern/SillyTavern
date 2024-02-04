@@ -12,6 +12,7 @@ import { registerSlashCommand } from '../../slash-commands.js';
 import { OpenAITtsProvider } from './openai.js';
 import { XTTSTtsProvider } from './xtts.js';
 import { AllTalkTtsProvider } from './alltalk.js';
+import { SpeechT5TtsProvider } from './speecht5.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
@@ -76,6 +77,7 @@ let ttsProviders = {
     Novel: NovelTtsProvider,
     OpenAI: OpenAITtsProvider,
     AllTalk: AllTalkTtsProvider,
+    SpeechT5: SpeechT5TtsProvider,
 };
 let ttsProvider;
 let ttsProviderName;
