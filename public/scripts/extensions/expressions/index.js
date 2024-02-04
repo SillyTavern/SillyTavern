@@ -530,7 +530,6 @@ function handleImageChange() {
         return;
     }
 
-        // Method get IP of endpoint
     if (isTalkingHeadEnabled() && modules.includes('talkinghead')) {
         const talkingheadResultFeedSrc = `${getApiUrl()}/api/talkinghead/result_feed`;
         $('#expression-holder').css({ display: '' });
@@ -547,7 +546,7 @@ function handleImageChange() {
                         }
                     })
                     .catch(error => {
-                        console.error(error); // Log the error if necessary
+                        console.error(error);
                     });
             }
         }
