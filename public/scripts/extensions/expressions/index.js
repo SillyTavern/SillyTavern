@@ -792,6 +792,7 @@ function getSpriteFolderName(characterMessage = null, characterName = null) {
 }
 
 function setTalkingHeadState(newState) {
+    console.debug(`expressions: New talkinghead state: ${newState}`);
     extension_settings.expressions.talkinghead = newState; // Store setting
     saveSettingsDebounced();
 
