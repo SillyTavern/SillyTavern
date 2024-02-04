@@ -187,6 +187,7 @@ const TOGETHERAI_KEYS = [
     'top_k',
     'repetition_penalty',
     'stream',
+    'stop',
 ];
 
 // https://github.com/jmorganca/ollama/blob/main/docs/api.md#request-with-options

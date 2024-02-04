@@ -1376,6 +1376,7 @@ async function handleFileUpload(url, formData) {
         // Refresh sprites list
         const name = formData.get('name');
         delete spriteCache[name];
+        await fetchImagesNoCache();
         await validateImages(name);
 
         return data;
@@ -1552,6 +1553,7 @@ async function onClickExpressionDelete(event) {
 
     // Refresh sprites list
     delete spriteCache[name];
+    await fetchImagesNoCache();
     await validateImages(name);
 }
 
@@ -1575,6 +1577,30 @@ function setExpressionOverrideHtml(forceClear = false) {
     if (forceClear && !expressionOverride) {
         $('#expression_override').val('');
     }
+}
+
+async function fetchImagesNoCache() {
+    const promises = [];
+    $('#image_list img').each(function () {
+        const src = $(this).attr('src');
+
+        if (!src) {
+            return;
+        }
+
+        const promise = fetch(src, {
+            method: 'GET',
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+            },
+        });
+        promises.push(promise);
+    });
+
+    return await Promise.allSettled(promises);
 }
 
 (function () {

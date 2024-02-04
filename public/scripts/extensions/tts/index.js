@@ -11,6 +11,8 @@ import { power_user } from '../../power-user.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { OpenAITtsProvider } from './openai.js';
 import { XTTSTtsProvider } from './xtts.js';
+import { AllTalkTtsProvider } from './alltalk.js';
+import { SpeechT5TtsProvider } from './speecht5.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
@@ -74,6 +76,8 @@ let ttsProviders = {
     Edge: EdgeTtsProvider,
     Novel: NovelTtsProvider,
     OpenAI: OpenAITtsProvider,
+    AllTalk: AllTalkTtsProvider,
+    SpeechT5: SpeechT5TtsProvider,
 };
 let ttsProvider;
 let ttsProviderName;
@@ -296,7 +300,7 @@ function debugTtsPlayback() {
         },
     ));
 }
-window.debugTtsPlayback = debugTtsPlayback;
+window['debugTtsPlayback'] = debugTtsPlayback;
 
 //##################//
 //   Audio Control  //
@@ -306,18 +310,37 @@ let audioElement = new Audio();
 audioElement.id = 'tts_audio';
 audioElement.autoplay = true;
 
+/**
+ * @type AudioJob[] Audio job queue
+ * @typedef {{audioBlob: Blob | string, char: string}} AudioJob Audio job object
+ */
 let audioJobQueue = [];
+/**
+ * @type AudioJob Current audio job
+ */
 let currentAudioJob;
 let audioPaused = false;
 let audioQueueProcessorReady = true;
 
-async function playAudioData(audioBlob) {
+/**
+ * Play audio data from audio job object.
+ * @param {AudioJob} audioJob Audio job object
+ * @returns {Promise<void>} Promise that resolves when audio playback is started
+ */
+async function playAudioData(audioJob) {
+    const { audioBlob, char } = audioJob;
     // Since current audio job can be cancelled, don't playback if it is null
     if (currentAudioJob == null) {
         console.log('Cancelled TTS playback because currentAudioJob was null');
     }
     if (audioBlob instanceof Blob) {
         const srcUrl = await getBase64Async(audioBlob);
+
+        // VRM lip sync
+        if (extension_settings.vrm?.enabled && typeof window['vrmLipSync'] === 'function') {
+            await window['vrmLipSync'](audioBlob, char);
+        }
+
         audioElement.src = srcUrl;
     } else if (typeof audioBlob === 'string') {
         audioElement.src = audioBlob;
@@ -334,7 +357,7 @@ async function playAudioData(audioBlob) {
 window['tts_preview'] = function (id) {
     const audio = document.getElementById(id);
 
-    if (audio && !$(audio).data('disabled')) {
+    if (audio instanceof HTMLAudioElement && !$(audio).data('disabled')) {
         audio.play();
     }
     else {
@@ -418,15 +441,15 @@ function completeCurrentAudioJob() {
  * Accepts an HTTP response containing audio/mpeg data, and puts the data as a Blob() on the queue for playback
  * @param {Response} response
  */
-async function addAudioJob(response) {
+async function addAudioJob(response, char) {
     if (typeof response === 'string') {
-        audioJobQueue.push(response);
+        audioJobQueue.push({ audioBlob: response, char: char });
     } else {
         const audioData = await response.blob();
         if (!audioData.type.startsWith('audio/')) {
             throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioData.type}`;
         }
-        audioJobQueue.push(audioData);
+        audioJobQueue.push({ audioBlob: audioData, char: char });
     }
     console.debug('Pushed audio job to queue.');
 }
@@ -474,7 +497,7 @@ async function tts(text, voiceId, char) {
         if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
             response = await window['rvcVoiceConversion'](response, char, text);
 
-        await addAudioJob(response);
+        await addAudioJob(response, char);
     }
 
     let response = await ttsProvider.generateTts(text, voiceId);
@@ -506,9 +529,11 @@ async function processTtsQueue() {
         text = text.replace(/```.*?```/gs, '').trim();
     }
 
-    text = extension_settings.tts.narrate_dialogues_only
-        ? text.replace(/\*[^*]*?(\*|$)/g, '').trim() // remove asterisks content
-        : text.replaceAll('*', '').trim(); // remove just the asterisks
+    if (!extension_settings.tts.pass_asterisks) {
+        text = extension_settings.tts.narrate_dialogues_only
+            ? text.replace(/\*[^*]*?(\*|$)/g, '').trim() // remove asterisks content
+            : text.replaceAll('*', '').trim(); // remove just the asterisks
+    }
 
     if (extension_settings.tts.narrate_quoted_only) {
         const special_quotes = /[“”]/g; // Extend this regex to include other special quotes
@@ -565,7 +590,7 @@ async function playFullConversation() {
     const chat = context.chat;
     ttsJobQueue = chat;
 }
-window.playFullConversation = playFullConversation;
+window['playFullConversation'] = playFullConversation;
 
 //#############################//
 //  Extension UI and Settings  //
@@ -590,6 +615,7 @@ function loadSettings() {
     $('#tts_auto_generation').prop('checked', extension_settings.tts.auto_generation);
     $('#tts_narrate_translated_only').prop('checked', extension_settings.tts.narrate_translated_only);
     $('#tts_narrate_user').prop('checked', extension_settings.tts.narrate_user);
+    $('#tts_pass_asterisks').prop('checked', extension_settings.tts.pass_asterisks);
     $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
 
@@ -666,6 +692,12 @@ function onNarrateTranslatedOnlyClick() {
 function onSkipCodeblocksClick() {
     extension_settings.tts.skip_codeblocks = !!$('#tts_skip_codeblocks').prop('checked');
     saveSettingsDebounced();
+}
+
+function onPassAsterisksClick() {
+    extension_settings.tts.pass_asterisks = !!$('#tts_pass_asterisks').prop('checked');
+    saveSettingsDebounced();
+    console.log('setting pass asterisks', extension_settings.tts.pass_asterisks);
 }
 
 //##############//
@@ -985,6 +1017,10 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_skip_codeblocks">
                             <small>Skip codeblocks</small>
                         </label>
+                        <label class="checkbox_label" for="tts_pass_asterisks">
+                        <input type="checkbox" id="tts_pass_asterisks">
+                        <small>Pass Asterisks to TTS Engine</small>
+                        </label>
                     </div>
                     <div id="tts_voicemap_block">
                     </div>
@@ -1006,6 +1042,7 @@ $(document).ready(function () {
         $('#tts_narrate_quoted').on('click', onNarrateQuotedClick);
         $('#tts_narrate_translated_only').on('click', onNarrateTranslatedOnlyClick);
         $('#tts_skip_codeblocks').on('click', onSkipCodeblocksClick);
+        $('#tts_pass_asterisks').on('click', onPassAsterisksClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
         $('#tts_voices').on('click', onTtsVoicesClick);

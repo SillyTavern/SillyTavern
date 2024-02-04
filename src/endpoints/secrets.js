@@ -17,6 +17,7 @@ const SECRET_KEYS = {
     DEEPL: 'deepl',
     LIBRE: 'libre',
     LIBRE_URL: 'libre_url',
+    LINGVA_URL: 'lingva_url',
     OPENROUTER: 'api_key_openrouter',
     SCALE: 'api_key_scale',
     AI21: 'api_key_ai21',

@@ -10,10 +10,7 @@ import {
 } from '../script.js';
 import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
 
-import {
-    power_user,
-    registerDebugFunction,
-} from './power-user.js';
+import { power_user, registerDebugFunction } from './power-user.js';
 import EventSourceStream from './sse-stream.js';
 import { SENTENCEPIECE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
@@ -36,7 +33,7 @@ export const textgen_types = {
     OLLAMA: 'ollama',
 };
 
-const { MANCER, APHRODITE, TOGETHERAI, OOBA, OLLAMA, LLAMACPP } = textgen_types;
+const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP } = textgen_types;
 const BIAS_KEY = '#textgenerationwebui_api-settings';
 
 // Maybe let it be configurable in the future?
@@ -82,6 +79,8 @@ const settings = {
     dynatemp: false,
     min_temp: 0,
     max_temp: 2.0,
+    dynatemp_exponent: 1.0,
+    smoothing_factor: 0.0,
     seed: -1,
     preset: 'Default',
     add_bos_token: true,
@@ -143,6 +142,8 @@ const setting_names = [
     'dynatemp',
     'min_temp',
     'max_temp',
+    'dynatemp_exponent',
+    'smoothing_factor',
     'encoder_rep_pen',
     'freq_pen',
     'presence_pen',
@@ -547,7 +548,7 @@ jQuery(function () {
                 inputElement.val(value).trigger('input');
                 if (power_user.enableZenSliders) {
                     let masterElementID = inputElement.prop('id');
-                    console.log(masterElementID)
+                    console.log(masterElementID);
                     let zenSlider = $(`#${masterElementID}_zenslider`).slider();
                     zenSlider.slider('option', 'value', value);
                     zenSlider.slider('option', 'slide')
@@ -675,6 +676,8 @@ async function generateTextGenWithStreaming(generate_data, signal) {
 
     return async function* streamData() {
         let text = '';
+        /** @type {import('logprobs.js').TokenLogprobs | null} */
+        let logprobs = null;
         const swipes = [];
         while (true) {
             const { done, value } = await reader.read();
@@ -689,12 +692,43 @@ async function generateTextGenWithStreaming(generate_data, signal) {
                 const swipeIndex = data.choices[0].index - 1;
                 swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.choices[0].text;
             } else {
-                text += data?.choices?.[0]?.text || data?.content || '';
+                const newText = data?.choices?.[0]?.text || data?.content || '';
+                text += newText;
+                logprobs = parseTextgenLogprobs(newText, data.choices?.[0]?.logprobs);
             }
 
-            yield { text, swipes };
+            yield { text, swipes, logprobs };
         }
     };
+}
+
+/**
+ * parseTextgenLogprobs converts a logprobs object returned from a textgen API
+ * for a single token into a TokenLogprobs object used by the Token
+ * Probabilities feature.
+ * @param {string} token - the text of the token that the logprobs are for
+ * @param {Object} logprobs - logprobs object returned from the API
+ * @returns {import('logprobs.js').TokenLogprobs | null} - converted logprobs
+ */
+function parseTextgenLogprobs(token, logprobs) {
+    if (!logprobs) {
+        return null;
+    }
+
+    switch (settings.type) {
+        case APHRODITE:
+        case OOBA: {
+            /** @type {Record<string, number>[]} */
+            const topLogprobs = logprobs.top_logprobs;
+            if (!topLogprobs?.length) {
+                return null;
+            }
+            const candidates = Object.entries(topLogprobs[0]);
+            return { token, topLogprobs: candidates };
+        }
+        default:
+            return null;
+    }
 }
 
 /**
@@ -769,6 +803,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'model': getModel(),
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
+        'logprobs': power_user.request_token_probabilities ? 10 : undefined,
         'temperature': settings.dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
         'top_p': settings.top_p,
         'typical_p': settings.typical_p,
@@ -784,9 +819,11 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'early_stopping': settings.early_stopping,
         'add_bos_token': settings.add_bos_token,
         'dynamic_temperature': settings.dynatemp,
-        'dynatemp_low': settings.min_temp,
-        'dynatemp_high': settings.max_temp,
+        'dynatemp_low': settings.dynatemp ? settings.min_temp : 0,
+        'dynatemp_high': settings.dynatemp ? settings.max_temp : 0,
         'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : 0,
+        'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : 1,
+        'smoothing_factor': settings.smoothing_factor,
         'stopping_strings': getStoppingStrings(isImpersonate, isContinue),
         'stop': getStoppingStrings(isImpersonate, isContinue),
         'truncation_length': max_context,
@@ -814,7 +851,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'encoder_repetition_penalty': settings.type === OOBA ? settings.encoder_rep_pen : undefined,
         'no_repeat_ngram_size': settings.type === OOBA ? settings.no_repeat_ngram_size : undefined,
         'penalty_alpha': settings.type === OOBA ? settings.penalty_alpha : undefined,
-        'temperature_last': (settings.type === OOBA || settings.type === APHRODITE) ? settings.temperature_last : undefined,
+        'temperature_last': (settings.type === OOBA || settings.type === APHRODITE || settings.type == TABBY) ? settings.temperature_last : undefined,
         'do_sample': settings.type === OOBA ? settings.do_sample : undefined,
         'seed': settings.seed,
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
@@ -833,6 +870,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'best_of': canMultiSwipe ? settings.n : 1,
         'ignore_eos': settings.ignore_eos_token_aphrodite,
         'spaces_between_special_tokens': settings.spaces_between_special_tokens_aphrodite,
+        'grammar': settings.grammar_string,
         //'logits_processors': settings.logits_processors_aphrodite,
         //'logprobs': settings.log_probs_aphrodite,
         //'prompt_logprobs': settings.prompt_log_probs_aphrodite,

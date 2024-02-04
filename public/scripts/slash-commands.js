@@ -354,8 +354,8 @@ function trimTokensCallback(arg, value) {
         }
 
         const sliceTokens = direction === 'start' ? textTokens.slice(0, limit) : textTokens.slice(-limit);
-        const decodedText = decodeTextTokens(tokenizerId, sliceTokens);
-        return decodedText;
+        const { text } = decodeTextTokens(tokenizerId, sliceTokens);
+        return text;
     } catch (error) {
         console.warn('WARN: Tokenization failed for /trimtokens command, returning original', error);
         return value;
@@ -1553,7 +1553,7 @@ async function executeSlashCommands(text, unescape = false) {
                     value = substituteParams(value.trim());
 
                     if (/{{pipe}}/i.test(value)) {
-                        value = value.replace(/{{pipe}}/i, pipeResult || '');
+                        value = value.replace(/{{pipe}}/i, pipeResult ?? '');
                     }
 
                     result.args[key] = value;
@@ -1561,8 +1561,26 @@ async function executeSlashCommands(text, unescape = false) {
             }
         }
 
-        if (typeof unnamedArg === 'string' && /{{pipe}}/i.test(unnamedArg)) {
-            unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult || '');
+        if (typeof unnamedArg === 'string') {
+            if (/{{pipe}}/i.test(unnamedArg)) {
+                unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult ?? '');
+            }
+
+            unnamedArg = unnamedArg
+                ?.replace(/\\\|/g, '|')
+                ?.replace(/\\\{/g, '{')
+                ?.replace(/\\\}/g, '}')
+            ;
+        }
+
+        for (const [key, value] of Object.entries(result.args)) {
+            if (typeof value === 'string') {
+                result.args[key] = value
+                    .replace(/\\\|/g, '|')
+                    .replace(/\\\{/g, '{')
+                    .replace(/\\\}/g, '}')
+                ;
+            }
         }
 
         pipeResult = await result.command.callback(result.args, unnamedArg);

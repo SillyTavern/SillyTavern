@@ -116,7 +116,7 @@ function addLocalVariable(name, value) {
         const parsedValue = JSON.parse(currentValue);
         if (Array.isArray(parsedValue)) {
             parsedValue.push(value);
-            setGlobalVariable(name, JSON.stringify(parsedValue));
+            setLocalVariable(name, JSON.stringify(parsedValue));
             return parsedValue;
         }
     } catch {
@@ -492,7 +492,7 @@ async function executeSubCommands(command) {
         command = command.slice(0, -1);
     }
 
-    const unescape = true;
+    const unescape = false;
     const result = await executeSlashCommands(command, unescape);
 
     if (!result || typeof result !== 'object') {
@@ -649,7 +649,19 @@ function lenValuesCallback(value) {
     } catch {
         // could not parse
     }
-    return parsedValue.length;
+    if (Array.isArray(parsedValue)) {
+        return parsedValue.length;
+    }
+    switch (typeof parsedValue) {
+        case 'string':
+            return parsedValue.length;
+        case 'object':
+            return Object.keys(parsedValue).length;
+        case 'number':
+            return String(parsedValue).length;
+        default:
+            return 0;
+    }
 }
 
 function randValuesCallback(from, to, args) {
@@ -664,7 +676,7 @@ function randValuesCallback(from, to, args) {
     if (args.round == 'floor') {
         return Math.floor(value);
     }
-    return value;
+    return String(value);
 }
 
 export function registerVariableCommands() {

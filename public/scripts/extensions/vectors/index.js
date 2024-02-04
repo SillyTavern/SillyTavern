@@ -1,5 +1,5 @@
 import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from '../../../script.js';
-import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplate } from '../../extensions.js';
+import { ModuleWorkerWrapper, extension_settings, getContext, modules, renderExtensionTemplate } from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
@@ -152,8 +152,25 @@ async function synchronizeChat(batchSize = 5) {
 
         return newVectorItems.length - batchSize;
     } catch (error) {
+        /**
+         * Gets the error message for a given cause
+         * @param {string} cause Error cause key
+         * @returns {string} Error message
+         */
+        function getErrorMessage(cause) {
+            switch (cause) {
+                case 'api_key_missing':
+                    return 'API key missing. Save it in the "API Connections" panel.';
+                case 'extras_module_missing':
+                    return 'Extras API must provide an "embeddings" module.';
+                default:
+                    return 'Check server console for more details';
+            }
+        }
+
         console.error('Vectors: Failed to synchronize chat', error);
-        const message = error.cause === 'api_key_missing' ? 'API key missing. Save it in the "API Connections" panel.' : 'Check server console for more details';
+
+        const message = getErrorMessage(error.cause);
         toastr.error(message, 'Vectorization failed');
         return -1;
     } finally {
@@ -246,7 +263,7 @@ async function retrieveFileChunks(queryText, collectionId) {
     console.debug(`Vectors: Retrieving file chunks for collection ${collectionId}`, queryText);
     const queryResults = await queryCollection(collectionId, queryText, settings.chunk_count);
     console.debug(`Vectors: Retrieved ${queryResults.hashes.length} file chunks for collection ${collectionId}`, queryResults);
-    const metadata = queryResults.metadata.filter(x => x.text).sort((a, b) => a.index - b.index).map(x => x.text);
+    const metadata = queryResults.metadata.filter(x => x.text).sort((a, b) => a.index - b.index).map(x => x.text).filter(onlyUnique);
     const fileText = metadata.join('\n');
 
     return fileText;
@@ -412,6 +429,18 @@ async function getSavedHashes(collectionId) {
 }
 
 /**
+ * Add headers for the Extras API source.
+ * @param {object} headers Headers object
+ */
+function addExtrasHeaders(headers) {
+    console.log(`Vector source is extras, populating API URL: ${extension_settings.apiUrl}`);
+    Object.assign(headers, {
+        'X-Extras-Url': extension_settings.apiUrl,
+        'X-Extras-Key': extension_settings.apiKey,
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
@@ -424,9 +453,18 @@ async function insertVectorItems(collectionId, items) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
+    if (settings.source === 'extras' && !modules.includes('embeddings')) {
+        throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
+    }
+
+    const headers = getRequestHeaders();
+    if (settings.source === 'extras') {
+        addExtrasHeaders(headers);
+    }
+
     const response = await fetch('/api/vector/insert', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: headers,
         body: JSON.stringify({
             collectionId: collectionId,
             items: items,
@@ -468,9 +506,14 @@ async function deleteVectorItems(collectionId, hashes) {
  * @returns {Promise<{ hashes: number[], metadata: object[]}>} - Hashes of the results
  */
 async function queryCollection(collectionId, searchText, topK) {
+    const headers = getRequestHeaders();
+    if (settings.source === 'extras') {
+        addExtrasHeaders(headers);
+    }
+
     const response = await fetch('/api/vector/query', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: headers,
         body: JSON.stringify({
             collectionId: collectionId,
             searchText: searchText,

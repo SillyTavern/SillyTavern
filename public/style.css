@@ -4,6 +4,7 @@
 @import url(css/loader.css);
 @import url(css/character-group-overlay.css);
 @import url(css/file-form.css);
+@import url(css/logprobs.css);
 
 :root {
     --doc-height: 100%;
@@ -538,7 +539,6 @@ hr {
     background-color: var(--SmartThemeChatTintColor);
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
-    scrollbar-width: thin;
     flex-direction: column;
     z-index: 30;
 }
@@ -979,7 +979,6 @@ textarea {
     font-size: var(--mainFontSize);
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     padding: 5px 10px;
-    scrollbar-width: thin;
     max-height: 90vh;
     max-height: 90svh;
 }
@@ -1342,7 +1341,7 @@ input[type="file"] {
     line-height: 1.2;
 }
 
-#ANClose {
+.floating_panel_close {
     height: 15px;
     aspect-ratio: 1 / 1;
     font-size: 20px;
@@ -1350,7 +1349,7 @@ input[type="file"] {
     transition: all 250ms;
 }
 
-#ANClose:hover {
+.floating_panel_close:hover {
     cursor: pointer;
     opacity: 1;
 }
@@ -1522,6 +1521,14 @@ select option:not(:checked) {
     height: auto;
 }
 
+#persona_search_bar {
+    min-width: 80px;
+}
+
+#persona_sort_order {
+    max-width: 4em;
+}
+
 input[type=search]::-webkit-search-cancel-button {
     -webkit-appearance: none;
     height: 1em;
@@ -1587,17 +1594,18 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 /*applies to both groups and solos chars in the char list*/
-#rm_print_characters_block .ch_name {
+#rm_print_characters_block .ch_name,
+.avatar-container .ch_name {
     flex: 1;
     white-space: nowrap;
-    /* max-width: calc(100% - 29px); */
     overflow: hidden;
     text-overflow: ellipsis;
     display: block;
 }
 
 .bogus_folder_select:hover,
-.character_select:hover {
+.character_select:hover,
+.avatar-container:hover {
     background-color: var(--white30a);
 }
 
@@ -1822,29 +1830,35 @@ input[type=search]:focus::-webkit-search-cancel-button {
     position: relative;
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 1px;
+    width: 100%;
+    outline: 2px solid transparent;
+    border: 2px solid transparent;
+}
+
+.avatar-container .character_select_container {
+    flex-grow: 1;
 }
 
 grammarly-extension {
     z-index: 35;
 }
 
-.avatar-container:hover .avatar-buttons {
+.avatar-container .avatar-buttons {
     display: flex;
+    flex-direction: row;
+    gap: 5px;
+    opacity: 0.3;
+    transition: opacity 0.25s ease-in-out;
 }
 
-.avatar-buttons .menu_button {
-    pointer-events: all;
-}
-
-.avatar-buttons-bottom {
-    bottom: 0;
-    left: 0;
-}
-
-.avatar-buttons-top {
-    top: 0;
-    left: 0;
+.avatar-container .avatar-buttons:hover {
+    opacity: 1;
 }
 
 /* Ross should be able to handle this later */
@@ -1852,14 +1866,6 @@ grammarly-extension {
     justify-content: center;
     width: fit-content;
 }*/
-
-.avatar-buttons {
-    pointer-events: none;
-    display: none;
-    position: absolute;
-    width: 100%;
-    justify-content: space-between;
-}
 
 .avatar_div .avatar {
     /*     margin-left: 4px;
@@ -2280,35 +2286,28 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 
 #user_avatar_block {
     display: flex;
-    grid-gap: 10px;
     flex-wrap: wrap;
-    justify-content: space-evenly;
+    justify-content: space-around;
 }
 
-#user_avatar_block .avatar {
+.avatar-container .avatar {
     cursor: pointer;
-    width: 64px;
-    height: 64px;
-    outline: 2px solid rgba(255, 255, 255, 0.7);
     border-radius: 50%;
-}
-
-#user_avatar_block .avatar:not(.selected) {
+    align-self: center;
     outline: 2px solid transparent;
+    flex: unset;
 }
 
-#user_avatar_block .default_persona .avatar {
-    border: 2px solid var(--golden);
-    box-sizing: content-box;
+.avatar-container.selected {
+    border: 2px solid rgba(255, 255, 255, 0.7);
 }
 
-#user_avatar_block .default_persona .set_default_persona {
+.avatar-container.default_persona .avatar {
+    outline: 2px solid var(--golden);
+}
+
+.avatar-container.default_persona .set_default_persona {
     color: var(--golden);
-}
-
-#user_avatar_block .avatar img {
-    width: 64px;
-    height: 64px;
 }
 
 #user_avatar_block .avatar_upload {
@@ -3125,7 +3124,6 @@ a {
     box-shadow: none;
     border-radius: 10px;
     overflow: hidden;
-    scrollbar-width: thin;
     flex-flow: column;
     min-width: 100px;
 }

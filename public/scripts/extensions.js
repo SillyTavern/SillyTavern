@@ -167,9 +167,12 @@ async function doExtrasFetch(endpoint, args) {
     if (!args.headers) {
         args.headers = {};
     }
-    Object.assign(args.headers, {
-        'Authorization': `Bearer ${extension_settings.apiKey}`,
-    });
+
+    if (extension_settings.apiKey) {
+        Object.assign(args.headers, {
+            'Authorization': `Bearer ${extension_settings.apiKey}`,
+        });
+    }
 
     const response = await fetch(endpoint, args);
     return response;
