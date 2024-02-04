@@ -389,7 +389,7 @@ function onExpressionsShowDefaultInput() {
 }
 
 /**
-  * Stops animating a talkinghead.
+  * Stops animating Talkinghead.
   */
 async function unloadTalkingHead() {
     if (!modules.includes('talkinghead')) {
@@ -560,7 +560,7 @@ function handleImageChange() {
 async function moduleWorker() {
     const context = getContext();
 
-    // Hide and disable talkinghead while in local mode
+    // Hide and disable Talkinghead while in local mode
     $('#image_type_block').toggle(!extension_settings.expressions.local);
 
     if (extension_settings.expressions.local && extension_settings.expressions.talkinghead) {
@@ -693,7 +693,7 @@ async function moduleWorker() {
 }
 
 /**
-  * Starts/stops talkinghead talking animation.
+  * Starts/stops Talkinghead talking animation.
   *
   * Talking starts only when all the following conditions are met:
   *   - The LLM is currently streaming its output.
@@ -702,10 +702,10 @@ async function moduleWorker() {
   *
   * In all other cases, talking stops.
   *
-  * A talkinghead API call is made only when the talking state changes.
+  * A Talkinghead API call is made only when the talking state changes.
   */
 async function updateTalkingState() {
-    // Don't bother if talkinghead is disabled or not loaded.
+    // Don't bother if Talkinghead is disabled or not loaded.
     if (!isTalkingHeadEnabled() || !modules.includes('talkinghead')) {
         return;
     }
@@ -729,7 +729,7 @@ async function updateTalkingState() {
             newTalkingState = false;
         }
         try {
-            // Call the talkinghead API only if the talking state changed.
+            // Call the Talkinghead API only if the talking state changed.
             if (newTalkingState !== lastTalkingState) {
                 console.debug(`updateTalkingState: calling ${url.pathname}`);
                 await doExtrasFetch(url);
@@ -873,7 +873,7 @@ async function setSpriteSlashCommand(_, spriteId) {
 
     spriteId = spriteId.trim().toLowerCase();
 
-    // In talkinghead mode, don't check for the existence of the sprite
+    // In Talkinghead mode, don't check for the existence of the sprite
     // (emotion names are the same as for sprites, but it only needs "talkinghead.png").
     const currentLastMessage = getLastCharacterMessage();
     const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
@@ -1257,8 +1257,8 @@ async function setExpression(character, expression, force) {
         document.getElementById('expression-holder').style.display = '';
 
     } else {
-        // Set the talkinghead emotion to the specified expression
-        // TODO: For now, talkinghead emote only supported when VN mode is off; see also updateVisualNovelMode.
+        // Set the Talkinghead emotion to the specified expression
+        // TODO: For now, Talkinghead emote only supported when VN mode is off; see also updateVisualNovelMode.
         try {
             let result = await isTalkingHeadAvailable();
             if (result) {
@@ -1411,8 +1411,8 @@ async function onClickExpressionUpload(event) {
         // Reset the input
         e.target.form.reset();
 
-        // In talkinghead mode, when a new talkinghead image is uploaded, refresh the live char.
         if (isTalkingHeadEnabled() && id === 'talkinghead') {
+        // In Talkinghead mode, when a new talkinghead image is uploaded, refresh the live char.
             await loadTalkingHead();
         }
     };
@@ -1666,7 +1666,7 @@ async function fetchImagesNoCache() {
     const updateFunction = wrapper.update.bind(wrapper);
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
-    // For setting the talkinghead talking animation on/off quickly enough for realtime use, we need another timer on a shorter schedule.
+    // For setting the Talkinghead talking animation on/off quickly enough for realtime use, we need another timer on a shorter schedule.
     const wrapperTalkingState = new ModuleWorkerWrapper(updateTalkingState);
     const updateTalkingStateFunction = wrapperTalkingState.update.bind(wrapperTalkingState);
     setInterval(updateTalkingStateFunction, TALKINGCHECK_UPDATE_INTERVAL);
