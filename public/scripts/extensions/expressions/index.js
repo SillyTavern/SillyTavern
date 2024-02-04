@@ -562,8 +562,14 @@ function handleImageChange() {
             }
         }
     } else {
-        imgElement.src = ''; //remove incase char doesnt have expressions
-        setExpression(getContext().name2, FALLBACK_EXPRESSION, true);
+        imgElement.src = '';  // remove in case char doesn't have expressions
+
+        // When switching Talkinghead off, force-set the character to the last known expression, if any.
+        // This preserves the same expression Talkinghead had at the moment it was switched off.
+        const charName = getContext().name2;
+        const last = lastExpression[charName];
+        const targetExpression = last ? last : FALLBACK_EXPRESSION;
+        setExpression(charName, targetExpression, true);
     }
 }
 
