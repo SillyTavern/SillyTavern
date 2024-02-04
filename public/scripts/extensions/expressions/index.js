@@ -703,6 +703,9 @@ async function moduleWorker() {
   * In all other cases, talking stops.
   *
   * A Talkinghead API call is made only when the talking state changes.
+  *
+  * Note that also the TTS system, if enabled, starts/stops the Talkinghead talking animation.
+  * See `talkingAnimation` in `SillyTavern/public/scripts/extensions/tts/index.js`.
   */
 async function updateTalkingState() {
     // Don't bother if Talkinghead is disabled or not loaded.
