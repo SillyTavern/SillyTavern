@@ -1525,6 +1525,11 @@ async function onClickExpressionUploadPackButton() {
 
         // Reset the input
         e.target.form.reset();
+
+        // In Talkinghead mode, refresh the live char.
+        if (isTalkingHeadEnabled() && modules.includes('talkinghead')) {
+            await loadTalkingHead();
+        }
     };
 
     $('#expression_upload_pack')
