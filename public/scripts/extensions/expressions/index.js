@@ -1678,6 +1678,34 @@ async function fetchImagesNoCache() {
         $('#expression_custom_remove').on('click', onClickExpressionRemoveCustom);
     }
 
+    // Pause Talkinghead to save resources when the ST tab is not visible or the window is minimized.
+    // We currently do this via loading/unloading. Could be improved by adding new pause/unpause endpoints to Extras.
+    document.addEventListener("visibilitychange", function (event) {
+        let pageIsVisible;
+        if (document.hidden) {
+            console.debug('expressions: SillyTavern is now hidden');
+            pageIsVisible = false;
+        } else {
+            console.debug('expressions: SillyTavern is now visible');
+            pageIsVisible = true;
+        }
+
+        if (isTalkingHeadEnabled() && modules.includes('talkinghead')) {
+            isTalkingHeadAvailable().then(result => {
+                if (result) {
+                    if (pageIsVisible) {
+                        loadTalkingHead();
+                    } else {
+                        unloadTalkingHead();
+                    }
+                    handleImageChange(); // Change image as needed
+                } else {
+                    //console.log("talkinghead does not exist.");
+                }
+            });
+        }
+    });
+
     addExpressionImage();
     addVisualNovelMode();
     addSettings();
