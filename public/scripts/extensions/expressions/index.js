@@ -1073,6 +1073,8 @@ function drawSpritesList(character, labels, sprites) {
  * @returns {string} Rendered list item template
  */
 function getListItem(item, imageSrc, textClass, isCustom) {
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    imageSrc = isFirefox ? `${imageSrc}?t=${Date.now()}` : imageSrc;
     return renderExtensionTemplate(MODULE_NAME, 'list-item', { item, imageSrc, textClass, isCustom });
 }
 
