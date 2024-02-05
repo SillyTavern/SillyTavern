@@ -5490,6 +5490,7 @@ function highlightSelectedAvatar() {
  * @returns {JQuery<HTMLElement>} Avatar block
  */
 function getUserAvatarBlock(name) {
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
     const template = $('#user_avatar_template .avatar-container').clone();
     const personaName = power_user.personas[name];
     const personaDescription = power_user.persona_descriptions[name]?.description;
@@ -5498,7 +5499,11 @@ function getUserAvatarBlock(name) {
     template.attr('imgfile', name);
     template.find('.avatar').attr('imgfile', name).attr('title', name);
     template.toggleClass('default_persona', name === power_user.default_persona);
-    template.find('img').attr('src', getUserAvatar(name));
+    let avatarUrl = getUserAvatar(name);
+    if (isFirefox) {
+        avatarUrl += '?t=' + Date.now();
+    }
+    template.find('img').attr('src', avatarUrl);
     $('#user_avatar_block').append(template);
     return template;
 }
