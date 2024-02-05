@@ -5420,17 +5420,21 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
     if (response.ok) {
         const allEntities = await response.json();
 
+        if (!Array.isArray(allEntities)) {
+            return [];
+        }
+
+        allEntities.sort((a, b) => {
+            const aName = String(power_user.personas[a] || a);
+            const bName = String(power_user.personas[b] || b);
+            return power_user.persona_sort_order === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
+        });
+
         if (!doRender) {
             return allEntities;
         }
 
         const entities = personasFilter.applyFilters(allEntities);
-        entities.sort((a, b) => {
-            const aName = String(power_user.personas[a]);
-            const bName = String(power_user.personas[b]);
-            return power_user.persona_sort_order === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
-        });
-
         const storageKey = 'Personas_PerPage';
         const listId = '#user_avatar_block';
         const perPage = Number(localStorage.getItem(storageKey)) || 5;
