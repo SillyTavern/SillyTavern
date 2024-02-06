@@ -751,7 +751,16 @@ router.post('/generate', jsonParser, function (request, response) {
         apiUrl = request.body.custom_url;
         apiKey = readSecret(SECRET_KEYS.CUSTOM);
         headers = {};
-        bodyParams = {};
+        bodyParams = {
+            logprobs: request.body.logprobs,
+        };
+
+        // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
+        if (!isTextCompletion && bodyParams.logprobs > 0) {
+            bodyParams.top_logprobs = bodyParams.logprobs;
+            bodyParams.logprobs = true;
+        }
+
         mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
     } else {

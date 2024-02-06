@@ -5420,17 +5420,21 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
     if (response.ok) {
         const allEntities = await response.json();
 
+        if (!Array.isArray(allEntities)) {
+            return [];
+        }
+
+        allEntities.sort((a, b) => {
+            const aName = String(power_user.personas[a] || a);
+            const bName = String(power_user.personas[b] || b);
+            return power_user.persona_sort_order === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
+        });
+
         if (!doRender) {
             return allEntities;
         }
 
         const entities = personasFilter.applyFilters(allEntities);
-        entities.sort((a, b) => {
-            const aName = String(power_user.personas[a]);
-            const bName = String(power_user.personas[b]);
-            return power_user.persona_sort_order === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
-        });
-
         const storageKey = 'Personas_PerPage';
         const listId = '#user_avatar_block';
         const perPage = Number(localStorage.getItem(storageKey)) || 5;
@@ -5490,6 +5494,7 @@ function highlightSelectedAvatar() {
  * @returns {JQuery<HTMLElement>} Avatar block
  */
 function getUserAvatarBlock(name) {
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
     const template = $('#user_avatar_template .avatar-container').clone();
     const personaName = power_user.personas[name];
     const personaDescription = power_user.persona_descriptions[name]?.description;
@@ -5498,7 +5503,11 @@ function getUserAvatarBlock(name) {
     template.attr('imgfile', name);
     template.find('.avatar').attr('imgfile', name).attr('title', name);
     template.toggleClass('default_persona', name === power_user.default_persona);
-    template.find('img').attr('src', getUserAvatar(name));
+    let avatarUrl = getUserAvatar(name);
+    if (isFirefox) {
+        avatarUrl += '?t=' + Date.now();
+    }
+    template.find('img').attr('src', avatarUrl);
     $('#user_avatar_block').append(template);
     return template;
 }
