@@ -37,6 +37,14 @@ function getTabbyHeaders() {
     }) : {};
 }
 
+function getOobaHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.OOBA);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
 function getOverrideHeaders(urlHost) {
     const requestOverrides = getConfigValue('requestOverrides', []);
     const overrideHeaders = requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
@@ -68,6 +76,9 @@ function setAdditionalHeaders(request, args, server) {
             break;
         case TEXTGEN_TYPES.TOGETHERAI:
             headers = getTogetherAIHeaders();
+            break;
+        case TEXTGEN_TYPES.OOBA:
+            headers = getOobaHeaders();
             break;
         default:
             headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
