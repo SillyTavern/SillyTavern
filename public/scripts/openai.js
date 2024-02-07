@@ -3935,6 +3935,28 @@ $('#delete_proxy').on('click', async function () {
     }
 });
 
+function runProxyCallback(_, value) {
+    if (!value) {
+        toastr.warning('Proxy preset name is required');
+        return '';
+    }
+
+    const proxyNames = proxies.map(preset => preset.name);
+    const fuse = new Fuse(proxyNames);
+    const result = fuse.search(value);
+
+    if (result.length === 0) {
+        toastr.warning(`Proxy preset "${value}" not found`);
+        return '';
+    }
+
+    const foundName = result[0].item;
+    $('#openai_proxy_preset').val(foundName).trigger('change');
+    return foundName;
+}
+
+registerSlashCommand('proxy', runProxyCallback, [], '<span class="monospace">(name)</span> –  sets a proxy preset by name');
+
 $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
 
@@ -4322,12 +4344,3 @@ $(document).ready(async function () {
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
 });
-function runProxyCallback(args,value) {
-        if ($('#openai_proxy_preset:contains("'+value+'")').length>=1) {
-                 $('#openai_proxy_preset').val(value);
-                 onProxyPresetChange();
-        } else {
-                toastr.warning("The selected preset does not exist");
-        }
-}
-registerSlashCommand('proxy',runProxyCallback,[],"(name) - Sets a proxy preset by name");
