@@ -6089,6 +6089,14 @@ export async function getPastCharacterChats(characterId = null) {
     return data;
 }
 
+function getCurrentChatDetails() {  // helper for `displayPastChats`, to make the same info consistently available for other functions
+    const group = selected_group ? groups.find(x => x.id === selected_group) : null;
+    const currentChat = selected_group ? group?.chat_id : characters[this_chid]['chat'];
+    const displayName = selected_group ? group?.name : characters[this_chid].name;
+    const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
+    return { sessionName: currentChat, group: group, characterName: displayName, avatarImgURL: avatarImg };
+}
+
 /**
  * Displays the past chats for a character or a group based on the selected context.
  * The function first fetches the chats, processes them, and then displays them in
@@ -6099,7 +6107,6 @@ export async function displayPastChats() {
     $('#select_chat_div').empty();
     $('#select_chat_search').val('').off('input');
 
-    const group = selected_group ? groups.find(x => x.id === selected_group) : null;
     const data = await (selected_group ? getGroupPastChats(selected_group) : getPastCharacterChats());
 
     if (!data) {
@@ -6107,10 +6114,14 @@ export async function displayPastChats() {
         return;
     }
 
-    const currentChat = selected_group ? group?.chat_id : characters[this_chid]['chat'];
-    const displayName = selected_group ? group?.name : characters[this_chid].name;
-    const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
+    const chatDetails = getCurrentChatDetails();
+    const group = chatDetails.group;
+    const currentChat = chatDetails.sessionName;
+    const displayName = chatDetails.characterName;
+    const avatarImg = chatDetails.avatarImgURL;
+
     const rawChats = await getChatsFromFiles(data, selected_group);
+
     // Sort by last message date descending
     data.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
     console.log(data);
@@ -7825,9 +7836,7 @@ async function doDeleteChat() {
 }
 
 async function doGetChatName() {  // `/getchatname` slash command
-    const group = selected_group ? groups.find(x => x.id === selected_group) : null;
-    const currentChat = selected_group ? group?.chat_id : characters[this_chid]['chat'];
-    return currentChat;
+    return getCurrentChatDetails().sessionName;
 }
 
 const isPwaMode = window.navigator.standalone;
