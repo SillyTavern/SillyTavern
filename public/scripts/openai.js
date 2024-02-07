@@ -31,6 +31,7 @@ import {
     this_chid,
 } from '../script.js';
 import { groups, selected_group } from './group-chats.js';
+import { registerSlashCommand } from './slash-commands.js';
 
 import {
     chatCompletionDefaultPrompts,
@@ -4321,3 +4322,12 @@ $(document).ready(async function () {
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
     $('#openai_proxy_preset').on('change', onProxyPresetChange);
 });
+function runProxyCallback(args,value) {
+        if ($('#openai_proxy_preset:contains("'+value+'")').length>=1) {
+                 $('#openai_proxy_preset').val(value);
+                 onProxyPresetChange();
+        } else {
+                toastr.warning("The selected preset does not exist");
+        }
+}
+registerSlashCommand('proxy',runProxyCallback,[],"(name) - Sets a proxy preset by name");
