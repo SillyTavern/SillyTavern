@@ -6089,7 +6089,14 @@ export async function getPastCharacterChats(characterId = null) {
     return data;
 }
 
-function getCurrentChatDetails() {  // helper for `displayPastChats`, to make the same info consistently available for other functions
+/**
+ * Helper for `displayPastChats`, to make the same info consistently available for other functions
+ */
+function getCurrentChatDetails() {
+    if (!characters[this_chid] && !selected_group) {
+        return { sessionName: '', group: null, characterName: '', avatarImgURL: '' };
+    }
+
     const group = selected_group ? groups.find(x => x.id === selected_group) : null;
     const currentChat = selected_group ? group?.chat_id : characters[this_chid]['chat'];
     const displayName = selected_group ? group?.name : characters[this_chid].name;
@@ -7835,7 +7842,10 @@ async function doDeleteChat() {
     $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
 }
 
-async function doGetChatName() {  // `/getchatname` slash command
+/**
+ * /getchatname` slash command
+ */
+async function doGetChatName() {
     return getCurrentChatDetails().sessionName;
 }
 
@@ -7990,7 +8000,7 @@ jQuery(async function () {
     registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
-    registerSlashCommand('getchatname', doGetChatName, [], '- returns the name of the current chat file into the pipe', false, true);
+    registerSlashCommand('getchatname', doGetChatName, [], '– returns the name of the current chat file into the pipe', false, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
     registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
     registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
