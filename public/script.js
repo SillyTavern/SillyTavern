@@ -6090,6 +6090,21 @@ export async function getPastCharacterChats(characterId = null) {
 }
 
 /**
+ * Helper for `displayPastChats`, to make the same info consistently available for other functions
+ */
+function getCurrentChatDetails() {
+    if (!characters[this_chid] && !selected_group) {
+        return { sessionName: '', group: null, characterName: '', avatarImgURL: '' };
+    }
+
+    const group = selected_group ? groups.find(x => x.id === selected_group) : null;
+    const currentChat = selected_group ? group?.chat_id : characters[this_chid]['chat'];
+    const displayName = selected_group ? group?.name : characters[this_chid].name;
+    const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
+    return { sessionName: currentChat, group: group, characterName: displayName, avatarImgURL: avatarImg };
+}
+
+/**
  * Displays the past chats for a character or a group based on the selected context.
  * The function first fetches the chats, processes them, and then displays them in
  * the HTML. It also has a built-in search functionality that allows filtering the
@@ -6099,7 +6114,6 @@ export async function displayPastChats() {
     $('#select_chat_div').empty();
     $('#select_chat_search').val('').off('input');
 
-    const group = selected_group ? groups.find(x => x.id === selected_group) : null;
     const data = await (selected_group ? getGroupPastChats(selected_group) : getPastCharacterChats());
 
     if (!data) {
@@ -6107,10 +6121,14 @@ export async function displayPastChats() {
         return;
     }
 
-    const currentChat = selected_group ? group?.chat_id : characters[this_chid]['chat'];
-    const displayName = selected_group ? group?.name : characters[this_chid].name;
-    const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
+    const chatDetails = getCurrentChatDetails();
+    const group = chatDetails.group;
+    const currentChat = chatDetails.sessionName;
+    const displayName = chatDetails.characterName;
+    const avatarImg = chatDetails.avatarImgURL;
+
     const rawChats = await getChatsFromFiles(data, selected_group);
+
     // Sort by last message date descending
     data.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
     console.log(data);
@@ -7824,6 +7842,13 @@ async function doDeleteChat() {
     $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
 }
 
+/**
+ * /getchatname` slash command
+ */
+async function doGetChatName() {
+    return getCurrentChatDetails().sessionName;
+}
+
 const isPwaMode = window.navigator.standalone;
 if (isPwaMode) { $('body').addClass('PWA'); }
 
@@ -7975,6 +8000,7 @@ jQuery(async function () {
     registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
+    registerSlashCommand('getchatname', doGetChatName, [], '– returns the name of the current chat file into the pipe', false, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
     registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
     registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
