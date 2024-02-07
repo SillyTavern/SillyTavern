@@ -3955,7 +3955,7 @@ function runProxyCallback(_, value) {
     return foundName;
 }
 
-registerSlashCommand('proxy', runProxyCallback, [], '<span class="monospace">(name)</span> –  sets a proxy preset by name');
+registerSlashCommand('proxy', runProxyCallback, [], '<span class="monospace">(name)</span> – sets a proxy preset by name');
 
 $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
