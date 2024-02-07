@@ -7817,15 +7817,11 @@ async function doImpersonate() {
 }
 
 async function doDeleteChat() {
-    $('#option_select_chat').trigger('click', { fromSlashCommand: true });
-    await delay(100);
+    await displayPastChats();
     let currentChatDeleteButton = $('.select_chat_block[highlight=\'true\']').parent().find('.PastChat_cross');
-    $(currentChatDeleteButton).trigger('click', { fromSlashCommand: true });
+    $(currentChatDeleteButton).trigger('click');
     await delay(1);
-    $('#dialogue_popup_ok').trigger('click');
-    //200 delay needed let the past chat view reshow first
-    await delay(200);
-    $('#select_chat_cross').trigger('click');
+    $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
 }
 
 const isPwaMode = window.navigator.standalone;
@@ -8208,7 +8204,8 @@ jQuery(async function () {
         $('#character_popup').css('display', 'none');
     });
 
-    $('#dialogue_popup_ok').click(async function (e) {
+    $('#dialogue_popup_ok').click(async function (e, customData) {
+        const fromSlashCommand = customData?.fromSlashCommand || false;
         dialogueCloseStop = false;
         $('#shadow_popup').transition({
             opacity: 0,
@@ -8238,14 +8235,16 @@ jQuery(async function () {
                 await delChat(chat_file_for_del);
             }
 
-            //open the history view again after 2seconds (delay to avoid edge cases for deleting last chat)
-            //hide option popup menu
-            setTimeout(function () {
-                $('#option_select_chat').click();
-                $('#options').hide();
+            if (fromSlashCommand) {  // When called from `/delchat` command, don't re-open the history view.
+                $('#options').hide();  // hide option popup menu
                 hideLoader();
-            }, 2000);
-
+            } else {  // Open the history view again after 2 seconds (delay to avoid edge cases for deleting last chat).
+                setTimeout(function () {
+                    $('#option_select_chat').click();
+                    $('#options').hide();  // hide option popup menu
+                    hideLoader();
+                }, 2000);
+            }
         }
         if (popup_type == 'del_ch') {
             const deleteChats = !!$('#del_char_checkbox').prop('checked');
