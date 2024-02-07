@@ -8541,6 +8541,11 @@ jQuery(async function () {
             await writeSecret(SECRET_KEYS.TOGETHERAI, togetherKey);
         }
 
+        const oobaKey = String($('#api_key_ooba').val()).trim();
+        if (oobaKey.length) {
+            await writeSecret(SECRET_KEYS.OOBA, oobaKey);
+        }
+
         validateTextGenUrl();
         startStatusLoading();
         main_api = 'textgenerationwebui';
