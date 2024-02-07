@@ -31,6 +31,7 @@ import {
     this_chid,
 } from '../script.js';
 import { groups, selected_group } from './group-chats.js';
+import { registerSlashCommand } from './slash-commands.js';
 
 import {
     chatCompletionDefaultPrompts,
@@ -3933,6 +3934,28 @@ $('#delete_proxy').on('click', async function () {
         toastr.error(`Could not find proxy with name "${presetName}"`);
     }
 });
+
+function runProxyCallback(_, value) {
+    if (!value) {
+        toastr.warning('Proxy preset name is required');
+        return '';
+    }
+
+    const proxyNames = proxies.map(preset => preset.name);
+    const fuse = new Fuse(proxyNames);
+    const result = fuse.search(value);
+
+    if (result.length === 0) {
+        toastr.warning(`Proxy preset "${value}" not found`);
+        return '';
+    }
+
+    const foundName = result[0].item;
+    $('#openai_proxy_preset').val(foundName).trigger('change');
+    return foundName;
+}
+
+registerSlashCommand('proxy', runProxyCallback, [], '<span class="monospace">(name)</span> – sets a proxy preset by name');
 
 $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
