@@ -7990,7 +7990,7 @@ jQuery(async function () {
     registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
-    registerSlashCommand('getchatname', doGetChatName, [], '- gets the name of the current chat file', false, true);
+    registerSlashCommand('getchatname', doGetChatName, [], '- returns the name of the current chat file into the pipe', false, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
     registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
     registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
