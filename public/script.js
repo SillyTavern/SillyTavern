@@ -2179,6 +2179,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     environment.user = _name1 ?? name1;
     environment.char = _name2 ?? name2;
     environment.group = environment.charIfNotGroup = _group ?? name2;
+    environment.model = online_status;
 
     return evaluateMacros(content, environment);
 }
