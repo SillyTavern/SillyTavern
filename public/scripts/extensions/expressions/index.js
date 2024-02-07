@@ -1688,7 +1688,7 @@ async function fetchImagesNoCache() {
 
     // Pause Talkinghead to save resources when the ST tab is not visible or the window is minimized.
     // We currently do this via loading/unloading. Could be improved by adding new pause/unpause endpoints to Extras.
-    document.addEventListener("visibilitychange", function (event) {
+    document.addEventListener('visibilitychange', function (event) {
         let pageIsVisible;
         if (document.hidden) {
             console.debug('expressions: SillyTavern is now hidden');

@@ -17,7 +17,7 @@ export const SECRET_KEYS = {
     MISTRALAI: 'api_key_mistralai',
     TOGETHERAI: 'api_key_togetherai',
     CUSTOM: 'api_key_custom',
-    OOBA: 'api_key_ooba'
+    OOBA: 'api_key_ooba',
 };
 
 const INPUT_MAP = {

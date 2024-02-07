@@ -719,7 +719,7 @@ router.post('/generate', jsonParser, function (request, response) {
         // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
         if (!isTextCompletion && bodyParams.logprobs > 0) {
             bodyParams.top_logprobs = bodyParams.logprobs;
-            bodyParams.logprobs = true
+            bodyParams.logprobs = true;
         }
 
         if (getConfigValue('openai.randomizeUserId', false)) {
