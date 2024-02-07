@@ -39,7 +39,6 @@ function getTabbyHeaders() {
 
 function getOobaHeaders() {
     const apiKey = readSecret(SECRET_KEYS.OOBA);
-    console.log(apiKey);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
