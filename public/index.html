@@ -3114,8 +3114,17 @@
                 <div id="user-settings-block-content" class="flex-container spaceEvenly">
                     <div name="UserSettingsFirstColumn" id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p">
                         <div id="UI-presets-block" class="flex-container flexFlowColumn">
-                            <h4>
-                                <span data-i18n="UI Theme Preset">Theme Preset</span>
+                            <h4 class="title_restorable">
+                                <span data-i18n="UI Theme">UI Theme</span>
+                                <div class="flex-container">
+                                    <div id="ui_preset_import_button" class="menu_button menu_button_icon margin0" title="Import a theme file" data-i18n="[title]Import a theme file">
+                                        <i class="fa-solid fa-file-import"></i>
+                                    </div>
+                                    <div id="ui_preset_export_button" class="menu_button menu_button_icon margin0" title="Export a theme file" data-i18n="[title]Export a theme file">
+                                        <i class="fa-solid fa-file-export"></i>
+                                    </div>
+                                </div>
+                                <input type="file" id="ui_preset_import_file" accept=".json" hidden>
                             </h4>
                             <div class="flex-container flexnowrap alignitemscenter">
                                 <select id="themes" class="margin0">
