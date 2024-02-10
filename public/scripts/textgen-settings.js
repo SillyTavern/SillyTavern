@@ -435,6 +435,16 @@ function sortItemsByOrder(orderArray) {
     }
 }
 
+function sortOobaItemsByOrder(orderArray) {
+    console.debug('Preset samplers order: ', orderArray);
+    const $container = $('#sampler_priority_container');
+
+    orderArray.forEach((name) => {
+        const $item = $container.find(`[data-name="${name}"]`).detach();
+        $container.append($item);
+    });
+}
+
 jQuery(function () {
     $('#koboldcpp_order').sortable({
         delay: getSortableDelay(),
@@ -451,9 +461,37 @@ jQuery(function () {
 
     $('#koboldcpp_default_order').on('click', function () {
         settings.sampler_order = KOBOLDCPP_ORDER;
-        sortItemsByOrder(settings.sampler_order);
+        sortOobaItemsByOrder(settings.sampler_order);
         saveSettingsDebounced();
     });
+	
+jQuery(function($) {
+    $('#sampler_priority_container').sortable({
+        delay: getSortableDelay(),
+        stop: function() {
+            const order = [];
+            $('#sampler_priority_container').children().each(function() {
+                order.push($(this).data('name'));
+            });
+            settings.sampler_priority = order.join('\n'); 
+            console.log('Samplers reordered:', settings.sampler_priority);
+            saveSettingsDebounced();
+            $('#sampler_priority_textgenerationwebui').val(settings.sampler_priority);
+        }
+    });
+
+	$('#textgenerationwebui_default_order').on('click', function () {
+		const defaultOrder = ['temperature', 'dynamic_temperature', 'quadratic_sampling', 'top_k', 'top_p', 'typical_p', 'epsilon_cutoff', 'eta_cutoff', 'tfs', 'top_a', 'min_p', 'mirostat'];
+
+		sortOobaItemsByOrder(defaultOrder); 
+		settings.sampler_priority = defaultOrder.join('\n'); 
+		console.log('Default samplers order loaded:', settings.sampler_priority);
+		saveSettingsDebounced();
+		$('#sampler_priority_textgenerationwebui').val(settings.sampler_priority);
+	});
+
+});
+
 
     $('#textgen_type').on('change', function () {
         const type = String($(this).val());
