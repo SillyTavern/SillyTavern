@@ -47,6 +47,7 @@
         "ban_eos_token": false,
         "skip_special_tokens": true,
         "streaming": false,
+        "sampler_priority": "temperature\ndynamic_temperature\nquadratic_sampling\ntop_k\ntop_p\ntypical_p\nepsilon_cutoff\neta_cutoff\ntfs\ntop_a\nmin_p\nmirostat"
         "mirostat_mode": 0,
         "mirostat_tau": 5,
         "mirostat_eta": 0.1,
