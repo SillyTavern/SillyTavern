@@ -172,7 +172,7 @@ function getSourceSettings(source, request) {
 
     const sourceSettings = {
         extrasUrl: extrasUrl,
-        extrasKey: extrasKey
+        extrasKey: extrasKey,
     };
     return sourceSettings;
 }

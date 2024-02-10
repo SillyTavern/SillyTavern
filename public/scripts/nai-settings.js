@@ -674,7 +674,7 @@ export function parseNovelAILogprobs(data) {
     // them with a logprob of -Infinity (0% probability)
     const notInAfter = befores
         .filter(([id]) => !afters.some(([aid]) => aid === id))
-        .map(([id]) => [id, -Infinity])
+        .map(([id]) => [id, -Infinity]);
     const merged = afters.concat(notInAfter);
 
     // Add the chosen token to `merged` if it's not already there. This can

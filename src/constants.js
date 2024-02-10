@@ -1,5 +1,6 @@
 const DIRECTORIES = {
     worlds: 'public/worlds/',
+    user: 'public/user',
     avatars: 'public/User Avatars',
     images: 'public/img/',
     userImages: 'public/user/images/',

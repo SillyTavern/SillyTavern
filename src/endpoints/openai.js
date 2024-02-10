@@ -33,6 +33,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
         }
 
         if (request.body.api === 'ooba') {
+            key = readSecret(SECRET_KEYS.OOBA);
             bodyParams.temperature = 0.1;
         }
 

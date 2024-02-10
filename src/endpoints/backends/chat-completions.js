@@ -267,7 +267,7 @@ async function sendMakerSuiteRequest(request, response) {
             ? (stream ? 'streamGenerateContent' : 'generateContent')
             : (isText ? 'generateText' : 'generateMessage');
 
-        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${responseType}?key=${apiKey}`, {
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -279,36 +279,8 @@ async function sendMakerSuiteRequest(request, response) {
         // have to do this because of their busted ass streaming endpoint
         if (stream) {
             try {
-                let partialData = '';
-                generateResponse.body.on('data', (data) => {
-                    const chunk = data.toString();
-                    if (chunk.startsWith(',') || chunk.endsWith(',') || chunk.startsWith('[') || chunk.endsWith(']')) {
-                        partialData = chunk.slice(1);
-                    } else {
-                        partialData += chunk;
-                    }
-                    while (true) {
-                        let json;
-                        try {
-                            json = JSON.parse(partialData);
-                        } catch (e) {
-                            break;
-                        }
-                        response.write(JSON.stringify(json));
-                        partialData = '';
-                    }
-                });
-
-                request.socket.on('close', function () {
-                    if (generateResponse.body instanceof Readable) generateResponse.body.destroy();
-                    response.end();
-                });
-
-                generateResponse.body.on('end', () => {
-                    console.log('Streaming request finished');
-                    response.end();
-                });
-
+                // Pipe remote SSE stream to Express response
+                forwardFetchResponse(generateResponse, response);
             } catch (error) {
                 console.log('Error forwarding streaming response:', error);
                 if (!response.headersSent) {
@@ -719,7 +691,7 @@ router.post('/generate', jsonParser, function (request, response) {
         // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
         if (!isTextCompletion && bodyParams.logprobs > 0) {
             bodyParams.top_logprobs = bodyParams.logprobs;
-            bodyParams.logprobs = true
+            bodyParams.logprobs = true;
         }
 
         if (getConfigValue('openai.randomizeUserId', false)) {

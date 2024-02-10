@@ -2179,6 +2179,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     environment.user = _name1 ?? name1;
     environment.char = _name2 ?? name2;
     environment.group = environment.charIfNotGroup = _group ?? name2;
+    environment.model = getGeneratingModel();
 
     return evaluateMacros(content, environment);
 }
@@ -6090,6 +6091,21 @@ export async function getPastCharacterChats(characterId = null) {
 }
 
 /**
+ * Helper for `displayPastChats`, to make the same info consistently available for other functions
+ */
+function getCurrentChatDetails() {
+    if (!characters[this_chid] && !selected_group) {
+        return { sessionName: '', group: null, characterName: '', avatarImgURL: '' };
+    }
+
+    const group = selected_group ? groups.find(x => x.id === selected_group) : null;
+    const currentChat = selected_group ? group?.chat_id : characters[this_chid]['chat'];
+    const displayName = selected_group ? group?.name : characters[this_chid].name;
+    const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
+    return { sessionName: currentChat, group: group, characterName: displayName, avatarImgURL: avatarImg };
+}
+
+/**
  * Displays the past chats for a character or a group based on the selected context.
  * The function first fetches the chats, processes them, and then displays them in
  * the HTML. It also has a built-in search functionality that allows filtering the
@@ -6099,7 +6115,6 @@ export async function displayPastChats() {
     $('#select_chat_div').empty();
     $('#select_chat_search').val('').off('input');
 
-    const group = selected_group ? groups.find(x => x.id === selected_group) : null;
     const data = await (selected_group ? getGroupPastChats(selected_group) : getPastCharacterChats());
 
     if (!data) {
@@ -6107,10 +6122,14 @@ export async function displayPastChats() {
         return;
     }
 
-    const currentChat = selected_group ? group?.chat_id : characters[this_chid]['chat'];
-    const displayName = selected_group ? group?.name : characters[this_chid].name;
-    const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
+    const chatDetails = getCurrentChatDetails();
+    const group = chatDetails.group;
+    const currentChat = chatDetails.sessionName;
+    const displayName = chatDetails.characterName;
+    const avatarImg = chatDetails.avatarImgURL;
+
     const rawChats = await getChatsFromFiles(data, selected_group);
+
     // Sort by last message date descending
     data.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
     console.log(data);
@@ -7817,15 +7836,18 @@ async function doImpersonate() {
 }
 
 async function doDeleteChat() {
-    $('#option_select_chat').trigger('click', { fromSlashCommand: true });
-    await delay(100);
+    await displayPastChats();
     let currentChatDeleteButton = $('.select_chat_block[highlight=\'true\']').parent().find('.PastChat_cross');
-    $(currentChatDeleteButton).trigger('click', { fromSlashCommand: true });
+    $(currentChatDeleteButton).trigger('click');
     await delay(1);
-    $('#dialogue_popup_ok').trigger('click');
-    //200 delay needed let the past chat view reshow first
-    await delay(200);
-    $('#select_chat_cross').trigger('click');
+    $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
+}
+
+/**
+ * /getchatname` slash command
+ */
+async function doGetChatName() {
+    return getCurrentChatDetails().sessionName;
 }
 
 const isPwaMode = window.navigator.standalone;
@@ -7979,6 +8001,7 @@ jQuery(async function () {
     registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
+    registerSlashCommand('getchatname', doGetChatName, [], '– returns the name of the current chat file into the pipe', false, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
     registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
     registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
@@ -8208,7 +8231,8 @@ jQuery(async function () {
         $('#character_popup').css('display', 'none');
     });
 
-    $('#dialogue_popup_ok').click(async function (e) {
+    $('#dialogue_popup_ok').click(async function (e, customData) {
+        const fromSlashCommand = customData?.fromSlashCommand || false;
         dialogueCloseStop = false;
         $('#shadow_popup').transition({
             opacity: 0,
@@ -8238,14 +8262,16 @@ jQuery(async function () {
                 await delChat(chat_file_for_del);
             }
 
-            //open the history view again after 2seconds (delay to avoid edge cases for deleting last chat)
-            //hide option popup menu
-            setTimeout(function () {
-                $('#option_select_chat').click();
-                $('#options').hide();
+            if (fromSlashCommand) {  // When called from `/delchat` command, don't re-open the history view.
+                $('#options').hide();  // hide option popup menu
                 hideLoader();
-            }, 2000);
-
+            } else {  // Open the history view again after 2 seconds (delay to avoid edge cases for deleting last chat).
+                setTimeout(function () {
+                    $('#option_select_chat').click();
+                    $('#options').hide();  // hide option popup menu
+                    hideLoader();
+                }, 2000);
+            }
         }
         if (popup_type == 'del_ch') {
             const deleteChats = !!$('#del_char_checkbox').prop('checked');
@@ -8539,6 +8565,11 @@ jQuery(async function () {
         const togetherKey = String($('#api_key_togetherai').val()).trim();
         if (togetherKey.length) {
             await writeSecret(SECRET_KEYS.TOGETHERAI, togetherKey);
+        }
+
+        const oobaKey = String($('#api_key_ooba').val()).trim();
+        if (oobaKey.length) {
+            await writeSecret(SECRET_KEYS.OOBA, oobaKey);
         }
 
         validateTextGenUrl();

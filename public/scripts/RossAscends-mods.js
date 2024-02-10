@@ -1132,7 +1132,7 @@ export function initRossMods() {
                 .not('#right-nav-panel')
                 .not('#floatingPrompt')
                 .not('#cfgConfig')
-                .not("#logprobsViewer")
+                .not('#logprobsViewer')
                 .is(':visible')) {
                 let visibleDrawerContent = $('.drawer-content:visible')
                     .not('#WorldInfo')
@@ -1140,7 +1140,7 @@ export function initRossMods() {
                     .not('#right-nav-panel')
                     .not('#floatingPrompt')
                     .not('#cfgConfig')
-                    .not("#logprobsViewer");
+                    .not('#logprobsViewer');
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
                 return;
             }

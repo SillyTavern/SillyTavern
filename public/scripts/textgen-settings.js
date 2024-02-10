@@ -716,6 +716,7 @@ function parseTextgenLogprobs(token, logprobs) {
     }
 
     switch (settings.type) {
+        case TABBY:
         case APHRODITE:
         case OOBA: {
             /** @type {Record<string, number>[]} */
@@ -807,6 +808,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'temperature': settings.dynatemp ? (settings.min_temp + settings.max_temp) / 2 : settings.temp,
         'top_p': settings.top_p,
         'typical_p': settings.typical_p,
+        'typical': settings.typical_p,
+        'sampler_seed': settings.seed,
         'min_p': settings.min_p,
         'repetition_penalty': settings.rep_pen,
         'frequency_penalty': settings.freq_pen,
@@ -819,8 +822,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'early_stopping': settings.early_stopping,
         'add_bos_token': settings.add_bos_token,
         'dynamic_temperature': settings.dynatemp,
-        'dynatemp_low': settings.dynatemp ? settings.min_temp : 0,
-        'dynatemp_high': settings.dynatemp ? settings.max_temp : 0,
+        'dynatemp_low': settings.dynatemp ? settings.min_temp : 1,
+        'dynatemp_high': settings.dynatemp ? settings.max_temp : 1,
         'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : 0,
         'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : 1,
         'smoothing_factor': settings.smoothing_factor,

@@ -1277,7 +1277,7 @@
                                     <div data-newbie-hidden data-tg-type="ooba, koboldcpp, aphrodite, tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Smoothing Factor">Smoothing Factor</small>
                                         <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
-                                        <input class="neo-range-input" type="number" min="0" max="5" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
+                                        <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
                                     </div>
                                     <!--
                                         <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Responses">
@@ -1915,6 +1915,15 @@
                                     <span data-i18n="Make sure you run it with">
                                         Make sure you run it with <code>--api</code> flag
                                     </span>
+                                </div>
+                                <h4 data-i18n="API key (optional)">API key (optional)</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_ooba" name="api_key_ooba" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_ooba">
+                                    </div>
+                                </div>
+                                <div data-for="api_key_ooba" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="Server url">Server URL</h4>

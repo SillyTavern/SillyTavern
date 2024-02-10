@@ -536,7 +536,7 @@ async function processTtsQueue() {
     }
 
     if (extension_settings.tts.narrate_quoted_only) {
-        const special_quotes = /[“”]/g; // Extend this regex to include other special quotes
+        const special_quotes = /[“”«»]/g; // Extend this regex to include other special quotes
         text = text.replace(special_quotes, '"');
         const matches = text.match(/".*?"/g); // Matches text inside double quotes, non-greedily
         const partJoiner = (ttsProvider?.separator || ' ... ');
