@@ -55,11 +55,10 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.11.3",
+    "version": "1.11.4",
     "scripts": {
         "start": "node server.js",
         "start-multi": "node server.js --disableCsrf",
-        "pkg": "pkg --compress Gzip --no-bytecode --public .",
         "postinstall": "node post-install.js",
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint-fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix"
@@ -72,24 +71,8 @@
         "no-var": "off"
     },
     "main": "server.js",
-    "pkg": {
-        "targets": [
-            "node18-linux-x64",
-            "node18-macos-x64",
-            "node18-windows-x64"
-        ],
-        "assets": [
-            "node_modules/**/*"
-        ],
-        "outputPath": "dist",
-        "scripts": [
-            "server.js"
-        ]
-    },
     "devDependencies": {
         "eslint": "^8.55.0",
-        "jquery": "^3.6.4",
-        "pkg": "^5.8.1",
-        "pkg-fetch": "^3.5.2"
+        "jquery": "^3.6.4"
     }
 }
