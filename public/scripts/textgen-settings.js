@@ -576,6 +576,7 @@ jQuery(function($) {
             'penalty_alpha_textgenerationwebui': 0,
             'typical_p_textgenerationwebui': 1, // Added entry
             'guidance_scale_textgenerationwebui': 1,
+            'smoothing_factor_textgenerationwebui': 0,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
