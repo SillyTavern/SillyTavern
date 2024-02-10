@@ -1692,24 +1692,17 @@ async function sendOpenAIRequest(type, messages, signal) {
         throw new Error(`Got response status ${response.status}`);
     }
     if (stream) {
-        let reader;
-        let isSSEStream = oai_settings.chat_completion_source !== chat_completion_sources.MAKERSUITE;
-        if (isSSEStream) {
-            const eventStream = new EventSourceStream();
-            response.body.pipeThrough(eventStream);
-            reader = eventStream.readable.getReader();
-        } else {
-            reader = response.body.getReader();
-        }
+        const eventStream = new EventSourceStream();
+        response.body.pipeThrough(eventStream);
+        const reader = eventStream.readable.getReader();
         return async function* streamData() {
             let text = '';
-            let utf8Decoder = new TextDecoder();
             const swipes = [];
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
-                const rawData = isSSEStream ? value.data : utf8Decoder.decode(value, { stream: true });
-                if (isSSEStream && rawData === '[DONE]') return;
+                const rawData = value.data;
+                if (rawData === '[DONE]') return;
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
 
@@ -1750,7 +1743,7 @@ function getStreamingReply(data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         return data?.completion || '';
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
-        return data?.candidates[0].content.parts[0].text || '';
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
         return data.choices[0]?.delta?.content || data.choices[0]?.message?.content || data.choices[0]?.text || '';
     }
