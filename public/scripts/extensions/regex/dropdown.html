@@ -5,9 +5,16 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <div id="open_regex_editor" class="menu_button">
-                <i class="fa-solid fa-pen-to-square"></i>
-                <span>Open Editor</span>
+            <div class="flex-container">
+                <div id="open_regex_editor" class="menu_button">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Open Editor</span>
+                </div>
+                <div id="import_regex" class="menu_button">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span>Import Script</span>
+                </div>
+                <input type="file" id="import_regex_file" hidden accept="*.json" />
             </div>
             <hr />
             <label>Saved Scripts</label>
