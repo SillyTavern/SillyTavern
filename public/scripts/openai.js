@@ -2166,8 +2166,13 @@ class ChatCompletion {
         let squashedMessages = [];
 
         for (let message of this.messages.collection) {
+            // Force exclude empty messages
+            if (message.role === 'system' && !message.content) {
+                continue;
+            }
+
             if (!excludeList.includes(message.identifier) && message.role === 'system' && !message.name) {
-                if (lastMessage && message.content && lastMessage.role === 'system') {
+                if (lastMessage && lastMessage.role === 'system') {
                     lastMessage.content += '\n' + message.content;
                     lastMessage.tokens = tokenHandler.count({ role: lastMessage.role, content: lastMessage.content });
                 }
