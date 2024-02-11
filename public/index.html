@@ -3108,7 +3108,7 @@
                         <small id="version_display"></small>
                     </div>
                     <div name="UserSettingsRowTwo" class="flex-container flexFlowRow">
-                        <textarea id="settingsSearch" class="textarea_compact wide100p" rows="1" placeholder="Search Settings"></textarea>
+                        <textarea id="settingsSearch" class="textarea_compact wide100p" rows="1" placeholder="Search Settings" data-i18n="[placeholder]Search Settings"></textarea>
                     </div>
                 </div>
                 <div id="user-settings-block-content" class="flex-container spaceEvenly">
@@ -3188,9 +3188,12 @@
                             </div>
                             <div data-newbie-hidden name="FontBlurChatWidthBlock" class="flex-container flexFlowColumn flexNoGap">
                                 <div data-newbie-hidden class="range-block">
-                                    <div class="range-block-title" data-i18n="Chat Width (PC)">
-                                        Chat Width&nbsp;<i class="fa-solid fa-desktop"></i>
-                                    </div>
+                                    <label for="compact_input_area" class="range-block-title">
+                                        <span data-i18n="Chat Width (PC)">
+                                            Chat Width
+                                        </span>
+                                        <i class="fa-solid fa-desktop"></i>
+                                    </label>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
                                             <input id="chat_width_slider" class="wide100p" type="range" min="25" max="100" step="1" value="50">
@@ -3240,9 +3243,12 @@
                                     </div>
                                 </div>
                                 <div id="chat-truncation-block" class="range-block">
-                                    <div class="range-block-title" data-i18n="Chat Truncation">
-                                        Chat Truncation <small>(0 = unlimited)</small>
-                                    </div>
+                                    <label for="compact_input_area" class="range-block-title">
+                                        <span data-i18n="Chat Truncation">
+                                            Chat Truncation
+                                        </span>
+                                        <small data-i18n="(0 = unlimited)">(0 = unlimited)</small>
+                                    </label>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
                                             <input type="range" id="chat_truncation" name="chat_truncation" min="0" max="1000" step="25">
@@ -3279,61 +3285,61 @@
                                 <input id="fast_ui_mode" type="checkbox" />
                                 <span data-i18n="No Blur Effect">No Blur Effect</span>
                             </label>
-                            <label data-newbie-hidden for="noShadowsmode" class="checkbox_label" title="Remove text shadow effect." data-i18n="Remove text shadow effect.">
+                            <label data-newbie-hidden for="noShadowsmode" class="checkbox_label" title="Remove text shadow effect." data-i18n="[title]Remove text shadow effect">
                                 <input id="noShadowsmode" type="checkbox" />
                                 <span data-i18n="No Text Shadows">No Text Shadows</span>
                             </label>
-                            <label for="waifuMode" class="checkbox_label" title="Reduce chat height, and put a static sprite behind the chat window." data-i18n="[title]Reduce chat height, and put a static sprite behind the chat window.">
+                            <label for="waifuMode" class="checkbox_label" title="Reduce chat height, and put a static sprite behind the chat window." data-i18n="[title]Reduce chat height, and put a static sprite behind the chat window">
                                 <input id="waifuMode" type="checkbox" />
                                 <span data-i18n="Waifu Mode">Visual Novel Mode</span>
                             </label>
-                            <label data-newbie-hidden for="expandMessageActions" class="checkbox_label" title="Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'." data-i18n="[title]Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'.">
+                            <label data-newbie-hidden for="expandMessageActions" class="checkbox_label" title="Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'." data-i18n="[title]Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'">
                                 <input id="expandMessageActions" type="checkbox" />
                                 <span data-i18n="Auto-Expand Message Actions">Expand Message Actions</span>
                             </label>
-                            <label data-newbie-hidden for="enableZenSliders" class="checkbox_label" title="Alternative UI for numeric sampling parameters with fewer steps." data-i18n="[title]Alternative UI for numeric sampling parameters with fewer steps.">
+                            <label data-newbie-hidden for="enableZenSliders" class="checkbox_label" title="Alternative UI for numeric sampling parameters with fewer steps." data-i18n="[title]Alternative UI for numeric sampling parameters with fewer steps">
                                 <input id="enableZenSliders" type="checkbox" />
                                 <span data-i18n="Zen Sliders">Zen Sliders</span>
                             </label>
-                            <label data-newbie-hidden for="enableLabMode" class="checkbox_label" title="Entirely unrestrict all numeric sampling parameters." data-i18n="[title]Entirely unrestrict all numeric sampling parameters.">
+                            <label data-newbie-hidden for="enableLabMode" class="checkbox_label" title="Entirely unrestrict all numeric sampling parameters." data-i18n="[title]Entirely unrestrict all numeric sampling parameters">
                                 <input id="enableLabMode" type="checkbox" />
                                 <span data-i18n="Mad Lab Mode">Mad Lab Mode</span>
                             </label>
-                            <label data-newbie-hidden for="messageTimerEnabled" class="checkbox_label" title="Time the AI's message generation, and show the duration in the chat log." data-i18n="[title]Time the AI's message generation, and show the duration in the chat log.">
+                            <label data-newbie-hidden for="messageTimerEnabled" class="checkbox_label" title="Time the AI's message generation, and show the duration in the chat log." data-i18n="[title]Time the AI's message generation, and show the duration in the chat log">
                                 <input id="messageTimerEnabled" type="checkbox" />
                                 <span data-i18n="Message Timer">Message Timer</span>
                             </label>
-                            <label data-newbie-hidden for="messageTimestampsEnabled" class="checkbox_label" title="Show a timestamp for each message in the chat log." data-i18n="Show a timestamp for each message in the chat log.">
+                            <label data-newbie-hidden for="messageTimestampsEnabled" class="checkbox_label" title="Show a timestamp for each message in the chat log." data-i18n="[title]Show a timestamp for each message in the chat log">
                                 <input id="messageTimestampsEnabled" type="checkbox" />
                                 <span data-i18n="Chat Timestamps">Chat Timestamps</span>
                             </label>
-                            <label data-newbie-hidden for="messageModelIconEnabled" class="checkbox_label" title="Show an icon for the API that generated the message." data-i18n="[title]Show an icon for the API that generated the message.">
+                            <label data-newbie-hidden for="messageModelIconEnabled" class="checkbox_label" title="Show an icon for the API that generated the message." data-i18n="[title]Show an icon for the API that generated the message">
                                 <input id="messageModelIconEnabled" type="checkbox" />
                                 <span data-i18n="Model Icon">Model Icons</span>
                             </label>
-                            <label data-newbie-hidden for="mesIDDisplayEnabled" class="checkbox_label" title="Show sequential message numbers in the chat log." data-i18n="Show sequential message numbers in the chat log.">
+                            <label data-newbie-hidden for="mesIDDisplayEnabled" class="checkbox_label" title="Show sequential message numbers in the chat log." data-i18n="[title]Show sequential message numbers in the chat log">
                                 <input id="mesIDDisplayEnabled" type="checkbox" />
                                 <span data-i18n="Message IDs">Message IDs</span>
                             </label>
-                            <label data-newbie-hidden for="messageTokensEnabled" class="checkbox_label" title="Show the number of tokens for each message in the chat log." data-i18n="[title]Show the number of tokens in each message in the chat log.">
+                            <label data-newbie-hidden for="messageTokensEnabled" class="checkbox_label" title="Show the number of tokens for each message in the chat log." data-i18n="[title]Show the number of tokens in each message in the chat log">
                                 <input id="messageTokensEnabled" type="checkbox" />
                                 <span data-i18n="Show Message Token Count">Message Token Count</span>
                             </label>
-                            <label for="compact_input_area" class="checkbox_label">
+                            <label for="compact_input_area" class="checkbox_label" title="Single-row message input area. Mobile only, no effect on PC." data-i18n="[title]Single-row message input area. Mobile only, no effect on PC">
                                 <input id="compact_input_area" type="checkbox" />
-                                <span title="Single-row message input area. Mobile only, no effect on PC." data-i18n="Compact Input Area (Mobile)">Compact Input Area&nbsp;<i class="fa-solid fa-mobile-screen-button"></i></span>
+                                <span data-i18n="Compact Input Area (Mobile)">Compact Input Area</span><i class="fa-solid fa-mobile-screen-button"></i>
                             </label>
-                            <label data-newbie-hidden for="hotswapEnabled" class="checkbox_label" title="In the Character Management panel, show quick selection buttons for favorited characters." data-i18n="In the Character Management panel, show quick selection buttons for favorited characters.">
+                            <label data-newbie-hidden for="hotswapEnabled" class="checkbox_label" title="In the Character Management panel, show quick selection buttons for favorited characters." data-i18n="[title]In the Character Management panel, show quick selection buttons for favorited characters">
                                 <input id="hotswapEnabled" type="checkbox" />
                                 <span data-i18n="Characters Hotswap">Characters Hotswap</span>
                             </label>
-                            <label for="bogus_folders" class="checkbox_label">
+                            <label for="bogus_folders" class="checkbox_label" title="Show tagged character folders in the character list." data-i18n="[title]Show tagged character folders in the character list">
                                 <input id="bogus_folders" type="checkbox" />
                                 <span data-i18n="Tags as Folders">Tags as Folders</span>
                             </label>
                         </div>
                         <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
-                        <div title="If set in the advanced character definitions, this field will be displayed in the characters list.">
+                        <div title="If set in the advanced character definitions, this field will be displayed in the characters list." data-i18n="[title]If set in the advanced character definitions, this field will be displayed in the characters list.">
                             <label for="aux_field" data-i18n="Aux List Field">Aux List Field</label>
                             <select id="aux_field">
                                 <option data-i18n="Character Version" value="character_version">Character Version</option>
@@ -3341,7 +3347,7 @@
                             </select>
                         </div>
                         <div>
-                            <label for="play_message_sound" class="checkbox_label" title="Play a sound when a message generation finishes." data-i18n="Play a sound when a message generation finishes.">
+                            <label for="play_message_sound" class="checkbox_label" title="Play a sound when a message generation finishes." data-i18n="[title]Play a sound when a message generation finishes">
                                 <input id="play_message_sound" type="checkbox" />
                                 <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
                                 <span>
@@ -3351,30 +3357,30 @@
                                     </a>
                                 </span>
                             </label>
-                            <label for="play_sound_unfocused" class="checkbox_label" title="Only play a sound when ST's browser tab is unfocused." data-i18n="Only play a sound when ST's browser tab is unfocused.">
+                            <label for="play_sound_unfocused" class="checkbox_label" title="Only play a sound when ST's browser tab is unfocused." data-i18n="[title]Only play a sound when ST's browser tab is unfocused">
                                 <input id="play_sound_unfocused" type="checkbox" />
                                 <span data-i18n="Background Sound Only">Background Sound Only</span>
                             </label>
-                            <label data-newbie-hidden class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLs.">
+                            <label data-newbie-hidden class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLs." data-i18n="[title]Reduce the formatting requirements on API URLs">
                                 <input id="relaxed_api_urls" type="checkbox" />
                                 <span data-i18n="Relaxed API URLS">Relaxed API URLs</span>
                             </label>
-                            <label data-newbie-hidden class="checkbox_label" for="world_import_dialog" title="Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead.">
+                            <label data-newbie-hidden class="checkbox_label" for="world_import_dialog" title="Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead." data-i18n="[title]Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead">
                                 <input id="world_import_dialog" type="checkbox" />
                                 <span data-i18n="Lorebook Import Dialog">Lorebook Import Dialog</span>
                             </label>
-                            <label class="checkbox_label" for="restore_user_input" title="Restore unsaved user input on page refresh." data-i18n="[title]Restore unsaved user input on page refresh.">
+                            <label class="checkbox_label" for="restore_user_input" title="Restore unsaved user input on page refresh." data-i18n="[title]Restore unsaved user input on page refresh">
                                 <input id="restore_user_input" type="checkbox" />
                                 <span data-i18n="Restore User Input">Restore User Input</span>
                             </label>
-                            <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile.">
+                            <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile">
                                 <input id="movingUImode" type="checkbox" />
                                 <span data-i18n="Movable UI Panels">MovingUI&nbsp;<i class="fa-solid fa-desktop"></i></span>
                             </label>
                             <div data-newbie-hidden id="MovingUI-presets-block" class="flex-container alignitemscenter">
                                 <div class="flex-container alignitemscenter">
-                                    <label for="movingUIPresets" title="MovingUI preset. Predefined/saved draggable positions." data-i18n="[title]MovingUI preset. Predefined/saved draggable positions.">
-                                        <span>MUI Preset:</span>
+                                    <label for="movingUIPresets" title="MovingUI preset. Predefined/saved draggable positions." data-i18n="[title]MovingUI preset. Predefined/saved draggable positions">
+                                        <span data-i18n="MUI Preset">MUI Preset:</span>
                                         <div class="flex-container flexnowrap">
                                             <select id="movingUIPresets" class="widthNatural flex1 margin0">
                                             </select>
@@ -3389,7 +3395,7 @@
                                 Reset MovingUI
                             </div>
                             <div data-newbie-hidden id="CustomCSS-block" class="flex-container flexFlowColumn">
-                                <h4 title="Apply a custom CSS style to all of the ST GUI." data-i18n="[title]Apply a custom CSS style to all of the ST GUI.">
+                                <h4 title="Apply a custom CSS style to all of the ST GUI." data-i18n="[title]Apply a custom CSS style to all of the ST GUI">
                                     <span data-i18n="Custom CSS">Custom CSS</span>
                                 </h4>
                                 <div class="flex-container flexnowrap alignitemscenter">
@@ -3409,42 +3415,42 @@
                                         Example Messages Behavior:
                                     </label>
                                     <select id="example_messages_behavior">
-                                        <option value="normal">Gradual push-out</option>
-                                        <option value="keep">Always include examples</option>
-                                        <option value="strip">Never include examples</option>
+                                        <option value="normal" data-i18n="Gradual push-out">Gradual push-out</option>
+                                        <option value="keep" data-i18n="Always include examples">Always include examples</option>
+                                        <option value="strip" data-i18n="Never include examples">Never include examples</option>
                                     </select>
                                 </div>
-                                <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox" title="Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring." data-i18n="[title]Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring.">
+                                <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox" title="Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring." data-i18n="[title]Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring">
                                     <input id="fuzzy_search_checkbox" type="checkbox" />
                                     <span data-i18n="Advanced Character Search">Advanced Character Search</span>
                                 </label>
-                                <label data-newbie-hidden for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." data-i18n="[title]If checked and the character card contains a prompt override (System Prompt), use that instead." class="checkbox_label">
+                                <label data-newbie-hidden for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." data-i18n="[title]If checked and the character card contains a prompt override (System Prompt), use that instead" class="checkbox_label">
                                     <input id="prefer_character_prompt" type="checkbox" />
                                     <span data-i18n="Prefer Character Card Prompt">Prefer Char. Prompt</span>
                                 </label>
-                                <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." class="checkbox_label">
+                                <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead" class="checkbox_label">
                                     <input id="prefer_character_jailbreak" type="checkbox" />
                                     <span data-i18n="Prefer Character Card Jailbreak">Prefer Char. Jailbreak</span>
                                 </label>
-                                <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars" title="Avoid cropping and resizing imported character images. When off, crop/resize to 400x600." data-i18n="[title]Avoid cropping and resizing imported character images. When off, crop/resize to 400x600.">
+                                <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars" title="Avoid cropping and resizing imported character images. When off, crop/resize to 400x600." data-i18n="[title]Avoid cropping and resizing imported character images. When off, crop/resize to 400x600">
                                     <input id="never_resize_avatars" type="checkbox" />
                                     <span data-i18n="Never resize avatars">Never resize avatars</span>
                                 </label>
-                                <label data-newbie-hidden class="checkbox_label" for="show_card_avatar_urls" title="Show actual file names on the disk, in the characters list display only." data-i18n="[title]Show actual file names on the disk, in the characters list display only.">
+                                <label data-newbie-hidden class="checkbox_label" for="show_card_avatar_urls" title="Show actual file names on the disk, in the characters list display only." data-i18n="[title]Show actual file names on the disk, in the characters list display only">
                                     <input id="show_card_avatar_urls" type="checkbox" />
                                     <span data-i18n="Show avatar filenames">Show avatar filenames</span>
                                 </label>
-                                <label data-newbie-hidden class="checkbox_label" for="import_card_tags" title="Prompt to import embedded card tags on character import. Otherwise embedded tags are ignored." data-i18n="[title]Prompt to import embedded card tags on character import. Otherwise embedded tags are ignored.">
+                                <label data-newbie-hidden class="checkbox_label" for="import_card_tags" title="Prompt to import embedded card tags on character import. Otherwise embedded tags are ignored." data-i18n="[title]Prompt to import embedded card tags on character import. Otherwise embedded tags are ignored">
                                     <input id="import_card_tags" type="checkbox" />
                                     <span data-i18n="Import Card Tags">Import Card Tags</span>
                                 </label>
-                                <label data-newbie-hidden class="checkbox_label" for="spoiler_free_mode" title="Hide character definitions from the editor panel behind a spoiler button." data-i18n="[title]Hide character definitions from the editor panel behind a spoiler button.">
+                                <label data-newbie-hidden class="checkbox_label" for="spoiler_free_mode" title="Hide character definitions from the editor panel behind a spoiler button." data-i18n="[title]Hide character definitions from the editor panel behind a spoiler button">
                                     <input id="spoiler_free_mode" type="checkbox" />
                                     <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
                                 </label>
                             </div>
-                            <div name="ChatMessageHandlingToggles">
-                                <h4>Chat/Message Handling</h4>
+                            <div name="ChatMessageHandlingToggles" >
+                                <h4 data-i18n="Chat/Message Handling">Chat/Message Handling</h4>
                                 <div data-newbie-hidden class="flex-container alignitemscenter">
                                     <span data-i18n="Send on Enter">
                                         Enter to Send:
@@ -3461,20 +3467,21 @@
                                         "Send" to Continue
                                     </span>
                                 </label>
-                                <label class="checkbox_label" for="quick_continue" title="Show a button in the input area to ask the AI to continue (extend) its last message." data-i18n="[title]Show a button in the input area to ask the AI to continue (extend) its last message.">
+                                <label class="checkbox_label" for="quick_continue" title="Show a button in the input area to ask the AI to continue (extend) its last message." data-i18n="[title]Show a button in the input area to ask the AI to continue (extend) its last message">
                                     <input id="quick_continue" type="checkbox" />
-                                    <span data-i18n="Press Send to continue">
+                                    <span data-i18n="Quick 'Continue' button">
                                         Quick "Continue" button
                                     </span>
                                 </label>
                                 <div class="checkbox-container flex-container">
-                                    <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox" title="Show arrow buttons on the last in-chat message to generate alternative AI responses. Both PC and mobile." data-i18n="[title]Show arrow buttons on the last in-chat message to generate alternative AI responses. Both PC and mobile.">
+                                    <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox" title="Show arrow buttons on the last in-chat message to generate alternative AI responses. Both PC and mobile." data-i18n="[title]Show arrow buttons on the last in-chat message to generate alternative AI responses. Both PC and mobile">
                                         <input id="swipes-checkbox" type="checkbox" />
-                                        <span data-i18n="Swipes">Swipes&nbsp;<i class="fa-solid fa-desktop"></i>&nbsp;<i class="fa-solid fa-mobile-screen-button"></i></span>
+                                        <span data-i18n="Swipes">Swipes</span><i class="fa-solid fa-desktop"></i><i class="fa-solid fa-mobile-screen-button"></i>
                                     </label>
-                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox" title="Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC.", data-i18n="[title]Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC.">
+                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox" title="Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC.", data-i18n="[title]Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC">
                                         <input id="gestures-checkbox" type="checkbox" />
-                                        <span data-i18n="Gestures">Gestures&nbsp;<i class="fa-solid fa-mobile-screen-button"></i></span>
+                                        <span data-i18n="Gestures">Gestures</span>
+                                        <i class="fa-solid fa-mobile-screen-button"></i>
                                     </label>
                                 </div>
                                 <label class="checkbox_label" for="auto-load-chat-checkbox">
@@ -3485,7 +3492,7 @@
                                     <input id="auto_scroll_chat_to_bottom" type="checkbox" />
                                     <span data-i18n="Auto-scroll Chat">Auto-scroll Chat</span>
                                 </label>
-                                <label data-newbie-hidden class="checkbox_label" for="auto_save_msg_edits" title="Save edits to messages without confirmation as you type." data-i18n="[title]Save edits to messages without confirmation as you type.">
+                                <label data-newbie-hidden class="checkbox_label" for="auto_save_msg_edits" title="Save edits to messages without confirmation as you type." data-i18n="[title]Save edits to messages without confirmation as you type">
                                     <input id="auto_save_msg_edits" type="checkbox" />
                                     <span data-i18n="Auto-save Message Edits">Auto-save Message Edits</span>
                                 </label>
@@ -3497,14 +3504,14 @@
                                     <input id="auto_fix_generated_markdown" type="checkbox" />
                                     <span data-i18n="Auto-fix Markdown">Auto-fix Markdown</span>
                                 </label>
-                                <label data-newbie-hidden class="checkbox_label" for="render_formulas" title="Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX." data-i18n="[title]Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX.">
+                                <label data-newbie-hidden class="checkbox_label" for="render_formulas" title="Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX." data-i18n="[title]Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX">
                                     <input id="render_formulas" type="checkbox" />
                                     <span data-i18n="Render Formulas">Render Formulas</span>
                                     <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#formulas-rendering" class="notes-link" target="_blank">
                                         <span class="fa-solid fa-circle-question note-link-span"></span>
                                     </a>
                                 </label>
-                                <label class="checkbox_label" for="forbid_external_images" title="Disalow embedded media from other domains in chat messages.">
+                                <label class="checkbox_label" for="forbid_external_images" title="Disalow embedded media from other domains in chat messages." data-i18n="[title]Disalow embedded media from other domains in chat messages">
                                     <input id="forbid_external_images" type="checkbox" />
                                     <span data-i18n="Forbid External Media">Forbid External Media</span>
                                 </label>
@@ -3516,11 +3523,11 @@
                                     <input id="allow_name1_display" type="checkbox" />
                                     <span data-i18n="Allow {{user}}: in bot messages">Show {{user}}: in responses</span>
                                 </label>
-                                <label class="checkbox_label" for="encode_tags" title="Skip encoding &lt; and &gt; characters in message text, allowing a subset of HTML markup as well as Markdown." data-i18n="[title]Skip encoding &lt; and &gt; characters in message text, allowing a subset of HTML markup as well as Markdown.">
+                                <label class="checkbox_label" for="encode_tags" title="Skip encoding &lt; and &gt; characters in message text, allowing a subset of HTML markup as well as Markdown." data-i18n="[title]Skip encoding  and  characters in message text, allowing a subset of HTML markup as well as Markdown">
                                     <input id="encode_tags" type="checkbox" />
                                     <span data-i18n="Show tags in responses">Show &lt;tags&gt; in responses</span>
                                 </label>
-                                <label data-newbie-hidden class="checkbox_label" for="disable_group_trimming" title="Allow AI messages in groups to contain lines spoken by other group members.">
+                                <label data-newbie-hidden class="checkbox_label" for="disable_group_trimming" title="Allow AI messages in groups to contain lines spoken by other group members." data-i18n="[title]Allow AI messages in groups to contain lines spoken by other group members">
                                     <input id="disable_group_trimming" type="checkbox" />
                                     <span data-i18n="Relax message trim in Groups">Relax message trim in Groups</span>
                                 </label>
@@ -3528,22 +3535,22 @@
                                     <input id="console_log_prompts" type="checkbox" />
                                     <span data-i18n="Log prompts to console">Log prompts to console</span>
                                 </label>
-                                <label data-newbie-hidden class="checkbox_label" for="request_token_probabilities" title="Requests logprobs from the API for the Token Probabilities feature.">
+                                <label data-newbie-hidden class="checkbox_label" for="request_token_probabilities" title="Requests logprobs from the API for the Token Probabilities feature." data-i18n="[title]Requests logprobs from the API for the Token Probabilities feature">
                                     <input id="request_token_probabilities" type="checkbox" />
                                     <span data-i18n="Request token probabilities">Request token probabilities</span>
                                 </label>
                                 <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
-                                    <div class="inline-drawer-toggle inline-drawer-header" title="Automatically reject and re-generate AI message based on configurable criteria." data-i18n="[title]Automatically reject and re-generate AI message based on configurable criteria.">
+                                    <div class="inline-drawer-toggle inline-drawer-header" title="Automatically reject and re-generate AI message based on configurable criteria." data-i18n="[title]Automatically reject and re-generate AI message based on configurable criteria">
                                         <b><span data-i18n="Auto-swipe">Auto-swipe</span></b>
                                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                     </div>
                                     <div class="inline-drawer-content">
-                                        <label class="checkbox_label" for="auto_swipe" title="Enable the auto-swipe function. Settings in this section only have an effect when auto-swipe is enabled." data-i18n="[title]Enable the auto-swipe function. Settings in this section only have an effect when auto-swipe is enabled.">
+                                        <label class="checkbox_label" for="auto_swipe" title="Enable the auto-swipe function. Settings in this section only have an effect when auto-swipe is enabled." data-i18n="[title]Enable the auto-swipe function. Settings in this section only have an effect when auto-swipe is enabled">
                                             <input id="auto_swipe" type="checkbox" />
                                             <span data-i18n="Enabled">Enabled</span>
                                         </label>
                                         <div data-i18n="Minimum generated message length">Minimum generated message length</div>
-                                        <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole" title="If the generated message is shorter than this, trigger an auto-swipe." data-i18n="[title]If the generated message is shorter than this, trigger an auto-swipe.">
+                                        <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole" title="If the generated message is shorter than this, trigger an auto-swipe." data-i18n="[title]If the generated message is shorter than this, trigger an auto-swipe">
                                         <div data-i18n="Blacklisted words">Blacklisted words</div>
                                         <div class="auto_swipe">
                                             <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" data-i18n="[placeholder]words you dont want generated separated by comma ','" placeholder="words you don't want generated separated by comma ','" title="Words you don't want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
@@ -3554,8 +3561,8 @@
                                 </div>
                             </div>
                             <div data-newbie-hidden class="flex-container">
-                                <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="Reload Chat" title="Reload and redraw the currently open chat.">
-                                    Reload Chat
+                                <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat." >
+                                    <span data-i18n="Reload Chat">Reload Chat</span>
                                 </div>
                                 <div id="debug_menu" class="menu_button whitespacenowrap" data-i18n="Debug Menu">
                                     Debug Menu
