@@ -1603,15 +1603,21 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     if (!isSystem) {
-        let regexPlacement;
-        if (isUser) {
-            regexPlacement = regex_placement.USER_INPUT;
-        } else if (ch_name !== name2) {
-            regexPlacement = regex_placement.SLASH_COMMAND;
-        } else {
-            regexPlacement = regex_placement.AI_OUTPUT;
+        function getRegexPlacement() {
+            try {
+                if (isUser) {
+                    return regex_placement.USER_INPUT;
+                } else if (chat[messageId]?.extra?.type === 'narrator') {
+                    return regex_placement.SLASH_COMMAND;
+                } else {
+                    return regex_placement.AI_OUTPUT;
+                }
+            } catch {
+                return regex_placement.AI_OUTPUT;
+            }
         }
 
+        const regexPlacement = getRegexPlacement();
         const usableMessages = chat.map((x, index) => ({ message: x, index: index })).filter(x => !x.message.is_system);
         const indexOf = usableMessages.findIndex(x => x.index === Number(messageId));
         const depth = messageId >= 0 && indexOf !== -1 ? (usableMessages.length - indexOf - 1) : undefined;
@@ -5899,10 +5905,10 @@ function updateMessage(div) {
     let regexPlacement;
     if (mes.is_user) {
         regexPlacement = regex_placement.USER_INPUT;
-    } else if (mes.name === name2) {
-        regexPlacement = regex_placement.AI_OUTPUT;
-    } else if (mes.name !== name2 || mes.extra?.type === 'narrator') {
+    } else if (mes.extra?.type === 'narrator') {
         regexPlacement = regex_placement.SLASH_COMMAND;
+    } else {
+        regexPlacement = regex_placement.AI_OUTPUT;
     }
 
     // Ignore character override if sent as system
