@@ -1912,9 +1912,12 @@
                                     <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
                                         oobabooga/text-generation-webui
                                     </a>
-                                    <span data-i18n="Make sure you run it with">
-                                        Make sure you run it with <code>--api</code> flag
-                                    </span>
+                                    <label for="">
+                                        <span data-i18n="Make sure you run it with">Make sure you run it with</span> 
+                                        <code>--api</code>
+                                        <span data-i18n="flag">flag</span>
+                                    </label>
+                                    
                                 </div>
                                 <h4 data-i18n="API key (optional)">API key (optional)</h4>
                                 <div class="flex-container">
@@ -1927,10 +1930,10 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="Server url">Server URL</h4>
-                                    <small data-i18n="Example: http://127.0.0.1:5000 ">Example: http://127.0.0.1:5000</small>
+                                    <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
                                 </div>
-                                <input id="custom_model_textgenerationwebui" class="text_pole wide100p" maxlength="500" placeholder="Custom model (optional)" type="text">
+                                <input id="custom_model_textgenerationwebui" class="text_pole wide100p" maxlength="500" placeholder="Custom model (optional)" data-i18n="[placeholder]Custom model (optional)" type="text">
                             </div>
                             <div data-tg-type="aphrodite">
                                 <div class="flex-container flexFlowColumn">
@@ -2469,7 +2472,7 @@
                             <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
                             <div data-source="custom" id="customize_additional_parameters" class="menu_button menu_button_icon">Additional Parameters</div>
                             <div data-source="openrouter" id="openrouter_authorize" class="menu_button menu_button_icon" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
-                            <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">Test Message</div>
+                            <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!"><span data-i18n="Test Message">Test Message</span></div>
                         </div>
                         <div class="online_status">
                             <div class="online_status_indicator"></div>
@@ -2505,7 +2508,7 @@
                             <div class="flex-container">
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
-                                <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode."></i>
+                                <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode." data-i18n="[title]Auto-select this preset for Instruct Mode"></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                 <i data-newbie-hidden data-preset-manager-new="context" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                 <i data-newbie-hidden data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
@@ -2600,7 +2603,7 @@
                             <div class="flex-container">
                                 <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
                                 <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
-                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection."></i>
+                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection." data-i18n="[title]Auto-select this preset on API connection"></i>
                                 <i data-newbie-hidden data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                 <i data-newbie-hidden data-preset-manager-new="instruct" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                 <i data-newbie-hidden data-preset-manager-import="instruct" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
@@ -2727,7 +2730,7 @@
                                 <h4 data-i18n="Context Formatting">
                                     Context Formatting
                                 </h4>
-                                <small>
+                                <small data-i18n="(Saved to Context Template)">
                                     &nbsp;(Saved to Context Template)
                                 </small>
                             </div>
@@ -2755,7 +2758,7 @@
                                 <span data-i18n="Include Newline">Include Newline</span>
                             </label>
                         </div>
-                        <h4>
+                        <h4 data-i18n="Misc. Settings">
                             Misc. Settings
                         </h4>
                         <label class="checkbox_label" for="collapse-newlines-checkbox">
@@ -2904,9 +2907,7 @@
                         </div>
                         <div class="range-block-range">
                             <select id="world_info" multiple>
-                                <option value="">
-                                    <span data-i18n="-- World Info not found --">-- World Info not found --</span>
-                                </option>
+                                <option value="" data-i18n="-- World Info not found --">-- World Info not found -- </option>
                             </select>
                         </div>
                     </div>
@@ -3044,7 +3045,7 @@
                                 <span data-i18n="New">New</span>
                             </div>
                             <small data-i18n="or">or</small>
-                            <select id="world_editor_select" class="margin0">
+                            <select id="world_editor_select" class="widthNatural flex1 margin0">
                                 <option value="" data-i18n="--- Pick to Edit ---">--- Pick to Edit ---</option>
                             </select>
                             <div id="world_popup_name_button" class="menu_button fa-pencil fa-solid" title="Rename World Info" data-i18n="[title]Rename World Info"></div>
@@ -3057,21 +3058,21 @@
                             <div id="world_duplicate" class="menu_button fa-solid fa-paste" title="Duplicate World Info" data-i18n="[title]Duplicate World Info"></div>
                             <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG" title="Delete World Info" data-i18n="[title]Delete World Info"></div>
                             <input type="search" class="text_pole textarea_compact" data-i18n="[placeholder]Search..." id="world_info_search" placeholder="Search...">
-                            <select id="world_info_sort_order" class="margin0">
-                                <option data-rule="priority" value="0">Priority</option>
-                                <option data-rule="custom" value="13">Custom</option>
-                                <option data-order="asc" data-field="comment" value="1">Title A-Z</option>
-                                <option data-order="desc" data-field="comment" value="2">Title Z-A</option>
-                                <option data-order="asc" data-field="content" data-rule="length" value="3">Tokens ↗</option>
-                                <option data-order="desc" data-field="content" data-rule="length" value="4">Tokens ↘</option>
-                                <option data-order="asc" data-field="depth" value="5">Depth ↗</option>
-                                <option data-order="desc" data-field="depth" value="6">Depth ↘</option>
-                                <option data-order="asc" data-field="order" value="7">Order ↗</option>
-                                <option data-order="desc" data-field="order" value="8">Order ↘</option>
-                                <option data-order="asc" data-field="uid" value="9">UID ↗</option>
-                                <option data-order="desc" data-field="uid" value="10">UID ↘</option>
-                                <option data-order="asc" data-field="probability" value="11">Trigger% ↗</option>
-                                <option data-order="desc" data-field="probability" value="12">Trigger% ↘</option>
+                            <select id="world_info_sort_order" class="widthNatural flex1 margin0">
+                                <option data-rule="priority" value="0" data-i18n="Priority">Priority</option>
+                                <option data-rule="custom" value="13" data-i18n="Custom">Custom</option>
+                                <option data-order="asc" data-field="comment" value="1" data-i18n="Title A-Z">Title A-Z</option>
+                                <option data-order="desc" data-field="comment" value="2" data-i18n="Title Z-A">Title Z-A</option>
+                                <option data-order="asc" data-field="content" data-rule="length" value="3" data-i18n="Tokens ↗">Tokens ↗</option>
+                                <option data-order="desc" data-field="content" data-rule="length" value="4" data-i18n="Tokens ↘">Tokens ↘</option>
+                                <option data-order="asc" data-field="depth" value="5" data-i18n="Depth ↗">Depth ↗</option>
+                                <option data-order="desc" data-field="depth" value="6" data-i18n="Depth ↘">Depth ↘</option>
+                                <option data-order="asc" data-field="order" value="7" data-i18n="Order ↗">Order ↗</option>
+                                <option data-order="desc" data-field="order" value="8" data-i18n="Order ↘">Order ↘</option>
+                                <option data-order="asc" data-field="uid" value="9" data-i18n="UID ↗">UID ↗</option>
+                                <option data-order="desc" data-field="uid" value="10" data-i18n="UID ↘">UID ↘</option>
+                                <option data-order="asc" data-field="probability" value="11" data-i18n="Trigger% ↗">Trigger% ↗</option>
+                                <option data-order="desc" data-field="probability" value="12" data-i18n="Trigger% ↘">Trigger% ↘</option>
                             </select>
                             <div id="world_refresh" class="menu_button fa-solid fa-arrows-rotate" title="Refresh" data-i18n="[title]Refresh"></div>
                             <div id="world_info_pagination"></div>
@@ -3553,9 +3554,9 @@
                                         <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole" title="If the generated message is shorter than this, trigger an auto-swipe." data-i18n="[title]If the generated message is shorter than this, trigger an auto-swipe">
                                         <div data-i18n="Blacklisted words">Blacklisted words</div>
                                         <div class="auto_swipe">
-                                            <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" data-i18n="[placeholder]words you dont want generated separated by comma ','" placeholder="words you don't want generated separated by comma ','" title="Words you don't want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
+                                            <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" data-i18n="[placeholder]words you dont want generated separated by comma ','" placeholder="words you don't want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
                                             <div data-i18n="Blacklisted word count to swipe">Blacklisted word count to swipe</div>
-                                            <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole" title="Minimum number of blacklisted words detected to trigger an auto-swipe." data-i18n="[title]Minimum number of blacklisted words detected to trigger an auto-swipe.">
+                                            <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole" title="Minimum number of blacklisted words detected to trigger an auto-swipe." data-i18n="[title]Minimum number of blacklisted words detected to trigger an auto-swipe">
                                         </div>
                                     </div>
                                 </div>
@@ -4424,21 +4425,21 @@
                                         <textarea class="text_pole autoSetHeight" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                     </div>
                                     <!-- <span class="world_entry_form_position_value"></span> -->
-                                    <select title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural margin0">
-                                        <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="constant">🔵</option>
-                                        <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="normal">🟢</option>
-                                        <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="disabled">❌</option>
+                                    <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal❌ Disabled" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural margin0">
+                                        <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="constant" data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal❌ Disabled">🔵</option>
+                                        <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="normal" data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal❌ Disabled">🟢</option>
+                                        <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="disabled" data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal❌ Disabled">❌</option>
                                     </select>
                                 </div>
                                 <div class="WIEnteryHeaderControls flex-container">
                                     <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios wi-enter-footer-text">
                                         <label for="position" class="WIEntryHeaderTitleMobile" data-i18n="Position:">Position:</label>
-                                        <select name="position" class="widthNatural margin0" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">
-                                            <option value="0" data-i18n="Before Char Defs" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↑Char</option>
-                                            <option value="1" data-i18n="After Char Defs" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↓Char</option>
-                                            <option value="2" data-i18n="Before AN" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↑AN</option>
-                                            <option value="3" data-i18n="After AN" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↓AN</option>
-                                            <option value="4" data-i18n="at Depth" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">@D</option>
+                                        <select name="position" class="widthNatural margin0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">
+                                            <option value="0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span Before Char Defs>↑Char</label></option>
+                                            <option value="1" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="After Char Defs">↓Char</span></option>
+                                            <option value="2" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="Before AN">↑AN</span></option>
+                                            <option value="3" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="After AN">↓AN</span></option>
+                                            <option value="4" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="at Depth">@D</span></option>
                                         </select>
                                     </div>
                                     <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap">
@@ -4450,13 +4451,13 @@
                                         <input title="Order" class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="999" />
                                     </div>
                                     <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
-                                        <label for="order" class="WIEntryHeaderTitleMobile" data-i18n="Order:">Trigger %:</label>
+                                        <label for="order" class="WIEntryHeaderTitleMobile" data-i18n="Trigger %:">Trigger %:</label>
                                         <input title="Probability" class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
                                     </div>
                                 </div>
                             </span>
                         </div>
-                        <i class="menu_button delete_entry_button fa-solid fa-trash-can" type="submit" data-i18n="" value="" /></i>
+                        <i class="menu_button delete_entry_button fa-solid fa-trash-can" type="submit" value=""></i>
                     </div>
                     <div class="inline-drawer-content flex-container paddingBottom5px wide100p">
                         <div class="flex-container wide100p alignitemscenter">
@@ -4467,16 +4468,16 @@
                                             Comma separated (required)
                                         </span>
                                     </small>
-                                    <small class="textAlignCenter">Primary Keywords</small>
+                                    <small class="textAlignCenter" data-i18n="Primary Keywords">Primary Keywords</small>
                                     <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="2000"></textarea>
                                 </div>
                                 <div class="world_entry_form_control">
-                                    <small class="textAlignCenter">Logic</small>
+                                    <small class="textAlignCenter" data-i18n="Logic">Logic</small>
                                     <select name="entryLogicType" class="text_pole widthFitContent margin0">
-                                        <option value="0">AND ANY</option>
-                                        <option value="3">AND ALL</option>
-                                        <option value="1">NOT ALL</option>
-                                        <option value="2">NOT ANY</option>
+                                        <option value="0" data-i18n="AND ANY">AND ANY</option>
+                                        <option value="3" data-i18n="AND ALL">AND ALL</option>
+                                        <option value="1" data-i18n="NOT ALL">NOT ALL</option>
+                                        <option value="2" data-i18n="NOT ANY">NOT ANY</option>
                                     </select>
                                 </div>
                                 <div class="world_entry_form_control keysecondary flex1">
@@ -4485,7 +4486,7 @@
                                             (ignored if empty)
                                         </span>
                                     </small>
-                                    <small class="textAlignCenter">Optional Filter</small>
+                                    <small class="textAlignCenter" data-i18n="Optional Filter">Optional Filter</small>
                                     <div class="flex-container flexFlowRow alignitemscenter">
                                         <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="2000"></textarea>
                                     </div>
@@ -4493,23 +4494,23 @@
                             </div>
                             <div name="perEntryOverridesBlock" class="flex-container wide100p alignitemscenter">
                                 <div class="world_entry_form_control flex1">
-                                    <small class="textAlignCenter">Scan Depth</small>
-                                    <input class="text_pole" name="scanDepth" type="number" placeholder="Use global setting" max="100">
+                                    <small class="textAlignCenter" data-i18n="Scan Depth">Scan Depth</small>
+                                    <input class="text_pole" name="scanDepth" type="number" placeholder="Use global setting" data-i18n="[placeholder]Use global setting" max="100">
                                 </div>
                                 <div class="world_entry_form_control flex1">
-                                    <small class="textAlignCenter">Case-Sensitive</small>
+                                    <small class="textAlignCenter" data-i18n="Case-Sensitive">Case-Sensitive</small>
                                     <select name="caseSensitive" class="text_pole widthNatural margin0">
-                                        <option value="null">Use global setting</option>
-                                        <option value="true">Yes</option>
-                                        <option value="false">No</option>
+                                        <option value="null" data-i18n="Use global setting">Use global setting</option>
+                                        <option value="true" data-i18n="Yes">Yes</option>
+                                        <option value="false" data-i18n="No">No</option>
                                     </select>
                                 </div>
                                 <div class="world_entry_form_control flex1">
-                                    <small class="textAlignCenter">Match Whole Words</small>
+                                    <small class="textAlignCenter" data-i18n="Match Whole Words">Match Whole Words</small>
                                     <select name="matchWholeWords" class="text_pole widthNatural margin0">
-                                        <option value="null">Use global setting</option>
-                                        <option value="true">Yes</option>
-                                        <option value="false">No</option>
+                                        <option value="null" data-i18n="Use global setting">Use global setting</option>
+                                        <option value="true" data-i18n="Yes">Yes</option>
+                                        <option value="false" data-i18n="No">No</option>
                                     </select>
                                 </div>
                             </div>
@@ -4561,8 +4562,8 @@
                                     </label>
                                     <label class="checkbox_label flexNoGap">
                                         <input type="checkbox" name="character_exclusion" />
-                                        <span data-i18n="Character Exclusion">
-                                            <small>Character Exclusion</small>
+                                        <span>
+                                            <small data-i18n="Character Exclusion">Character Exclusion</small>
                                         </span>
                                     </label>
                                 </div>
