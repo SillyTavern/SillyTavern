@@ -682,6 +682,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'top_k_textgenerationwebui' ||
         sliderID == 'top_k' ||
         sliderID == 'rep_pen_slope' ||
+        sliderID == 'smoothing_factor_textgenerationwebui' ||
         sliderID == 'min_length_textgenerationwebui') {
         offVal = 0;
     }
@@ -696,6 +697,9 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'encoder_rep_pen_textgenerationwebui' ||
         sliderID == 'temp_textgenerationwebui' ||
         sliderID == 'temp' ||
+        sliderID == 'min_temp_textgenerationwebui' ||
+        sliderID == 'max_temp_textgenerationwebui' ||
+        sliderID == 'dynatemp_exponent_textgenerationwebui' ||
         sliderID == 'guidance_scale_textgenerationwebui' ||
         sliderID == 'guidance_scale') {
         offVal = 1;
