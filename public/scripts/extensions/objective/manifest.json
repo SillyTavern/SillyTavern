@@ -1,0 +1,11 @@
+{
+    "display_name": "Objective",
+    "loading_order": 5,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Ouoertheo",
+    "version": "0.0.1",
+    "homePage": ""
+}
