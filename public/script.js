@@ -8456,7 +8456,7 @@ jQuery(async function () {
                 throw new Error('Unsuccessful request.');
             }
 
-            const data = response.json();
+            const data = await response.json();
 
             if (data.error) {
                 throw new Error('Server returned an error.');
@@ -8468,6 +8468,7 @@ jQuery(async function () {
             else {
                 if (characters[this_chid].chat == old_filename) {
                     characters[this_chid].chat = newName;
+                    $('#selected_chat_pole').val(characters[this_chid].chat);
                     await createOrEditCharacter();
                 }
             }
