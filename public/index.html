@@ -124,7 +124,7 @@
                     Click slider numbers to input manually.
                 </div>
                 <div id="labModeWarning" class="redWarningBG textAlignCenter displayNone">MAD LAB MODE ON</div>
-                <a href="https://docs.sillytavern.app/usage/common-settings/" target="_blank" title="Documentation on sampling parameters.">
+                <a href="https://docs.sillytavern.app/usage/common-settings/" target="_blank" title="Documentation on sampling parameters." data-i18n="[title]Documentation on sampling parameters">
                     <span name="samplerHelpButton" class="note-link-span topRightInset fa-solid fa-circle-question"></span>
                 </a>
                 <div class="scrollableInner">
@@ -235,16 +235,16 @@
                                     <div id="streaming_textgenerationwebui_block" class="flex-container alignitemscenter justifyCenter marginTop5">
                                         <label class="checkbox_label" for="streaming_textgenerationwebui">
                                             <input type="checkbox" id="streaming_textgenerationwebui" />
-                                            <small data-i18n="Streaming">Streaming
-                                                <div class="margin5 fa-solid fa-circle-info opacity50p" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
+                                            <small><span data-i18n="Streaming">Streaming</span>
+                                                <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Display the response bit by bit as it is generated" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
                                             </small>
                                         </label>
                                     </div>
                                     <div id="streaming_kobold_block" class="flex-container alignitemscenter justifyCenter marginTop5">
                                         <label class="checkbox_label" for="streaming_kobold">
                                             <input type="checkbox" id="streaming_kobold" />
-                                            <small data-i18n="Streaming">Streaming
-                                                <div class="margin5 fa-solid fa-circle-info opacity50p" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
+                                            <small><span data-i18n="Streaming">Streaming</span>
+                                                <div class="margin5 fa-solid fa-circle-info opacity50p" data-i18n="[title]Display the response bit by bit as it is generated" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
                                             </small>
                                         </label>
                                     </div>
@@ -259,7 +259,7 @@
                                         <label class="checkbox_label">
                                             <input id="max_context_unlocked" type="checkbox" />
                                             <small><span data-i18n="unlocked">Unlocked</span>
-                                                <div id="max_context_unlocked_warning" class="fa-solid fa-circle-info opacity50p " title="Only enable this if your model supports context sizes greater than 4096 tokens.&#13;Increase only if you know what you're doing."></div>
+                                                <div id="max_context_unlocked_warning" class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Only enable this if your model supports context sizes greater than 4096 tokens" title="Only enable this if your model supports context sizes greater than 4096 tokens.&#13;Increase only if you know what you're doing."></div>
                                             </small>
                                         </label>
                                     </div>
@@ -773,7 +773,7 @@
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="temperature">Temperature</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Temperature controls the randomness in token selection" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="temp" name="volume" min="0.0" max="4.0" step="0.01">
                                         <input class="neo-range-input" type="number" min="0.0" max="4.0" step="0.01" data-for="temp" id="temp_counter">
@@ -1158,8 +1158,8 @@
                             <div id="textgenerationwebui_api-settings">
                                 <div data-newbie-hidden class="flex-container justifyCenter">
                                     <small class="flex-container alignitemscenter">
-                                        <div id="samplerResetButton" class="menu_button whitespacenowrap">Neutralize Samplers</div>
-                                        <div class="fa-solid fa-circle-info opacity50p" title="Set all samplers to their neutral/disabled state."></div>
+                                        <div id="samplerResetButton" class="menu_button whitespacenowrap" data-i18n="Neutralize Samplers">Neutralize Samplers</div>
+                                        <div class="fa-solid fa-circle-info opacity50p" title="Set all samplers to their neutral/disabled state." data-i18n="[title]Set all samplers to their neutral/disabled state."></div>
                                     </small>
                                 </div>
                                 <div data-newbie-hidden data-tg-type="aphrodite" class="flex-container flexFlowColumn alignitemscenter flexBasis100p flexGrow flexShrink gap0">
@@ -1170,7 +1170,7 @@
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="temperature">Temperature</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Temperature controls the randomness in token selection" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="5.0" step="0.01" x-setting-id="temp">
                                         <input class="neo-range-input" type="number" min="0.0" max="5.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
@@ -1178,7 +1178,7 @@
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Top K">Top K</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Top K sets a maximum amount of top tokens that can be chosen from" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="200" step="1" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui">
@@ -1186,7 +1186,7 @@
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Top P">Top P</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top P (a.k.a. nucleus sampling) adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Top P (a.k.a. nucleus sampling)" title="Top P (a.k.a. nucleus sampling) adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p_textgenerationwebui" id="top_p_counter_textgenerationwebui">
@@ -1194,7 +1194,7 @@
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Typical P">Typical P</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="typical_p_textgenerationwebui" id="typical_p_counter_textgenerationwebui">
@@ -1202,7 +1202,7 @@
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Min P">Min P</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability. This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Min P sets a base minimum probability" title="Min P sets a base minimum probability. This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="min_p_textgenerationwebui" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="min_p_textgenerationwebui" id="min_p_counter_textgenerationwebui">
@@ -1210,7 +1210,7 @@
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Top A">Top A</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Top A sets a threshold for token selection based on the square of the highest token probability" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="top_a_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_a_textgenerationwebui" id="top_a_counter_textgenerationwebui">
@@ -1218,7 +1218,7 @@
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Tail Free Sampling">Tail Free Sampling</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Tail-Free Sampling (TFS) searches for a tail of low-probability tokens in the distribution,&#13;by analyzing the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;The closer to 0, the more discarded tokens. Set to 1.0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Tail-Free Sampling (TFS)" title="Tail-Free Sampling (TFS) searches for a tail of low-probability tokens in the distribution,&#13;by analyzing the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;The closer to 0, the more discarded tokens. Set to 1.0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
@@ -1226,7 +1226,7 @@
                                     <div data-newbie-hidden data-tg-type="ooba" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Epsilon Cutoff">Epsilon Cutoff</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Epsilon cutoff sets a probability floor below which tokens are excluded from being sampled.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Epsilon cutoff sets a probability floor below which tokens are excluded from being sampled" title="Epsilon cutoff sets a probability floor below which tokens are excluded from being sampled.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
@@ -1308,8 +1308,8 @@
                                                     <input type="checkbox" id="dynatemp_textgenerationwebui" />
                                                     <small data-i18n="dynatemp"></small>
                                                 </div>
-                                                <span style="text-align: center;">Dynamic Temperature</span>
-                                                <div class="fa-solid fa-circle-info opacity50p" title="Scale Temperature dynamically per token, based on the variation of probabilities."></div>
+                                                <span style="text-align: center;" data-i18n="Dynamic Temperature">Dynamic Temperature</span>
+                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Scale Temperature dynamically per token, based on the variation of probabilities" title="Scale Temperature dynamically per token, based on the variation of probabilities."></div>
                                             </div>
                                         </h4>
                                         <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
@@ -1331,8 +1331,9 @@
                                         </div>
                                     </div>
                                     <div data-newbie-hidden name="miroStatBlock" class="wide100p">
-                                        <h4 class="wide100p textAlignCenter" data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat
-                                            <div class=" fa-solid fa-circle-info opacity50p " title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
+                                        <h4 class="wide100p textAlignCenter">
+                                            <label data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat</label>
+                                            <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat is a thermostat for output perplexity" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
                                         </h4>
                                         <div class="flex-container flexFlowRow gap10px flexShrink">
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
@@ -1341,26 +1342,29 @@
                                                 <input class="neo-range-input" type="number" min="0" max="2" step="1" data-for="mirostat_mode_textgenerationwebui" id="mirostat_mode_counter_textgenerationwebui">
                                             </div>
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
-                                                <small data-i18n="Mirostat Tau">
-                                                    Tau
-                                                    <div class="fa-solid fa-circle-info opacity50p" title="Variability parameter for Mirostat outputs."></div>
-                                                </small>
+                                                <label>
+                                                    <small data-i18n="Mirostat Tau">Tau</small>
+                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Variability parameter for Mirostat outputs" title="Variability parameter for Mirostat outputs."></div>
+                                                </label>
                                                 <input class="neo-range-slider" type="range" id="mirostat_tau_textgenerationwebui" name="volume" min="0" max="20" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="mirostat_tau_textgenerationwebui" id="mirostat_tau_counter_textgenerationwebui">
                                             </div>
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
-                                                <small data-i18n="Mirostat Eta">
-                                                    Eta
-                                                    <div class="fa-solid fa-circle-info opacity50p" title="Learning rate of Mirostat."></div>
-                                                </small>
+                                                <label>
+                                                    <small data-i18n="Mirostat Eta">Eta</small>
+                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Learning rate of Mirostat" title="Learning rate of Mirostat."></div>
+                                                </label>
                                                 <input class="neo-range-slider" type="range" id="mirostat_eta_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="mirostat_eta_textgenerationwebui" id="mirostat_eta_counter_textgenerationwebui">
                                             </div>
                                         </div>
                                     </div>
                                     <div data-newbie-hidden data-tg-type="ooba" name="beamSearchBlock" class="wide100p">
-                                        <h4 class="wide100p textAlignCenter" span data-i18n="Beam search">Beam Search
-                                            <div class=" fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon."></div>
+                                        <h4 class="wide100p textAlignCenter"> 
+                                            <label>
+                                                <span data-i18n="Beam search">Beam Search</span>
+                                                <div class=" fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon."></div>
+                                            </label>
                                         </h4>
                                         <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
@@ -1386,10 +1390,10 @@
                                             <div class=" fa-solid fa-circle-info opacity50p " title="A sampler that encourages diversity while maintaining coherence, by exploiting the isotropicity of the representation space of most LLMs. For details, see the paper A Contrastive Framework for Neural Text Generation by Su et al. (2022)."></div>
                                         </h4>
                                         <div class="alignitemscenter flex-container flexFlowColumn wide100p gap0">
-                                            <small>
-                                                Penalty Alpha
-                                                <div class="fa-solid fa-circle-info opacity50p " title="Strength of the Contrastive Search regularization term. Set to 0 to disable CS." data-i18n="[title]Strength of the Contrastive Search regularization term. Set to 0 to disable CS."></div>
-                                            </small>
+                                            <label>
+                                                <small data-i18n="Penalty Alpha">Penalty Alpha</small>
+                                                <div class="fa-solid fa-circle-info opacity50p " title="Strength of the Contrastive Search regularization term. Set to 0 to disable CS." data-i18n="[title]Strength of the Contrastive Search regularization term. Set to 0 to disable CS"></div>
+                                            </label>
                                             <input class="neo-range-slider" type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
                                             <input class="neo-range-input" type="number" min="0" max="5" step="0.05" data-for="penalty_alpha_textgenerationwebui" id="penalty_alpha_counter_textgenerationwebui">
                                         </div>
@@ -1402,33 +1406,34 @@
                                             </label>
                                             <label data-forAphro="False" data-tg-type="ooba, tabby" class="checkbox_label  flexGrow flexShrink" for="add_bos_token_textgenerationwebui">
                                                 <input type="checkbox" id="add_bos_token_textgenerationwebui" />
-                                                <small data-i18n="Add BOS Token">Add BOS Token
-                                                    <div class="fa-solid fa-circle-info opacity50p " data-i18n="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative." title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
-                                                </small>
+                                                <label>
+                                                    <small data-i18n="Add BOS Token">Add BOS Token</small>
+                                                    <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative" title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
+                                                </label>
                                             </label>
                                             <label data-forAphro="False" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
                                                 <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
-                                                <small data-i18n="Ban EOS Token">Ban EOS Token
-                                                    <div class="fa-solid fa-circle-info opacity50p " data-i18n="Ban the eos_token. This forces the model to never end the generation prematurely" title="Ban the eos_token. This forces the model to never end the generation prematurely."></div>
-                                                </small>
+                                                <label>
+                                                    <small data-i18n="Ban EOS Token">Ban EOS Token</small>
+                                                    <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Ban the eos_token. This forces the model to never end the generation prematurely" title="Ban the eos_token. This forces the model to never end the generation prematurely."></div>
+                                                </label>
                                             </label>
-
                                             <label data-tg-type="aphrodite" class="checkbox_label" for="ignore_eos_token_aphrodite_textgenerationwebui">
                                                 <input type="checkbox" id="ignore_eos_token_aphrodite_textgenerationwebui" />
                                                 <small data-i18n="Ignore EOS Token">Ignore EOS Token
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="Ignore the EOS Token even if it generates." title="Ignore the EOS Token even if it generates."></div>
                                                 </small>
                                             </label>
-
                                             <label class="checkbox_label flexGrow flexShrink" for="skip_special_tokens_textgenerationwebui">
                                                 <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
                                                 <small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
                                             </label>
                                             <label data-forAphro="False" data-tg-type="ooba, aphrodite, tabby" class="checkbox_label  flexGrow flexShrink" for="temperature_last_textgenerationwebui">
                                                 <input type="checkbox" id="temperature_last_textgenerationwebui" />
-                                                <small data-i18n="Temperature Last">Temperature Last
-                                                    <div class="fa-solid fa-circle-info opacity50p " data-i18n="Use the temperature sampler last." title="Use the temperature sampler last. This is almost always the sensible thing to do.&#13;When enabled: sample the set of plausible tokens first, then apply temperature to adjust their relative probabilities (technically, logits).&#13;When disabled: apply temperature to adjust the relative probabilities of ALL tokens first, then sample plausible tokens from that.&#13;Disabling Temperature Last boosts the probabilities in the tail of the distribution, which tends to amplify the chances of getting an incoherent response."></div>
-                                                </small>
+                                                <label>
+                                                    <small data-i18n="Temperature Last">Temperature Last</small>
+                                                    <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Use the temperature sampler last" title="Use the temperature sampler last. This is almost always the sensible thing to do.&#13;When enabled: sample the set of plausible tokens first, then apply temperature to adjust their relative probabilities (technically, logits).&#13;When disabled: apply temperature to adjust the relative probabilities of ALL tokens first, then sample plausible tokens from that.&#13;Disabling Temperature Last boosts the probabilities in the tail of the distribution, which tends to amplify the chances of getting an incoherent response."></div>
+                                                </label>
                                             </label>
 
                                             <label data-tg-type="aphrodite" class="checkbox_label" for="spaces_between_special_tokens_aphrodite_textgenerationwebui">
@@ -1445,10 +1450,10 @@
                                         <hr data-newbie-hidden class="width100p">
                                         <h4 class="range-block-title justifyCenter">
                                             <span data-i18n="Banned Tokens">Banned Tokens</span>
-                                            <div class="margin5 fa-solid fa-circle-info opacity50p " title="LLaMA / Mistral / Yi models only. Make sure to select an appropriate tokenizer first.&#13;Sequences you don't want to appear in the output.&#13;One per line. Text or [token ids].&#13;Most tokens have a leading space. Use token counter if unsure."></div>
+                                            <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]LLaMA / Mistral / Yi models only" title="LLaMA / Mistral / Yi models only. Make sure to select an appropriate tokenizer first.&#13;Sequences you don't want to appear in the output.&#13;One per line. Text or [token ids].&#13;Most tokens have a leading space. Use token counter if unsure."></div>
                                         </h4>
                                         <div class="wide100p">
-                                            <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
+                                            <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" data-i18n="[placeholder]Example: some text [42, 69, 1337]" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
                                         </div>
                                     </div>
                                     <div class="range-block wide100p">
@@ -1469,10 +1474,10 @@
                                     <div data-newbie-hidden data-forAphro="False" class="wide100p">
                                         <hr class="width100p">
                                         <h4 data-i18n="CFG" class="textAlignCenter">CFG
-                                            <div class="margin5 fa-solid fa-circle-info opacity50p " title="Classifier Free Guidance. More helpful tip coming soon."></div>
+                                            <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]Classifier Free Guidance. More helpful tip coming soon" title="Classifier Free Guidance. More helpful tip coming soon."></div>
                                         </h4>
                                         <div class="alignitemscenter flex-container flexFlowColumn flexShrink gap0">
-                                            <small>Scale</small>
+                                            <small data-i18n="Scale">Scale</small>
                                             <input class="neo-range-slider" type="range" id="guidance_scale_textgenerationwebui" name="volume" min="0.1" max="4" step="0.05">
                                             <input class="neo-range-input" type="number" min="0.1" max="4" step="0.05" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
                                         </div>
@@ -1480,7 +1485,7 @@
                                             <div class="range-block-title justifyLeft">
                                                 <span data-i18n="Negative Prompt">Negative Prompt</span>
                                                 <small>
-                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="Used if CFG Scale is unset globally, per chat or character" title="Used if CFG Scale is unset globally, per chat or character"></div>
+                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Used if CFG Scale is unset globally, per chat or character" title="Used if CFG Scale is unset globally, per chat or character"></div>
                                                 </small>
                                             </div>
                                             <div class="wide100p">
@@ -1490,14 +1495,17 @@
                                     </div>
                                     <div data-newbie-hidden id="grammar_block_ooba" class="wide100p">
                                         <hr class="wide100p">
-                                        <h4 class="wide100p textAlignCenter" data-i18n="GBNF Grammar">GBNF Grammar
-                                            <a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">
-                                                <small>
-                                                    <div class="fa-solid fa-circle-question note-link-span"></div>
-                                                </small>
-                                            </a>
+                                        <h4 class="wide100p textAlignCenter">
+                                            <label>
+                                                <span data-i18n="GBNF Grammar">GBNF Grammar</span>
+                                                <a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">
+                                                    <small>
+                                                        <div class="fa-solid fa-circle-question note-link-span"></div>
+                                                    </small>
+                                                </a>
+                                            </label>
                                         </h4>
-                                        <textarea id="grammar_string_textgenerationwebui" rows="4" class="text_pole textarea_compact monospace" placeholder="Type in the desired custom grammar"></textarea>
+                                        <textarea id="grammar_string_textgenerationwebui" rows="4" class="text_pole textarea_compact monospace" data-i18n="[placeholder]Type in the desired custom grammar" placeholder="Type in the desired custom grammar"></textarea>
                                     </div>
                                     <div data-newbie-hidden data-tg-type="koboldcpp" class="range-block flexFlowColumn">
                                         <hr class="wide100p">
@@ -1851,9 +1859,9 @@
                     <div id="textgenerationwebui_api" style="display: none;position: relative;">
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <div>
-                                <h4>API Type</h4>
+                                <h4 data-i18n="API Type">API Type</h4>
                                 <select id="textgen_type">
-                                    <option value="ooba">Default (oobabooga)</option>
+                                    <option value="ooba" data-i18n="Default (oobabooga)">Default (oobabooga)</option>
                                     <option value="mancer">Mancer</option>
                                     <option value="aphrodite">Aphrodite</option>
                                     <option value="tabby">TabbyAPI</option>
@@ -1875,7 +1883,7 @@
                                 <div>
                                     <h4 data-i18n="TogetherAI Model">TogetherAI Model</h4>
                                     <select id="model_togetherai_select">
-                                        <option>
+                                        <option data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -1899,9 +1907,9 @@
                                     For privacy reasons, your API key will be hidden after you reload the page.
                                 </div>
                                 <div class="flex1">
-                                    <h4>Mancer Model</h4>
+                                    <h4 data-i18n="Mancer Model">Mancer Model</h4>
                                     <select id="mancer_model">
-                                        <option>
+                                        <option data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -1937,7 +1945,7 @@
                             </div>
                             <div data-tg-type="aphrodite">
                                 <div class="flex-container flexFlowColumn">
-                                    <a href="https://github.com/PygmalionAI/aphrodite-engine" target="_blank">
+                                    <a href="https://github.com/PygmalionAI/aphrodite-engine" target="_blank" data-i18n="PygmalionAI/aphrodite-engine">
                                         PygmalionAI/aphrodite-engine (OpenAI API wrapper mode)
                                     </a>
                                 </div>
@@ -1952,19 +1960,19 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: http://127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
+                                    <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="aphrodite_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="aphrodite">
                                 </div>
                             </div>
                             <div data-tg-type="llamacpp">
                                 <div class="flex-container flexFlowColumn">
-                                    <a href="https://github.com/ggerganov/llama.cpp" target="_blank">
+                                    <a href="https://github.com/ggerganov/llama.cpp" target="_blank" data-i18n="ggerganov/llama.cpp">
                                         ggerganov/llama.cpp (inference server)
                                     </a>
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: http://127.0.0.1:8080">Example: http://127.0.0.1:8080</small>
+                                    <small data-i18n="Example: 127.0.0.1:8080">Example: http://127.0.0.1:8080</small>
                                     <input id="llamacpp_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="llamacpp">
                                 </div>
                             </div>
@@ -1976,7 +1984,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: http://127.0.0.1:11434">Example: http://127.0.0.1:11434</small>
+                                    <small data-i18n="Example: 127.0.0.1:11434">Example: http://127.0.0.1:11434</small>
                                     <input id="ollama_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ollama">
                                 </div>
                                 <div class="flex1">
@@ -1985,7 +1993,7 @@
                                     </h4>
                                     </h4>
                                     <select id="ollama_model">
-                                        <option>
+                                        <option data-i18n="-- Connect to the API --">
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -2012,7 +2020,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: http://127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
+                                    <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="tabby_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="tabby">
                                 </div>
                             </div>
@@ -2024,7 +2032,7 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: http://127.0.0.1:5001">Example: http://127.0.0.1:5001</small>
+                                    <small data-i18n="Example: 127.0.0.1:5001">Example: http://127.0.0.1:5001</small>
                                     <input id="koboldcpp_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="koboldcpp">
                                 </div>
                             </div>
@@ -3045,7 +3053,7 @@
                                 <span data-i18n="New">New</span>
                             </div>
                             <small data-i18n="or">or</small>
-                            <select id="world_editor_select" class="widthNatural flex1 margin0">
+                            <select id="world_editor_select" class="widthNatural margin0">
                                 <option value="" data-i18n="--- Pick to Edit ---">--- Pick to Edit ---</option>
                             </select>
                             <div id="world_popup_name_button" class="menu_button fa-pencil fa-solid" title="Rename World Info" data-i18n="[title]Rename World Info"></div>
@@ -3058,7 +3066,7 @@
                             <div id="world_duplicate" class="menu_button fa-solid fa-paste" title="Duplicate World Info" data-i18n="[title]Duplicate World Info"></div>
                             <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG" title="Delete World Info" data-i18n="[title]Delete World Info"></div>
                             <input type="search" class="text_pole textarea_compact" data-i18n="[placeholder]Search..." id="world_info_search" placeholder="Search...">
-                            <select id="world_info_sort_order" class="widthNatural flex1 margin0">
+                            <select id="world_info_sort_order" class="widthNatural margin0">
                                 <option data-rule="priority" value="0" data-i18n="Priority">Priority</option>
                                 <option data-rule="custom" value="13" data-i18n="Custom">Custom</option>
                                 <option data-order="asc" data-field="comment" value="1" data-i18n="Title A-Z">Title A-Z</option>
@@ -3581,10 +3589,10 @@
             <div id="Backgrounds" class="drawer-content closedDrawer">
                 <div class="flex-container">
                     <div class="flex-container wide100p">
-                        <input id="bg-filter" placeholder="Filter" class="text_pole flex1" type="search" />
-                        <div id="auto_background" class="menu_button menu_button_icon" title="Automatically select a background based on the chat context.">
+                        <input id="bg-filter" data-i18n="[placeholder]Filter" placeholder="Filter" class="text_pole flex1" type="search" />
+                        <div id="auto_background" class="menu_button menu_button_icon" data-i18n="[title]Automatically select a background based on the chat context" title="Automatically select a background based on the chat context.">
                             <i class="fa-solid fa-wand-magic"></i>
-                            Auto-select
+                            <span data-i18n="Auto-select">Auto-select</span>
                         </div>
                     </div>
                     <h3 data-i18n="System Backgrounds" class="wide100p textAlignCenter">
@@ -3675,15 +3683,15 @@
                             </a>
                         </div>
                         <div class="flex-container">
-                            <div class="menu_button menu_button_icon user_stats_button" title="Click for stats!">
+                            <div class="menu_button menu_button_icon user_stats_button" data-i18n="[title]Click for stats!" title="Click for stats!">
                                 <i class="fa-solid fa-ranking-star"></i>
                                 <span data-i18n="Usage Stats">Usage Stats</span>
                             </div>
-                            <div id="personas_backup" class="menu_button menu_button_icon" title="Backup your personas to a file">
+                            <div id="personas_backup" class="menu_button menu_button_icon" data-i18n="[title]Backup your personas to a file" title="Backup your personas to a file">
                                 <i class="fa-solid fa-file-export"></i>
                                 <span data-i18n="Backup">Backup</span>
                             </div>
-                            <div id="personas_restore" class="menu_button menu_button_icon" title="Restore your personas from a file">
+                            <div id="personas_restore" class="menu_button menu_button_icon" data-i18n="[title]Restore your personas from a file" title="Restore your personas from a file">
                                 <i class="fa-solid fa-file-import"></i>
                                 <span data-i18n="Restore">Restore</span>
                             </div>
@@ -3703,7 +3711,7 @@
                                     <option value="desc">Z-A</option>
                                 </select>
                                 <div id="persona_pagination_container" class="flex1"></div>
-                                <i id="persona_grid_toggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle grid view"></i>
+                                <i id="persona_grid_toggle" class="fa-solid fa-table-cells-large menu_button" data-i18n="[title]Toggle grid view" title="Toggle grid view"></i>
                             </div>
                             <div id="user_avatar_block">
                                 <div class="avatar_upload">+</div>
@@ -3726,7 +3734,7 @@
                             </div>
                             <div>
                                 <h4 data-i18n="Persona Description">Persona Description</h4>
-                                <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="50000" value="" autocomplete="off" rows="8"></textarea>
+                                <textarea id="persona_description" name="persona_description" data-i18n="[placeholder]Example: [{{user}} is a 28-year-old Romanian cat girl.]" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="50000" value="" autocomplete="off" rows="8"></textarea>
                                 <div class="extension_token_counter">
                                     Tokens: <span id="persona_description_token_count">0</span>
                                 </div>
@@ -4419,7 +4427,7 @@
                         <span class="drag-handle">&#9776;</span>
                         <div class="gap5px world_entry_thin_controls wide100p alignitemscenter">
                             <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                            <span class="flex-container alignitemscenter wide100p">
+                            <div class="flex-container alignitemscenter wide100p">
                                 <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
                                     <div class="flex-container flex1">
                                         <textarea class="text_pole autoSetHeight" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
@@ -4435,7 +4443,7 @@
                                     <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios wi-enter-footer-text">
                                         <label for="position" class="WIEntryHeaderTitleMobile" data-i18n="Position:">Position:</label>
                                         <select name="position" class="widthNatural margin0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">
-                                            <option value="0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span Before Char Defs>↑Char</label></option>
+                                            <option value="0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="Before Char Defs">↑Char</label></option>
                                             <option value="1" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="After Char Defs">↓Char</span></option>
                                             <option value="2" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="Before AN">↑AN</span></option>
                                             <option value="3" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="After AN">↓AN</span></option>
@@ -4455,7 +4463,7 @@
                                         <input title="Probability" class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
                                     </div>
                                 </div>
-                            </span>
+                            </div>
                         </div>
                         <i class="menu_button delete_entry_button fa-solid fa-trash-can" type="submit" value=""></i>
                     </div>
@@ -4557,9 +4565,9 @@
                         <div class="flex-container wide100p flexGap10">
                             <div class="flex1 flex-container flexFlowColumn flexNoGap">
                                 <div class="flex-container justifySpaceBetween">
-                                    <label for="characterFilter" class="">
-                                        <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
-                                    </label>
+                                    <small for="characterFilter" data-i18n="Filter to Character(s)">
+                                        Filter to Character(s)
+                                    </small>                                    
                                     <label class="checkbox_label flexNoGap">
                                         <input type="checkbox" name="character_exclusion" />
                                         <span>
@@ -4576,9 +4584,9 @@
                                 </div>
                             </div>
                             <div class="flex1 flex-container flexFlowColumn flexNoGap">
-                                <label for="group">
-                                    <small data-i18n="">Inclusion Group</small>
-                                </label>
+                                <small for="group" data-i18n="Inclusion Group">
+                                    Inclusion Group
+                                </small>
                                 <input type="text" class="text_pole" name="group" rows="1" data-i18n="[placeholder]Only one entry with the same label will be activated" placeholder="Only one entry with the same label will be activated">
                             </div>
                         </div>
