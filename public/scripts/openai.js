@@ -670,10 +670,9 @@ export function isOpenRouterWithInstruct() {
 async function populateChatHistory(messages, prompts, chatCompletion, type = null, cyclePrompt = null) {
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
-    let names = (selected_group && groups.find(x => x.id === selected_group)?.members.map(member => characters.find(c => c.avatar === member)?.name).filter(Boolean).join(', ')) || '';
     // Reserve budget for new chat message
     const newChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
-    const newChatMessage = new Message('system', substituteParams(newChat, null, null, null, names), 'newMainChat');
+    const newChatMessage = new Message('system', substituteParams(newChat), 'newMainChat');
     chatCompletion.reserveBudget(newChatMessage);
 
     // Reserve budget for group nudge

@@ -2169,6 +2169,22 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
         };
     }
 
+    const getGroupValue = () => {
+        if (typeof _group === 'string') {
+            return _group;
+        }
+
+        if (selected_group) {
+            const members = groups.find(x => x.id === selected_group)?.members;
+            const names = Array.isArray(members)
+                ? members.map(m => characters.find(c => c.avatar === m)?.name).filter(Boolean).join(', ')
+                : '';
+            return names;
+        } else {
+            return _name2 ?? name2;
+        }
+    };
+
     if (_replaceCharacterCard) {
         const fields = getCharacterCardFields();
         environment.charPrompt = fields.system || '';
@@ -2181,10 +2197,9 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     }
 
     // Must be substituted last so that they're replaced inside {{description}}
-    // TODO: evaluate macros recursively so we don't need to rely on substitution order
     environment.user = _name1 ?? name1;
     environment.char = _name2 ?? name2;
-    environment.group = environment.charIfNotGroup = _group ?? name2;
+    environment.group = environment.charIfNotGroup = getGroupValue();
     environment.model = getGeneratingModel();
 
     return evaluateMacros(content, environment);
