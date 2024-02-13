@@ -1799,18 +1799,21 @@ function setTypeSpecificDimensions(generationType) {
         // Force to use roughly the same pixel count as before rescaling
         const prevPixelCount = prevSDHeight * prevSDWidth;
         const newPixelCount = extension_settings.sd.height * extension_settings.sd.width;
-        const ratio = Math.sqrt(prevPixelCount / newPixelCount);
-        extension_settings.sd.height = Math.round(extension_settings.sd.height * ratio / 64) * 64;
-        extension_settings.sd.width = Math.round(extension_settings.sd.width * ratio / 64) * 64;
-        console.log(`Pixel counts after rescaling: ${prevPixelCount} -> ${newPixelCount} (ratio: ${ratio})`);
 
-        const resolution = resolutionOptions[getClosestKnownResolution()];
-        if (resolution) {
-            extension_settings.sd.height = resolution.height;
-            extension_settings.sd.width = resolution.width;
-            console.log('Snap to resolution', JSON.stringify(resolution));
-        } else {
-            console.warn('Snap to resolution failed, using custom dimensions');
+        if (prevPixelCount !== newPixelCount) {
+            const ratio = Math.sqrt(prevPixelCount / newPixelCount);
+            extension_settings.sd.height = Math.round(extension_settings.sd.height * ratio / 64) * 64;
+            extension_settings.sd.width = Math.round(extension_settings.sd.width * ratio / 64) * 64;
+            console.log(`Pixel counts after rescaling: ${prevPixelCount} -> ${newPixelCount} (ratio: ${ratio})`);
+
+            const resolution = resolutionOptions[getClosestKnownResolution()];
+            if (resolution) {
+                extension_settings.sd.height = resolution.height;
+                extension_settings.sd.width = resolution.width;
+                console.log('Snap to resolution', JSON.stringify(resolution));
+            } else {
+                console.warn('Snap to resolution failed, using custom dimensions');
+            }
         }
     }
 
