@@ -707,6 +707,9 @@ async function CreateZenSliders(elmnt) {
     if (sliderID == 'guidance_scale_textgenerationwebui') {
         numSteps = 78;
     }
+    if (sliderID == 'top_k_textgenerationwebui') {
+        sliderMin = 0;
+    }
     //customize amt gen steps
     if (sliderID !== 'amount_gen' && sliderID !== 'rep_pen_range_textgenerationwebui') {
         stepScale = sliderRange / numSteps;
