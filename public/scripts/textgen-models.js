@@ -121,7 +121,7 @@ function onTogetherModelSelect() {
 function onInfermaticAIModelSelect() {
     const modelName = String($('#model_infermaticai_select').val());
     textgen_settings.infermaticai_model = modelName;
-    $('#api_button_openai').trigger('click');
+    $('#api_button_textgenerationwebui').trigger('click');
     const model = infermaticAIModels.find(x => x.id === modelName);
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }

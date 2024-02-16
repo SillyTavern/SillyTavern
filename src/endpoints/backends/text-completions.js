@@ -106,6 +106,7 @@ router.post('/status', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.APHRODITE:
                 case TEXTGEN_TYPES.KOBOLDCPP:
                 case TEXTGEN_TYPES.LLAMACPP:
+                case TEXTGEN_TYPES.INFERMATICAI:
                     url += '/v1/models';
                     break;
                 case TEXTGEN_TYPES.MANCER:
@@ -116,9 +117,6 @@ router.post('/status', jsonParser, async function (request, response) {
                     break;
                 case TEXTGEN_TYPES.TOGETHERAI:
                     url += '/api/models?&info';
-                    break;
-                case TEXTGEN_TYPES.INFERMATICAI:
-                    url += '/models';
                     break;
                 case TEXTGEN_TYPES.OLLAMA:
                     url += '/api/tags';
@@ -235,6 +233,7 @@ router.post('/generate', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.TABBY:
                 case TEXTGEN_TYPES.KOBOLDCPP:
                 case TEXTGEN_TYPES.TOGETHERAI:
+                case TEXTGEN_TYPES.INFERMATICAI:
                     url += '/v1/completions';
                     break;
                 case TEXTGEN_TYPES.MANCER:
@@ -245,9 +244,6 @@ router.post('/generate', jsonParser, async function (request, response) {
                     break;
                 case TEXTGEN_TYPES.OLLAMA:
                     url += '/api/generate';
-                    break;
-                case TEXTGEN_TYPES.INFERMATICAI:
-                    url += '/completions';
                     break;
             }
         }

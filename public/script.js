@@ -7658,8 +7658,8 @@ const CONNECT_API_MAP = {
         source: chat_completion_sources.CUSTOM,
     },
     'infermaticai': {
-        selected: 'openai',
-        button: '#api_button_openai',
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
         type: textgen_types.INFERMATICAI,
     },
 };
