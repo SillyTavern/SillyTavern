@@ -27,17 +27,14 @@
     color: inherit;
 }
 
-.assets-list-div i {
+.assets-list-div > i {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: left;
     padding: 5px;
     font-style: normal;
-}
-
-.assets-list-div i span {
-    margin-left: 10px;
+    gap: 5px;
 }
 
 .assets-list-div i span:first-of-type {
@@ -46,12 +43,11 @@
 
 .asset-download-button {
     position: relative;
-    width: 50px;
-    padding: 8px 16px;
     border: none;
     outline: none;
     border-radius: 2px;
     cursor: pointer;
+    filter: none !important;
 }
 
 .asset-download-button:active {
@@ -83,6 +79,21 @@
     border-top-color: #ffffff;
     border-radius: 50%;
     animation: asset-download-button-loading-spinner 1s ease infinite;
+}
+
+.asset-name .avatar {
+    --imgSize: 30px !important;
+    flex: unset;
+    width: var(--imgSize);
+    height: var(--imgSize);
+}
+
+.asset-name .avatar img {
+    width: var(--imgSize);
+    height: var(--imgSize);
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center center;
 }
 
 @keyframes asset-download-button-loading-spinner {

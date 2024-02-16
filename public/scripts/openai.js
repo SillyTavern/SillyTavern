@@ -670,10 +670,9 @@ export function isOpenRouterWithInstruct() {
 async function populateChatHistory(messages, prompts, chatCompletion, type = null, cyclePrompt = null) {
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
-    let names = (selected_group && groups.find(x => x.id === selected_group)?.members.map(member => characters.find(c => c.avatar === member)?.name).filter(Boolean).join(', ')) || '';
     // Reserve budget for new chat message
     const newChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
-    const newChatMessage = new Message('system', substituteParams(newChat, null, null, null, names), 'newMainChat');
+    const newChatMessage = new Message('system', substituteParams(newChat), 'newMainChat');
     chatCompletion.reserveBudget(newChatMessage);
 
     // Reserve budget for group nudge
@@ -1692,24 +1691,17 @@ async function sendOpenAIRequest(type, messages, signal) {
         throw new Error(`Got response status ${response.status}`);
     }
     if (stream) {
-        let reader;
-        let isSSEStream = oai_settings.chat_completion_source !== chat_completion_sources.MAKERSUITE;
-        if (isSSEStream) {
-            const eventStream = new EventSourceStream();
-            response.body.pipeThrough(eventStream);
-            reader = eventStream.readable.getReader();
-        } else {
-            reader = response.body.getReader();
-        }
+        const eventStream = new EventSourceStream();
+        response.body.pipeThrough(eventStream);
+        const reader = eventStream.readable.getReader();
         return async function* streamData() {
             let text = '';
-            let utf8Decoder = new TextDecoder();
             const swipes = [];
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
-                const rawData = isSSEStream ? value.data : utf8Decoder.decode(value, { stream: true });
-                if (isSSEStream && rawData === '[DONE]') return;
+                const rawData = value.data;
+                if (rawData === '[DONE]') return;
                 tryParseStreamingError(response, rawData);
                 const parsed = JSON.parse(rawData);
 
@@ -1750,7 +1742,7 @@ function getStreamingReply(data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         return data?.completion || '';
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
-        return data?.candidates[0].content.parts[0].text || '';
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
         return data.choices[0]?.delta?.content || data.choices[0]?.message?.content || data.choices[0]?.text || '';
     }
@@ -2173,8 +2165,13 @@ class ChatCompletion {
         let squashedMessages = [];
 
         for (let message of this.messages.collection) {
+            // Force exclude empty messages
+            if (message.role === 'system' && !message.content) {
+                continue;
+            }
+
             if (!excludeList.includes(message.identifier) && message.role === 'system' && !message.name) {
-                if (lastMessage && message.content && lastMessage.role === 'system') {
+                if (lastMessage && lastMessage.role === 'system') {
                     lastMessage.content += '\n' + message.content;
                     lastMessage.tokens = tokenHandler.count({ role: lastMessage.role, content: lastMessage.content });
                 }

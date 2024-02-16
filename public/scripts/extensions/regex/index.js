@@ -1,7 +1,7 @@
 import { callPopup, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { registerSlashCommand } from '../../slash-commands.js';
-import { getSortableDelay, uuidv4 } from '../../utils.js';
+import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
 import { resolveVariable } from '../../variables.js';
 import { regex_placement, runRegexScript } from './engine.js';
 
@@ -92,6 +92,11 @@ async function loadRegexScripts() {
         });
         scriptHtml.find('.edit_existing_regex').on('click', async function () {
             await onRegexEditorOpenClick(scriptHtml.attr('id'));
+        });
+        scriptHtml.find('.export_regex').on('click', async function () {
+            const fileName = `${script.scriptName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+            const fileData = JSON.stringify(script, null, 4);
+            download(fileData, fileName, 'application/json');
         });
         scriptHtml.find('.delete_regex').on('click', async function () {
             const confirm = await callPopup('Are you sure you want to delete this regex script?', 'confirm');
@@ -270,6 +275,35 @@ function runRegexCallback(args, value) {
     return value;
 }
 
+/**
+ * Performs the import of the regex file.
+ * @param {File} file Input file
+ */
+async function onRegexImportFileChange(file) {
+    if (!file) {
+        toastr.error('No file provided.');
+        return;
+    }
+
+    try {
+        const fileText = await getFileText(file);
+        const regexScript = JSON.parse(fileText);
+        if (!regexScript.scriptName) {
+            throw new Error('No script name provided.');
+        }
+
+        extension_settings.regex.push(regexScript);
+
+        saveSettingsDebounced();
+        await loadRegexScripts();
+        toastr.success(`Regex script "${regexScript.scriptName}" imported.`);
+    } catch (error) {
+        console.log(error);
+        toastr.error('Invalid JSON file.');
+        return;
+    }
+}
+
 // Workaround for loading in sequence with other extensions
 // NOTE: Always puts extension at the top of the list, but this is fine since it's static
 jQuery(async () => {
@@ -286,6 +320,14 @@ jQuery(async () => {
     $('#extensions_settings2').append(settingsHtml);
     $('#open_regex_editor').on('click', function () {
         onRegexEditorOpenClick(false);
+    });
+    $('#import_regex_file').on('change', async function () {
+        const inputElement = this instanceof HTMLInputElement && this;
+        await onRegexImportFileChange(inputElement.files[0]);
+        inputElement.value = '';
+    });
+    $('#import_regex').on('click', function () {
+        $('#import_regex_file').trigger('click');
     });
 
     $('#saved_regex_scripts').sortable({

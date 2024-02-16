@@ -267,7 +267,7 @@ async function sendMakerSuiteRequest(request, response) {
             ? (stream ? 'streamGenerateContent' : 'generateContent')
             : (isText ? 'generateText' : 'generateMessage');
 
-        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${responseType}?key=${apiKey}`, {
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -279,36 +279,8 @@ async function sendMakerSuiteRequest(request, response) {
         // have to do this because of their busted ass streaming endpoint
         if (stream) {
             try {
-                let partialData = '';
-                generateResponse.body.on('data', (data) => {
-                    const chunk = data.toString();
-                    if (chunk.startsWith(',') || chunk.endsWith(',') || chunk.startsWith('[') || chunk.endsWith(']')) {
-                        partialData = chunk.slice(1);
-                    } else {
-                        partialData += chunk;
-                    }
-                    while (true) {
-                        let json;
-                        try {
-                            json = JSON.parse(partialData);
-                        } catch (e) {
-                            break;
-                        }
-                        response.write(JSON.stringify(json));
-                        partialData = '';
-                    }
-                });
-
-                request.socket.on('close', function () {
-                    if (generateResponse.body instanceof Readable) generateResponse.body.destroy();
-                    response.end();
-                });
-
-                generateResponse.body.on('end', () => {
-                    console.log('Streaming request finished');
-                    response.end();
-                });
-
+                // Pipe remote SSE stream to Express response
+                forwardFetchResponse(generateResponse, response);
             } catch (error) {
                 console.log('Error forwarding streaming response:', error);
                 if (!response.headersSent) {
@@ -541,8 +513,11 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         api_url = 'https://openrouter.ai/api/v1';
         api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
-        // OpenRouter needs to pass the referer: https://openrouter.ai/docs
-        headers = { 'HTTP-Referer': request.headers.referer };
+        // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
+        headers = {
+            'HTTP-Referer': 'https://sillytavern.app',
+            'X-Title': 'SillyTavern',
+        };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.MISTRALAI);
@@ -728,8 +703,11 @@ router.post('/generate', jsonParser, function (request, response) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         apiUrl = 'https://openrouter.ai/api/v1';
         apiKey = readSecret(SECRET_KEYS.OPENROUTER);
-        // OpenRouter needs to pass the referer: https://openrouter.ai/docs
-        headers = { 'HTTP-Referer': request.headers.referer };
+        // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
+        headers = {
+            'HTTP-Referer': 'https://sillytavern.app',
+            'X-Title': 'SillyTavern',
+        };
         bodyParams = { 'transforms': ['middle-out'] };
 
         if (request.body.min_p !== undefined) {

@@ -1121,6 +1121,12 @@ function findCharacterIndex(name) {
         (a, b) => a.includes(b),
     ];
 
+    const exactAvatarMatch = characters.findIndex(x => x.avatar === name);
+
+    if (exactAvatarMatch !== -1) {
+        return exactAvatarMatch;
+    }
+
     for (const matchType of matchTypes) {
         const index = characters.findIndex(x => matchType(x.name.toLowerCase(), name.toLowerCase()));
         if (index !== -1) {

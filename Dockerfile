@@ -34,7 +34,8 @@ RUN \
   rm -f "config.yaml" "public/settings.json" || true && \
   ln -s "./config/config.yaml" "config.yaml" || true && \
   ln -s "../config/settings.json" "public/settings.json" || true && \
-  mkdir "config" || true
+  mkdir "config" || true && \
+  mkdir -p "public/user" || true
 
 # Cleanup unnecessary files
 RUN \
