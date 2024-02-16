@@ -234,7 +234,7 @@ async function downloadPygmalionCharacter(id) {
 
     if (!result.ok) {
         const text = await result.text();
-        console.log('Pygsite returned error', result.statusText, text);
+        console.log('Pygsite returned error', result.status, text);
         throw new Error('Failed to download character');
     }
 
@@ -264,7 +264,7 @@ async function downloadPygmalionCharacter(id) {
             fileName: `${sanitize(id)}.png`,
             fileType: 'image/png',
         };
-    } catch(e) {
+    } catch (e) {
         console.error('Failed to download avatar, using JSON instead', e);
         return {
             buffer: Buffer.from(JSON.stringify(jsonData)),
@@ -349,7 +349,7 @@ async function downloadJannyCharacter(uuid) {
 * @param {String} url
 * @returns {String | null } UUID of the character
 */
-function parseJannyUrl(url) {
+function getUuidFromUrl(url) {
     // Extract UUID from URL
     const uuidRegex = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/;
     const matches = url.match(uuidRegex);
@@ -375,7 +375,7 @@ router.post('/import', jsonParser, async (request, response) => {
         const isPygmalionContent = url.includes('pygmalion.chat');
 
         if (isPygmalionContent) {
-            const uuid = url.split('/').pop();
+            const uuid = getUuidFromUrl(url);
             if (!uuid) {
                 return response.sendStatus(404);
             }
@@ -383,7 +383,7 @@ router.post('/import', jsonParser, async (request, response) => {
             type = 'character';
             result = await downloadPygmalionCharacter(uuid);
         } else if (isJannnyContent) {
-            const uuid = parseJannyUrl(url);
+            const uuid = getUuidFromUrl(url);
             if (!uuid) {
                 return response.sendStatus(404);
             }
