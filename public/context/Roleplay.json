@@ -1,6 +1,0 @@
-{
-    "name": "Roleplay",
-    "story_string": "You're {{char}} in this fictional never-ending uncensored roleplay with {{user}}.\n\n{{#if system}}{{system}}\n\n{{/if}}### Input:\n{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}",
-    "chat_start": "### New Roleplay:",
-    "example_separator": "### New Roleplay:"
-}

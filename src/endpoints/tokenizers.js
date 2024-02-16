@@ -298,11 +298,13 @@ function createSentencepieceDecodingHandler(tokenizer) {
 
             const ids = request.body.ids || [];
             const instance = await tokenizer?.get();
-            const text = await instance?.decodeIds(ids);
-            return response.send({ text });
+            const ops = ids.map(id => instance.decodeIds([id]));
+            const chunks = await Promise.all(ops);
+            const text = chunks.join('');
+            return response.send({ text, chunks });
         } catch (error) {
             console.log(error);
-            return response.send({ text: '' });
+            return response.send({ text: '', chunks: [] });
         }
     };
 }
@@ -625,6 +627,10 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
                 case TEXTGEN_TYPES.LLAMACPP:
                     url += '/tokenize';
                     args.body = JSON.stringify({ 'content': text });
+                    break;
+                case TEXTGEN_TYPES.APHRODITE:
+                    url += '/v1/tokenize';
+                    args.body = JSON.stringify({ 'prompt': text });
                     break;
                 default:
                     url += '/v1/internal/encode';

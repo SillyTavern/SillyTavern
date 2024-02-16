@@ -432,6 +432,7 @@
     line-height: 1.2;
 }
 
+.custom-katex-html,
 .katex-html {
     display: none;
 }

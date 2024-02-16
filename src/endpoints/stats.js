@@ -2,10 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const writeFileAtomic = require('write-file-atomic');
-const util = require('util');
 const crypto = require('crypto');
 
-const writeFile = util.promisify(writeFileAtomic);
 const readFile = fs.promises.readFile;
 const readdir = fs.promises.readdir;
 
@@ -168,7 +166,7 @@ async function saveStatsToFile() {
     if (charStats.timestamp > lastSaveTimestamp) {
         //console.debug("Saving stats to file...");
         try {
-            await writeFile(statsFilePath, JSON.stringify(charStats));
+            await writeFileAtomic(statsFilePath, JSON.stringify(charStats));
             lastSaveTimestamp = Date.now();
         } catch (error) {
             console.log('Failed to save stats to file.', error);

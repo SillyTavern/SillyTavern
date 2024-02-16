@@ -11,6 +11,7 @@ import {
     name1,
     saveMetadata,
     saveSettingsDebounced,
+    setUserAvatar,
     setUserName,
     this_chid,
     user_avatar,
@@ -19,6 +20,13 @@ import { getContext } from './extensions.js';
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCount } from './tokenizers.js';
 import { debounce, delay, download, parseJsonFile } from './utils.js';
+
+const GRID_STORAGE_KEY = 'Personas_GridView';
+
+function switchPersonaGridView() {
+    const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
+    $('#user_avatar_block').toggleClass('gridView', state);
+}
 
 /**
  * Uploads an avatar file to the server
@@ -46,7 +54,7 @@ async function uploadUserAvatar(url, name) {
         contentType: false,
         processData: false,
         success: async function () {
-            await getUserAvatars();
+            await getUserAvatars(true, name);
         },
     });
 }
@@ -156,7 +164,7 @@ export async function convertCharacterToPersona(characterId = null) {
     toastr.success(`You can now select ${name} as a persona in the Persona Management menu.`, 'Persona Created');
 
     // Refresh the persona selector
-    await getUserAvatars();
+    await getUserAvatars(true, overwriteName);
     // Reload the persona description
     setPersonaDescription();
 }
@@ -187,7 +195,7 @@ export function autoSelectPersona(name) {
     for (const [key, value] of Object.entries(power_user.personas)) {
         if (value === name) {
             console.log(`Auto-selecting persona ${key} for name ${name}`);
-            $(`.avatar[imgfile="${key}"]`).trigger('click');
+            setUserAvatar(key);
             return;
         }
     }
@@ -201,7 +209,7 @@ export function autoSelectPersona(name) {
 export async function updatePersonaNameIfExists(avatarId, newName) {
     if (avatarId in power_user.personas) {
         power_user.personas[avatarId] = newName;
-        await getUserAvatars();
+        await getUserAvatars(true, avatarId);
         saveSettingsDebounced();
         console.log(`Updated persona name for ${avatarId} to ${newName}`);
     } else {
@@ -209,7 +217,8 @@ export async function updatePersonaNameIfExists(avatarId, newName) {
     }
 }
 
-async function bindUserNameToPersona() {
+async function bindUserNameToPersona(e) {
+    e?.stopPropagation();
     const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
 
     if (!avatarId) {
@@ -254,7 +263,7 @@ async function bindUserNameToPersona() {
     }
 
     saveSettingsDebounced();
-    await getUserAvatars();
+    await getUserAvatars(true, avatarId);
     setPersonaDescription();
 }
 
@@ -331,7 +340,8 @@ async function lockUserNameToChat() {
     updateUserLockIcon();
 }
 
-async function deleteUserAvatar() {
+async function deleteUserAvatar(e) {
+    e?.stopPropagation();
     const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
 
     if (!avatarId) {
@@ -400,6 +410,9 @@ function onPersonaDescriptionInput() {
         object.description = power_user.persona_description;
     }
 
+    $(`.avatar-container[imgfile="${user_avatar}"] .ch_description`)
+        .text(power_user.persona_description || '[No description]')
+        .toggleClass('text_muted', !power_user.persona_description);
     saveSettingsDebounced();
 }
 
@@ -425,7 +438,8 @@ function onPersonaDescriptionPositionInput() {
     saveSettingsDebounced();
 }
 
-async function setDefaultPersona() {
+async function setDefaultPersona(e) {
+    e?.stopPropagation();
     const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
 
     if (!avatarId) {
@@ -472,7 +486,7 @@ async function setDefaultPersona() {
     }
 
     saveSettingsDebounced();
-    await getUserAvatars();
+    await getUserAvatars(true, avatarId);
 }
 
 function updateUserLockIcon() {
@@ -481,7 +495,7 @@ function updateUserLockIcon() {
     $('#lock_user_name').toggleClass('fa-lock', hasLock);
 }
 
-function setChatLockedPersona() {
+async function setChatLockedPersona() {
     // Define a persona for this chat
     let chatPersona = '';
 
@@ -502,10 +516,10 @@ function setChatLockedPersona() {
     }
 
     // Find the avatar file
-    const personaAvatar = $(`.avatar[imgfile="${chatPersona}"]`).trigger('click');
+    const userAvatars = await getUserAvatars(false);
 
     // Avatar missing (persona deleted)
-    if (chat_metadata['persona'] && personaAvatar.length == 0) {
+    if (chat_metadata['persona'] && !userAvatars.includes(chatPersona)) {
         console.warn('Persona avatar not found, unlocking persona');
         delete chat_metadata['persona'];
         updateUserLockIcon();
@@ -513,7 +527,7 @@ function setChatLockedPersona() {
     }
 
     // Default persona missing
-    if (power_user.default_persona && personaAvatar.length == 0) {
+    if (power_user.default_persona && !userAvatars.includes(power_user.default_persona)) {
         console.warn('Default persona avatar not found, clearing default persona');
         power_user.default_persona = null;
         saveSettingsDebounced();
@@ -521,7 +535,7 @@ function setChatLockedPersona() {
     }
 
     // Persona avatar found, select it
-    personaAvatar.trigger('click');
+    setUserAvatar(chatPersona);
     updateUserLockIcon();
 }
 
@@ -560,7 +574,7 @@ async function onPersonasRestoreInput(e) {
         return;
     }
 
-    const avatarsList = await getUserAvatars();
+    const avatarsList = await getUserAvatars(false);
     const warnings = [];
 
     // Merge personas with existing ones
@@ -626,6 +640,16 @@ export function initPersonas() {
     $('#personas_backup').on('click', onBackupPersonas);
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);
+    $('#persona_sort_order').val(power_user.persona_sort_order).on('input', function () {
+        power_user.persona_sort_order = String($(this).val());
+        getUserAvatars(true, user_avatar);
+        saveSettingsDebounced();
+    });
+    $('#persona_grid_toggle').on('click', () => {
+        const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
+        localStorage.setItem(GRID_STORAGE_KEY, String(!state));
+        switchPersonaGridView();
+    });
 
     eventSource.on('charManagementDropdown', (target) => {
         if (target === 'convert_to_persona') {
@@ -633,4 +657,5 @@ export function initPersonas() {
         }
     });
     eventSource.on(event_types.CHAT_CHANGED, setChatLockedPersona);
+    switchPersonaGridView();
 }

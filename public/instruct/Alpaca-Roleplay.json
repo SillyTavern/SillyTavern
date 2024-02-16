@@ -1,0 +1,17 @@
+{
+    "name": "Alpaca-Roleplay",
+    "system_prompt": "Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions.",
+    "input_sequence": "\n### Instruction:",
+    "output_sequence": "\n### Response:",
+    "first_output_sequence": "",
+    "last_output_sequence": "\n### Response (2 paragraphs, engaging, natural, authentic, descriptive, creative):",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "stop_sequence": "",
+    "separator_sequence": "",
+    "wrap": true,
+    "macro": true,
+    "names": true,
+    "names_force_groups": true,
+    "activation_regex": ""
+}

@@ -11,6 +11,7 @@
                 </label>
                 <select id="vectors_source" class="text_pole">
                     <option value="transformers">Local (Transformers)</option>
+                    <option value="extras">Extras</option>
                     <option value="openai">OpenAI</option>
                     <option value="palm">Google MakerSuite (PaLM)</option>
                     <option value="mistral">MistralAI</option>
@@ -91,7 +92,7 @@
                             <input type="radio" name="vectors_position" value="0" />
                             After Main Prompt / Story String
                         </label>
-                        <label>
+                        <label for="vectors_depth" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
                             <input type="radio" name="vectors_position" value="1" />
                             In-chat @ Depth <input id="vectors_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
                         </label>

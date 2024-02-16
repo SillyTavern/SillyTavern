@@ -20,14 +20,6 @@ const regex_placement = {
 };
 
 /**
- * @enum {number} How the regex script should replace the matched string
- */
-const regex_replace_strategy = {
-    REPLACE: 0,
-    OVERLAY: 1,
-};
-
-/**
  * Instantiates a regular expression from a string.
  * @param {string} input The input string.
  * @returns {RegExp} The regular expression instance.
@@ -56,9 +48,9 @@ function regexFromString(input) {
  * @param {regex_placement} placement The placement of the string
  * @param {RegexParams} params The parameters to use for the regex script
  * @returns {string} The regexed string
- * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean }} RegexParams The parameters to use for the regex script
+ * @typedef {{characterOverride?: string, isMarkdown?: boolean, isPrompt?: boolean, depth?: number }} RegexParams The parameters to use for the regex script
  */
-function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt } = {}) {
+function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt, depth } = {}) {
     // WTF have you passed me?
     if (typeof rawString !== 'string') {
         console.warn('getRegexedString: rawString is not a string. Returning empty string.');
@@ -79,6 +71,19 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
             // Script applies to all cases when neither "only"s are true, but there's no need to do it when `isMarkdown`, the as source (chat history) should already be changed beforehand
             (!script.markdownOnly && !script.promptOnly && !isMarkdown)
         ) {
+            // Check if the depth is within the min/max depth
+            if (typeof depth === 'number' && depth >= 0) {
+                if (!isNaN(script.minDepth) && script.minDepth !== null && script.minDepth >= 0 && depth < script.minDepth) {
+                    console.debug(`getRegexedString: Skipping script ${script.scriptName} because depth ${depth} is less than minDepth ${script.minDepth}`);
+                    return;
+                }
+
+                if (!isNaN(script.maxDepth) && script.maxDepth !== null && script.maxDepth >= 0 && depth > script.maxDepth) {
+                    console.debug(`getRegexedString: Skipping script ${script.scriptName} because depth ${depth} is greater than maxDepth ${script.maxDepth}`);
+                    return;
+                }
+            }
+
             if (script.placement.includes(placement)) {
                 finalString = runRegexScript(script, finalString, { characterOverride });
             }
@@ -152,87 +157,4 @@ function filterString(rawString, trimStrings, { characterOverride } = {}) {
     });
 
     return finalString;
-}
-
-/**
- * Substitutes regex-specific and normal parameters
- * @param {string} rawString
- * @param {string} regexMatch
- * @param {RegexSubstituteParams} params The parameters to use for the regex substitution
- * @returns {string} The substituted string
- * @typedef {{characterOverride?: string, replaceStrategy?: number}} RegexSubstituteParams The parameters to use for the regex substitution
- */
-function substituteRegexParams(rawString, regexMatch, { characterOverride, replaceStrategy } = {}) {
-    let finalString = rawString;
-    finalString = substituteParams(finalString, undefined, characterOverride);
-
-    let overlaidMatch = regexMatch;
-    // TODO: Maybe move the for loops into a separate function?
-    if (replaceStrategy === regex_replace_strategy.OVERLAY) {
-        const splitReplace = finalString.split('{{match}}');
-
-        // There's a prefix
-        if (splitReplace[0]) {
-            // Fetch the prefix
-            const splicedPrefix = spliceSymbols(splitReplace[0], false);
-
-            // Sequentially remove all occurrences of prefix from start of split
-            const splitMatch = overlaidMatch.split(splicedPrefix);
-            let sliceNum = 0;
-            for (let index = 0; index < splitMatch.length; index++) {
-                if (splitMatch[index].length === 0) {
-                    sliceNum++;
-                } else {
-                    break;
-                }
-            }
-
-            overlaidMatch = splitMatch.slice(sliceNum, splitMatch.length).join(splicedPrefix);
-        }
-
-        // There's a suffix
-        if (splitReplace[1]) {
-            // Fetch the suffix
-            const splicedSuffix = spliceSymbols(splitReplace[1], true);
-
-            // Sequential removal of all suffix occurrences from end of split
-            const splitMatch = overlaidMatch.split(splicedSuffix);
-            let sliceNum = 0;
-            for (let index = splitMatch.length - 1; index >= 0; index--) {
-                if (splitMatch[index].length === 0) {
-                    sliceNum++;
-                } else {
-                    break;
-                }
-            }
-
-            overlaidMatch = splitMatch.slice(0, splitMatch.length - sliceNum).join(splicedSuffix);
-        }
-    }
-
-    // Only one match is replaced. This is by design
-    finalString = finalString.replace('{{match}}', overlaidMatch) || finalString.replace('{{match}}', regexMatch);
-
-    return finalString;
-}
-
-/**
- * Splices common sentence symbols and whitespace from the beginning and end of a string.
- * Using a for loop due to sequential ordering.
- * @param {string} rawString The raw string to splice
- * @param {boolean} isSuffix String is a suffix
- * @returns {string} The spliced string
- */
-function spliceSymbols(rawString, isSuffix) {
-    let offset = 0;
-
-    for (const ch of isSuffix ? rawString.split('').reverse() : rawString) {
-        if (ch.match(/[^\w.,?'!]/)) {
-            offset++;
-        } else {
-            break;
-        }
-    }
-
-    return isSuffix ? rawString.substring(0, rawString.length - offset) : rawString.substring(offset);
 }

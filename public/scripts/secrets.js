@@ -18,6 +18,7 @@ export const SECRET_KEYS = {
     TOGETHERAI: 'api_key_togetherai',
     INFERMATICAI: 'api_key_infermaticai',
     CUSTOM: 'api_key_custom',
+    OOBA: 'api_key_ooba',
 };
 
 const INPUT_MAP = {
@@ -36,6 +37,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.MISTRALAI]: '#api_key_mistralai',
     [SECRET_KEYS.CUSTOM]: '#api_key_custom',
     [SECRET_KEYS.TOGETHERAI]: '#api_key_togetherai',
+    [SECRET_KEYS.OOBA]: '#api_key_ooba',
     [SECRET_KEYS.INFERMATICAI]: '#api_key_infermaticai',
 };
 

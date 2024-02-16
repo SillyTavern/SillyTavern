@@ -12,7 +12,7 @@ const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sente
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
-
+const API_MISTRAL = 'https://api.mistral.ai/v1';
 /**
  * Sends a request to Claude API.
  * @param {express.Request} request Express request
@@ -267,7 +267,7 @@ async function sendMakerSuiteRequest(request, response) {
             ? (stream ? 'streamGenerateContent' : 'generateContent')
             : (isText ? 'generateText' : 'generateMessage');
 
-        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${responseType}?key=${apiKey}`, {
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -279,36 +279,8 @@ async function sendMakerSuiteRequest(request, response) {
         // have to do this because of their busted ass streaming endpoint
         if (stream) {
             try {
-                let partialData = '';
-                generateResponse.body.on('data', (data) => {
-                    const chunk = data.toString();
-                    if (chunk.startsWith(',') || chunk.endsWith(',') || chunk.startsWith('[') || chunk.endsWith(']')) {
-                        partialData = chunk.slice(1);
-                    } else {
-                        partialData += chunk;
-                    }
-                    while (true) {
-                        let json;
-                        try {
-                            json = JSON.parse(partialData);
-                        } catch (e) {
-                            break;
-                        }
-                        response.write(JSON.stringify(json));
-                        partialData = '';
-                    }
-                });
-
-                request.socket.on('close', function () {
-                    if (generateResponse.body instanceof Readable) generateResponse.body.destroy();
-                    response.end();
-                });
-
-                generateResponse.body.on('end', () => {
-                    console.log('Streaming request finished');
-                    response.end();
-                });
-
+                // Pipe remote SSE stream to Express response
+                forwardFetchResponse(generateResponse, response);
             } catch (error) {
                 console.log('Error forwarding streaming response:', error);
                 if (!response.headersSent) {
@@ -436,7 +408,8 @@ async function sendAI21Request(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendMistralAIRequest(request, response) {
-    const apiKey = readSecret(SECRET_KEYS.MISTRALAI);
+    const apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.MISTRALAI);
 
     if (!apiKey) {
         console.log('MistralAI API key is missing.');
@@ -500,7 +473,7 @@ async function sendMistralAIRequest(request, response) {
 
         console.log('MisralAI request:', requestBody);
 
-        const generateResponse = await fetch('https://api.mistral.ai/v1/chat/completions', config);
+        const generateResponse = await fetch(apiUrl + '/chat/completions', config);
         if (request.body.stream) {
             forwardFetchResponse(generateResponse, response);
         } else {
@@ -543,8 +516,8 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
-        api_url = 'https://api.mistral.ai/v1';
-        api_key_openai = readSecret(SECRET_KEYS.MISTRALAI);
+        api_url = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
+        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.MISTRALAI);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         api_url = request.body.custom_url;
@@ -705,12 +678,21 @@ router.post('/generate', jsonParser, function (request, response) {
     let apiKey;
     let headers;
     let bodyParams;
+    const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(request.body.model)) || typeof request.body.messages === 'string';
 
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
-        bodyParams = {};
+        bodyParams = {
+            logprobs: request.body.logprobs,
+        };
+
+        // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
+        if (!isTextCompletion && bodyParams.logprobs > 0) {
+            bodyParams.top_logprobs = bodyParams.logprobs;
+            bodyParams.logprobs = true;
+        }
 
         if (getConfigValue('openai.randomizeUserId', false)) {
             bodyParams['user'] = uuidv4();
@@ -730,6 +712,10 @@ router.post('/generate', jsonParser, function (request, response) {
             bodyParams['top_a'] = request.body.top_a;
         }
 
+        if (request.body.repetition_penalty !== undefined) {
+            bodyParams['repetition_penalty'] = request.body.repetition_penalty;
+        }
+
         if (request.body.use_fallback) {
             bodyParams['route'] = 'fallback';
         }
@@ -737,7 +723,16 @@ router.post('/generate', jsonParser, function (request, response) {
         apiUrl = request.body.custom_url;
         apiKey = readSecret(SECRET_KEYS.CUSTOM);
         headers = {};
-        bodyParams = {};
+        bodyParams = {
+            logprobs: request.body.logprobs,
+        };
+
+        // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
+        if (!isTextCompletion && bodyParams.logprobs > 0) {
+            bodyParams.top_logprobs = bodyParams.logprobs;
+            bodyParams.logprobs = true;
+        }
+
         mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
     } else {
@@ -755,7 +750,6 @@ router.post('/generate', jsonParser, function (request, response) {
         bodyParams['stop'] = request.body.stop;
     }
 
-    const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(request.body.model)) || typeof request.body.messages === 'string';
     const textPrompt = isTextCompletion ? convertTextCompletionPrompt(request.body.messages) : '';
     const endpointUrl = isTextCompletion && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.OPENROUTER ?
         `${apiUrl}/completions` :
@@ -781,6 +775,7 @@ router.post('/generate', jsonParser, function (request, response) {
         'stop': isTextCompletion === false ? request.body.stop : undefined,
         'logit_bias': request.body.logit_bias,
         'seed': request.body.seed,
+        'n': request.body.n,
         ...bodyParams,
     };
 
@@ -827,7 +822,7 @@ router.post('/generate', jsonParser, function (request, response) {
                 let json = await fetchResponse.json();
                 response.send(json);
                 console.log(json);
-                console.log(json?.choices[0]?.message);
+                console.log(json?.choices?.[0]?.message);
             } else if (fetchResponse.status === 429 && retries > 0) {
                 console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {

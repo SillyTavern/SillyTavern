@@ -8,7 +8,7 @@ const { DIRECTORIES, UNSAFE_EXTENSIONS } = require('../constants');
 const { jsonParser } = require('../express-common');
 const { clientRelativePath } = require('../util');
 
-const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d'];
+const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm'];
 
 /**
  * Validates the input filename for the asset.
@@ -101,6 +101,33 @@ router.post('/get', jsonParser, async (_, response) => {
                         if (file.includes('model') && file.endsWith('.json')) {
                             //console.debug("Asset live2d model found:",file)
                             output[folder].push(clientRelativePath(file));
+                        }
+                    }
+                    continue;
+                }
+
+                // VRM assets
+                if (folder == 'vrm') {
+                    output[folder] = { 'model': [], 'animation': [] };
+                    // Extract models
+                    const vrm_model_folder = path.normalize(path.join(folderPath, 'vrm', 'model'));
+                    let files = getFiles(vrm_model_folder);
+                    //console.debug("FILE FOUND:",files)
+                    for (let file of files) {
+                        if (!file.endsWith('.placeholder')) {
+                            //console.debug("Asset VRM model found:",file)
+                            output['vrm']['model'].push(clientRelativePath(file));
+                        }
+                    }
+
+                    // Extract models
+                    const vrm_animation_folder = path.normalize(path.join(folderPath, 'vrm', 'animation'));
+                    files = getFiles(vrm_animation_folder);
+                    //console.debug("FILE FOUND:",files)
+                    for (let file of files) {
+                        if (!file.endsWith('.placeholder')) {
+                            //console.debug("Asset VRM animation found:",file)
+                            output['vrm']['animation'].push(clientRelativePath(file));
                         }
                     }
                     continue;

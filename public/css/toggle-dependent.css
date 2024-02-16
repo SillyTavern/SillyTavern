@@ -36,7 +36,8 @@ body.charListGrid #rm_print_characters_block {
 }
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select,
-body.charListGrid #rm_print_characters_block .character_select {
+body.charListGrid #rm_print_characters_block .character_select,
+#user_avatar_block.gridView .avatar-container {
     width: 30%;
     align-items: flex-start;
     height: min-content;
@@ -47,7 +48,8 @@ body.charListGrid #rm_print_characters_block .character_select {
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select .ch_name,
 body.charListGrid #rm_print_characters_block .character_select .ch_name,
-body.charListGrid #rm_print_characters_block .group_select .ch_name {
+body.charListGrid #rm_print_characters_block .group_select .ch_name,
+#user_avatar_block.gridView .avatar-container .ch_name {
     width: 100%;
     max-width: 100px;
     text-align: center;
@@ -55,12 +57,20 @@ body.charListGrid #rm_print_characters_block .group_select .ch_name {
 }
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select .character_name_block,
-body.charListGrid #rm_print_characters_block .character_select .character_name_block {
+body.charListGrid #rm_print_characters_block .character_select .character_name_block,
+#user_avatar_block.gridView .avatar-container .character_name_block {
     width: 100%;
+    flex-direction: column;
+}
+
+#user_avatar_block.gridView .avatar-container .avatar-buttons {
+    flex-wrap: wrap;
+    justify-content: space-evenly;
 }
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select .character_select_container,
-body.charListGrid #rm_print_characters_block .character_select .character_select_container {
+body.charListGrid #rm_print_characters_block .character_select .character_select_container,
+#user_avatar_block.gridView .avatar-container .character_select_container {
     width: 100%;
     justify-content: center;
     max-width: 100px;
@@ -83,13 +93,15 @@ body.charListGrid #rm_print_characters_block .bogus_folder_counter_block,
 body.charListGrid #rm_print_characters_block .ch_description,
 body.charListGrid #rm_print_characters_block .tags_inline,
 body.charListGrid #rm_print_characters_block .character_version,
-body.charListGrid #rm_print_characters_block .ch_avatar_url {
+body.charListGrid #rm_print_characters_block .ch_avatar_url,
+#user_avatar_block.gridView .avatar-container .ch_description {
     display: none;
 }
 
 /*big avatars mode page-wide changes*/
 
-body.big-avatars .character_select .avatar {
+body.big-avatars .character_select .avatar,
+body.big-avatars .bogus_folder_select .avatar {
     flex: unset;
 }
 
@@ -148,7 +160,8 @@ body.big-avatars .avatar_collage {
     aspect-ratio: 2 / 3;
 }
 
-body.big-avatars .ch_description {
+body.big-avatars .ch_description,
+body.big-avatars .avatar-container .ch_description {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;

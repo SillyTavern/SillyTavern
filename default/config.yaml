@@ -53,6 +53,8 @@ extras:
   captioningModel: Xenova/vit-gpt2-image-captioning
   embeddingModel: Cohee/jina-embeddings-v2-base-en
   promptExpansionModel: Cohee/fooocus_expansion-onnx
+  speechToTextModel: Xenova/whisper-small
+  textToSpeechModel: Xenova/speecht5_tts
 # -- OPENAI CONFIGURATION --
 openai:
   # Will send a random user ID to OpenAI completion API
