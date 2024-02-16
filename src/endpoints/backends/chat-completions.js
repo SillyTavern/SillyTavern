@@ -515,8 +515,8 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
         headers = {
-          'HTTP-Referer':  'https://sillytavern.app',
-          'X-Title':       'SillyTavern'
+            'HTTP-Referer': 'https://sillytavern.app',
+            'X-Title': 'SillyTavern',
         };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
@@ -705,8 +705,8 @@ router.post('/generate', jsonParser, function (request, response) {
         apiKey = readSecret(SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
         headers = {
-          'HTTP-Referer':  'https://sillytavern.app',
-          'X-Title':       'SillyTavern'
+            'HTTP-Referer': 'https://sillytavern.app',
+            'X-Title': 'SillyTavern',
         };
         bodyParams = { 'transforms': ['middle-out'] };
 
