@@ -80,26 +80,28 @@ class SlashCommandParser {
         const excludedFromRegex = ['sendas'];
         const firstSpace = text.indexOf(' ');
         const command = firstSpace !== -1 ? text.substring(1, firstSpace) : text.substring(1);
-        const args = firstSpace !== -1 ? text.substring(firstSpace + 1) : '';
+        let args = firstSpace !== -1 ? text.substring(firstSpace + 1) : '';
         const argObj = {};
         let unnamedArg;
 
         if (args.length > 0) {
+            let match;
+
+            // Match unnamed argument
+            const unnamedArgPattern = /(?:\w+=(?:"(?:\\.|[^"\\])*"|\S+)\s*)*(.*)/s;
+            match = unnamedArgPattern.exec(args);
+            if (match !== null && match[1].length > 0) {
+                args = args.slice(0, -match[1].length);
+                unnamedArg = match[1].trim();
+            }
+
             // Match named arguments
             const namedArgPattern = /(\w+)=("(?:\\.|[^"\\])*"|\S+)/g;
-            let match;
             while ((match = namedArgPattern.exec(args)) !== null) {
                 const key = match[1];
                 const value = match[2];
                 // Remove the quotes around the value, if any
                 argObj[key] = value.replace(/(^")|("$)/g, '');
-            }
-
-            // Match unnamed argument
-            const unnamedArgPattern = /(?:\w+=(?:"(?:\\.|[^"\\])*"|\S+)\s*)*(.*)/s;
-            match = unnamedArgPattern.exec(args);
-            if (match !== null) {
-                unnamedArg = match[1].trim();
             }
 
             // Excluded commands format in their own function
@@ -1118,6 +1120,12 @@ function findCharacterIndex(name) {
         (a, b) => a.startsWith(b),
         (a, b) => a.includes(b),
     ];
+
+    const exactAvatarMatch = characters.findIndex(x => x.avatar === name);
+
+    if (exactAvatarMatch !== -1) {
+        return exactAvatarMatch;
+    }
 
     for (const matchType of matchTypes) {
         const index = characters.findIndex(x => matchType(x.name.toLowerCase(), name.toLowerCase()));
