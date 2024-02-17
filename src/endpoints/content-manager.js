@@ -221,24 +221,75 @@ async function downloadChubCharacter(id) {
 }
 
 /**
+ * Makes an HTTP/2 request to the specified endpoint.
+ *
+ * THIS IS A WORKAROUND FOR NODE-FETCH NOT SUPPORTING HTTP/2 AND PYGSITE USING BROKEN AHH AWS LOAD BALANCER.
+ * @param {string} endpoint URL to make the request to
+ * @param {string} method HTTP method to use
+ * @param {string} body Request body
+ * @param {object} headers Request headers
+ * @returns {Promise<string>} Response body
+ */
+function makeHttp2Request(endpoint, method, body, headers) {
+    return new Promise((resolve, reject) => {
+        try {
+            const http2 = require('http2');
+            const url = new URL(endpoint);
+            const client = http2.connect(url.origin);
+
+            const req = client.request({
+                ':method': method,
+                ':path': url.pathname,
+                ...headers,
+            });
+            req.setEncoding('utf8');
+
+            req.on('response', (headers) => {
+                const status = Number(headers[':status']);
+
+                if (status < 200 || status >= 300) {
+                    reject(new Error(`Request failed with status ${status}`));
+                }
+
+                let data = '';
+
+                req.on('data', (chunk) => {
+                    data += chunk;
+                });
+
+                req.on('end', () => {
+                    resolve(data);
+                });
+            });
+
+            req.on('error', (err) => {
+                reject(err);
+            });
+
+            if (body) {
+                req.write(body);
+            }
+
+            req.end();
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
+/**
  * Downloads a character card from the Pygsite.
  * @param {string} id UUID of the character
  * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string}>}
  */
 async function downloadPygmalionCharacter(id) {
-    const result = await fetch('https://server.pygmalion.chat/galatea.v1.PublicCharacterService/CharacterExport', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 'character_id': id }),
-    });
-
-    if (!result.ok) {
-        const text = await result.text();
-        console.log('Pygsite returned error', result.status, text);
-        throw new Error('Failed to download character');
-    }
-
-    const jsonData = await result.json();
+    const result = await makeHttp2Request(
+        'https://server.pygmalion.chat/galatea.v1.PublicCharacterService/CharacterExport',
+        'POST',
+        JSON.stringify({ 'character_id': id }),
+        { 'content-type': 'application/json' },
+    );
+    const jsonData = JSON.parse(result);
     const card = jsonData?.card;
 
     if (!card || typeof card !== 'object') {
