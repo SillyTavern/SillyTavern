@@ -174,3 +174,49 @@
         1px -1px 0px black;
     opacity: 1;
 }
+
+.tag_as_folder {
+    filter: brightness(25%) saturate(0.25);
+}
+.tag_as_folder.yes_folder {
+    filter: brightness(75%) saturate(0.6);
+}
+.tag_as_folder:hover {
+    filter: brightness(150%) saturate(0.6);
+}
+
+.tag_as_folder.yes_folder:after {
+    position: absolute;
+    top: -8px;
+    bottom: 0;
+    left: 0;
+    right: -24px;
+    content: "\2714";
+    font-size: calc(var(--mainFontSize) * 1);
+    color: green;
+    line-height: calc(var(--mainFontSize) * 1.3);
+    text-align: center;
+    text-shadow: 1px 1px 0px black,
+        -1px -1px 0px black,
+        -1px 1px 0px black,
+        1px -1px 0px black;
+    opacity: 1;
+}
+
+.tag_as_folder.no_folder:after {
+    position: absolute;
+    top: -8px;
+    bottom: 0;
+    left: 0;
+    right: -24px;
+    content: "\2715";
+    font-size: calc(var(--mainFontSize) * 1);
+    color: red;
+    line-height: calc(var(--mainFontSize) * 1.3);
+    text-align: center;
+    text-shadow: 1px 1px 0px black,
+        -1px -1px 0px black,
+        -1px 1px 0px black,
+        1px -1px 0px black;
+    opacity: 1;
+}

@@ -163,6 +163,7 @@ import {
     renameTagKey,
     importTags,
     tag_filter_types,
+    compareTagsForSort,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -1326,7 +1327,7 @@ export function getEntitiesList({ doFilter } = {}) {
     let entities = [
         ...characters.map((item, index) => characterToEntity(item, index)),
         ...groups.map(item => groupToEntity(item)),
-        ...(power_user.bogus_folders ? tags.map(item => tagToEntity(item)) : []),
+        ...(power_user.bogus_folders ? tags.filter(x => x.is_folder).sort(compareTagsForSort).map(item => tagToEntity(item)) : []),
     ];
 
     if (doFilter) {
@@ -1337,7 +1338,7 @@ export function getEntitiesList({ doFilter } = {}) {
         // Get tags of entities within the bogus folder
         const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
         entities = entities.filter(x => x.type !== 'tag');
-        const otherTags = tags.filter(x => !filterData.selected.includes(x.id));
+        const otherTags = tags.filter(x => x.is_folder && !filterData.selected.includes(x.id)).sort(compareTagsForSort);
         const bogusTags = [];
         for (const entity of entities) {
             for (const tag of otherTags) {
