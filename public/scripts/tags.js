@@ -12,7 +12,8 @@ import {
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4 } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay } from './utils.js';
+import { power_user } from './power-user.js';
 
 export {
     tags,
@@ -24,6 +25,8 @@ export {
     createTagMapFromList,
     renameTagKey,
     importTags,
+    sortTags,
+    compareTagsForSort,
 };
 
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
@@ -111,7 +114,7 @@ function getTagsList(key) {
     return tag_map[key]
         .map(x => tags.find(y => y.id === x))
         .filter(x => x)
-        .sort((a, b) => a.name.localeCompare(b.name));
+        .sort(compareTagsForSort);
 }
 
 function getInlineListSelector() {
@@ -245,7 +248,9 @@ async function importTags(imported_char) {
     } else {
         selected_tags = await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
     }
+    // @ts-ignore
     selected_tags = existingTags.concat(selected_tags.split(','));
+    // @ts-ignore
     selected_tags = selected_tags.map(t => t.trim()).filter(t => t !== '');
     //Anti-troll measure
     if (selected_tags.length > 15) {
@@ -276,6 +281,8 @@ function createNewTag(tagName) {
     const tag = {
         id: uuidv4(),
         name: tagName,
+        is_folder: false,
+        sort_order: tags.length,
         color: '',
         color2: '',
         create_date: Date.now(),
@@ -379,7 +386,7 @@ function printTagFilters(type = tag_filter_types.character) {
     const characterTagIds = Object.values(tag_map).flat();
     const tagsToDisplay = tags
         .filter(x => characterTagIds.includes(x.id))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        .sort(compareTagsForSort);
 
     for (const tag of Object.values(ACTIONABLE_TAGS)) {
         appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: false, action: tag.action, isGeneralList: true });
@@ -426,13 +433,16 @@ function onTagRemoveClick(event) {
     saveSettingsDebounced();
 }
 
+// @ts-ignore
 function onTagInput(event) {
     let val = $(this).val();
     if (tags.find(t => t.name === val)) return;
+    // @ts-ignore
     $(this).autocomplete('search', val);
 }
 
 function onTagInputFocus() {
+    // @ts-ignore
     $(this).autocomplete('search', $(this).val());
 }
 
@@ -475,6 +485,7 @@ function applyTagsOnGroupSelect() {
 
 export function createTagInput(inputSelector, listSelector) {
     $(inputSelector)
+        // @ts-ignore
         .autocomplete({
             source: (i, o) => findTag(i, o, listSelector),
             select: (e, u) => selectTag(e, u, listSelector),
@@ -509,17 +520,92 @@ function onViewTagsListClick() {
     </div>
     <div class="justifyLeft m-b-1">
         <small>
+            Drag the handle to reorder.<br>
+            ${(power_user.bogus_folders ? 'Click on the folder icon to use this tag as a folder.<br>' : '')}
             Click on the tag name to edit it.<br>
             Click on color box to assign new color.
         </small>
     </div>`);
 
-    const sortedTags = tags.slice().sort((a, b) => a?.name?.toLowerCase()?.localeCompare(b?.name?.toLowerCase()));
+    const tagContainer = $('<div class="tag_view_list_tags ui-sortable"></div>');
+    list.append(tagContainer);
+
+    const sortedTags = sortTags(tags);
+    // var highestSortOrder = sortedTags.reduce((max, tag) => tag.sort_order !== undefined ? Math.max(max, tag.sort_order) : max, -1);
+
     for (const tag of sortedTags) {
-        appendViewTagToList(list, tag, everything);
+        // // For drag&drop to work we need a sort_order defined, so set it but not save. Gets persisted if there are any tag settings changes
+        // if (tag.sort_order === undefined) {
+        //     tag.sort_order = ++highestSortOrder;
+        // }
+
+        appendViewTagToList(tagContainer, tag, everything);
     }
 
+    makeTagListDraggable(tagContainer);
+
     callPopup(list, 'text');
+}
+
+function makeTagListDraggable(tagContainer) {
+    const onTagsSort = () => {
+        tagContainer.find('.tag_view_item').each(function (i, tagElement) {
+            const id = $(tagElement).attr('id');
+            const tag = tags.find(x => x.id === id);
+
+            // Fix the defined colors, because if there is no color set, they seem to get automatically set to black
+            // based on the color picker after drag&drop, even if there was no color chosen. We just set them back.
+            const color = $(tagElement).find('.tagColorPickerHolder .tag-color').attr('color');
+            const color2 = $(tagElement).find('.tagColorPicker2Holder .tag-color2').attr('color');
+            if (color === '' || color === undefined) {
+                tag.color = '';
+                fixColor('background-color', tag.color);
+            }
+            if (color2 === '' || color2 === undefined) {
+                tag.color2 = '';
+                fixColor('color', tag.color2);
+            }
+
+            // Update the sort order
+            tag.sort_order = i;
+
+            function fixColor(property, color) {
+                $(tagElement).find('.tag_view_name').css(property, color);
+                $(`.tag[id="${id}"]`).css(property, color);
+                $(`.bogus_folder_select[tagid="${id}"] .avatar`).css(property, color);
+            }
+        });
+
+        saveSettingsDebounced();
+
+        // If the order of tags in display has changed, we need to redraw some UI elements
+        printCharacters(false);
+        printTagFilters(tag_filter_types.character);
+        printTagFilters(tag_filter_types.group_member);
+    };
+
+    // @ts-ignore
+    $(tagContainer).sortable({
+        delay: getSortableDelay(),
+        stop: () => onTagsSort(),
+        handle: '.drag-handle',
+    });
+}
+
+function sortTags(tags) {
+    return tags.slice().sort(compareTagsForSort);
+}
+
+function compareTagsForSort(a, b) {
+    if (a.sort_order !== undefined && b.sort_order !== undefined) {
+        return a.sort_order - b.sort_order;
+    } else if (a.sort_order !== undefined) {
+        return -1;
+    } else if (b.sort_order !== undefined) {
+        return 1;
+    } else {
+        return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    }
 }
 
 async function onTagRestoreFileSelect(e) {
@@ -620,7 +706,7 @@ function onTagsBackupClick() {
 
 function onTagCreateClick() {
     const tag = createNewTag('New Tag');
-    appendViewTagToList($('#tag_view_list'), tag, []);
+    appendViewTagToList($('#tag_view_list .tag_view_list_tags'), tag, []);
     printCharacters(false);
     saveSettingsDebounced();
 }
@@ -636,9 +722,15 @@ function appendViewTagToList(list, tag, everything) {
     template.find('.tag_view_name').css('background-color', tag.color);
     template.find('.tag_view_name').css('color', tag.color2);
 
+    const tagAsFolderId = tag.id + '-tag-folder';
     const colorPickerId = tag.id + '-tag-color';
     const colorPicker2Id = tag.id + '-tag-color2';
 
+    if (!power_user.bogus_folders) {
+        template.find('.tag_as_folder').hide();
+    }
+
+    template.find('.tag_as_folder').addClass(tag.is_folder == true ? 'yes_folder' : 'no_folder');
     template.find('.tagColorPickerHolder').html(
         `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`,
     );
@@ -646,6 +738,7 @@ function appendViewTagToList(list, tag, everything) {
         `<toolcool-color-picker id="${colorPicker2Id}" color="${tag.color2}" class="tag-color2"></toolcool-color-picker>`,
     );
 
+    template.find('.tag_as_folder').attr('id', tagAsFolderId);
     template.find('.tag-color').attr('id', colorPickerId);
     template.find('.tag-color2').attr('id', colorPicker2Id);
 
@@ -663,8 +756,24 @@ function appendViewTagToList(list, tag, everything) {
         });
     }, 100);
 
+    // @ts-ignore
     $(colorPickerId).color = tag.color;
+    // @ts-ignore
     $(colorPicker2Id).color = tag.color2;
+}
+
+function onTagAsFolderClick() {
+    const id = $(this).closest('.tag_view_item').attr('id');
+    const tag = tags.find(x => x.id === id);
+
+    // Toggle
+    tag.is_folder = tag.is_folder != true;
+    $(`.tag_view_item[id="${id}"] .tag_as_folder`).toggleClass('yes_folder').toggleClass('no_folder');
+
+    // If folder display has changed, we have to redraw the character list, otherwise this folders state would not change
+    printCharacters(true);
+    saveSettingsDebounced();
+
 }
 
 function onTagDeleteClick() {
@@ -738,8 +847,10 @@ jQuery(() => {
     $(document).on('input', '.tag_input', onTagInput);
     $(document).on('click', '.tags_view', onViewTagsListClick);
     $(document).on('click', '.tag_delete', onTagDeleteClick);
+    $(document).on('click', '.tag_as_folder', onTagAsFolderClick);
     $(document).on('input', '.tag_view_name', onTagRenameInput);
     $(document).on('click', '.tag_view_create', onTagCreateClick);
     $(document).on('click', '.tag_view_backup', onTagsBackupClick);
     $(document).on('click', '.tag_view_restore', onBackupRestoreClick);
 });
+
