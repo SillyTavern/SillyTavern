@@ -7764,7 +7764,13 @@ async function connectAPISlash(_, text) {
     }
 }
 
-export async function processDroppedFiles(files) {
+/**
+ * Imports supported files dropped into the app window.
+ * @param {File[]} files Array of files to process
+ * @param {boolean?} preserveFileNames Whether to preserve original file names
+ * @returns {Promise<void>}
+ */
+export async function processDroppedFiles(files, preserveFileNames = false) {
     const allowedMimeTypes = [
         'application/json',
         'image/png',
@@ -7776,14 +7782,20 @@ export async function processDroppedFiles(files) {
 
     for (const file of files) {
         if (allowedMimeTypes.includes(file.type)) {
-            await importCharacter(file);
+            await importCharacter(file, preserveFileNames);
         } else {
             toastr.warning('Unsupported file type: ' + file.name);
         }
     }
 }
 
-async function importCharacter(file) {
+/**
+ * Imports a character from a file.
+ * @param {File} file File to import
+ * @param {boolean?} preserveFileName Whether to preserve original file name
+ * @returns {Promise<void>}
+ */
+async function importCharacter(file, preserveFileName = false) {
     const ext = file.name.match(/\.(\w+)$/);
     if (!ext || !(['json', 'png', 'yaml', 'yml'].includes(ext[1].toLowerCase()))) {
         return;
@@ -7794,6 +7806,7 @@ async function importCharacter(file) {
     const formData = new FormData();
     formData.append('avatar', file);
     formData.append('file_type', format);
+    formData.append('preserve_file_name', String(preserveFileName));
 
     const data = await jQuery.ajax({
         type: 'POST',
