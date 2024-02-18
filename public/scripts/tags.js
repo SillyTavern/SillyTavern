@@ -43,6 +43,7 @@ export const tag_filter_types = {
 };
 
 const ACTIONABLE_TAGS = {
+    FOLDER: { id: 4, name: 'Show folders', color: 'rgba(255, 255, 0, 0.5)', action: applyFavFilter, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
     FAV: { id: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: applyFavFilter, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
     GROUP: { id: 0, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
     VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
@@ -796,6 +797,24 @@ function onTagAsFolderClick() {
     const id = $(this).closest('.tag_view_item').attr('id');
     const tag = tags.find(x => x.id === id);
 
+    // Toggle through all states
+    const states = ['folder_open', 'folder_closed', 'no_folder' ];
+
+
+    let excludeTag;
+    if ($(this).hasClass('selected')) {
+        $(this).removeClass('selected');
+        $(this).addClass('excluded');
+        excludeTag = true;
+    }
+    else if ($(this).hasClass('excluded')) {
+        $(this).removeClass('excluded');
+        excludeTag = false;
+    }
+    else {
+        $(this).addClass('selected');
+    }
+
     // Toggle
     tag.is_folder = tag.is_folder != true;
     $(`.tag_view_item[id="${id}"] .tag_as_folder`).toggleClass('yes_folder').toggleClass('no_folder');
@@ -866,8 +885,6 @@ function onTagListHintClick() {
 
     power_user.show_tag_filters = $(this).hasClass('selected');
     saveSettingsDebounced();
-
-    console.log('show_tag_filters', power_user.show_tag_filters);
 }
 
 jQuery(() => {
