@@ -8682,8 +8682,8 @@ jQuery(async function () {
         const fromSlashCommand = customData?.fromSlashCommand || false;
         var id = $(this).attr('id');
 
-        // Check whether a custom prompt was provided via custom data (for example through a slash command), otherwise fall back and use the text from the textbox, if there is any
-        const additionalPrompt = (customData?.additionalPrompt && customData.additionalPrompt.trim()) || (String($('#send_textarea').val()).trim() || undefined);
+        // Check whether a custom prompt was provided via custom data (for example through a slash command)
+        const additionalPrompt = customData?.additionalPrompt?.trim() || undefined;
         const buildOrFillAdditionalArgs = (args = {}) => ({
             ...args,
             ...(additionalPrompt !== undefined && { quiet_prompt: additionalPrompt, quietToLoud: true }),
