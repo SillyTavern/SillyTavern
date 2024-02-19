@@ -370,6 +370,7 @@ function onTagFilterClick(listElement) {
     }
 
     runTagFilters(listElement);
+    updateTagFilterIndicator();
 }
 
 function runTagFilters(listElement) {
@@ -406,6 +407,21 @@ function printTagFilters(type = tag_filter_types.character) {
 
     for (const tagId of selectedTagIds) {
         $(`${FILTER_SELECTOR} .tag[id="${tagId}"]`).trigger('click');
+    }
+
+    if (power_user.show_tag_filters) {
+        $('.rm_tag_controls .showTagList').addClass('selected');
+        $('.rm_tag_controls').find('.tag:not(.actionable)').show();
+    }
+
+    updateTagFilterIndicator();
+}
+
+function updateTagFilterIndicator() {
+    if ($('.rm_tag_controls').find('.tag:not(.actionable)').is('.selected, .excluded')) {
+        $('.rm_tag_controls .showTagList').addClass('indicator');
+    } else {
+        $('.rm_tag_controls .showTagList').removeClass('indicator');
     }
 }
 
@@ -829,10 +845,15 @@ function onTagColorize2(evt) {
 }
 
 function onTagListHintClick() {
-    console.log($(this));
+    console.debug($(this));
     $(this).toggleClass('selected');
     $(this).siblings('.tag:not(.actionable)').toggle(100);
     $(this).siblings('.innerActionable').toggleClass('hidden');
+
+    power_user.show_tag_filters = $(this).hasClass('selected');
+    saveSettingsDebounced();
+
+    console.log('show_tag_filters', power_user.show_tag_filters);
 }
 
 jQuery(() => {
