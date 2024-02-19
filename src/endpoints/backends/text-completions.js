@@ -294,6 +294,11 @@ router.post('/generate', jsonParser, async function (request, response) {
                     data['choices'] = [{ text }];
                 }
 
+                // Map InfermaticAI response to OAI completions format
+                if (request.body.api_type === TEXTGEN_TYPES.INFERMATICAI) {
+                    data['choices'] = (data?.choices || []).map(choice => ({ text: choice.message.content }));
+                }
+
                 return response.send(data);
             } else {
                 const text = await completionsReply.text();
