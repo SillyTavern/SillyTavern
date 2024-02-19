@@ -181,10 +181,14 @@ const TEXTGEN_TYPES = {
 
 const INFERMATICAI_KEYS = [
     'model',
+    'prompt',
     'max_tokens',
     'temperature',
+    'top_p',
+    'top_k',
     'repetition_penalty',
     'stream',
+    'stop',
 ];
 
 // https://docs.together.ai/reference/completions
