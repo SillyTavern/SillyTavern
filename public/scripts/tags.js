@@ -7,6 +7,7 @@ import {
     getCharacters,
     entitiesFilter,
     printCharacters,
+    chooseBogusFolder,
 } from '../script.js';
 // eslint-disable-next-line no-unused-vars
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -429,6 +430,13 @@ function onTagRemoveClick(event) {
     event.stopPropagation();
     const tag = $(this).closest('.tag');
     const tagId = tag.attr('id');
+
+    // Check if we are inside the drilldown. If so, we call remove on the bogus folder
+    if ($(this).closest('.rm_tag_bogus_drilldown').length > 0) {
+        console.debug('Bogus drilldown remove', tagId);
+        chooseBogusFolder(tagId, true);
+        return;
+    }
 
     // Optional, check for multiple character ids being present.
     const characterData = event.target.closest('#bulk_tags_div')?.dataset.characters;
