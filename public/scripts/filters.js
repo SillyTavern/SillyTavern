@@ -116,6 +116,7 @@ export class FilterHelper {
         }
 
         const getIsTagged = (entity) => {
+            const isTag = entity.type === 'tag';
             const tagFlags = selected.map(tagId => this.isElementTagged(entity, tagId));
             const trueFlags = tagFlags.filter(x => x);
             const isTagged = TAG_LOGIC_AND ? tagFlags.length === trueFlags.length : trueFlags.length > 0;
@@ -123,7 +124,9 @@ export class FilterHelper {
             const excludedTagFlags = excluded.map(tagId => this.isElementTagged(entity, tagId));
             const isExcluded = excludedTagFlags.includes(true);
 
-            if (isExcluded) {
+            if (isTag) {
+                return true;
+            } else if (isExcluded) {
                 return false;
             } else if (selected.length > 0 && !isTagged) {
                 return false;
