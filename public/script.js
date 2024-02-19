@@ -272,6 +272,7 @@ export {
     printCharacters,
     isOdd,
     countOccurrences,
+    chooseBogusFolder,
 };
 
 showLoader();
@@ -1334,21 +1335,20 @@ export function getEntitiesList({ doFilter } = {}) {
         entities = entitiesFilter.applyFilters(entities);
     }
 
-    if (isBogusFolderOpen()) {
-        // Get tags of entities within the bogus folder
-        const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
-        entities = entities.filter(x => x.type !== 'tag');
-        const otherTags = tags.filter(x => x.is_folder && !filterData.selected.includes(x.id)).sort(compareTagsForSort);
-        const bogusTags = [];
-        for (const entity of entities) {
-            for (const tag of otherTags) {
-                if (!bogusTags.includes(tag) && entitiesFilter.isElementTagged(entity, tag.id)) {
-                    bogusTags.push(tag);
-                }
+    const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
+
+    entities = entities.filter(entity => {
+        if (entity.type === 'tag') {
+            // Remove filtered tags/bogus folders
+            if (filterData.selected.includes(entity.id) || filterData.excluded.includes(entity.id)) {
+                return false;
             }
+
+            // Check if tag is used in any other entities, removing 0 count folders
+            return entities.some(e => e.type !== 'tag' && entitiesFilter.isElementTagged(e, entity.id));
         }
-        entities.push(...bogusTags.map(item => tagToEntity(item)));
-    }
+        return true;
+    });
 
     sortEntitiesList(entities);
     return entities;
@@ -8054,6 +8054,40 @@ function doTogglePanels() {
     $('#option_settings').trigger('click');
 }
 
+function chooseBogusFolder(tagId, remove = false) {
+    // Update bogus filter
+    const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
+
+    if (!Array.isArray(filterData.selected)) {
+        filterData.selected = [];
+        filterData.excluded = [];
+        filterData.bogus = false;
+    }
+
+    if (tagId === 'back') {
+        filterData.selected.pop();
+        filterData.bogus = filterData.selected.length > 0;
+    } else if (remove) {
+        const index = filterData.selected.indexOf(tagId);
+        if (index > -1) filterData.selected.splice(index, 1);
+    } else {
+        filterData.selected.push(tagId);
+        filterData.bogus = true;
+    }
+
+    entitiesFilter.setFilterData(FILTER_TYPES.TAG, filterData);
+
+    // Update bogus drilldown
+    if (tagId === 'back') {
+        $('.rm_tag_controls .rm_tag_bogus_drilldown .tag').last().remove();
+    } else if (remove) {
+        $(`.rm_tag_controls .rm_tag_bogus_drilldown .tag[id=${tagId}]`).remove();
+    } else {
+        const tag = tags.find(x => x.id === tagId);
+        appendTagToList('.rm_tag_controls .rm_tag_bogus_drilldown', tag, { removable: true, selectable: false, isGeneralList: false });
+    }
+}
+
 function addDebugFunctions() {
     const doBackfill = async () => {
         for (const message of chat) {
@@ -8229,24 +8263,7 @@ jQuery(async function () {
     $(document).on('click', '.bogus_folder_select', function () {
         const tagId = $(this).attr('tagid');
         console.log('Bogus folder clicked', tagId);
-
-        const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
-
-        if (!Array.isArray(filterData.selected)) {
-            filterData.selected = [];
-            filterData.excluded = [];
-            filterData.bogus = false;
-        }
-
-        if (tagId === 'back') {
-            filterData.selected.pop();
-            filterData.bogus = filterData.selected.length > 0;
-        } else {
-            filterData.selected.push(tagId);
-            filterData.bogus = true;
-        }
-
-        entitiesFilter.setFilterData(FILTER_TYPES.TAG, filterData);
+        chooseBogusFolder(tagId);
     });
 
     $(document).on('input', '.edit_textarea', function () {
