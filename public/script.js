@@ -1606,15 +1606,21 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     if (!isSystem) {
-        let regexPlacement;
-        if (isUser) {
-            regexPlacement = regex_placement.USER_INPUT;
-        } else if (ch_name !== name2) {
-            regexPlacement = regex_placement.SLASH_COMMAND;
-        } else {
-            regexPlacement = regex_placement.AI_OUTPUT;
+        function getRegexPlacement() {
+            try {
+                if (isUser) {
+                    return regex_placement.USER_INPUT;
+                } else if (chat[messageId]?.extra?.type === 'narrator') {
+                    return regex_placement.SLASH_COMMAND;
+                } else {
+                    return regex_placement.AI_OUTPUT;
+                }
+            } catch {
+                return regex_placement.AI_OUTPUT;
+            }
         }
 
+        const regexPlacement = getRegexPlacement();
         const usableMessages = chat.map((x, index) => ({ message: x, index: index })).filter(x => !x.message.is_system);
         const indexOf = usableMessages.findIndex(x => x.index === Number(messageId));
         const depth = messageId >= 0 && indexOf !== -1 ? (usableMessages.length - indexOf - 1) : undefined;
@@ -2166,6 +2172,22 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
         };
     }
 
+    const getGroupValue = () => {
+        if (typeof _group === 'string') {
+            return _group;
+        }
+
+        if (selected_group) {
+            const members = groups.find(x => x.id === selected_group)?.members;
+            const names = Array.isArray(members)
+                ? members.map(m => characters.find(c => c.avatar === m)?.name).filter(Boolean).join(', ')
+                : '';
+            return names;
+        } else {
+            return _name2 ?? name2;
+        }
+    };
+
     if (_replaceCharacterCard) {
         const fields = getCharacterCardFields();
         environment.charPrompt = fields.system || '';
@@ -2178,10 +2200,9 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     }
 
     // Must be substituted last so that they're replaced inside {{description}}
-    // TODO: evaluate macros recursively so we don't need to rely on substitution order
     environment.user = _name1 ?? name1;
     environment.char = _name2 ?? name2;
-    environment.group = environment.charIfNotGroup = _group ?? name2;
+    environment.group = environment.charIfNotGroup = getGroupValue();
     environment.model = getGeneratingModel();
 
     return evaluateMacros(content, environment);
@@ -5902,10 +5923,10 @@ function updateMessage(div) {
     let regexPlacement;
     if (mes.is_user) {
         regexPlacement = regex_placement.USER_INPUT;
-    } else if (mes.name === name2) {
-        regexPlacement = regex_placement.AI_OUTPUT;
-    } else if (mes.name !== name2 || mes.extra?.type === 'narrator') {
+    } else if (mes.extra?.type === 'narrator') {
         regexPlacement = regex_placement.SLASH_COMMAND;
+    } else {
+        regexPlacement = regex_placement.AI_OUTPUT;
     }
 
     // Ignore character override if sent as system
@@ -7751,7 +7772,13 @@ async function connectAPISlash(_, text) {
     }
 }
 
-export async function processDroppedFiles(files) {
+/**
+ * Imports supported files dropped into the app window.
+ * @param {File[]} files Array of files to process
+ * @param {boolean?} preserveFileNames Whether to preserve original file names
+ * @returns {Promise<void>}
+ */
+export async function processDroppedFiles(files, preserveFileNames = false) {
     const allowedMimeTypes = [
         'application/json',
         'image/png',
@@ -7763,14 +7790,20 @@ export async function processDroppedFiles(files) {
 
     for (const file of files) {
         if (allowedMimeTypes.includes(file.type)) {
-            await importCharacter(file);
+            await importCharacter(file, preserveFileNames);
         } else {
             toastr.warning('Unsupported file type: ' + file.name);
         }
     }
 }
 
-async function importCharacter(file) {
+/**
+ * Imports a character from a file.
+ * @param {File} file File to import
+ * @param {boolean?} preserveFileName Whether to preserve original file name
+ * @returns {Promise<void>}
+ */
+async function importCharacter(file, preserveFileName = false) {
     const ext = file.name.match(/\.(\w+)$/);
     if (!ext || !(['json', 'png', 'yaml', 'yml'].includes(ext[1].toLowerCase()))) {
         return;
@@ -7781,6 +7814,7 @@ async function importCharacter(file) {
     const formData = new FormData();
     formData.append('avatar', file);
     formData.append('file_type', format);
+    formData.append('preserve_file_name', String(preserveFileName));
 
     const data = await jQuery.ajax({
         type: 'POST',
@@ -8458,7 +8492,7 @@ jQuery(async function () {
                 throw new Error('Unsuccessful request.');
             }
 
-            const data = response.json();
+            const data = await response.json();
 
             if (data.error) {
                 throw new Error('Server returned an error.');
@@ -8470,6 +8504,7 @@ jQuery(async function () {
             else {
                 if (characters[this_chid].chat == old_filename) {
                     characters[this_chid].chat = newName;
+                    $('#selected_chat_pole').val(characters[this_chid].chat);
                     await createOrEditCharacter();
                 }
             }

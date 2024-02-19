@@ -513,8 +513,11 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         api_url = 'https://openrouter.ai/api/v1';
         api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
-        // OpenRouter needs to pass the referer: https://openrouter.ai/docs
-        headers = { 'HTTP-Referer': request.headers.referer };
+        // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
+        headers = {
+            'HTTP-Referer': 'https://sillytavern.app',
+            'X-Title': 'SillyTavern',
+        };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.MISTRALAI);
@@ -700,8 +703,11 @@ router.post('/generate', jsonParser, function (request, response) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         apiUrl = 'https://openrouter.ai/api/v1';
         apiKey = readSecret(SECRET_KEYS.OPENROUTER);
-        // OpenRouter needs to pass the referer: https://openrouter.ai/docs
-        headers = { 'HTTP-Referer': request.headers.referer };
+        // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
+        headers = {
+            'HTTP-Referer': 'https://sillytavern.app',
+            'X-Title': 'SillyTavern',
+        };
         bodyParams = { 'transforms': ['middle-out'] };
 
         if (request.body.min_p !== undefined) {

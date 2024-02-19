@@ -206,6 +206,7 @@ const defaultSettings = {
     expand: false,
     interactive_mode: false,
     multimodal_captioning: false,
+    snap: false,
 
     prompts: promptTemplates,
 
@@ -389,6 +390,7 @@ async function loadSettings() {
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
+    $('#sd_snap').prop('checked', extension_settings.sd.snap);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -398,29 +400,39 @@ async function loadSettings() {
         $('#sd_style').append(option);
     }
 
-    // Find a closest resolution option match for the current width and height
-    let resolutionId = null, minAspectDiff = Infinity, minResolutionDiff = Infinity;
-    for (const [id, resolution] of Object.entries(resolutionOptions)) {
-        const aspectDiff = Math.abs((resolution.width / resolution.height) - (extension_settings.sd.width / extension_settings.sd.height));
-        const resolutionDiff = Math.abs(resolution.width * resolution.height - extension_settings.sd.width * extension_settings.sd.height);
-
-        if (resolutionDiff < minResolutionDiff || (resolutionDiff === minResolutionDiff && aspectDiff < minAspectDiff)) {
-            resolutionId = id;
-            minAspectDiff = aspectDiff;
-            minResolutionDiff = resolutionDiff;
-        }
-
-        if (resolutionDiff === 0 && aspectDiff === 0) {
-            break;
-        }
-    }
-
+    const resolutionId = getClosestKnownResolution();
     $('#sd_resolution').val(resolutionId);
 
     toggleSourceControls();
     addPromptTemplates();
 
     await loadSettingOptions();
+}
+
+/**
+ * Find a closest resolution option match for the current width and height.
+ */
+function getClosestKnownResolution() {
+    let resolutionId = null;
+    let minTotalDiff = Infinity;
+
+    const targetAspect = extension_settings.sd.width / extension_settings.sd.height;
+    const targetResolution = extension_settings.sd.width * extension_settings.sd.height;
+
+    const diffs = Object.entries(resolutionOptions).map(([id, resolution]) => {
+        const aspectDiff = Math.abs((resolution.width / resolution.height) - targetAspect) / targetAspect;
+        const resolutionDiff = Math.abs(resolution.width * resolution.height - targetResolution) / targetResolution;
+        return { id, totalDiff: aspectDiff + resolutionDiff };
+    });
+
+    for (const { id, totalDiff } of diffs) {
+        if (totalDiff < minTotalDiff) {
+            minTotalDiff = totalDiff;
+            resolutionId = id;
+        }
+    }
+
+    return resolutionId;
 }
 
 async function loadSettingOptions() {
@@ -472,6 +484,11 @@ function onInteractiveModeInput() {
 
 function onMultimodalCaptioningInput() {
     extension_settings.sd.multimodal_captioning = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+function onSnapInput() {
+    extension_settings.sd.snap = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -1659,7 +1676,7 @@ function processReply(str) {
     str = str.replaceAll('“', '');
     str = str.replaceAll('.', ',');
     str = str.replaceAll('\n', ', ');
-    str = str.replace(/[^a-zA-Z0-9,:()]+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
+    str = str.replace(/[^a-zA-Z0-9,:()']+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
 
@@ -1765,7 +1782,7 @@ function setTypeSpecificDimensions(generationType) {
     const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
 
     // Face images are always portrait (pun intended)
-    if (generationType == generationMode.FACE && aspectRatio >= 1) {
+    if ((generationType == generationMode.FACE || generationType == generationMode.FACE_MULTIMODAL) && aspectRatio >= 1) {
         // Round to nearest multiple of 64
         extension_settings.sd.height = Math.round(extension_settings.sd.width * 1.5 / 64) * 64;
     }
@@ -1775,6 +1792,28 @@ function setTypeSpecificDimensions(generationType) {
         if (aspectRatio <= 1) {
             // Round to nearest multiple of 64
             extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
+        }
+    }
+
+    if (extension_settings.sd.snap) {
+        // Force to use roughly the same pixel count as before rescaling
+        const prevPixelCount = prevSDHeight * prevSDWidth;
+        const newPixelCount = extension_settings.sd.height * extension_settings.sd.width;
+
+        if (prevPixelCount !== newPixelCount) {
+            const ratio = Math.sqrt(prevPixelCount / newPixelCount);
+            extension_settings.sd.height = Math.round(extension_settings.sd.height * ratio / 64) * 64;
+            extension_settings.sd.width = Math.round(extension_settings.sd.width * ratio / 64) * 64;
+            console.log(`Pixel counts after rescaling: ${prevPixelCount} -> ${newPixelCount} (ratio: ${ratio})`);
+
+            const resolution = resolutionOptions[getClosestKnownResolution()];
+            if (resolution) {
+                extension_settings.sd.height = resolution.height;
+                extension_settings.sd.width = resolution.width;
+                console.log('Snap to resolution', JSON.stringify(resolution));
+            } else {
+                console.warn('Snap to resolution failed, using custom dimensions');
+            }
         }
     }
 
@@ -2349,7 +2388,7 @@ async function onComfyOpenWorkflowEditorClick() {
         `);
         $('#sd_comfy_workflow_editor_placeholder_list_custom').append(el);
         el.find('.sd_comfy_workflow_editor_custom_find').val(placeholder.find);
-        el.find('.sd_comfy_workflow_editor_custom_find').on('input', function() {
+        el.find('.sd_comfy_workflow_editor_custom_find').on('input', function () {
             placeholder.find = this.value;
             el.find('.sd_comfy_workflow_editor_custom_final').text(`"%${this.value}%"`);
             el.attr('data-placeholder', `${this.value}`);
@@ -2357,7 +2396,7 @@ async function onComfyOpenWorkflowEditorClick() {
             saveSettingsDebounced();
         });
         el.find('.sd_comfy_workflow_editor_custom_replace').val(placeholder.replace);
-        el.find('.sd_comfy_workflow_editor_custom_replace').on('input', function() {
+        el.find('.sd_comfy_workflow_editor_custom_replace').on('input', function () {
             placeholder.replace = this.value;
             saveSettingsDebounced();
         });
@@ -2379,7 +2418,7 @@ async function onComfyOpenWorkflowEditorClick() {
         addPlaceholderDom(placeholder);
         saveSettingsDebounced();
     });
-    (extension_settings.sd.comfy_placeholders ?? []).forEach(placeholder=>{
+    (extension_settings.sd.comfy_placeholders ?? []).forEach(placeholder => {
         addPlaceholderDom(placeholder);
     });
     checkPlaceholders();
@@ -2700,6 +2739,7 @@ jQuery(async () => {
     $('#sd_openai_style').on('change', onOpenAiStyleSelect);
     $('#sd_openai_quality').on('change', onOpenAiQualitySelect);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
+    $('#sd_snap').on('input', onSnapInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));
