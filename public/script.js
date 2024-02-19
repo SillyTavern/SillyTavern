@@ -7864,9 +7864,9 @@ async function importFromURL(items, files) {
     }
 }
 
-async function doImpersonate() {
+async function doImpersonate(_, prompt) {
     $('#send_textarea').val('');
-    $('#option_impersonate').trigger('click', { fromSlashCommand: true });
+    $('#option_impersonate').trigger('click', { fromSlashCommand: true, additionalPrompt: prompt });
 }
 
 async function doDeleteChat() {
@@ -8682,6 +8682,13 @@ jQuery(async function () {
         const fromSlashCommand = customData?.fromSlashCommand || false;
         var id = $(this).attr('id');
 
+        // Check whether a custom prompt was provided via custom data (for example through a slash command), otherwise fall back and use the text from the textbox, if there is any
+        const additionalPrompt = (customData?.additionalPrompt && customData.additionalPrompt.trim()) || (String($('#send_textarea').val()).trim() || undefined);
+        const buildOrFillAdditionalArgs = (args = {}) => ({
+            ...args,
+            ...(additionalPrompt !== undefined && { quiet_prompt: additionalPrompt, quietToLoud: true }),
+        });
+
         if (id == 'option_select_chat') {
             if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
                 await displayPastChats();
@@ -8717,7 +8724,7 @@ jQuery(async function () {
                 }
                 else {
                     is_send_press = true;
-                    Generate('regenerate');
+                    Generate('regenerate', buildOrFillAdditionalArgs());
                 }
             }
         }
@@ -8725,14 +8732,14 @@ jQuery(async function () {
         else if (id == 'option_impersonate') {
             if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
-                Generate('impersonate');
+                Generate('impersonate', buildOrFillAdditionalArgs());
             }
         }
 
         else if (id == 'option_continue') {
             if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
-                Generate('continue');
+                Generate('continue', buildOrFillAdditionalArgs());
             }
         }
 
