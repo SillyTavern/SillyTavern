@@ -2270,12 +2270,21 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
     return generateFinished;
 }
 
+/**
+ * Executes slash commands and returns the new text and whether the generation was interrupted.
+ * @param {string} message Text to be sent
+ * @returns {Promise<boolean>} Whether the message sending was interrupted
+ */
 async function processCommands(message) {
+    if (!message || !message.trim().startsWith('/')) {
+        return false;
+    }
+
     const previousText = String($('#send_textarea').val());
     const result = await executeSlashCommands(message);
 
     if (!result || typeof result !== 'object') {
-        return null;
+        return false;
     }
 
     const currentText = String($('#send_textarea').val());
@@ -2878,7 +2887,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     let message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     if (!(dryRun || type == 'regenerate' || type == 'swipe' || type == 'quiet')) {
-        const interruptedByCommand = await processCommands($('#send_textarea').val());
+        const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
 
         if (interruptedByCommand) {
             //$("#send_textarea").val('').trigger('input');
