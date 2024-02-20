@@ -38,7 +38,7 @@ import { tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 
-import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 
 export {
     loadPowerUserSettings,
@@ -682,6 +682,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'top_k_textgenerationwebui' ||
         sliderID == 'top_k' ||
         sliderID == 'rep_pen_slope' ||
+        sliderID == 'smoothing_factor_textgenerationwebui' ||
         sliderID == 'min_length_textgenerationwebui') {
         offVal = 0;
     }
@@ -696,12 +697,18 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'encoder_rep_pen_textgenerationwebui' ||
         sliderID == 'temp_textgenerationwebui' ||
         sliderID == 'temp' ||
+        sliderID == 'min_temp_textgenerationwebui' ||
+        sliderID == 'max_temp_textgenerationwebui' ||
+        sliderID == 'dynatemp_exponent_textgenerationwebui' ||
         sliderID == 'guidance_scale_textgenerationwebui' ||
         sliderID == 'guidance_scale') {
         offVal = 1;
     }
     if (sliderID == 'guidance_scale_textgenerationwebui') {
         numSteps = 78;
+    }
+    if (sliderID == 'top_k_textgenerationwebui') {
+        sliderMin = 0;
     }
     //customize amt gen steps
     if (sliderID !== 'amount_gen' && sliderID !== 'rep_pen_range_textgenerationwebui') {
@@ -1982,9 +1989,50 @@ async function updateTheme() {
 }
 
 /**
+ * Exports the current theme to a file.
+ */
+async function exportTheme() {
+    const themeFile = await saveTheme(power_user.theme);
+    const fileName = `${themeFile.name}.json`;
+    download(JSON.stringify(themeFile, null, 4), fileName, 'application/json');
+}
+
+/**
+ * Imports a theme from a file.
+ * @param {File} file File to import.
+ * @returns {Promise<void>} A promise that resolves when the theme is imported.
+ */
+async function importTheme(file) {
+    if (!file) {
+        return;
+    }
+
+    const fileText = await getFileText(file);
+    const parsed = JSON.parse(fileText);
+
+    if (!parsed.name) {
+        throw new Error('Missing name');
+    }
+
+    if (themes.some(t => t.name === parsed.name)) {
+        throw new Error('Theme with that name already exists');
+    }
+
+    themes.push(parsed);
+    await applyTheme(parsed.name);
+    await saveTheme(parsed.name);
+    const option = document.createElement('option');
+    option.selected = true;
+    option.value = parsed.name;
+    option.innerText = parsed.name;
+    $('#themes').append(option);
+    saveSettingsDebounced();
+}
+
+/**
  * Saves the current theme to the server.
  * @param {string|undefined} name Theme name. If undefined, a popup will be shown to enter a name.
- * @returns {Promise<void>} A promise that resolves when the theme is saved.
+ * @returns {Promise<object>} A promise that resolves when the theme is saved.
  */
 async function saveTheme(name = undefined) {
     if (typeof name !== 'string') {
@@ -2056,6 +2104,8 @@ async function saveTheme(name = undefined) {
         power_user.theme = name;
         saveSettingsDebounced();
     }
+
+    return theme;
 }
 
 async function saveMovingUI() {
@@ -3276,6 +3326,30 @@ $(document).ready(() => {
         power_user.forbid_external_images = !!$(this).prop('checked');
         saveSettingsDebounced();
         reloadCurrentChat();
+    });
+
+    $('#ui_preset_import_button').on('click', function () {
+        $('#ui_preset_import_file').trigger('click');
+    });
+
+    $('#ui_preset_import_file').on('change', async function() {
+        const inputElement = this instanceof HTMLInputElement && this;
+
+        try {
+            const file = inputElement?.files?.[0];
+            await importTheme(file);
+        } catch (error) {
+            console.error('Error importing UI theme', error);
+            toastr.error(String(error), 'Failed to import UI theme');
+        } finally {
+            if (inputElement) {
+                inputElement.value = null;
+            }
+        }
+    });
+
+    $('#ui_preset_export_button').on('click', async function () {
+        await exportTheme();
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {
