@@ -263,6 +263,11 @@ router.post('/generate', jsonParser, async function (request, response) {
             args.body = JSON.stringify(request.body);
         }
 
+        if (request.body.api_type === TEXTGEN_TYPES.INFERMATICAI) {
+            request.body = _.pickBy(request.body, (_, key) => INFERMATICAI_KEYS.includes(key));
+            args.body = JSON.stringify(request.body);
+        }
+
         if (request.body.api_type === TEXTGEN_TYPES.OLLAMA) {
             args.body = JSON.stringify({
                 model: request.body.model,
