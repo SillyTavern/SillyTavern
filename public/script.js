@@ -8042,7 +8042,7 @@ jQuery(async function () {
 
     registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
     registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
-    registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
+    registerSlashCommand('impersonate', doImpersonate, ['imp'], '<span class="monospace">[prompt]</span> – calls an impersonation response, with an optional additional prompt', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
     registerSlashCommand('getchatname', doGetChatName, [], '– returns the name of the current chat file into the pipe', false, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);

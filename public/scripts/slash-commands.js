@@ -150,7 +150,7 @@ parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(t
 parser.addCommand('single', setStoryModeCallback, ['story'], ' – sets the message style to single document mode without names or avatars visible', true, true);
 parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the message style to bubble chat mode', true, true);
 parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
-parser.addCommand('continue', continueChatCallback, ['cont'], ' – continues the last message in the chat', true, true);
+parser.addCommand('continue', continueChatCallback, ['cont'], '<span class="monospace">[prompt]</span> – continues the last message in the chat, with an optional additional prompt', true, true);
 parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character or group by its name', true, true);
 parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
 parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</span> – asks a specified character card a prompt', true, true);
