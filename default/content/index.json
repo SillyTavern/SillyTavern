@@ -353,10 +353,6 @@
         "type": "textgen_preset"
     },
     {
-        "filename": "presets/textgen/InfermaticAI.json",
-        "type": "textgen_preset"
-    },
-    {
         "filename": "presets/openai/Default.json",
         "type": "openai_preset"
     }
