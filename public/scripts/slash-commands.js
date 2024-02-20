@@ -1168,7 +1168,7 @@ async function openChat(id) {
     await reloadCurrentChat();
 }
 
-function continueChatCallback() {
+function continueChatCallback(_, prompt) {
     setTimeout(async () => {
         try {
             await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
@@ -1179,7 +1179,7 @@ function continueChatCallback() {
 
         // Prevent infinite recursion
         $('#send_textarea').val('').trigger('input');
-        $('#option_continue').trigger('click', { fromSlashCommand: true });
+        $('#option_continue').trigger('click', { fromSlashCommand: true, additionalPrompt: prompt });
     }, 1);
 
     return '';
