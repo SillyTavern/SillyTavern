@@ -461,7 +461,7 @@ jQuery(function () {
 
     $('#koboldcpp_default_order').on('click', function () {
         settings.sampler_order = KOBOLDCPP_ORDER;
-        sortOobaItemsByOrder(settings.sampler_order);
+        sortItemsByOrder(settings.sampler_order);
         saveSettingsDebounced();
     });
 	
