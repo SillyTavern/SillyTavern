@@ -4,8 +4,8 @@ name: Create Docker Image on Release
 
 on:
   release:
-    # Only runs on full releases not pre releases
-    types: [released]
+    # Allow pre-releases
+    types: [published]
 
 env:
   # This should allow creation of docker images even in forked repositories
