@@ -226,10 +226,8 @@ async function downloadChubCharacter(id) {
  * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string}>}
  */
 async function downloadPygmalionCharacter(id) {
-    const result = await fetch('https://server.pygmalion.chat/galatea.v1.PublicCharacterService/CharacterExport', {
+    const result = await fetch(`https://server.pygmalion.chat/api/export/character/${id}/v2`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 'character_id': id }),
     });
 
     if (!result.ok) {
