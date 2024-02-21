@@ -236,7 +236,7 @@ async function installAsset(url, assetType, filename) {
                 console.debug(DEBUG_PREFIX, 'Importing character ', filename);
                 const blob = await result.blob();
                 const file = new File([blob], filename, { type: blob.type });
-                await processDroppedFiles([file]);
+                await processDroppedFiles([file], true);
                 console.debug(DEBUG_PREFIX, 'Character downloaded.');
             }
         }

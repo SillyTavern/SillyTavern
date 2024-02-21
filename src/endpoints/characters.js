@@ -783,6 +783,17 @@ function getPngName(file) {
     return file;
 }
 
+/**
+ * Gets the preserved name for the uploaded file if the request is valid.
+ * @param {import("express").Request} request - Express request object
+ * @returns {string | undefined} - The preserved name if the request is valid, otherwise undefined
+ */
+function getPreservedName(request) {
+    return request.body.file_type === 'png' && request.body.preserve_file_name === 'true' && request.file?.originalname
+        ? path.parse(request.file.originalname).name
+        : undefined;
+}
+
 router.post('/import', urlencodedParser, async function (request, response) {
     if (!request.body || !request.file) return response.sendStatus(400);
 
@@ -790,6 +801,7 @@ router.post('/import', urlencodedParser, async function (request, response) {
     let filedata = request.file;
     let uploadPath = path.join(UPLOADS_PATH, filedata.filename);
     let format = request.body.file_type;
+    const preservedFileName = getPreservedName(request);
 
     if (format == 'yaml' || format == 'yml') {
         try {
@@ -881,7 +893,7 @@ router.post('/import', urlencodedParser, async function (request, response) {
             let jsonData = JSON.parse(img_data);
 
             jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
-            png_name = getPngName(jsonData.name);
+            png_name = preservedFileName || getPngName(jsonData.name);
 
             if (jsonData.spec !== undefined) {
                 console.log('Found a v2 character file.');
