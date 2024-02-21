@@ -365,7 +365,7 @@ function getImages(path) {
 /**
  * Pipe a fetch() response to an Express.js Response, including status code.
  * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
- * @param {Express.Response} to The Express response to pipe to.
+ * @param {import('express').Response} to The Express response to pipe to.
  */
 function forwardFetchResponse(from, to) {
     let statusCode = from.status;
@@ -396,6 +396,64 @@ function forwardFetchResponse(from, to) {
     from.body.on('end', function () {
         console.log('Streaming request finished');
         to.end();
+    });
+}
+
+/**
+ * Makes an HTTP/2 request to the specified endpoint.
+ *
+ * @deprecated Use `node-fetch` if possible.
+ * @param {string} endpoint URL to make the request to
+ * @param {string} method HTTP method to use
+ * @param {string} body Request body
+ * @param {object} headers Request headers
+ * @returns {Promise<string>} Response body
+ */
+function makeHttp2Request(endpoint, method, body, headers) {
+    return new Promise((resolve, reject) => {
+        try {
+            const http2 = require('http2');
+            const url = new URL(endpoint);
+            const client = http2.connect(url.origin);
+
+            const req = client.request({
+                ':method': method,
+                ':path': url.pathname,
+                ...headers,
+            });
+            req.setEncoding('utf8');
+
+            req.on('response', (headers) => {
+                const status = Number(headers[':status']);
+
+                if (status < 200 || status >= 300) {
+                    reject(new Error(`Request failed with status ${status}`));
+                }
+
+                let data = '';
+
+                req.on('data', (chunk) => {
+                    data += chunk;
+                });
+
+                req.on('end', () => {
+                    console.log(data);
+                    resolve(data);
+                });
+            });
+
+            req.on('error', (err) => {
+                reject(err);
+            });
+
+            if (body) {
+                req.write(body);
+            }
+
+            req.end();
+        } catch (e) {
+            reject(e);
+        }
     });
 }
 
@@ -547,4 +605,5 @@ module.exports = {
     excludeKeysByYaml,
     trimV1,
     Cache,
+    makeHttp2Request,
 };
