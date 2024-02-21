@@ -226,9 +226,7 @@ async function downloadChubCharacter(id) {
  * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string}>}
  */
 async function downloadPygmalionCharacter(id) {
-    const result = await fetch(`https://server.pygmalion.chat/api/export/character/${id}/v2`, {
-        method: 'POST',
-    });
+    const result = await fetch(`https://server.pygmalion.chat/api/export/character/${id}/v2`);
 
     if (!result.ok) {
         const text = await result.text();
@@ -237,25 +235,25 @@ async function downloadPygmalionCharacter(id) {
     }
 
     const jsonData = await result.json();
-    const card = jsonData?.card;
+    const characterData = jsonData?.character;
 
-    if (!card || typeof card !== 'object') {
+    if (!characterData || typeof characterData !== 'object') {
         console.error('Pygsite returned invalid character data', jsonData);
         throw new Error('Failed to download character');
     }
 
     try {
-        const avatarUrl = card?.data?.avatar;
+        const avatarUrl = characterData?.data?.avatar;
 
         if (!avatarUrl) {
-            console.error('Pygsite character does not have an avatar', card);
+            console.error('Pygsite character does not have an avatar', characterData);
             throw new Error('Failed to download avatar');
         }
 
         const avatarResult = await fetch(avatarUrl);
         const avatarBuffer = await avatarResult.buffer();
 
-        const cardBuffer = characterCardParser.write(avatarBuffer, JSON.stringify(card));
+        const cardBuffer = characterCardParser.write(avatarBuffer, JSON.stringify(characterData));
 
         return {
             buffer: cardBuffer,
