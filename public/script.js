@@ -2273,12 +2273,21 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
     return generateFinished;
 }
 
+/**
+ * Executes slash commands and returns the new text and whether the generation was interrupted.
+ * @param {string} message Text to be sent
+ * @returns {Promise<boolean>} Whether the message sending was interrupted
+ */
 async function processCommands(message) {
+    if (!message || !message.trim().startsWith('/')) {
+        return false;
+    }
+
     const previousText = String($('#send_textarea').val());
     const result = await executeSlashCommands(message);
 
     if (!result || typeof result !== 'object') {
-        return null;
+        return false;
     }
 
     const currentText = String($('#send_textarea').val());
@@ -2881,7 +2890,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     let message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     if (!(dryRun || type == 'regenerate' || type == 'swipe' || type == 'quiet')) {
-        const interruptedByCommand = await processCommands($('#send_textarea').val());
+        const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
 
         if (interruptedByCommand) {
             //$("#send_textarea").val('').trigger('input');
@@ -7872,9 +7881,9 @@ async function importFromURL(items, files) {
     }
 }
 
-async function doImpersonate() {
+async function doImpersonate(_, prompt) {
     $('#send_textarea').val('');
-    $('#option_impersonate').trigger('click', { fromSlashCommand: true });
+    $('#option_impersonate').trigger('click', { fromSlashCommand: true, additionalPrompt: prompt });
 }
 
 async function doDeleteChat() {
@@ -8041,7 +8050,7 @@ jQuery(async function () {
 
     registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
     registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
-    registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
+    registerSlashCommand('impersonate', doImpersonate, ['imp'], '<span class="monospace">[prompt]</span> – calls an impersonation response, with an optional additional prompt', true, true);
     registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
     registerSlashCommand('getchatname', doGetChatName, [], '– returns the name of the current chat file into the pipe', false, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
@@ -8695,6 +8704,13 @@ jQuery(async function () {
         const fromSlashCommand = customData?.fromSlashCommand || false;
         var id = $(this).attr('id');
 
+        // Check whether a custom prompt was provided via custom data (for example through a slash command)
+        const additionalPrompt = customData?.additionalPrompt?.trim() || undefined;
+        const buildOrFillAdditionalArgs = (args = {}) => ({
+            ...args,
+            ...(additionalPrompt !== undefined && { quiet_prompt: additionalPrompt, quietToLoud: true }),
+        });
+
         if (id == 'option_select_chat') {
             if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
                 await displayPastChats();
@@ -8730,7 +8746,7 @@ jQuery(async function () {
                 }
                 else {
                     is_send_press = true;
-                    Generate('regenerate');
+                    Generate('regenerate', buildOrFillAdditionalArgs());
                 }
             }
         }
@@ -8738,14 +8754,14 @@ jQuery(async function () {
         else if (id == 'option_impersonate') {
             if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
-                Generate('impersonate');
+                Generate('impersonate', buildOrFillAdditionalArgs());
             }
         }
 
         else if (id == 'option_continue') {
             if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
-                Generate('continue');
+                Generate('continue', buildOrFillAdditionalArgs());
             }
         }
 
@@ -9882,6 +9898,7 @@ jQuery(async function () {
             <li>Chub characters (direct link or id)<br>Example: <tt>Anonymous/example-character</tt></li>
             <li>Chub lorebooks (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
             <li>JanitorAI character (direct link or id)<br>Example: <tt>https://janitorai.com/characters/ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
+            <li>Pygmalion.chat character (link)<br>Example: <tt>https://pygmalion.chat/character/a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
             <li>More coming soon...</li>
         <ul>`;
         const input = await callPopup(html, 'input', '', { okButton: 'Import', rows: 4 });

@@ -119,7 +119,7 @@ const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const claude_100k_max = 99000;
 let ai21_max = 9200; //can easily fit 9k gpt tokens because j2's tokenizer is efficient af
-const unlocked_max = 100 * 1024;
+const unlocked_max = max_200k;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0; //same as j2
 const j2_max_topk = 10.0;
@@ -3739,9 +3739,11 @@ async function testApiConnection() {
 }
 
 function reconnectOpenAi() {
-    setOnlineStatus('no_connection');
-    resultCheckStatus();
-    $('#api_button_openai').trigger('click');
+    if (main_api == 'openai') {
+        setOnlineStatus('no_connection');
+        resultCheckStatus();
+        $('#api_button_openai').trigger('click');
+    }
 }
 
 function onProxyPasswordShowClick() {
@@ -4202,11 +4204,7 @@ $(document).ready(async function () {
         oai_settings.chat_completion_source = String($(this).find(':selected').val());
         toggleChatCompletionForms();
         saveSettingsDebounced();
-
-        if (main_api == 'openai') {
-            reconnectOpenAi();
-        }
-
+        reconnectOpenAi();
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
     });
 
