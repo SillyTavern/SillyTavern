@@ -139,13 +139,13 @@ const processCharacter = async (item, i) => {
         const img_data = await charaRead(DIRECTORIES.characters + item);
         if (img_data === undefined) throw new Error('Failed to read character file');
 
-        let jsonObject = getCharaCardV2(JSON.parse(img_data));
+        let jsonObject = getCharaCardV2(JSON.parse(img_data), false);
         jsonObject.avatar = item;
         characters[i] = jsonObject;
         characters[i]['json_data'] = img_data;
         const charStat = fs.statSync(path.join(DIRECTORIES.characters, item));
-        characters[i]['date_added'] = charStat.birthtimeMs;
-        characters[i]['create_date'] = jsonObject['create_date'] || humanizedISO8601DateTime(charStat.birthtimeMs);
+        characters[i]['date_added'] = charStat.ctimeMs;
+        characters[i]['create_date'] = jsonObject['create_date'] || humanizedISO8601DateTime(charStat.ctimeMs);
         const char_dir = path.join(DIRECTORIES.chats, item.replace('.png', ''));
 
         const { chatSize, dateLastChat } = calculateChatSize(char_dir);
@@ -170,15 +170,30 @@ const processCharacter = async (item, i) => {
     }
 };
 
-function getCharaCardV2(jsonObject) {
+/**
+ * Convert a character object to Spec V2 format.
+ * @param {object} jsonObject Character object
+ * @param {boolean} hoistDate Will set the chat and create_date fields to the current date if they are missing
+ * @returns {object} Character object in Spec V2 format
+ */
+function getCharaCardV2(jsonObject, hoistDate = true) {
     if (jsonObject.spec === undefined) {
         jsonObject = convertToV2(jsonObject);
+
+        if (hoistDate && !jsonObject.create_date) {
+            jsonObject.create_date = humanizedISO8601DateTime();
+        }
     } else {
         jsonObject = readFromV2(jsonObject);
     }
     return jsonObject;
 }
 
+/**
+ * Convert a character object to Spec V2 format.
+ * @param {object} char Character object
+ * @returns {object} Character object in Spec V2 format
+ */
 function convertToV2(char) {
     // Simulate incoming data from frontend form
     const result = charaFormatData({
@@ -199,7 +214,8 @@ function convertToV2(char) {
     });
 
     result.chat = char.chat ?? humanizedISO8601DateTime();
-    result.create_date = char.create_date ?? humanizedISO8601DateTime();
+    result.create_date = char.create_date;
+
     return result;
 }
 
