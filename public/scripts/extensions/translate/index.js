@@ -598,13 +598,18 @@ jQuery(() => {
             'deeplx': 'http://127.0.0.1:1188/translate',
         };
         const popupText = `<h3>${optionText} API URL</h3><i>Example: <tt>${String(exampleURLs[extension_settings.translate.provider])}</tt></i>`;
-        const url = await callPopup(popupText, 'input');
 
+        const provider_name = extension_settings.translate.provider + '_url'
+        const saved_url     = ( Boolean(secret_state[provider_name]) ) ? await findSecret(provider_name) : '';
+
+        const url = await callPopup(popupText, 'input', saved_url);
+        
         if (url == false) {
             return;
         }
+        
+        await writeSecret(provider_name, url);
 
-        await writeSecret(extension_settings.translate.provider + '_url', url);
         toastr.success('API URL saved');
         $('#translate_url_button').addClass('success');
     });
