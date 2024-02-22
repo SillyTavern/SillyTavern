@@ -351,8 +351,19 @@ function validateReverseProxy() {
     }
 }
 
+/**
+ * Converts the Chat Completion object to an Instruct Mode prompt string.
+ * @param {object[]} messages Array of messages
+ * @param {string} type Generation type
+ * @returns {string} Text completion prompt
+ */
 function convertChatCompletionToInstruct(messages, type) {
-    messages = messages.filter(x => x.content !== oai_settings.new_chat_prompt && x.content !== oai_settings.new_example_chat_prompt);
+    const newChatPrompts = [
+        substituteParams(oai_settings.new_chat_prompt),
+        substituteParams(oai_settings.new_example_chat_prompt),
+        substituteParams(oai_settings.new_group_chat_prompt),
+    ];
+    messages = messages.filter(x => !newChatPrompts.includes(x.content));
 
     let chatMessagesText = '';
     let systemPromptText = '';
@@ -766,7 +777,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 function populateDialogueExamples(prompts, chatCompletion, messageExamples) {
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (Array.isArray(messageExamples) && messageExamples.length) {
-        const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
+        const newExampleChat = new Message('system', substituteParams(oai_settings.new_example_chat_prompt), 'newChat');
         [...messageExamples].forEach((dialogue, dialogueIndex) => {
             let examplesAdded = 0;
 
@@ -1654,13 +1665,13 @@ async function sendOpenAIRequest(type, messages, signal) {
         const nameStopString = isImpersonate ? `\n${name2}:` : `\n${name1}:`;
         const stopStringsLimit = 3; // 5 - 2 (nameStopString and new_chat_prompt)
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['stop'] = [nameStopString, oai_settings.new_chat_prompt, ...getCustomStoppingStrings(stopStringsLimit)];
+        generate_data['stop'] = [nameStopString, substituteParams(oai_settings.new_chat_prompt), ...getCustomStoppingStrings(stopStringsLimit)];
     }
 
     if (isAI21) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['count_pen'] = Number(oai_settings.count_pen);
-        generate_data['stop_tokens'] = [name1 + ':', oai_settings.new_chat_prompt, oai_settings.new_group_chat_prompt];
+        generate_data['stop_tokens'] = [name1 + ':', substituteParams(oai_settings.new_chat_prompt), substituteParams(oai_settings.new_group_chat_prompt)];
     }
 
     if (isMistral) {
