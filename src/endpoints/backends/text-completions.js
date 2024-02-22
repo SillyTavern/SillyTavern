@@ -300,7 +300,7 @@ router.post('/generate', jsonParser, async function (request, response) {
                 }
 
                 // Map InfermaticAI response to OAI completions format
-                if (request.body.api_type === TEXTGEN_TYPES.INFERMATICAI) {
+                if (completionsReply.url.includes('https://api.totalgpt.ai')) {
                     data['choices'] = (data?.choices || []).map(choice => ({ text: choice.message.content }));
                 }
 
