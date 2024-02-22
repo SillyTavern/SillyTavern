@@ -213,12 +213,13 @@ router.post('/view', jsonParser, async (_, response) => {
 router.post('/find', jsonParser, (request, response) => {
     const allowKeysExposure = getConfigValue('allowKeysExposure', false);
 
-    if (!allowKeysExposure) {
+    const key = request.body.key;
+    
+    if (!allowKeysExposure && key.slice(key.length-4) !== '_url' ) {
         console.error('Cannot fetch secrets unless allowKeysExposure in config.yaml is set to true');
         return response.sendStatus(403);
     }
 
-    const key = request.body.key;
 
     try {
         const secret = readSecret(key);
