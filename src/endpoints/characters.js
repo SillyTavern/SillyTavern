@@ -7,9 +7,6 @@ const writeFileAtomicSync = require('write-file-atomic').sync;
 const yaml = require('yaml');
 const _ = require('lodash');
 
-const encode = require('png-chunks-encode');
-const extract = require('png-chunks-extract');
-const PNGtext = require('png-chunk-text');
 const jimp = require('jimp');
 
 const { DIRECTORIES, UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
@@ -33,7 +30,7 @@ const characterDataCache = new Map();
  * @param {string} input_format - 'png'
  * @returns {Promise<string | undefined>} - Character card data
  */
-async function charaRead(img_url, input_format) {
+async function charaRead(img_url, input_format = 'png') {
     const stat = fs.statSync(img_url);
     const cacheKey = `${img_url}-${stat.mtimeMs}`;
     if (characterDataCache.has(cacheKey)) {
@@ -59,22 +56,12 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
             }
         }
         // Read the image, resize, and save it as a PNG into the buffer
-        const image = await tryReadImage(img_url, crop);
+        const inputImage = await tryReadImage(img_url, crop);
 
         // Get the chunks
-        const chunks = extract(image);
-        const tEXtChunks = chunks.filter(chunk => chunk.name === 'tEXt');
+        const outputImage = characterCardParser.write(inputImage, data);
 
-        // Remove all existing tEXt chunks
-        for (let tEXtChunk of tEXtChunks) {
-            chunks.splice(chunks.indexOf(tEXtChunk), 1);
-        }
-        // Add new chunks before the IEND chunk
-        const base64EncodedData = Buffer.from(data, 'utf8').toString('base64');
-        chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
-        //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
-
-        writeFileAtomicSync(DIRECTORIES.characters + target_img + '.png', Buffer.from(encode(chunks)));
+        writeFileAtomicSync(DIRECTORIES.characters + target_img + '.png', outputImage);
         if (response !== undefined) response.send(mes);
         return true;
     } catch (err) {
