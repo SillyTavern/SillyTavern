@@ -3739,9 +3739,11 @@ async function testApiConnection() {
 }
 
 function reconnectOpenAi() {
-    setOnlineStatus('no_connection');
-    resultCheckStatus();
-    $('#api_button_openai').trigger('click');
+    if (main_api == 'openai') {
+        setOnlineStatus('no_connection');
+        resultCheckStatus();
+        $('#api_button_openai').trigger('click');
+    }
 }
 
 function onProxyPasswordShowClick() {
@@ -4202,11 +4204,7 @@ $(document).ready(async function () {
         oai_settings.chat_completion_source = String($(this).find(':selected').val());
         toggleChatCompletionForms();
         saveSettingsDebounced();
-
-        if (main_api == 'openai') {
-            reconnectOpenAi();
-        }
-
+        reconnectOpenAi();
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
     });
 
