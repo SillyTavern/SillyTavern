@@ -34,6 +34,20 @@ export const textgen_types = {
 };
 
 const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP } = textgen_types;
+const OOBA_DEFAULT_ORDER = [
+    'temperature',
+    'dynamic_temperature',
+    'quadratic_sampling',
+    'top_k',
+    'top_p',
+    'typical_p',
+    'epsilon_cutoff',
+    'eta_cutoff',
+    'tfs',
+    'top_a',
+    'min_p',
+    'mirostat',
+];
 const BIAS_KEY = '#textgenerationwebui_api-settings';
 
 // Maybe let it be configurable in the future?
@@ -96,6 +110,7 @@ const settings = {
     negative_prompt: '',
     grammar_string: '',
     banned_tokens: '',
+    sampler_priority: OOBA_DEFAULT_ORDER,
     //n_aphrodite: 1,
     //best_of_aphrodite: 1,
     ignore_eos_token_aphrodite: false,
@@ -170,6 +185,7 @@ const setting_names = [
     //'log_probs_aphrodite',
     //'prompt_log_probs_aphrodite'
     'sampler_order',
+    'sampler_priority',
     'n',
     'logit_bias',
     'custom_model',
@@ -422,7 +438,7 @@ function loadTextGenSettings(data, loadedSettings) {
  * Sorts the sampler items by the given order.
  * @param {any[]} orderArray Sampler order array.
  */
-function sortItemsByOrder(orderArray) {
+function sortKoboldItemsByOrder(orderArray) {
     console.debug('Preset samplers order: ' + orderArray);
     const $draggableItems = $('#koboldcpp_order');
 
@@ -431,6 +447,16 @@ function sortItemsByOrder(orderArray) {
         const $item = $draggableItems.find(`[data-id="${index}"]`).detach();
         $draggableItems.append($item);
     }
+}
+
+function sortOobaItemsByOrder(orderArray) {
+    console.debug('Preset samplers order: ', orderArray);
+    const $container = $('#sampler_priority_container');
+
+    orderArray.forEach((name) => {
+        const $item = $container.find(`[data-name="${name}"]`).detach();
+        $container.append($item);
+    });
 }
 
 jQuery(function () {
@@ -449,7 +475,27 @@ jQuery(function () {
 
     $('#koboldcpp_default_order').on('click', function () {
         settings.sampler_order = KOBOLDCPP_ORDER;
-        sortItemsByOrder(settings.sampler_order);
+        sortKoboldItemsByOrder(settings.sampler_order);
+        saveSettingsDebounced();
+    });
+
+    $('#sampler_priority_container').sortable({
+        delay: getSortableDelay(),
+        stop: function () {
+            const order = [];
+            $('#sampler_priority_container').children().each(function () {
+                order.push($(this).data('name'));
+            });
+            settings.sampler_priority = order;
+            console.log('Samplers reordered:', settings.sampler_priority);
+            saveSettingsDebounced();
+        },
+    });
+
+    $('#textgenerationwebui_default_order').on('click', function () {
+        sortOobaItemsByOrder(OOBA_DEFAULT_ORDER);
+        settings.sampler_priority = OOBA_DEFAULT_ORDER;
+        console.log('Default samplers order loaded:', settings.sampler_priority);
         saveSettingsDebounced();
     });
 
@@ -536,6 +582,7 @@ jQuery(function () {
             'penalty_alpha_textgenerationwebui': 0,
             'typical_p_textgenerationwebui': 1, // Added entry
             'guidance_scale_textgenerationwebui': 1,
+            'smoothing_factor_textgenerationwebui': 0,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
@@ -615,8 +662,15 @@ function setSettingByName(setting, value, trigger) {
 
     if ('sampler_order' === setting) {
         value = Array.isArray(value) ? value : KOBOLDCPP_ORDER;
-        sortItemsByOrder(value);
+        sortKoboldItemsByOrder(value);
         settings.sampler_order = value;
+        return;
+    }
+
+    if ('sampler_priority' === setting) {
+        value = Array.isArray(value) ? value : OOBA_DEFAULT_ORDER;
+        sortOobaItemsByOrder(value);
+        settings.sampler_priority = value;
         return;
     }
 
@@ -827,6 +881,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : 0,
         'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : 1,
         'smoothing_factor': settings.smoothing_factor,
+        'sampler_priority': settings.type === OOBA ? settings.sampler_priority : undefined,
         'stopping_strings': getStoppingStrings(isImpersonate, isContinue),
         'stop': getStoppingStrings(isImpersonate, isContinue),
         'truncation_length': max_context,
