@@ -12,6 +12,7 @@ import {
 import { debounce, delay, getStringHash } from './utils.js';
 import { decodeTextTokens, getTokenizerBestMatch } from './tokenizers.js';
 import { power_user } from './power-user.js';
+import { textgenerationwebui_settings, textgen_types } from './textgen-settings.js';
 
 const TINTS = 4;
 const MAX_MESSAGE_LOGPROBS = 100;
@@ -139,9 +140,14 @@ function renderTopLogprobs() {
     const candidates = topLogprobs
         .sort(([, logA], [, logB]) => logB - logA)
         .map(([text, log]) => {
-            const probability = Math.exp(log);
-            sum += probability;
-            return [text, probability, log];
+            if (textgenerationwebui_settings.type !== textgen_types.LLAMACPP) {
+                const probability = Math.exp(log);
+                sum += probability;
+                return [text, probability, log];
+            }
+            else {
+                return [text, log, null];
+            }
         });
     candidates.push(['<others>', 1 - sum, 0]);
 
@@ -157,7 +163,9 @@ function renderTopLogprobs() {
         const tokenText = $('<span></span>').text(`${toVisibleWhitespace(token)}`);
         const percentText = $('<span></span>').text(`${(probability * 100).toFixed(2)}%`);
         container.append(tokenText, percentText);
-        container.attr('title', `logarithm: ${log}`);
+        if (log) {
+            container.attr('title', `logarithm: ${log}`);
+        }
         addKeyboardProps(container);
         if (token !== '<others>') {
             container.click(() => onAlternativeClicked(state.selectedTokenLogprobs, token));
