@@ -113,6 +113,10 @@ class WorldInfoBuffer {
             if (messages[depth]) {
                 this.#depthBuffer[depth] = messages[depth].trim();
             }
+            // break if last message is reached
+            if (depth === messages.length - 1) {
+                break;
+            }
         }
     }
 
