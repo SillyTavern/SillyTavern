@@ -70,7 +70,7 @@ const SORT_ORDER_KEY = 'world_info_sort_order';
 const METADATA_KEY = 'world_info';
 
 const DEFAULT_DEPTH = 4;
-const MAX_SCAN_DEPTH = 100;
+const MAX_SCAN_DEPTH = 1000;
 
 /**
  * Represents a scanning buffer for one evaluation of World Info.
@@ -1513,11 +1513,13 @@ function getWorldEntry(name, data, entry) {
         // Clamp if necessary
         if (value < 0) {
             $(this).val(0).trigger('input');
+            toastr.warning('Scan depth cannot be negative');
             return;
         }
 
         if (value > MAX_SCAN_DEPTH) {
             $(this).val(MAX_SCAN_DEPTH).trigger('input');
+            toastr.warning(`Scan depth cannot exceed ${MAX_SCAN_DEPTH}`);
             return;
         }
 
