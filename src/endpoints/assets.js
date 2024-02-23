@@ -8,7 +8,7 @@ const { DIRECTORIES, UNSAFE_EXTENSIONS } = require('../constants');
 const { jsonParser } = require('../express-common');
 const { clientRelativePath } = require('../util');
 
-const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm'];
+const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character'];
 
 /**
  * Validates the input filename for the asset.
@@ -198,6 +198,13 @@ router.post('/download', jsonParser, async (request, response) => {
         }
         const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
         await finished(res.body.pipe(fileStream));
+
+        if (category === 'character') {
+            response.sendFile(temp_path, { root: process.cwd() }, () => {
+                fs.rmSync(temp_path);
+            });
+            return;
+        }
 
         // Move into asset place
         console.debug('Download finished, moving file from', temp_path, 'to', file_path);
