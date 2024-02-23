@@ -11,7 +11,7 @@ import {
     updateMessageBlock,
 } from '../../../script.js';
 import { extension_settings, getContext } from '../../extensions.js';
-import { secret_state, writeSecret } from '../../secrets.js';
+import { findSecret, secret_state, writeSecret } from '../../secrets.js';
 import { splitRecursive } from '../../utils.js';
 
 export const autoModeOptions = {
@@ -599,16 +599,16 @@ jQuery(() => {
         };
         const popupText = `<h3>${optionText} API URL</h3><i>Example: <tt>${String(exampleURLs[extension_settings.translate.provider])}</tt></i>`;
 
-        const provider_name = extension_settings.translate.provider + '_url'
-        const saved_url     = ( Boolean(secret_state[provider_name]) ) ? await findSecret(provider_name) : '';
+        const secretKey = extension_settings.translate.provider + '_url';
+        const savedUrl = secret_state[secretKey] ? await findSecret(secretKey) : '';
 
-        const url = await callPopup(popupText, 'input', saved_url);
-        
-        if (url == false) {
+        const url = await callPopup(popupText, 'input', savedUrl);
+
+        if (url == false || url == '') {
             return;
         }
-        
-        await writeSecret(provider_name, url);
+
+        await writeSecret(secretKey, url);
 
         toastr.success('API URL saved');
         $('#translate_url_button').addClass('success');

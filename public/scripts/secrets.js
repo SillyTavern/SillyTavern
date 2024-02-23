@@ -124,6 +124,11 @@ export async function readSecretState() {
     }
 }
 
+/**
+ * Finds a secret value by key.
+ * @param {string} key Secret key
+ * @returns {Promise<string | undefined>} Secret value, or undefined if keys are not exposed
+ */
 export async function findSecret(key) {
     try {
         const response = await fetch('/api/secrets/find', {
