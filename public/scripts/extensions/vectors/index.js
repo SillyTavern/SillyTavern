@@ -327,7 +327,7 @@ async function rearrangeChat(chat) {
         }
 
         // Get the most relevant messages, excluding the last few
-        const queryResults = await queryCollection(chatId, queryText, settings.query);
+        const queryResults = await queryCollection(chatId, queryText, settings.insert);
         const queryHashes = queryResults.hashes.filter(onlyUnique);
         const queriedMessages = [];
         const insertedHashes = new Set();
