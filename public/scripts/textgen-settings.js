@@ -849,6 +849,24 @@ export function parseTextgenLogprobs(token, logprobs) {
     }
 }
 
+export function parseTabbyLogprobs(data) {
+    const text = data?.choices?.[0]?.text;
+    const offsets = data?.choices?.[0]?.logprobs?.text_offset;
+
+    if (!text || !offsets) {
+        return null;
+    }
+
+    // Convert string offsets list to tokens
+    const tokens = offsets?.map((offset, index) => {
+        const nextOffset = offsets[index + 1] || text.length;
+        return text.substring(offset, nextOffset);
+    });
+
+    const topLogprobs = data?.choices?.[0]?.logprobs?.top_logprobs?.map(x => ({ top_logprobs: [x] }));
+    return tokens?.map((token, index) => parseTextgenLogprobs(token, topLogprobs[index])) || null;
+}
+
 /**
  * Parses errors in streaming responses and displays them in toastr.
  * @param {Response} response - Response from the server.

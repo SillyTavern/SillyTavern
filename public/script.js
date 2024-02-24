@@ -19,6 +19,7 @@ import {
     getTextGenServer,
     validateTextGenUrl,
     parseTextgenLogprobs,
+    parseTabbyLogprobs,
 } from './scripts/textgen-settings.js';
 
 const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI } = textgen_types;
@@ -4484,10 +4485,14 @@ function parseAndSaveLogprobs(data, continueFrom) {
             // the text of the generated message, logprobs are not included.
             return;
         case 'textgenerationwebui':
-            if (textgen_settings.type === textgen_types.LLAMACPP) {
-                logprobs = data?.completion_probabilities?.map(x => parseTextgenLogprobs(x.content, [x])) || null;
-            }
-            break;
+            switch (textgen_settings.type) {
+                case textgen_types.LLAMACPP: {
+                    logprobs = data?.completion_probabilities?.map(x => parseTextgenLogprobs(x.content, [x])) || null;
+                } break;
+                case textgen_types.TABBY: {
+                    logprobs = parseTabbyLogprobs(data) || null;
+                } break;
+            } break;
         default:
             return;
     }
