@@ -764,7 +764,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
  * @param {Object} logprobs - logprobs object returned from the API
  * @returns {import('logprobs.js').TokenLogprobs | null} - converted logprobs
  */
-function parseTextgenLogprobs(token, logprobs) {
+export function parseTextgenLogprobs(token, logprobs) {
     if (!logprobs) {
         return null;
     }

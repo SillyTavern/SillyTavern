@@ -18,6 +18,7 @@ import {
     textgen_types,
     getTextGenServer,
     validateTextGenUrl,
+    parseTextgenLogprobs,
 } from './scripts/textgen-settings.js';
 
 const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA } = textgen_types;
@@ -4478,6 +4479,11 @@ function parseAndSaveLogprobs(data, continueFrom) {
             // `sendOpenAIRequest`. `data` for these APIs is just a string with
             // the text of the generated message, logprobs are not included.
             return;
+        case 'textgenerationwebui':
+            if (textgen_settings.type === textgen_types.LLAMACPP) {
+                logprobs = data?.completion_probabilities?.map(x => parseTextgenLogprobs(x.content, [x])) || null;
+            }
+            break;
         default:
             return;
     }
