@@ -16,6 +16,7 @@ export const SECRET_KEYS = {
     SERPAPI: 'api_key_serpapi',
     MISTRALAI: 'api_key_mistralai',
     TOGETHERAI: 'api_key_togetherai',
+    INFERMATICAI: 'api_key_infermaticai',
     CUSTOM: 'api_key_custom',
     OOBA: 'api_key_ooba',
 };
@@ -37,6 +38,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.CUSTOM]: '#api_key_custom',
     [SECRET_KEYS.TOGETHERAI]: '#api_key_togetherai',
     [SECRET_KEYS.OOBA]: '#api_key_ooba',
+    [SECRET_KEYS.INFERMATICAI]: '#api_key_infermaticai',
 };
 
 async function clearSecret() {

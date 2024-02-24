@@ -31,9 +31,10 @@ export const textgen_types = {
     TOGETHERAI: 'togetherai',
     LLAMACPP: 'llamacpp',
     OLLAMA: 'ollama',
+    INFERMATICAI: 'infermaticai',
 };
 
-const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP } = textgen_types;
+const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI } = textgen_types;
 const OOBA_DEFAULT_ORDER = [
     'temperature',
     'dynamic_temperature',
@@ -56,6 +57,7 @@ const MANCER_SERVER_KEY = 'mancer_server';
 const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
 let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 let TOGETHERAI_SERVER = 'https://api.together.xyz';
+let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
 
 const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
@@ -121,6 +123,7 @@ const settings = {
     type: textgen_types.OOBA,
     mancer_model: 'mytholite',
     togetherai_model: 'Gryphe/MythoMax-L2-13b',
+    infermaticai_model: '',
     ollama_model: '',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
@@ -220,6 +223,10 @@ export function getTextGenServer() {
         return TOGETHERAI_SERVER;
     }
 
+    if (settings.type === INFERMATICAI) {
+        return INFERMATICAI_SERVER;
+    }
+
     return settings.server_urls[settings.type] ?? '';
 }
 
@@ -243,8 +250,8 @@ async function selectPreset(name) {
 
 function formatTextGenURL(value) {
     try {
-        // Mancer/Together doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER || settings.type === TOGETHERAI) {
+        // Mancer/Together/InfermaticAI doesn't need any formatting (it's hardcoded)
+        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI) {
             return value;
         }
 
@@ -833,6 +840,10 @@ function getModel() {
 
     if (settings.type === TOGETHERAI) {
         return settings.togetherai_model;
+    }
+
+    if (settings.type === INFERMATICAI) {
+        return settings.infermaticai_model;
     }
 
     if (settings.type === APHRODITE) {

@@ -176,7 +176,20 @@ const TEXTGEN_TYPES = {
     TOGETHERAI: 'togetherai',
     LLAMACPP: 'llamacpp',
     OLLAMA: 'ollama',
+    INFERMATICAI: 'infermaticai',
 };
+
+const INFERMATICAI_KEYS = [
+    'model',
+    'prompt',
+    'max_tokens',
+    'temperature',
+    'top_p',
+    'top_k',
+    'repetition_penalty',
+    'stream',
+    'stop',
+];
 
 // https://docs.together.ai/reference/completions
 const TOGETHERAI_KEYS = [
@@ -225,4 +238,5 @@ module.exports = {
     AVATAR_HEIGHT,
     TOGETHERAI_KEYS,
     OLLAMA_KEYS,
+    INFERMATICAI_KEYS,
 };

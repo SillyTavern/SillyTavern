@@ -30,6 +30,7 @@ const SECRET_KEYS = {
     MISTRALAI: 'api_key_mistralai',
     CUSTOM: 'api_key_custom',
     OOBA: 'api_key_ooba',
+    INFERMATICAI: 'api_key_infermaticai',
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false

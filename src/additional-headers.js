@@ -19,6 +19,14 @@ function getTogetherAIHeaders() {
     }) : {};
 }
 
+function getInfermaticAIHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.INFERMATICAI);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
 function getAphroditeHeaders() {
     const apiKey = readSecret(SECRET_KEYS.APHRODITE);
 
@@ -79,6 +87,9 @@ function setAdditionalHeaders(request, args, server) {
             break;
         case TEXTGEN_TYPES.OOBA:
             headers = getOobaHeaders();
+            break;
+        case TEXTGEN_TYPES.INFERMATICAI:
+            headers = getInfermaticAIHeaders();
             break;
         default:
             headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
