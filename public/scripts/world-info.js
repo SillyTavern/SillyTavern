@@ -1286,6 +1286,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     groupInput.val(entry.group ?? '').trigger('input');
+    setTimeout(() => createInclusionGroupAutocomplete(groupInput, data), 1);
 
     // probability
     if (entry.probability === undefined) {
@@ -1613,6 +1614,46 @@ function getWorldEntry(name, data, entry) {
     }
 
     return template;
+}
+
+/**
+ * Create an autocomplete for the inclusion group.
+ * @param {JQuery<HTMLElement>} input Input element to attach the autocomplete to
+ * @param {any} data WI data
+ */
+function createInclusionGroupAutocomplete(input, data) {
+    function getGroups(input, output) {
+        const groups = new Set();
+        for (const entry of Object.values(data.entries)) {
+            if (entry.group) {
+                groups.add(String(entry.group));
+            }
+        }
+
+        const haystack = Array.from(groups);
+        haystack.sort((a, b) => a.localeCompare(b));
+        const needle = input.term.toLowerCase();
+        const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
+        const result = haystack.filter(x => x.toLowerCase().includes(needle));
+
+        if (input.term && !hasExactMatch) {
+            result.unshift(input.term);
+        }
+
+        output(result);
+    }
+
+    $(input).autocomplete({
+        minLength: 0,
+        source: getGroups,
+        select: function (event, ui) {
+            $(input).val(ui.item.value).trigger('input').trigger('blur');
+        },
+    });
+
+    $(input).on('focus', function () {
+        $(input).autocomplete('search', String($(input).val()));
+    });
 }
 
 async function deleteWorldInfoEntry(data, uid) {
@@ -2843,4 +2884,14 @@ jQuery(() => {
             closeOnSelect: false,
         });
     }
+
+    $('#WorldInfo').on('scroll', () => {
+        $('.world_entry input[name="group"]').each((_, el) => {
+            const instance = $(el).autocomplete('instance');
+
+            if (instance !== undefined) {
+                $(el).autocomplete('close');
+            }
+        });
+    });
 });
