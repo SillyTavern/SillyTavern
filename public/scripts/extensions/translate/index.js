@@ -11,7 +11,7 @@ import {
     updateMessageBlock,
 } from '../../../script.js';
 import { extension_settings, getContext } from '../../extensions.js';
-import { secret_state, writeSecret } from '../../secrets.js';
+import { findSecret, secret_state, writeSecret } from '../../secrets.js';
 import { splitRecursive } from '../../utils.js';
 
 export const autoModeOptions = {
@@ -598,13 +598,18 @@ jQuery(() => {
             'deeplx': 'http://127.0.0.1:1188/translate',
         };
         const popupText = `<h3>${optionText} API URL</h3><i>Example: <tt>${String(exampleURLs[extension_settings.translate.provider])}</tt></i>`;
-        const url = await callPopup(popupText, 'input');
 
-        if (url == false) {
+        const secretKey = extension_settings.translate.provider + '_url';
+        const savedUrl = secret_state[secretKey] ? await findSecret(secretKey) : '';
+
+        const url = await callPopup(popupText, 'input', savedUrl);
+
+        if (url == false || url == '') {
             return;
         }
 
-        await writeSecret(extension_settings.translate.provider + '_url', url);
+        await writeSecret(secretKey, url);
+
         toastr.success('API URL saved');
         $('#translate_url_button').addClass('success');
     });

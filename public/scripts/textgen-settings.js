@@ -31,9 +31,11 @@ export const textgen_types = {
     TOGETHERAI: 'togetherai',
     LLAMACPP: 'llamacpp',
     OLLAMA: 'ollama',
+    INFERMATICAI: 'infermaticai',
 };
 
-const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP } = textgen_types;
+const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI } = textgen_types;
+
 const LLAMACPP_DEFAULT_ORDER = [
     'top_k',
     'tfs_z',
@@ -64,6 +66,7 @@ const MANCER_SERVER_KEY = 'mancer_server';
 const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
 let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 let TOGETHERAI_SERVER = 'https://api.together.xyz';
+let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
 
 const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
@@ -130,6 +133,7 @@ const settings = {
     type: textgen_types.OOBA,
     mancer_model: 'mytholite',
     togetherai_model: 'Gryphe/MythoMax-L2-13b',
+    infermaticai_model: '',
     ollama_model: '',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
@@ -230,6 +234,10 @@ export function getTextGenServer() {
         return TOGETHERAI_SERVER;
     }
 
+    if (settings.type === INFERMATICAI) {
+        return INFERMATICAI_SERVER;
+    }
+
     return settings.server_urls[settings.type] ?? '';
 }
 
@@ -253,8 +261,8 @@ async function selectPreset(name) {
 
 function formatTextGenURL(value) {
     try {
-        // Mancer/Together doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER || settings.type === TOGETHERAI) {
+        // Mancer/Together/InfermaticAI doesn't need any formatting (it's hardcoded)
+        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI) {
             return value;
         }
 
@@ -795,7 +803,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
             } else {
                 const newText = data?.choices?.[0]?.text || data?.content || '';
                 text += newText;
-                logprobs = parseTextgenLogprobs(newText, data.choices?.[0]?.logprobs);
+                logprobs = parseTextgenLogprobs(newText, data.choices?.[0]?.logprobs || data?.completion_probabilities);
             }
 
             yield { text, swipes, logprobs };
@@ -811,7 +819,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
  * @param {Object} logprobs - logprobs object returned from the API
  * @returns {import('logprobs.js').TokenLogprobs | null} - converted logprobs
  */
-function parseTextgenLogprobs(token, logprobs) {
+export function parseTextgenLogprobs(token, logprobs) {
     if (!logprobs) {
         return null;
     }
@@ -826,6 +834,14 @@ function parseTextgenLogprobs(token, logprobs) {
                 return null;
             }
             const candidates = Object.entries(topLogprobs[0]);
+            return { token, topLogprobs: candidates };
+        }
+        case LLAMACPP: {
+            /** @type {Record<string, number>[]} */
+            if (!logprobs?.length) {
+                return null;
+            }
+            const candidates = logprobs[0].probs.map(x => [ x.tok_str, x.prob ]);
             return { token, topLogprobs: candidates };
         }
         default:
@@ -880,6 +896,10 @@ function getModel() {
 
     if (settings.type === TOGETHERAI) {
         return settings.togetherai_model;
+    }
+
+    if (settings.type === INFERMATICAI) {
+        return settings.infermaticai_model;
     }
 
     if (settings.type === APHRODITE) {
@@ -970,6 +990,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'n_predict': maxTokens,
         'mirostat': settings.mirostat_mode,
         'ignore_eos': settings.ban_eos_token,
+        'n_probs': power_user.request_token_probabilities ? 10 : undefined,
     };
     const aphroditeParams = {
         'n': canMultiSwipe ? settings.n : 1,

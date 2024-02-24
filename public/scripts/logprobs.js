@@ -139,9 +139,14 @@ function renderTopLogprobs() {
     const candidates = topLogprobs
         .sort(([, logA], [, logB]) => logB - logA)
         .map(([text, log]) => {
-            const probability = Math.exp(log);
-            sum += probability;
-            return [text, probability, log];
+            if (log < 0) {
+                const probability = Math.exp(log);
+                sum += probability;
+                return [text, probability, log];
+            }
+            else {
+                return [text, log, null];
+            }
         });
     candidates.push(['<others>', 1 - sum, 0]);
 
@@ -157,7 +162,9 @@ function renderTopLogprobs() {
         const tokenText = $('<span></span>').text(`${toVisibleWhitespace(token)}`);
         const percentText = $('<span></span>').text(`${(probability * 100).toFixed(2)}%`);
         container.append(tokenText, percentText);
-        container.attr('title', `logarithm: ${log}`);
+        if (log) {
+            container.attr('title', `logarithm: ${log}`);
+        }
         addKeyboardProps(container);
         if (token !== '<others>') {
             container.click(() => onAlternativeClicked(state.selectedTokenLogprobs, token));
@@ -459,7 +466,7 @@ function convertTokenIdLogprobsToText(input) {
 }
 
 export function initLogprobs() {
-    const debouncedRender = debounce(renderAlternativeTokensView, 250);
+    const debouncedRender = debounce(renderAlternativeTokensView, 500);
     $('#logprobsViewerClose').click(onToggleLogprobsPanel);
     $('#option_toggle_logprobs').click(onToggleLogprobsPanel);
     eventSource.on(event_types.CHAT_CHANGED, debouncedRender);

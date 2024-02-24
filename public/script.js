@@ -18,9 +18,10 @@ import {
     textgen_types,
     getTextGenServer,
     validateTextGenUrl,
+    parseTextgenLogprobs,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI } = textgen_types;
 
 import {
     world_info,
@@ -194,7 +195,7 @@ import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescriptio
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadOllamaModels, loadTogetherAIModels } from './scripts/textgen-models.js';
+import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
@@ -1053,6 +1054,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === OLLAMA) {
             loadOllamaModels(data?.data);
             online_status = textgen_settings.ollama_model || 'Connected';
+        } else if (textgen_settings.type === INFERMATICAI) {
+            loadInfermaticAIModels(data?.data);
+            online_status = textgen_settings.infermaticai_model;
         } else {
             online_status = data?.result;
         }
@@ -2665,8 +2669,8 @@ class StreamingProcessor {
         }
 
         const continueMsg = this.type === 'continue' ? this.messageAlreadyGenerated : undefined;
-        await saveChatConditional();
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), continueMsg);
+        await saveChatConditional();
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
@@ -4478,6 +4482,11 @@ function parseAndSaveLogprobs(data, continueFrom) {
             // `sendOpenAIRequest`. `data` for these APIs is just a string with
             // the text of the generated message, logprobs are not included.
             return;
+        case 'textgenerationwebui':
+            if (textgen_settings.type === textgen_types.LLAMACPP) {
+                logprobs = data?.completion_probabilities?.map(x => parseTextgenLogprobs(x.content, [x])) || null;
+            }
+            break;
         default:
             return;
     }
@@ -7684,6 +7693,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.CUSTOM,
     },
+    'infermaticai': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.INFERMATICAI,
+    },
 };
 
 async function selectContextCallback(_, name) {
@@ -8614,6 +8628,11 @@ jQuery(async function () {
         const oobaKey = String($('#api_key_ooba').val()).trim();
         if (oobaKey.length) {
             await writeSecret(SECRET_KEYS.OOBA, oobaKey);
+        }
+
+        const infermaticAIKey = String($('#api_key_infermaticai').val()).trim();
+        if (infermaticAIKey.length) {
+            await writeSecret(SECRET_KEYS.INFERMATICAI, infermaticAIKey);
         }
 
         validateTextGenUrl();

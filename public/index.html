@@ -1917,6 +1917,7 @@
                                     <option value="llamacpp">llama.cpp</option>
                                     <option value="ollama">Ollama</option>
                                     <option value="togetherai">TogetherAI</option>
+                                    <option value="infermaticai">InfermaticAI</option>
                                 </select>
                             </div>
                             <div data-tg-type="togetherai" class="flex-container flexFlowColumn">
@@ -1932,6 +1933,24 @@
                                     <h4 data-i18n="TogetherAI Model">TogetherAI Model</h4>
                                     <select id="model_togetherai_select">
                                         <option data-i18n="-- Connect to the API --">
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div data-tg-type="infermaticai" class="flex-container flexFlowColumn">
+                                <h4 data-i18n="InfermaticAI API Key">InfermaticAI API Key</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_infermaticai" name="api_key_infermaticai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_infermaticai"></div>
+                                </div>
+                                <div data-for="api_key_infermaticai" class="neutral_warning">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <div>
+                                    <h4 data-i18n="InfermaticAI Model">InfermaticAI Model</h4>
+                                    <select id="model_infermaticai_select">
+                                        <option>
                                             -- Connect to the API --
                                         </option>
                                     </select>
@@ -4560,7 +4579,7 @@
                             <div name="perEntryOverridesBlock" class="flex-container wide100p alignitemscenter">
                                 <div class="world_entry_form_control flex1">
                                     <small class="textAlignCenter" data-i18n="Scan Depth">Scan Depth</small>
-                                    <input class="text_pole" name="scanDepth" type="number" placeholder="Use global setting" data-i18n="[placeholder]Use global setting" max="100">
+                                    <input class="text_pole" name="scanDepth" type="number" placeholder="Use global setting" data-i18n="[placeholder]Use global setting" max="1000">
                                 </div>
                                 <div class="world_entry_form_control flex1">
                                     <small class="textAlignCenter" data-i18n="Case-Sensitive">Case-Sensitive</small>
