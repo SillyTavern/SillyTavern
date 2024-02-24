@@ -755,7 +755,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
             } else {
                 const newText = data?.choices?.[0]?.text || data?.content || '';
                 text += newText;
-                logprobs = parseTextgenLogprobs(newText, data.choices?.[0]?.logprobs);
+                logprobs = parseTextgenLogprobs(newText, data.choices?.[0]?.logprobs || data?.completion_probabilities);
             }
 
             yield { text, swipes, logprobs };
@@ -771,7 +771,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
  * @param {Object} logprobs - logprobs object returned from the API
  * @returns {import('logprobs.js').TokenLogprobs | null} - converted logprobs
  */
-function parseTextgenLogprobs(token, logprobs) {
+export function parseTextgenLogprobs(token, logprobs) {
     if (!logprobs) {
         return null;
     }
@@ -786,6 +786,14 @@ function parseTextgenLogprobs(token, logprobs) {
                 return null;
             }
             const candidates = Object.entries(topLogprobs[0]);
+            return { token, topLogprobs: candidates };
+        }
+        case LLAMACPP: {
+            /** @type {Record<string, number>[]} */
+            if (!logprobs?.length) {
+                return null;
+            }
+            const candidates = logprobs[0].probs.map(x => [ x.tok_str, x.prob ]);
             return { token, topLogprobs: candidates };
         }
         default:
@@ -933,6 +941,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'n_predict': maxTokens,
         'mirostat': settings.mirostat_mode,
         'ignore_eos': settings.ban_eos_token,
+        'n_probs': power_user.request_token_probabilities ? 10 : undefined,
     };
     const aphroditeParams = {
         'n': canMultiSwipe ? settings.n : 1,

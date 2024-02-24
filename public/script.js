@@ -18,6 +18,7 @@ import {
     textgen_types,
     getTextGenServer,
     validateTextGenUrl,
+    parseTextgenLogprobs,
 } from './scripts/textgen-settings.js';
 
 const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI } = textgen_types;
@@ -2668,8 +2669,8 @@ class StreamingProcessor {
         }
 
         const continueMsg = this.type === 'continue' ? this.messageAlreadyGenerated : undefined;
-        await saveChatConditional();
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), continueMsg);
+        await saveChatConditional();
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
@@ -4481,6 +4482,11 @@ function parseAndSaveLogprobs(data, continueFrom) {
             // `sendOpenAIRequest`. `data` for these APIs is just a string with
             // the text of the generated message, logprobs are not included.
             return;
+        case 'textgenerationwebui':
+            if (textgen_settings.type === textgen_types.LLAMACPP) {
+                logprobs = data?.completion_probabilities?.map(x => parseTextgenLogprobs(x.content, [x])) || null;
+            }
+            break;
         default:
             return;
     }
