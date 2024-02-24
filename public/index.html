@@ -1550,6 +1550,27 @@
                                             <span data-i18n="Load default order">Load default order</span>
                                         </div>
                                     </div>
+                                    <div data-newbie-hidden data-tg-type="llamacpp" class="range-block flexFlowColumn wide100p">
+                                        <hr class="wide100p">
+                                        <h4 class="range-block-title justifyCenter">
+                                            <span data-i18n="Samplers Order">Samplers Order</span>
+                                            <div class="margin5 fa-solid fa-circle-info opacity50p" title="llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored."></div>
+                                        </h4>
+                                        <div class="toggle-description widthUnset" data-i18n="llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored.">
+                                            llama.cpp only. Determines the order of samplers. If Mirostat mode is not 0, sampler order is ignored.
+                                        </div>
+                                        <div id="llamacpp_samplers_sortable" class="prompt_order">
+                                            <div data-name="temperature" draggable="true"><span>Temperature</span><small></small></div>
+                                            <div data-name="top_k" draggable="true"><span>Top K</span><small></small></div>
+                                            <div data-name="top_p" draggable="true"><span>Top P</span><small></small></div>
+                                            <div data-name="typical_p" draggable="true"><span>Typical P</span><small></small></div>
+                                            <div data-name="tfs_z" draggable="true"><span>Tail Free Sampling</span><small></small></div>
+                                            <div data-name="min_p" draggable="true"><span>Min P</span><small></small></div>
+                                        </div>
+                                        <div id="llamacpp_samplers_default_order" class="menu_button menu_button_icon">
+                                            <span data-i18n="Load default order">Load default order</span>
+                                        </div>
+                                    </div>
                                     <div data-newbie-hidden data-tg-type="ooba" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
                                         <h4 class="range-block-title justifyCenter">

@@ -34,6 +34,14 @@ export const textgen_types = {
 };
 
 const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP } = textgen_types;
+const LLAMACPP_DEFAULT_ORDER = [
+    'top_k',
+    'tfs_z',
+    'typical_p',
+    'top_p',
+    'min_p',
+    'temperature',
+];
 const OOBA_DEFAULT_ORDER = [
     'temperature',
     'dynamic_temperature',
@@ -111,6 +119,7 @@ const settings = {
     grammar_string: '',
     banned_tokens: '',
     sampler_priority: OOBA_DEFAULT_ORDER,
+    samplers: LLAMACPP_DEFAULT_ORDER,
     //n_aphrodite: 1,
     //best_of_aphrodite: 1,
     ignore_eos_token_aphrodite: false,
@@ -186,6 +195,7 @@ const setting_names = [
     //'prompt_log_probs_aphrodite'
     'sampler_order',
     'sampler_priority',
+    'samplers',
     'n',
     'logit_bias',
     'custom_model',
@@ -449,6 +459,16 @@ function sortKoboldItemsByOrder(orderArray) {
     }
 }
 
+function sortLlamacppItemsByOrder(orderArray) {
+    console.debug('Preset samplers order: ', orderArray);
+    const $container = $('#llamacpp_samplers_sortable');
+
+    orderArray.forEach((name) => {
+        const $item = $container.find(`[data-name="${name}"]`).detach();
+        $container.append($item);
+    });
+}
+
 function sortOobaItemsByOrder(orderArray) {
     console.debug('Preset samplers order: ', orderArray);
     const $container = $('#sampler_priority_container');
@@ -476,6 +496,26 @@ jQuery(function () {
     $('#koboldcpp_default_order').on('click', function () {
         settings.sampler_order = KOBOLDCPP_ORDER;
         sortKoboldItemsByOrder(settings.sampler_order);
+        saveSettingsDebounced();
+    });
+
+    $('#llamacpp_samplers_sortable').sortable({
+        delay: getSortableDelay(),
+        stop: function () {
+            const order = [];
+            $('#llamacpp_samplers_sortable').children().each(function () {
+                order.push($(this).data('name'));
+            });
+            settings.samplers = order;
+            console.log('Samplers reordered:', settings.samplers);
+            saveSettingsDebounced();
+        },
+    });
+
+    $('#llamacpp_samplers_default_order').on('click', function () {
+        sortLlamacppItemsByOrder(LLAMACPP_DEFAULT_ORDER);
+        settings.samplers = LLAMACPP_DEFAULT_ORDER;
+        console.log('Default samplers order loaded:', settings.samplers);
         saveSettingsDebounced();
     });
 
@@ -671,6 +711,13 @@ function setSettingByName(setting, value, trigger) {
         value = Array.isArray(value) ? value : OOBA_DEFAULT_ORDER;
         sortOobaItemsByOrder(value);
         settings.sampler_priority = value;
+        return;
+    }
+
+    if ('samplers' === setting) {
+        value = Array.isArray(value) ? value : LLAMACPP_DEFAULT_ORDER;
+        sortLlamacppItemsByOrder(value);
+        settings.samplers = value;
         return;
     }
 
@@ -882,6 +929,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : 1,
         'smoothing_factor': settings.smoothing_factor,
         'sampler_priority': settings.type === OOBA ? settings.sampler_priority : undefined,
+        'samplers': settings.type === LLAMACPP ? settings.samplers : undefined,
         'stopping_strings': getStoppingStrings(isImpersonate, isContinue),
         'stop': getStoppingStrings(isImpersonate, isContinue),
         'truncation_length': max_context,
