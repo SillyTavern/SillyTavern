@@ -12,7 +12,6 @@ import {
 import { debounce, delay, getStringHash } from './utils.js';
 import { decodeTextTokens, getTokenizerBestMatch } from './tokenizers.js';
 import { power_user } from './power-user.js';
-import { textgenerationwebui_settings, textgen_types } from './textgen-settings.js';
 
 const TINTS = 4;
 const MAX_MESSAGE_LOGPROBS = 100;
@@ -140,7 +139,7 @@ function renderTopLogprobs() {
     const candidates = topLogprobs
         .sort(([, logA], [, logB]) => logB - logA)
         .map(([text, log]) => {
-            if (textgenerationwebui_settings.type !== textgen_types.LLAMACPP) {
+            if (log < 0) {
                 const probability = Math.exp(log);
                 sum += probability;
                 return [text, probability, log];
