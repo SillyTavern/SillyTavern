@@ -230,13 +230,26 @@ const world_info_position = {
 
 const worldInfoCache = {};
 
-async function getWorldInfoPrompt(chat2, maxContext) {
+/**
+ * Gets the world info based on chat messages.
+ * @param {string[]} chat The chat messages to scan.
+ * @param {number} maxContext The maximum context size of the generation.
+ * @param {boolean} isDryRun If true, the function will not emit any events.
+ * @typedef {{worldInfoString: string, worldInfoBefore: string, worldInfoAfter: string, worldInfoDepth: any[]}} WIPromptResult
+ * @returns {Promise<WIPromptResult>} The world info string and depth.
+ */
+async function getWorldInfoPrompt(chat, maxContext, isDryRun) {
     let worldInfoString = '', worldInfoBefore = '', worldInfoAfter = '';
 
-    const activatedWorldInfo = await checkWorldInfo(chat2, maxContext);
+    const activatedWorldInfo = await checkWorldInfo(chat, maxContext);
     worldInfoBefore = activatedWorldInfo.worldInfoBefore;
     worldInfoAfter = activatedWorldInfo.worldInfoAfter;
     worldInfoString = worldInfoBefore + worldInfoAfter;
+
+    if (!isDryRun && activatedWorldInfo.allActivatedEntries && activatedWorldInfo.allActivatedEntries.size > 0) {
+        const arg = Array.from(activatedWorldInfo.allActivatedEntries);
+        await eventSource.emit(event_types.WORLD_INFO_ACTIVATED, arg);
+    }
 
     return {
         worldInfoString,
@@ -926,6 +939,7 @@ const originalDataKeyMap = {
     'matchWholeWords': 'extensions.match_whole_words',
     'caseSensitive': 'extensions.case_sensitive',
     'scanDepth': 'extensions.scan_depth',
+    'automationId': 'extensions.automation_id',
 };
 
 function setOriginalDataValue(data, uid, key, value) {
@@ -1559,6 +1573,19 @@ function getWorldEntry(name, data, entry) {
     });
     matchWholeWordsSelect.val((entry.matchWholeWords === null || entry.matchWholeWords === undefined) ? 'null' : entry.matchWholeWords ? 'true' : 'false').trigger('input');
 
+    // automation id
+    const automationIdInput = template.find('input[name="automationId"]');
+    automationIdInput.data('uid', entry.uid);
+    automationIdInput.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = $(this).val();
+
+        data.entries[uid].automationId = value;
+        setOriginalDataValue(data, uid, 'extensions.automation_id', data.entries[uid].automationId);
+        saveWorldInfo(name, data);
+    });
+    automationIdInput.val(entry.automationId ?? '').trigger('input');
+
     template.find('.inline-drawer-content').css('display', 'none'); //entries start collapsed
 
     function updatePosOrdDisplay(uid) {
@@ -1620,6 +1647,7 @@ const newEntryTemplate = {
     scanDepth: null,
     caseSensitive: null,
     matchWholeWords: null,
+    automationId: '',
 };
 
 function createWorldInfoEntry(name, data, fromSlashCommand = false) {
@@ -1896,6 +1924,13 @@ async function getSortedEntries() {
     }
 }
 
+/**
+ * Performs a scan on the chat and returns the world info activated.
+ * @param {string[]} chat The chat messages to scan.
+ * @param {number} maxContext The maximum context size of the generation.
+ * @typedef {{ worldInfoBefore: string, worldInfoAfter: string, WIDepthEntries: any[], allActivatedEntries: Set<any> }} WIActivated
+ * @returns {Promise<WIActivated>} The world info activated.
+ */
 async function checkWorldInfo(chat, maxContext) {
     const context = getContext();
     const buffer = new WorldInfoBuffer(chat);
@@ -1932,7 +1967,7 @@ async function checkWorldInfo(chat, maxContext) {
     const sortedEntries = await getSortedEntries();
 
     if (sortedEntries.length === 0) {
-        return { worldInfoBefore: '', worldInfoAfter: '' };
+        return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], allActivatedEntries: new Set() };
     }
 
     while (needsToScan) {
@@ -2179,7 +2214,7 @@ async function checkWorldInfo(chat, maxContext) {
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan);
     }
 
-    return { worldInfoBefore, worldInfoAfter, WIDepthEntries };
+    return { worldInfoBefore, worldInfoAfter, WIDepthEntries, allActivatedEntries };
 }
 
 /**
@@ -2373,6 +2408,7 @@ function convertCharacterBook(characterBook) {
             scanDepth: entry.extensions?.scan_depth ?? null,
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
+            automationId: entry.extensions?.automation_id ?? '',
         };
     });
 

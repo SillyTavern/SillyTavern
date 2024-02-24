@@ -395,6 +395,7 @@ export const event_types = {
     GROUP_CHAT_DELETED: 'group_chat_deleted',
     GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
+    WORLD_INFO_ACTIVATED: 'world_info_activated',
 };
 
 export const eventSource = new EventEmitter();
@@ -3192,7 +3193,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     setFloatingPrompt();
     // Add WI to prompt (and also inject WI to AN value via hijack)
 
-    let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chat2, this_max_context);
+    let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chat2, this_max_context, dryRun);
 
     if (skipWIAN !== true) {
         console.log('skipWIAN not active, adding WIAN');

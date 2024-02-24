@@ -104,6 +104,7 @@ const loadSets = async () => {
                     qr.executeOnAi = slot.autoExecute_botMessage ?? false;
                     qr.executeOnChatChange = slot.autoExecute_chatLoad ?? false;
                     qr.executeOnGroupMemberDraft = slot.autoExecute_groupMemberDraft ?? false;
+                    qr.automationId = slot.automationId ?? false;
                     qr.contextList = (slot.contextMenu ?? []).map(it=>({
                         set: it.preset,
                         isChained: it.chain,
@@ -244,3 +245,8 @@ const onGroupMemberDraft = async () => {
     await autoExec.handleGroupMemberDraft();
 };
 eventSource.on(event_types.GROUP_MEMBER_DRAFTED, (...args) => executeIfReadyElseQueue(onGroupMemberDraft, args));
+
+const onWIActivation = async (entries) => {
+    await autoExec.handleWIActivation(entries);
+};
+eventSource.on(event_types.WORLD_INFO_ACTIVATED, (...args) => executeIfReadyElseQueue(onWIActivation, args));
