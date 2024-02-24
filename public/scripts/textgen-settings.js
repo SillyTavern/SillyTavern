@@ -636,7 +636,7 @@ jQuery(function () {
         for (const [id, value] of Object.entries(inputs)) {
             const inputElement = $(`#${id}`);
             if (inputElement.prop('type') === 'checkbox') {
-                inputElement.prop('checked', value);
+                inputElement.prop('checked', value).trigger('input');
             } else if (inputElement.prop('type') === 'number') {
                 inputElement.val(value).trigger('input');
             } else {
