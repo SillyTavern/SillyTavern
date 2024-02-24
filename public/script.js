@@ -2666,8 +2666,8 @@ class StreamingProcessor {
         }
 
         const continueMsg = this.type === 'continue' ? this.messageAlreadyGenerated : undefined;
-        await saveChatConditional();
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), continueMsg);
+        await saveChatConditional();
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
