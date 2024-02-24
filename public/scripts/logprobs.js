@@ -153,8 +153,9 @@ function renderTopLogprobs() {
     let matched = false;
     for (const [token, probability, log] of candidates) {
         const container = $('<button class="flex-container flexFlowColumn logprobs_top_candidate"></button>');
+        const tokenNormalized = String(token).replace(/^▁/g, ' ');
 
-        if (token === selectedToken) {
+        if (token === selectedToken || tokenNormalized === selectedToken) {
             matched = true;
             container.addClass('selected');
         }
@@ -222,7 +223,7 @@ function onAlternativeClicked(tokenLogprobs, alternative) {
     const replaceIndex = messageLogprobs.findIndex(x => x === tokenLogprobs);
 
     const tokens = messageLogprobs.slice(0, replaceIndex + 1).map(({ token }) => token);
-    tokens[replaceIndex] = alternative;
+    tokens[replaceIndex] = String(alternative).replace(/^▁/g, ' ');
 
     const prefix = continueFrom || '';
     const prompt = prefix + tokens.join('');
@@ -335,7 +336,7 @@ function createSwipe(messageId, prompt) {
  * @returns {string}
  */
 function toVisibleWhitespace(input) {
-    return input.replace(/ /g, '·').replace(/\n/g, '↵');
+    return input.replace(/ /g, '·').replace(/▁/g, '·').replace(/\n/g, '↵');
 }
 
 /**
@@ -353,6 +354,9 @@ function withVirtualWhitespace(text, span) {
     }
     if (text.match(/\s$/)) {
         result.push($(document.createTextNode('\u200b')));
+    }
+    if (text.match(/^▁/)) {
+        result.unshift(document.createTextNode('\u200b'));
     }
     // line breaks are trickier. we don't currently handle consecutive line
     // breaks or line breaks occuring in between non-whitespace characters, but
