@@ -1,4 +1,6 @@
 import {
+    eventSource,
+    event_types,
     getRequestHeaders,
     getStoppingStrings,
     max_context,
@@ -1047,6 +1049,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         };
         params = Object.assign(params, llamaCppParams);
     }
+
+    eventSource.emitAndWait(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
 
     return params;
 }

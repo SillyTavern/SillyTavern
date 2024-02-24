@@ -397,6 +397,7 @@ export const event_types = {
     GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
+    TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
 };
 
 export const eventSource = new EventEmitter();
