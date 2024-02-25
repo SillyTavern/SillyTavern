@@ -200,6 +200,8 @@ const init = async () => {
     autoExec = new AutoExecuteHandler(settings);
 
     eventSource.on(event_types.APP_READY, async()=>await finalizeInit());
+
+    window['quickReplyApi'] = quickReplyApi;
 };
 const finalizeInit = async () => {
     log('executing startup');

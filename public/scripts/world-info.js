@@ -1286,7 +1286,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     groupInput.val(entry.group ?? '').trigger('input');
-    setTimeout(() => createInclusionGroupAutocomplete(groupInput, data), 1);
+    setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data)), 1);
 
     // probability
     if (entry.probability === undefined) {
@@ -1586,6 +1586,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     automationIdInput.val(entry.automationId ?? '').trigger('input');
+    setTimeout(() => createEntryInputAutocomplete(automationIdInput, getAutomationIdCallback(data)), 1);
 
     template.find('.inline-drawer-content').css('display', 'none'); //entries start collapsed
 
@@ -1617,12 +1618,12 @@ function getWorldEntry(name, data, entry) {
 }
 
 /**
- * Create an autocomplete for the inclusion group.
- * @param {JQuery<HTMLElement>} input Input element to attach the autocomplete to
+ * Get the inclusion groups for the autocomplete.
  * @param {any} data WI data
+ * @returns {(input: any, output: any) => any} Callback function for the autocomplete
  */
-function createInclusionGroupAutocomplete(input, data) {
-    function getGroups(input, output) {
+function getInclusionGroupCallback(data) {
+    return function(input, output) {
         const groups = new Set();
         for (const entry of Object.values(data.entries)) {
             if (entry.group) {
@@ -1641,17 +1642,54 @@ function createInclusionGroupAutocomplete(input, data) {
         }
 
         output(result);
-    }
+    };
+}
 
+function getAutomationIdCallback(data) {
+    return function(input, output) {
+        const ids = new Set();
+        for (const entry of Object.values(data.entries)) {
+            if (entry.automationId) {
+                ids.add(String(entry.automationId));
+            }
+        }
+
+        if ('quickReplyApi' in window) {
+            // @ts-ignore
+            for (const automationId of window['quickReplyApi'].listAutomationIds()) {
+                ids.add(String(automationId));
+            }
+        }
+
+        const haystack = Array.from(ids);
+        haystack.sort((a, b) => a.localeCompare(b));
+        const needle = input.term.toLowerCase();
+        const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
+        const result = haystack.filter(x => x.toLowerCase().includes(needle));
+
+        if (input.term && !hasExactMatch) {
+            result.unshift(input.term);
+        }
+
+        output(result);
+    };
+}
+
+/**
+ * Create an autocomplete for the inclusion group.
+ * @param {JQuery<HTMLElement>} input Input element to attach the autocomplete to
+ * @param {(input: any, output: any) => any} callback Source data callbacks
+ */
+function createEntryInputAutocomplete(input, callback) {
     $(input).autocomplete({
         minLength: 0,
-        source: getGroups,
+        source: callback,
         select: function (event, ui) {
             $(input).val(ui.item.value).trigger('input').trigger('blur');
         },
     });
 
-    $(input).on('focus', function () {
+    $(input).on('focus click', function () {
         $(input).autocomplete('search', String($(input).val()));
     });
 }
@@ -2886,7 +2924,7 @@ jQuery(() => {
     }
 
     $('#WorldInfo').on('scroll', () => {
-        $('.world_entry input[name="group"]').each((_, el) => {
+        $('.world_entry input[name="group"], .world_entry input[name="automationId"]').each((_, el) => {
             const instance = $(el).autocomplete('instance');
 
             if (instance !== undefined) {

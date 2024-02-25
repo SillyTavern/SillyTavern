@@ -6,6 +6,7 @@ import { QuickReplySet } from '../src/QuickReplySet.js';
 import { QuickReplySettings } from '../src/QuickReplySettings.js';
 // eslint-disable-next-line no-unused-vars
 import { SettingsUi } from '../src/ui/SettingsUi.js';
+import { onlyUnique } from '../../../utils.js';
 
 export class QuickReplyApi {
     /**@type {QuickReplySettings}*/ settings;
@@ -459,5 +460,21 @@ export class QuickReplyApi {
             throw new Error(`No quick reply set with name "${name}" found.`);
         }
         return set.qrList.map(it=>it.label);
+    }
+
+    /**
+     * Gets a list of all Automation IDs used by quick replies.
+     *
+     * @returns {String[]} array with all automation IDs used by quick replies
+     */
+    listAutomationIds() {
+        return this
+            .listSets()
+            .flatMap(it => ({ set: it, qrs: this.listQuickReplies(it) }))
+            .map(it => it.qrs?.map(qr => this.getQrByLabel(it.set, qr)?.automationId))
+            .flat()
+            .filter(Boolean)
+            .filter(onlyUnique)
+            .map(String);
     }
 }
