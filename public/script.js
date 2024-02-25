@@ -8362,9 +8362,14 @@ jQuery(async function () {
             //Fix it; New chat doesn't create while open create character menu
             await clearChat();
             chat.length = 0;
+            
+            chat_file_for_del = getCurrentChatDetails().sessionName
+            const isDelChatCheckbox = document.getElementById('del_chat_checkbox').checked
 
             if (selected_group) {
+                //Fix it; When you're creating a new group chat (but not when initially converting from the existing regular chat), the first greeting message doesn't automatically get translated.
                 await createNewGroupChat(selected_group);
+                if (isDelChatCheckbox) await deleteGroupChat(selected_group, chat_file_for_del);
             }
             else {
                 //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
@@ -8373,6 +8378,7 @@ jQuery(async function () {
                 $('#selected_chat_pole').val(characters[this_chid].chat);
                 await getChat();
                 await createOrEditCharacter();
+                if (isDelChatCheckbox) await delChat(chat_file_for_del + '.jsonl');
             }
         }
 
@@ -8746,7 +8752,14 @@ jQuery(async function () {
         else if (id == 'option_start_new_chat') {
             if ((selected_group || this_chid !== undefined) && !is_send_press) {
                 popup_type = 'new_chat';
-                callPopup('<h3>Start new chat?</h3>');
+                callPopup(`
+                    <h3>Start new chat?</h3><br>
+                    <label for="del_chat_checkbox" class="checkbox_label justifyCenter" 
+                    title="If necessary, you can later restore this chat file from the /backups folder">
+                        <input type="checkbox" id="del_chat_checkbox" />
+                        <span>Also delete the current chat file</span>
+                    </label><br>
+                `);
             }
         }
 
