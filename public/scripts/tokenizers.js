@@ -5,8 +5,9 @@ import { groups, selected_group } from './group-chats.js';
 import { getStringHash } from './utils.js';
 import { kai_flags } from './kai-settings.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
+import { getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
 
-const { OOBA, TABBY, KOBOLDCPP, APHRODITE, LLAMACPP } = textgen_types;
+const { OOBA, TABBY, KOBOLDCPP, APHRODITE, LLAMACPP, OPENROUTER } = textgen_types;
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
@@ -202,6 +203,9 @@ export function getTokenizerBestMatch(forApi) {
             if (forApi === 'textgenerationwebui' && isTokenizerSupported) {
                 return tokenizers.API_TEXTGENERATIONWEBUI;
             }
+            if (forApi === 'textgenerationwebui' && textgen_settings.type === OPENROUTER) {
+                return getCurrentOpenRouterModelTokenizer();
+            }
         }
 
         return tokenizers.LLAMA;
@@ -349,8 +353,11 @@ export function getTokenizerModel() {
     }
 
     // And for OpenRouter (if not a site model, then it's impossible to determine the tokenizer)
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER && oai_settings.openrouter_model) {
-        const model = model_list.find(x => x.id === oai_settings.openrouter_model);
+    if (main_api == 'openai' && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER && oai_settings.openrouter_model ||
+        main_api == 'textgenerationwebui' && textgen_settings.type === OPENROUTER && textgen_settings.openrouter_model) {
+        const model = main_api == 'openai'
+            ? model_list.find(x => x.id === oai_settings.openrouter_model)
+            : openRouterModels.find(x => x.id === textgen_settings.openrouter_model);
 
         if (model?.architecture?.tokenizer === 'Llama2') {
             return llamaTokenizer;

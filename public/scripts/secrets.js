@@ -27,7 +27,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.OPENAI]: '#api_key_openai',
     [SECRET_KEYS.NOVEL]: '#api_key_novel',
     [SECRET_KEYS.CLAUDE]: '#api_key_claude',
-    [SECRET_KEYS.OPENROUTER]: '#api_key_openrouter',
+    [SECRET_KEYS.OPENROUTER]: '.api_key_openrouter',
     [SECRET_KEYS.SCALE]: '#api_key_scale',
     [SECRET_KEYS.AI21]: '#api_key_ai21',
     [SECRET_KEYS.SCALE_COOKIE]: '#scale_cookie',
@@ -199,5 +199,5 @@ jQuery(async () => {
         const warningElement = $(`[data-for="${id}"]`);
         warningElement.toggle(value.length > 0);
     });
-    $('#openrouter_authorize').on('click', authorizeOpenRouter);
+    $('.openrouter_authorize').on('click', authorizeOpenRouter);
 });

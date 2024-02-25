@@ -1,4 +1,4 @@
-const { TEXTGEN_TYPES } = require('./constants');
+const { TEXTGEN_TYPES, OPENROUTER_HEADERS } = require('./constants');
 const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
 const { getConfigValue } = require('./util');
 
@@ -25,6 +25,13 @@ function getInfermaticAIHeaders() {
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
     }) : {};
+}
+
+function getOpenRouterHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.OPENROUTER);
+    const baseHeaders = { ...OPENROUTER_HEADERS };
+
+    return apiKey ? Object.assign(baseHeaders, { 'Authorization': `Bearer ${apiKey}` }) : baseHeaders;
 }
 
 function getAphroditeHeaders() {
@@ -90,6 +97,9 @@ function setAdditionalHeaders(request, args, server) {
             break;
         case TEXTGEN_TYPES.INFERMATICAI:
             headers = getInfermaticAIHeaders();
+            break;
+        case TEXTGEN_TYPES.OPENROUTER:
+            headers = getOpenRouterHeaders();
             break;
         default:
             headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
