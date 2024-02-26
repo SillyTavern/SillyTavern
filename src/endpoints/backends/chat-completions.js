@@ -419,6 +419,9 @@ async function sendMistralAIRequest(request, response) {
     try {
         //must send a user role as last message
         const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
+        //large seems to be throwing a 500 error if we don't make the first message a user role, most likely a bug since the other models won't do this
+        if (request.body.model.includes('large'))
+            messages[0].role = 'user';
         const lastMsg = messages[messages.length - 1];
         if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
             if (lastMsg.role === 'assistant' && lastMsg.name) {
