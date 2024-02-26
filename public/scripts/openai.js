@@ -216,7 +216,7 @@ const default_settings = {
     claude_model: 'claude-instant-v1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
-    mistralai_model: 'mistral-medium',
+    mistralai_model: 'mistral-medium-latest',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -285,7 +285,7 @@ const oai_settings = {
     claude_model: 'claude-instant-v1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
-    mistralai_model: 'mistral-medium',
+    mistralai_model: 'mistral-medium-latest',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -3365,8 +3365,16 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_mistralai_select')) {
+        // Upgrade old mistral models to new naming scheme
+        // would have done this in loadOpenAISettings, but it wasn't updating on preset change?
+        if (value === 'mistral-medium' || value === 'mistral-small' || value === 'mistral-tiny') {
+            value = value + '-latest';
+        } else if (value === '') {
+            value = default_settings.mistralai_model;
+        }
         console.log('MistralAI model changed to', value);
         oai_settings.mistralai_model = value;
+        $('#model_mistralai_select').val(oai_settings.mistralai_model);
     }
 
     if (value && $(this).is('#model_custom_select')) {
