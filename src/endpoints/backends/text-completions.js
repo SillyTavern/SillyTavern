@@ -283,6 +283,7 @@ router.post('/generate', jsonParser, async function (request, response) {
                 model: request.body.model,
                 prompt: request.body.prompt,
                 stream: request.body.stream ?? false,
+                keep_alive: -1,
                 raw: true,
                 options: _.pickBy(request.body, (_, key) => OLLAMA_KEYS.includes(key)),
             });
