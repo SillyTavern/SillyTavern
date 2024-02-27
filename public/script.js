@@ -1242,11 +1242,6 @@ async function printCharacters(fullRefresh = false) {
         printTagFilters(tag_filter_types.character);
         printTagFilters(tag_filter_types.group_member);
 
-        // Return to main list
-        if (isBogusFolderOpen()) {
-            entitiesFilter.setFilterData(FILTER_TYPES.TAG, { excluded: [], selected: [] });
-        }
-
         await delay(1);
     }
 
@@ -1309,7 +1304,11 @@ async function printCharacters(fullRefresh = false) {
  * @returns {boolean} If currently viewing a folder
  */
 function isBogusFolderOpen() {
-    return !!entitiesFilter.getFilterData(FILTER_TYPES.TAG)?.bogus;
+    const anyIsFolder = entitiesFilter.getFilterData(FILTER_TYPES.TAG)?.selected
+        .map(tagId => tags.find(x => x.id === tagId))
+        .some(x => !!x.is_folder);
+
+    return !!anyIsFolder;
 }
 
 export function getEntitiesList({ doFilter } = {}) {
@@ -8054,37 +8053,34 @@ function doTogglePanels() {
     $('#option_settings').trigger('click');
 }
 
-function chooseBogusFolder(tagId, remove = false) {
-    // Update bogus filter
+function chooseBogusFolder(source, tagId, remove = false) {
+    // Take the filter as the base on what bogus is currently selected
     const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
 
     if (!Array.isArray(filterData.selected)) {
         filterData.selected = [];
         filterData.excluded = [];
-        filterData.bogus = false;
     }
 
-    if (tagId === 'back') {
-        filterData.selected.pop();
-        filterData.bogus = filterData.selected.length > 0;
-    } else if (remove) {
-        const index = filterData.selected.indexOf(tagId);
-        if (index > -1) filterData.selected.splice(index, 1);
-    } else {
-        filterData.selected.push(tagId);
-        filterData.bogus = true;
+    const filteredFolders = filterData.selected
+        .map(tagId => tags.find(x => x.id === tagId))
+        .filter(x => !!x.is_folder);
+
+    // If we are here via the 'back' action, we implicitly take the last filtered folder as one to remove
+    const isBack = tagId === 'back';
+    if (isBack) {
+        tagId = filteredFolders?.[filteredFolders.length - 1].id;
+        remove = true;
     }
 
-    entitiesFilter.setFilterData(FILTER_TYPES.TAG, filterData);
-
-    // Update bogus drilldown
-    if (tagId === 'back') {
-        $('.rm_tag_controls .rm_tag_bogus_drilldown .tag').last().remove();
-    } else if (remove) {
-        $(`.rm_tag_controls .rm_tag_bogus_drilldown .tag[id=${tagId}]`).remove();
+    // Instead of manually updating the filter conditions, we just "click" on the filter tag
+    // We search inside which filter block we are located in and use that one
+    const FILTER_SELECTOR = ($(source).closest('#rm_characters_block') ?? $(source).closest('#rm_group_chats_block')).find('.rm_tag_filter');
+    if (remove) {
+        // Click twice to skip over the 'excluded' state
+        $(FILTER_SELECTOR).find(`.tag[id=${tagId}]`).trigger('click').trigger('click');
     } else {
-        const tag = tags.find(x => x.id === tagId);
-        appendTagToList('.rm_tag_controls .rm_tag_bogus_drilldown', tag, { removable: true, selectable: false, isGeneralList: false });
+        $(FILTER_SELECTOR).find(`.tag[id=${tagId}]`).trigger('click');
     }
 }
 
@@ -8263,7 +8259,7 @@ jQuery(async function () {
     $(document).on('click', '.bogus_folder_select', function () {
         const tagId = $(this).attr('tagid');
         console.log('Bogus folder clicked', tagId);
-        chooseBogusFolder(tagId);
+        chooseBogusFolder($(this), tagId);
     });
 
     $(document).on('input', '.edit_textarea', function () {
