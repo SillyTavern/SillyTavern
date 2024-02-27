@@ -5967,7 +5967,11 @@ function updateMessage(div) {
         text = text.trim();
     }
 
-    const bias = extractMessageBias(text);
+    const bias = substituteParams(extractMessageBias(text));
+    text = substituteParams(text);
+    if (bias) {
+        text = removeMacros(text);
+    }
     mes['mes'] = text;
     if (mes['swipe_id'] !== undefined) {
         mes['swipes'][mes['swipe_id']] = text;
@@ -6010,7 +6014,7 @@ function openMessageDelete(fromSlashCommand) {
 }
 
 function messageEditAuto(div) {
-    const { mesBlock, text, mes } = updateMessage(div);
+    const { mesBlock, text, mes, bias } = updateMessage(div);
 
     mesBlock.find('.mes_text').val('');
     mesBlock.find('.mes_text').val(messageFormatting(
@@ -6020,6 +6024,8 @@ function messageEditAuto(div) {
         mes.is_user,
         this_edit_mes_id,
     ));
+    mesBlock.find('.mes_bias').empty();
+    mesBlock.find('.mes_bias').append(messageFormatting(bias, '', false, false, -1));
     saveChatDebounced();
 }
 
