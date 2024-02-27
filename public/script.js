@@ -5967,7 +5967,11 @@ function updateMessage(div) {
         text = text.trim();
     }
 
-    const bias = extractMessageBias(text);
+    const bias = substituteParams(extractMessageBias(text));
+    text = substituteParams(text);
+    if (bias) {
+        text = removeMacros(text);
+    }
     mes['mes'] = text;
     if (mes['swipe_id'] !== undefined) {
         mes['swipes'][mes['swipe_id']] = text;
