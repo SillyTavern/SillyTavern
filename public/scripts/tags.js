@@ -345,6 +345,9 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
 }
 
 function onTagFilterClick(listElement) {
+    const tagId = $(this).attr('id');
+    const existingTag = tags.find((tag) => tag.id === tagId);
+
     let excludeTag;
     if ($(this).hasClass('selected')) {
         $(this).removeClass('selected');
@@ -361,12 +364,20 @@ function onTagFilterClick(listElement) {
 
     // Manual undefined check required for three-state boolean
     if (excludeTag !== undefined) {
-        const tagId = $(this).attr('id');
-        const existingTag = tags.find((tag) => tag.id === tagId);
         if (existingTag) {
             existingTag.excluded = excludeTag;
 
             saveSettingsDebounced();
+        }
+    }
+
+    // Update bogus folder if applicable
+    if (existingTag?.is_folder) {
+        // Update bogus drilldown
+        if ($(this).hasClass('selected')) {
+            appendTagToList('.rm_tag_controls .rm_tag_bogus_drilldown', existingTag, { removable: true, selectable: false, isGeneralList: false });
+        } else {
+            $(listElement).closest('.rm_tag_controls').find(`.rm_tag_bogus_drilldown .tag[id=${tagId}]`).remove();
         }
     }
 
@@ -385,6 +396,7 @@ function printTagFilters(type = tag_filter_types.character) {
     const FILTER_SELECTOR = type === tag_filter_types.character ? CHARACTER_FILTER_SELECTOR : GROUP_FILTER_SELECTOR;
     const selectedTagIds = [...($(FILTER_SELECTOR).find('.tag.selected').map((_, el) => $(el).attr('id')))];
     $(FILTER_SELECTOR).empty();
+    $(FILTER_SELECTOR).siblings('.rm_tag_bogus_drilldown').empty();
     const characterTagIds = Object.values(tag_map).flat();
     const tagsToDisplay = tags
         .filter(x => characterTagIds.includes(x.id))
@@ -434,7 +446,7 @@ function onTagRemoveClick(event) {
     // Check if we are inside the drilldown. If so, we call remove on the bogus folder
     if ($(this).closest('.rm_tag_bogus_drilldown').length > 0) {
         console.debug('Bogus drilldown remove', tagId);
-        chooseBogusFolder(tagId, true);
+        chooseBogusFolder($(this), tagId, true);
         return;
     }
 
