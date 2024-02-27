@@ -47,6 +47,28 @@
         "ban_eos_token": false,
         "skip_special_tokens": true,
         "streaming": false,
+        "sampler_priority": [
+            "temperature",
+            "dynamic_temperature",
+            "quadratic_sampling",
+            "top_k",
+            "top_p",
+            "typical_p",
+            "epsilon_cutoff",
+            "eta_cutoff",
+            "tfs",
+            "top_a",
+            "min_p",
+            "mirostat"
+        ],
+        "samplers": [
+            "top_k",
+            "tfs_z",
+            "typical_p",
+            "top_p",
+            "min_p",
+            "temperature"
+        ],
         "mirostat_mode": 0,
         "mirostat_tau": 5,
         "mirostat_eta": 0.1,

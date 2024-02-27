@@ -139,17 +139,23 @@ function renderTopLogprobs() {
     const candidates = topLogprobs
         .sort(([, logA], [, logB]) => logB - logA)
         .map(([text, log]) => {
-            const probability = Math.exp(log);
-            sum += probability;
-            return [text, probability, log];
+            if (log < 0) {
+                const probability = Math.exp(log);
+                sum += probability;
+                return [text, probability, log];
+            }
+            else {
+                return [text, log, null];
+            }
         });
     candidates.push(['<others>', 1 - sum, 0]);
 
     let matched = false;
     for (const [token, probability, log] of candidates) {
         const container = $('<button class="flex-container flexFlowColumn logprobs_top_candidate"></button>');
+        const tokenNormalized = String(token).replace(/^▁/g, ' ');
 
-        if (token === selectedToken) {
+        if (token === selectedToken || tokenNormalized === selectedToken) {
             matched = true;
             container.addClass('selected');
         }
@@ -157,7 +163,9 @@ function renderTopLogprobs() {
         const tokenText = $('<span></span>').text(`${toVisibleWhitespace(token)}`);
         const percentText = $('<span></span>').text(`${(probability * 100).toFixed(2)}%`);
         container.append(tokenText, percentText);
-        container.attr('title', `logarithm: ${log}`);
+        if (log) {
+            container.attr('title', `logarithm: ${log}`);
+        }
         addKeyboardProps(container);
         if (token !== '<others>') {
             container.click(() => onAlternativeClicked(state.selectedTokenLogprobs, token));
@@ -215,7 +223,7 @@ function onAlternativeClicked(tokenLogprobs, alternative) {
     const replaceIndex = messageLogprobs.findIndex(x => x === tokenLogprobs);
 
     const tokens = messageLogprobs.slice(0, replaceIndex + 1).map(({ token }) => token);
-    tokens[replaceIndex] = alternative;
+    tokens[replaceIndex] = String(alternative).replace(/^▁/g, ' ');
 
     const prefix = continueFrom || '';
     const prompt = prefix + tokens.join('');
@@ -328,7 +336,7 @@ function createSwipe(messageId, prompt) {
  * @returns {string}
  */
 function toVisibleWhitespace(input) {
-    return input.replace(/ /g, '·').replace(/\n/g, '↵');
+    return input.replace(/ /g, '·').replace(/▁/g, '·').replace(/\n/g, '↵');
 }
 
 /**
@@ -346,6 +354,9 @@ function withVirtualWhitespace(text, span) {
     }
     if (text.match(/\s$/)) {
         result.push($(document.createTextNode('\u200b')));
+    }
+    if (text.match(/^▁/)) {
+        result.unshift(document.createTextNode('\u200b'));
     }
     // line breaks are trickier. we don't currently handle consecutive line
     // breaks or line breaks occuring in between non-whitespace characters, but
@@ -459,7 +470,7 @@ function convertTokenIdLogprobsToText(input) {
 }
 
 export function initLogprobs() {
-    const debouncedRender = debounce(renderAlternativeTokensView, 250);
+    const debouncedRender = debounce(renderAlternativeTokensView, 500);
     $('#logprobsViewerClose').click(onToggleLogprobsPanel);
     $('#option_toggle_logprobs').click(onToggleLogprobsPanel);
     eventSource.on(event_types.CHAT_CHANGED, debouncedRender);

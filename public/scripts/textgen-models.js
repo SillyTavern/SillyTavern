@@ -1,9 +1,12 @@
 import { callPopup, getRequestHeaders, setGenerationParamsFromPreset } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { textgenerationwebui_settings as textgen_settings, textgen_types } from './textgen-settings.js';
+import { tokenizers } from './tokenizers.js';
 
 let mancerModels = [];
 let togetherModels = [];
+let infermaticAIModels = [];
+export let openRouterModels = [];
 
 export async function loadOllamaModels(data) {
     if (!Array.isArray(data)) {
@@ -52,6 +55,32 @@ export async function loadTogetherAIModels(data) {
     }
 }
 
+export async function loadInfermaticAIModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid Infermatic AI models data', data);
+        return;
+    }
+
+    infermaticAIModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.infermaticai_model)) {
+        textgen_settings.infermaticai_model = data[0]?.id || '';
+    }
+
+    $('#model_infermaticai_select').empty();
+    for (const model of data) {
+        if (model.display_type === 'image') {
+            continue;
+        }
+
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.infermaticai_model;
+        $('#model_infermaticai_select').append(option);
+    }
+}
+
 export async function loadMancerModels(data) {
     if (!Array.isArray(data)) {
         console.error('Invalid Mancer models data', data);
@@ -74,6 +103,28 @@ export async function loadMancerModels(data) {
     }
 }
 
+export async function loadOpenRouterModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid OpenRouter models data', data);
+        return;
+    }
+
+    openRouterModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.openrouter_model)) {
+        textgen_settings.openrouter_model = data[0]?.id || '';
+    }
+
+    $('#openrouter_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.openrouter_model;
+        $('#openrouter_model').append(option);
+    }
+}
+
 function onMancerModelSelect() {
     const modelId = String($('#mancer_model').val());
     textgen_settings.mancer_model = modelId;
@@ -91,10 +142,26 @@ function onTogetherModelSelect() {
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 
+function onInfermaticAIModelSelect() {
+    const modelName = String($('#model_infermaticai_select').val());
+    textgen_settings.infermaticai_model = modelName;
+    $('#api_button_textgenerationwebui').trigger('click');
+    const model = infermaticAIModels.find(x => x.id === modelName);
+    setGenerationParamsFromPreset({ max_length: model.context_length });
+}
+
 function onOllamaModelSelect() {
     const modelId = String($('#ollama_model').val());
     textgen_settings.ollama_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
+}
+
+function onOpenRouterModelSelect() {
+    const modelId = String($('#openrouter_model').val());
+    textgen_settings.openrouter_model = modelId;
+    $('#api_button_textgenerationwebui').trigger('click');
+    const model = openRouterModels.find(x => x.id === modelId);
+    setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 
 function getMancerModelTemplate(option) {
@@ -126,6 +193,39 @@ function getTogetherModelTemplate(option) {
         <div class="flex-container flexFlowColumn">
             <div><strong>${DOMPurify.sanitize(model.name)}</strong> | <span>${model.context_length || '???'} tokens</span></div>
             <div><small>${DOMPurify.sanitize(model.description)}</small></div>
+        </div>
+    `));
+}
+
+function getInfermaticAIModelTemplate(option) {
+    const model = infermaticAIModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
+        </div>
+    `));
+}
+
+function getOpenRouterModelTemplate(option) {
+    const model = openRouterModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    let tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
+    let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
+
+    const price = 0 === Number(model.pricing?.prompt) ? 'Free' : `${tokens_rounded}k t/$ `;
+
+    return $((`
+        <div class="flex-container flexFlowColumn" title="${DOMPurify.sanitize(model.id)}">
+            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | ${model.context_length} ctx | <small>${price}</small></div>
         </div>
     `));
 }
@@ -171,10 +271,25 @@ async function downloadOllamaModel() {
     }
 }
 
+export function getCurrentOpenRouterModelTokenizer() {
+    const modelId = textgen_settings.openrouter_model;
+    const model = openRouterModels.find(x => x.id === modelId);
+    switch (model?.architecture?.tokenizer) {
+        case 'Llama2':
+            return tokenizers.LLAMA;
+        case 'Mistral':
+            return tokenizers.MISTRAL;
+        default:
+            return tokenizers.OPENAI;
+    }
+}
+
 jQuery(function () {
     $('#mancer_model').on('change', onMancerModelSelect);
     $('#model_togetherai_select').on('change', onTogetherModelSelect);
+    $('#model_infermaticai_select').on('change', onInfermaticAIModelSelect);
     $('#ollama_model').on('change', onOllamaModelSelect);
+    $('#openrouter_model').on('change', onOpenRouterModelSelect);
     $('#ollama_download_model').on('click', downloadOllamaModel);
 
     if (!isMobile()) {
@@ -197,6 +312,20 @@ jQuery(function () {
             searchInputPlaceholder: 'Search models...',
             searchInputCssClass: 'text_pole',
             width: '100%',
+        });
+        $('#model_infermaticai_select').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getInfermaticAIModelTemplate,
+        });
+        $('#openrouter_model').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getOpenRouterModelTemplate,
         });
     }
 });

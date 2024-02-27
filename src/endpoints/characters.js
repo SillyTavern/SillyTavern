@@ -7,9 +7,6 @@ const writeFileAtomicSync = require('write-file-atomic').sync;
 const yaml = require('yaml');
 const _ = require('lodash');
 
-const encode = require('png-chunks-encode');
-const extract = require('png-chunks-extract');
-const PNGtext = require('png-chunk-text');
 const jimp = require('jimp');
 
 const { DIRECTORIES, UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
@@ -33,7 +30,7 @@ const characterDataCache = new Map();
  * @param {string} input_format - 'png'
  * @returns {Promise<string | undefined>} - Character card data
  */
-async function charaRead(img_url, input_format) {
+async function charaRead(img_url, input_format = 'png') {
     const stat = fs.statSync(img_url);
     const cacheKey = `${img_url}-${stat.mtimeMs}`;
     if (characterDataCache.has(cacheKey)) {
@@ -59,22 +56,12 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
             }
         }
         // Read the image, resize, and save it as a PNG into the buffer
-        const image = await tryReadImage(img_url, crop);
+        const inputImage = await tryReadImage(img_url, crop);
 
         // Get the chunks
-        const chunks = extract(image);
-        const tEXtChunks = chunks.filter(chunk => chunk.name === 'tEXt');
+        const outputImage = characterCardParser.write(inputImage, data);
 
-        // Remove all existing tEXt chunks
-        for (let tEXtChunk of tEXtChunks) {
-            chunks.splice(chunks.indexOf(tEXtChunk), 1);
-        }
-        // Add new chunks before the IEND chunk
-        const base64EncodedData = Buffer.from(data, 'utf8').toString('base64');
-        chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
-        //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
-
-        writeFileAtomicSync(DIRECTORIES.characters + target_img + '.png', Buffer.from(encode(chunks)));
+        writeFileAtomicSync(DIRECTORIES.characters + target_img + '.png', outputImage);
         if (response !== undefined) response.send(mes);
         return true;
     } catch (err) {
@@ -152,13 +139,13 @@ const processCharacter = async (item, i) => {
         const img_data = await charaRead(DIRECTORIES.characters + item);
         if (img_data === undefined) throw new Error('Failed to read character file');
 
-        let jsonObject = getCharaCardV2(JSON.parse(img_data));
+        let jsonObject = getCharaCardV2(JSON.parse(img_data), false);
         jsonObject.avatar = item;
         characters[i] = jsonObject;
         characters[i]['json_data'] = img_data;
         const charStat = fs.statSync(path.join(DIRECTORIES.characters, item));
-        characters[i]['date_added'] = charStat.birthtimeMs;
-        characters[i]['create_date'] = jsonObject['create_date'] || humanizedISO8601DateTime(charStat.birthtimeMs);
+        characters[i]['date_added'] = charStat.ctimeMs;
+        characters[i]['create_date'] = jsonObject['create_date'] || humanizedISO8601DateTime(charStat.ctimeMs);
         const char_dir = path.join(DIRECTORIES.chats, item.replace('.png', ''));
 
         const { chatSize, dateLastChat } = calculateChatSize(char_dir);
@@ -183,15 +170,30 @@ const processCharacter = async (item, i) => {
     }
 };
 
-function getCharaCardV2(jsonObject) {
+/**
+ * Convert a character object to Spec V2 format.
+ * @param {object} jsonObject Character object
+ * @param {boolean} hoistDate Will set the chat and create_date fields to the current date if they are missing
+ * @returns {object} Character object in Spec V2 format
+ */
+function getCharaCardV2(jsonObject, hoistDate = true) {
     if (jsonObject.spec === undefined) {
         jsonObject = convertToV2(jsonObject);
+
+        if (hoistDate && !jsonObject.create_date) {
+            jsonObject.create_date = humanizedISO8601DateTime();
+        }
     } else {
         jsonObject = readFromV2(jsonObject);
     }
     return jsonObject;
 }
 
+/**
+ * Convert a character object to Spec V2 format.
+ * @param {object} char Character object
+ * @returns {object} Character object in Spec V2 format
+ */
 function convertToV2(char) {
     // Simulate incoming data from frontend form
     const result = charaFormatData({
@@ -212,7 +214,8 @@ function convertToV2(char) {
     });
 
     result.chat = char.chat ?? humanizedISO8601DateTime();
-    result.create_date = char.create_date ?? humanizedISO8601DateTime();
+    result.create_date = char.create_date;
+
     return result;
 }
 
@@ -392,6 +395,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 scan_depth: entry.scanDepth ?? null,
                 match_whole_words: entry.matchWholeWords ?? null,
                 case_sensitive: entry.caseSensitive ?? null,
+                automation_id: entry.automationId ?? '',
             },
         };
 
@@ -796,6 +800,17 @@ function getPngName(file) {
     return file;
 }
 
+/**
+ * Gets the preserved name for the uploaded file if the request is valid.
+ * @param {import("express").Request} request - Express request object
+ * @returns {string | undefined} - The preserved name if the request is valid, otherwise undefined
+ */
+function getPreservedName(request) {
+    return request.body.file_type === 'png' && request.body.preserve_file_name === 'true' && request.file?.originalname
+        ? path.parse(request.file.originalname).name
+        : undefined;
+}
+
 router.post('/import', urlencodedParser, async function (request, response) {
     if (!request.body || !request.file) return response.sendStatus(400);
 
@@ -803,6 +818,7 @@ router.post('/import', urlencodedParser, async function (request, response) {
     let filedata = request.file;
     let uploadPath = path.join(UPLOADS_PATH, filedata.filename);
     let format = request.body.file_type;
+    const preservedFileName = getPreservedName(request);
 
     if (format == 'yaml' || format == 'yml') {
         try {
@@ -894,7 +910,7 @@ router.post('/import', urlencodedParser, async function (request, response) {
             let jsonData = JSON.parse(img_data);
 
             jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
-            png_name = getPngName(jsonData.name);
+            png_name = preservedFileName || getPngName(jsonData.name);
 
             if (jsonData.spec !== undefined) {
                 console.log('Found a v2 character file.');

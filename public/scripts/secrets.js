@@ -16,6 +16,7 @@ export const SECRET_KEYS = {
     SERPAPI: 'api_key_serpapi',
     MISTRALAI: 'api_key_mistralai',
     TOGETHERAI: 'api_key_togetherai',
+    INFERMATICAI: 'api_key_infermaticai',
     CUSTOM: 'api_key_custom',
     OOBA: 'api_key_ooba',
 };
@@ -26,7 +27,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.OPENAI]: '#api_key_openai',
     [SECRET_KEYS.NOVEL]: '#api_key_novel',
     [SECRET_KEYS.CLAUDE]: '#api_key_claude',
-    [SECRET_KEYS.OPENROUTER]: '#api_key_openrouter',
+    [SECRET_KEYS.OPENROUTER]: '.api_key_openrouter',
     [SECRET_KEYS.SCALE]: '#api_key_scale',
     [SECRET_KEYS.AI21]: '#api_key_ai21',
     [SECRET_KEYS.SCALE_COOKIE]: '#scale_cookie',
@@ -37,6 +38,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.CUSTOM]: '#api_key_custom',
     [SECRET_KEYS.TOGETHERAI]: '#api_key_togetherai',
     [SECRET_KEYS.OOBA]: '#api_key_ooba',
+    [SECRET_KEYS.INFERMATICAI]: '#api_key_infermaticai',
 };
 
 async function clearSecret() {
@@ -124,6 +126,11 @@ export async function readSecretState() {
     }
 }
 
+/**
+ * Finds a secret value by key.
+ * @param {string} key Secret key
+ * @returns {Promise<string | undefined>} Secret value, or undefined if keys are not exposed
+ */
 export async function findSecret(key) {
     try {
         const response = await fetch('/api/secrets/find', {
@@ -192,5 +199,5 @@ jQuery(async () => {
         const warningElement = $(`[data-for="${id}"]`);
         warningElement.toggle(value.length > 0);
     });
-    $('#openrouter_authorize').on('click', authorizeOpenRouter);
+    $('.openrouter_authorize').on('click', authorizeOpenRouter);
 });

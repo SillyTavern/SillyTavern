@@ -1,4 +1,6 @@
 import {
+    eventSource,
+    event_types,
     getRequestHeaders,
     getStoppingStrings,
     max_context,
@@ -12,6 +14,7 @@ import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasList
 
 import { power_user, registerDebugFunction } from './power-user.js';
 import EventSourceStream from './sse-stream.js';
+import { getCurrentOpenRouterModelTokenizer } from './textgen-models.js';
 import { SENTENCEPIECE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
 
@@ -31,9 +34,34 @@ export const textgen_types = {
     TOGETHERAI: 'togetherai',
     LLAMACPP: 'llamacpp',
     OLLAMA: 'ollama',
+    INFERMATICAI: 'infermaticai',
+    OPENROUTER: 'openrouter',
 };
 
-const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP } = textgen_types;
+const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, OPENROUTER } = textgen_types;
+
+const LLAMACPP_DEFAULT_ORDER = [
+    'top_k',
+    'tfs_z',
+    'typical_p',
+    'top_p',
+    'min_p',
+    'temperature',
+];
+const OOBA_DEFAULT_ORDER = [
+    'temperature',
+    'dynamic_temperature',
+    'quadratic_sampling',
+    'top_k',
+    'top_p',
+    'typical_p',
+    'epsilon_cutoff',
+    'eta_cutoff',
+    'tfs',
+    'top_a',
+    'min_p',
+    'mirostat',
+];
 const BIAS_KEY = '#textgenerationwebui_api-settings';
 
 // Maybe let it be configurable in the future?
@@ -42,6 +70,8 @@ const MANCER_SERVER_KEY = 'mancer_server';
 const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
 let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 let TOGETHERAI_SERVER = 'https://api.together.xyz';
+let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
+let OPENROUTER_SERVER = 'https://openrouter.ai/api';
 
 const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
@@ -96,6 +126,8 @@ const settings = {
     negative_prompt: '',
     grammar_string: '',
     banned_tokens: '',
+    sampler_priority: OOBA_DEFAULT_ORDER,
+    samplers: LLAMACPP_DEFAULT_ORDER,
     //n_aphrodite: 1,
     //best_of_aphrodite: 1,
     ignore_eos_token_aphrodite: false,
@@ -106,7 +138,9 @@ const settings = {
     type: textgen_types.OOBA,
     mancer_model: 'mytholite',
     togetherai_model: 'Gryphe/MythoMax-L2-13b',
+    infermaticai_model: '',
     ollama_model: '',
+    openrouter_model: 'openrouter/auto',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
     logit_bias: [],
@@ -170,6 +204,8 @@ const setting_names = [
     //'log_probs_aphrodite',
     //'prompt_log_probs_aphrodite'
     'sampler_order',
+    'sampler_priority',
+    'samplers',
     'n',
     'logit_bias',
     'custom_model',
@@ -204,6 +240,14 @@ export function getTextGenServer() {
         return TOGETHERAI_SERVER;
     }
 
+    if (settings.type === INFERMATICAI) {
+        return INFERMATICAI_SERVER;
+    }
+
+    if (settings.type === OPENROUTER) {
+        return OPENROUTER_SERVER;
+    }
+
     return settings.server_urls[settings.type] ?? '';
 }
 
@@ -227,8 +271,8 @@ async function selectPreset(name) {
 
 function formatTextGenURL(value) {
     try {
-        // Mancer/Together doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER || settings.type === TOGETHERAI) {
+        // Mancer/Together/InfermaticAI doesn't need any formatting (it's hardcoded)
+        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI || settings.type === OPENROUTER) {
             return value;
         }
 
@@ -259,6 +303,10 @@ function getTokenizerForTokenIds() {
 
     if (SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer)) {
         return power_user.tokenizer;
+    }
+
+    if (settings.type === OPENROUTER) {
+        return getCurrentOpenRouterModelTokenizer();
     }
 
     return tokenizers.LLAMA;
@@ -422,7 +470,7 @@ function loadTextGenSettings(data, loadedSettings) {
  * Sorts the sampler items by the given order.
  * @param {any[]} orderArray Sampler order array.
  */
-function sortItemsByOrder(orderArray) {
+function sortKoboldItemsByOrder(orderArray) {
     console.debug('Preset samplers order: ' + orderArray);
     const $draggableItems = $('#koboldcpp_order');
 
@@ -431,6 +479,26 @@ function sortItemsByOrder(orderArray) {
         const $item = $draggableItems.find(`[data-id="${index}"]`).detach();
         $draggableItems.append($item);
     }
+}
+
+function sortLlamacppItemsByOrder(orderArray) {
+    console.debug('Preset samplers order: ', orderArray);
+    const $container = $('#llamacpp_samplers_sortable');
+
+    orderArray.forEach((name) => {
+        const $item = $container.find(`[data-name="${name}"]`).detach();
+        $container.append($item);
+    });
+}
+
+function sortOobaItemsByOrder(orderArray) {
+    console.debug('Preset samplers order: ', orderArray);
+    const $container = $('#sampler_priority_container');
+
+    orderArray.forEach((name) => {
+        const $item = $container.find(`[data-name="${name}"]`).detach();
+        $container.append($item);
+    });
 }
 
 jQuery(function () {
@@ -449,7 +517,47 @@ jQuery(function () {
 
     $('#koboldcpp_default_order').on('click', function () {
         settings.sampler_order = KOBOLDCPP_ORDER;
-        sortItemsByOrder(settings.sampler_order);
+        sortKoboldItemsByOrder(settings.sampler_order);
+        saveSettingsDebounced();
+    });
+
+    $('#llamacpp_samplers_sortable').sortable({
+        delay: getSortableDelay(),
+        stop: function () {
+            const order = [];
+            $('#llamacpp_samplers_sortable').children().each(function () {
+                order.push($(this).data('name'));
+            });
+            settings.samplers = order;
+            console.log('Samplers reordered:', settings.samplers);
+            saveSettingsDebounced();
+        },
+    });
+
+    $('#llamacpp_samplers_default_order').on('click', function () {
+        sortLlamacppItemsByOrder(LLAMACPP_DEFAULT_ORDER);
+        settings.samplers = LLAMACPP_DEFAULT_ORDER;
+        console.log('Default samplers order loaded:', settings.samplers);
+        saveSettingsDebounced();
+    });
+
+    $('#sampler_priority_container').sortable({
+        delay: getSortableDelay(),
+        stop: function () {
+            const order = [];
+            $('#sampler_priority_container').children().each(function () {
+                order.push($(this).data('name'));
+            });
+            settings.sampler_priority = order;
+            console.log('Samplers reordered:', settings.sampler_priority);
+            saveSettingsDebounced();
+        },
+    });
+
+    $('#textgenerationwebui_default_order').on('click', function () {
+        sortOobaItemsByOrder(OOBA_DEFAULT_ORDER);
+        settings.sampler_priority = OOBA_DEFAULT_ORDER;
+        console.log('Default samplers order loaded:', settings.sampler_priority);
         saveSettingsDebounced();
     });
 
@@ -536,12 +644,13 @@ jQuery(function () {
             'penalty_alpha_textgenerationwebui': 0,
             'typical_p_textgenerationwebui': 1, // Added entry
             'guidance_scale_textgenerationwebui': 1,
+            'smoothing_factor_textgenerationwebui': 0,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
             const inputElement = $(`#${id}`);
             if (inputElement.prop('type') === 'checkbox') {
-                inputElement.prop('checked', value);
+                inputElement.prop('checked', value).trigger('input');
             } else if (inputElement.prop('type') === 'number') {
                 inputElement.val(value).trigger('input');
             } else {
@@ -615,8 +724,22 @@ function setSettingByName(setting, value, trigger) {
 
     if ('sampler_order' === setting) {
         value = Array.isArray(value) ? value : KOBOLDCPP_ORDER;
-        sortItemsByOrder(value);
+        sortKoboldItemsByOrder(value);
         settings.sampler_order = value;
+        return;
+    }
+
+    if ('sampler_priority' === setting) {
+        value = Array.isArray(value) ? value : OOBA_DEFAULT_ORDER;
+        sortOobaItemsByOrder(value);
+        settings.sampler_priority = value;
+        return;
+    }
+
+    if ('samplers' === setting) {
+        value = Array.isArray(value) ? value : LLAMACPP_DEFAULT_ORDER;
+        sortLlamacppItemsByOrder(value);
+        settings.samplers = value;
         return;
     }
 
@@ -694,7 +817,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
             } else {
                 const newText = data?.choices?.[0]?.text || data?.content || '';
                 text += newText;
-                logprobs = parseTextgenLogprobs(newText, data.choices?.[0]?.logprobs);
+                logprobs = parseTextgenLogprobs(newText, data.choices?.[0]?.logprobs || data?.completion_probabilities);
             }
 
             yield { text, swipes, logprobs };
@@ -710,7 +833,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
  * @param {Object} logprobs - logprobs object returned from the API
  * @returns {import('logprobs.js').TokenLogprobs | null} - converted logprobs
  */
-function parseTextgenLogprobs(token, logprobs) {
+export function parseTextgenLogprobs(token, logprobs) {
     if (!logprobs) {
         return null;
     }
@@ -727,9 +850,35 @@ function parseTextgenLogprobs(token, logprobs) {
             const candidates = Object.entries(topLogprobs[0]);
             return { token, topLogprobs: candidates };
         }
+        case LLAMACPP: {
+            /** @type {Record<string, number>[]} */
+            if (!logprobs?.length) {
+                return null;
+            }
+            const candidates = logprobs[0].probs.map(x => [ x.tok_str, x.prob ]);
+            return { token, topLogprobs: candidates };
+        }
         default:
             return null;
     }
+}
+
+export function parseTabbyLogprobs(data) {
+    const text = data?.choices?.[0]?.text;
+    const offsets = data?.choices?.[0]?.logprobs?.text_offset;
+
+    if (!text || !offsets) {
+        return null;
+    }
+
+    // Convert string offsets list to tokens
+    const tokens = offsets?.map((offset, index) => {
+        const nextOffset = offsets[index + 1] || text.length;
+        return text.substring(offset, nextOffset);
+    });
+
+    const topLogprobs = data?.choices?.[0]?.logprobs?.top_logprobs?.map(x => ({ top_logprobs: [x] }));
+    return tokens?.map((token, index) => parseTextgenLogprobs(token, topLogprobs[index])) || null;
 }
 
 /**
@@ -781,6 +930,14 @@ function getModel() {
         return settings.togetherai_model;
     }
 
+    if (settings.type === INFERMATICAI) {
+        return settings.infermaticai_model;
+    }
+
+    if (settings.type === OPENROUTER) {
+        return settings.openrouter_model;
+    }
+
     if (settings.type === APHRODITE) {
         return online_status;
     }
@@ -827,6 +984,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : 0,
         'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : 1,
         'smoothing_factor': settings.smoothing_factor,
+        'sampler_priority': settings.type === OOBA ? settings.sampler_priority : undefined,
+        'samplers': settings.type === LLAMACPP ? settings.samplers : undefined,
         'stopping_strings': getStoppingStrings(isImpersonate, isContinue),
         'stop': getStoppingStrings(isImpersonate, isContinue),
         'truncation_length': max_context,
@@ -867,6 +1026,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'n_predict': maxTokens,
         'mirostat': settings.mirostat_mode,
         'ignore_eos': settings.ban_eos_token,
+        'n_probs': power_user.request_token_probabilities ? 10 : undefined,
     };
     const aphroditeParams = {
         'n': canMultiSwipe ? settings.n : 1,
@@ -905,6 +1065,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         };
         params = Object.assign(params, llamaCppParams);
     }
+
+    eventSource.emitAndWait(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
 
     return params;
 }

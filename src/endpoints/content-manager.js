@@ -10,6 +10,7 @@ const contentLogPath = path.join(contentDirectory, 'content.log');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 const { DIRECTORIES } = require('../constants');
 const presetFolders = [DIRECTORIES.koboldAI_Settings, DIRECTORIES.openAI_Settings, DIRECTORIES.novelAI_Settings, DIRECTORIES.textGen_Settings];
+const characterCardParser = require('../character-card-parser.js');
 
 /**
  * Gets the default presets from the content directory.
@@ -220,6 +221,56 @@ async function downloadChubCharacter(id) {
 }
 
 /**
+ * Downloads a character card from the Pygsite.
+ * @param {string} id UUID of the character
+ * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string}>}
+ */
+async function downloadPygmalionCharacter(id) {
+    const result = await fetch(`https://server.pygmalion.chat/api/export/character/${id}/v2`);
+
+    if (!result.ok) {
+        const text = await result.text();
+        console.log('Pygsite returned error', result.status, text);
+        throw new Error('Failed to download character');
+    }
+
+    const jsonData = await result.json();
+    const characterData = jsonData?.character;
+
+    if (!characterData || typeof characterData !== 'object') {
+        console.error('Pygsite returned invalid character data', jsonData);
+        throw new Error('Failed to download character');
+    }
+
+    try {
+        const avatarUrl = characterData?.data?.avatar;
+
+        if (!avatarUrl) {
+            console.error('Pygsite character does not have an avatar', characterData);
+            throw new Error('Failed to download avatar');
+        }
+
+        const avatarResult = await fetch(avatarUrl);
+        const avatarBuffer = await avatarResult.buffer();
+
+        const cardBuffer = characterCardParser.write(avatarBuffer, JSON.stringify(characterData));
+
+        return {
+            buffer: cardBuffer,
+            fileName: `${sanitize(id)}.png`,
+            fileType: 'image/png',
+        };
+    } catch (e) {
+        console.error('Failed to download avatar, using JSON instead', e);
+        return {
+            buffer: Buffer.from(JSON.stringify(jsonData)),
+            fileName: `${sanitize(id)}.json`,
+            fileType: 'application/json',
+        };
+    }
+}
+
+/**
  *
  * @param {String} str
  * @returns { { id: string, type: "character" | "lorebook" } | null }
@@ -294,7 +345,7 @@ async function downloadJannyCharacter(uuid) {
 * @param {String} url
 * @returns {String | null } UUID of the character
 */
-function parseJannyUrl(url) {
+function getUuidFromUrl(url) {
     // Extract UUID from URL
     const uuidRegex = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/;
     const matches = url.match(uuidRegex);
@@ -317,8 +368,18 @@ router.post('/import', jsonParser, async (request, response) => {
         let type;
 
         const isJannnyContent = url.includes('janitorai');
-        if (isJannnyContent) {
-            const uuid = parseJannyUrl(url);
+        const isPygmalionContent = url.includes('pygmalion.chat');
+
+        if (isPygmalionContent) {
+            const uuid = getUuidFromUrl(url);
+            if (!uuid) {
+                return response.sendStatus(404);
+            }
+
+            type = 'character';
+            result = await downloadPygmalionCharacter(uuid);
+        } else if (isJannnyContent) {
+            const uuid = getUuidFromUrl(url);
             if (!uuid) {
                 return response.sendStatus(404);
             }

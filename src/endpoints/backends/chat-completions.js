@@ -3,7 +3,7 @@ const fetch = require('node-fetch').default;
 const { Readable } = require('stream');
 
 const { jsonParser } = require('../../express-common');
-const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY } = require('../../constants');
+const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
 const { convertClaudePrompt, convertGooglePrompt, convertTextCompletionPrompt } = require('../prompt-converters');
 
@@ -419,6 +419,9 @@ async function sendMistralAIRequest(request, response) {
     try {
         //must send a user role as last message
         const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
+        //large seems to be throwing a 500 error if we don't make the first message a user role, most likely a bug since the other models won't do this
+        if (request.body.model.includes('large'))
+            messages[0].role = 'user';
         const lastMsg = messages[messages.length - 1];
         if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
             if (lastMsg.role === 'assistant' && lastMsg.name) {
@@ -513,8 +516,8 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         api_url = 'https://openrouter.ai/api/v1';
         api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
-        // OpenRouter needs to pass the referer: https://openrouter.ai/docs
-        headers = { 'HTTP-Referer': request.headers.referer };
+        // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
+        headers = { ...OPENROUTER_HEADERS };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.MISTRALAI);
@@ -700,8 +703,8 @@ router.post('/generate', jsonParser, function (request, response) {
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         apiUrl = 'https://openrouter.ai/api/v1';
         apiKey = readSecret(SECRET_KEYS.OPENROUTER);
-        // OpenRouter needs to pass the referer: https://openrouter.ai/docs
-        headers = { 'HTTP-Referer': request.headers.referer };
+        // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
+        headers = { ...OPENROUTER_HEADERS };
         bodyParams = { 'transforms': ['middle-out'] };
 
         if (request.body.min_p !== undefined) {
