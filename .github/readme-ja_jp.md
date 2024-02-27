@@ -2,15 +2,15 @@
 
 ![SillyTavern-Banner](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
 
-モバイルフレンドリーなレイアウト、マルチAPI（KoboldAI/CPP、Horde、NovelAI、Ooba、OpenAI、OpenRouter、Claude、Scale）、VN ライクな Waifu モード、Stable Diffusion、TTS、WorldInfo（伝承本）、カスタマイズ可能な UI、自動翻訳、あなたにとって必要とする以上のプロンプトオプション＋サードパーティの拡張機能をインストールする機能。
+モバイルデバイスにも適したレイアウト・マルチAPI（KoboldAI/CPP、Horde、NovelAI、Ooba、OpenAI、OpenRouter、Claude、Scale）、VN ライクな Waifu モード、Stable Diffusion、TTS、WorldInfo（伝承本）、カスタマイズ可能なUI、自動翻訳、大量のプロンプトオプション＋サードパーティの拡張機能をインストールする機能
 
-[TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8 のフォークに基づいています
+[TavernAI](https://github.com/TavernAI/TavernAI) v.1.2.8 のフォークに基づいています。
 
-## 重要ニュース！
+## 重要事項
 
-1. 私たちは[ドキュメント website](https://docs.sillytavern.app/) を作成し、ほとんどの質問にお答えしています。
+1. 私たちは[ドキュメントウェブサイト](https://docs.sillytavern.app/) を作成し、ほとんどの質問にお答えしています。
 
-2. アップデートしたらに拡張機能を見失った？リリースバージョン 1.10.6 以降、これまで内蔵されていた拡張機能のほとんどがダウンロード可能なアドオンに変更されました。ダウンロードは、拡張機能パネル（トップバーのスタックドブロックアイコン）にある内蔵の "Download Extensions and Assets" メニューから行えます。
+2. アップデートしたら使っていた拡張機能を見失いましたか？リリースバージョン 1.10.6 以降、これまで内蔵されていた拡張機能のほとんどがダウンロード可能なアドオンに変更されました。ダウンロードは、拡張機能パネル（トップバーのスタックドブロックアイコン）にある内蔵の "Download Extensions and Assets" メニューから行えます。
 
 ### Cohee、RossAscends、SillyTavern コミュニティがお届けします
 
@@ -27,21 +27,21 @@ SillyTavern は、すべてのユーザーにスムーズな体験を保証す�
 * release -🌟 **ほとんどのユーザーにお勧め。** これは最も安定した推奨ブランチで、メジャーリリースがプッシュされた時のみ更新されます。大半のユーザーに適しています。
 * staging - ⚠️ **カジュアルな使用にはお勧めしない。** このブランチには最新の機能がありますが、いつ壊れるかわからないので注意してください。パワーユーザーとマニア向けです。
 
-git CLI の使い方に慣れていなかったり、ブランチが何なのかわからなかったりしても、心配はいりません！リリースブランチが常に望ましい選択肢となります。
+git CLI の使い方に慣れていなかったり、ブランチが何なのかわからなかったりしても、心配はいりません！releaseブランチが良い選択肢となります。
 
 ### Tavern 以外に何が必要ですか？
 
-Tavern は単なるユーザーインターフェイスなので、それだけでは役に立ちません。ロールプレイキャラクターとして機能する AI システムのバックエンドにアクセスする必要があります。様々なバックエンドがサポートされています： OpenAPI API (GPT)、KoboldAI (ローカルまたは Google Colab 上で動作)、その他。詳しくは [FAQ](https://docs.sillytavern.app/usage/faq/) をご覧ください。
+Tavern は単なるユーザーインターフェイスなので、それだけでは何もできません。ロールプレイキャラクターとして機能する AI システムのバックエンドにアクセスする必要があります。様々なバックエンドがサポートされています。リストはこちらです： OpenAPI API (GPT)、KoboldAI (ローカルまたは Google Colab 上で動作)、その他。詳しくは [FAQ](https://docs.sillytavern.app/usage/faq/) をご覧ください。
 
-### Tavern を実行するには、強力な PC が必要ですか？
+### Tavern を実行するには、ハイスペックなPCが必要ですか？
 
-Tavern は単なるユーザーインターフェイスであり、必要なハードウェアはごくわずかです。パワフルである必要があるのは、AI システムのバックエンドです。
+Tavern は単なるフロントエンドのUIであり、必要なハードウェアはごくわずかです。パワフルである必要があるのは、AI システムのバックエンドです。
 
 ## モバイルサポート
 
 > **注**
 
-> **このフォークは Termux を使って Android スマホでネイティブに実行できます。ArroganceComplex#2659 のガイドを参照してください:**
+> **このフォークは Termux を使って Android スマホで実行できます。ArroganceComplex#2659 のガイドを参照してください:**
 
 <https://rentry.org/STAI-Termux>
 
@@ -49,19 +49,19 @@ Tavern は単なるユーザーインターフェイスであり、必要なハ�
 
 ### コミュニティ Discord サーバーを開設しました
 
-サポートを受け、お気に入りのキャラクターやプロンプトを共有する:
+サポートを受けたり、作成したキャラを共有したり、コミュニティの作ったキャラと遊びたいですか？:
 
 ### [参加](https://discord.gg/RZdyAEUPvj)
 
 ***
 
-開発者と直接連絡を取る:
+開発者と直接連絡:
 
 * Discord: cohee または rossascends
 * Reddit: /u/RossAscends または /u/sillylossy
 * [GitHub issue を投稿](https://github.com/SillyTavern/SillyTavern/issues)
 
-## このバージョンには以下が含まれる
+## このバージョンには以下のコードが含まれます
 
 * 大幅に修正された TavernAI 1.2.8 (コードの 50% 以上が書き換えまたは最適化されています)
 * スワイプ
@@ -76,7 +76,7 @@ Tavern は単なるユーザーインターフェイスであり、必要なハ�
 
 ## 拡張機能
 
-SillyTavern は拡張性をサポートしており、[SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras) を介していくつかの追加AIモジュールをホストしています
+SillyTavern は拡張できるようになっており、[SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras) でいくつかの追加AIモジュールをホストしています
 
 * 作者ノート/キャラクターバイアス
 * キャラクターの感情表現（スプライト）
@@ -97,7 +97,7 @@ SillyTavern は拡張性をサポートしており、[SillyTavern Extras API](h
   * Right = 右スワイプ (注: チャットバーに何か入力されている場合、スワイプホットキーが無効になります)
   * Ctrl+Left = ローカルに保存された変数を見る（ブラウザのコンソールウィンドウにて）
   * Enter (チャットバー選択時) = AI にメッセージを送る
-  * Ctrl+Enter = 最後の AI 応答を再生成する
+  * Ctrl+Enter = 最後の AIのレスポンスを再生成する
 
 * ユーザー名の変更と文字の削除でページが更新されなくなりました。
 
@@ -136,10 +136,10 @@ SillyTavern は拡張性をサポートしており、[SillyTavern Extras API](h
 
 Git 経由でのインストール（更新を容易にするため推奨）
 
-きれいな写真付きのわかりやすいガイド:
+写真付きのわかりやすいガイドはこちらです:
 <https://docs.sillytavern.app/installation/windows/>
 
-  1. [NodeJS](https://nodejs.org/en) をインストールする(最新の LTS 版を推奨)
+  1. [NodeJS](https://nodejs.org/en) をインストール(最新の LTS 版を推奨)
   2. [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32) をインストールする
   3. Windows エクスプローラーを開く (`Win+E`)
   4. Windows によって制御または監視されていないフォルダを参照または作成する。（例: C:\MySpecialFolder\）
@@ -158,7 +158,7 @@ ZIP ダウンロードによるインストール（推奨しない）
   2. GitHub のリポジトリから zip をダウンロードする。(`ソースコード(zip)` は [Releases](https://github.com/SillyTavern/SillyTavern/releases/latest) から入手)
   3. お好きなフォルダに解凍してください
   4. `Start.bat` をダブルクリックまたはコマンドラインで実行する。
-  5. サーバーがあなたのためにすべてを準備したら、ブラウザのタブを開きます。
+  5. サーバーが準備できれば、ブラウザのタブを開きます。
 
 ### Linux
 
@@ -211,7 +211,7 @@ CIDR マスクも受け付ける（例：10.0.0.0/24）。
 * `whitelist.txt` ファイルを保存する。
 * TAI サーバーを再起動する。
 
-これでファイルに指定された IP を持つデバイスが接続できるようになる。
+これでファイルに指定された IP を持つデバイスが接続できるようになります。
 
 *注: `config.yaml` にも `whitelist` 配列があり、同じように使うことができるが、`whitelist.txt` が存在する場合、この配列は無視される。*
 
@@ -258,7 +258,7 @@ ST サーバを再起動すると、ユーザ名とパスワードさえ知っ�
 
 ユーザー設定パネルでブラー効果なし（高速 UI）モードを有効にしてみてください。
 
-## このプロジェクトが好きです！どうすればコントリビュートできますか？
+## このプロジェクトが気に入りました！どうすれば貢献できますか？
 
 ### やるべきこと
 
@@ -266,7 +266,7 @@ ST サーバを再起動すると、ユーザ名とパスワードさえ知っ�
 2. 確立されたテンプレートを使って機能提案と課題レポートを送る
 3. 何か質問する前に、readme ファイルや組み込みのドキュメントを読んでください
 
-### やらないべきこと
+### やるべきではないこと
 
 1. 金銭の寄付を申し出る
 2. 何の脈絡もなくバグ報告を送る
