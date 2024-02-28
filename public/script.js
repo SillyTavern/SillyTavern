@@ -1159,18 +1159,53 @@ export async function selectCharacterById(id) {
 
 function getTagBlock(item, entities) {
     let count = 0;
+    let subEntities = [];
 
     for (const entity of entities) {
         if (entitiesFilter.isElementTagged(entity, item.id)) {
             count++;
+            subEntities.push(entity);
         }
     }
 
     const template = $('#bogus_folder_template .bogus_folder_select').clone();
     template.attr({ 'tagid': item.id, 'id': `BogusFolder${item.id}` });
-    template.find('.avatar').css({ 'background-color': item.color, 'color': item.color2 });
-    template.find('.ch_name').text(item.name);
+    template.find('.avatar').css({ 'background-color': item.color, 'color': item.color2 }).attr('title', `[Folder] ${item.name}`);
+    template.find('.ch_name').text(item.name).attr('title', `[Folder] ${item.name}`);;
     template.find('.bogus_folder_counter').text(count);
+
+    // Fill inline character images
+    const inlineAvatars = template.find('.bogus_folder_avatars_block');
+    for (const entitiy of subEntities) {
+        const id = entitiy.id;
+
+        // Populate the template
+        const avatarTemplate = $('#bogus_folder_inline_character_template .avatar').clone();
+
+        let this_avatar = default_avatar;
+        if (entitiy.item.avatar != 'none') {
+            this_avatar = getThumbnailUrl('avatar', entitiy.item.avatar);
+        }
+
+        avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
+        avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entitiy.item.name);
+        avatarTemplate.attr('title', `[Character] ${entitiy.item.name}`);
+        avatarTemplate.toggleClass('is_fav', entitiy.item.fav || entitiy.item.fav == 'true');
+        avatarTemplate.find('.ch_fav').val(entitiy.item.fav);
+
+        // If this is a group, we need to hack slightly. We still want to keep most of the css classes and layout, but use a group avatar instead.
+        if (entitiy.type === 'group') {
+            const grpTemplate = getGroupAvatar(entitiy.item);
+
+            avatarTemplate.addClass(grpTemplate.attr('class'));
+            avatarTemplate.empty();
+            avatarTemplate.append(grpTemplate.children());
+            avatarTemplate.attr('title', `Group: ${entitiy.item.name}`);
+        }
+
+        inlineAvatars.append(avatarTemplate);
+    }
+
     return template;
 }
 
@@ -1200,9 +1235,9 @@ function getCharacterBlock(item, id) {
     // Populate the template
     const template = $('#character_template .character_select').clone();
     template.attr({ 'chid': id, 'id': `CharID${id}` });
-    template.find('img').attr('src', this_avatar);
-    template.find('.avatar').attr('title', item.avatar);
-    template.find('.ch_name').text(item.name);
+    template.find('img').attr('src', this_avatar).attr('alt', item.name);
+    template.find('.avatar').attr('title', `[Character] ${item.name}`);
+    template.find('.ch_name').text(item.name).attr('title', `[Character] ${item.name}`);
     if (power_user.show_card_avatar_urls) {
         template.find('.ch_avatar_url').text(item.avatar);
     }

@@ -567,14 +567,8 @@ function onViewTagsListClick() {
     list.append(tagContainer);
 
     const sortedTags = sortTags(tags);
-    // var highestSortOrder = sortedTags.reduce((max, tag) => tag.sort_order !== undefined ? Math.max(max, tag.sort_order) : max, -1);
 
     for (const tag of sortedTags) {
-        // // For drag&drop to work we need a sort_order defined, so set it but not save. Gets persisted if there are any tag settings changes
-        // if (tag.sort_order === undefined) {
-        //     tag.sort_order = ++highestSortOrder;
-        // }
-
         appendViewTagToList(tagContainer, tag, everything);
     }
 
