@@ -96,6 +96,12 @@
     /*styles for the color picker*/
     --tool-cool-color-picker-btn-bg: transparent;
     --tool-cool-color-picker-btn-border-color: transparent;
+
+    --avatar-base-height: 50px;
+    --avatar-base-width: 50px;
+    --avatar-base-border-radius: 2px;
+    --avatar-base-border-radius-round: 50%;
+    --inline-avatar-factor: 0.6;
 }
 
 * {
@@ -849,8 +855,8 @@ hr {
 }
 
 .add_avatar {
-    border: 2px solid var(--SmartThemeBodyColor);
-    margin: 2px;
+    border: var(--avatar-base-border-radius) solid var(--SmartThemeBodyColor);
+    margin: var(--avatar-base-border-radius);
     cursor: pointer;
     transition: filter 0.2s ease-in-out;
 }
@@ -860,14 +866,14 @@ hr {
 }
 
 .avatar {
-    width: 50px;
-    height: 50px;
+    width: var(--avatar-base-width);
+    height: var(--avatar-base-height);
     border-style: none;
     flex: 1;
 }
 
 .last_mes .mesAvatarWrapper {
-    padding-bottom: 50px;
+    padding-bottom: var(--avatar-base-height);
 }
 
 .mes .avatar {
@@ -880,8 +886,8 @@ hr {
 
 .hotswapAvatar,
 .hotswapAvatar .avatar {
-    width: 50px !important;
-    height: 50px !important;
+    width: var(--avatar-base-width) !important;
+    height: var(--avatar-base-height) !important;
     border-style: none;
 }
 
@@ -901,10 +907,10 @@ hr {
 
 .hotswapAvatar .avatar_collage,
 .hotswapAvatar.group_select {
-    border-radius: 50% !important;
+    border-radius: var(--avatar-base-border-radius-round) !important;
     position: relative;
     overflow: hidden;
-    min-width: 50px !important;
+    min-width: var(--avatar-base-width) !important;
 }
 
 .hotswapAvatar.group_select .avatar.avatar_collage img {
@@ -916,21 +922,21 @@ hr {
 }
 
 .hotswapAvatar .avatar {
-    width: 50px !important;
-    height: 50px !important;
+    width: var(--avatar-base-width) !important;
+    height: var(--avatar-base-height) !important;
     object-fit: cover;
     object-position: center center;
-    border-radius: 50% !important;
+    border-radius: var(--avatar-base-border-radius-round) !important;
     box-shadow: 0 0 5px var(--black50a);
 }
 
 .hotswapAvatar img,
 .avatar img {
-    width: 50px;
-    height: 50px;
+    width: var(--avatar-base-width);
+    height: var(--avatar-base-height);
     object-fit: cover;
     object-position: center center;
-    border-radius: 50%;
+    border-radius: var(--avatar-base-border-radius-round);
     border: 1px solid var(--SmartThemeBorderColor);
     /*--black30a*/
     box-shadow: 0 0 5px var(--black50a);
@@ -948,6 +954,43 @@ hr {
     outline-style: solid;
     outline-width: 1px;
     outline-color: var(--SmartThemeBorderColor);
+}
+
+.avatars_inline .avatar,
+.avatars_inline .avatar img {
+    width: calc(var(--avatar-base-width) * var(--inline-avatar-factor));
+    height: calc(var(--avatar-base-height) * var(--inline-avatar-factor));
+}
+
+.bogus_folder_avatars_block {
+    flex-wrap: wrap;
+    overflow: hidden;
+    height: calc(var(--avatar-base-height) * var(--inline-avatar-factor) + 2 * var(--avatar-base-border-radius));
+    /* margin-top: calc(var(--avatar-base-height) * var(--inline-avatar-factor) * 0.2); */
+}
+
+.bogus_folder_avatars_block .avatar {
+    margin: calc(var(--avatar-base-border-radius)) 0;
+}
+
+.group_select_block_list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.2rem;
+    align-items: flex-end;
+    flex-basis: 100%;
+}
+
+.group_select_block_list .group_ch_name:not(:last-child):not(:nth-last-child(2)):after {
+    content: ", ";
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
+.group_select_block_list .group_ch_name:nth-last-child(2):after {
+    content: " & ";
+    font-size: calc(var(--mainFontSize) * 0.9);
 }
 
 .mes_block {
@@ -1778,7 +1821,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .character_select.is_fav .avatar,
 .group_select.is_fav .avatar,
-.group_member.is_fav .avatar {
+.group_member.is_fav .avatar,
+.avatar.is_fav {
     outline: 2px solid var(--golden);
 }
 
@@ -1842,8 +1886,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
     cursor: pointer;
     margin-bottom: 1px;
     width: 100%;
-    outline: 2px solid transparent;
-    border: 2px solid transparent;
+    outline: var(--avatar-base-border-radius) solid transparent;
+    border: var(--avatar-base-border-radius) solid transparent;
 }
 
 .avatar-container .character_select_container {
@@ -2297,18 +2341,18 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 
 .avatar-container .avatar {
     cursor: pointer;
-    border-radius: 50%;
+    border-radius: var(--avatar-base-border-radius-round);
     align-self: center;
-    outline: 2px solid transparent;
+    outline: var(--avatar-base-border-radius) solid transparent;
     flex: unset;
 }
 
 .avatar-container.selected {
-    border: 2px solid rgba(255, 255, 255, 0.7);
+    border: var(--avatar-base-border-radius) solid rgba(255, 255, 255, 0.7);
 }
 
 .avatar-container.default_persona .avatar {
-    outline: 2px solid var(--golden);
+    outline: var(--avatar-base-border-radius) solid var(--golden);
 }
 
 .avatar-container.default_persona .set_default_persona {

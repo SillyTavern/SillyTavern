@@ -523,13 +523,27 @@ async function getGroups() {
 }
 
 export function getGroupBlock(group) {
+    let count = 0;
+    let namesList = [];
+
+    // Build inline name list
+    if (Array.isArray(group.members) && group.members.length) {
+        for (const member of group.members) {
+            count++;
+            const character = characters.find(x => x.avatar === member || x.name === member);
+            namesList.push(`<span class="group_ch_name">${character.name}</span>`);
+        }
+    }
+
     const template = $('#group_list_template .group_select').clone();
     template.data('id', group.id);
     template.attr('grid', group.id);
-    template.find('.ch_name').text(group.name);
+    template.find('.ch_name').text(group.name).attr('title', `[Group] ${group.name}`);
     template.find('.group_fav_icon').css('display', 'none');
     template.addClass(group.fav ? 'is_fav' : '');
     template.find('.ch_fav').val(group.fav);
+    template.find('.group_select_counter').text(count);
+    template.find('.group_select_block_list').append(namesList.join(''));
 
     // Display inline tags
     const tags = getTagsList(group.id);
@@ -565,11 +579,11 @@ function isValidImageUrl(url) {
 
 function getGroupAvatar(group) {
     if (!group) {
-        return $(`<div class="avatar"><img src="${default_avatar}"></div>`);
+        return $(`<div class="avatar" title="[Group] ${group.name}"><img src="${default_avatar}"></div>`);
     }
     // if isDataURL or if it's a valid local file url
     if (isValidImageUrl(group.avatar_url)) {
-        return $(`<div class="avatar"><img src="${group.avatar_url}"></div>`);
+        return $(`<div class="avatar" title="[Group] ${group.name}"><img src="${group.avatar_url}"></div>`);
     }
 
     const memberAvatars = [];
@@ -595,6 +609,7 @@ function getGroupAvatar(group) {
             groupAvatar.find(`.img_${i + 1}`).attr('src', memberAvatars[i]);
         }
 
+        groupAvatar.attr('title', `[Group] ${group.name}`);
         return groupAvatar;
     }
 
@@ -606,6 +621,7 @@ function getGroupAvatar(group) {
     // default avatar
     const groupAvatar = $('#group_avatars_template .collage_1').clone();
     groupAvatar.find('.img_1').attr('src', group.avatar_url || system_avatar);
+    groupAvatar.attr('title', `[Group] ${group.name}`);
     return groupAvatar;
 }
 
