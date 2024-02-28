@@ -22,7 +22,7 @@ import {
     parseTabbyLogprobs,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI, OPENROUTER } = textgen_types;
 
 import {
     world_info,
@@ -196,7 +196,7 @@ import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescriptio
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels } from './scripts/textgen-models.js';
+import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
@@ -1060,6 +1060,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === INFERMATICAI) {
             loadInfermaticAIModels(data?.data);
             online_status = textgen_settings.infermaticai_model;
+        } else if (textgen_settings.type === OPENROUTER) {
+            loadOpenRouterModels(data?.data);
+            online_status = textgen_settings.openrouter_model;
         } else {
             online_status = data?.result;
         }
@@ -5964,7 +5967,11 @@ function updateMessage(div) {
         text = text.trim();
     }
 
-    const bias = extractMessageBias(text);
+    const bias = substituteParams(extractMessageBias(text));
+    text = substituteParams(text);
+    if (bias) {
+        text = removeMacros(text);
+    }
     mes['mes'] = text;
     if (mes['swipe_id'] !== undefined) {
         mes['swipes'][mes['swipe_id']] = text;
@@ -6007,7 +6014,7 @@ function openMessageDelete(fromSlashCommand) {
 }
 
 function messageEditAuto(div) {
-    const { mesBlock, text, mes } = updateMessage(div);
+    const { mesBlock, text, mes, bias } = updateMessage(div);
 
     mesBlock.find('.mes_text').val('');
     mesBlock.find('.mes_text').val(messageFormatting(
@@ -6017,6 +6024,8 @@ function messageEditAuto(div) {
         mes.is_user,
         this_edit_mes_id,
     ));
+    mesBlock.find('.mes_bias').empty();
+    mesBlock.find('.mes_bias').append(messageFormatting(bias, '', false, false, -1));
     saveChatDebounced();
 }
 
@@ -7706,6 +7715,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_textgenerationwebui',
         type: textgen_types.INFERMATICAI,
     },
+    'openrouter-text': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.OPENROUTER,
+    },
 };
 
 async function selectContextCallback(_, name) {
@@ -8647,6 +8661,11 @@ jQuery(async function () {
         const infermaticAIKey = String($('#api_key_infermaticai').val()).trim();
         if (infermaticAIKey.length) {
             await writeSecret(SECRET_KEYS.INFERMATICAI, infermaticAIKey);
+        }
+
+        const openRouterKey = String($('#api_key_openrouter-tg').val()).trim();
+        if (openRouterKey.length) {
+            await writeSecret(SECRET_KEYS.OPENROUTER, openRouterKey);
         }
 
         validateTextGenUrl();

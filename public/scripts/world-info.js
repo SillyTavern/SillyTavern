@@ -1542,7 +1542,7 @@ function getWorldEntry(name, data, entry) {
             return;
         }
 
-        data.entries[uid].scanDepth = !isEmpty && !isNaN(value) && value >= 0 && value < MAX_SCAN_DEPTH ? Math.floor(value) : null;
+        data.entries[uid].scanDepth = !isEmpty && !isNaN(value) && value >= 0 && value <= MAX_SCAN_DEPTH ? Math.floor(value) : null;
         setOriginalDataValue(data, uid, 'extensions.scan_depth', data.entries[uid].scanDepth);
         saveWorldInfo(name, data);
     });

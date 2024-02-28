@@ -313,6 +313,8 @@ class PresetManager {
             'type',
             'custom_model',
             'bypass_status_check',
+            'infermaticai_model',
+            'openrouter_model',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 

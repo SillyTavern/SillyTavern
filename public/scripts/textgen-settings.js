@@ -14,6 +14,7 @@ import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasList
 
 import { power_user, registerDebugFunction } from './power-user.js';
 import EventSourceStream from './sse-stream.js';
+import { getCurrentOpenRouterModelTokenizer } from './textgen-models.js';
 import { SENTENCEPIECE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
 
@@ -34,9 +35,10 @@ export const textgen_types = {
     LLAMACPP: 'llamacpp',
     OLLAMA: 'ollama',
     INFERMATICAI: 'infermaticai',
+    OPENROUTER: 'openrouter',
 };
 
-const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI } = textgen_types;
+const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, OPENROUTER } = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
     'top_k',
@@ -69,6 +71,7 @@ const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
 let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 let TOGETHERAI_SERVER = 'https://api.together.xyz';
 let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
+let OPENROUTER_SERVER = 'https://openrouter.ai/api';
 
 const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
@@ -137,6 +140,7 @@ const settings = {
     togetherai_model: 'Gryphe/MythoMax-L2-13b',
     infermaticai_model: '',
     ollama_model: '',
+    openrouter_model: 'openrouter/auto',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
     logit_bias: [],
@@ -240,6 +244,10 @@ export function getTextGenServer() {
         return INFERMATICAI_SERVER;
     }
 
+    if (settings.type === OPENROUTER) {
+        return OPENROUTER_SERVER;
+    }
+
     return settings.server_urls[settings.type] ?? '';
 }
 
@@ -264,7 +272,7 @@ async function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         // Mancer/Together/InfermaticAI doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI) {
+        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI || settings.type === OPENROUTER) {
             return value;
         }
 
@@ -295,6 +303,10 @@ function getTokenizerForTokenIds() {
 
     if (SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer)) {
         return power_user.tokenizer;
+    }
+
+    if (settings.type === OPENROUTER) {
+        return getCurrentOpenRouterModelTokenizer();
     }
 
     return tokenizers.LLAMA;
@@ -920,6 +932,10 @@ function getModel() {
 
     if (settings.type === INFERMATICAI) {
         return settings.infermaticai_model;
+    }
+
+    if (settings.type === OPENROUTER) {
+        return settings.openrouter_model;
     }
 
     if (settings.type === APHRODITE) {
