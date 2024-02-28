@@ -617,7 +617,8 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'min_length_textgenerationwebui' ||
         sliderID == 'top_k' ||
         sliderID == 'mirostat_mode_kobold' ||
-        sliderID == 'rep_pen_range') {
+        sliderID == 'rep_pen_range' ||
+        sliderID == 'max_tokens_second_textgenerationwebui') {
         decimals = 0;
     }
     if (sliderID == 'min_temp_textgenerationwebui' ||
