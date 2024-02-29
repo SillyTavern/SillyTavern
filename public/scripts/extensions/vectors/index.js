@@ -218,6 +218,7 @@ async function processFiles(chat) {
             if (!message?.extra?.file) {
                 continue;
             }
+            console.debug(`Vectors: processFiles: message ${message.index}: has a file attachment, processing.`)
 
             // Trim file inserted by the script
             const fileText = String(message.mes)
@@ -229,6 +230,7 @@ async function processFiles(chat) {
 
             // File is too small
             if (fileText.length < thresholdLength) {
+                console.debug(`Vectors: processFiles: message ${message.index}: text of file "${message.extra.file.name}" shorter than vectorization threshold (${fileText.length} < ${thresholdLength} chars), keeping inlined.`)
                 continue;
             }
 
@@ -240,11 +242,16 @@ async function processFiles(chat) {
 
             // File is already in the collection
             if (!hashesInCollection.length) {
+                console.debug(`Vectors: processFiles: message ${message.index}: file "${fileName}" not yet in collection, vectorizing.`)
                 await vectorizeFile(fileText, fileName, collectionId);
+            } else {
+                console.debug(`Vectors: processFiles: message ${message.index}: file "${fileName}" found in collection.`)
             }
 
+            console.debug(`Vectors: processFiles: message ${message.index}: querying vector DB.`)
             const queryText = getQueryText(chat);
             const fileChunks = await retrieveFileChunks(queryText, collectionId);
+            console.debug(`Vectors: processFiles: message ${message.index}: retrieved ${fileChunks.length} chars.`);
 
             // Wrap it back in a code block
             message.mes = `\`\`\`\n${fileChunks}\n\`\`\`\n\n${message.mes}`;
