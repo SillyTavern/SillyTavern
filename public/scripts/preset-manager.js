@@ -315,6 +315,7 @@ class PresetManager {
             'bypass_status_check',
             'infermaticai_model',
             'openrouter_model',
+            'max_tokens_second',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
