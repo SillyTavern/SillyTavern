@@ -41,7 +41,7 @@ async function onVectorizeAllClick() {
         const chatId = getCurrentChatId();
 
         if (!chatId) {
-            toastr.info('No chat selected', 'Vectorization aborted');
+            toastr.info('No chat selected. Vectorization aborted.', 'Vector Storage');
             return;
         }
 
@@ -54,7 +54,7 @@ async function onVectorizeAllClick() {
 
         while (!finished) {
             if (is_send_press) {
-                toastr.info('Message generation is in progress.', 'Vectorization aborted');
+                toastr.info('Message generation is in progress. Vectorization aborted.', 'Vector Storage');
                 throw new Error('Message generation is in progress.');
             }
 
@@ -171,7 +171,7 @@ async function synchronizeChat(batchSize = 5) {
         console.error('Vectors: Failed to synchronize chat', error);
 
         const message = getErrorMessage(error.cause);
-        toastr.error(message, 'Vectorization failed');
+        toastr.error(`Vectorization failed. ${message}`, 'Vector Storage');
         return -1;
     } finally {
         syncBlocked = false;
@@ -277,7 +277,7 @@ async function retrieveFileChunks(queryText, collectionId) {
  */
 async function vectorizeFile(fileText, fileName, collectionId) {
     try {
-        toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
+        toastr.info(`Ingesting file ${fileName}. Vectorization may take some time, please wait...`, 'Vector Storage');
         const chunks = splitRecursive(fileText, settings.chunk_size);
         console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks`, chunks);
 
@@ -569,20 +569,20 @@ function toggleSettings() {
 async function onPurgeClick() {
     const chatId = getCurrentChatId();
     if (!chatId) {
-        toastr.info('No chat selected', 'Purge aborted');
+        toastr.info('No chat selected. Purge aborted.', 'Vector Storage');
         return;
     }
     if (await purgeVectorIndex(chatId)) {
-        toastr.success('Vector index purged', 'Purge successful');
+        toastr.success('Vector index purged successfully.', 'Vector Storage');
     } else {
-        toastr.error('Failed to purge vector index', 'Purge failed');
+        toastr.error('Failed to purge vector index', 'Vector Storage');
     }
 }
 
 async function onViewStatsClick() {
     const chatId = getCurrentChatId();
     if (!chatId) {
-        toastr.info('No chat selected');
+        toastr.info('No chat selected', 'Vector Storage');
         return;
     }
 
