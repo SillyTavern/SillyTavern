@@ -81,6 +81,7 @@ async function onVectorizeAllClick() {
         }
     } catch (error) {
         console.error('Vectors: Failed to vectorize all', error);
+        toastr.error(`Vectorize all failed. ${new String(error)}`, 'Vector Storage')
     } finally {
         $('#vectorize_progress').hide();
     }
