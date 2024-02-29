@@ -283,10 +283,12 @@ async function vectorizeFile(fileText, fileName, collectionId) {
 
         const items = chunks.map((chunk, index) => ({ hash: getStringHash(chunk), text: chunk, index: index }));
         await insertVectorItems(collectionId, items);
+        toastr.info(`Vectorization complete for ${fileName}.`, `Vector Storage`);
 
         console.log(`Vectors: Inserted ${chunks.length} vector items for file ${fileName} into ${collectionId}`);
     } catch (error) {
         console.error('Vectors: Failed to vectorize file', error);
+        toastr.error(`Vectorization failed for ${fileName}. ${new String(error)}`, 'Vector Storage');
     }
 }
 
