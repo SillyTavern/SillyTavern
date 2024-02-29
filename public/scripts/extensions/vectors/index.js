@@ -165,7 +165,7 @@ async function synchronizeChat(batchSize = 5) {
                 case 'extras_module_missing':
                     return 'Extras API must provide an "embeddings" module.';
                 default:
-                    return 'Check server console for more details';
+                    return 'Check server console for more details.';
             }
         }
 
