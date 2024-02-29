@@ -6270,6 +6270,14 @@ export async function displayPastChats() {
         const searchQuery = $(this).val();
         debouncedDisplay(searchQuery);
     });
+
+    // UX convenience: Focus the search field when the Manage Chat Files view opens.
+    setTimeout(function () {
+        const textSearchElement = $('#select_chat_search');
+        textSearchElement.click();
+        textSearchElement.focus();
+        textSearchElement.select();  // select content (if any) for easy erasing
+    }, 200);
 }
 
 function selectRightMenuWithAnimation(selectedMenuId) {
