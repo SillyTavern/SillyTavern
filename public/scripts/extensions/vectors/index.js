@@ -25,6 +25,7 @@ const settings = {
 
     // For files
     enabled_files: false,
+    science_mode: false,
     size_threshold: 10,
     chunk_size: 5000,
     chunk_count: 2,
@@ -278,6 +279,62 @@ async function retrieveFileChunks(queryText, collectionId) {
 }
 
 /**
+ * Sanitizes the text content of a scientific paper to obtain higher-quality text for vectorization.
+ *
+ * This is a really simplistic, classical regex-based algorithm. An LLM could likely do better, but that would be slow.
+ * We hope to get a result that's not horribly broken and that won't include irrelevant RAG query poisoning stuff.
+ *
+ * Currently, we:
+ *
+ *   - Strip the reference list.
+ *
+ *     The reference list contains the highest concentration of keywords of any kind (in the titles of the cited studies),
+ *     so it usually poisons RAG queries so that no matter what you search for, you'll only get chunks of the reference list.
+ *     Omitting the reference list from the text to be vectorized, RAG will look for matches in the paper content only.
+ *
+ *   - F IX H EADINGS T HAT L OOK L IKE T HIS.
+ *
+ *     This is a rather common issue in text extraction from a PDF.
+ *
+ * @param {string} fileText The text to sanitize
+ * @returns {string} The sanitized text
+ */
+function sanitizeScientificInput(fileText) {
+    // Fix section headings
+    //
+    const brokenUppercaseWordsFinder = new RegExp(/(?<!\b[A-Z]\s+)\b([A-Z])\s+([A-Z]+)\b/, 'g');  // "H EADING", but not "C  H EADING" (appendix section)
+    fileText = fileText.replaceAll(brokenUppercaseWordsFinder, '$1$2');
+    const brokenAppendixHeadingFinder = new RegExp(/([A-Z])\s+([A-Z])\s+([A-Z]+)\b/, 'g');  // "C H EADING"
+    fileText = fileText.replaceAll(brokenAppendixHeadingFinder, '$1 $2$3');  // -> "C HEADING"
+
+    const brokenHeadingsFinder = new RegExp(/^\s*([A-Z])\s+([a-z]+)\s*$/, 'mg');  // "H eading", on its own line
+    fileText = fileText.replaceAll(brokenHeadingsFinder, '$1$2');
+
+    // Strip reference list (easier now that the headings are already fixed).
+    //
+    // Linefeeds are sometimes lost, so the references may begin in the middle of a line.
+    // Since we can't trigger on any random mention of the word "References", we trigger in the middle of a line
+    // only for an all-uppercase "REFERENCES".
+    //
+    const referencesFinder = new RegExp(/(^\s*References\s*$|^\s*REFERENCES\s*$|\bREFERENCES\s*)/, 'mg');
+    const referencesMatches = [...fileText.matchAll(referencesFinder)];
+    if (referencesMatches.length > 0) {  // Detected a reference list
+        const appendixFinder = new RegExp(/(^\s*Appendi(x|ces)\s*$|^\s*A\s*PPENDI(X|CES)\s*$|\bAPPENDI(X|CES)\s*)/, 'mg');
+        // Some documents just start appendices like "A  Some stuff..." without a heading, but there's not much we can do about that.
+        // In those cases, we will simply ignore the appendices.
+        const appendixMatches = [...fileText.matchAll(appendixFinder)];
+        if (appendixMatches.length > 0) {  // Detected both a reference list and appendices
+            fileText = fileText.substring(0, referencesMatches[0].index).trim() + fileText.substring(appendixMatches[0].index);
+        } else {  // Detected only a reference list, no appendices
+            fileText = fileText.substring(0, referencesMatches[0].index).trim();
+        }
+    }
+
+    console.debug(fileText);
+    return fileText;
+}
+
+/**
  * Vectorizes a file and inserts it into the vector index.
  * @param {string} fileText File text
  * @param {string} fileName File name
@@ -286,6 +343,12 @@ async function retrieveFileChunks(queryText, collectionId) {
 async function vectorizeFile(fileText, fileName, collectionId) {
     try {
         toastr.info(`Ingesting file ${fileName}. Vectorization may take some time, please wait...`, 'Vector Storage');
+
+        if (settings.science_mode) {
+            console.debug(`Vectors: Science mode is enabled. Sanitizing input ${fileName}.`);
+            fileText = sanitizeScientificInput(fileText);
+        }
+
         const chunks = splitRecursive(fileText, settings.chunk_size);
         console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks`, chunks);
 
@@ -641,6 +704,11 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
         toggleSettings();
+    });
+    $('#vectors_science_mode').prop('checked', settings.science_mode).on('input', () => {
+        settings.science_mode = $('#vectors_science_mode').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
     });
     $('#vectors_source').val(settings.source).on('change', () => {
         settings.source = String($('#vectors_source').val());
