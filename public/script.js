@@ -8376,7 +8376,7 @@ jQuery(async function () {
             //Fix it; New chat doesn't create while open create character menu
             await clearChat();
             chat.length = 0;
-            
+
             chat_file_for_del = getCurrentChatDetails().sessionName
             const isDelChatCheckbox = document.getElementById('del_chat_checkbox').checked
 
@@ -8770,15 +8770,14 @@ jQuery(async function () {
 
         else if (id == 'option_start_new_chat') {
             if ((selected_group || this_chid !== undefined) && !is_send_press) {
-                popup_type = 'new_chat';
                 callPopup(`
                     <h3>Start new chat?</h3><br>
-                    <label for="del_chat_checkbox" class="checkbox_label justifyCenter" 
+                    <label for="del_chat_checkbox" class="checkbox_label justifyCenter"
                     title="If necessary, you can later restore this chat file from the /backups folder">
                         <input type="checkbox" id="del_chat_checkbox" />
                         <span>Also delete the current chat file</span>
                     </label><br>
-                `);
+                `, 'new_chat', '');
             }
         }
 

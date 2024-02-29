@@ -1622,7 +1622,7 @@ export async function deleteGroupChat(groupId, chatId) {
 
     if (response.ok) {
         if (group.chats.length) {
-            await openGroupChat(groupId, group.chats[group.chats.length-1]);
+            await openGroupChat(groupId, group.chats[group.chats.length - 1]);
         } else {
             await createNewGroupChat(groupId);
         }
