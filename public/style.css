@@ -50,6 +50,7 @@
     /*Default Theme, will be changed by ToolCool Color Picker*/
     --SmartThemeBodyColor: rgb(220, 220, 210);
     --SmartThemeEmColor: rgb(145, 145, 145);
+    --SmartThemeUnderlineColor: rgb(188, 231, 207);
     --SmartThemeQuoteColor: rgb(225, 138, 36);
     /* --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9); */
     --SmartThemeBlurTintColor: rgba(23, 23, 23, 1);
@@ -272,6 +273,11 @@ table.responsiveTable {
 .mes_text i,
 .mes_text em {
     color: var(--SmartThemeEmColor);
+}
+
+.mes_text u
+{
+    color: var(--SmartThemeUnderlineColor);
 }
 
 .mes_text q {

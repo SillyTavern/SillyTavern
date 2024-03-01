@@ -113,6 +113,7 @@
         "shadow_width": 2,
         "main_text_color": "rgba(220, 220, 210, 1)",
         "italics_text_color": "rgba(145, 145, 145, 1)",
+        "underline_text_color": "rgba(188, 231, 207, 1)",
         "quote_text_color": "rgba(225, 138, 36, 1)",
         "blur_tint_color": "rgba(23, 23, 23, 1)",
         "user_mes_blur_tint_color": "rgba(0, 0, 0, 0.9)",
