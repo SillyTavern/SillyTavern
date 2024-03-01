@@ -309,6 +309,7 @@ class PresetManager {
             'mancer_model',
             'togetherai_model',
             'ollama_model',
+            'aphrodite_model',
             'server_urls',
             'type',
             'custom_model',

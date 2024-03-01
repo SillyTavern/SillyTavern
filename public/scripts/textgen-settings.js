@@ -142,6 +142,7 @@ const settings = {
     infermaticai_model: '',
     ollama_model: '',
     openrouter_model: 'openrouter/auto',
+    aphrodite_model: '',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
     logit_bias: [],
@@ -941,7 +942,7 @@ function getModel() {
     }
 
     if (settings.type === APHRODITE) {
-        return online_status;
+        return settings.aphrodite_model;
     }
 
     if (settings.type === OLLAMA) {

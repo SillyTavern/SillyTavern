@@ -196,7 +196,7 @@ import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescriptio
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels } from './scripts/textgen-models.js';
+import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadAphroditeModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
@@ -1064,6 +1064,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === OPENROUTER) {
             loadOpenRouterModels(data?.data);
             online_status = textgen_settings.openrouter_model;
+        } else if (textgen_settings.type === APHRODITE) {
+            loadAphroditeModels(data?.data);
+            online_status = textgen_settings.aphrodite_model;
         } else {
             online_status = data?.result;
         }
