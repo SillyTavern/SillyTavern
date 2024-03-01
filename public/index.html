@@ -1276,15 +1276,26 @@
                                         <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba, koboldcpp, aphrodite, tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Smoothing Factor">Smoothing Factor</small>
-                                        <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
-                                        <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
-                                    </div>
                                     <div data-newbie-hidden data-tg-type="ooba" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Max Tokens Second">Maximum tokens/second</small>
                                         <input class="neo-range-slider" type="range" id="max_tokens_second_textgenerationwebui" name="volume" min="0" max="20" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-newbie-hidden name="smoothingBlock" class="wide100p">
+                                        <h4 class="wide100p textAlignCenter">
+                                            <label data-i18n="Smooth Sampling">Smooth Sampling</label>
+                                            <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Smooth Sampling" title="Allows you to use quadratic/cubic transformations to adjust the distribution. Lower Smoothing Factor values will be more creative, usually between 0.2-0.3 is the sweetspot (assuming the curve = 1). Higher Smoothing Curve values will make the curve steeper, which will punish low probability choices more aggressively. 1.0 curve is equivalent to only using Smoothing Factor."></div>
+                                        </h4>
+                                        <div data-newbie-hidden data-tg-type="ooba, koboldcpp, aphrodite, tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <small data-i18n="Smoothing Factor">Smoothing Factor</small>
+                                            <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
+                                            <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
+                                        </div>
+                                        <div data-newbie-hidden data-tg-type="ooba, koboldcpp, aphrodite, tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <small data-i18n="Smoothing Curve">Smoothing Curve</small>
+                                            <input class="neo-range-slider" type="range" id="smoothing_curve_textgenerationwebui" name="volume" min="1" max="10" step="0.01" />
+                                            <input class="neo-range-input" type="number" min="1" max="10" step="0.01" data-for="smoothing_curve_textgenerationwebui" id="smoothing_curve_counter_textgenerationwebui">
+                                        </div>
                                     </div>
                                     <!--
                                         <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Responses">
