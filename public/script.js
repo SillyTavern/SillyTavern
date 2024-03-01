@@ -6206,10 +6206,8 @@ export async function displayPastChats() {
             // Fragment search a.k.a. swoop (as in `helm-swoop` in the Helm package of Emacs).
             // Split a `query` {string} into its fragments {string[]}.
             function makeQueryFragments(query) {
-                let fragments = query.trim().split(/\s+/).map( function (str) { return str.trim(); } );
-                fragments = [...new Set(fragments)];  // uniques only
+                let fragments = query.trim().split(/\s+/).map(str => str.trim().toLowerCase()).filter(onlyUnique);
                 // fragments = fragments.filter( function(str) { return str.length >= 3; } );  // Helm does this, but perhaps better if we don't.
-                fragments = fragments.map( function (str) { return str.toLowerCase(); } );
                 return fragments;
             }
             // Check whether `text` {string} includes all of the `fragments` {string[]}.
@@ -6217,7 +6215,7 @@ export async function displayPastChats() {
                 if (!text) {
                     return false;
                 }
-                return fragments.every(function (item, idx, arr) { return text.includes(item); });
+                return fragments.every(item => text.includes(item));
             }
             const fragments = makeQueryFragments(searchQuery);
             // At least one chat message must match *all* the fragments.
