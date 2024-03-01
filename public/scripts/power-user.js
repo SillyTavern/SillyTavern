@@ -138,6 +138,7 @@ let power_user = {
 
     main_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor').trim()}`,
     italics_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeEmColor').trim()}`,
+    underline_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeUnderlineColor').trim()}`,
     quote_text_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeQuoteColor').trim()}`,
     blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()}`,
     chat_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeChatTintColor').trim()}`,
@@ -255,6 +256,7 @@ const storage_keys = {
 
     main_text_color: 'TavernAI_main_text_color',
     italics_text_color: 'TavernAI_italics_text_color',
+    underline_text_color: 'TavernAI_underline_text_color',
     quote_text_color: 'TavernAI_quote_text_color',
     blur_tint_color: 'TavernAI_blur_tint_color',
     chat_tint_color: 'TavernAI_chat_tint_color',
@@ -1040,6 +1042,9 @@ async function applyThemeColor(type) {
     if (type === 'italics') {
         document.documentElement.style.setProperty('--SmartThemeEmColor', power_user.italics_text_color);
     }
+    if (type === 'underline') {
+        document.documentElement.style.setProperty('--SmartThemeUnderlineColor', power_user.underline_text_color);
+    }
     if (type === 'quote') {
         document.documentElement.style.setProperty('--SmartThemeQuoteColor', power_user.quote_text_color);
     }
@@ -1132,6 +1137,7 @@ async function applyTheme(name) {
     const themeProperties = [
         { key: 'main_text_color', selector: '#main-text-color-picker', type: 'main' },
         { key: 'italics_text_color', selector: '#italics-color-picker', type: 'italics' },
+        { key: 'underline_text_color', selector: '#underline-color-picker', type: 'underline' },
         { key: 'quote_text_color', selector: '#quote-color-picker', type: 'quote' },
         { key: 'blur_tint_color', selector: '#blur-tint-color-picker', type: 'blurTint' },
         { key: 'chat_tint_color', selector: '#chat-tint-color-picker', type: 'chatTint' },
@@ -1541,6 +1547,7 @@ function loadPowerUserSettings(settings, data) {
 
     $('#main-text-color-picker').attr('color', power_user.main_text_color);
     $('#italics-color-picker').attr('color', power_user.italics_text_color);
+    $('#underline-color-picker').attr('color', power_user.underline_text_color);
     $('#quote-color-picker').attr('color', power_user.quote_text_color);
     $('#blur-tint-color-picker').attr('color', power_user.blur_tint_color);
     $('#chat-tint-color-picker').attr('color', power_user.chat_tint_color);
@@ -2049,6 +2056,7 @@ async function saveTheme(name = undefined) {
         blur_strength: power_user.blur_strength,
         main_text_color: power_user.main_text_color,
         italics_text_color: power_user.italics_text_color,
+        underline_text_color: power_user.underline_text_color,
         quote_text_color: power_user.quote_text_color,
         blur_tint_color: power_user.blur_tint_color,
         chat_tint_color: power_user.chat_tint_color,
@@ -2892,6 +2900,12 @@ $(document).ready(() => {
     $('#italics-color-picker').on('change', (evt) => {
         power_user.italics_text_color = evt.detail.rgba;
         applyThemeColor('italics');
+        saveSettingsDebounced();
+    });
+
+    $('#underline-color-picker').on('change', (evt) => {
+        power_user.underline_text_color = evt.detail.rgba;
+        applyThemeColor('underline');
         saveSettingsDebounced();
     });
 

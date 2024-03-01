@@ -689,6 +689,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
             literalMidWordUnderscores: true,
             parseImgDimensions: true,
             tables: true,
+            underline: true,
         });
     }
 
