@@ -1208,7 +1208,7 @@ function getCharacterBlock(item, id) {
     template.toggleClass('is_fav', item.fav || item.fav == 'true');
     template.find('.ch_fav').val(item.fav);
 
-    const description = item.data?.creator_notes?.split('\n', 1)[0] || '';
+    const description = item.data?.creator_notes || '';
     if (description) {
         template.find('.ch_description').text(description);
     }
