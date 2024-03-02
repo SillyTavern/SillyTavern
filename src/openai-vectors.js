@@ -2,6 +2,11 @@ const fetch = require('node-fetch').default;
 const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
 
 const SOURCES = {
+    'togetherai': {
+        secretKey: SECRET_KEYS.TOGETHERAI,
+        url: 'api.together.xyz',
+        model: 'togethercomputer/m2-bert-80M-32k-retrieval',
+    },
     'mistral': {
         secretKey: SECRET_KEYS.MISTRALAI,
         url: 'api.mistral.ai',
@@ -18,9 +23,10 @@ const SOURCES = {
  * Gets the vector for the given text batch from an OpenAI compatible endpoint.
  * @param {string[]} texts - The array of texts to get the vector for
  * @param {string} source - The source of the vector
+ * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getOpenAIBatchVector(texts, source) {
+async function getOpenAIBatchVector(texts, source, model = '') {
     const config = SOURCES[source];
 
     if (!config) {
@@ -44,7 +50,7 @@ async function getOpenAIBatchVector(texts, source) {
         },
         body: JSON.stringify({
             input: texts,
-            model: config.model,
+            model: model || config.model,
         }),
     });
 
@@ -72,10 +78,11 @@ async function getOpenAIBatchVector(texts, source) {
  * Gets the vector for the given text from an OpenAI compatible endpoint.
  * @param {string} text - The text to get the vector for
  * @param {string} source - The source of the vector
+ * @param model
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getOpenAIVector(text, source) {
-    const vectors = await getOpenAIBatchVector([text], source);
+async function getOpenAIVector(text, source, model = '') {
+    const vectors = await getOpenAIBatchVector([text], source, model);
     return vectors[0];
 }
 
