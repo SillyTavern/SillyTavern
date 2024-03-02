@@ -12,7 +12,7 @@ const settings = {
     // For both
     source: 'transformers',
     include_wi: false,
-    model: 'togethercomputer/m2-bert-80M-32k-retrieval',
+    togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
 
     // For chats
     enabled_chats: false,
@@ -447,10 +447,9 @@ function addExtrasHeaders(headers) {
  */
 function addTogetherAiHeaders(headers) {
     Object.assign(headers, {
-        'X-Togetherai-Model': extension_settings.vectors.model,
+        'X-Togetherai-Model': extension_settings.vectors.togetherai_model,
     });
 }
-
 
 /**
  * Inserts vector items into a collection
@@ -580,6 +579,7 @@ async function purgeVectorIndex(collectionId) {
 function toggleSettings() {
     $('#vectors_files_settings').toggle(!!settings.enabled_files);
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
+    $('#together_vectorsModel').toggle(settings.source === 'togetherai');
 }
 
 async function onPurgeClick() {
@@ -634,12 +634,6 @@ jQuery(async () => {
 
     Object.assign(settings, extension_settings.vectors);
 
-    if (settings.source === 'togetherai') {
-        $('#vectorsModel').show();
-    } else {
-        $('#vectorsModel').hide();
-    }
-
     // Migrate from TensorFlow to Transformers
     settings.source = settings.source !== 'local' ? settings.source : 'transformers';
     $('#extensions_settings2').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
@@ -657,17 +651,13 @@ jQuery(async () => {
     });
     $('#vectors_source').val(settings.source).on('change', () => {
         settings.source = String($('#vectors_source').val());
-        if (settings.source === 'togetherai') {
-            $('#vectorsModel').show();
-        } else {
-            $('#vectorsModel').hide();
-        }
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
+        toggleSettings();
     });
 
-    $('#vectors_model').val(settings.model).on('change', () => {
-        settings.model = String($('#vectors_model').val());
+    $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
+        settings.togetherai_model = String($('#vectors_togetherai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

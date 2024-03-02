@@ -50,7 +50,7 @@ async function getOpenAIBatchVector(texts, source, model = '') {
         },
         body: JSON.stringify({
             input: texts,
-            model: source === 'togetherai' && model !== '' ? model : config.model,
+            model: model || config.model,
         }),
     });
 
