@@ -2491,12 +2491,12 @@ export function getCharacterCardFields() {
         return result;
     }
 
-    const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
-    result.description = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
-    result.personality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
+    const scenarioText = chat_metadata['scenario'] || characters[this_chid]?.scenario;
+    result.description = baseChatReplace(characters[this_chid].description?.trim(), name1, name2);
+    result.personality = baseChatReplace(characters[this_chid].personality?.trim(), name1, name2);
     result.scenario = baseChatReplace(scenarioText.trim(), name1, name2);
-    result.mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
-    result.persona = baseChatReplace(power_user.persona_description.trim(), name1, name2);
+    result.mesExamples = baseChatReplace(characters[this_chid].mes_example?.trim(), name1, name2);
+    result.persona = baseChatReplace(power_user.persona_description?.trim(), name1, name2);
     result.system = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
     result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
 
