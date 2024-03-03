@@ -1,15 +1,20 @@
 // Showdown extension that replaces words surrounded by singular underscores with <em> tags
 export const markdownUnderscoreExt = () => {
-    if (!canUseNegativeLookbehind()) {
-        console.log('Showdown-underscore extension: Negative lookbehind not supported. Skipping.');
+    try {
+        if (!canUseNegativeLookbehind()) {
+            console.log('Showdown-underscore extension: Negative lookbehind not supported. Skipping.');
+            return [];
+        }
+
+        return [{
+            type: 'lang',
+            regex: new RegExp('\\b(?<!_)_(?!_)(.*?)(?<!_)_(?!_)\\b', 'g'),
+            replace: '<em>$1</em>',
+        }];
+    } catch (e) {
+        console.error('Error in Showdown-underscore extension:', e);
         return [];
     }
-
-    return [{
-        type: 'lang',
-        regex: /\b(?<!_)_(?!_)(.*?)(?<!_)_(?!_)\b/g,
-        replace: '<em>$1</em>',
-    }];
 };
 
 function canUseNegativeLookbehind() {
