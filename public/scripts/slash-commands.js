@@ -173,8 +173,7 @@ parser.addCommand('gen', generateCallback, [], '<span class="monospace">(lock=on
 parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
-parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] (search value) – performs a fuzzy match of the provided search using the provided list of value and passes the closest match to the next command through the pipe.', true, true);
-parser.addCommand('pass', (_, arg) => arg, ['return'], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
+parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] threshold=0.4 (text to search) – performs a fuzzy match of each items of list within the text to search. If any item matches then its name is returned. If no item list matches the text to search then undefined is returned. The optional threshold (default is 0.4) allows some control over the matching. A low value (min 0.0) means the match is very strict. At 1.0 (max) the match is very loose and probably matches anything. The returned value passes to the next command through the pipe.', true, true);parser.addCommand('pass', (_, arg) => arg, ['return'], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
 parser.addCommand('delay', delayCallback, ['wait', 'sleep'], '<span class="monospace">(milliseconds)</span> – delays the next command in the pipe by the specified number of milliseconds.', true, true);
 parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(default="string" large=on/off wide=on/off okButton="string" rows=number [text])</span> – Shows a popup with the provided text and an input field. The default argument is the default value of the input field, and the text argument is the text to display.', true, true);
 parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">[key1=value key2=value ...] ([qrSet.]qrLabel)</span> – runs a Quick Reply with the specified name from a currently active preset or from another preset, named arguments can be referenced in a QR with {{arg::key}}.', true, true);
@@ -502,7 +501,24 @@ async function inputCallback(args, prompt) {
     return result || '';
 }
 
-function fuzzyCallback(args, value) {
+/**
+ * Each item in "args.list" is searched within "search_item" using fuzzy search. If any matches it returns the matched "item".
+ * @param {any} args - arguments containing "list" (JSON array) and optionaly "threshold" (float between 0.0 and 1.0)
+ * @param {list} args.list - list of words you search into search_in_value
+ * @param {number} args.threshold - sensitivity of search, the lower the strictier, default value is 0.4
+ * @param {string} search_in_value - the string where items of list are searched
+ * @returns {string}
+ */
+function fuzzyCallback(args, search_in_value) {
+    // 
+    // args.list : list of words (no space) you search into search_in_value
+    // args.threshold : sensitivity of search, lower the more strict (added to give more flexibility)
+    // search_in_value: the text where you want to search
+    //
+    // /fuzzy list=["down","left","up","right"] "he looks up" | /echo
+    // should return "up"
+    // https://www.fusejs.io/
+
     if (!value) {
         console.warn('WARN: No argument provided for /fuzzy command');
         return '';
@@ -520,14 +536,37 @@ function fuzzyCallback(args, value) {
             return '';
         }
 
-        const fuse = new Fuse(list, {
+        const params = {
             includeScore: true,
             findAllMatches: true,
             ignoreLocation: true,
-            threshold: 0.7,
-        });
-        const result = fuse.search(value);
-        return result[0]?.item;
+            threshold: 0.4,
+        };
+        // threshold determines how strict is the match, low threshold value is very strict, at 1 (nearly?) everything matches
+        if ( 'threshold' in args ) {
+            params.threshold = parseFloat(resolveVariable(args.threshold));
+            if ( isNaN(params.threshold) ) {
+                console.warn('WARN: \'threshold\' argument must be a float between 0.0 and 1.0 for /fuzzy command');
+                return '';
+            }
+            if ( params.threshold < 0 ) {
+                params.threshold = 0;
+            }
+            if ( params.threshold > 1 ) {
+                params.threshold = 1;
+            }
+        }
+
+        const fuse = new Fuse([search_in_value], params);
+        // each item in the "list" is searched within "search_item", if any matches it returns the matched "item"
+        for (let search_item of list) {
+            let result = fuse.search(search_item);
+            if ( result.length > 0 ) {
+                console.info('fuzzyCallback Matched: ' + search_item);
+                return search_item;
+            }
+        }
+        return '';
     } catch {
         console.warn('WARN: Invalid list argument provided for /fuzzy command');
         return '';
