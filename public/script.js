@@ -1380,6 +1380,22 @@ export async function getOneCharacter(avatarUrl) {
     }
 }
 
+function getCharacterSource(chId = this_chid) {
+    const character = characters[chId];
+
+    if (!character) {
+        return '';
+    }
+
+    const chubId = characters[this_chid]?.data?.extensions?.chub?.full_path;
+
+    if (chubId) {
+        return `https://chub.ai/characters/${chubId}`;
+    }
+
+    return '';
+}
+
 async function getCharacters() {
     var response = await fetch('/api/characters/all', {
         method: 'POST',
@@ -6481,13 +6497,6 @@ export function select_selected_character(chid) {
     setWorldInfoButtonClass(chid);
     checkEmbeddedWorld(chid);
 
-    // Disable or enable Link to Source dropdown menu item depending on the presence of 'full_path' property
-    $('#character_source').prop( "disabled", true );
-    const chidSourceData = Object.values(characters[this_chid].data.extensions)
-    Object.entries(chidSourceData).forEach(function([key, value]) {
-        if (Object.keys(value).includes('full_path')) $('#character_source').prop( "disabled", false );
-    });
-    
     $('#form_create').attr('actiontype', 'editcharacter');
     $('.form_create_bottom_buttons_block .chat_lorebook_button').show();
     saveSettingsDebounced();
@@ -9816,22 +9825,19 @@ jQuery(async function () {
                 await importEmbeddedWorldInfo();
                 saveCharacterDebounced();
                 break;
-            case 'character_source':
-                const chidSourceData = characters[this_chid].data.extensions
-                switch(true) {
-                    case Object.hasOwn(chidSourceData, 'chub') :
-                        window.open('https://chub.ai/characters/' + chidSourceData.chub.full_path, '_blank');
-                        break;
-                    case Object.hasOwn(chidSourceData, 'janitorai') : // not implemented yet
-                        window.open('https://janitorai.com/characters/' + chidSourceData.janitorai.full_path, '_blank');
-                        break;
-                    case Object.hasOwn(chidSourceData, 'pygmalion') : // not implemented yet
-                        window.open('https://pygmalion.chat/character/' + chidSourceData.pygmalion.full_path, '_blank');
-                        break;
-                    default: toastr.info("This character doesn't seem to have a source.");
+            case 'character_source': {
+                const source = getCharacterSource(this_chid);
+                if (source && isValidUrl(source)) {
+                    const url = new URL(source);
+                    const confirm = await callPopup(`Open ${url.hostname} in a new tab?`, 'confirm');
+                    if (confirm) {
+                        window.open(source, '_blank');
+                    }
+                } else {
+                    toastr.info('This character doesn\'t seem to have a source.');
                 }
-                break;
-                
+            } break;
+
             /*case 'delete_button':
                 popup_type = "del_ch";
                 callPopup(`
