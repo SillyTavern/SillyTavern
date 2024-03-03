@@ -3588,7 +3588,7 @@
                                     <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
                                 </label>
                             </div>
-                            <div name="ChatMessageHandlingToggles" >
+                            <div name="ChatMessageHandlingToggles">
                                 <h4 data-i18n="Chat/Message Handling">Chat/Message Handling</h4>
                                 <div data-newbie-hidden class="flex-container alignitemscenter">
                                     <span data-i18n="Send on Enter">
@@ -3617,7 +3617,7 @@
                                         <input id="swipes-checkbox" type="checkbox" />
                                         <span data-i18n="Swipes">Swipes</span><i class="fa-solid fa-desktop"></i><i class="fa-solid fa-mobile-screen-button"></i>
                                     </label>
-                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox" title="Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC.", data-i18n="[title]Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC">
+                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox" title="Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC." , data-i18n="[title]Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC">
                                         <input id="gestures-checkbox" type="checkbox" />
                                         <span data-i18n="Gestures">Gestures</span>
                                         <i class="fa-solid fa-mobile-screen-button"></i>
@@ -3700,7 +3700,7 @@
                                 </div>
                             </div>
                             <div data-newbie-hidden class="flex-container">
-                                <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat." >
+                                <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat.">
                                     <span data-i18n="Reload Chat">Reload Chat</span>
                                 </div>
                                 <div id="debug_menu" class="menu_button whitespacenowrap" data-i18n="Debug Menu">
@@ -4014,44 +4014,48 @@
                             </div>
                         </div>
                         <hr>
-                        <div id="description_div" class="marginBot5 flex-container alignitemscenter">
-                            <span data-i18n="Character Description">Description</span>
-                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
-                            <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
-                                <span class="fa-solid fa-circle-question note-link-span"></span>
-                            </a>
-                        </div>
-                        <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
-                        <div class="extension_token_counter">
-                            Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
-                        </div>
-                        <div id="first_message_div" class="marginBot5 title_restorable">
-                            <div class="flex-container alignitemscenter">
-                                <span data-i18n="First message">First message</span>
-                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor"></i>
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
-                                    <span class="fa-solid fa-circle-question note-link-span"></span>
-                                </a>
-                            </div>
-                            <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
-                                <span data-i18n="Alt. Greetings">
-                                    Alt. Greetings
-                                </span>
-                            </div>
-                        </div>
-                        <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
-                        <div class="extension_token_counter">
-                            Tokens: <span data-token-counter="firstmessage_textarea">counting...</span>
-                        </div>
-                        <div id="spoiler_free_desc">
+                        <div id="spoiler_free_desc" class="flex-container flexFlowColumn flex1">
                             <div id="creators_notes_div" class="marginBot5 title_restorable">
                                 <span data-i18n="Creator's Notes">Creator's Notes</span>
                                 <div id="spoiler_free_desc_button" class="menu_button fa-solid fa-eye" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
                                 </a>
                             </div>
-                            <hr>
-                            <div id="creator_notes_spoiler" data-i18n="[placeholder]Creator's Notes" placeholder="Creator's Notes" class="marginBot5" name="creator_notes_spoiler"></div>
+                            <textarea readonly id="creator_notes_spoiler" class="flex1" data-i18n="[placeholder]Creator's Notes" placeholder="Creator's Notes" class="marginBot5" name="creator_notes_spoiler"></textarea>
                             <!-- A button to show / hide description_div and description_textarea and first_message_div and firstmessage_textarea-->
+                        </div>
+                        <div id="descriptionWrapper" class="flex-container flexFlowColumn flex1">
+                            <hr>
+                            <div id="description_div" class="marginBot5 flex-container alignitemscenter">
+                                <span data-i18n="Character Description">Description</span>
+                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </div>
+                            <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
+                            <div class="extension_token_counter">
+                                Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
+                            </div>
+                        </div>
+                        <div id="firstMessageWrapper" class="flex-container flexFlowColumn flex1">
+                            <div id="first_message_div" class="marginBot5 title_restorable">
+                                <div class="flex-container alignitemscenter">
+                                    <span data-i18n="First message">First message</span>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor"></i>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </div>
+                                <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
+                                    <span data-i18n="Alt. Greetings">
+                                        Alt. Greetings
+                                    </span>
+                                </div>
+                            </div>
+                            <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
+                            <div class="extension_token_counter">
+                                Tokens: <span data-token-counter="firstmessage_textarea">counting...</span>
+                            </div>
                         </div>
                         <!-- these divs are invisible and used for server communication purposes -->
                         <div id="hidden-divs">
@@ -4417,7 +4421,7 @@
                     <span id="ChatHistoryCharName"></span><span data-i18n="Chat History">Chat History</span>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/chatfilemanagement/#chat-import" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
                 </div>
-                <div id="newChatFromManageScreenButton" class="menu_button menu_button_icon" >
+                <div id="newChatFromManageScreenButton" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-plus"></i>
                     <span data-i18n="New Chat">New Chat</span>
                 </div>

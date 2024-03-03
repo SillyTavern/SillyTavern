@@ -1028,6 +1028,11 @@ select {
     white-space: nowrap;
 }
 
+#creator_notes_spoiler {
+    border: 0;
+    font-size: calc(var(--mainFontSize)*.8);
+}
+
 @media screen and (max-width: 1000px) {
     #form_create textarea {
         flex-grow: 1;
