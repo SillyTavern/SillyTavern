@@ -384,9 +384,9 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
         }
 
         // if character is defined, save to a sub folder for that character
-        let pathToNewFile = path.join(DIRECTORIES.userImages, filename);
+        let pathToNewFile = path.join(DIRECTORIES.userImages, sanitize(filename));
         if (request.body.ch_name) {
-            pathToNewFile = path.join(DIRECTORIES.userImages, request.body.ch_name, filename);
+            pathToNewFile = path.join(DIRECTORIES.userImages, sanitize(request.body.ch_name), sanitize(filename));
         }
 
         ensureDirectoryExistence(pathToNewFile);
