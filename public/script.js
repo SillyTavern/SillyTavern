@@ -9837,7 +9837,28 @@ jQuery(async function () {
                     toastr.info('This character doesn\'t seem to have a source.');
                 }
             } break;
+            case 'replace_update': {
+                const confirm = await callPopup('<p><b>Choose a new character card to replace this character with.</b></p><p>All chats, assets and group memberships will be preserved, but local changes to the character data will be lost.</p><p>Proceed?</p>', 'confirm', '');
+                if (confirm) {
+                    async function uploadReplacementCard(e) {
+                        const file = e.target.files[0];
 
+                        if (!file) {
+                            return;
+                        }
+
+                        try {
+                            const cloneFile = new File([file], characters[this_chid].avatar, { type: file.type });
+                            const chatFile = characters[this_chid]['chat'];
+                            await processDroppedFiles([cloneFile], true);
+                            await openCharacterChat(chatFile);
+                        } catch {
+                            toastr.error('Failed to replace the character card.', 'Something went wrong');
+                        }
+                    }
+                    $('#character_replace_file').off('change').on('change', uploadReplacementCard).trigger('click');
+                }
+            } break;
             /*case 'delete_button':
                 popup_type = "del_ch";
                 callPopup(`
