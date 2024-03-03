@@ -9974,10 +9974,10 @@ jQuery(async function () {
         const html = `<h3>Enter the URL of the content to import</h3>
         Supported sources:<br>
         <ul class="justifyLeft">
-            <li>Chub characters (direct link or id)<br>Example: <tt>Anonymous/example-character</tt></li>
-            <li>Chub lorebooks (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
-            <li>JanitorAI character (direct link or id)<br>Example: <tt>https://janitorai.com/characters/ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
-            <li>Pygmalion.chat character (link)<br>Example: <tt>https://pygmalion.chat/character/a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
+            <li>Chub Character (Direct Link or ID)<br>Example: <tt>Anonymous/example-character</tt></li>
+            <li>Chub Lorebook (Direct Link or ID)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
+            <li>JanitorAI Character (Direct Link or UUID)<br>Example: <tt>ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
+            <li>Pygmalion.chat Character (Direct Link or UUID)<br>Example: <tt>a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
             <li>More coming soon...</li>
         <ul>`;
         const input = await callPopup(html, 'input', '', { okButton: 'Import', rows: 4 });
@@ -9988,13 +9988,23 @@ jQuery(async function () {
         }
 
         const url = input.trim();
-        console.debug('Custom content import started', url);
+        var request;
 
-        const request = await fetch('/api/content/import', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ url }),
-        });
+        if (url.includes("https")) {
+            console.debug('Custom content import started for URL: ', url);
+            request = await fetch('/api/content/importURL', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ url }),
+            });
+        } else {
+            console.debug('Custom content import started for Char UUID: ', url);
+            request = await fetch('/api/content/importUUID', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ url }),
+            });
+        }
 
         if (!request.ok) {
             toastr.info(request.statusText, 'Custom content import failed');
