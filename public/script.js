@@ -148,6 +148,7 @@ import {
     getBase64Async,
     humanFileSize,
     Stopwatch,
+    isValidUrl,
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
@@ -9990,7 +9991,7 @@ jQuery(async function () {
         const url = input.trim();
         var request;
 
-        if (url.includes("https")) {
+        if (isValidUrl(url)) {
             console.debug('Custom content import started for URL: ', url);
             request = await fetch('/api/content/importURL', {
                 method: 'POST',

@@ -422,18 +422,17 @@ router.post('/importUUID', jsonParser, async (request, response) => {
         const uuid = request.body.url;
         let result;
 
-        const isJannny = uuid.includes("_character")
-        const isPygmalion = (!isJannny && uuid.length == 36)
-        const uuidType = uuid.includes("lorebook") ? "lorebook" : "character";
+        const isJannny = uuid.includes('_character');
+        const isPygmalion = (!isJannny && uuid.length == 36);
+        const uuidType = uuid.includes('lorebook') ? 'lorebook' : 'character';
 
         if (isPygmalion) {
-            console.debug("We have a Pyg character")
+            console.log('Downloading Pygmalion character:', uuid);
             result = await downloadPygmalionCharacter(uuid);
         } else if (isJannny) {
-            console.debug("We have a Janny character")
-            result = await downloadJannyCharacter(uuid.split("_")[0]);
+            console.log('Downloading Janitor character:', uuid.split('_')[0]);
+            result = await downloadJannyCharacter(uuid.split('_')[0]);
         } else {
-            console.debug("We have something from Chub?")
             if (uuidType === 'character') {
                 console.log('Downloading chub character:', uuid);
                 result = await downloadChubCharacter(uuid);
