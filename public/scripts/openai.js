@@ -3330,8 +3330,15 @@ async function onModelChange() {
     let value = String($(this).val() || '');
 
     if ($(this).is('#model_claude_select')) {
+        if (value.includes('-v')) {
+            value = value.replace('-v', '-');
+        } else if (value === '') {
+            value = default_settings.claude_model;
+        }
         console.log('Claude model changed to', value);
         oai_settings.claude_model = value;
+        $('#model_claude_select').val(oai_settings.claude_model);
+
     }
 
     if ($(this).is('#model_windowai_select')) {
