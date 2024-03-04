@@ -505,6 +505,9 @@ app.use('/api/openai', require('./src/endpoints/openai').router);
 //Google API
 app.use('/api/google', require('./src/endpoints/google').router);
 
+//Anthropic API
+app.use('/api/anthropic', require('./src/endpoints/anthropic').router);
+
 // Tokenizers
 app.use('/api/tokenizers', require('./src/endpoints/tokenizers').router);
 

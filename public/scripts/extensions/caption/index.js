@@ -284,6 +284,7 @@ jQuery(function () {
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'openai' && (secret_state[SECRET_KEYS.OPENAI] || extension_settings.caption.allow_reverse_proxy)) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'openrouter' && secret_state[SECRET_KEYS.OPENROUTER]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'google' && secret_state[SECRET_KEYS.MAKERSUITE]) ||
+                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'anthropic' && secret_state[SECRET_KEYS.CLAUDE]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ollama' && textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'llamacpp' && textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ooba' && textgenerationwebui_settings.server_urls[textgen_types.OOBA]) ||
@@ -343,7 +344,7 @@ jQuery(function () {
                     <label for="caption_source">Source</label>
                     <select id="caption_source" class="text_pole">
                         <option value="local">Local</option>
-                        <option value="multimodal">Multimodal (OpenAI / llama / Google)</option>
+                        <option value="multimodal">Multimodal (OpenAI / Anthropic / llama / Google)</option>
                         <option value="extras">Extras</option>
                         <option value="horde">Horde</option>
                     </select>
@@ -355,6 +356,7 @@ jQuery(function () {
                                 <option value="ooba">Text Generation WebUI (oobabooga)</option>
                                 <option value="ollama">Ollama</option>
                                 <option value="openai">OpenAI</option>
+                                <option value="anthropic">Anthropic</option>
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="google">Google MakerSuite</option>
                                 <option value="custom">Custom (OpenAI-compatible)</option>
@@ -364,6 +366,8 @@ jQuery(function () {
                             <label for="caption_multimodal_model">Model</label>
                             <select id="caption_multimodal_model" class="flex1 text_pole">
                                 <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
+                                <option data-type="anthropic" value="claude-3-opus-20240229">claude-3-opus-20240229</option>
+                                <option data-type="anthropic" value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                 <option data-type="google" value="gemini-pro-vision">gemini-pro-vision</option>
                                 <option data-type="openrouter" value="openai/gpt-4-vision-preview">openai/gpt-4-vision-preview</option>
                                 <option data-type="openrouter" value="haotian-liu/llava-13b">haotian-liu/llava-13b</option>
