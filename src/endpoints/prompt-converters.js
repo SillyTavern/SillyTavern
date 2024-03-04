@@ -108,14 +108,45 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
     });
 
     // Since the messaging endpoint only supports user assistant roles in turns, we have to merge messages with the same role if they follow eachother
+    // Also handle multi-modality, holy slop.
     let mergedMessages = [];
     messages.forEach((message) => {
+        const imageEntry = message.content[1]?.image_url;
+        const imageData = imageEntry?.url;
+        const mimeType = imageData?.split(';')[0].split(':')[1];
+        const base64Data = imageData?.split(',')[1];
+
         if (mergedMessages.length > 0 && mergedMessages[mergedMessages.length - 1].role === message.role) {
-            mergedMessages[mergedMessages.length - 1].content += '\n\n' + message.content;
+            if(Array.isArray(message.content)) {
+                if(Array.isArray(mergedMessages[mergedMessages.length - 1].content)) {
+                    mergedMessages[mergedMessages.length - 1].content[0].text += '\n\n' + message.content[0].text;
+                } else {
+                    mergedMessages[mergedMessages.length - 1].content += '\n\n' + message.content[0].text;
+                }
+            } else {
+                if(Array.isArray(mergedMessages[mergedMessages.length - 1].content)) {
+                    mergedMessages[mergedMessages.length - 1].content[0].text += '\n\n' + message.content;
+                } else {
+                    mergedMessages[mergedMessages.length - 1].content += '\n\n' + message.content;
+                }
+            }
         } else {
             mergedMessages.push(message);
         }
+        if (imageData) {
+            mergedMessages[mergedMessages.length - 1].content = [
+                { type: 'text', text: mergedMessages[mergedMessages.length - 1].content[0]?.text || mergedMessages[mergedMessages.length - 1].content },
+                {
+                    type: 'image', source: {
+                        type: 'base64',
+                        media_type: mimeType,
+                        data: base64Data,
+                    },
+                },
+            ];
+        }
     });
+
 
     // Take care of name properties since claude messages don't support them
     mergedMessages.forEach((message) => {
