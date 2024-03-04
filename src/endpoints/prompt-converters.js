@@ -116,6 +116,15 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
             mergedMessages.push(message);
         }
     });
+
+    // Take care of name properties since claude messages don't support them
+    mergedMessages.forEach((message) => {
+        if (message.name) {
+            message.content = `${message.name}: ${message.content}`;
+            delete message.name;
+        }
+    });
+
     // Shouldn't be conditional anymore, messages api expects the last role to be user unless we're explicitly prefilling
     if (prefillString) {
         mergedMessages.push({
