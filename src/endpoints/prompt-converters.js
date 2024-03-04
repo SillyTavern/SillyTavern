@@ -74,48 +74,58 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
 /**
  * Convert ChatML objects into working with Anthropic's new Messaging API.
  * @param {object[]} messages Array of messages
- * @param {boolean}  addAssistantPostfix Add Assistant postfix.
- * @param {string}   addAssistantPrefill Add Assistant prefill after the assistant postfix.
- * @param {boolean}  withSysPromptSupport Indicates if the Claude model supports the system prompt format.
- * @param {string}   addSysHumanMsg Add Human message between system prompt and assistant.
+ * @param {string}   prefillString User determined prefill string
+ * @param {boolean}  useSysPrompt See if we want to use a system prompt
+ * @param {string}   humanMsgFix Add Human message between system prompt and assistant.
  */
-function convertClaudeMessages(messages, addAssistantPostfix, addAssistantPrefill, addSysHumanMsg) {
-    // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
-    let systemPrompt = '';
-    let i;
-    for (i = 0; i < messages.length; i++) {
-        if (messages[i].role !== 'system') {
-            break;
-        }
-        systemPrompt += `${messages[i].content}\n\n`;
-    }
-
-    messages.splice(0, i);
-
-    // Check if the first message in the array is of type user, if not, interject with addSysHumanMsg or a blank message.
-    if (messages.length > 0 && messages[0].role !== 'user') {
-        messages.unshift({
-            role: 'user',
-            content: addSysHumanMsg || '',
-        });
-    }
-
-    // Now replace all further messages that have the role 'system' with the role 'user'.
+function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFix) {
+    // Since the messaging endpoint only supports user assistant roles in turns, we have to merge messages with the same role if they follow eachother
+    let mergedMessages = [];
     messages.forEach((message) => {
+        if (mergedMessages.length > 0 && mergedMessages[mergedMessages.length - 1].role === message.role) {
+            mergedMessages[mergedMessages.length - 1].content += '\n\n' + message.content;
+        } else {
+            mergedMessages.push(message);
+        }
+    });
+
+    let systemPrompt = '';
+    if (useSysPrompt) {
+        // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
+        let i;
+        for (i = 0; i < mergedMessages.length; i++) {
+            if (mergedMessages[i].role !== 'system') {
+                break;
+            }
+            systemPrompt += `${mergedMessages[i].content}\n\n`;
+        }
+
+        mergedMessages.splice(0, i);
+
+        // Check if the first message in the array is of type user, if not, interject with humanMsgFix or a blank message.
+        if (mergedMessages.length > 0 && mergedMessages[0].role !== 'user') {
+            mergedMessages.unshift({
+                role: 'user',
+                content: humanMsgFix || '',
+            });
+        }
+    }
+    // Now replace all further messages that have the role 'system' with the role 'user'. (or all if we're not using one)
+    mergedMessages.forEach((message) => {
         if (message.role === 'system') {
             message.role = 'user';
         }
     });
 
-    // Postfix and prefill
-    if (addAssistantPostfix) {
-        messages.push({
+    // Shouldn't be conditional anymore, messages api expects the last role to be user unless we're explicitly prefilling
+    if (prefillString) {
+        mergedMessages.push({
             role: 'assistant',
-            content: addAssistantPrefill || '',
+            content: prefillString,
         });
     }
 
-    return { messages: messages, systemPrompt: systemPrompt.trim() };
+    return { messages: mergedMessages, systemPrompt: systemPrompt.trim() };
 }
 
 /**
