@@ -96,7 +96,7 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
         if (messages.length > 0 && messages[0].role !== 'user') {
             messages.unshift({
                 role: 'user',
-                content: humanMsgFix || '',
+                content: humanMsgFix || '[Start a new chat]',
             });
         }
     }
