@@ -4511,6 +4511,10 @@ function parseAndSaveLogprobs(data, continueFrom) {
  * @returns {string} Extracted message
  */
 function extractMessageFromData(data) {
+    if (typeof data === 'string') {
+        return data;
+    }
+
     switch (main_api) {
         case 'kobold':
             return data.results[0].text;
