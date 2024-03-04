@@ -31,6 +31,7 @@ import {
     this_chid,
 } from '../script.js';
 import { groups, selected_group } from './group-chats.js';
+import { registerSlashCommand } from './slash-commands.js';
 
 import {
     chatCompletionDefaultPrompts,
@@ -62,6 +63,8 @@ import {
     formatInstructModePrompt,
     formatInstructModeSystemPrompt,
 } from './instruct-mode.js';
+import { isMobile } from './RossAscends-mods.js';
+import { saveLogprobsForActiveMessage } from './logprobs.js';
 
 export {
     openai_messages_count,
@@ -88,7 +91,7 @@ const default_enhance_definitions_prompt = 'If you have more knowledge of {{char
 const default_wi_format = '[Details of the fictional world the RP is set in:\n{0}]\n';
 const default_new_chat_prompt = '[Start a new Chat]';
 const default_new_group_chat_prompt = '[Start a new group chat. Group members: {{group}}]';
-const default_new_example_chat_prompt = '[Start a new Chat]';
+const default_new_example_chat_prompt = '[Example Chat]';
 const default_claude_human_sysprompt_message = 'Let\'s get started. Please generate your response based on the information and instructions provided above.';
 const default_continue_nudge_prompt = '[Continue the following message. Do not include ANY parts of the original message. Use capitalization and punctuation as if your reply is a part of the original message: {{lastChatMessage}}]';
 const default_bias = 'Default (none)';
@@ -116,7 +119,7 @@ const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const claude_100k_max = 99000;
 let ai21_max = 9200; //can easily fit 9k gpt tokens because j2's tokenizer is efficient af
-const unlocked_max = 100 * 1024;
+const unlocked_max = max_200k;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0; //same as j2
 const j2_max_topk = 10.0;
@@ -187,6 +190,9 @@ const default_settings = {
     count_pen: 0.0,
     top_p_openai: 1.0,
     top_k_openai: 0,
+    min_p_openai: 0,
+    top_a_openai: 1,
+    repetition_penalty_openai: 1,
     stream_openai: false,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
@@ -210,7 +216,7 @@ const default_settings = {
     claude_model: 'claude-instant-v1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
-    mistralai_model: 'mistral-medium',
+    mistralai_model: 'mistral-medium-latest',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -235,12 +241,14 @@ const default_settings = {
     use_google_tokenizer: false,
     exclude_assistant: false,
     claude_use_sysprompt: false,
+    claude_exclude_prefixes: false,
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
     bypass_status_check: false,
     continue_prefill: false,
     seed: -1,
+    n: 1,
 };
 
 const oai_settings = {
@@ -251,6 +259,9 @@ const oai_settings = {
     count_pen: 0.0,
     top_p_openai: 1.0,
     top_k_openai: 0,
+    min_p_openai: 0,
+    top_a_openai: 1,
+    repetition_penalty_openai: 1,
     stream_openai: false,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
@@ -274,7 +285,7 @@ const oai_settings = {
     claude_model: 'claude-instant-v1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
-    mistralai_model: 'mistral-medium',
+    mistralai_model: 'mistral-medium-latest',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -299,13 +310,24 @@ const oai_settings = {
     use_google_tokenizer: false,
     exclude_assistant: false,
     claude_use_sysprompt: false,
+    claude_exclude_prefixes: false,
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
     bypass_status_check: false,
     continue_prefill: false,
     seed: -1,
+    n: 1,
 };
+
+export let proxies = [
+    {
+        name: 'None',
+        url: '',
+        password: '',
+    },
+];
+export let selected_proxy = proxies[0];
 
 let openai_setting_names;
 let openai_settings;
@@ -329,8 +351,19 @@ function validateReverseProxy() {
     }
 }
 
+/**
+ * Converts the Chat Completion object to an Instruct Mode prompt string.
+ * @param {object[]} messages Array of messages
+ * @param {string} type Generation type
+ * @returns {string} Text completion prompt
+ */
 function convertChatCompletionToInstruct(messages, type) {
-    messages = messages.filter(x => x.content !== oai_settings.new_chat_prompt && x.content !== oai_settings.new_example_chat_prompt);
+    const newChatPrompts = [
+        substituteParams(oai_settings.new_chat_prompt),
+        substituteParams(oai_settings.new_example_chat_prompt),
+        substituteParams(oai_settings.new_group_chat_prompt),
+    ];
+    messages = messages.filter(x => !newChatPrompts.includes(x.content));
 
     let chatMessagesText = '';
     let systemPromptText = '';
@@ -457,7 +490,7 @@ function setOpenAIMessages(chat) {
 }
 
 /**
- * Formats chat messages into chat completion messages.
+ * Formats chat examples into chat completion messages.
  * @param {string[]} mesExamplesArray - Array containing all examples.
  * @returns {object[]} - Array containing all examples formatted for chat completion.
  */
@@ -482,7 +515,10 @@ function setOpenAIMessageExamples(mesExamplesArray) {
  */
 function setupChatCompletionPromptManager(openAiSettings) {
     // Do not set up prompt manager more than once
-    if (promptManager) return promptManager;
+    if (promptManager) {
+        promptManager.render(false);
+        return promptManager;
+    }
 
     promptManager = new PromptManager();
 
@@ -531,14 +567,14 @@ function parseExampleIntoIndividual(messageExampleString) {
     let cur_msg_lines = [];
     let in_user = false;
     let in_bot = false;
-    // DRY my cock and balls
+    // DRY my cock and balls :)
     function add_msg(name, role, system_name) {
         // join different newlines (we split them by \n and join by \n)
         // remove char name
         // strip to remove extra spaces
         let parsed_msg = cur_msg_lines.join('\n').replace(name + ':', '').trim();
 
-        if (selected_group && role == 'assistant') {
+        if (selected_group && ['example_user', 'example_assistant'].includes(system_name)) {
             parsed_msg = `${name}: ${parsed_msg}`;
         }
 
@@ -645,10 +681,9 @@ export function isOpenRouterWithInstruct() {
 async function populateChatHistory(messages, prompts, chatCompletion, type = null, cyclePrompt = null) {
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
-    let names = (selected_group && groups.find(x => x.id === selected_group)?.members.map(member => characters.find(c => c.avatar === member)?.name).filter(Boolean).join(', ')) || '';
     // Reserve budget for new chat message
     const newChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
-    const newChatMessage = new Message('system', substituteParams(newChat, null, null, null, names), 'newMainChat');
+    const newChatMessage = new Message('system', substituteParams(newChat), 'newMainChat');
     chatCompletion.reserveBudget(newChatMessage);
 
     // Reserve budget for group nudge
@@ -742,7 +777,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 function populateDialogueExamples(prompts, chatCompletion, messageExamples) {
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (Array.isArray(messageExamples) && messageExamples.length) {
-        const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
+        const newExampleChat = new Message('system', substituteParams(oai_settings.new_example_chat_prompt), 'newChat');
         [...messageExamples].forEach((dialogue, dialogueIndex) => {
             let examplesAdded = 0;
 
@@ -1031,9 +1066,6 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
         prompts.set(jbReplacement, prompts.index('jailbreak'));
     }
 
-    // Allow subscribers to manipulate the prompts object
-    eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
-
     return prompts;
 }
 
@@ -1151,6 +1183,7 @@ function tryParseStreamingError(response, decoded) {
         }
 
         checkQuotaError(data);
+        checkModerationError(data);
 
         if (data.error) {
             toastr.error(data.error.message || response.statusText, 'Chat Completion API');
@@ -1175,6 +1208,15 @@ function checkQuotaError(data) {
     if (data.quota_error) {
         callPopup(errorText, 'text');
         throw new Error(data);
+    }
+}
+
+function checkModerationError(data) {
+    const moderationError = data?.error?.message?.includes('requires moderation');
+    if (moderationError) {
+        const moderationReason = `Reasons: ${data?.error?.metadata?.reasons?.join(', ') ?? '(N/A)'}`;
+        const flaggedText = data?.error?.metadata?.flagged_input ?? '(N/A)';
+        toastr.info(flaggedText, moderationReason, { timeOut: 10000 });
     }
 }
 
@@ -1296,6 +1338,25 @@ function getChatCompletionModel() {
     }
 }
 
+function getOpenRouterModelTemplate(option) {
+    const model = model_list.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    let tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
+    let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
+
+    const price = 0 === Number(model.pricing?.prompt) ? 'Free' : `${tokens_rounded}k t/$ `;
+
+    return $((`
+        <div class="flex-container flexFlowColumn" title="${DOMPurify.sanitize(model.id)}">
+            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | ${model.context_length} ctx | <small>${price}</small></div>
+        </div>
+    `));
+}
+
 function calculateOpenRouterCost() {
     if (oai_settings.chat_completion_source !== chat_completion_sources.OPENROUTER) {
         return;
@@ -1319,7 +1380,7 @@ function calculateOpenRouterCost() {
 }
 
 function saveModelList(data) {
-    model_list = data.map((model) => ({ id: model.id, context_length: model.context_length, pricing: model.pricing, architecture: model.architecture }));
+    model_list = data.map((model) => ({ ...model }));
     model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
@@ -1374,16 +1435,10 @@ function appendOpenRouterOptions(model_list, groupModels = false, sort = false) 
     $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
 
     const appendOption = (model, parent = null) => {
-        let tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
-        let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
-
-        const price = 0 === Number(model.pricing?.prompt) ? 'Free' : `${tokens_rounded}k t/$ `;
-
-        let model_description = `${model.id} | ${price} | ${model.context_length} ctx`;
         (parent || $('#model_openrouter_select')).append(
             $('<option>', {
                 value: model.id,
-                text: model_description,
+                text: model.name,
             }));
     };
 
@@ -1412,7 +1467,7 @@ const openRouterSortBy = (data, property = 'alphabetically') => {
             return parseFloat(a.pricing.prompt) - parseFloat(b.pricing.prompt);
         } else {
             // Alphabetically
-            return a?.id && b?.id && a.id.localeCompare(b.id);
+            return a?.name && b?.name && a.name.localeCompare(b.name);
         }
     });
 };
@@ -1502,6 +1557,8 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
     const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !(isGoogle && oai_settings.google_model.includes('bison'));
+    const useLogprobs = !!power_user.request_token_probabilities;
+    const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom);
 
     if (isTextCompletion && isOpenRouter) {
         messages = convertChatCompletionToInstruct(messages, type);
@@ -1549,6 +1606,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         'logit_bias': logit_bias,
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
         'chat_completion_source': oai_settings.chat_completion_source,
+        'n': canMultiSwipe ? oai_settings.n : undefined,
     };
 
     // Empty array will produce a validation error
@@ -1562,17 +1620,23 @@ async function sendOpenAIRequest(type, messages, signal) {
         delete generate_data.stop;
     }
 
-    // Proxy is only supported for Claude and OpenAI
-    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI].includes(oai_settings.chat_completion_source)) {
+    // Proxy is only supported for Claude, OpenAI and Mistral
+    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI].includes(oai_settings.chat_completion_source)) {
         validateReverseProxy();
         generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
         generate_data['proxy_password'] = oai_settings.proxy_password;
+    }
+
+    // Add logprobs request (currently OpenAI only, max 5 on their side)
+    if (useLogprobs && (isOAI || isCustom)) {
+        generate_data['logprobs'] = 5;
     }
 
     if (isClaude) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['exclude_assistant'] = oai_settings.exclude_assistant;
         generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
+        generate_data['claude_exclude_prefixes'] = oai_settings.claude_exclude_prefixes;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
         // Don't add a prefill on quiet gens (summarization)
@@ -1583,6 +1647,9 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isOpenRouter) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
+        generate_data['min_p'] = Number(oai_settings.min_p_openai);
+        generate_data['repetition_penalty'] = Number(oai_settings.repetition_penalty_openai);
+        generate_data['top_a'] = Number(oai_settings.top_a_openai);
         generate_data['use_fallback'] = oai_settings.openrouter_use_fallback;
 
         if (isTextCompletion) {
@@ -1598,17 +1665,17 @@ async function sendOpenAIRequest(type, messages, signal) {
         const nameStopString = isImpersonate ? `\n${name2}:` : `\n${name1}:`;
         const stopStringsLimit = 3; // 5 - 2 (nameStopString and new_chat_prompt)
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['stop'] = [nameStopString, oai_settings.new_chat_prompt, ...getCustomStoppingStrings(stopStringsLimit)];
+        generate_data['stop'] = [nameStopString, substituteParams(oai_settings.new_chat_prompt), ...getCustomStoppingStrings(stopStringsLimit)];
     }
 
     if (isAI21) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['count_pen'] = Number(oai_settings.count_pen);
-        generate_data['stop_tokens'] = [name1 + ':', oai_settings.new_chat_prompt, oai_settings.new_group_chat_prompt];
+        generate_data['stop_tokens'] = [name1 + ':', substituteParams(oai_settings.new_chat_prompt), substituteParams(oai_settings.new_group_chat_prompt)];
     }
 
     if (isMistral) {
-        generate_data['safe_mode'] = false; // already defaults to false, but just incase they change that in the future.
+        generate_data['safe_prompt'] = false; // already defaults to false, but just incase they change that in the future.
     }
 
     if (isCustom) {
@@ -1635,26 +1702,28 @@ async function sendOpenAIRequest(type, messages, signal) {
         throw new Error(`Got response status ${response.status}`);
     }
     if (stream) {
-        let reader;
-        let isSSEStream = oai_settings.chat_completion_source !== chat_completion_sources.MAKERSUITE;
-        if (isSSEStream) {
-            const eventStream = new EventSourceStream();
-            response.body.pipeThrough(eventStream);
-            reader = eventStream.readable.getReader();
-        } else {
-            reader = response.body.getReader();
-        }
+        const eventStream = new EventSourceStream();
+        response.body.pipeThrough(eventStream);
+        const reader = eventStream.readable.getReader();
         return async function* streamData() {
             let text = '';
-            let utf8Decoder = new TextDecoder();
+            const swipes = [];
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) return;
-                const rawData = isSSEStream ? value.data : utf8Decoder.decode(value, { stream: true });
-                if (isSSEStream && rawData === '[DONE]') return;
+                const rawData = value.data;
+                if (rawData === '[DONE]') return;
                 tryParseStreamingError(response, rawData);
-                text += getStreamingReply(JSON.parse(rawData));
-                yield { text, swipes: [] };
+                const parsed = JSON.parse(rawData);
+
+                if (Array.isArray(parsed?.choices) && parsed?.choices?.[0]?.index > 0) {
+                    const swipeIndex = parsed.choices[0].index - 1;
+                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + getStreamingReply(parsed);
+                } else {
+                    text += getStreamingReply(parsed);
+                }
+
+                yield { text, swipes: swipes, logprobs: parseChatCompletionLogprobs(parsed) };
             }
         };
     }
@@ -1662,13 +1731,21 @@ async function sendOpenAIRequest(type, messages, signal) {
         const data = await response.json();
 
         checkQuotaError(data);
+        checkModerationError(data);
 
         if (data.error) {
             toastr.error(data.error.message || response.statusText, 'API returned an error');
             throw new Error(data);
         }
 
-        return !isTextCompletion ? data.choices[0]['message']['content'] : data.choices[0]['text'];
+        if (type !== 'quiet') {
+            const logprobs = parseChatCompletionLogprobs(data);
+            // Delay is required to allow the active message to be updated to
+            // the one we are generating (happens right after sendOpenAIRequest)
+            delay(1).then(() => saveLogprobsForActiveMessage(logprobs, null));
+        }
+
+        return data;
     }
 }
 
@@ -1676,11 +1753,94 @@ function getStreamingReply(data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         return data?.completion || '';
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
-        return data?.candidates[0].content.parts[0].text || '';
+        return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
         return data.choices[0]?.delta?.content || data.choices[0]?.message?.content || data.choices[0]?.text || '';
     }
 }
+
+/**
+ * parseChatCompletionLogprobs converts the response data returned from a chat
+ * completions-like source into an array of TokenLogprobs found in the response.
+ * @param {Object} data - response data from a chat completions-like source
+ * @returns {import('logprobs.js').TokenLogprobs[] | null} converted logprobs
+ */
+function parseChatCompletionLogprobs(data) {
+    if (!data) {
+        return null;
+    }
+
+    switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.OPENAI:
+        case chat_completion_sources.CUSTOM:
+            if (!data.choices?.length) {
+                return null;
+            }
+            // OpenAI Text Completion API is treated as a chat completion source
+            // by SillyTavern, hence its presence in this function.
+            return textCompletionModels.includes(oai_settings.openai_model)
+                ? parseOpenAITextLogprobs(data.choices[0]?.logprobs)
+                : parseOpenAIChatLogprobs(data.choices[0]?.logprobs);
+        default:
+        // implement other chat completion sources here
+    }
+    return null;
+}
+
+/**
+ * parseOpenAIChatLogprobs receives a `logprobs` response from OpenAI's chat
+ * completion API and converts into the structure used by the Token Probabilities
+ * view.
+ * @param {{content: { token: string, logprob: number, top_logprobs: { token: string, logprob: number }[] }[]}} logprobs
+ * @returns {import('logprobs.js').TokenLogprobs[] | null} converted logprobs
+ */
+function parseOpenAIChatLogprobs(logprobs) {
+    const { content } = logprobs ?? {};
+
+    if (!Array.isArray(content)) {
+        return null;
+    }
+
+    /** @type {({ token: string, logprob: number }) => [string, number]} */
+    const toTuple = (x) => [x.token, x.logprob];
+
+    return content.map(({ token, logprob, top_logprobs }) => {
+        // Add the chosen token to top_logprobs if it's not already there, then
+        // convert to a list of [token, logprob] pairs
+        const chosenTopToken = top_logprobs.some((top) => token === top.token);
+        const topLogprobs = chosenTopToken
+            ? top_logprobs.map(toTuple)
+            : [...top_logprobs.map(toTuple), [token, logprob]];
+        return { token, topLogprobs };
+    });
+}
+
+/**
+ * parseOpenAITextLogprobs receives a `logprobs` response from OpenAI's text
+ * completion API and converts into the structure used by the Token Probabilities
+ * view.
+ * @param {{tokens: string[], token_logprobs: number[], top_logprobs: { token: string, logprob: number }[][]}} logprobs
+ * @returns {import('logprobs.js').TokenLogprobs[] | null} converted logprobs
+ */
+function parseOpenAITextLogprobs(logprobs) {
+    const { tokens, token_logprobs, top_logprobs } = logprobs ?? {};
+
+    if (!Array.isArray(tokens)) {
+        return null;
+    }
+
+    return tokens.map((token, i) => {
+        // Add the chosen token to top_logprobs if it's not already there, then
+        // convert to a list of [token, logprob] pairs
+        const topLogprobs = top_logprobs[i] ? Object.entries(top_logprobs[i]) : [];
+        const chosenTopToken = topLogprobs.some(([topToken]) => token === topToken);
+        if (!chosenTopToken) {
+            topLogprobs.push([token, token_logprobs[i]]);
+        }
+        return { token, topLogprobs };
+    });
+}
+
 
 function handleWindowError(err) {
     const text = parseWindowError(err);
@@ -2016,8 +2176,13 @@ class ChatCompletion {
         let squashedMessages = [];
 
         for (let message of this.messages.collection) {
+            // Force exclude empty messages
+            if (message.role === 'system' && !message.content) {
+                continue;
+            }
+
             if (!excludeList.includes(message.identifier) && message.role === 'system' && !message.name) {
-                if (lastMessage && message.content && lastMessage.role === 'system') {
+                if (lastMessage && lastMessage.role === 'system') {
                     lastMessage.content += '\n' + message.content;
                     lastMessage.tokens = tokenHandler.count({ role: lastMessage.role, content: lastMessage.content });
                 }
@@ -2344,6 +2509,9 @@ function loadOpenAISettings(data, settings) {
     oai_settings.count_pen = settings.count_pen ?? default_settings.count_pen;
     oai_settings.top_p_openai = settings.top_p_openai ?? default_settings.top_p_openai;
     oai_settings.top_k_openai = settings.top_k_openai ?? default_settings.top_k_openai;
+    oai_settings.top_a_openai = settings.top_a_openai ?? default_settings.top_a_openai;
+    oai_settings.min_p_openai = settings.min_p_openai ?? default_settings.min_p_openai;
+    oai_settings.repetition_penalty_openai = settings.repetition_penalty_openai ?? default_settings.repetition_penalty_openai;
     oai_settings.stream_openai = settings.stream_openai ?? default_settings.stream_openai;
     oai_settings.openai_max_context = settings.openai_max_context ?? default_settings.openai_max_context;
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
@@ -2378,6 +2546,8 @@ function loadOpenAISettings(data, settings) {
     oai_settings.human_sysprompt_message = settings.human_sysprompt_message ?? default_settings.human_sysprompt_message;
     oai_settings.image_inlining = settings.image_inlining ?? default_settings.image_inlining;
     oai_settings.bypass_status_check = settings.bypass_status_check ?? default_settings.bypass_status_check;
+    oai_settings.seed = settings.seed ?? default_settings.seed;
+    oai_settings.n = settings.n ?? default_settings.n;
 
     oai_settings.prompts = settings.prompts ?? default_settings.prompts;
     oai_settings.prompt_order = settings.prompt_order ?? default_settings.prompt_order;
@@ -2396,6 +2566,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.use_google_tokenizer !== undefined) oai_settings.use_google_tokenizer = !!settings.use_google_tokenizer;
     if (settings.exclude_assistant !== undefined) oai_settings.exclude_assistant = !!settings.exclude_assistant;
     if (settings.claude_use_sysprompt !== undefined) oai_settings.claude_use_sysprompt = !!settings.claude_use_sysprompt;
+    if (settings.claude_exclude_prefixes !== undefined) oai_settings.claude_exclude_prefixes = !!settings.claude_exclude_prefixes;
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
@@ -2435,6 +2606,7 @@ function loadOpenAISettings(data, settings) {
     $('#use_google_tokenizer').prop('checked', oai_settings.use_google_tokenizer);
     $('#exclude_assistant').prop('checked', oai_settings.exclude_assistant);
     $('#claude_use_sysprompt').prop('checked', oai_settings.claude_use_sysprompt);
+    $('#claude_exclude_prefixes').prop('checked', oai_settings.claude_exclude_prefixes);
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
     $('#openrouter_force_instruct').prop('checked', oai_settings.openrouter_force_instruct);
@@ -2473,7 +2645,14 @@ function loadOpenAISettings(data, settings) {
 
     $('#top_k_openai').val(oai_settings.top_k_openai);
     $('#top_k_counter_openai').val(Number(oai_settings.top_k_openai).toFixed(0));
+    $('#top_a_openai').val(oai_settings.top_a_openai);
+    $('#top_a_counter_openai').val(Number(oai_settings.top_a_openai));
+    $('#min_p_openai').val(oai_settings.min_p_openai);
+    $('#min_p_counter_openai').val(Number(oai_settings.min_p_openai));
+    $('#repetition_penalty_openai').val(oai_settings.repetition_penalty_openai);
+    $('#repetition_penalty_counter_openai').val(Number(oai_settings.repetition_penalty_openai));
     $('#seed_openai').val(oai_settings.seed);
+    $('#n_openai').val(oai_settings.n);
 
     if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
@@ -2617,6 +2796,9 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         count_penalty: settings.count_pen,
         top_p: settings.top_p_openai,
         top_k: settings.top_k_openai,
+        top_a: settings.top_a_openai,
+        min_p: settings.min_p_openai,
+        repetition_penalty: settings.repetition_penalty_openai,
         openai_max_context: settings.openai_max_context,
         openai_max_tokens: settings.openai_max_tokens,
         wrap_in_quotes: settings.wrap_in_quotes,
@@ -2648,12 +2830,14 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         use_google_tokenizer: settings.use_google_tokenizer,
         exclude_assistant: settings.exclude_assistant,
         claude_use_sysprompt: settings.claude_use_sysprompt,
+        claude_exclude_prefixes: settings.claude_exclude_prefixes,
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
         bypass_status_check: settings.bypass_status_check,
         continue_prefill: settings.continue_prefill,
         seed: settings.seed,
+        n: settings.n,
     };
 
     const savePresetSettings = await fetch(`/api/presets/save-openai?name=${name}`, {
@@ -2975,6 +3159,9 @@ function onSettingsPresetChange() {
         count_penalty: ['#count_pen', 'count_pen', false],
         top_p: ['#top_p_openai', 'top_p_openai', false],
         top_k: ['#top_k_openai', 'top_k_openai', false],
+        top_a: ['#top_a_openai', 'top_a_openai', false],
+        min_p: ['#min_p_openai', 'min_p_openai', false],
+        repetition_penalty: ['#repetition_penalty_openai', 'repetition_penalty_openai', false],
         max_context_unlocked: ['#oai_max_context_unlocked', 'max_context_unlocked', true],
         openai_model: ['#model_openai_select', 'openai_model', false],
         claude_model: ['#model_claude_select', 'claude_model', false],
@@ -3020,11 +3207,13 @@ function onSettingsPresetChange() {
         use_google_tokenizer: ['#use_google_tokenizer', 'use_google_tokenizer', true],
         exclude_assistant: ['#exclude_assistant', 'exclude_assistant', true],
         claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true],
+        claude_exclude_prefixes: ['#claude_exclude_prefixes', 'claude_exclude_prefixes', true],
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
         image_inlining: ['#openai_image_inlining', 'image_inlining', true],
         continue_prefill: ['#continue_prefill', 'continue_prefill', true],
         seed: ['#seed_openai', 'seed', false],
+        n: ['#n_openai', 'n', false],
     };
 
     const presetName = $('#settings_preset_openai').find(':selected').text();
@@ -3066,10 +3255,7 @@ function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
     }
-    else if (value.includes('gpt-4-1106')) {
-        return max_128k;
-    }
-    else if (value.includes('gpt-4-vision')) {
+    else if (value.includes('gpt-4-turbo') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
         return max_128k;
     }
     else if (value.includes('gpt-3.5-turbo-1106')) {
@@ -3179,8 +3365,16 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_mistralai_select')) {
+        // Upgrade old mistral models to new naming scheme
+        // would have done this in loadOpenAISettings, but it wasn't updating on preset change?
+        if (value === 'mistral-medium' || value === 'mistral-small' || value === 'mistral-tiny') {
+            value = value + '-latest';
+        } else if (value === '') {
+            value = default_settings.mistralai_model;
+        }
         console.log('MistralAI model changed to', value);
         oai_settings.mistralai_model = value;
+        $('#model_mistralai_select').val(oai_settings.mistralai_model);
     }
 
     if (value && $(this).is('#model_custom_select')) {
@@ -3564,9 +3758,11 @@ async function testApiConnection() {
 }
 
 function reconnectOpenAi() {
-    setOnlineStatus('no_connection');
-    resultCheckStatus();
-    $('#api_button_openai').trigger('click');
+    if (main_api == 'openai') {
+        setOnlineStatus('no_connection');
+        resultCheckStatus();
+        $('#api_button_openai').trigger('click');
+    }
 }
 
 function onProxyPasswordShowClick() {
@@ -3653,6 +3849,132 @@ export function isImageInliningSupported() {
     }
 }
 
+/**
+ * Proxy stuff
+ */
+export function loadProxyPresets(settings) {
+    let proxyPresets = settings.proxies;
+    selected_proxy = settings.selected_proxy || selected_proxy;
+    if (!Array.isArray(proxyPresets) || proxyPresets.length === 0) {
+        proxyPresets = proxies;
+    } else {
+        proxies = proxyPresets;
+    }
+
+    $('#openai_proxy_preset').empty();
+
+    for (const preset of proxyPresets) {
+        const option = document.createElement('option');
+        option.innerText = preset.name;
+        option.value = preset.name;
+        option.selected = preset.name === 'None';
+        $('#openai_proxy_preset').append(option);
+    }
+    $('#openai_proxy_preset').val(selected_proxy.name);
+    setProxyPreset(selected_proxy.name, selected_proxy.url, selected_proxy.password);
+}
+
+function setProxyPreset(name, url, password) {
+    const preset = proxies.find(p => p.name === name);
+    if (preset) {
+        preset.url = url;
+        preset.password = password;
+        selected_proxy = preset;
+    } else {
+        let new_proxy = { name, url, password };
+        proxies.push(new_proxy);
+        selected_proxy = new_proxy;
+    }
+
+    $('#openai_reverse_proxy_name').val(name);
+    oai_settings.reverse_proxy = url;
+    $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
+    oai_settings.proxy_password = password;
+    $('#openai_proxy_password').val(oai_settings.proxy_password);
+    reconnectOpenAi();
+}
+
+function onProxyPresetChange() {
+    const value = String($('#openai_proxy_preset').find(':selected').val());
+    const selectedPreset = proxies.find(preset => preset.name === value);
+
+    if (selectedPreset) {
+        setProxyPreset(selectedPreset.name, selectedPreset.url, selectedPreset.password);
+    } else {
+        console.error(`Proxy preset "${value}" not found in proxies array.`);
+    }
+    saveSettingsDebounced();
+}
+
+$('#save_proxy').on('click', async function () {
+    const presetName = $('#openai_reverse_proxy_name').val();
+    const reverseProxy = $('#openai_reverse_proxy').val();
+    const proxyPassword = $('#openai_proxy_password').val();
+
+    setProxyPreset(presetName, reverseProxy, proxyPassword);
+    saveSettingsDebounced();
+    toastr.success('Proxy Saved');
+    if ($('#openai_proxy_preset').val() !== presetName) {
+        const option = document.createElement('option');
+        option.text = presetName;
+        option.value = presetName;
+
+        $('#openai_proxy_preset').append(option);
+    }
+    $('#openai_proxy_preset').val(presetName);
+});
+
+$('#delete_proxy').on('click', async function () {
+    const presetName = $('#openai_reverse_proxy_name').val();
+    const index = proxies.findIndex(preset => preset.name === presetName);
+
+    if (index !== -1) {
+        proxies.splice(index, 1);
+        $('#openai_proxy_preset option[value="' + presetName + '"]').remove();
+
+        if (proxies.length > 0) {
+            const newIndex = Math.max(0, index - 1);
+            selected_proxy = proxies[newIndex];
+        } else {
+            selected_proxy = { name: 'None', url: '', password: '' };
+        }
+
+        $('#openai_reverse_proxy_name').val(selected_proxy.name);
+        oai_settings.reverse_proxy = selected_proxy.url;
+        $('#openai_reverse_proxy').val(selected_proxy.url);
+        oai_settings.proxy_password = selected_proxy.password;
+        $('#openai_proxy_password').val(selected_proxy.password);
+
+        saveSettingsDebounced();
+        $('#openai_proxy_preset').val(selected_proxy.name);
+        toastr.success('Proxy Deleted');
+    } else {
+        toastr.error(`Could not find proxy with name "${presetName}"`);
+    }
+});
+
+function runProxyCallback(_, value) {
+    if (!value) {
+        toastr.warning('Proxy preset name is required');
+        return '';
+    }
+
+    const proxyNames = proxies.map(preset => preset.name);
+    const fuse = new Fuse(proxyNames);
+    const result = fuse.search(value);
+
+    if (result.length === 0) {
+        toastr.warning(`Proxy preset "${value}" not found`);
+        return '';
+    }
+
+    const foundName = result[0].item;
+    $('#openai_proxy_preset').val(foundName).trigger('change');
+    return foundName;
+}
+
+registerSlashCommand('proxy', runProxyCallback, [], '<span class="monospace">(name)</span> – sets a proxy preset by name');
+
 $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
 
@@ -3662,50 +3984,68 @@ $(document).ready(async function () {
         updateScaleForm();
     });
 
-    $(document).on('input', '#temp_openai', function () {
+    $('#temp_openai').on('input', function () {
         oai_settings.temp_openai = Number($(this).val());
         $('#temp_counter_openai').val(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
-    $(document).on('input', '#freq_pen_openai', function () {
+    $('#freq_pen_openai').on('input', function () {
         oai_settings.freq_pen_openai = Number($(this).val());
         $('#freq_pen_counter_openai').val(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
-    $(document).on('input', '#pres_pen_openai', function () {
+    $('#pres_pen_openai').on('input', function () {
         oai_settings.pres_pen_openai = Number($(this).val());
         $('#pres_pen_counter_openai').val(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
-    $(document).on('input', '#count_pen', function () {
+    $('#count_pen').on('input', function () {
         oai_settings.count_pen = Number($(this).val());
         $('#count_pen_counter').val(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
-    $(document).on('input', '#top_p_openai', function () {
+    $('#top_p_openai').on('input', function () {
         oai_settings.top_p_openai = Number($(this).val());
         $('#top_p_counter_openai').val(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
-    $(document).on('input', '#top_k_openai', function () {
+    $('#top_k_openai').on('input', function () {
         oai_settings.top_k_openai = Number($(this).val());
         $('#top_k_counter_openai').val(Number($(this).val()).toFixed(0));
         saveSettingsDebounced();
     });
 
-    $(document).on('input', '#openai_max_context', function () {
+    $('#top_a_openai').on('input', function () {
+        oai_settings.top_a_openai = Number($(this).val());
+        $('#top_a_counter_openai').val(Number($(this).val()));
+        saveSettingsDebounced();
+    });
+
+    $('#min_p_openai').on('input', function () {
+        oai_settings.min_p_openai = Number($(this).val());
+        $('#min_p_counter_openai').val(Number($(this).val()));
+        saveSettingsDebounced();
+    });
+
+    $('#repetition_penalty_openai').on('input', function () {
+        oai_settings.repetition_penalty_openai = Number($(this).val());
+        $('#repetition_penalty_counter_openai').val(Number($(this).val()));
+        saveSettingsDebounced();
+    });
+
+    $('#openai_max_context').on('input', function () {
         oai_settings.openai_max_context = Number($(this).val());
         $('#openai_max_context_counter').val(`${$(this).val()}`);
         calculateOpenRouterCost();
         saveSettingsDebounced();
     });
 
-    $(document).on('input', '#openai_max_tokens', function () {
+    $('#openai_max_tokens').on('input', function () {
         oai_settings.openai_max_tokens = Number($(this).val());
         calculateOpenRouterCost();
         saveSettingsDebounced();
@@ -3744,6 +4084,11 @@ $(document).ready(async function () {
     $('#claude_use_sysprompt').on('change', function () {
         oai_settings.claude_use_sysprompt = !!$('#claude_use_sysprompt').prop('checked');
         $('#claude_human_sysprompt_message_block').toggle(oai_settings.claude_use_sysprompt);
+        saveSettingsDebounced();
+    });
+
+    $('#claude_exclude_prefixes').on('change', function () {
+        oai_settings.claude_exclude_prefixes = !!$('#claude_exclude_prefixes').prop('checked');
         saveSettingsDebounced();
     });
 
@@ -3878,11 +4223,7 @@ $(document).ready(async function () {
         oai_settings.chat_completion_source = String($(this).find(':selected').val());
         toggleChatCompletionForms();
         saveSettingsDebounced();
-
-        if (main_api == 'openai') {
-            reconnectOpenAi();
-        }
-
+        reconnectOpenAi();
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
     });
 
@@ -3958,6 +4299,11 @@ $(document).ready(async function () {
         saveSettingsDebounced();
     });
 
+    $('#n_openai').on('input', function () {
+        oai_settings.n = Number($(this).val());
+        saveSettingsDebounced();
+    });
+
     $('#custom_api_url_text').on('input', function () {
         oai_settings.custom_url = String($(this).val());
         saveSettingsDebounced();
@@ -3971,6 +4317,16 @@ $(document).ready(async function () {
     $(document).on('input', '#openai_settings .autoSetHeight', function () {
         resetScrollHeight($(this));
     });
+
+    if (!isMobile()) {
+        $('#model_openrouter_select').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getOpenRouterModelTemplate,
+        });
+    }
 
     $('#api_button_openai').on('click', onConnectButtonClick);
     $('#openai_reverse_proxy').on('input', onReverseProxyInput);
@@ -4000,4 +4356,5 @@ $(document).ready(async function () {
     $('#import_oai_preset').on('click', onImportPresetClick);
     $('#openai_proxy_password_show').on('click', onProxyPasswordShowClick);
     $('#customize_additional_parameters').on('click', onCustomizeParametersClick);
+    $('#openai_proxy_preset').on('change', onProxyPresetChange);
 });

@@ -1,15 +1,36 @@
 <div id="regex_editor_template">
     <div class="regex_editor">
-        <h3><strong data-i18n="Regex Editor">Regex Editor</strong>
+        <h3 class="flex-container justifyCenter alignItemsBaseline">
+            <strong data-i18n="Regex Editor">Regex Editor</strong>
             <a href="https://regexr.com/" class="notes-link" target="_blank">
                 <span class="note-link-span">?</span>
             </a>
+            <div id="regex_test_mode_toggle" class="menu_button menu_button_icon">
+                <i class="fa-solid fa-bug fa-sm"></i>
+                <span class="menu_button_text" data-i18n="Test Mode">Test Mode</span>
+            </div>
         </h3>
 
         <small class="flex-container extensions_info">
             Regex is a tool to find/replace strings using regular expressions. If you want to learn more, click on the ? next to the title.
         </small>
         <hr />
+
+        <div id="regex_test_mode" class="flex1 flex-container displayNone">
+            <div class="flex1">
+                <label class="title_restorable" for="regex_test_input">
+                    <small data-i18n="Input">Input</small>
+                </label>
+                <textarea id="regex_test_input" class="text_pole textarea_compact" rows="4" placeholder="Type here..."></textarea>
+            </div>
+            <div class="flex1">
+                <label class="title_restorable" for="regex_test_output">
+                    <small data-i18n="Output">Output</small>
+                </label>
+                <textarea id="regex_test_output" class="text_pole textarea_compact" rows="4" placeholder="Empty" readonly></textarea>
+            </div>
+            <hr>
+        </div>
 
         <div class="flex-container flexFlowColumn">
             <div class="flex1">
@@ -35,7 +56,7 @@
                 <div>
                     <textarea
                         class="regex_replace_string text_pole wide100p textarea_compact"
-                        placeholder="Use {{match}} to include the matched text from the Find Regex"
+                        placeholder="Use {{match}} to include the matched text from the Find Regex or $1, $2, etc. for capture groups."
                         rows="2"
                     ></textarea>
                 </div>
@@ -55,7 +76,7 @@
         </div>
 
         <div class="flex-container">
-            <div class="wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
+            <div class="flex1 wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
                 <small>Affects</small>
                 <div>
                     <label class="checkbox flex-container">
@@ -75,8 +96,24 @@
                         <span data-i18n="Slash Commands">Slash Commands</span>
                     </label>
                 </div>
+                <div class="flex-container wide100p marginTop5">
+                    <div class="flex1 flex-container flexNoGap">
+                        <small title="When applied to prompts or display, only affect messages that are at least N levels deep. 0 = last message, 1 = penultimate message, etc. Only counts usable messages, i.e. not hidden or system.">
+                            <span data-i18n="Min Depth">Min Depth</span>
+                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                        </small>
+                        <input name="min_depth" class="text_pole textarea_compact" type="number" min="0" max="999" placeholder="Unlimited" />
+                    </div>
+                    <div class="flex1 flex-container flexNoGap">
+                        <small title="When applied to prompts or display, only affect messages no more than N levels deep. 0 = last message, 1 = penultimate message, etc. Only counts usable messages, i.e. not hidden or system.">
+                            <span data-i18n="Max Depth">Max Depth</span>
+                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                        </small>
+                        <input name="max_depth" class="text_pole textarea_compact" type="number" min="0" max="999" placeholder="Unlimited" />
+                    </div>
+                </div>
             </div>
-            <div class="wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
+            <div class="flex1 wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
                 <small>Other Options</small>
                 <label class="checkbox flex-container">
                     <input type="checkbox" name="disabled" />
@@ -88,23 +125,22 @@
                 </label>
                 <label class="checkbox flex-container" title="Chat history won't change, only the prompt as the request is sent (on generation)">
                     <input type="checkbox" name="only_format_prompt"/>
-                    <span data-i18n="Only Format Prompt (?)">Only Format Prompt (?)</span>
+                    <span>
+                        <span data-i18n="Only Format Prompt (?)">Only Format Prompt</span>
+                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                    </span>
                 </label>
                 <label class="checkbox flex-container">
                     <input type="checkbox" name="run_on_edit" />
                     <span data-i18n="Run On Edit">Run On Edit</span>
                 </label>
-                <label class="checkbox flex-container">
+                <label class="checkbox flex-container" title="Substitute {{macros}} in Find Regex before running it">
                     <input type="checkbox" name="substitute_regex" />
-                    <span data-i18n="Substitute Regex">Substitute Regex</span>
+                    <span>
+                        <span data-i18n="Substitute Regex">Substitute Regex</span>
+                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                    </span>
                 </label>
-            </div>
-            <div class="flex-container flexFlowColumn alignitemsstart">
-                <small>Replacement Strategy</small>
-                <select name="replace_strategy_select" class="margin0">
-                    <option value="0">Replace</option>
-                    <option value="1">Overlay</option>
-                </select>
             </div>
         </div>
     </div>

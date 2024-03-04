@@ -416,10 +416,7 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
         cfgValues.negativePrompt = (getCfgPrompt(cfgValues.guidanceScale, true))?.value;
     }
 
-    const clio = nai_settings.model_novel.includes('clio');
-    const kayra = nai_settings.model_novel.includes('kayra');
-
-    const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
+    const tokenizerType = getTokenizerTypeForModel(nai_settings.model_novel);
     const stopSequences = (tokenizerType !== tokenizers.NONE)
         ? getStoppingStrings(isImpersonate, isContinue)
             .map(t => getTextTokens(tokenizerType, t))
@@ -471,6 +468,7 @@ export function getNovelGenerationData(finalPrompt, settings, maxLength, isImper
         'return_full_text': false,
         'prefix': prefix,
         'order': nai_settings.order || settings.order || default_order,
+        'num_logprobs': power_user.request_token_probabilities ? 10 : undefined,
     };
 }
 
@@ -489,6 +487,16 @@ function selectPrefix(selected_prefix, finalPrompt) {
     }
 
     return 'vanilla';
+}
+
+function getTokenizerTypeForModel(model) {
+    if (model.includes('clio')) {
+        return tokenizers.NERD;
+    }
+    if (model.includes('kayra')) {
+        return tokenizers.NERD2;
+    }
+    return tokenizers.NONE;
 }
 
 // Sort the samplers by the order array
@@ -540,9 +548,7 @@ function calculateLogitBias() {
         return [];
     }
 
-    const clio = nai_settings.model_novel.includes('clio');
-    const kayra = nai_settings.model_novel.includes('kayra');
-    const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
+    const tokenizerType = getTokenizerTypeForModel(nai_settings.model_novel);
 
     /**
      * Creates a bias object for Novel AI
@@ -624,9 +630,66 @@ export async function generateNovelWithStreaming(generate_data, signal) {
                 text += data.token;
             }
 
-            yield { text, swipes: [] };
+            yield { text, swipes: [], logprobs: parseNovelAILogprobs(data.logprobs) };
         }
     };
+}
+
+/**
+ * A single token's ID.
+ * @typedef {[number]} TokenIdEntry
+ */
+/**
+ * A single token's log probabilities. The first element is before repetition
+ * penalties and samplers are applied, the second is after.
+ * @typedef {[number, number]} LogprobsEntry
+ */
+/**
+ * Combination of token ID and its corresponding log probabilities.
+ * @typedef {[TokenIdEntry, LogprobsEntry]} TokenLogprobTuple
+ */
+/**
+ * Represents all logprob data for a single token, including its
+ * before, after, and the ultimately selected token.
+ * @typedef {Object} NAITokenLogprobs
+ * @property {TokenLogprobTuple[]} chosen - always length 1
+ * @property {TokenLogprobTuple[]} before - always `top_logprobs` length
+ * @property {TokenLogprobTuple[]} after - maybe less than `top_logprobs` length
+ */
+/**
+ * parseNovelAILogprobs converts a logprobs object returned from the NovelAI API
+ * for a single token into a TokenLogprobs object used by the Token Probabilities
+ * feature.
+ * @param {NAITokenLogprobs} data - NAI logprobs object for one token
+ * @returns {import('logprobs.js').TokenLogprobs | null} converted logprobs
+ */
+export function parseNovelAILogprobs(data) {
+    if (!data) {
+        return null;
+    }
+    const befores = data.before.map(([[tokenId], [before, _]]) => [tokenId, before]);
+    const afters = data.after.map(([[tokenId], [_, after]]) => [tokenId, after]);
+
+    // Find any tokens in `befores` that are missing from `afters`. Then add
+    // them with a logprob of -Infinity (0% probability)
+    const notInAfter = befores
+        .filter(([id]) => !afters.some(([aid]) => aid === id))
+        .map(([id]) => [id, -Infinity]);
+    const merged = afters.concat(notInAfter);
+
+    // Add the chosen token to `merged` if it's not already there. This can
+    // happen if the chosen token was not among the top 10 most likely ones.
+    const [[chosenId], [_, chosenAfter]] = data.chosen[0];
+    if (!merged.some(([id]) => id === chosenId)) {
+        merged.push([chosenId, chosenAfter]);
+    }
+
+    // nb: returned logprobs are provided alongside token IDs, not decoded text.
+    // We don't want to send an API call for every streaming tick to decode the
+    // text so we will use the IDs instead and bulk decode them in
+    // StreamingProcessor. JSDoc typechecking may complain about this, but it's
+    // intentional.
+    return { token: chosenId, topLogprobs: merged };
 }
 
 $('#nai_preamble_textarea').on('input', function () {

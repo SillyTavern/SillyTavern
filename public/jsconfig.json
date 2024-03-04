@@ -23,7 +23,8 @@
             "handlebars",
             "highlight.js",
             "localforage",
-            "pdfjs-dist"
+            "pdfjs-dist",
+            "@mozilla/readability"
         ]
     }
 }

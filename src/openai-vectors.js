@@ -2,8 +2,13 @@ const fetch = require('node-fetch').default;
 const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
 
 const SOURCES = {
+    'togetherai': {
+        secretKey: SECRET_KEYS.TOGETHERAI,
+        url: 'api.together.xyz',
+        model: 'togethercomputer/m2-bert-80M-32k-retrieval',
+    },
     'mistral': {
-        secretKey: SECRET_KEYS.MISTRAL,
+        secretKey: SECRET_KEYS.MISTRALAI,
         url: 'api.mistral.ai',
         model: 'mistral-embed',
     },
@@ -15,12 +20,13 @@ const SOURCES = {
 };
 
 /**
- * Gets the vector for the given text from an OpenAI compatible endpoint.
- * @param {string} text - The text to get the vector for
+ * Gets the vector for the given text batch from an OpenAI compatible endpoint.
+ * @param {string[]} texts - The array of texts to get the vector for
  * @param {string} source - The source of the vector
- * @returns {Promise<number[]>} - The vector for the text
+ * @param {string} model - The model to use for the embedding
+ * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getOpenAIVector(text, source) {
+async function getOpenAIBatchVector(texts, source, model = '') {
     const config = SOURCES[source];
 
     if (!config) {
@@ -43,8 +49,8 @@ async function getOpenAIVector(text, source) {
             Authorization: `Bearer ${key}`,
         },
         body: JSON.stringify({
-            input: text,
-            model: config.model,
+            input: texts,
+            model: model || config.model,
         }),
     });
 
@@ -55,16 +61,32 @@ async function getOpenAIVector(text, source) {
     }
 
     const data = await response.json();
-    const vector = data?.data[0]?.embedding;
 
-    if (!Array.isArray(vector)) {
+    if (!Array.isArray(data?.data)) {
         console.log('API response was not an array');
         throw new Error('API response was not an array');
     }
 
-    return vector;
+    // Sort data by x.index to ensure the order is correct
+    data.data.sort((a, b) => a.index - b.index);
+
+    const vectors = data.data.map(x => x.embedding);
+    return vectors;
+}
+
+/**
+ * Gets the vector for the given text from an OpenAI compatible endpoint.
+ * @param {string} text - The text to get the vector for
+ * @param {string} source - The source of the vector
+ * @param model
+ * @returns {Promise<number[]>} - The vector for the text
+ */
+async function getOpenAIVector(text, source, model = '') {
+    const vectors = await getOpenAIBatchVector([text], source, model);
+    return vectors[0];
 }
 
 module.exports = {
     getOpenAIVector,
+    getOpenAIBatchVector,
 };

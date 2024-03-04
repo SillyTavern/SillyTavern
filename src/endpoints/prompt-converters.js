@@ -5,15 +5,21 @@
  * @param {string}   addAssistantPrefill Add Assistant prefill after the assistant postfix.
  * @param {boolean}  withSysPromptSupport Indicates if the Claude model supports the system prompt format.
  * @param {boolean}  useSystemPrompt Indicates if the system prompt format should be used.
+ * @param {boolean}  excludePrefixes Exlude Human/Assistant prefixes.
  * @param {string}   addSysHumanMsg Add Human message between system prompt and assistant.
  * @returns {string} Prompt for Claude
  * @copyright Prompt Conversion script taken from RisuAI by kwaroran (GPLv3).
  */
-function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg) {
+function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill, withSysPromptSupport, useSystemPrompt, addSysHumanMsg, excludePrefixes) {
 
     //Prepare messages for claude.
+    //When 'Exclude Human/Assistant prefixes' checked, setting messages role to the 'system'(last message is exception).
     if (messages.length > 0) {
-        messages[0].role = 'system';
+        if (excludePrefixes) {
+            messages.slice(0, -1).forEach(message => message.role = 'system');
+        } else {
+            messages[0].role = 'system';
+        }
         //Add the assistant's message to the end of messages.
         if (addAssistantPostfix) {
             messages.push({
@@ -29,7 +35,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
             }
             return message.role === 'assistant' && i > 0;
         });
-        // When 2.1+ and 'Use system prompt" checked, switches to the system prompt format by setting the first message's role to the 'system'.
+        // When 2.1+ and 'Use system prompt' checked, switches to the system prompt format by setting the first message's role to the 'system'.
         // Inserts the human's message before the first the assistant one, if there are no such message or prefix found.
         if (withSysPromptSupport && useSystemPrompt) {
             messages[0].role = 'system';
@@ -43,7 +49,7 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
             // Otherwise, use the default message format by setting the first message's role to 'user'(compatible with all claude models including 2.1.)
             messages[0].role = 'user';
             // Fix messages order for default message format when(messages > Context Size) by merging two messages with "\n\nHuman: " prefixes into one, before the first Assistant's message.
-            if (firstAssistantIndex > 0) {
+            if (firstAssistantIndex > 0 && !excludePrefixes) {
                 messages[firstAssistantIndex - 1].role = firstAssistantIndex - 1 !== 0 && messages[firstAssistantIndex - 1].role === 'user' ? 'FixHumMsg' : messages[firstAssistantIndex - 1].role;
             }
         }
@@ -51,11 +57,11 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
 
     // Convert messages to the prompt.
     let requestPrompt = messages.map((v, i) => {
-        // Set prefix according to the role.
+        // Set prefix according to the role. Also, when "Exclude Human/Assistant prefixes" is checked, names are added via the system prefix.
         let prefix = {
             'assistant': '\n\nAssistant: ',
             'user': '\n\nHuman: ',
-            'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : '\n\n',
+            'system': i === 0 ? '' : v.name === 'example_assistant' ? '\n\nA: ' : v.name === 'example_user' ? '\n\nH: ' : excludePrefixes && v.name ? `\n\n${v.name}: ` : '\n\n',
             'FixHumMsg': '\n\nFirst message: ',
         }[v.role] ?? '';
         // Claude doesn't support message names, so we'll just add them to the message content.

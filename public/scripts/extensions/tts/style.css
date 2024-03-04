@@ -88,3 +88,72 @@
     gap: 5px;
     margin-bottom: 5px;
 }
+
+.at-settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.at-settings-option {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.at-endpoint-option {
+    flex: 1; 
+    margin: 0 10px;
+    margin-right: 25px;
+    width: 38%;
+}
+
+.at-website-row {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    margin-top: 10px; 
+    margin-bottom: 10px;
+}
+
+.at-website-option {
+    flex: 1; 
+    margin-right: 10px; 
+    margin-left: 10px; 
+}
+
+.at-settings-separator {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 18x;
+    font-weight: bold;
+    border-top: 1px solid #e1e1e1; /* Grey line */
+    border-bottom: 1px solid #e1e1e1; /* Grey line */
+    text-align: center;
+}
+
+.at-status-message {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.at-model-endpoint-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.at-model-option, .endpoint-option {
+    flex: 1;
+    margin: 0 10px;
+    margin-left: 10px; 
+}
+
+.at-endpoint-option {
+    width: 38%;
+}
+
+#at-status_info {
+    color: lightgreen; 
+}

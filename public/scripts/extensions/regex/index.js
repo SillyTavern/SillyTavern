@@ -1,7 +1,7 @@
 import { callPopup, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { registerSlashCommand } from '../../slash-commands.js';
-import { getSortableDelay, uuidv4 } from '../../utils.js';
+import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
 import { resolveVariable } from '../../variables.js';
 import { regex_placement, runRegexScript } from './engine.js';
 
@@ -81,6 +81,7 @@ async function loadRegexScripts() {
         scriptHtml.find('.disable_regex').prop('checked', script.disabled ?? false)
             .on('input', function () {
                 script.disabled = !!$(this).prop('checked');
+                reloadCurrentChat();
                 saveSettingsDebounced();
             });
         scriptHtml.find('.regex-toggle-on').on('click', function () {
@@ -91,6 +92,11 @@ async function loadRegexScripts() {
         });
         scriptHtml.find('.edit_existing_regex').on('click', async function () {
             await onRegexEditorOpenClick(scriptHtml.attr('id'));
+        });
+        scriptHtml.find('.export_regex').on('click', async function () {
+            const fileName = `${script.scriptName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+            const fileData = JSON.stringify(script, null, 4);
+            download(fileData, fileName, 'application/json');
         });
         scriptHtml.find('.delete_regex').on('click', async function () {
             const confirm = await callPopup('Are you sure you want to delete this regex script?', 'confirm');
@@ -126,24 +132,13 @@ async function onRegexEditorOpenClick(existingId) {
             editorHtml.find('.find_regex').val(existingScript.findRegex || '');
             editorHtml.find('.regex_replace_string').val(existingScript.replaceString || '');
             editorHtml.find('.regex_trim_strings').val(existingScript.trimStrings?.join('\n') || []);
-            editorHtml
-                .find('input[name="disabled"]')
-                .prop('checked', existingScript.disabled ?? false);
-            editorHtml
-                .find('input[name="only_format_display"]')
-                .prop('checked', existingScript.markdownOnly ?? false);
-            editorHtml
-                .find('input[name="only_format_prompt"]')
-                .prop('checked', existingScript.promptOnly ?? false);
-            editorHtml
-                .find('input[name="run_on_edit"]')
-                .prop('checked', existingScript.runOnEdit ?? false);
-            editorHtml
-                .find('input[name="substitute_regex"]')
-                .prop('checked', existingScript.substituteRegex ?? false);
-            editorHtml
-                .find('select[name="replace_strategy_select"]')
-                .val(existingScript.replaceStrategy ?? 0);
+            editorHtml.find('input[name="disabled"]').prop('checked', existingScript.disabled ?? false);
+            editorHtml.find('input[name="only_format_display"]').prop('checked', existingScript.markdownOnly ?? false);
+            editorHtml.find('input[name="only_format_prompt"]').prop('checked', existingScript.promptOnly ?? false);
+            editorHtml.find('input[name="run_on_edit"]').prop('checked', existingScript.runOnEdit ?? false);
+            editorHtml.find('input[name="substitute_regex"]').prop('checked', existingScript.substituteRegex ?? false);
+            editorHtml.find('input[name="min_depth"]').val(existingScript.minDepth ?? '');
+            editorHtml.find('input[name="max_depth"]').val(existingScript.maxDepth ?? '');
 
             existingScript.placement.forEach((element) => {
                 editorHtml
@@ -165,6 +160,30 @@ async function onRegexEditorOpenClick(existingId) {
             .prop('checked', true);
     }
 
+    editorHtml.find('#regex_test_mode_toggle').on('click', function () {
+        editorHtml.find('#regex_test_mode').toggleClass('displayNone');
+        updateTestResult();
+    });
+
+    function updateTestResult() {
+        if (!editorHtml.find('#regex_test_mode').is(':visible')) {
+            return;
+        }
+
+        const testScript = {
+            scriptName: editorHtml.find('.regex_script_name').val(),
+            findRegex: editorHtml.find('.find_regex').val(),
+            replaceString: editorHtml.find('.regex_replace_string').val(),
+            trimStrings: String(editorHtml.find('.regex_trim_strings').val()).split('\n').filter((e) => e.length !== 0) || [],
+            substituteRegex: editorHtml.find('input[name="substitute_regex"]').prop('checked'),
+        };
+        const rawTestString = String(editorHtml.find('#regex_test_input').val());
+        const result = runRegexScript(testScript, rawTestString);
+        editorHtml.find('#regex_test_output').text(result);
+    }
+
+    editorHtml.find('input, textarea, select').on('input', updateTestResult);
+
     const popupResult = await callPopup(editorHtml, 'confirm', undefined, { okButton: 'Save' });
     if (popupResult) {
         const newRegexScript = {
@@ -179,31 +198,13 @@ async function onRegexEditorOpenClick(existingId) {
                     .map(function () { return parseInt($(this).val()); })
                     .get()
                     .filter((e) => !isNaN(e)) || [],
-            disabled:
-                editorHtml
-                    .find('input[name="disabled"]')
-                    .prop('checked'),
-            markdownOnly:
-                editorHtml
-                    .find('input[name="only_format_display"]')
-                    .prop('checked'),
-            promptOnly:
-                editorHtml
-                    .find('input[name="only_format_prompt"]')
-                    .prop('checked'),
-            runOnEdit:
-                editorHtml
-                    .find('input[name="run_on_edit"]')
-                    .prop('checked'),
-            substituteRegex:
-                editorHtml
-                    .find('input[name="substitute_regex"]')
-                    .prop('checked'),
-            replaceStrategy:
-                parseInt(editorHtml
-                    .find('select[name="replace_strategy_select"]')
-                    .find(':selected')
-                    .val()) ?? 0,
+            disabled: editorHtml.find('input[name="disabled"]').prop('checked'),
+            markdownOnly: editorHtml.find('input[name="only_format_display"]').prop('checked'),
+            promptOnly: editorHtml.find('input[name="only_format_prompt"]').prop('checked'),
+            runOnEdit: editorHtml.find('input[name="run_on_edit"]').prop('checked'),
+            substituteRegex: editorHtml.find('input[name="substitute_regex"]').prop('checked'),
+            minDepth: parseInt(String(editorHtml.find('input[name="min_depth"]').val())),
+            maxDepth: parseInt(String(editorHtml.find('input[name="max_depth"]').val())),
         };
 
         saveRegexScript(newRegexScript, existingScriptIndex);
@@ -274,6 +275,35 @@ function runRegexCallback(args, value) {
     return value;
 }
 
+/**
+ * Performs the import of the regex file.
+ * @param {File} file Input file
+ */
+async function onRegexImportFileChange(file) {
+    if (!file) {
+        toastr.error('No file provided.');
+        return;
+    }
+
+    try {
+        const fileText = await getFileText(file);
+        const regexScript = JSON.parse(fileText);
+        if (!regexScript.scriptName) {
+            throw new Error('No script name provided.');
+        }
+
+        extension_settings.regex.push(regexScript);
+
+        saveSettingsDebounced();
+        await loadRegexScripts();
+        toastr.success(`Regex script "${regexScript.scriptName}" imported.`);
+    } catch (error) {
+        console.log(error);
+        toastr.error('Invalid JSON file.');
+        return;
+    }
+}
+
 // Workaround for loading in sequence with other extensions
 // NOTE: Always puts extension at the top of the list, but this is fine since it's static
 jQuery(async () => {
@@ -290,6 +320,14 @@ jQuery(async () => {
     $('#extensions_settings2').append(settingsHtml);
     $('#open_regex_editor').on('click', function () {
         onRegexEditorOpenClick(false);
+    });
+    $('#import_regex_file').on('change', async function () {
+        const inputElement = this instanceof HTMLInputElement && this;
+        await onRegexImportFileChange(inputElement.files[0]);
+        inputElement.value = '';
+    });
+    $('#import_regex').on('click', function () {
+        $('#import_regex_file').trigger('click');
     });
 
     $('#saved_regex_scripts').sortable({

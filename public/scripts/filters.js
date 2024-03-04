@@ -1,4 +1,4 @@
-import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchTags, fuzzySearchWorldInfo, power_user } from './power-user.js';
+import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchPersonas, fuzzySearchTags, fuzzySearchWorldInfo, power_user } from './power-user.js';
 import { tag_map } from './tags.js';
 
 /**
@@ -11,6 +11,7 @@ export const FILTER_TYPES = {
     FAV: 'fav',
     GROUP: 'group',
     WORLD_INFO_SEARCH: 'world_info_search',
+    PERSONA_SEARCH: 'persona_search',
 };
 
 /**
@@ -39,6 +40,7 @@ export class FilterHelper {
         [FILTER_TYPES.FAV]: this.favFilter.bind(this),
         [FILTER_TYPES.TAG]: this.tagFilter.bind(this),
         [FILTER_TYPES.WORLD_INFO_SEARCH]: this.wiSearchFilter.bind(this),
+        [FILTER_TYPES.PERSONA_SEARCH]: this.personaSearchFilter.bind(this),
     };
 
     /**
@@ -51,6 +53,7 @@ export class FilterHelper {
         [FILTER_TYPES.FAV]: false,
         [FILTER_TYPES.TAG]: { excluded: [], selected: [] },
         [FILTER_TYPES.WORLD_INFO_SEARCH]: '',
+        [FILTER_TYPES.PERSONA_SEARCH]: '',
     };
 
     /**
@@ -67,6 +70,22 @@ export class FilterHelper {
 
         const fuzzySearchResults = fuzzySearchWorldInfo(data, term);
         return data.filter(entity => fuzzySearchResults.includes(entity.uid));
+    }
+
+    /**
+     * Applies a search filter to Persona data.
+     * @param {string[]} data The data to filter.
+     * @returns {string[]} The filtered data.
+     */
+    personaSearchFilter(data) {
+        const term = this.filterData[FILTER_TYPES.PERSONA_SEARCH];
+
+        if (!term) {
+            return data;
+        }
+
+        const fuzzySearchResults = fuzzySearchPersonas(data, term);
+        return data.filter(entity => fuzzySearchResults.includes(entity));
     }
 
     /**

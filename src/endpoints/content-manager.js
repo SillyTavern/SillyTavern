@@ -10,6 +10,7 @@ const contentLogPath = path.join(contentDirectory, 'content.log');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 const { DIRECTORIES } = require('../constants');
 const presetFolders = [DIRECTORIES.koboldAI_Settings, DIRECTORIES.openAI_Settings, DIRECTORIES.novelAI_Settings, DIRECTORIES.textGen_Settings];
+const characterCardParser = require('../character-card-parser.js');
 
 /**
  * Gets the default presets from the content directory.
@@ -220,6 +221,56 @@ async function downloadChubCharacter(id) {
 }
 
 /**
+ * Downloads a character card from the Pygsite.
+ * @param {string} id UUID of the character
+ * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string}>}
+ */
+async function downloadPygmalionCharacter(id) {
+    const result = await fetch(`https://server.pygmalion.chat/api/export/character/${id}/v2`);
+
+    if (!result.ok) {
+        const text = await result.text();
+        console.log('Pygsite returned error', result.status, text);
+        throw new Error('Failed to download character');
+    }
+
+    const jsonData = await result.json();
+    const characterData = jsonData?.character;
+
+    if (!characterData || typeof characterData !== 'object') {
+        console.error('Pygsite returned invalid character data', jsonData);
+        throw new Error('Failed to download character');
+    }
+
+    try {
+        const avatarUrl = characterData?.data?.avatar;
+
+        if (!avatarUrl) {
+            console.error('Pygsite character does not have an avatar', characterData);
+            throw new Error('Failed to download avatar');
+        }
+
+        const avatarResult = await fetch(avatarUrl);
+        const avatarBuffer = await avatarResult.buffer();
+
+        const cardBuffer = characterCardParser.write(avatarBuffer, JSON.stringify(characterData));
+
+        return {
+            buffer: cardBuffer,
+            fileName: `${sanitize(id)}.png`,
+            fileType: 'image/png',
+        };
+    } catch (e) {
+        console.error('Failed to download avatar, using JSON instead', e);
+        return {
+            buffer: Buffer.from(JSON.stringify(jsonData)),
+            fileName: `${sanitize(id)}.json`,
+            fileType: 'application/json',
+        };
+    }
+}
+
+/**
  *
  * @param {String} str
  * @returns { { id: string, type: "character" | "lorebook" } | null }
@@ -294,7 +345,7 @@ async function downloadJannyCharacter(uuid) {
 * @param {String} url
 * @returns {String | null } UUID of the character
 */
-function parseJannyUrl(url) {
+function getUuidFromUrl(url) {
     // Extract UUID from URL
     const uuidRegex = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/;
     const matches = url.match(uuidRegex);
@@ -306,7 +357,7 @@ function parseJannyUrl(url) {
 
 const router = express.Router();
 
-router.post('/import', jsonParser, async (request, response) => {
+router.post('/importURL', jsonParser, async (request, response) => {
     if (!request.body.url) {
         return response.sendStatus(400);
     }
@@ -317,8 +368,18 @@ router.post('/import', jsonParser, async (request, response) => {
         let type;
 
         const isJannnyContent = url.includes('janitorai');
-        if (isJannnyContent) {
-            const uuid = parseJannyUrl(url);
+        const isPygmalionContent = url.includes('pygmalion.chat');
+
+        if (isPygmalionContent) {
+            const uuid = getUuidFromUrl(url);
+            if (!uuid) {
+                return response.sendStatus(404);
+            }
+
+            type = 'character';
+            result = await downloadPygmalionCharacter(uuid);
+        } else if (isJannnyContent) {
+            const uuid = getUuidFromUrl(url);
             if (!uuid) {
                 return response.sendStatus(404);
             }
@@ -345,6 +406,49 @@ router.post('/import', jsonParser, async (request, response) => {
         if (result.fileType) response.set('Content-Type', result.fileType);
         response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
         response.set('X-Custom-Content-Type', type);
+        return response.send(result.buffer);
+    } catch (error) {
+        console.log('Importing custom content failed', error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/importUUID', jsonParser, async (request, response) => {
+    if (!request.body.url) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const uuid = request.body.url;
+        let result;
+
+        const isJannny = uuid.includes('_character');
+        const isPygmalion = (!isJannny && uuid.length == 36);
+        const uuidType = uuid.includes('lorebook') ? 'lorebook' : 'character';
+
+        if (isPygmalion) {
+            console.log('Downloading Pygmalion character:', uuid);
+            result = await downloadPygmalionCharacter(uuid);
+        } else if (isJannny) {
+            console.log('Downloading Janitor character:', uuid.split('_')[0]);
+            result = await downloadJannyCharacter(uuid.split('_')[0]);
+        } else {
+            if (uuidType === 'character') {
+                console.log('Downloading chub character:', uuid);
+                result = await downloadChubCharacter(uuid);
+            }
+            else if (uuidType === 'lorebook') {
+                console.log('Downloading chub lorebook:', uuid);
+                result = await downloadChubLorebook(uuid);
+            }
+            else {
+                return response.sendStatus(404);
+            }
+        }
+
+        if (result.fileType) response.set('Content-Type', result.fileType);
+        response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
+        response.set('X-Custom-Content-Type', uuidType);
         return response.send(result.buffer);
     } catch (error) {
         console.log('Importing custom content failed', error);

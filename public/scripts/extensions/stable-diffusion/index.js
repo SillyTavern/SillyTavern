@@ -20,7 +20,7 @@ import {
 } from '../../../script.js';
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
-import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay } from '../../utils.js';
+import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay, isTrueBoolean } from '../../utils.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from '../../nai-settings.js';
@@ -145,8 +145,8 @@ const promptTemplates = {
 };
 
 const helpString = [
-    `${m('(argument)')} – requests to generate an image. Supported arguments: ${m(j(Object.values(triggerWords).flat()))}.`,
-    'Anything else would trigger a "free mode" to make generate whatever you prompted. Example: \'/imagine apple tree\' would generate a picture of an apple tree.',
+    `${m('[quiet=false/true] (argument)')} – requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments: ${m(j(Object.values(triggerWords).flat()))}.`,
+    'Anything else would trigger a "free mode" to make generate whatever you prompted. Example: \'/imagine apple tree\' would generate a picture of an apple tree. Returns a link to the generated image.',
 ].join(' ');
 
 const defaultPrefix = 'best quality, absurdres, aesthetic,';
@@ -206,6 +206,7 @@ const defaultSettings = {
     expand: false,
     interactive_mode: false,
     multimodal_captioning: false,
+    snap: false,
 
     prompts: promptTemplates,
 
@@ -389,6 +390,7 @@ async function loadSettings() {
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
+    $('#sd_snap').prop('checked', extension_settings.sd.snap);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -398,29 +400,39 @@ async function loadSettings() {
         $('#sd_style').append(option);
     }
 
-    // Find a closest resolution option match for the current width and height
-    let resolutionId = null, minAspectDiff = Infinity, minResolutionDiff = Infinity;
-    for (const [id, resolution] of Object.entries(resolutionOptions)) {
-        const aspectDiff = Math.abs((resolution.width / resolution.height) - (extension_settings.sd.width / extension_settings.sd.height));
-        const resolutionDiff = Math.abs(resolution.width * resolution.height - extension_settings.sd.width * extension_settings.sd.height);
-
-        if (resolutionDiff < minResolutionDiff || (resolutionDiff === minResolutionDiff && aspectDiff < minAspectDiff)) {
-            resolutionId = id;
-            minAspectDiff = aspectDiff;
-            minResolutionDiff = resolutionDiff;
-        }
-
-        if (resolutionDiff === 0 && aspectDiff === 0) {
-            break;
-        }
-    }
-
+    const resolutionId = getClosestKnownResolution();
     $('#sd_resolution').val(resolutionId);
 
     toggleSourceControls();
     addPromptTemplates();
 
     await loadSettingOptions();
+}
+
+/**
+ * Find a closest resolution option match for the current width and height.
+ */
+function getClosestKnownResolution() {
+    let resolutionId = null;
+    let minTotalDiff = Infinity;
+
+    const targetAspect = extension_settings.sd.width / extension_settings.sd.height;
+    const targetResolution = extension_settings.sd.width * extension_settings.sd.height;
+
+    const diffs = Object.entries(resolutionOptions).map(([id, resolution]) => {
+        const aspectDiff = Math.abs((resolution.width / resolution.height) - targetAspect) / targetAspect;
+        const resolutionDiff = Math.abs(resolution.width * resolution.height - targetResolution) / targetResolution;
+        return { id, totalDiff: aspectDiff + resolutionDiff };
+    });
+
+    for (const { id, totalDiff } of diffs) {
+        if (totalDiff < minTotalDiff) {
+            minTotalDiff = totalDiff;
+            resolutionId = id;
+        }
+    }
+
+    return resolutionId;
 }
 
 async function loadSettingOptions() {
@@ -472,6 +484,11 @@ function onInteractiveModeInput() {
 
 function onMultimodalCaptioningInput() {
     extension_settings.sd.multimodal_captioning = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+function onSnapInput() {
+    extension_settings.sd.snap = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -1659,7 +1676,7 @@ function processReply(str) {
     str = str.replaceAll('“', '');
     str = str.replaceAll('.', ',');
     str = str.replaceAll('\n', ', ');
-    str = str.replace(/[^a-zA-Z0-9,:()]+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
+    str = str.replace(/[^a-zA-Z0-9,:()']+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
 
@@ -1693,7 +1710,7 @@ function getRawLastMessage() {
     return `((${processReply(lastMessage)})), (${processReply(situation)}:0.7), (${processReply(characterDescription)}:0.5)`;
 }
 
-async function generatePicture(_, trigger, message, callback) {
+async function generatePicture(args, trigger, message, callback) {
     if (!trigger || trigger.trim().length === 0) {
         console.log('Trigger word empty, aborting');
         return;
@@ -1731,7 +1748,12 @@ async function generatePicture(_, trigger, message, callback) {
         };
     }
 
+    if (isTrueBoolean(args?.quiet)) {
+        callback = () => { };
+    }
+
     const dimensions = setTypeSpecificDimensions(generationType);
+    let imagePath = '';
 
     try {
         const prompt = await getPrompt(generationType, message, trigger, quietPrompt);
@@ -1740,7 +1762,7 @@ async function generatePicture(_, trigger, message, callback) {
         context.deactivateSendButtons();
         hideSwipeButtons();
 
-        await sendGenerationRequest(generationType, prompt, characterName, callback);
+        imagePath = await sendGenerationRequest(generationType, prompt, characterName, callback);
     } catch (err) {
         console.trace(err);
         throw new Error('SD prompt text generation failed.');
@@ -1750,6 +1772,8 @@ async function generatePicture(_, trigger, message, callback) {
         context.activateSendButtons();
         showSwipeButtons();
     }
+
+    return imagePath;
 }
 
 function setTypeSpecificDimensions(generationType) {
@@ -1758,7 +1782,7 @@ function setTypeSpecificDimensions(generationType) {
     const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
 
     // Face images are always portrait (pun intended)
-    if (generationType == generationMode.FACE && aspectRatio >= 1) {
+    if ((generationType == generationMode.FACE || generationType == generationMode.FACE_MULTIMODAL) && aspectRatio >= 1) {
         // Round to nearest multiple of 64
         extension_settings.sd.height = Math.round(extension_settings.sd.width * 1.5 / 64) * 64;
     }
@@ -1768,6 +1792,28 @@ function setTypeSpecificDimensions(generationType) {
         if (aspectRatio <= 1) {
             // Round to nearest multiple of 64
             extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
+        }
+    }
+
+    if (extension_settings.sd.snap) {
+        // Force to use roughly the same pixel count as before rescaling
+        const prevPixelCount = prevSDHeight * prevSDWidth;
+        const newPixelCount = extension_settings.sd.height * extension_settings.sd.width;
+
+        if (prevPixelCount !== newPixelCount) {
+            const ratio = Math.sqrt(prevPixelCount / newPixelCount);
+            extension_settings.sd.height = Math.round(extension_settings.sd.height * ratio / 64) * 64;
+            extension_settings.sd.width = Math.round(extension_settings.sd.width * ratio / 64) * 64;
+            console.log(`Pixel counts after rescaling: ${prevPixelCount} -> ${newPixelCount} (ratio: ${ratio})`);
+
+            const resolution = resolutionOptions[getClosestKnownResolution()];
+            if (resolution) {
+                extension_settings.sd.height = resolution.height;
+                extension_settings.sd.width = resolution.width;
+                console.log('Snap to resolution', JSON.stringify(resolution));
+            } else {
+                console.warn('Snap to resolution failed, using custom dimensions');
+            }
         }
     }
 
@@ -1964,6 +2010,7 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
     callback ? callback(prompt, base64Image, generationType) : sendMessage(prompt, base64Image, generationType);
+    return base64Image;
 }
 
 async function generateTogetherAIImage(prompt, negativePrompt) {
@@ -2341,7 +2388,7 @@ async function onComfyOpenWorkflowEditorClick() {
         `);
         $('#sd_comfy_workflow_editor_placeholder_list_custom').append(el);
         el.find('.sd_comfy_workflow_editor_custom_find').val(placeholder.find);
-        el.find('.sd_comfy_workflow_editor_custom_find').on('input', function() {
+        el.find('.sd_comfy_workflow_editor_custom_find').on('input', function () {
             placeholder.find = this.value;
             el.find('.sd_comfy_workflow_editor_custom_final').text(`"%${this.value}%"`);
             el.attr('data-placeholder', `${this.value}`);
@@ -2349,7 +2396,7 @@ async function onComfyOpenWorkflowEditorClick() {
             saveSettingsDebounced();
         });
         el.find('.sd_comfy_workflow_editor_custom_replace').val(placeholder.replace);
-        el.find('.sd_comfy_workflow_editor_custom_replace').on('input', function() {
+        el.find('.sd_comfy_workflow_editor_custom_replace').on('input', function () {
             placeholder.replace = this.value;
             saveSettingsDebounced();
         });
@@ -2371,7 +2418,7 @@ async function onComfyOpenWorkflowEditorClick() {
         addPlaceholderDom(placeholder);
         saveSettingsDebounced();
     });
-    (extension_settings.sd.comfy_placeholders ?? []).forEach(placeholder=>{
+    (extension_settings.sd.comfy_placeholders ?? []).forEach(placeholder => {
         addPlaceholderDom(placeholder);
     });
     checkPlaceholders();
@@ -2642,7 +2689,7 @@ $('#sd_dropdown [id]').on('click', function () {
 
 jQuery(async () => {
     registerSlashCommand('imagine', generatePicture, ['sd', 'img', 'image'], helpString, true, true);
-    registerSlashCommand('imagine-comfy-workflow', changeComfyWorkflow, ['icw'], '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <tt>/imagine-comfy-workflow MyWorkflow</tt>')
+    registerSlashCommand('imagine-comfy-workflow', changeComfyWorkflow, ['icw'], '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <tt>/imagine-comfy-workflow MyWorkflow</tt>');
 
     $('#extensions_settings').append(renderExtensionTemplate('stable-diffusion', 'settings', defaultSettings));
     $('#sd_source').on('change', onSourceChange);
@@ -2692,6 +2739,7 @@ jQuery(async () => {
     $('#sd_openai_style').on('change', onOpenAiStyleSelect);
     $('#sd_openai_quality').on('change', onOpenAiQualitySelect);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
+    $('#sd_snap').on('input', onSnapInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));

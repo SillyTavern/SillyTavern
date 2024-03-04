@@ -294,6 +294,19 @@ app.post('/savequickreply', jsonParser, (request, response) => {
     return response.sendStatus(200);
 });
 
+app.post('/deletequickreply', jsonParser, (request, response) => {
+    if (!request.body || !request.body.name) {
+        return response.sendStatus(400);
+    }
+
+    const filename = path.join(DIRECTORIES.quickreplies, sanitize(request.body.name) + '.json');
+    if (fs.existsSync(filename)) {
+        fs.unlinkSync(filename);
+    }
+
+    return response.sendStatus(200);
+});
+
 
 app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
     if (!request.file) return response.sendStatus(400);
@@ -371,9 +384,9 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
         }
 
         // if character is defined, save to a sub folder for that character
-        let pathToNewFile = path.join(DIRECTORIES.userImages, filename);
+        let pathToNewFile = path.join(DIRECTORIES.userImages, sanitize(filename));
         if (request.body.ch_name) {
-            pathToNewFile = path.join(DIRECTORIES.userImages, request.body.ch_name, filename);
+            pathToNewFile = path.join(DIRECTORIES.userImages, sanitize(request.body.ch_name), sanitize(filename));
         }
 
         ensureDirectoryExistence(pathToNewFile);
@@ -579,6 +592,9 @@ app.use('/api/backends/chat-completions', require('./src/endpoints/backends/chat
 
 // Scale (alt method)
 app.use('/api/backends/scale-alt', require('./src/endpoints/backends/scale-alt').router);
+
+// Speech (text-to-speech and speech-to-text)
+app.use('/api/speech', require('./src/endpoints/speech').router);
 
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +

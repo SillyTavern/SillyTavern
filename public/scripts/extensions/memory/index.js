@@ -592,12 +592,12 @@ jQuery(function () {
 
                         <textarea id="memory_contents" class="text_pole textarea_compact" rows="6" placeholder="Summary will be generated here..."></textarea>
                         <div class="memory_contents_controls">
-                            <div id="memory_force_summarize" data-source="main" class="menu_button menu_button_icon">
+                            <div id="memory_force_summarize" data-source="main" class="menu_button menu_button_icon" title="Trigger a summary update right now." data-i18n="Trigger a summary update right now.">
                                 <i class="fa-solid fa-database"></i>
                                 <span>Summarize now</span>
                             </div>
-                            <label for="memory_frozen"><input id="memory_frozen" type="checkbox" />Pause</label>
-                            <label for="memory_skipWIAN"><input id="memory_skipWIAN" type="checkbox" />No WI/AN</label>
+                            <label for="memory_frozen" title="Disable automatic summary updates. While paused, the summary remains as-is. You can still force an update by pressing the Summarize now button (which is only available with the Main API)." data-i18n="[title]Disable automatic summary updates. While paused, the summary remains as-is. You can still force an update by pressing the Summarize now button (which is only available with the Main API)."><input id="memory_frozen" type="checkbox" />Pause</label>
+                            <label for="memory_skipWIAN" title="Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN." data-i18n="[title]Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN."><input id="memory_skipWIAN" type="checkbox" />No WI/AN</label>
                         </div>
                         <div class="memory_contents_controls">
                             <div id="summarySettingsBlockToggle" class="menu_button menu_button_icon" title="Edit summarization prompt, insertion position, etc.">
@@ -620,7 +620,7 @@ jQuery(function () {
                                     <input type="radio" name="memory_position" value="0" />
                                     After Main Prompt / Story String
                                 </label>
-                                <label>
+                                <label for="memory_depth" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
                                     <input type="radio" name="memory_position" value="1" />
                                     In-chat @ Depth <input id="memory_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
                                 </label>

@@ -1,6 +1,6 @@
 import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from '../../../script.js';
-import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplate } from '../../extensions.js';
-import { collapseNewlines, power_user, ui_mode } from '../../power-user.js';
+import { ModuleWorkerWrapper, extension_settings, getContext, modules, renderExtensionTemplate } from '../../extensions.js';
+import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
 
@@ -12,6 +12,7 @@ const settings = {
     // For both
     source: 'transformers',
     include_wi: false,
+    togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
 
     // For chats
     enabled_chats: false,
@@ -21,6 +22,7 @@ const settings = {
     protect: 5,
     insert: 3,
     query: 2,
+    message_chunk_size: 400,
 
     // For files
     enabled_files: false,
@@ -87,6 +89,29 @@ async function onVectorizeAllClick() {
 
 let syncBlocked = false;
 
+/**
+ * Splits messages into chunks before inserting them into the vector index.
+ * @param {object[]} items Array of vector items
+ * @returns {object[]} Array of vector items (possibly chunked)
+ */
+function splitByChunks(items) {
+    if (settings.message_chunk_size <= 0) {
+        return items;
+    }
+
+    const chunkedItems = [];
+
+    for (const item of items) {
+        const chunks = splitRecursive(item.text, settings.message_chunk_size);
+        for (const chunk of chunks) {
+            const chunkedItem = { ...item, text: chunk };
+            chunkedItems.push(chunkedItem);
+        }
+    }
+
+    return chunkedItems;
+}
+
 async function synchronizeChat(batchSize = 5) {
     if (!settings.enabled_chats) {
         return -1;
@@ -116,8 +141,9 @@ async function synchronizeChat(batchSize = 5) {
         const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
 
         if (newVectorItems.length > 0) {
+            const chunkedBatch = splitByChunks(newVectorItems.slice(0, batchSize));
             console.log(`Vectors: Found ${newVectorItems.length} new items. Processing ${batchSize}...`);
-            await insertVectorItems(chatId, newVectorItems.slice(0, batchSize));
+            await insertVectorItems(chatId, chunkedBatch);
         }
 
         if (deletedHashes.length > 0) {
@@ -127,8 +153,25 @@ async function synchronizeChat(batchSize = 5) {
 
         return newVectorItems.length - batchSize;
     } catch (error) {
+        /**
+         * Gets the error message for a given cause
+         * @param {string} cause Error cause key
+         * @returns {string} Error message
+         */
+        function getErrorMessage(cause) {
+            switch (cause) {
+                case 'api_key_missing':
+                    return 'API key missing. Save it in the "API Connections" panel.';
+                case 'extras_module_missing':
+                    return 'Extras API must provide an "embeddings" module.';
+                default:
+                    return 'Check server console for more details';
+            }
+        }
+
         console.error('Vectors: Failed to synchronize chat', error);
-        const message = error.cause === 'api_key_missing' ? 'API key missing. Save it in the "API Connections" panel.' : 'Check server console for more details';
+
+        const message = getErrorMessage(error.cause);
         toastr.error(message, 'Vectorization failed');
         return -1;
     } finally {
@@ -221,7 +264,7 @@ async function retrieveFileChunks(queryText, collectionId) {
     console.debug(`Vectors: Retrieving file chunks for collection ${collectionId}`, queryText);
     const queryResults = await queryCollection(collectionId, queryText, settings.chunk_count);
     console.debug(`Vectors: Retrieved ${queryResults.hashes.length} file chunks for collection ${collectionId}`, queryResults);
-    const metadata = queryResults.metadata.filter(x => x.text).sort((a, b) => a.index - b.index).map(x => x.text);
+    const metadata = queryResults.metadata.filter(x => x.text).sort((a, b) => a.index - b.index).map(x => x.text).filter(onlyUnique);
     const fileText = metadata.join('\n');
 
     return fileText;
@@ -285,7 +328,7 @@ async function rearrangeChat(chat) {
         }
 
         // Get the most relevant messages, excluding the last few
-        const queryResults = await queryCollection(chatId, queryText, settings.query);
+        const queryResults = await queryCollection(chatId, queryText, settings.insert);
         const queryHashes = queryResults.hashes.filter(onlyUnique);
         const queriedMessages = [];
         const insertedHashes = new Set();
@@ -387,6 +430,28 @@ async function getSavedHashes(collectionId) {
 }
 
 /**
+ * Add headers for the Extras API source.
+ * @param {object} headers Headers object
+ */
+function addExtrasHeaders(headers) {
+    console.log(`Vector source is extras, populating API URL: ${extension_settings.apiUrl}`);
+    Object.assign(headers, {
+        'X-Extras-Url': extension_settings.apiUrl,
+        'X-Extras-Key': extension_settings.apiKey,
+    });
+}
+
+/**
+ * Add headers for the Extras API source.
+ * @param {object} headers Headers object
+ */
+function addTogetherAiHeaders(headers) {
+    Object.assign(headers, {
+        'X-Togetherai-Model': extension_settings.vectors.togetherai_model,
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
@@ -395,13 +460,25 @@ async function getSavedHashes(collectionId) {
 async function insertVectorItems(collectionId, items) {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
-        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI]) {
+        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
+        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
+    }
+
+    if (settings.source === 'extras' && !modules.includes('embeddings')) {
+        throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
+    }
+
+    const headers = getRequestHeaders();
+    if (settings.source === 'extras') {
+        addExtrasHeaders(headers);
+    } else if (settings.source === 'togetherai') {
+        addTogetherAiHeaders(headers);
     }
 
     const response = await fetch('/api/vector/insert', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: headers,
         body: JSON.stringify({
             collectionId: collectionId,
             items: items,
@@ -443,9 +520,16 @@ async function deleteVectorItems(collectionId, hashes) {
  * @returns {Promise<{ hashes: number[], metadata: object[]}>} - Hashes of the results
  */
 async function queryCollection(collectionId, searchText, topK) {
+    const headers = getRequestHeaders();
+    if (settings.source === 'extras') {
+        addExtrasHeaders(headers);
+    } else if (settings.source === 'togetherai') {
+        addTogetherAiHeaders(headers);
+    }
+
     const response = await fetch('/api/vector/query', {
         method: 'POST',
-        headers: getRequestHeaders(),
+        headers: headers,
         body: JSON.stringify({
             collectionId: collectionId,
             searchText: searchText,
@@ -458,14 +542,18 @@ async function queryCollection(collectionId, searchText, topK) {
         throw new Error(`Failed to query collection ${collectionId}`);
     }
 
-    const results = await response.json();
-    return results;
+    return await response.json();
 }
 
+/**
+ * Purges the vector index for a collection.
+ * @param {string} collectionId Collection ID to purge
+ * @returns <Promise<boolean>> True if deleted, false if not
+ */
 async function purgeVectorIndex(collectionId) {
     try {
         if (!settings.enabled_chats) {
-            return;
+            return true;
         }
 
         const response = await fetch('/api/vector/purge', {
@@ -481,15 +569,57 @@ async function purgeVectorIndex(collectionId) {
         }
 
         console.log(`Vectors: Purged vector index for collection ${collectionId}`);
-
+        return true;
     } catch (error) {
         console.error('Vectors: Failed to purge', error);
+        return false;
     }
 }
 
 function toggleSettings() {
     $('#vectors_files_settings').toggle(!!settings.enabled_files);
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
+    $('#together_vectorsModel').toggle(settings.source === 'togetherai');
+}
+
+async function onPurgeClick() {
+    const chatId = getCurrentChatId();
+    if (!chatId) {
+        toastr.info('No chat selected', 'Purge aborted');
+        return;
+    }
+    if (await purgeVectorIndex(chatId)) {
+        toastr.success('Vector index purged', 'Purge successful');
+    } else {
+        toastr.error('Failed to purge vector index', 'Purge failed');
+    }
+}
+
+async function onViewStatsClick() {
+    const chatId = getCurrentChatId();
+    if (!chatId) {
+        toastr.info('No chat selected');
+        return;
+    }
+
+    const hashesInCollection = await getSavedHashes(chatId);
+    const totalHashes = hashesInCollection.length;
+    const uniqueHashes = hashesInCollection.filter(onlyUnique).length;
+
+    toastr.info(`Total hashes: <b>${totalHashes}</b><br>
+    Unique hashes: <b>${uniqueHashes}</b><br><br>
+    I'll mark collected messages with a green circle.`,
+    `Stats for chat ${chatId}`,
+    { timeOut: 10000, escapeHtml: false });
+
+    const chat = getContext().chat;
+    for (const message of chat) {
+        if (hashesInCollection.includes(getStringHash(message.mes))) {
+            const messageElement = $(`.mes[mesid="${chat.indexOf(message)}"]`);
+            messageElement.addClass('vectorized');
+        }
+    }
+
 }
 
 jQuery(async () => {
@@ -503,6 +633,7 @@ jQuery(async () => {
     }
 
     Object.assign(settings, extension_settings.vectors);
+
     // Migrate from TensorFlow to Transformers
     settings.source = settings.source !== 'local' ? settings.source : 'transformers';
     $('#extensions_settings2').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
@@ -520,6 +651,13 @@ jQuery(async () => {
     });
     $('#vectors_source').val(settings.source).on('change', () => {
         settings.source = String($('#vectors_source').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+        toggleSettings();
+    });
+
+    $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
+        settings.togetherai_model = String($('#vectors_togetherai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
@@ -554,9 +692,9 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
-    $('#vectors_advanced_settings').toggleClass('displayNone', power_user.ui_mode === ui_mode.SIMPLE);
-
     $('#vectors_vectorize_all').on('click', onVectorizeAllClick);
+    $('#vectors_purge').on('click', onPurgeClick);
+    $('#vectors_view_stats').on('click', onViewStatsClick);
 
     $('#vectors_size_threshold').val(settings.size_threshold).on('input', () => {
         settings.size_threshold = Number($('#vectors_size_threshold').val());
@@ -578,6 +716,12 @@ jQuery(async () => {
 
     $('#vectors_include_wi').prop('checked', settings.include_wi).on('input', () => {
         settings.include_wi = !!$('#vectors_include_wi').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_message_chunk_size').val(settings.message_chunk_size).on('input', () => {
+        settings.message_chunk_size = Number($('#vectors_message_chunk_size').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

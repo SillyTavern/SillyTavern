@@ -2,7 +2,7 @@ import { callPopup, main_api } from '../../../script.js';
 import { getContext } from '../../extensions.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { getFriendlyTokenizerName, getTextTokens, getTokenCount, tokenizers } from '../../tokenizers.js';
-import { resetScrollHeight } from '../../utils.js';
+import { resetScrollHeight, debounce } from '../../utils.js';
 
 function rgb2hex(rgb) {
     rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
@@ -38,7 +38,7 @@ async function doTokenCounter() {
     </div>`;
 
     const dialog = $(html);
-    dialog.find('#token_counter_textarea').on('input', () => {
+    const countDebounced = debounce(() => {
         const text = String($('#token_counter_textarea').val());
         const ids = main_api == 'openai' ? getTextTokens(tokenizers.OPENAI, text) : getTextTokens(tokenizerId, text);
 
@@ -59,7 +59,8 @@ async function doTokenCounter() {
 
         resetScrollHeight($('#token_counter_textarea'));
         resetScrollHeight($('#token_counter_ids'));
-    });
+    }, 1000);
+    dialog.find('#token_counter_textarea').on('input', () => countDebounced());
 
     $('#dialogue_popup').addClass('wide_dialogue_popup');
     callPopup(dialog, 'text', '', { wide: true, large: true });

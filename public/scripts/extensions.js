@@ -167,9 +167,12 @@ async function doExtrasFetch(endpoint, args) {
     if (!args.headers) {
         args.headers = {};
     }
-    Object.assign(args.headers, {
-        'Authorization': `Bearer ${extension_settings.apiKey}`,
-    });
+
+    if (extension_settings.apiKey) {
+        Object.assign(args.headers, {
+            'Authorization': `Bearer ${extension_settings.apiKey}`,
+        });
+    }
 
     const response = await fetch(endpoint, args);
     return response;
@@ -654,7 +657,7 @@ async function updateExtension(extensionName, quiet) {
                 toastr.success('Extension is already up to date');
             }
         } else {
-            toastr.success(`Extension ${extensionName} updated to ${data.shortCommitHash}`);
+            toastr.success(`Extension ${extensionName} updated to ${data.shortCommitHash}`, 'Reload the page to apply updates');
         }
     } catch (error) {
         console.error('Error:', error);

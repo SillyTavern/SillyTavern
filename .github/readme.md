@@ -1,4 +1,4 @@
-English | [中文](readme-zh_cn.md)
+English | [中文](readme-zh_cn.md) | [日本語](readme-ja_jp.md)
 
 ![SillyTavern-Banner](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
 
@@ -11,6 +11,8 @@ Based on a fork of [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8
 1. We have created a [Documentation website](https://docs.sillytavern.app/) to answer most of your questions and help you get started.
 
 2. Missing extensions after the update? Since the 1.10.6 release version, most of the previously built-in extensions have been converted to downloadable add-ons. You can download them via the built-in "Download Extensions and Assets" menu in the extensions panel (stacked blocks icon in the top bar).
+
+3. Having unstyled underscores instead of italics? Since the 1.11.6 release version, the handling of underscores in Markdown text processing was changed. The asterisk italics formatting will continue working as expected. Now double or triple underscores can be used for representing underlined text. Text surrounded by a single underscore is no longer interpreted as italics but left unformatted. To revert to the old behavior, please import and enable the following Regex script: [underscore_italics.json](https://github.com/SillyTavern/SillyTavern/files/14463077/underscore_italics.json)
 
 ### Brought to you by Cohee, RossAscends, and the SillyTavern community
 
@@ -51,7 +53,7 @@ Since Tavern is only a user interface, it has tiny hardware requirements, it wil
 
 Get support, share favorite characters and prompts:
 
-### [Join](https://discord.gg/RZdyAEUPvj)
+### [Join](https://discord.gg/sillytavern)
 
 ***
 
@@ -85,7 +87,7 @@ SillyTavern has extensibility support, with some additional AI modules hosted vi
 * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 
-A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/extras/extensions/).
+A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/).
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
@@ -161,6 +163,17 @@ Installing via ZIP download (discouraged)
   5. Once the server has prepared everything for you, it will open a tab in your browser.
 
 ### Linux
+
+#### Unofficial Debian/Ubuntu PKGBUILD
+
+> **This installation method is unofficial and not supported by the project. Report any issues to the PKGBUILD maintainer.**  
+> The method is intended for Debian-based distributions (Ubuntu, Mint, etc).
+
+1. Install [makedeb](https://www.makedeb.org/).
+2. Ensure you have Node.js v18 or higher installed by running `node -v`. If you need to upgrade, you can install a [node.js repo](https://mpr.makedeb.org/packages/nodejs-repo) (you'll might need to edit the version inside the PKGBUILD). As an alternative, install and configure [nvm](https://mpr.makedeb.org/packages/nvm) to manage multiple node.js installations. Finally, you can [install node.js manually](https://nodejs.org/en/download), but you will need to update the PATH variable of your environment.
+3. Now build the [sillytavern package](https://mpr.makedeb.org/packages/sillytavern). The build needs to run with the correct node.js version.
+
+#### Manual
 
   1. Ensure you have Node.js v18 or higher (the latest [LTS version](https://nodejs.org/en/download/) is recommended) installed by running `node -v`.
 Alternatively, use the [Node Version Manager](https://github.com/nvm-sh/nvm#installing-and-updating) script to quickly and easily manage your Node installations.
@@ -282,8 +295,9 @@ You can find them archived here:
 
 ## Screenshots
 
-<img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649245-8061c60f-63dc-488e-9325-f151b7a3ec2d.png">
-<img width="400" alt="image" src="https://user-images.githubusercontent.com/18619528/228649856-fbdeef05-d727-4d5a-be80-266cbbc6b811.png">
+<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/e902c7a2-45a6-4415-97aa-c59c597669c1"> 
+<img width="400" alt="image" src="https://github.com/SillyTavern/SillyTavern/assets/61471128/f8a79c47-4fe9-4564-9e4a-bf247ed1c961">
+
 
 ## License and credits
 

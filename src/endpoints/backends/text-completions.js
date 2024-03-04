@@ -4,7 +4,7 @@ const _ = require('lodash');
 const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
-const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS } = require('../../constants');
+const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS, INFERMATICAI_KEYS, OPENROUTER_KEYS } = require('../../constants');
 const { forwardFetchResponse, trimV1 } = require('../../util');
 const { setAdditionalHeaders } = require('../../additional-headers');
 
@@ -106,6 +106,8 @@ router.post('/status', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.APHRODITE:
                 case TEXTGEN_TYPES.KOBOLDCPP:
                 case TEXTGEN_TYPES.LLAMACPP:
+                case TEXTGEN_TYPES.INFERMATICAI:
+                case TEXTGEN_TYPES.OPENROUTER:
                     url += '/v1/models';
                     break;
                 case TEXTGEN_TYPES.MANCER:
@@ -208,6 +210,7 @@ router.post('/generate', jsonParser, async function (request, response) {
             request.body.api_server = request.body.api_server.replace('localhost', '127.0.0.1');
         }
 
+        const apiType = request.body.api_type;
         const baseUrl = request.body.api_server;
         console.log(request.body);
 
@@ -232,6 +235,7 @@ router.post('/generate', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.TABBY:
                 case TEXTGEN_TYPES.KOBOLDCPP:
                 case TEXTGEN_TYPES.TOGETHERAI:
+                case TEXTGEN_TYPES.INFERMATICAI:
                     url += '/v1/completions';
                     break;
                 case TEXTGEN_TYPES.MANCER:
@@ -242,6 +246,9 @@ router.post('/generate', jsonParser, async function (request, response) {
                     break;
                 case TEXTGEN_TYPES.OLLAMA:
                     url += '/api/generate';
+                    break;
+                case TEXTGEN_TYPES.OPENROUTER:
+                    url += '/v1/chat/completions';
                     break;
             }
         }
@@ -257,11 +264,17 @@ router.post('/generate', jsonParser, async function (request, response) {
         setAdditionalHeaders(request, args, baseUrl);
 
         if (request.body.api_type === TEXTGEN_TYPES.TOGETHERAI) {
-            const stop = Array.isArray(request.body.stop) ? request.body.stop[0] : '';
             request.body = _.pickBy(request.body, (_, key) => TOGETHERAI_KEYS.includes(key));
-            if (typeof stop === 'string' && stop.length > 0) {
-                request.body.stop = stop;
-            }
+            args.body = JSON.stringify(request.body);
+        }
+
+        if (request.body.api_type === TEXTGEN_TYPES.INFERMATICAI) {
+            request.body = _.pickBy(request.body, (_, key) => INFERMATICAI_KEYS.includes(key));
+            args.body = JSON.stringify(request.body);
+        }
+
+        if (request.body.api_type === TEXTGEN_TYPES.OPENROUTER) {
+            request.body = _.pickBy(request.body, (_, key) => OPENROUTER_KEYS.includes(key));
             args.body = JSON.stringify(request.body);
         }
 
@@ -270,6 +283,7 @@ router.post('/generate', jsonParser, async function (request, response) {
                 model: request.body.model,
                 prompt: request.body.prompt,
                 stream: request.body.stream ?? false,
+                keep_alive: -1,
                 raw: true,
                 options: _.pickBy(request.body, (_, key) => OLLAMA_KEYS.includes(key)),
             });
@@ -294,6 +308,11 @@ router.post('/generate', jsonParser, async function (request, response) {
                 if (request.body.legacy_api) {
                     const text = data?.results[0]?.text;
                     data['choices'] = [{ text }];
+                }
+
+                // Map InfermaticAI response to OAI completions format
+                if (apiType === TEXTGEN_TYPES.INFERMATICAI) {
+                    data['choices'] = (data?.choices || []).map(choice => ({ text: choice.message.content }));
                 }
 
                 return response.send(data);

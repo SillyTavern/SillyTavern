@@ -1,4 +1,5 @@
 import { getRequestHeaders, callPopup } from '../../../script.js';
+import { splitRecursive } from '../../utils.js';
 import { getPreviewString, saveTtsProviderSettings } from './index.js';
 import { initVoiceMap } from './index.js';
 
@@ -52,7 +53,7 @@ class NovelTtsProvider {
 
 
     // Add a new Novel custom voice to provider
-    async addCustomVoice(){
+    async addCustomVoice() {
         const voiceName = await callPopup('<h3>Custom Voice name:</h3>', 'input');
         this.settings.customVoices.push(voiceName);
         this.populateCustomVoices();
@@ -74,7 +75,7 @@ class NovelTtsProvider {
     }
 
     // Create the UI dropdown list of voices in provider
-    populateCustomVoices(){
+    populateCustomVoices() {
         let voiceSelect = $('#tts-novel-custom-voices-select');
         voiceSelect.empty();
         this.settings.customVoices.forEach(voice => {
@@ -88,7 +89,7 @@ class NovelTtsProvider {
             console.info('Using default TTS Provider settings');
         }
         $('#tts-novel-custom-voices-add').on('click', () => (this.addCustomVoice()));
-        $('#tts-novel-custom-voices-delete').on('click',() => (this.deleteCustomVoice()));
+        $('#tts-novel-custom-voices-delete').on('click', () => (this.deleteCustomVoice()));
 
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings;
@@ -108,7 +109,7 @@ class NovelTtsProvider {
 
     // Perform a simple readiness check by trying to fetch voiceIds
     // Doesnt really do much for Novel, not seeing a good way to test this at the moment.
-    async checkReady(){
+    async checkReady() {
         await this.fetchTtsVoiceObjects();
     }
 
@@ -179,22 +180,26 @@ class NovelTtsProvider {
         this.audioElement.play();
     }
 
-    async fetchTtsGeneration(inputText, voiceId) {
+    async* fetchTtsGeneration(inputText, voiceId) {
+        const MAX_LENGTH = 1000;
         console.info(`Generating new TTS for voice_id ${voiceId}`);
-        const response = await fetch('/api/novelai/generate-voice',
-            {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify({
-                    'text': inputText,
-                    'voice': voiceId,
-                }),
-            },
-        );
-        if (!response.ok) {
-            toastr.error(response.statusText, 'TTS Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        const chunks = splitRecursive(inputText, MAX_LENGTH);
+        for (const chunk of chunks) {
+            const response = await fetch('/api/novelai/generate-voice',
+                {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({
+                        'text': chunk,
+                        'voice': voiceId,
+                    }),
+                },
+            );
+            if (!response.ok) {
+                toastr.error(response.statusText, 'TTS Generation Failed');
+                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            }
+            yield response;
         }
-        return response;
     }
 }

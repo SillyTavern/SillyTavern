@@ -11,9 +11,26 @@
                 </label>
                 <select id="vectors_source" class="text_pole">
                     <option value="transformers">Local (Transformers)</option>
+                    <option value="extras">Extras</option>
                     <option value="openai">OpenAI</option>
                     <option value="palm">Google MakerSuite (PaLM)</option>
                     <option value="mistral">MistralAI</option>
+                    <option value="togetherai">TogetherAI</option>
+                </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="together_vectorsModel">
+                <label for="vectors_togetherai_model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_togetherai_model" class="text_pole">
+                    <option value="togethercomputer/m2-bert-80M-32k-retrieval">M2-BERT-Retrieval-32k</option>
+                    <option value="togethercomputer/m2-bert-80M-8k-retrieval">M2-BERT-Retrieval-8k</option>
+                    <option value="togethercomputer/m2-bert-80M-2k-retrieval">M2-BERT-Retrieval-2K</option>
+                    <option value="WhereIsAI/UAE-Large-V1">UAE-Large-V1</option>
+                    <option value="BAAI/bge-large-en-v1.5">BAAI-Bge-Large-1p5</option>
+                    <option value="BAAI/bge-base-en-v1.5">BAAI-Bge-Base-1p5</option>
+                    <option value="sentence-transformers/msmarco-bert-base-dot-v5">Sentence-BERT</option>
+                    <option value="bert-base-uncased">Bert Base Uncased</option>
                 </select>
             </div>
 
@@ -75,7 +92,7 @@
             </label>
 
             <div id="vectors_chats_settings">
-                <div id="vectors_advanced_settings" data-newbie-hidden>
+                <div id="vectors_advanced_settings">
                     <label for="vectors_template">
                         Insertion Template
                     </label>
@@ -91,23 +108,29 @@
                             <input type="radio" name="vectors_position" value="0" />
                             After Main Prompt / Story String
                         </label>
-                        <label>
+                        <label for="vectors_depth" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
                             <input type="radio" name="vectors_position" value="1" />
                             In-chat @ Depth <input id="vectors_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
                         </label>
                     </div>
                     <div class="flex-container">
+                        <div class="flex1" title="Can increase the retrieval quality for the cost of processing. 0 = disabled.">
+                            <label for="vectors_message_chunk_size">
+                                <small>Chunk size (chars)</small>
+                            </label>
+                            <input id="vectors_message_chunk_size" type="number" class="text_pole widthUnset" min="0" max="9999" />
+                        </div>
                         <div class="flex1" title="Prevents last N messages from being placed out of order.">
                             <label for="vectors_protect">
                                 <small>Retain#</small>
                             </label>
-                            <input type="number" id="vectors_protect" class="text_pole widthUnset" min="1" max="99" />
+                            <input type="number" id="vectors_protect" class="text_pole widthUnset" min="1" max="9999" />
                         </div>
                         <div class="flex1" title="How many past messages to insert as memories.">
                             <label for="vectors_insert">
                                 <small>Insert#</small>
                             </label>
-                            <input type="number" id="vectors_insert" class="text_pole widthUnset" min="1" max="99" />
+                            <input type="number" id="vectors_insert" class="text_pole widthUnset" min="1" max="9999" />
                         </div>
                     </div>
                 </div>
@@ -115,8 +138,16 @@
                     Old messages are vectorized gradually as you chat.
                     To process all previous messages, click the button below.
                 </small>
-                <div id="vectors_vectorize_all" class="menu_button menu_button_icon">
-                    Vectorize All
+                <div class="flex-container">
+                    <div id="vectors_vectorize_all" class="menu_button menu_button_icon">
+                        Vectorize All
+                    </div>
+                    <div id="vectors_purge" class="menu_button menu_button_icon">
+                        Purge Vectors
+                    </div>
+                    <div id="vectors_view_stats" class="menu_button menu_button_icon">
+                        View Stats
+                    </div>
                 </div>
                 <div id="vectorize_progress" style="display: none;">
                     <small>

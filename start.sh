@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if ! command -v npm &> /dev/null
 then
@@ -31,4 +31,4 @@ echo "Installing Node Modules..."
 npm i --no-audit
 
 echo "Entering SillyTavern..."
-node "$(dirname "$0")/server.js"
+node "$(dirname "$0")/server.js" "$@"

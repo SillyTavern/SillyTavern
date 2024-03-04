@@ -12,6 +12,6 @@ if %errorlevel% neq 0 (
     )
 )
 call npm install
-node server.js
+node server.js %*
 pause
 popd

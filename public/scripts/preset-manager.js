@@ -309,8 +309,14 @@ class PresetManager {
             'mancer_model',
             'togetherai_model',
             'ollama_model',
+            'aphrodite_model',
             'server_urls',
             'type',
+            'custom_model',
+            'bypass_status_check',
+            'infermaticai_model',
+            'openrouter_model',
+            'max_tokens_second',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
@@ -454,7 +460,7 @@ async function presetCommandCallback(_, name) {
  */
 async function waitForConnection() {
     try {
-        await waitUntilCondition(() => online_status !== 'no_connection', 5000, 100);
+        await waitUntilCondition(() => online_status !== 'no_connection', 10000, 100);
     } catch {
         console.log('Timeout waiting for API to connect');
     }

@@ -51,8 +51,10 @@ extras:
   # Extra models for plugins. Expects model IDs from HuggingFace model hub in ONNX format
   classificationModel: Cohee/distilbert-base-uncased-go-emotions-onnx
   captioningModel: Xenova/vit-gpt2-image-captioning
-  embeddingModel: Xenova/all-mpnet-base-v2
+  embeddingModel: Cohee/jina-embeddings-v2-base-en
   promptExpansionModel: Cohee/fooocus_expansion-onnx
+  speechToTextModel: Xenova/whisper-small
+  textToSpeechModel: Xenova/speecht5_tts
 # -- OPENAI CONFIGURATION --
 openai:
   # Will send a random user ID to OpenAI completion API

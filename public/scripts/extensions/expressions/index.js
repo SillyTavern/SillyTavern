@@ -10,6 +10,7 @@ export { MODULE_NAME };
 const MODULE_NAME = 'expressions';
 const UPDATE_INTERVAL = 2000;
 const STREAMING_UPDATE_INTERVAL = 6000;
+const TALKINGCHECK_UPDATE_INTERVAL = 500;
 const FALLBACK_EXPRESSION = 'joy';
 const DEFAULT_EXPRESSIONS = [
     'talkinghead',
@@ -46,9 +47,27 @@ const DEFAULT_EXPRESSIONS = [
 let expressionsList = null;
 let lastCharacter = undefined;
 let lastMessage = null;
+let lastTalkingState = false;
+let lastTalkingStateMessage = null;  // last message as seen by `updateTalkingState` (tracked separately, different timer)
 let spriteCache = {};
 let inApiCall = false;
 let lastServerResponseTime = 0;
+export let lastExpression = {};
+
+function isTalkingHeadEnabled() {
+    return extension_settings.expressions.talkinghead && !extension_settings.expressions.local;
+}
+
+/**
+ * Toggles Talkinghead mode on/off.
+ *
+ * Implements the `/th` slash command, which is meant to be bound to a Quick Reply button
+ * as a quick way to switch Talkinghead on or off (e.g. to conserve GPU resources when AFK
+ * for a long time).
+ */
+function toggleTalkingHeadCommand(_) {
+    setTalkingHeadState(!extension_settings.expressions.talkinghead);
+}
 
 function isVisualNovelMode() {
     return Boolean(!isMobile() && power_user.waifuMode && getContext().groupId);
@@ -380,11 +399,15 @@ function onExpressionsShowDefaultInput() {
     }
 }
 
-async function unloadLiveChar() {
+/**
+  * Stops animating Talkinghead.
+  */
+async function unloadTalkingHead() {
     if (!modules.includes('talkinghead')) {
         console.debug('talkinghead module is disabled');
         return;
     }
+    console.debug('expressions: Stopping Talkinghead');
 
     try {
         const url = new URL(getApiUrl());
@@ -399,15 +422,21 @@ async function unloadLiveChar() {
     }
 }
 
-async function loadLiveChar() {
+/**
+  * Posts `talkinghead.png` of the current character to the talkinghead module in SillyTavern-extras, to start animating it.
+  */
+async function loadTalkingHead() {
     if (!modules.includes('talkinghead')) {
         console.debug('talkinghead module is disabled');
         return;
     }
+    console.debug('expressions: Starting Talkinghead');
 
     const spriteFolderName = getSpriteFolderName();
 
     const talkingheadPath = `/characters/${encodeURIComponent(spriteFolderName)}/talkinghead.png`;
+    const emotionsSettingsPath = `/characters/${encodeURIComponent(spriteFolderName)}/_emotions.json`;
+    const animatorSettingsPath = `/characters/${encodeURIComponent(spriteFolderName)}/_animator.json`;
 
     try {
         const spriteResponse = await fetch(talkingheadPath);
@@ -436,6 +465,69 @@ async function loadLiveChar() {
         const loadResponseText = await loadResponse.text();
         console.log(`Load talkinghead response: ${loadResponseText}`);
 
+        // Optional: per-character emotion templates
+        let emotionsSettings;
+        try {
+            const emotionsResponse = await fetch(emotionsSettingsPath);
+            if (emotionsResponse.ok) {
+                emotionsSettings = await emotionsResponse.json();
+                console.log(`Loaded ${emotionsSettingsPath}`);
+            } else {
+                throw new Error();
+            }
+        }
+        catch (error) {
+            emotionsSettings = {};  // blank -> use server defaults (to unload the previous character's customizations)
+            console.log(`No valid config at ${emotionsSettingsPath}, using server defaults`);
+        }
+        try {
+            const url = new URL(getApiUrl());
+            url.pathname = '/api/talkinghead/load_emotion_templates';
+            const apiResult = await doExtrasFetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'bypass',
+                },
+                body: JSON.stringify(emotionsSettings),
+            });
+        }
+        catch (error) {
+            // it's ok if not supported
+            console.log('Failed to send _emotions.json (backend too old?), ignoring');
+        }
+
+        // Optional: per-character animator and postprocessor config
+        let animatorSettings;
+        try {
+            const animatorResponse = await fetch(animatorSettingsPath);
+            if (animatorResponse.ok) {
+                animatorSettings = await animatorResponse.json();
+                console.log(`Loaded ${animatorSettingsPath}`);
+            } else {
+                throw new Error();
+            }
+        }
+        catch (error) {
+            animatorSettings = {};  // blank -> use server defaults (to unload the previous character's customizations)
+            console.log(`No valid config at ${animatorSettingsPath}, using server defaults`);
+        }
+        try {
+            const url = new URL(getApiUrl());
+            url.pathname = '/api/talkinghead/load_animator_settings';
+            const apiResult = await doExtrasFetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'bypass',
+                },
+                body: JSON.stringify(animatorSettings),
+            });
+        }
+        catch (error) {
+            // it's ok if not supported
+            console.log('Failed to send _animator.json (backend too old?), ignoring');
+        }
     } catch (error) {
         console.error(`Error loading talkinghead image: ${talkingheadPath} - ${error}`);
     }
@@ -449,8 +541,7 @@ function handleImageChange() {
         return;
     }
 
-    if (extension_settings.expressions.talkinghead && !extension_settings.expressions.local) {
-        // Method get IP of endpoint
+    if (isTalkingHeadEnabled() && modules.includes('talkinghead')) {
         const talkingheadResultFeedSrc = `${getApiUrl()}/api/talkinghead/result_feed`;
         $('#expression-holder').css({ display: '' });
         if (imgElement.src !== talkingheadResultFeedSrc) {
@@ -466,20 +557,26 @@ function handleImageChange() {
                         }
                     })
                     .catch(error => {
-                        console.error(error); // Log the error if necessary
+                        console.error(error);
                     });
             }
         }
     } else {
-        imgElement.src = ''; //remove incase char doesnt have expressions
-        setExpression(getContext().name2, FALLBACK_EXPRESSION, true);
+        imgElement.src = '';  // remove in case char doesn't have expressions
+
+        // When switching Talkinghead off, force-set the character to the last known expression, if any.
+        // This preserves the same expression Talkinghead had at the moment it was switched off.
+        const charName = getContext().name2;
+        const last = lastExpression[charName];
+        const targetExpression = last ? last : FALLBACK_EXPRESSION;
+        setExpression(charName, targetExpression, true);
     }
 }
 
 async function moduleWorker() {
     const context = getContext();
 
-    // Hide and disable talkinghead while in local mode
+    // Hide and disable Talkinghead while in local mode
     $('#image_type_block').toggle(!extension_settings.expressions.local);
 
     if (extension_settings.expressions.local && extension_settings.expressions.talkinghead) {
@@ -558,9 +655,10 @@ async function moduleWorker() {
         return;
     }
 
+    const lastMessageChanged = !((lastCharacter === context.characterId || lastCharacter === context.groupId) && lastMessage === currentLastMessage.mes);
+
     // check if last message changed
-    if ((lastCharacter === context.characterId || lastCharacter === context.groupId)
-        && lastMessage === currentLastMessage.mes) {
+    if (!lastMessageChanged) {
         return;
     }
 
@@ -610,21 +708,84 @@ async function moduleWorker() {
     }
 }
 
-async function talkingHeadCheck() {
+/**
+  * Starts/stops Talkinghead talking animation.
+  *
+  * Talking starts only when all the following conditions are met:
+  *   - The LLM is currently streaming its output.
+  *   - The AI's current last message is non-empty, and also not just '...' (as produced by a swipe).
+  *   - The AI's current last message has changed from what we saw during the previous call.
+  *
+  * In all other cases, talking stops.
+  *
+  * A Talkinghead API call is made only when the talking state changes.
+  *
+  * Note that also the TTS system, if enabled, starts/stops the Talkinghead talking animation.
+  * See `talkingAnimation` in `SillyTavern/public/scripts/extensions/tts/index.js`.
+  */
+async function updateTalkingState() {
+    // Don't bother if Talkinghead is disabled or not loaded.
+    if (!isTalkingHeadEnabled() || !modules.includes('talkinghead')) {
+        return;
+    }
+
+    const context = getContext();
+    const currentLastMessage = getLastCharacterMessage();
+
+    try {
+        // TODO: Not sure if we need also "&& !context.groupId" here - the classify check in `moduleWorker`
+        //       (that similarly checks the streaming processor state) does that for some reason.
+        //       Talkinghead isn't currently designed to work with groups.
+        const lastMessageChanged = !((lastCharacter === context.characterId || lastCharacter === context.groupId) && lastTalkingStateMessage === currentLastMessage.mes);
+        const url = new URL(getApiUrl());
+        let newTalkingState;
+        if (context.streamingProcessor && !context.streamingProcessor.isFinished &&
+            currentLastMessage.mes.length !== 0 && currentLastMessage.mes !== '...' && lastMessageChanged) {
+            url.pathname = '/api/talkinghead/start_talking';
+            newTalkingState = true;
+        } else {
+            url.pathname = '/api/talkinghead/stop_talking';
+            newTalkingState = false;
+        }
+        try {
+            // Call the Talkinghead API only if the talking state changed.
+            if (newTalkingState !== lastTalkingState) {
+                console.debug(`updateTalkingState: calling ${url.pathname}`);
+                await doExtrasFetch(url);
+            }
+        }
+        catch (error) {
+            // it's ok if not supported
+        }
+        finally {
+            lastTalkingState = newTalkingState;
+        }
+    }
+    catch (error) {
+        // console.log(error);
+    }
+    finally {
+        lastTalkingStateMessage = currentLastMessage.mes;
+    }
+}
+
+/**
+ * Checks whether the current character has a talkinghead image available.
+ * @returns {Promise<boolean>} True if the character has a talkinghead image available, false otherwise.
+ */
+async function isTalkingHeadAvailable() {
     let spriteFolderName = getSpriteFolderName();
 
     try {
         await validateImages(spriteFolderName);
 
         let talkingheadObj = spriteCache[spriteFolderName].find(obj => obj.label === 'talkinghead');
-        let talkingheadPath_f = talkingheadObj ? talkingheadObj.path : null;
+        let talkingheadPath = talkingheadObj ? talkingheadObj.path : null;
 
-        if (talkingheadPath_f != null) {
-            //console.log("talkingheadPath_f " + talkingheadPath_f);
+        if (talkingheadPath != null) {
             return true;
         } else {
-            //console.log("talkingheadPath_f is null");
-            unloadLiveChar();
+            await unloadTalkingHead();
             return false;
         }
     } catch (err) {
@@ -646,22 +807,23 @@ function getSpriteFolderName(characterMessage = null, characterName = null) {
     return spriteFolderName;
 }
 
-function setTalkingHeadState(switch_var) {
-    extension_settings.expressions.talkinghead = switch_var; // Store setting
+function setTalkingHeadState(newState) {
+    console.debug(`expressions: New talkinghead state: ${newState}`);
+    extension_settings.expressions.talkinghead = newState; // Store setting
     saveSettingsDebounced();
 
     if (extension_settings.expressions.local) {
         return;
     }
 
-    talkingHeadCheck().then(result => {
+    isTalkingHeadAvailable().then(result => {
         if (result) {
             //console.log("talkinghead exists!");
 
             if (extension_settings.expressions.talkinghead) {
-                loadLiveChar();
+                loadTalkingHead();
             } else {
-                unloadLiveChar();
+                unloadTalkingHead();
             }
             handleImageChange(); // Change image as needed
 
@@ -692,6 +854,7 @@ function getFolderNameByMessage(message) {
 }
 
 async function sendExpressionCall(name, expression, force, vnMode) {
+    lastExpression[name.split('/')[0]] = expression;
     if (!vnMode) {
         vnMode = isVisualNovelMode();
     }
@@ -730,22 +893,29 @@ async function setSpriteSlashCommand(_, spriteId) {
 
     spriteId = spriteId.trim().toLowerCase();
 
+    // In Talkinghead mode, don't check for the existence of the sprite
+    // (emotion names are the same as for sprites, but it only needs "talkinghead.png").
     const currentLastMessage = getLastCharacterMessage();
     const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
-    await validateImages(spriteFolderName);
+    let label = spriteId;
+    if (!isTalkingHeadEnabled() || !modules.includes('talkinghead')) {
+        await validateImages(spriteFolderName);
 
-    // Fuzzy search for sprite
-    const fuse = new Fuse(spriteCache[spriteFolderName], { keys: ['label'] });
-    const results = fuse.search(spriteId);
-    const spriteItem = results[0]?.item;
+        // Fuzzy search for sprite
+        const fuse = new Fuse(spriteCache[spriteFolderName], { keys: ['label'] });
+        const results = fuse.search(spriteId);
+        const spriteItem = results[0]?.item;
 
-    if (!spriteItem) {
-        console.log('No sprite found for search term ' + spriteId);
-        return;
+        if (!spriteItem) {
+            console.log('No sprite found for search term ' + spriteId);
+            return;
+        }
+
+        label = spriteItem.label;
     }
 
     const vnMode = isVisualNovelMode();
-    await sendExpressionCall(spriteFolderName, spriteItem.label, true, vnMode);
+    await sendExpressionCall(spriteFolderName, label, true, vnMode);
 }
 
 /**
@@ -903,6 +1073,8 @@ function drawSpritesList(character, labels, sprites) {
  * @returns {string} Rendered list item template
  */
 function getListItem(item, imageSrc, textClass, isCustom) {
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    imageSrc = isFirefox ? `${imageSrc}?t=${Date.now()}` : imageSrc;
     return renderExtensionTemplate(MODULE_NAME, 'list-item', { item, imageSrc, textClass, isCustom });
 }
 
@@ -996,7 +1168,7 @@ async function getExpressionsList() {
 }
 
 async function setExpression(character, expression, force) {
-    if (extension_settings.expressions.local || !extension_settings.expressions.talkinghead) {
+    if (!isTalkingHeadEnabled() || !modules.includes('talkinghead')) {
         console.debug('entered setExpressions');
         await validateImages(character);
         const img = $('img.expression');
@@ -1107,24 +1279,38 @@ async function setExpression(character, expression, force) {
         document.getElementById('expression-holder').style.display = '';
 
     } else {
-
-
-        talkingHeadCheck().then(result => {
+        // Set the Talkinghead emotion to the specified expression
+        // TODO: For now, Talkinghead emote only supported when VN mode is off; see also updateVisualNovelMode.
+        try {
+            let result = await isTalkingHeadAvailable();
             if (result) {
-                // Find the <img> element with id="expression-image" and class="expression"
-                const imgElement = document.querySelector('img#expression-image.expression');
-                //console.log("searching");
-                if (imgElement && imgElement instanceof HTMLImageElement) {
-                    //console.log("setting value");
-                    imgElement.src = getApiUrl() + '/api/talkinghead/result_feed';
-                }
-
-            } else {
-                //console.log("The fetch failed!");
+                const url = new URL(getApiUrl());
+                url.pathname = '/api/talkinghead/set_emotion';
+                await doExtrasFetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ emotion_name: expression }),
+                });
             }
-        });
+        }
+        catch (error) {
+            // `set_emotion` is not present in old versions, so let it 404.
+        }
 
-
+        try {
+            // Find the <img> element with id="expression-image" and class="expression"
+            const imgElement = document.querySelector('img#expression-image.expression');
+            //console.log("searching");
+            if (imgElement && imgElement instanceof HTMLImageElement) {
+                //console.log("setting value");
+                imgElement.src = getApiUrl() + '/api/talkinghead/result_feed';
+            }
+        }
+        catch (error) {
+            //console.log("The fetch failed!");
+        }
     }
 }
 
@@ -1214,6 +1400,7 @@ async function handleFileUpload(url, formData) {
         // Refresh sprites list
         const name = formData.get('name');
         delete spriteCache[name];
+        await fetchImagesNoCache();
         await validateImages(name);
 
         return data;
@@ -1245,6 +1432,11 @@ async function onClickExpressionUpload(event) {
 
         // Reset the input
         e.target.form.reset();
+
+        // In Talkinghead mode, when a new talkinghead image is uploaded, refresh the live char.
+        if (id === 'talkinghead' && isTalkingHeadEnabled() && modules.includes('talkinghead')) {
+            await loadTalkingHead();
+        }
     };
 
     $('#expression_upload')
@@ -1352,6 +1544,11 @@ async function onClickExpressionUploadPackButton() {
 
         // Reset the input
         e.target.form.reset();
+
+        // In Talkinghead mode, refresh the live char.
+        if (isTalkingHeadEnabled() && modules.includes('talkinghead')) {
+            await loadTalkingHead();
+        }
     };
 
     $('#expression_upload_pack')
@@ -1385,6 +1582,7 @@ async function onClickExpressionDelete(event) {
 
     // Refresh sprites list
     delete spriteCache[name];
+    await fetchImagesNoCache();
     await validateImages(name);
 }
 
@@ -1408,6 +1606,30 @@ function setExpressionOverrideHtml(forceClear = false) {
     if (forceClear && !expressionOverride) {
         $('#expression_override').val('');
     }
+}
+
+async function fetchImagesNoCache() {
+    const promises = [];
+    $('#image_list img').each(function () {
+        const src = $(this).attr('src');
+
+        if (!src) {
+            return;
+        }
+
+        const promise = fetch(src, {
+            method: 'GET',
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Expires': '0',
+            },
+        });
+        promises.push(promise);
+    });
+
+    return await Promise.allSettled(promises);
 }
 
 (function () {
@@ -1464,6 +1686,34 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('#expression_custom_remove').on('click', onClickExpressionRemoveCustom);
     }
 
+    // Pause Talkinghead to save resources when the ST tab is not visible or the window is minimized.
+    // We currently do this via loading/unloading. Could be improved by adding new pause/unpause endpoints to Extras.
+    document.addEventListener('visibilitychange', function (event) {
+        let pageIsVisible;
+        if (document.hidden) {
+            console.debug('expressions: SillyTavern is now hidden');
+            pageIsVisible = false;
+        } else {
+            console.debug('expressions: SillyTavern is now visible');
+            pageIsVisible = true;
+        }
+
+        if (isTalkingHeadEnabled() && modules.includes('talkinghead')) {
+            isTalkingHeadAvailable().then(result => {
+                if (result) {
+                    if (pageIsVisible) {
+                        loadTalkingHead();
+                    } else {
+                        unloadTalkingHead();
+                    }
+                    handleImageChange(); // Change image as needed
+                } else {
+                    //console.log("talkinghead does not exist.");
+                }
+            });
+        }
+    });
+
     addExpressionImage();
     addVisualNovelMode();
     addSettings();
@@ -1471,11 +1721,17 @@ function setExpressionOverrideHtml(forceClear = false) {
     const updateFunction = wrapper.update.bind(wrapper);
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
+    // For setting the Talkinghead talking animation on/off quickly enough for realtime use, we need another timer on a shorter schedule.
+    const wrapperTalkingState = new ModuleWorkerWrapper(updateTalkingState);
+    const updateTalkingStateFunction = wrapperTalkingState.update.bind(wrapperTalkingState);
+    setInterval(updateTalkingStateFunction, TALKINGCHECK_UPDATE_INTERVAL);
+    updateTalkingState();
     dragElement($('#expression-holder'));
     eventSource.on(event_types.CHAT_CHANGED, () => {
         // character changed
         removeExpression();
         spriteCache = {};
+        lastExpression = {};
 
         //clear expression
         let imgElement = document.getElementById('expression-image');
@@ -1501,4 +1757,6 @@ function setExpressionOverrideHtml(forceClear = false) {
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
     registerSlashCommand('sprite', setSpriteSlashCommand, ['emote'], '<span class="monospace">(spriteId)</span> – force sets the sprite for the current character', true, true);
     registerSlashCommand('spriteoverride', setSpriteSetCommand, ['costume'], '<span class="monospace">(optional folder)</span> – sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.', true, true);
+    registerSlashCommand('lastsprite', (_, value) => lastExpression[value.trim()] ?? '', [], '<span class="monospace">(charName)</span> – Returns the last set sprite / expression for the named character.', true, true);
+    registerSlashCommand('th', toggleTalkingHeadCommand, ['talkinghead'], '– Character Expressions: toggles <i>Image Type - talkinghead (extras)</i> on/off.');
 })();

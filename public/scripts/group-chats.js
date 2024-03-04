@@ -108,6 +108,7 @@ export const group_activation_strategy = {
 export const group_generation_mode = {
     SWAP: 0,
     APPEND: 1,
+    APPEND_DISABLED: 2,
 };
 
 const DEFAULT_AUTO_MODE_DELAY = 5;
@@ -325,7 +326,7 @@ export function getGroupDepthPrompts(groupId, characterId) {
 }
 
 /**
- * Combines group members info a single string. Only for groups with generation mode set to APPEND.
+ * Combines group members cards into a single string. Only for groups with generation mode set to APPEND or APPEND_DISABLED.
  * @param {string} groupId Group ID
  * @param {number} characterId Current Character ID
  * @returns {{description: string, personality: string, scenario: string, mesExamples: string}} Group character cards combined
@@ -334,7 +335,7 @@ export function getGroupCharacterCards(groupId, characterId) {
     console.debug('getGroupCharacterCards entered for group: ', groupId);
     const group = groups.find(x => x.id === groupId);
 
-    if (!group || group?.generation_mode !== group_generation_mode.APPEND || !Array.isArray(group.members) || !group.members.length) {
+    if (!group || !group?.generation_mode || !Array.isArray(group.members) || !group.members.length) {
         return null;
     }
 
@@ -354,7 +355,7 @@ export function getGroupCharacterCards(groupId, characterId) {
             continue;
         }
 
-        if (group.disabled_members.includes(member) && characterId !== index) {
+        if (group.disabled_members.includes(member) && characterId !== index && group.generation_mode !== group_generation_mode.APPEND_DISABLED) {
             console.debug(`Skipping disabled group member: ${member}`);
             continue;
         }
@@ -597,6 +598,11 @@ function getGroupAvatar(group) {
         return groupAvatar;
     }
 
+    // catch edge case where group had one member and that member is deleted
+    if (avatarCount === 0) {
+        return $('<div class="missing-avatar fa-solid fa-user-slash"></div>');
+    }
+
     // default avatar
     const groupAvatar = $('#group_avatars_template .collage_1').clone();
     groupAvatar.find('.img_1').attr('src', group.avatar_url || system_avatar);
@@ -729,6 +735,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
             setCharacterName(characters[chId].name);
+            await eventSource.emit(event_types.GROUP_MEMBER_DRAFTED, chId);
 
             if (type !== 'swipe' && type !== 'impersonate' && !isStreamingEnabled()) {
                 // update indicator and scroll down
@@ -1620,7 +1627,7 @@ export async function deleteGroupChat(groupId, chatId) {
 
     if (response.ok) {
         if (group.chats.length) {
-            await openGroupChat(groupId, group.chats[0]);
+            await openGroupChat(groupId, group.chats[group.chats.length - 1]);
         } else {
             await createNewGroupChat(groupId);
         }
