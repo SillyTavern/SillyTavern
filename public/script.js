@@ -1397,36 +1397,75 @@ function getCharacterSource(chId = this_chid) {
 }
 
 async function getCharacters() {
-    var response = await fetch('/api/characters/all', {
+    const response = await fetch('/api/characters/all', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
             '': '',
         }),
     });
-    if (response.ok === true) {
-        var getData = ''; //RossAscends: reset to force array to update to account for deleted character.
-        getData = await response.json();
-        const load_ch_count = Object.getOwnPropertyNames(getData);
-        for (var i = 0; i < load_ch_count.length; i++) {
-            characters[i] = [];
-            characters[i] = getData[i];
-            characters[i]['name'] = DOMPurify.sanitize(characters[i]['name']);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-            // For dropped-in cards
-            if (!characters[i]['chat']) {
-                characters[i]['chat'] = `${characters[i]['name']} - ${humanizedDateTime()}`;
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+                console.log('Stream complete');
+                break;
             }
 
-            characters[i]['chat'] = String(characters[i]['chat']);
-        }
-        if (this_chid != undefined && this_chid != 'invalid-safety-id') {
-            $('#avatar_url_pole').val(characters[this_chid].avatar);
-        }
+            buffer += decoder.decode(value, { stream: true });
+            const chunks = buffer.split('--- End Of Character JSON Chunk ---');
 
-        await getGroups();
-        await printCharacters(true);
+            for (let i = 0; i < chunks.length - 1; i++) {
+                try {
+                    let fixedJSON = chunks[i];
+                    if (fixedJSON.startsWith('[')) {
+                        fixedJSON = fixedJSON.substring(1);
+                    }
+                    if (fixedJSON.endsWith(']')) {
+                        fixedJSON = fixedJSON.substring(0, fixedJSON.length - 1);
+                    }
+                    if (fixedJSON.startsWith('"\n,')) {
+                        fixedJSON = fixedJSON.substring(3);
+                    }
+                    if (fixedJSON.endsWith(',\n"')) {
+                        fixedJSON = fixedJSON.slice(0, -3);
+                    }
+                    const character = JSON.parse(fixedJSON);
+                    character['name'] = DOMPurify.sanitize(character['name']);
+
+                    if (!character['chat']) {
+                        character['chat'] = `${character['name']} - ${humanizedDateTime()}`;
+                    }
+
+                    character['chat'] = String(character['chat']);
+                    characters.push(character);
+                } catch (err) {
+                    console.error('Error parsing JSON chunk:', chunks[i]);
+                }
+            }
+            buffer = chunks[chunks.length - 1];
+        }
+    } catch (err) {
+        console.error('Error reading stream:', err);
+    } finally {
+        reader.releaseLock();
     }
+
+    if (this_chid != undefined && this_chid != 'invalid-safety-id') {
+        $('#avatar_url_pole').val(characters[this_chid].avatar);
+    }
+
+    await getGroups();
+    await printCharacters(true);
 }
 
 async function delChat(chatfile) {

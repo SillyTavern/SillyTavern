@@ -8,6 +8,7 @@ const yaml = require('yaml');
 const _ = require('lodash');
 
 const jimp = require('jimp');
+const JSONStream = require('JSONStream');
 
 const { DIRECTORIES, UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
 const { jsonParser, urlencodedParser } = require('../express-common');
@@ -699,12 +700,24 @@ router.post('/all', jsonParser, function (request, response) {
         await Promise.all(processingPromises); performance.mark('B');
 
         // Filter out invalid/broken characters
-        characters = Object.values(characters).filter(x => x?.name).reduce((acc, val, index) => {
-            acc[index] = val;
-            return acc;
-        }, {});
+        characters = Object.values(characters).filter(x => x?.name);
 
-        response.send(JSON.stringify(characters));
+        response.setHeader('Content-Type', 'application/json');
+        const stream = JSONStream.stringify();
+        stream.pipe(response);
+
+        characters.forEach(character => {
+            stream.write(character);
+            stream.write('--- End Of Character JSON Chunk ---');
+        });
+
+        stream.on('end', () => {
+            console.log('JSONStream has ended');
+        });
+
+        stream.end(() => {
+            console.log('Stream is fully closed');
+        });
     });
 });
 
