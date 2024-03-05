@@ -317,7 +317,8 @@ jQuery(function () {
         $('#caption_multimodal_model').val(extension_settings.caption.multimodal_model);
         $('#caption_multimodal_block [data-type]').each(function () {
             const type = $(this).data('type');
-            $(this).toggle(type === extension_settings.caption.multimodal_api);
+            const types = type.split(',');
+            $(this).toggle(types.includes(extension_settings.caption.multimodal_api));
         });
         $('#caption_multimodal_api').on('change', () => {
             const api = String($('#caption_multimodal_api').val());
@@ -379,7 +380,7 @@ jQuery(function () {
                                 <option data-type="custom" value="custom_current">[Currently selected]</option>
                             </select>
                         </div>
-                        <label data-type="openai" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
+                        <label data-type="openai,anthropic" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
                             <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox">
                             Allow reverse proxy
                         </label>
