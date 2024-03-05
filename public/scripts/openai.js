@@ -213,7 +213,7 @@ const default_settings = {
     scenario_format: default_scenario_format,
     personality_format: default_personality_format,
     openai_model: 'gpt-3.5-turbo',
-    claude_model: 'claude-2',
+    claude_model: 'claude-2.1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
     mistralai_model: 'mistral-medium-latest',
@@ -282,7 +282,7 @@ const oai_settings = {
     scenario_format: default_scenario_format,
     personality_format: default_personality_format,
     openai_model: 'gpt-3.5-turbo',
-    claude_model: 'claude-2',
+    claude_model: 'claude-2.1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
     mistralai_model: 'mistral-medium-latest',
@@ -3332,7 +3332,7 @@ async function onModelChange() {
     if ($(this).is('#model_claude_select')) {
         if (value.includes('-v')) {
             value = value.replace('-v', '-');
-        } else if (value === '') {
+        } else if (value === '' || value === 'claude-2') {
             value = default_settings.claude_model;
         }
         console.log('Claude model changed to', value);
@@ -3446,7 +3446,7 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_200k);
         }
-        else if (value == 'claude-2.1' || value == 'claude-2' || value.startsWith('claude-3')) {
+        else if (value == 'claude-2.1' || value.startsWith('claude-3')) {
             $('#openai_max_context').attr('max', max_200k);
         }
         else if (value.endsWith('100k') || value.startsWith('claude-2') || value === 'claude-instant-1.2') {
