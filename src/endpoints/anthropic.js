@@ -9,7 +9,8 @@ router.post('/caption-image', jsonParser, async (request, response) => {
     try {
         const mimeType = request.body.image.split(';')[0].split(':')[1];
         const base64Data = request.body.image.split(',')[1];
-        const url = request.body.reverse_proxy ? request.body.reverse_proxy : 'https://api.anthropic.com/v1/messages';
+        const baseUrl = request.body.reverse_proxy ? request.body.reverse_proxy : 'https://api.anthropic.com/v1';
+        const url = `${baseUrl}/messages`;
         const body = {
             model: request.body.model,
             messages: [
