@@ -966,7 +966,10 @@ hr {
     flex-wrap: wrap;
     overflow: hidden;
     height: calc(var(--avatar-base-height) * var(--inline-avatar-factor) + 2 * var(--avatar-base-border-radius));
-    /* margin-top: calc(var(--avatar-base-height) * var(--inline-avatar-factor) * 0.2); */
+}
+
+.bogus_folder_select:not(.folder_closed) .bogus_folder_avatars_block {
+    opacity: 1 !important;
 }
 
 .bogus_folder_avatars_block .avatar {

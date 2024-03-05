@@ -8,6 +8,7 @@ import {
     entitiesFilter,
     printCharacters,
     chooseBogusFolder,
+    isBogusFolder,
 } from '../script.js';
 // eslint-disable-next-line no-unused-vars
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -17,8 +18,11 @@ import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay } from '.
 import { power_user } from './power-user.js';
 
 export {
+    TAG_FOLDER_TYPES,
+    TAG_FOLDER_DEFAULT_TYPE,
     tags,
     tag_map,
+    filterByTagState,
     loadTagsSettings,
     printTagFilters,
     getTagsList,
@@ -61,8 +65,84 @@ const DEFAULT_TAGS = [
     { id: uuidv4(), name: 'AliChat', create_date: Date.now() },
 ];
 
+const TAG_FOLDER_TYPES = {
+    OPEN: { icon: '✔', class: 'folder_open', fa_icon: 'fa-folder-open', tooltip: 'Open Folder (Show all characters even if not selected)', color: 'green', size: '1' },
+    CLOSED: { icon: '👁', class: 'folder_closed', fa_icon: 'fa-eye-slash', tooltip: 'Closed Folder (Hide all characters unless selected)', color: 'lightgoldenrodyellow', size: '0.7' },
+    NONE: { icon: '✕', class: 'no_folder', tooltip: 'No Folder', color: 'red', size: '1' },
+};
+const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
+
+
 let tags = [];
 let tag_map = {};
+
+/**
+ * Applies the basic filter for the current state of the tags and their selection on an entity list.
+ * @param {*} entities List of entities for display, consisting of tags, characters and groups.
+ */
+function filterByTagState(entities, { globalDisplayFilters = false, subForEntity = undefined } = {}) {
+    const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
+
+    entities = entities.filter(entity => {
+        if (entity.type === 'tag') {
+            // Remove folders that are already filtered on
+            if (filterData.selected.includes(entity.id) || filterData.excluded.includes(entity.id)) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    if (globalDisplayFilters) {
+        // Prepare some data for caching and performance
+        const closedFolders = entities.filter(x => x.type === 'tag' && TAG_FOLDER_TYPES[x.item.folder_type] === TAG_FOLDER_TYPES.CLOSED);
+
+        entities = entities.filter(entity => {
+            // Hide entities that are in a closed folder, unless that one is opened
+            if (entity.type !== 'tag' && closedFolders.some(f => entitiesFilter.isElementTagged(entity, f.id) && !filterData.selected.includes(f.id))) {
+                return false;
+            }
+
+            // Hide folders that have 0 visible sub entities after the first filtering round
+            if (entity.type === 'tag') {
+                return entity.entities.length > 0;
+            }
+
+            return true;
+        });
+    }
+
+    if (subForEntity !== undefined && subForEntity.type === 'tag') {
+        entities = filterTagSubEntities(subForEntity.item, entities);
+    }
+
+    return entities;
+}
+
+function filterTagSubEntities(tag, entities) {
+    const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
+
+    const closedFolders = entities.filter(x => x.type === 'tag' && TAG_FOLDER_TYPES[x.item.folder_type] === TAG_FOLDER_TYPES.CLOSED);
+
+    entities = entities.filter(sub => {
+        // Filter out all tags and and all who isn't tagged for this item
+        if (sub.type === 'tag' || !entitiesFilter.isElementTagged(sub, tag.id)) {
+            return false;
+        }
+
+        // Hide entities that are in a closed folder, unless the closed folder is opened or we display a closed folder
+        if (sub.type !== 'tag' && TAG_FOLDER_TYPES[tag.folder_type] !== TAG_FOLDER_TYPES.CLOSED && closedFolders.some(f => entitiesFilter.isElementTagged(sub, f.id) && !filterData.selected.includes(f.id))) {
+            return false;
+        }
+
+        return true;
+    });
+
+    return entities;
+}
+
+
 
 /**
  * Applies the favorite filter to the character list.
@@ -282,7 +362,7 @@ function createNewTag(tagName) {
     const tag = {
         id: uuidv4(),
         name: tagName,
-        is_folder: false,
+        folder_type: TAG_FOLDER_DEFAULT_TYPE,
         sort_order: tags.length,
         color: '',
         color2: '',
@@ -372,7 +452,7 @@ function onTagFilterClick(listElement) {
     }
 
     // Update bogus folder if applicable
-    if (existingTag?.is_folder) {
+    if (isBogusFolder(existingTag)) {
         // Update bogus drilldown
         if ($(this).hasClass('selected')) {
             appendTagToList('.rm_tag_controls .rm_tag_bogus_drilldown', existingTag, { removable: true, selectable: false, isGeneralList: false });
@@ -760,7 +840,6 @@ function appendViewTagToList(list, tag, everything) {
         template.find('.tag_as_folder').hide();
     }
 
-    template.find('.tag_as_folder').addClass(tag.is_folder == true ? 'yes_folder' : 'no_folder');
     template.find('.tagColorPickerHolder').html(
         `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`,
     );
@@ -786,6 +865,8 @@ function appendViewTagToList(list, tag, everything) {
         });
     }, 100);
 
+    updateDrawTagFolder(template, tag);
+
     // @ts-ignore
     $(colorPickerId).color = tag.color;
     // @ts-ignore
@@ -793,17 +874,38 @@ function appendViewTagToList(list, tag, everything) {
 }
 
 function onTagAsFolderClick() {
-    const id = $(this).closest('.tag_view_item').attr('id');
+    const element = $(this).closest('.tag_view_item');
+    const id = element.attr('id');
     const tag = tags.find(x => x.id === id);
 
-    // Toggle
-    tag.is_folder = tag.is_folder != true;
-    $(`.tag_view_item[id="${id}"] .tag_as_folder`).toggleClass('yes_folder').toggleClass('no_folder');
+    // Cycle through folder types
+    const types = Object.keys(TAG_FOLDER_TYPES);
+    let currentTypeIndex = types.indexOf(tag.folder_type);
+    tag.folder_type = types[(currentTypeIndex + 1) % types.length];
+
+    updateDrawTagFolder(element, tag);
 
     // If folder display has changed, we have to redraw the character list, otherwise this folders state would not change
     printCharacters(true);
     saveSettingsDebounced();
 
+}
+
+function updateDrawTagFolder(element, tag) {
+    const tagFolder = TAG_FOLDER_TYPES[tag.folder_type] || TAG_FOLDER_TYPES[TAG_FOLDER_DEFAULT_TYPE];
+    const folderElement = element.find('.tag_as_folder');
+
+    // Update css class and remove all others
+    Object.keys(TAG_FOLDER_TYPES).forEach(x => {
+        folderElement.toggleClass(TAG_FOLDER_TYPES[x].class, TAG_FOLDER_TYPES[x] === tagFolder);
+    });
+
+    // Draw/update css attributes for this class
+    folderElement.attr('title', tagFolder.tooltip);
+    const indicator = folderElement.find('.tag_folder_indicator');
+    indicator.text(tagFolder.icon);
+    indicator.css('color', tagFolder.color);
+    indicator.css('font-size', `calc(var(--mainFontSize) * ${tagFolder.size})`);
 }
 
 function onTagDeleteClick() {
@@ -859,7 +961,6 @@ function onTagColorize2(evt) {
 }
 
 function onTagListHintClick() {
-    console.debug($(this));
     $(this).toggleClass('selected');
     $(this).siblings('.tag:not(.actionable)').toggle(100);
     $(this).siblings('.innerActionable').toggleClass('hidden');
@@ -867,7 +968,7 @@ function onTagListHintClick() {
     power_user.show_tag_filters = $(this).hasClass('selected');
     saveSettingsDebounced();
 
-    console.log('show_tag_filters', power_user.show_tag_filters);
+    console.debug('show_tag_filters', power_user.show_tag_filters);
 }
 
 jQuery(() => {

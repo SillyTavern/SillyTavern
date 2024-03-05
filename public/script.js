@@ -153,8 +153,10 @@ import {
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from './scripts/slash-commands.js';
 import {
+    TAG_FOLDER_DEFAULT_TYPE,
     tag_map,
     tags,
+    filterByTagState,
     loadTagsSettings,
     printTagFilters,
     getTagsList,
@@ -164,6 +166,7 @@ import {
     importTags,
     tag_filter_types,
     compareTagsForSort,
+    TAG_FOLDER_TYPES,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -273,6 +276,7 @@ export {
     isOdd,
     countOccurrences,
     chooseBogusFolder,
+    isBogusFolder,
 };
 
 showLoader();
@@ -1158,25 +1162,24 @@ export async function selectCharacterById(id) {
 }
 
 function getTagBlock(item, entities) {
-    let count = 0;
-    let subEntities = [];
+    let count = entities.length;
 
-    for (const entity of entities) {
-        if (entitiesFilter.isElementTagged(entity, item.id)) {
-            count++;
-            subEntities.push(entity);
-        }
-    }
+    const tagFolder = TAG_FOLDER_TYPES[item.folder_type];
 
     const template = $('#bogus_folder_template .bogus_folder_select').clone();
+    template.addClass(tagFolder.class);
     template.attr({ 'tagid': item.id, 'id': `BogusFolder${item.id}` });
     template.find('.avatar').css({ 'background-color': item.color, 'color': item.color2 }).attr('title', `[Folder] ${item.name}`);
-    template.find('.ch_name').text(item.name).attr('title', `[Folder] ${item.name}`);;
+    template.find('.ch_name').text(item.name).attr('title', `[Folder] ${item.name}`);
     template.find('.bogus_folder_counter').text(count);
+    template.find('.bogus_folder_icon').addClass(tagFolder.fa_icon);
+    if (count == 1) {
+        template.find('.character_unit_name').text('character');
+    }
 
     // Fill inline character images
     const inlineAvatars = template.find('.bogus_folder_avatars_block');
-    for (const entitiy of subEntities) {
+    for (const entitiy of entities) {
         const id = entitiy.id;
 
         // Populate the template
@@ -1314,7 +1317,7 @@ async function printCharacters(fullRefresh = false) {
                         $(listId).append(getGroupBlock(i.item));
                         break;
                     case 'tag':
-                        $(listId).append(getTagBlock(i.item, entities));
+                        $(listId).append(getTagBlock(i.item, i.entities ?? entities));
                         break;
                 }
             }
@@ -1335,13 +1338,21 @@ async function printCharacters(fullRefresh = false) {
 }
 
 /**
+ * Indicates whether a given tag is defined as a folder. Meaning it's neither undefined nor 'NONE'.
+ * @returns {boolean} If it's a tag folder
+ */
+function isBogusFolder(tag) {
+    return tag?.folder_type !== undefined && tag.folder_type !== TAG_FOLDER_DEFAULT_TYPE;
+}
+
+/**
  * Indicates whether a user is currently in a bogus folder.
  * @returns {boolean} If currently viewing a folder
  */
 function isBogusFolderOpen() {
     const anyIsFolder = entitiesFilter.getFilterData(FILTER_TYPES.TAG)?.selected
         .map(tagId => tags.find(x => x.id === tagId))
-        .some(x => !!x.is_folder);
+        .some(isBogusFolder);
 
     return !!anyIsFolder;
 }
@@ -1356,33 +1367,33 @@ export function getEntitiesList({ doFilter } = {}) {
     }
 
     function tagToEntity(tag) {
-        return { item: structuredClone(tag), id: tag.id, type: 'tag' };
+        return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
     }
 
     let entities = [
         ...characters.map((item, index) => characterToEntity(item, index)),
         ...groups.map(item => groupToEntity(item)),
-        ...(power_user.bogus_folders ? tags.filter(x => x.is_folder).sort(compareTagsForSort).map(item => tagToEntity(item)) : []),
+        ...(power_user.bogus_folders ? tags.filter(isBogusFolder).sort(compareTagsForSort).map(item => tagToEntity(item)) : []),
     ];
 
+    // First run filters, that will hide what should never be displayed
     if (doFilter) {
         entities = entitiesFilter.applyFilters(entities);
+        entities = filterByTagState(entities);
     }
 
-    const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
-
-    entities = entities.filter(entity => {
+    // Run over all entities between first and second filter to save some states
+    for(const entity of entities) {
+        // For folders, we remember the sub entities so they can be displayed later, even if they might be filtered
         if (entity.type === 'tag') {
-            // Remove filtered tags/bogus folders
-            if (filterData.selected.includes(entity.id) || filterData.excluded.includes(entity.id)) {
-                return false;
-            }
-
-            // Check if tag is used in any other entities, removing 0 count folders
-            return entities.some(e => e.type !== 'tag' && entitiesFilter.isElementTagged(e, entity.id));
+            entity.entities = filterByTagState(entities, { subForEntity: entity });
         }
-        return true;
-    });
+    }
+
+    // Second run filters, hiding whatever should be filtered later
+    if (doFilter) {
+        entities = filterByTagState(entities, { globalDisplayFilters: true });
+    }
 
     sortEntitiesList(entities);
     return entities;
@@ -8089,22 +8100,12 @@ function doTogglePanels() {
 }
 
 function chooseBogusFolder(source, tagId, remove = false) {
-    // Take the filter as the base on what bogus is currently selected
-    const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
-
-    if (!Array.isArray(filterData.selected)) {
-        filterData.selected = [];
-        filterData.excluded = [];
-    }
-
-    const filteredFolders = filterData.selected
-        .map(tagId => tags.find(x => x.id === tagId))
-        .filter(x => !!x.is_folder);
-
     // If we are here via the 'back' action, we implicitly take the last filtered folder as one to remove
     const isBack = tagId === 'back';
     if (isBack) {
-        tagId = filteredFolders?.[filteredFolders.length - 1].id;
+        const drilldown = $(source).closest('#rm_characters_block').find('.rm_tag_bogus_drilldown');
+        const lastTag = drilldown.find('.tag:last').last();
+        tagId = lastTag.attr('id');
         remove = true;
     }
 
@@ -8293,7 +8294,7 @@ jQuery(async function () {
 
     $(document).on('click', '.bogus_folder_select', function () {
         const tagId = $(this).attr('tagid');
-        console.log('Bogus folder clicked', tagId);
+        console.debug('Bogus folder clicked', tagId);
         chooseBogusFolder($(this), tagId);
     });
 

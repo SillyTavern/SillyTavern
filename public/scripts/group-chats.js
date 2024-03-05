@@ -544,6 +544,9 @@ export function getGroupBlock(group) {
     template.find('.ch_fav').val(group.fav);
     template.find('.group_select_counter').text(count);
     template.find('.group_select_block_list').append(namesList.join(''));
+    if (count == 1) {
+        template.find('.character_unit_name').text('character');
+    }
 
     // Display inline tags
     const tags = getTagsList(group.id);
