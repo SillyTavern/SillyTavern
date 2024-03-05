@@ -202,6 +202,7 @@ import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermati
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
+import EventSourceStream from './scripts/sse-stream.js';
 
 //exporting functions and vars for mods
 export {
@@ -1397,36 +1398,50 @@ function getCharacterSource(chId = this_chid) {
 }
 
 async function getCharacters() {
-    var response = await fetch('/api/characters/all', {
+    const response = await fetch('/api/characters/all', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({
-            '': '',
-        }),
     });
-    if (response.ok === true) {
-        var getData = ''; //RossAscends: reset to force array to update to account for deleted character.
-        getData = await response.json();
-        const load_ch_count = Object.getOwnPropertyNames(getData);
-        for (var i = 0; i < load_ch_count.length; i++) {
-            characters[i] = [];
-            characters[i] = getData[i];
-            characters[i]['name'] = DOMPurify.sanitize(characters[i]['name']);
 
-            // For dropped-in cards
-            if (!characters[i]['chat']) {
-                characters[i]['chat'] = `${characters[i]['name']} - ${humanizedDateTime()}`;
-            }
+    const preservedAvatar = characters[this_chid]?.avatar;
+    const eventStream = new EventSourceStream();
+    response.body.pipeThrough(eventStream);
+    const reader = eventStream.readable.getReader();
 
-            characters[i]['chat'] = String(characters[i]['chat']);
+    async function* streamData() {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) return;
+            yield JSON.parse(value.data);
         }
-        if (this_chid != undefined && this_chid != 'invalid-safety-id') {
-            $('#avatar_url_pole').val(characters[this_chid].avatar);
-        }
-
-        await getGroups();
-        await printCharacters(true);
     }
+
+    const newCharacters = [];
+    for await (const data of streamData()) {
+        data['name'] = DOMPurify.sanitize(data['name']);
+        if (!data['chat']) {
+            data['chat'] = `${data['name']} - ${humanizedDateTime()}`;
+        }
+        data['chat'] = String(data['chat']);
+        newCharacters.push(data);
+    }
+
+    characters = newCharacters;
+
+    // Prevent this_chid from going out of sync
+    if (preservedAvatar) {
+        const newId = characters.findIndex(x => x.avatar === preservedAvatar);
+        if (newId !== -1) {
+            this_chid = newId;
+        }
+    }
+
+    if (this_chid != undefined && this_chid != 'invalid-safety-id') {
+        $('#avatar_url_pole').val(characters[this_chid].avatar);
+    }
+
+    await getGroups();
+    await printCharacters(true);
 }
 
 async function delChat(chatfile) {

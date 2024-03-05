@@ -19,8 +19,6 @@ const { invalidateThumbnail } = require('./thumbnails');
 const { importRisuSprites } = require('./sprites');
 const defaultAvatarPath = './public/img/ai4.png';
 
-let characters = {};
-
 // KV-store for parsed character data
 const characterDataCache = new Map();
 
@@ -131,42 +129,42 @@ const calculateDataSize = (data) => {
  * processCharacter - Process a given character, read its data and calculate its statistics.
  *
  * @param  {string} item The name of the character.
- * @param  {number} i    The index of the character in the characters list.
  * @return {Promise}     A Promise that resolves when the character processing is done.
  */
-const processCharacter = async (item, i) => {
+const processCharacter = async (item) => {
     try {
         const img_data = await charaRead(DIRECTORIES.characters + item);
         if (img_data === undefined) throw new Error('Failed to read character file');
 
         let jsonObject = getCharaCardV2(JSON.parse(img_data), false);
         jsonObject.avatar = item;
-        characters[i] = jsonObject;
-        characters[i]['json_data'] = img_data;
+        const character = jsonObject;
+        character['json_data'] = img_data;
         const charStat = fs.statSync(path.join(DIRECTORIES.characters, item));
-        characters[i]['date_added'] = charStat.ctimeMs;
-        characters[i]['create_date'] = jsonObject['create_date'] || humanizedISO8601DateTime(charStat.ctimeMs);
+        character['date_added'] = charStat.ctimeMs;
+        character['create_date'] = jsonObject['create_date'] || humanizedISO8601DateTime(charStat.ctimeMs);
         const char_dir = path.join(DIRECTORIES.chats, item.replace('.png', ''));
 
         const { chatSize, dateLastChat } = calculateChatSize(char_dir);
-        characters[i]['chat_size'] = chatSize;
-        characters[i]['date_last_chat'] = dateLastChat;
-        characters[i]['data_size'] = calculateDataSize(jsonObject?.data);
+        character['chat_size'] = chatSize;
+        character['date_last_chat'] = dateLastChat;
+        character['data_size'] = calculateDataSize(jsonObject?.data);
+        return character;
     }
     catch (err) {
-        characters[i] = {
+        console.log(`Could not process character: ${item}`);
+
+        if (err instanceof SyntaxError) {
+            console.log(`${item} does not contain a valid JSON object.`);
+        } else {
+            console.log('An unexpected error occurred: ', err);
+        }
+
+        return {
             date_added: 0,
             date_last_chat: 0,
             chat_size: 0,
         };
-
-        console.log(`Could not process character: ${item}`);
-
-        if (err instanceof SyntaxError) {
-            console.log('String [' + i + '] is not valid JSON!');
-        } else {
-            console.log('An unexpected error occurred: ', err);
-        }
     }
 };
 
@@ -685,42 +683,53 @@ router.post('/delete', jsonParser, async function (request, response) {
  * @param  {object}   response The HTTP response object.
  * @return {undefined}         Does not return a value.
  */
-router.post('/all', jsonParser, function (request, response) {
-    fs.readdir(DIRECTORIES.characters, async (err, files) => {
-        if (err) {
-            console.error(err);
-            return;
-        }
+router.post('/all', jsonParser, async function (_, response) {
+    try {
+        const files = fs.readdirSync(DIRECTORIES.characters);
 
+        response.setHeader('Content-Type', 'text/plain;charset=UTF-8');
         const pngFiles = files.filter(file => file.endsWith('.png'));
-        characters = {};
 
-        let processingPromises = pngFiles.map((file, index) => processCharacter(file, index));
-        await Promise.all(processingPromises); performance.mark('B');
+        const processingPromises = pngFiles.map(async (file) => {
+            const data = await processCharacter(file);
 
-        // Filter out invalid/broken characters
-        characters = Object.values(characters).filter(x => x?.name).reduce((acc, val, index) => {
-            acc[index] = val;
-            return acc;
-        }, {});
+            if (data && data.name) {
+                response.write(`data: ${JSON.stringify(data)}\n\n`);
+            }
+        });
 
-        response.send(JSON.stringify(characters));
-    });
+        await Promise.all(processingPromises);
+        response.end();
+    } catch (err) {
+        console.error(err);
+        if (!response.headersSent) {
+            response.sendStatus(500);
+        }
+        response.end();
+    }
 });
 
 router.post('/get', jsonParser, async function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-    const item = request.body.avatar_url;
-    const filePath = path.join(DIRECTORIES.characters, item);
+    try {
+        if (!request.body) return response.sendStatus(400);
+        const item = request.body.avatar_url;
+        const filePath = path.join(DIRECTORIES.characters, item);
 
-    if (!fs.existsSync(filePath)) {
-        return response.sendStatus(404);
+        if (!fs.existsSync(filePath)) {
+            return response.sendStatus(404);
+        }
+
+        const data = await processCharacter(item);
+
+        if (data && data.name) {
+            return response.send(data);
+        }
+
+        return response.sendStatus(500);
+    } catch (err) {
+        console.error(err);
+        return response.sendStatus(500);
     }
-
-    characters = {};
-    await processCharacter(item, 0);
-
-    return response.send(characters[0]);
 });
 
 router.post('/chats', jsonParser, async function (request, response) {
