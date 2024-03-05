@@ -1167,6 +1167,12 @@ function getGroupCharacterBlock(character) {
     template.find('.ch_fav').val(isFav);
     template.toggleClass('is_fav', isFav);
     template.toggleClass('disabled', isGroupMemberDisabled(character.avatar));
+    template.find('.send_as').on('click', function () {
+        const textArea = document.querySelector('#send_textarea');
+        if (!textArea) return;
+        textArea.value = `/sendas name="${character.name}" ${textArea.value}` ;
+        textArea.focus();
+    });
 
     // Display inline tags
     const tags = getTagsList(character.avatar);
