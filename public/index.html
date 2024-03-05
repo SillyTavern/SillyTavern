@@ -1682,16 +1682,7 @@
                                         </div>
                                     </div>
                                     <div data-newbie-hidden class="range-block" data-source="claude">
-                                        <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
-                                            <input id="exclude_assistant" type="checkbox" />
-                                            <span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">
-                                                Exclude the assistant suffix from being added to the end of prompt. Requires jailbreak with 'Assistant:' in it.
-                                            </span>
-                                        </div>
-                                        <div id="claude_assistant_prefill_block" class="wide100p">
+                                        <div class="wide100p">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                             <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
@@ -1708,12 +1699,12 @@
                                         </div>
                                         <div id="claude_human_sysprompt_message_block" class="wide100p">
                                             <div class="range-block-title openai_restorable">
-                                                <span data-i18n="Human: first message">Human: first message</span>
-                                                <div id="claude_human_sysprompt_message_restore" title="Restore Human: first message" class="right_menu_button">
+                                                <span data-i18n="User first message">User first message</span>
+                                                <div id="claude_human_sysprompt_message_restore" title="Restore User first message" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
-                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user' or manually adding the 'Human: ' prefix."></textarea>
+                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user'."></textarea>
                                         </div>
                                     </div>
                                 </div>

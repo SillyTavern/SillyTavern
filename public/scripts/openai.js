@@ -239,7 +239,6 @@ const default_settings = {
     human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
-    exclude_assistant: false,
     claude_use_sysprompt: false,
     use_alt_scale: false,
     squash_system_messages: false,
@@ -307,7 +306,6 @@ const oai_settings = {
     human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
-    exclude_assistant: false,
     claude_use_sysprompt: false,
     use_alt_scale: false,
     squash_system_messages: false,
@@ -1636,7 +1634,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
         // Don't add a prefill on quiet gens (summarization)
-        if (!isQuiet && !oai_settings.exclude_assistant) {
+        if (!isQuiet) {
             generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
         }
     }
@@ -2560,7 +2558,6 @@ function loadOpenAISettings(data, settings) {
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
     if (settings.use_ai21_tokenizer !== undefined) { oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer; oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200; }
     if (settings.use_google_tokenizer !== undefined) oai_settings.use_google_tokenizer = !!settings.use_google_tokenizer;
-    if (settings.exclude_assistant !== undefined) oai_settings.exclude_assistant = !!settings.exclude_assistant;
     if (settings.claude_use_sysprompt !== undefined) oai_settings.claude_use_sysprompt = !!settings.claude_use_sysprompt;
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
@@ -2599,7 +2596,6 @@ function loadOpenAISettings(data, settings) {
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#use_ai21_tokenizer').prop('checked', oai_settings.use_ai21_tokenizer);
     $('#use_google_tokenizer').prop('checked', oai_settings.use_google_tokenizer);
-    $('#exclude_assistant').prop('checked', oai_settings.exclude_assistant);
     $('#claude_use_sysprompt').prop('checked', oai_settings.claude_use_sysprompt);
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
@@ -2822,7 +2818,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         human_sysprompt_message: settings.human_sysprompt_message,
         use_ai21_tokenizer: settings.use_ai21_tokenizer,
         use_google_tokenizer: settings.use_google_tokenizer,
-        exclude_assistant: settings.exclude_assistant,
         claude_use_sysprompt: settings.claude_use_sysprompt,
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
@@ -3198,7 +3193,6 @@ function onSettingsPresetChange() {
         human_sysprompt_message: ['#claude_human_sysprompt_textarea', 'human_sysprompt_message', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', true],
         use_google_tokenizer: ['#use_google_tokenizer', 'use_google_tokenizer', true],
-        exclude_assistant: ['#exclude_assistant', 'exclude_assistant', true],
         claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true],
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
@@ -3734,7 +3728,6 @@ function toggleChatCompletionForms() {
     });
 
     if (chat_completion_sources.CLAUDE == oai_settings.chat_completion_source) {
-        $('#claude_assistant_prefill_block').toggle(!oai_settings.exclude_assistant);
         $('#claude_human_sysprompt_message_block').toggle(oai_settings.claude_use_sysprompt);
     }
 }
@@ -4074,12 +4067,6 @@ $(document).ready(async function () {
 
     $('#use_google_tokenizer').on('change', function () {
         oai_settings.use_google_tokenizer = !!$('#use_google_tokenizer').prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $('#exclude_assistant').on('change', function () {
-        oai_settings.exclude_assistant = !!$('#exclude_assistant').prop('checked');
-        $('#claude_assistant_prefill_block').toggle(!oai_settings.exclude_assistant);
         saveSettingsDebounced();
     });
 
