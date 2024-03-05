@@ -1654,12 +1654,12 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,makersuite,custom">
+                                    <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                                Sends images in prompts if the model supports it (e.g. GPT-4V or Llava 13B).
+                                                Sends images in prompts if the model supports it (e.g. GPT-4V, Claude 3 or Llava 13B).
                                                 Use the <code><i class="fa-solid fa-paperclip"></i></code> action on any message or the
                                                 <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image file to the chat.
                                             </div>
@@ -1682,26 +1682,7 @@
                                         </div>
                                     </div>
                                     <div data-newbie-hidden class="range-block" data-source="claude">
-                                        <label for="claude_exclude_prefixes" title="Exclude Human/Assistant prefixes" class="checkbox_label widthFreeExpand">
-                                            <input id="claude_exclude_prefixes" type="checkbox" />
-                                            <span data-i18n="Exclude Human/Assistant prefixes">Exclude Human/Assistant prefixes</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Exclude Human/Assistant prefixes from being added to the prompt.">
-                                                Exclude Human/Assistant prefixes from being added to the prompt, except very first/last message, system prompt Human message and Assistant suffix.
-                                                Requires 'Add character names' checked.
-                                            </span>
-                                        </div>
-                                        <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
-                                            <input id="exclude_assistant" type="checkbox" />
-                                            <span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">
-                                                Exclude the assistant suffix from being added to the end of prompt. Requires jailbreak with 'Assistant:' in it.
-                                            </span>
-                                        </div>
-                                        <div id="claude_assistant_prefill_block" class="wide100p">
+                                        <div class="wide100p">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                             <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
@@ -1712,19 +1693,18 @@
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Exclude the 'Human: ' prefix from being added to the beginning of the prompt.">
-                                                Exclude the 'Human: ' prefix from being added to the beginning of the prompt.
-                                                Instead, place it between the system prompt and the first message with the role 'assistant' (right before 'Chat History' by default).
+                                            <span data-i18n="Send the system prompt for supported models.">
+                                                Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.
                                             </span>
                                         </div>
                                         <div id="claude_human_sysprompt_message_block" class="wide100p">
                                             <div class="range-block-title openai_restorable">
-                                                <span data-i18n="Human: first message">Human: first message</span>
-                                                <div id="claude_human_sysprompt_message_restore" title="Restore Human: first message" class="right_menu_button">
+                                                <span data-i18n="User first message">User first message</span>
+                                                <div id="claude_human_sysprompt_message_restore" title="Restore User first message" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
-                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user' or manually adding the 'Human: ' prefix."></textarea>
+                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user'."></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -2347,24 +2327,14 @@
                             <div>
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
-                                    <optgroup label="Latest">
-                                        <option value="claude-2">claude-2</option>
-                                        <option value="claude-v1">claude-v1</option>
-                                        <option value="claude-v1-100k">claude-v1-100k</option>
-                                        <option value="claude-instant-v1">claude-instant-v1</option>
-                                        <option value="claude-instant-v1-100k">claude-instant-v1-100k</option>
-                                    </optgroup>
-                                    <optgroup label="Sub-versions">
+                                    <optgroup label="Versions">
+                                        <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
+                                        <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                         <option value="claude-2.1">claude-2.1</option>
                                         <option value="claude-2.0">claude-2.0</option>
-                                        <option value="claude-v1.3">claude-v1.3</option>
-                                        <option value="claude-v1.3-100k">claude-v1.3-100k</option>
-                                        <option value="claude-v1.2">claude-v1.2</option>
-                                        <option value="claude-v1.0">claude-v1.0</option>
+                                        <option value="claude-1.3">claude-1.3</option>
                                         <option value="claude-instant-1.2">claude-instant-1.2</option>
-                                        <option value="claude-instant-v1.1">claude-instant-v1.1</option>
-                                        <option value="claude-instant-v1.1-100k">claude-instant-v1.1-100k</option>
-                                        <option value="claude-instant-v1.0">claude-instant-v1.0</option>
+                                        <option value="claude-instant-1.1">claude-instant-1.1</option>
                                     </optgroup>
                                 </select>
                             </div>
