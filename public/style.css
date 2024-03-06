@@ -955,6 +955,9 @@ hr {
     margin-left: calc(var(--avatar-base-border-radius));
     margin-bottom: calc(var(--avatar-base-border-radius));
 }
+.avatars_inline .avatar:last-of-type {
+    margin-right: calc(var(--avatar-base-border-radius));
+}
 
 .group_select_block_list {
     display: flex;

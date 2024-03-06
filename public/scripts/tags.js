@@ -10,7 +10,7 @@ import {
     buildAvatarList,
 } from '../script.js';
 // eslint-disable-next-line no-unused-vars
-import { FILTER_TYPES, FilterHelper } from './filters.js';
+import { FILTER_TYPES, FILTER_STATES, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
 import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay } from './utils.js';
@@ -50,8 +50,9 @@ export const tag_filter_types = {
 };
 
 const ACTIONABLE_TAGS = {
-    FAV: { id: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: applyFavFilter, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
+    FAV: { id: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
     GROUP: { id: 0, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
+    FOLDER: { id: 4, name: 'Always show folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
     VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
     HINT: { id: 3, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
 };
@@ -81,7 +82,11 @@ let tag_map = {};
 
 /**
  * Applies the basic filter for the current state of the tags and their selection on an entity list.
- * @param {*} entities List of entities for display, consisting of tags, characters and groups.
+ * @param {Array<Object>} entities List of entities for display, consisting of tags, characters and groups.
+ * @param {Object} param1 Optional parameters, explained below.
+ * @param {Boolean} [param1.globalDisplayFilters] When enabled, applies the final filter for the global list. Icludes filtering out entities in closed/hidden folders and empty folders.
+ * @param {Object} [param1.subForEntity] When given an entity, the list of entities gets filtered specifically for that one as a "sub list", filtering out other tags, elements not tagged for this and hidden elements.
+ * @returns The filtered list of entities
  */
 function filterByTagState(entities, { globalDisplayFilters = false, subForEntity = undefined } = {}) {
     const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
@@ -108,8 +113,9 @@ function filterByTagState(entities, { globalDisplayFilters = false, subForEntity
             }
 
             // Hide folders that have 0 visible sub entities after the first filtering round
+            const alwaysFolder = isFilterState(entitiesFilter.getFilterData(FILTER_TYPES.FOLDER), FILTER_STATES.SELECTED);
             if (entity.type === 'tag') {
-                return entity.entities.length > 0;
+                return alwaysFolder || entity.entities.length > 0;
             }
 
             return true;
@@ -218,12 +224,9 @@ function getTagBlock(item, entities) {
  * Applies the favorite filter to the character list.
  * @param {FilterHelper} filterHelper Instance of FilterHelper class.
  */
-function applyFavFilter(filterHelper) {
-    const isSelected = $(this).hasClass('selected');
-    const displayFavoritesOnly = !isSelected;
-    $(this).toggleClass('selected', displayFavoritesOnly);
-
-    filterHelper.setFilterData(FILTER_TYPES.FAV, displayFavoritesOnly);
+function filterByFav(filterHelper) {
+    const state = toggleTagThreeState($(this));
+    filterHelper.setFilterData(FILTER_TYPES.FAV, state);
 }
 
 /**
@@ -231,11 +234,17 @@ function applyFavFilter(filterHelper) {
  * @param {FilterHelper} filterHelper Instance of FilterHelper class.
  */
 function filterByGroups(filterHelper) {
-    const isSelected = $(this).hasClass('selected');
-    const displayGroupsOnly = !isSelected;
-    $(this).toggleClass('selected', displayGroupsOnly);
+    const state = toggleTagThreeState($(this));
+    filterHelper.setFilterData(FILTER_TYPES.GROUP, state);
+}
 
-    filterHelper.setFilterData(FILTER_TYPES.GROUP, displayGroupsOnly);
+/**
+ * Applies the "only folder" filter to the character list.
+ * @param {FilterHelper} filterHelper Instance of FilterHelper class.
+ */
+function filterByFolder(filterHelper) {
+    const state = toggleTagThreeState($(this));
+    filterHelper.setFilterData(FILTER_TYPES.FOLDER, state);
 }
 
 function loadTagsSettings(settings) {
@@ -475,7 +484,7 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
     }
 
     if (tag.excluded && isGeneralList) {
-        $(tagElement).addClass('excluded');
+        toggleTagThreeState(tagElement, FILTER_STATES.EXCLUDED);
     }
 
     if (selectable) {
@@ -498,27 +507,13 @@ function onTagFilterClick(listElement) {
     const tagId = $(this).attr('id');
     const existingTag = tags.find((tag) => tag.id === tagId);
 
-    let excludeTag;
-    if ($(this).hasClass('selected')) {
-        $(this).removeClass('selected');
-        $(this).addClass('excluded');
-        excludeTag = true;
-    }
-    else if ($(this).hasClass('excluded')) {
-        $(this).removeClass('excluded');
-        excludeTag = false;
-    }
-    else {
-        $(this).addClass('selected');
-    }
+    let state = toggleTagThreeState($(this));
 
     // Manual undefined check required for three-state boolean
-    if (excludeTag !== undefined) {
-        if (existingTag) {
-            existingTag.excluded = excludeTag;
+    if (existingTag) {
+        existingTag.excluded = isFilterState(state, FILTER_STATES.EXCLUDED);
 
-            saveSettingsDebounced();
-        }
+        saveSettingsDebounced();
     }
 
     // Update bogus folder if applicable
@@ -533,6 +528,28 @@ function onTagFilterClick(listElement) {
 
     runTagFilters(listElement);
     updateTagFilterIndicator();
+}
+
+function toggleTagThreeState(element, stateOverride = undefined) {
+    const states = Object.keys(FILTER_STATES);
+
+    const overrideKey = states.includes(stateOverride) ? stateOverride : states.find(key => FILTER_STATES[key] === stateOverride);
+
+    const currentState = element.attr('data-toggle-state') ?? states[states.length - 1];
+    const nextState = overrideKey ?? states[(states.indexOf(currentState) + 1) % states.length];
+
+    element.attr('data-toggle-state', nextState);
+
+    console.debug('toggle three-way filter on', element, 'from', currentState, 'to', nextState);
+
+    // Update css class and remove all others
+    Object.keys(FILTER_STATES).forEach(x => {
+        if (!isFilterState(x, FILTER_STATES.UNDEFINED)) {
+            element.toggleClass(FILTER_STATES[x].class, x === nextState);
+        }
+    });
+
+    return nextState;
 }
 
 function runTagFilters(listElement) {
@@ -950,7 +967,7 @@ function onTagAsFolderClick() {
 
     // Cycle through folder types
     const types = Object.keys(TAG_FOLDER_TYPES);
-    let currentTypeIndex = types.indexOf(tag.folder_type);
+    const currentTypeIndex = types.indexOf(tag.folder_type);
     tag.folder_type = types[(currentTypeIndex + 1) % types.length];
 
     updateDrawTagFolder(element, tag);

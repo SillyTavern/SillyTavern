@@ -1309,23 +1309,36 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
         ...(power_user.bogus_folders ? tags.filter(isBogusFolder).sort(compareTagsForSort).map(item => tagToEntity(item)) : []),
     ];
 
+    // We need to do multiple filter runs in a specific order, otherwise different settings might override each other
+    // and screw up tags and search filter, sub lists or similar.
+    // The specific filters are written inside the "filterByTagState" method and its different parameters.
+    // Generally what we do is the following:
+    //   1. First swipe over the list to remove the most obvious things
+    //   2. Build sub entity lists for all folders, filtering them similarly to the second swipe
+    //   3. We do the last run, where global filters are applied, and the search filters last
+
     // First run filters, that will hide what should never be displayed
     if (doFilter) {
-        entities = entitiesFilter.applyFilters(entities);
         entities = filterByTagState(entities);
     }
 
     // Run over all entities between first and second filter to save some states
     for(const entity of entities) {
         // For folders, we remember the sub entities so they can be displayed later, even if they might be filtered
+        // Those sub entities should be filtered and have the search filters applied too
         if (entity.type === 'tag') {
-            entity.entities = filterByTagState(entities, { subForEntity: entity });
+            let subEntities = filterByTagState(entities, { subForEntity: entity });
+            if (doFilter) {
+                subEntities = entitiesFilter.applyFilters(subEntities);
+            }
+            entity.entities = subEntities;
         }
     }
 
     // Second run filters, hiding whatever should be filtered later
     if (doFilter) {
         entities = filterByTagState(entities, { globalDisplayFilters: true });
+        entities = entitiesFilter.applyFilters(entities);
     }
 
     if (doSort) {

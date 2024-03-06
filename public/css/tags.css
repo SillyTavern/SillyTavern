@@ -160,11 +160,11 @@
 
 .tag.excluded::after {
     position: absolute;
-    top: 0;
-    bottom: 0;
+    height: calc(var(--mainFontSize)*1.5);
     left: 0;
     right: 0;
     content: "\d7";
+    pointer-events: none;
     font-size: calc(var(--mainFontSize) *3);
     color: red;
     line-height: calc(var(--mainFontSize)*1.3);
