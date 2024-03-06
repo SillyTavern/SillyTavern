@@ -153,10 +153,13 @@ import {
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from './scripts/slash-commands.js';
 import {
-    TAG_FOLDER_DEFAULT_TYPE,
     tag_map,
     tags,
     filterByTagState,
+    isBogusFolder,
+    isBogusFolderOpen,
+    chooseBogusFolder,
+    getTagBlock,
     loadTagsSettings,
     printTagFilters,
     getTagsList,
@@ -166,7 +169,6 @@ import {
     importTags,
     tag_filter_types,
     compareTagsForSort,
-    TAG_FOLDER_TYPES,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -275,8 +277,6 @@ export {
     printCharacters,
     isOdd,
     countOccurrences,
-    chooseBogusFolder,
-    isBogusFolder,
 };
 
 showLoader();
@@ -1161,57 +1161,6 @@ export async function selectCharacterById(id) {
     }
 }
 
-function getTagBlock(item, entities) {
-    let count = entities.length;
-
-    const tagFolder = TAG_FOLDER_TYPES[item.folder_type];
-
-    const template = $('#bogus_folder_template .bogus_folder_select').clone();
-    template.addClass(tagFolder.class);
-    template.attr({ 'tagid': item.id, 'id': `BogusFolder${item.id}` });
-    template.find('.avatar').css({ 'background-color': item.color, 'color': item.color2 }).attr('title', `[Folder] ${item.name}`);
-    template.find('.ch_name').text(item.name).attr('title', `[Folder] ${item.name}`);
-    template.find('.bogus_folder_counter').text(count);
-    template.find('.bogus_folder_icon').addClass(tagFolder.fa_icon);
-    if (count == 1) {
-        template.find('.character_unit_name').text('character');
-    }
-
-    // Fill inline character images
-    const inlineAvatars = template.find('.bogus_folder_avatars_block');
-    for (const entitiy of entities) {
-        const id = entitiy.id;
-
-        // Populate the template
-        const avatarTemplate = $('#bogus_folder_inline_character_template .avatar').clone();
-
-        let this_avatar = default_avatar;
-        if (entitiy.item.avatar != 'none') {
-            this_avatar = getThumbnailUrl('avatar', entitiy.item.avatar);
-        }
-
-        avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
-        avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entitiy.item.name);
-        avatarTemplate.attr('title', `[Character] ${entitiy.item.name}`);
-        avatarTemplate.toggleClass('is_fav', entitiy.item.fav || entitiy.item.fav == 'true');
-        avatarTemplate.find('.ch_fav').val(entitiy.item.fav);
-
-        // If this is a group, we need to hack slightly. We still want to keep most of the css classes and layout, but use a group avatar instead.
-        if (entitiy.type === 'group') {
-            const grpTemplate = getGroupAvatar(entitiy.item);
-
-            avatarTemplate.addClass(grpTemplate.attr('class'));
-            avatarTemplate.empty();
-            avatarTemplate.append(grpTemplate.children());
-            avatarTemplate.attr('title', `Group: ${entitiy.item.name}`);
-        }
-
-        inlineAvatars.append(avatarTemplate);
-    }
-
-    return template;
-}
-
 function getBackBlock() {
     const template = $('#bogus_folder_back_template .bogus_folder_select').clone();
     return template;
@@ -1335,26 +1284,6 @@ async function printCharacters(fullRefresh = false) {
     });
 
     favsToHotswap();
-}
-
-/**
- * Indicates whether a given tag is defined as a folder. Meaning it's neither undefined nor 'NONE'.
- * @returns {boolean} If it's a tag folder
- */
-function isBogusFolder(tag) {
-    return tag?.folder_type !== undefined && tag.folder_type !== TAG_FOLDER_DEFAULT_TYPE;
-}
-
-/**
- * Indicates whether a user is currently in a bogus folder.
- * @returns {boolean} If currently viewing a folder
- */
-function isBogusFolderOpen() {
-    const anyIsFolder = entitiesFilter.getFilterData(FILTER_TYPES.TAG)?.selected
-        .map(tagId => tags.find(x => x.id === tagId))
-        .some(isBogusFolder);
-
-    return !!anyIsFolder;
 }
 
 export function getEntitiesList({ doFilter } = {}) {
@@ -8097,27 +8026,6 @@ export async function deleteCharacter(name, avatar, reloadCharacters = true) {
 
 function doTogglePanels() {
     $('#option_settings').trigger('click');
-}
-
-function chooseBogusFolder(source, tagId, remove = false) {
-    // If we are here via the 'back' action, we implicitly take the last filtered folder as one to remove
-    const isBack = tagId === 'back';
-    if (isBack) {
-        const drilldown = $(source).closest('#rm_characters_block').find('.rm_tag_bogus_drilldown');
-        const lastTag = drilldown.find('.tag:last').last();
-        tagId = lastTag.attr('id');
-        remove = true;
-    }
-
-    // Instead of manually updating the filter conditions, we just "click" on the filter tag
-    // We search inside which filter block we are located in and use that one
-    const FILTER_SELECTOR = ($(source).closest('#rm_characters_block') ?? $(source).closest('#rm_group_chats_block')).find('.rm_tag_filter');
-    if (remove) {
-        // Click twice to skip over the 'excluded' state
-        $(FILTER_SELECTOR).find(`.tag[id=${tagId}]`).trigger('click').trigger('click');
-    } else {
-        $(FILTER_SELECTOR).find(`.tag[id=${tagId}]`).trigger('click');
-    }
 }
 
 function addDebugFunctions() {
