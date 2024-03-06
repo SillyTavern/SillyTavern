@@ -151,7 +151,11 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
     // Take care of name properties since claude messages don't support them
     mergedMessages.forEach((message) => {
         if (message.name) {
-            message.content = `${message.name}: ${message.content}`;
+            if (Array.isArray(message.content)) {
+                message.content[0].text = `${message.name}: ${message.content[0].text}`;
+            } else {
+                message.content = `${message.name}: ${message.content}`;
+            }
             delete message.name;
         }
     });
