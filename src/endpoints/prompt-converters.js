@@ -159,7 +159,6 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
                     content[i].text = `${message.name}: ${content[i].text}`;
                 }
             }
-            console.log(message.content);
             delete message.name;
         }
     });
