@@ -79,7 +79,7 @@ class SlashCommandParser {
     /**
      * Parses a slash command to extract the command name, the (named) arguments and the remaining text
      * @param {string} text - Slash command text
-     * @returns { command: string, args: object, value: string }
+     * @returns {{command: string, args: object, value: string}} - The parsed command, its arguments and the remaining text
      */
     parse(text) {
         // Parses a command even when spaces are present in arguments
@@ -98,15 +98,11 @@ class SlashCommandParser {
         if (match !== null && match[1].length > 0) {
             command = match[1];
             remainingText = match[2];
-            console.log('command:' + command);
+            console.debug('command:' + command);
         }
 
         // parse the rest of the string to extract named arguments, the remainder is the "unnamedArg" which is usually text, like the prompt to send
-        let loop = 0;
         while (remainingText.length > 0) {
-            loop++;
-            //console.log(`   > loop: ${loop} : remainingText: ${remainingText}`);
-
             // does the remaining text is like     nameArg=[value]   or  nameArg=[value,value] or  nameArg=[  value , value , value]
             // where value can be a string like   " this is some text "  , note previously it was not possible to have have spaces
             // where value can be a scalar like   AScalar
@@ -145,31 +141,28 @@ class SlashCommandParser {
                 continue;
             }
 
-            // the remainder that matches no named argument is the "unamedArg" previously mentionned
-            //console.log('         > unnamed arg: ${remainingText}');
+            // the remainder that matches no named argument is the "unamedArg" previously mentioned
             unnamedArg = remainingText.trim();
             remainingText = '';
         }
 
         // Excluded commands format in their own function
         if (!excludedFromRegex.includes(command)) {
-            console.log(`parse: !excludedFromRegex.includes(${command}`);
-            console.log(`   parse: unnamedArg before: ${unnamedArg}`);
+            console.debug(`parse: !excludedFromRegex.includes(${command}`);
+            console.debug(`   parse: unnamedArg before: ${unnamedArg}`);
             unnamedArg = getRegexedString(
                 unnamedArg,
                 regex_placement.SLASH_COMMAND,
             );
-            console.log(`   parse: unnamedArg after: ${unnamedArg}`);
+            console.debug(`   parse: unnamedArg after: ${unnamedArg}`);
         }
-
-        //console.log(JSON.stringify( { command: command, args: argObj, value: unnamedArg }));
 
         // your weird complex command is now transformed into a juicy tiny text or something useful :)
         if (this.commands[command]) {
             return { command: this.commands[command], args: argObj, value: unnamedArg };
         }
 
-        return false;
+        return null;
     }
 
     getHelpString() {
