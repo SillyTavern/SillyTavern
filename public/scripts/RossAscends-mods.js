@@ -12,6 +12,7 @@ import {
     setActiveCharacter,
     getEntitiesList,
     getThumbnailUrl,
+    buildAvatarList,
     selectCharacterById,
     eventSource,
     menu_type,
@@ -264,82 +265,16 @@ async function RA_autoloadchat() {
 export async function favsToHotswap() {
     const entities = getEntitiesList({ doFilter: false });
     const container = $('#right-nav-panel .hotswap');
-    const template = $('#hotswap_template .hotswapAvatar');
-    const DEFAULT_COUNT = 6;
-    const WIDTH_PER_ITEM = 60; // 50px + 5px gap + 5px padding
-    const containerWidth = container.outerWidth();
-    const maxCount = containerWidth > 0 ? Math.floor(containerWidth / WIDTH_PER_ITEM) : DEFAULT_COUNT;
-    let count = 0;
 
-    const promises = [];
-    const newContainer = container.clone();
-    newContainer.empty();
+    const favs = entities.filter(x => x.item.fav || x.item.fav == 'true');
 
-    for (const entity of entities) {
-        if (count >= maxCount) {
-            break;
-        }
-
-        const isFavorite = entity.item.fav || entity.item.fav == 'true';
-
-        if (!isFavorite) {
-            continue;
-        }
-
-        const isCharacter = entity.type === 'character';
-        const isGroup = entity.type === 'group';
-
-        const grid = isGroup ? entity.id : '';
-        const chid = isCharacter ? entity.id : '';
-
-        let slot = template.clone();
-        slot.toggleClass('character_select', isCharacter);
-        slot.toggleClass('group_select', isGroup);
-        slot.attr('grid', isGroup ? grid : '');
-        slot.attr('chid', isCharacter ? chid : '');
-        slot.data('id', isGroup ? grid : chid);
-
-        if (isGroup) {
-            const group = groups.find(x => x.id === grid);
-            const avatar = getGroupAvatar(group);
-            $(slot).find('img').replaceWith(avatar);
-            $(slot).attr('title', group.name);
-        }
-
-        if (isCharacter) {
-            const imgLoadPromise = new Promise((resolve) => {
-                const avatarUrl = getThumbnailUrl('avatar', entity.item.avatar);
-                $(slot).find('img').attr('src', avatarUrl).on('load', resolve);
-                $(slot).attr('title', entity.item.avatar);
-            });
-
-            // if the image doesn't load in 500ms, resolve the promise anyway
-            promises.push(Promise.race([imgLoadPromise, delay(500)]));
-        }
-
-        $(slot).css('cursor', 'pointer');
-        newContainer.append(slot);
-        count++;
-    }
-
-    // don't fill leftover spaces with avatar placeholders
-    // just evenly space the selected avatars instead
-    /*
-   if (count < maxCount) { //if any space is left over
-        let leftOverSlots = maxCount - count;
-        for (let i = 1; i <= leftOverSlots; i++) {
-            newContainer.append(template.clone());
-        }
-    }
-    */
-
-    await Promise.allSettled(promises);
     //helpful instruction message if no characters are favorited
-    if (count === 0) { container.html('<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>'); }
-    //otherwise replace with fav'd characters
-    if (count > 0) {
-        container.replaceWith(newContainer);
+    if (favs.length == 0) {
+        container.html('<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>');
+        return;
     }
+
+    buildAvatarList(container, favs, { selectable: true });
 }
 
 //changes input bar and send button display depending on connection status

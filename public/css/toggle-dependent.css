@@ -24,9 +24,7 @@ body.no-modelIcons .icon-svg {
 }
 
 body.square-avatars .avatar,
-body.square-avatars .avatar img,
-body.square-avatars .hotswapAvatar,
-body.square-avatars .hotswapAvatar img {
+body.square-avatars .avatar img {
     border-radius: var(--avatar-base-border-radius) !important;
 }
 
@@ -113,10 +111,6 @@ body.big-avatars .bogus_folder_select .avatar {
     flex: unset;
 }
 
-body:not(.big-avatars) .avatar {
-    border-radius: var(--avatar-base-border-radius-round);
-}
-
 body.big-avatars .avatar {
     width: calc(var(--avatar-base-height) * var(--big-avatar-width-factor));
     height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor));
@@ -129,7 +123,6 @@ body.big-avatars .avatar {
     /* align-self: unset; */
     overflow: visible;
     border-radius: calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor));
-    flex: 1
 }
 
 body.big-avatars #user_avatar_block .avatar,
@@ -177,30 +170,27 @@ body.big-avatars .avatar-container .ch_description {
     text-overflow: unset;
 }
 
-body.big-avatars .avatars_inline .avatar,
-body.big-avatars .avatars_inline .avatar img {
-    width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor) * var(--inline-avatar-factor));
-    height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) * var(--inline-avatar-factor));
+body.big-avatars .avatars_inline_small .avatar,
+body.big-avatars .avatars_inline_small .avatar img {
+    width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor) * var(--inline-avatar-small-factor));
+    height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) * var(--inline-avatar-small-factor));
 }
 
-body.big-avatars .bogus_folder_avatars_block {
-    flex-wrap: wrap;
-    overflow: hidden;
-    height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) * var(--inline-avatar-factor) + 2 * var(--avatar-base-border-radius));
-    /* margin-top: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) * var(--inline-avatar-factor) * 0.2); */
+body.big-avatars .avatars_inline {
+    max-height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) + 2 * var(--avatar-base-border-radius));
 }
 
-body.big-avatars .bogus_folder_avatars_block .avatar {
-    margin: calc(var(--avatar-base-border-radius)) 0;
+body.big-avatars .avatars_inline.avatars_inline_small {
+    height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) * var(--inline-avatar-small-factor) + 2 * var(--avatar-base-border-radius));
 }
 
-body:not(.big-avatars) .avatars_inline .avatar_collage {
-    min-width: calc(var(--avatar-base-width) * var(--inline-avatar-factor));
+body:not(.big-avatars) .avatars_inline_small .avatar_collage {
+    min-width: calc(var(--avatar-base-width) * var(--inline-avatar-small-factor));
 }
 
-body.big-avatars .avatars_inline .avatar_collage {
-    min-width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor) * var(--inline-avatar-factor));
-    max-width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor) * var(--inline-avatar-factor));
+body.big-avatars .avatars_inline_small .avatar_collage {
+    min-width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor) * var(--inline-avatar-small-factor));
+    max-width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor) * var(--inline-avatar-small-factor));
 }
 
 /* border radius for big avatars collages */

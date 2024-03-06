@@ -249,6 +249,7 @@ export {
     scrollChatToBottom,
     isStreamingEnabled,
     getThumbnailUrl,
+    buildAvatarList,
     getStoppingStrings,
     reloadMarkdownProcessor,
     getCurrentChatId,
@@ -1289,7 +1290,7 @@ async function printCharacters(fullRefresh = false) {
     favsToHotswap();
 }
 
-export function getEntitiesList({ doFilter } = {}) {
+export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
     function characterToEntity(character, id) {
         return { item: character, id, type: 'character' };
     }
@@ -1327,7 +1328,9 @@ export function getEntitiesList({ doFilter } = {}) {
         entities = filterByTagState(entities, { globalDisplayFilters: true });
     }
 
-    sortEntitiesList(entities);
+    if (doSort) {
+        sortEntitiesList(entities);
+    }
     return entities;
 }
 
@@ -5243,6 +5246,49 @@ export function getCropPopup(src) {
 
 function getThumbnailUrl(type, file) {
     return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
+}
+
+function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, selectable = false } = {}) {
+    if (empty) {
+        block.empty();
+    }
+
+    for (const entity of entities) {
+        const id = entity.id;
+
+        // Populate the template
+        const avatarTemplate = $(`#${templateId} .avatar`).clone();
+
+        let this_avatar = default_avatar;
+        if (entity.item.avatar !== undefined && entity.item.avatar != 'none') {
+            this_avatar = getThumbnailUrl('avatar', entity.item.avatar);
+        }
+
+        avatarTemplate.attr('data-type', entity.type);
+        avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
+        avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entity.item.name);
+        avatarTemplate.attr('title', `[Character] ${entity.item.name}`);
+        avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
+        avatarTemplate.find('.ch_fav').val(entity.item.fav);
+
+        // If this is a group, we need to hack slightly. We still want to keep most of the css classes and layout, but use a group avatar instead.
+        if (entity.type === 'group') {
+            const grpTemplate = getGroupAvatar(entity.item);
+
+            avatarTemplate.addClass(grpTemplate.attr('class'));
+            avatarTemplate.empty();
+            avatarTemplate.append(grpTemplate.children());
+            avatarTemplate.attr('title', `[Group] ${entity.item.name}`);
+        }
+
+        if (selectable) {
+            avatarTemplate.addClass('selectable');
+            avatarTemplate.toggleClass('character_select', entity.type === 'character');
+            avatarTemplate.toggleClass('group_select', entity.type === 'group');
+        }
+
+        block.append(avatarTemplate);
+    }
 }
 
 async function getChat() {

@@ -7,13 +7,12 @@ import {
     getCharacters,
     entitiesFilter,
     printCharacters,
-    getThumbnailUrl,
-    default_avatar,
+    buildAvatarList,
 } from '../script.js';
 // eslint-disable-next-line no-unused-vars
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 
-import { groupCandidatesFilter, groups, selected_group, getGroupAvatar } from './group-chats.js';
+import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
 import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay } from './utils.js';
 import { power_user } from './power-user.js';
 
@@ -210,44 +209,9 @@ function getTagBlock(item, entities) {
     }
 
     // Fill inline character images
-    buildTagInlineAvatars(template, entities);
+    buildAvatarList(template.find('.bogus_folder_avatars_block'), entities);
 
     return template;
-}
-
-function buildTagInlineAvatars(template, entities) {
-    const inlineAvatars = template.find('.bogus_folder_avatars_block');
-    inlineAvatars.empty();
-
-    for (const entitiy of entities) {
-        const id = entitiy.id;
-
-        // Populate the template
-        const avatarTemplate = $('#bogus_folder_inline_character_template .avatar').clone();
-
-        let this_avatar = default_avatar;
-        if (entitiy.item.avatar !== undefined && entitiy.item.avatar != 'none') {
-            this_avatar = getThumbnailUrl('avatar', entitiy.item.avatar);
-        }
-
-        avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
-        avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entitiy.item.name);
-        avatarTemplate.attr('title', `[Character] ${entitiy.item.name}`);
-        avatarTemplate.toggleClass('is_fav', entitiy.item.fav || entitiy.item.fav == 'true');
-        avatarTemplate.find('.ch_fav').val(entitiy.item.fav);
-
-        // If this is a group, we need to hack slightly. We still want to keep most of the css classes and layout, but use a group avatar instead.
-        if (entitiy.type === 'group') {
-            const grpTemplate = getGroupAvatar(entitiy.item);
-
-            avatarTemplate.addClass(grpTemplate.attr('class'));
-            avatarTemplate.empty();
-            avatarTemplate.append(grpTemplate.children());
-            avatarTemplate.attr('title', `Group: ${entitiy.item.name}`);
-        }
-
-        inlineAvatars.append(avatarTemplate);
-    }
 }
 
 /**

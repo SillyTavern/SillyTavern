@@ -101,7 +101,7 @@
     --avatar-base-width: 50px;
     --avatar-base-border-radius: 2px;
     --avatar-base-border-radius-round: 50%;
-    --inline-avatar-factor: 0.6;
+    --inline-avatar-small-factor: 0.6;
 }
 
 * {
@@ -868,8 +868,10 @@ hr {
 .avatar {
     width: var(--avatar-base-width);
     height: var(--avatar-base-height);
+    border-radius: var(--avatar-base-border-radius-round);
     border-style: none;
     flex: 1;
+    transition: 250ms;
 }
 
 .last_mes .mesAvatarWrapper {
@@ -880,40 +882,21 @@ hr {
     cursor: pointer;
 }
 
-#HotSwapWrapper .hotswap {
-    justify-content: space-evenly;
+.hotswap {
+    margin: 5px;
 }
 
-.hotswapAvatar,
-.hotswapAvatar .avatar {
-    width: var(--avatar-base-width) !important;
-    height: var(--avatar-base-height) !important;
-    border-style: none;
+.avatar.selectable {
+    opacity: 0.6;
 }
 
-.hotswapAvatar {
-    opacity: 0.5;
-    transition: 250ms;
-    overflow: hidden;
-    padding: 0 !important;
-    order: 100;
-}
-
-.hotswapAvatar:hover {
+.avatar.selectable:hover {
     opacity: 1;
     background-color: transparent !important;
     cursor: pointer;
 }
 
-.hotswapAvatar .avatar_collage,
-.hotswapAvatar.group_select {
-    border-radius: var(--avatar-base-border-radius-round) !important;
-    position: relative;
-    overflow: hidden;
-    min-width: var(--avatar-base-width) !important;
-}
-
-.hotswapAvatar.group_select .avatar.avatar_collage img {
+.avatar.avatar_collage img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -921,16 +904,6 @@ hr {
     border: 1px solid var(--SmartThemeBorderColor);
 }
 
-.hotswapAvatar .avatar {
-    width: var(--avatar-base-width) !important;
-    height: var(--avatar-base-height) !important;
-    object-fit: cover;
-    object-position: center center;
-    border-radius: var(--avatar-base-border-radius-round) !important;
-    box-shadow: 0 0 5px var(--black50a);
-}
-
-.hotswapAvatar img,
 .avatar img {
     width: var(--avatar-base-width);
     height: var(--avatar-base-height);
@@ -943,8 +916,15 @@ hr {
 }
 
 .bogus_folder_select .avatar,
-.character_select .avatar {
+.character_select .avatar,
+.avatars_inline .avatar {
     flex: unset;
+}
+
+.avatars_inline {
+    flex-wrap: wrap;
+    overflow: hidden;
+    max-height: calc(var(--avatar-base-height) + 2 * var(--avatar-base-border-radius));
 }
 
 .bogus_folder_select .avatar {
@@ -956,24 +936,24 @@ hr {
     outline-color: var(--SmartThemeBorderColor);
 }
 
-.avatars_inline .avatar,
-.avatars_inline .avatar img {
-    width: calc(var(--avatar-base-width) * var(--inline-avatar-factor));
-    height: calc(var(--avatar-base-height) * var(--inline-avatar-factor));
+.avatars_inline_small .avatar,
+.avatars_inline_small .avatar img {
+    width: calc(var(--avatar-base-width) * var(--inline-avatar-small-factor));
+    height: calc(var(--avatar-base-height) * var(--inline-avatar-small-factor));
 }
 
-.bogus_folder_avatars_block {
-    flex-wrap: wrap;
-    overflow: hidden;
-    height: calc(var(--avatar-base-height) * var(--inline-avatar-factor) + 2 * var(--avatar-base-border-radius));
+.avatars_inline_small {
+    height: calc(var(--avatar-base-height) * var(--inline-avatar-small-factor) + 2 * var(--avatar-base-border-radius));
 }
 
 .bogus_folder_select:not(.folder_closed) .bogus_folder_avatars_block {
     opacity: 1 !important;
 }
 
-.bogus_folder_avatars_block .avatar {
-    margin: calc(var(--avatar-base-border-radius)) 0;
+.avatars_inline .avatar {
+    margin-top: calc(var(--avatar-base-border-radius));
+    margin-left: calc(var(--avatar-base-border-radius));
+    margin-bottom: calc(var(--avatar-base-border-radius));
 }
 
 .group_select_block_list {
@@ -1625,6 +1605,11 @@ input[type=search]:focus::-webkit-search-cancel-button {
     border-radius: 10px;
     cursor: pointer;
     margin-bottom: 1px;
+}
+
+.character_select.inline_avatar {
+    padding: unset;
+    border-radius: var(--avatar-base-border-radius-round);
 }
 
 /*applies to char list and mes_text char display name*/
