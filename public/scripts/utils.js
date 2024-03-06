@@ -970,7 +970,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
     const requestBody = {
         image: dataURL,
         ch_name: characterName,
-        filename: filename,
+        filename: String(filename).replace(/\./g, '_'),
     };
 
     // Send the data URL to your backend using fetch

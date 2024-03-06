@@ -391,10 +391,6 @@
         flex-wrap: wrap;
         height: unset;
     }
-
-    #extensionsMenuButton {
-        order: 1;
-    }
 }
 
 /*iOS specific*/

@@ -623,7 +623,6 @@
         "show_external_models": false,
         "proxy_password": "",
         "assistant_prefill": "",
-        "use_ai21_tokenizer": false,
-        "exclude_assistant": false
+        "use_ai21_tokenizer": false
     }
 }

@@ -918,27 +918,24 @@ function switchWaifuMode() {
 
 function switchSpoilerMode() {
     if (power_user.spoiler_free_mode) {
-        $('#description_div').hide();
-        $('#description_textarea').hide();
-        $('#firstmessage_textarea').hide();
-        $('#first_message_div').hide();
-        $('#spoiler_free_desc').show();
+        $('#descriptionWrapper').hide();
+        $('#firstMessageWrapper').hide();
+        $('#spoiler_free_desc').addClass('flex1');
+        $('#creator_notes_spoiler').show();
     }
     else {
-        $('#description_div').show();
-        $('#description_textarea').show();
-        $('#firstmessage_textarea').show();
-        $('#first_message_div').show();
-        $('#spoiler_free_desc').hide();
+        $('#descriptionWrapper').show();
+        $('#firstMessageWrapper').show();
+        $('#spoiler_free_desc').removeClass('flex1');
+        $('#creator_notes_spoiler').hide();
     }
 }
 
 function peekSpoilerMode() {
-    $('#description_div').toggle();
-    $('#description_textarea').toggle();
-    $('#firstmessage_textarea').toggle();
-    $('#first_message_div').toggle();
-
+    $('#descriptionWrapper').toggle();
+    $('#firstMessageWrapper').toggle();
+    $('#creator_notes_spoiler').toggle();
+    $('#spoiler_free_desc').toggleClass('flex1');
 }
 
 
@@ -3348,7 +3345,7 @@ $(document).ready(() => {
         $('#ui_preset_import_file').trigger('click');
     });
 
-    $('#ui_preset_import_file').on('change', async function() {
+    $('#ui_preset_import_file').on('change', async function () {
         const inputElement = this instanceof HTMLInputElement && this;
 
         try {

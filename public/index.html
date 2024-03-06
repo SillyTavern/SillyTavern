@@ -1654,12 +1654,12 @@
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,makersuite,custom">
+                                    <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                                Sends images in prompts if the model supports it (e.g. GPT-4V or Llava 13B).
+                                                Sends images in prompts if the model supports it (e.g. GPT-4V, Claude 3 or Llava 13B).
                                                 Use the <code><i class="fa-solid fa-paperclip"></i></code> action on any message or the
                                                 <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image file to the chat.
                                             </div>
@@ -1682,26 +1682,7 @@
                                         </div>
                                     </div>
                                     <div data-newbie-hidden class="range-block" data-source="claude">
-                                        <label for="claude_exclude_prefixes" title="Exclude Human/Assistant prefixes" class="checkbox_label widthFreeExpand">
-                                            <input id="claude_exclude_prefixes" type="checkbox" />
-                                            <span data-i18n="Exclude Human/Assistant prefixes">Exclude Human/Assistant prefixes</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Exclude Human/Assistant prefixes from being added to the prompt.">
-                                                Exclude Human/Assistant prefixes from being added to the prompt, except very first/last message, system prompt Human message and Assistant suffix.
-                                                Requires 'Add character names' checked.
-                                            </span>
-                                        </div>
-                                        <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
-                                            <input id="exclude_assistant" type="checkbox" />
-                                            <span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">
-                                                Exclude the assistant suffix from being added to the end of prompt. Requires jailbreak with 'Assistant:' in it.
-                                            </span>
-                                        </div>
-                                        <div id="claude_assistant_prefill_block" class="wide100p">
+                                        <div class="wide100p">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                             <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
@@ -1712,19 +1693,18 @@
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Exclude the 'Human: ' prefix from being added to the beginning of the prompt.">
-                                                Exclude the 'Human: ' prefix from being added to the beginning of the prompt.
-                                                Instead, place it between the system prompt and the first message with the role 'assistant' (right before 'Chat History' by default).
+                                            <span data-i18n="Send the system prompt for supported models.">
+                                                Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.
                                             </span>
                                         </div>
                                         <div id="claude_human_sysprompt_message_block" class="wide100p">
                                             <div class="range-block-title openai_restorable">
-                                                <span data-i18n="Human: first message">Human: first message</span>
-                                                <div id="claude_human_sysprompt_message_restore" title="Restore Human: first message" class="right_menu_button">
+                                                <span data-i18n="User first message">User first message</span>
+                                                <div id="claude_human_sysprompt_message_restore" title="Restore User first message" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
-                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user' or manually adding the 'Human: ' prefix."></textarea>
+                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user'."></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -2347,24 +2327,14 @@
                             <div>
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
-                                    <optgroup label="Latest">
-                                        <option value="claude-2">claude-2</option>
-                                        <option value="claude-v1">claude-v1</option>
-                                        <option value="claude-v1-100k">claude-v1-100k</option>
-                                        <option value="claude-instant-v1">claude-instant-v1</option>
-                                        <option value="claude-instant-v1-100k">claude-instant-v1-100k</option>
-                                    </optgroup>
-                                    <optgroup label="Sub-versions">
+                                    <optgroup label="Versions">
+                                        <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
+                                        <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                         <option value="claude-2.1">claude-2.1</option>
                                         <option value="claude-2.0">claude-2.0</option>
-                                        <option value="claude-v1.3">claude-v1.3</option>
-                                        <option value="claude-v1.3-100k">claude-v1.3-100k</option>
-                                        <option value="claude-v1.2">claude-v1.2</option>
-                                        <option value="claude-v1.0">claude-v1.0</option>
+                                        <option value="claude-1.3">claude-1.3</option>
                                         <option value="claude-instant-1.2">claude-instant-1.2</option>
-                                        <option value="claude-instant-v1.1">claude-instant-v1.1</option>
-                                        <option value="claude-instant-v1.1-100k">claude-instant-v1.1-100k</option>
-                                        <option value="claude-instant-v1.0">claude-instant-v1.0</option>
+                                        <option value="claude-instant-1.1">claude-instant-1.1</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -2440,6 +2410,10 @@
                             <div class="marginTopBot5">
                                 <label for="openrouter_force_instruct" class="checkbox_label">
                                     <input id="openrouter_force_instruct" type="checkbox" />
+                                    <span class="flex-container alignItemsBaseline" title="This option is outdated and will be removed in the future. To use instruct formatting, please switch to OpenRouter under Text Completion API instead.">
+                                        <i class="fa-solid fa-circle-exclamation neutral_warning"></i>
+                                        <b data-i18n="LEGACY">LEGACY</b>
+                                    </span>
                                     <span data-i18n="Force Instruct Mode formatting">Force Instruct Mode formatting</span>
                                 </label>
                                 <div class="toggle-description justifyLeft wide100p">
@@ -2751,6 +2725,10 @@
                                 <label for="instruct_macro" class="checkbox_label">
                                     <input id="instruct_macro" type="checkbox" />
                                     <span data-i18n="Replace Macro in Sequences">Replace Macro in Sequences</span>
+                                </label>
+                                <label for="instruct_skip_examples" class="checkbox_label">
+                                    <input id="instruct_skip_examples" type="checkbox" />
+                                    <span data-i18n="Skip Example Dialogues Formatting">Skip Example Dialogues Formatting</span>
                                 </label>
                                 <label for="instruct_names" class="checkbox_label">
                                     <input id="instruct_names" type="checkbox" />
@@ -3588,7 +3566,7 @@
                                     <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
                                 </label>
                             </div>
-                            <div name="ChatMessageHandlingToggles" >
+                            <div name="ChatMessageHandlingToggles">
                                 <h4 data-i18n="Chat/Message Handling">Chat/Message Handling</h4>
                                 <div data-newbie-hidden class="flex-container alignitemscenter">
                                     <span data-i18n="Send on Enter">
@@ -3617,7 +3595,7 @@
                                         <input id="swipes-checkbox" type="checkbox" />
                                         <span data-i18n="Swipes">Swipes</span><i class="fa-solid fa-desktop"></i><i class="fa-solid fa-mobile-screen-button"></i>
                                     </label>
-                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox" title="Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC.", data-i18n="[title]Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC">
+                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox" title="Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC." , data-i18n="[title]Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC">
                                         <input id="gestures-checkbox" type="checkbox" />
                                         <span data-i18n="Gestures">Gestures</span>
                                         <i class="fa-solid fa-mobile-screen-button"></i>
@@ -3700,7 +3678,7 @@
                                 </div>
                             </div>
                             <div data-newbie-hidden class="flex-container">
-                                <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat." >
+                                <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat.">
                                     <span data-i18n="Reload Chat">Reload Chat</span>
                                 </div>
                                 <div id="debug_menu" class="menu_button whitespacenowrap" data-i18n="Debug Menu">
@@ -3990,6 +3968,12 @@
                                                     <option id="renameCharButton" data-i18n="Rename">
                                                         Rename
                                                     </option>
+                                                    <option id="character_source" data-i18n="Link to Source">
+                                                        Link to Source
+                                                    </option>
+                                                    <option id="replace_update" data-i18n="Replace / Update">
+                                                        Replace / Update
+                                                    </option>
                                                     <!--<option id="dupe_button">
                                                             Duplicate
                                                         </option>
@@ -4014,44 +3998,48 @@
                             </div>
                         </div>
                         <hr>
-                        <div id="description_div" class="marginBot5 flex-container alignitemscenter">
-                            <span data-i18n="Character Description">Description</span>
-                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
-                            <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
-                                <span class="fa-solid fa-circle-question note-link-span"></span>
-                            </a>
-                        </div>
-                        <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
-                        <div class="extension_token_counter">
-                            Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
-                        </div>
-                        <div id="first_message_div" class="marginBot5 title_restorable">
-                            <div class="flex-container alignitemscenter">
-                                <span data-i18n="First message">First message</span>
-                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor"></i>
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
-                                    <span class="fa-solid fa-circle-question note-link-span"></span>
-                                </a>
-                            </div>
-                            <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
-                                <span data-i18n="Alt. Greetings">
-                                    Alt. Greetings
-                                </span>
-                            </div>
-                        </div>
-                        <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
-                        <div class="extension_token_counter">
-                            Tokens: <span data-token-counter="firstmessage_textarea">counting...</span>
-                        </div>
-                        <div id="spoiler_free_desc">
+                        <div id="spoiler_free_desc" class="flex-container flexFlowColumn flex1">
                             <div id="creators_notes_div" class="marginBot5 title_restorable">
                                 <span data-i18n="Creator's Notes">Creator's Notes</span>
                                 <div id="spoiler_free_desc_button" class="menu_button fa-solid fa-eye" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
                                 </a>
                             </div>
-                            <hr>
-                            <div id="creator_notes_spoiler" data-i18n="[placeholder]Creator's Notes" placeholder="Creator's Notes" class="marginBot5" name="creator_notes_spoiler"></div>
+                            <div id="creator_notes_spoiler" class="flex1" data-i18n="[placeholder]Creator's Notes" paceholder="Creator's Notes" class="marginBot5" name="creator_notes_spoiler"></div>
                             <!-- A button to show / hide description_div and description_textarea and first_message_div and firstmessage_textarea-->
+                        </div>
+                        <div id="descriptionWrapper" class="flex-container flexFlowColumn flex1">
+                            <hr>
+                            <div id="description_div" class="marginBot5 flex-container alignitemscenter">
+                                <span data-i18n="Character Description">Description</span>
+                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
+                                    <span class="fa-solid fa-circle-question note-link-span"></span>
+                                </a>
+                            </div>
+                            <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
+                            <div class="extension_token_counter">
+                                Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
+                            </div>
+                        </div>
+                        <div id="firstMessageWrapper" class="flex-container flexFlowColumn flex1">
+                            <div id="first_message_div" class="marginBot5 title_restorable">
+                                <div class="flex-container alignitemscenter">
+                                    <span data-i18n="First message">First message</span>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor"></i>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </div>
+                                <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
+                                    <span data-i18n="Alt. Greetings">
+                                        Alt. Greetings
+                                    </span>
+                                </div>
+                            </div>
+                            <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
+                            <div class="extension_token_counter">
+                                Tokens: <span data-token-counter="firstmessage_textarea">counting...</span>
+                            </div>
                         </div>
                         <!-- these divs are invisible and used for server communication purposes -->
                         <div id="hidden-divs">
@@ -4185,6 +4173,7 @@
                         <input multiple type="file" id="character_import_file" accept=".json, image/png, .yaml, .yml" name="avatar">
                         <input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
                     </form>
+                    <input type="file" id="character_replace_file" accept="image/png" name="replace_avatar" hidden>
                 </div>
                 <div name="Character List Panel" id="rm_characters_block" class="right_menu">
                     <div id="charListFixedTop">
@@ -4295,7 +4284,7 @@
                 </div>
                 <div class="flex-container flexnowrap">
                     <div class="flex1">
-                        <h4 data-i18n="Creator's Notes">Creator's Notes</h4>
+                        <h4 class="flex-box" data-i18n="Creator's Notes">Creator's Notes<i class="editor_maximize fa-solid fa-maximize" data-for="creator_notes_textarea" title="Expand the editor"></i></h4>
                         <textarea id="creator_notes_textarea" name="creator_notes" data-i18n="[placeholder](Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" placeholder="(Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="20000"></textarea>
                     </div>
                     <div class="flex1">
@@ -4418,7 +4407,7 @@
                     <span id="ChatHistoryCharName"></span><span data-i18n="Chat History">Chat History</span>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/chatfilemanagement/#chat-import" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
                 </div>
-                <div id="newChatFromManageScreenButton" class="menu_button menu_button_icon" >
+                <div id="newChatFromManageScreenButton" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-plus"></i>
                     <span data-i18n="New Chat">New Chat</span>
                 </div>

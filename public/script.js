@@ -148,6 +148,7 @@ import {
     getBase64Async,
     humanFileSize,
     Stopwatch,
+    isValidUrl,
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from './scripts/extensions.js';
@@ -178,6 +179,7 @@ import {
 } from './scripts/secrets.js';
 import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
+import { markdownUnderscoreExt } from './scripts/showdown-underscore.js';
 import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from './scripts/authors-note.js';
 import { registerPromptManagerMigration } from './scripts/PromptManager.js';
 import { getRegexedString, regex_placement } from './scripts/extensions/regex/engine.js';
@@ -696,6 +698,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
             parseImgDimensions: true,
             tables: true,
             underline: true,
+            extensions: [markdownUnderscoreExt()],
         });
     }
 
@@ -1350,6 +1353,22 @@ export async function getOneCharacter(avatarUrl) {
             toastr.error(`Character ${avatarUrl} not found in the list`, 'Error', { timeOut: 5000, preventDuplicates: true });
         }
     }
+}
+
+function getCharacterSource(chId = this_chid) {
+    const character = characters[chId];
+
+    if (!character) {
+        return '';
+    }
+
+    const chubId = characters[this_chid]?.data?.extensions?.chub?.full_path;
+
+    if (chubId) {
+        return `https://chub.ai/characters/${chubId}`;
+    }
+
+    return '';
 }
 
 async function getCharacters() {
@@ -2463,12 +2482,12 @@ export function getCharacterCardFields() {
         return result;
     }
 
-    const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
-    result.description = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
-    result.personality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
+    const scenarioText = chat_metadata['scenario'] || characters[this_chid]?.scenario;
+    result.description = baseChatReplace(characters[this_chid].description?.trim(), name1, name2);
+    result.personality = baseChatReplace(characters[this_chid].personality?.trim(), name1, name2);
     result.scenario = baseChatReplace(scenarioText.trim(), name1, name2);
-    result.mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
-    result.persona = baseChatReplace(power_user.persona_description.trim(), name1, name2);
+    result.mesExamples = baseChatReplace(characters[this_chid].mes_example?.trim(), name1, name2);
+    result.persona = baseChatReplace(power_user.persona_description?.trim(), name1, name2);
     result.system = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
     result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
 
@@ -4490,6 +4509,10 @@ function parseAndSaveLogprobs(data, continueFrom) {
  * @returns {string} Extracted message
  */
 function extractMessageFromData(data) {
+    if (typeof data === 'string') {
+        return data;
+    }
+
     switch (main_api) {
         case 'kobold':
             return data.results[0].text;
@@ -6417,7 +6440,7 @@ export function select_selected_character(chid) {
     $('#description_textarea').val(characters[chid].description);
     $('#character_world').val(characters[chid].data?.extensions?.world || '');
     $('#creator_notes_textarea').val(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
-    $('#creator_notes_spoiler').text(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
+    $('#creator_notes_spoiler').html(DOMPurify.sanitize(converter.makeHtml(characters[chid].data?.creator_notes || characters[chid].creatorcomment), { MESSAGE_SANITIZE: true }));
     $('#character_version_textarea').val(characters[chid].data?.character_version || '');
     $('#system_prompt_textarea').val(characters[chid].data?.system_prompt || '');
     $('#post_history_instructions_textarea').val(characters[chid].data?.post_history_instructions || '');
@@ -6487,7 +6510,7 @@ function select_rm_create() {
     $('#description_textarea').val(create_save.description);
     $('#character_world').val(create_save.world);
     $('#creator_notes_textarea').val(create_save.creator_notes);
-    $('#creator_notes_spoiler').text(create_save.creator_notes);
+    $('#creator_notes_spoiler').html(DOMPurify.sanitize(converter.makeHtml(create_save.creator_notes), { MESSAGE_SANITIZE: true }));
     $('#post_history_instructions_textarea').val(create_save.post_history_instructions);
     $('#system_prompt_textarea').val(create_save.system_prompt);
     $('#tags_textarea').val(create_save.tags);
@@ -9764,6 +9787,40 @@ jQuery(async function () {
                 await importEmbeddedWorldInfo();
                 saveCharacterDebounced();
                 break;
+            case 'character_source': {
+                const source = getCharacterSource(this_chid);
+                if (source && isValidUrl(source)) {
+                    const url = new URL(source);
+                    const confirm = await callPopup(`Open ${url.hostname} in a new tab?`, 'confirm');
+                    if (confirm) {
+                        window.open(source, '_blank');
+                    }
+                } else {
+                    toastr.info('This character doesn\'t seem to have a source.');
+                }
+            } break;
+            case 'replace_update': {
+                const confirm = await callPopup('<p><b>Choose a new character card to replace this character with.</b></p><p>All chats, assets and group memberships will be preserved, but local changes to the character data will be lost.</p><p>Proceed?</p>', 'confirm', '');
+                if (confirm) {
+                    async function uploadReplacementCard(e) {
+                        const file = e.target.files[0];
+
+                        if (!file) {
+                            return;
+                        }
+
+                        try {
+                            const cloneFile = new File([file], characters[this_chid].avatar, { type: file.type });
+                            const chatFile = characters[this_chid]['chat'];
+                            await processDroppedFiles([cloneFile], true);
+                            await openCharacterChat(chatFile);
+                        } catch {
+                            toastr.error('Failed to replace the character card.', 'Something went wrong');
+                        }
+                    }
+                    $('#character_replace_file').off('change').on('change', uploadReplacementCard).trigger('click');
+                }
+            } break;
             /*case 'delete_button':
                 popup_type = "del_ch";
                 callPopup(`
@@ -9930,10 +9987,10 @@ jQuery(async function () {
         const html = `<h3>Enter the URL of the content to import</h3>
         Supported sources:<br>
         <ul class="justifyLeft">
-            <li>Chub characters (direct link or id)<br>Example: <tt>Anonymous/example-character</tt></li>
-            <li>Chub lorebooks (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
-            <li>JanitorAI character (direct link or id)<br>Example: <tt>https://janitorai.com/characters/ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
-            <li>Pygmalion.chat character (link)<br>Example: <tt>https://pygmalion.chat/character/a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
+            <li>Chub Character (Direct Link or ID)<br>Example: <tt>Anonymous/example-character</tt></li>
+            <li>Chub Lorebook (Direct Link or ID)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
+            <li>JanitorAI Character (Direct Link or UUID)<br>Example: <tt>ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
+            <li>Pygmalion.chat Character (Direct Link or UUID)<br>Example: <tt>a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
             <li>More coming soon...</li>
         <ul>`;
         const input = await callPopup(html, 'input', '', { okButton: 'Import', rows: 4 });
@@ -9944,13 +10001,23 @@ jQuery(async function () {
         }
 
         const url = input.trim();
-        console.debug('Custom content import started', url);
+        var request;
 
-        const request = await fetch('/api/content/import', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ url }),
-        });
+        if (isValidUrl(url)) {
+            console.debug('Custom content import started for URL: ', url);
+            request = await fetch('/api/content/importURL', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ url }),
+            });
+        } else {
+            console.debug('Custom content import started for Char UUID: ', url);
+            request = await fetch('/api/content/importUUID', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ url }),
+            });
+        }
 
         if (!request.ok) {
             toastr.info(request.statusText, 'Custom content import failed');

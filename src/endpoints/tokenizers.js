@@ -249,6 +249,7 @@ async function loadClaudeTokenizer(modelPath) {
 }
 
 function countClaudeTokens(tokenizer, messages) {
+    // Should be fine if we use the old conversion method instead of the messages API one i think?
     const convertedPrompt = convertClaudePrompt(messages, false, false, false);
 
     // Fallback to strlen estimation
