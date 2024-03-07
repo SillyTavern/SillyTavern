@@ -1312,18 +1312,25 @@ input[type="file"] {
     align-self: center;
 }
 
+#rm_print_characters_block .text_block {
+    height: 100%;
+    width: 100%;
+    opacity: 0.5;
+    margin: 0 auto 1px auto;
+    padding: 5px;
+}
+
 #rm_print_characters_block .empty_block {
     display: flex;
     flex-direction: column;
     gap: 10px;
     flex-wrap: wrap;
     text-align: center;
-    height: 100%;
-    width: 100%;
-    opacity: 0.5;
     justify-content: center;
-    margin: 0 auto;
     align-items: center;
+}
+#rm_print_characters_block .hidden_block p {
+    display: inline;
 }
 
 #rm_print_characters_block {
@@ -1626,6 +1633,15 @@ input[type=search]:focus::-webkit-search-cancel-button {
     align-items: baseline;
     flex-direction: row;
     gap: 5px;
+    margin-bottom: 6px;
+}
+
+.character_name_block_sub_line {
+    position: absolute;
+    right: 0px;
+    top: calc(var(--mainFontSize) + 2px);
+    font-size: calc(var(--mainFontSize) * 0.6);
+    color: var(--grey7070a);
 }
 
 .ch_avatar_url {
@@ -1651,13 +1667,26 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 /*applies to both groups and solos chars in the char list*/
+#rm_print_characters_block .character_select_container,
+#rm_print_characters_block .group_select_container {
+    position: relative;
+}
+
 #rm_print_characters_block .ch_name,
 .avatar-container .ch_name {
-    flex: 1;
+    flex: 1 1 auto;
     white-space: nowrap;
     overflow: hidden;
+    text-wrap: nowrap;
     text-overflow: ellipsis;
     display: block;
+}
+
+#rm_print_characters_block .character_name_block > :last-child {
+    flex: 0 100000 auto; /* Force shrinking first */
+    overflow: hidden;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
 }
 
 .bogus_folder_select:hover,

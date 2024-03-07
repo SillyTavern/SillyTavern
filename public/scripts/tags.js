@@ -86,9 +86,10 @@ let tag_map = {};
  * @param {Object} param1 Optional parameters, explained below.
  * @param {Boolean} [param1.globalDisplayFilters] When enabled, applies the final filter for the global list. Icludes filtering out entities in closed/hidden folders and empty folders.
  * @param {Object} [param1.subForEntity] When given an entity, the list of entities gets filtered specifically for that one as a "sub list", filtering out other tags, elements not tagged for this and hidden elements.
+ * @param {Boolean} [param1.filterHidden] Optional switch with which filtering out hidden items (from closed folders) can be disabled.
  * @returns The filtered list of entities
  */
-function filterByTagState(entities, { globalDisplayFilters = false, subForEntity = undefined } = {}) {
+function filterByTagState(entities, { globalDisplayFilters = false, subForEntity = undefined, filterHidden = true } = {}) {
     const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
 
     entities = entities.filter(entity => {
@@ -108,7 +109,7 @@ function filterByTagState(entities, { globalDisplayFilters = false, subForEntity
 
         entities = entities.filter(entity => {
             // Hide entities that are in a closed folder, unless that one is opened
-            if (entity.type !== 'tag' && closedFolders.some(f => entitiesFilter.isElementTagged(entity, f.id) && !filterData.selected.includes(f.id))) {
+            if (filterHidden && entity.type !== 'tag' && closedFolders.some(f => entitiesFilter.isElementTagged(entity, f.id) && !filterData.selected.includes(f.id))) {
                 return false;
             }
 
@@ -123,13 +124,13 @@ function filterByTagState(entities, { globalDisplayFilters = false, subForEntity
     }
 
     if (subForEntity !== undefined && subForEntity.type === 'tag') {
-        entities = filterTagSubEntities(subForEntity.item, entities);
+        entities = filterTagSubEntities(subForEntity.item, entities, { filterHidden : filterHidden });
     }
 
     return entities;
 }
 
-function filterTagSubEntities(tag, entities) {
+function filterTagSubEntities(tag, entities, { filterHidden = true } = {}) {
     const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
 
     const closedFolders = entities.filter(x => x.type === 'tag' && TAG_FOLDER_TYPES[x.item.folder_type] === TAG_FOLDER_TYPES.CLOSED);
@@ -141,7 +142,7 @@ function filterTagSubEntities(tag, entities) {
         }
 
         // Hide entities that are in a closed folder, unless the closed folder is opened or we display a closed folder
-        if (sub.type !== 'tag' && TAG_FOLDER_TYPES[tag.folder_type] !== TAG_FOLDER_TYPES.CLOSED && closedFolders.some(f => entitiesFilter.isElementTagged(sub, f.id) && !filterData.selected.includes(f.id))) {
+        if (filterHidden && sub.type !== 'tag' && TAG_FOLDER_TYPES[tag.folder_type] !== TAG_FOLDER_TYPES.CLOSED && closedFolders.some(f => entitiesFilter.isElementTagged(sub, f.id) && !filterData.selected.includes(f.id))) {
             return false;
         }
 
@@ -198,7 +199,14 @@ function chooseBogusFolder(source, tagId, remove = false) {
     }
 }
 
-function getTagBlock(item, entities) {
+/**
+ * Builds the tag block for the specified item.
+ * @param {Object} item The tag item
+ * @param {*} entities The list ob sub items for this tag
+ * @param {*} hidden A count of how many sub items are hidden
+ * @returns The html for the tag block
+ */
+function getTagBlock(item, entities, hidden = 0) {
     let count = entities.length;
 
     const tagFolder = TAG_FOLDER_TYPES[item.folder_type];
@@ -208,11 +216,9 @@ function getTagBlock(item, entities) {
     template.attr({ 'tagid': item.id, 'id': `BogusFolder${item.id}` });
     template.find('.avatar').css({ 'background-color': item.color, 'color': item.color2 }).attr('title', `[Folder] ${item.name}`);
     template.find('.ch_name').text(item.name).attr('title', `[Folder] ${item.name}`);
-    template.find('.bogus_folder_counter').text(count);
+    template.find('.bogus_folder_hidden_counter').text(hidden > 0 ? `${hidden} hidden` : '');
+    template.find('.bogus_folder_counter').text(`${count} ${count != 1 ? 'characters' : 'character'}`);
     template.find('.bogus_folder_icon').addClass(tagFolder.fa_icon);
-    if (count == 1) {
-        template.find('.character_unit_name').text('character');
-    }
 
     // Fill inline character images
     buildAvatarList(template.find('.bogus_folder_avatars_block'), entities);
