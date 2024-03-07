@@ -376,8 +376,8 @@ export function getCurrentOpenRouterModelTokenizer() {
 }
 
 export function getCurrentDreamGenModelTokenizer() {
-    const modelId = textgen_settings.openrouter_model;
-    const model = openRouterModels.find(x => x.id === modelId);
+    const modelId = textgen_settings.dreamgen_model;
+    const model = dreamGenModels.find(x => x.id === modelId);
     if (model.id.startsWith('opus-v1-sm')) {
         return tokenizers.MISTRAL;
     } else if (model.id.startsWith('opus-v1-lg')) {
