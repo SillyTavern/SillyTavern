@@ -27,6 +27,14 @@ function getInfermaticAIHeaders() {
     }) : {};
 }
 
+function getDreamGenHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.DREAMGEN);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
 function getOpenRouterHeaders() {
     const apiKey = readSecret(SECRET_KEYS.OPENROUTER);
     const baseHeaders = { ...OPENROUTER_HEADERS };
@@ -97,6 +105,9 @@ function setAdditionalHeaders(request, args, server) {
             break;
         case TEXTGEN_TYPES.INFERMATICAI:
             headers = getInfermaticAIHeaders();
+            break;
+        case TEXTGEN_TYPES.DREAMGEN:
+            headers = getDreamGenHeaders();
             break;
         case TEXTGEN_TYPES.OPENROUTER:
             headers = getOpenRouterHeaders();

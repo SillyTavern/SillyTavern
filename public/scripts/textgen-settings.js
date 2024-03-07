@@ -35,10 +35,11 @@ export const textgen_types = {
     LLAMACPP: 'llamacpp',
     OLLAMA: 'ollama',
     INFERMATICAI: 'infermaticai',
+    DREAMGEN: 'dreamgen',
     OPENROUTER: 'openrouter',
 };
 
-const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, OPENROUTER } = textgen_types;
+const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
     'top_k',
@@ -71,6 +72,7 @@ const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
 let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 let TOGETHERAI_SERVER = 'https://api.together.xyz';
 let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
+let DREAMGEN_SERVER = 'https://dreamgen.com';
 let OPENROUTER_SERVER = 'https://openrouter.ai/api';
 
 const SERVER_INPUTS = {
@@ -101,6 +103,7 @@ const settings = {
     num_beams: 1,
     length_penalty: 1,
     min_length: 0,
+    minimum_message_content_tokens: 0,
     encoder_rep_pen: 1,
     freq_pen: 0,
     presence_pen: 0,
@@ -143,6 +146,7 @@ const settings = {
     ollama_model: '',
     openrouter_model: 'openrouter/auto',
     aphrodite_model: '',
+    dreamgen_model: 'opus-v1-xl/text',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
     logit_bias: [],
@@ -175,6 +179,7 @@ const setting_names = [
     'num_beams',
     'length_penalty',
     'min_length',
+    'minimum_message_content_tokens',
     'dynatemp',
     'min_temp',
     'max_temp',
@@ -247,6 +252,10 @@ export function getTextGenServer() {
         return INFERMATICAI_SERVER;
     }
 
+    if (settings.type === DREAMGEN) {
+        return DREAMGEN_SERVER;
+    }
+
     if (settings.type === OPENROUTER) {
         return OPENROUTER_SERVER;
     }
@@ -275,7 +284,7 @@ async function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         // Mancer/Together/InfermaticAI doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI || settings.type === OPENROUTER) {
+        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI || settings.type === DREAMGEN || settings.type === OPENROUTER) {
             return value;
         }
 
@@ -642,6 +651,7 @@ jQuery(function () {
             'presence_pen_textgenerationwebui': 0,
             'no_repeat_ngram_size_textgenerationwebui': 0,
             'min_length_textgenerationwebui': 0,
+            'minimum_message_content_tokens_textgenerationwebui': 0,
             'num_beams_textgenerationwebui': 1,
             'length_penalty_textgenerationwebui': 0,
             'penalty_alpha_textgenerationwebui': 0,
@@ -937,6 +947,10 @@ function getModel() {
         return settings.infermaticai_model;
     }
 
+    if (settings.type === DREAMGEN) {
+        return settings.dreamgen_model;
+    }
+
     if (settings.type === OPENROUTER) {
         return settings.openrouter_model;
     }
@@ -976,6 +990,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'presence_penalty': settings.presence_pen,
         'top_k': settings.top_k,
         'min_length': settings.type === OOBA ? settings.min_length : undefined,
+        'minimum_message_content_tokens': settings.type === DREAMGEN ? settings.minimum_message_content_tokens : undefined,
         'min_tokens': settings.min_length,
         'num_beams': settings.type === OOBA ? settings.num_beams : undefined,
         'length_penalty': settings.length_penalty,

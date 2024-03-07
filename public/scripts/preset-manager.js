@@ -315,6 +315,7 @@ class PresetManager {
             'custom_model',
             'bypass_status_check',
             'infermaticai_model',
+            'dreamgen_model',
             'openrouter_model',
             'max_tokens_second',
         ];

@@ -1276,6 +1276,11 @@
                                         <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
                                     </div>
+                                    <div data-newbie-hidden data-tg-type="dreamgen" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                        <small data-i18n="Min Message Length">Min Message Length</small>
+                                        <input class="neo-range-slider" type="range" id="minimum_message_content_tokens_textgenerationwebui" name="volume" min="0" max="150" step="1" />
+                                        <input class="neo-range-input" type="number" min="0" max="150" step="1" data-for="minimum_message_content_tokens_textgenerationwebui" id="minimum_message_content_tokens_counter_textgenerationwebui">
+                                    </div>
                                     <div data-newbie-hidden data-tg-type="ooba, koboldcpp, aphrodite, tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Smoothing Factor">Smoothing Factor</small>
                                         <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
@@ -1897,6 +1902,7 @@
                                 <h4 data-i18n="API Type">API Type</h4>
                                 <select id="textgen_type">
                                     <option value="ooba" data-i18n="Default (oobabooga)">Default (oobabooga)</option>
+                                    <option value="dreamgen">DreamGen</option>
                                     <option value="mancer">Mancer</option>
                                     <option value="aphrodite">Aphrodite</option>
                                     <option value="tabby">TabbyAPI</option>
@@ -1962,6 +1968,29 @@
                                 <div>
                                     <h4 data-i18n="InfermaticAI Model">InfermaticAI Model</h4>
                                     <select id="model_infermaticai_select">
+                                        <option>
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div data-tg-type="dreamgen" class="flex-container flexFlowColumn">
+                                <h4 data-i18n="DreamGen API key">
+                                    DreamGen API key
+                                    <a href="https://dreamgen.com/account/api-keys" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </h4>
+                                <div class="flex-container">
+                                    <input id="api_key_dreamgen" name="api_key_dreamgen" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_dreamgen"></div>
+                                </div>
+                                <div data-for="api_key_dreamgen" class="neutral_warning">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <div>
+                                    <h4 data-i18n="DreamGen Model">DreamGen Model</h4>
+                                    <select id="model_dreamgen_select">
                                         <option>
                                             -- Connect to the API --
                                         </option>

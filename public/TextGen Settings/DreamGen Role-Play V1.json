@@ -1,0 +1,10 @@
+{
+    "temp": 1,
+    "top_p": 1,
+    "top_k": 0,
+    "min_p": 0.1,
+    "rep_pen": 1.05,
+    "minimum_message_content_tokens": 0,
+    "ban_eos_token": true,
+    "streaming": true
+}
