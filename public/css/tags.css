@@ -248,7 +248,7 @@
 }
 
 .bogus_folder_select_back .avatar {
-    display: none;
+    display: none !important;
 }
 
 .bogus_folder_select_back .bogus_folder_back_placeholder {
