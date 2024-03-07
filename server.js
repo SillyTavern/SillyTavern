@@ -93,8 +93,8 @@ const cliArguments = yargs(hideBin(process.argv))
     }).parseSync();
 
 // change all relative paths
-const serverDirectory = process['pkg'] ? path.dirname(process.execPath) : __dirname;
-console.log(process['pkg'] ? 'Running from binary' : 'Running from source');
+console.log(`Running in ${process.env.NODE_ENV} environment`);
+const serverDirectory = __dirname;
 process.chdir(serverDirectory);
 
 const app = express();

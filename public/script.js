@@ -7204,6 +7204,11 @@ async function createOrEditCharacter(e) {
     formData.set('fav', fav_ch_checked);
     if ($('#form_create').attr('actiontype') == 'createcharacter') {
         if ($('#character_name_pole').val().length > 0) {
+            if (is_group_generating || is_send_press) {
+                toastr.error('Cannot create characters while generating. Stop the request and try again.', 'Creation aborted');
+                throw new Error('Cannot import character while generating');
+            }
+
             //if the character name text area isn't empty (only posible when creating a new character)
             let url = '/api/characters/create';
 
@@ -7956,6 +7961,11 @@ export async function processDroppedFiles(files, preserveFileNames = false) {
  * @returns {Promise<void>}
  */
 async function importCharacter(file, preserveFileName = false) {
+    if (is_group_generating || is_send_press) {
+        toastr.error('Cannot import characters while generating. Stop the request and try again.', 'Import aborted');
+        throw new Error('Cannot import character while generating');
+    }
+
     const ext = file.name.match(/\.(\w+)$/);
     if (!ext || !(['json', 'png', 'yaml', 'yml'].includes(ext[1].toLowerCase()))) {
         return;

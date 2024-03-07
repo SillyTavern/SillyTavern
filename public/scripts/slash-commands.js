@@ -76,48 +76,93 @@ class SlashCommandParser {
         this.helpStrings[command] = stringBuilder;
     }
 
+    /**
+     * Parses a slash command to extract the command name, the (named) arguments and the remaining text
+     * @param {string} text - Slash command text
+     * @returns {{command: string, args: object, value: string}} - The parsed command, its arguments and the remaining text
+     */
     parse(text) {
+        // Parses a command even when spaces are present in arguments
+        // /buttons labels=["OK","I do not accept"] some text
+        // /fuzzy list=[ "red pink" , "yellow" ] threshold=" 0.6 " he yelled when the color was reddish and not pink | /echo
         const excludedFromRegex = ['sendas'];
-        const firstSpace = text.indexOf(' ');
-        const command = firstSpace !== -1 ? text.substring(1, firstSpace) : text.substring(1);
-        let args = firstSpace !== -1 ? text.substring(firstSpace + 1) : '';
+        let command = '';
         const argObj = {};
-        let unnamedArg;
+        let unnamedArg = '';
 
-        if (args.length > 0) {
-            let match;
-
-            // Match unnamed argument
-            const unnamedArgPattern = /(?:\w+=(?:"(?:\\.|[^"\\])*"|\S+)\s*)*(.*)/s;
-            match = unnamedArgPattern.exec(args);
-            if (match !== null && match[1].length > 0) {
-                args = args.slice(0, -match[1].length);
-                unnamedArg = match[1].trim();
-            }
-
-            // Match named arguments
-            const namedArgPattern = /(\w+)=("(?:\\.|[^"\\])*"|\S+)/g;
-            while ((match = namedArgPattern.exec(args)) !== null) {
-                const key = match[1];
-                const value = match[2];
-                // Remove the quotes around the value, if any
-                argObj[key] = value.replace(/(^")|("$)/g, '');
-            }
-
-            // Excluded commands format in their own function
-            if (!excludedFromRegex.includes(command)) {
-                unnamedArg = getRegexedString(
-                    unnamedArg,
-                    regex_placement.SLASH_COMMAND,
-                );
-            }
+        // extract the command " /fuzzy   " => "fuzzy"
+        text = text.trim();
+        let remainingText = '';
+        const commandArgPattern = /^\/([^\s]+)\s*(.*)$/s;
+        let match = commandArgPattern.exec(text);
+        if (match !== null && match[1].length > 0) {
+            command = match[1];
+            remainingText = match[2];
+            console.debug('command:' + command);
         }
 
+        // parse the rest of the string to extract named arguments, the remainder is the "unnamedArg" which is usually text, like the prompt to send
+        while (remainingText.length > 0) {
+            // does the remaining text is like     nameArg=[value]   or  nameArg=[value,value] or  nameArg=[  value , value , value]
+            // where value can be a string like   " this is some text "  , note previously it was not possible to have have spaces
+            // where value can be a scalar like   AScalar
+            // where value can be a number like   +9   -1005.44
+            // where value can be a macro like    {{getvar::name}}
+            const namedArrayArgPattern = /^(\w+)=\[\s*(((?<quote>["'])[^"]*(\k<quote>)|{{[^}]*}}|[+-]?\d*\.?\d+|\w*)\s*,?\s*)+\]/s;
+            match = namedArrayArgPattern.exec(remainingText);
+            if (match !== null && match[0].length > 0) {
+                //console.log(`matching: ${match[0]}`);
+                const posFirstEqual = match[0].indexOf('=');
+                const key = match[0].substring(0, posFirstEqual).trim();
+                const value = match[0].substring(posFirstEqual + 1).trim();
+
+                // Remove the quotes around the value, if any
+                argObj[key] = value.replace(/(^")|("$)/g, '');
+                remainingText = remainingText.slice(match[0].length + 1).trim();
+                continue;
+            }
+
+            // does the remaining text is like     nameArg=value
+            // where value can be a string like   " this is some text "  , note previously it was not possible to have have spaces
+            // where value can be a scalar like   AScalar
+            // where value can be a number like   +9   -1005.44
+            // where value can be a macro like    {{getvar::name}}
+            const namedScalarArgPattern = /^(\w+)=(((?<quote>["'])[^"]*(\k<quote>)|{{[^}]*}}|[+-]?\d*\.?\d+|\w*))/s;
+            match = namedScalarArgPattern.exec(remainingText);
+            if (match !== null && match[0].length > 0) {
+                //console.log(`matching: ${match[0]}`);
+                const posFirstEqual = match[0].indexOf('=');
+                const key = match[0].substring(0, posFirstEqual).trim();
+                const value = match[0].substring(posFirstEqual + 1).trim();
+
+                // Remove the quotes around the value, if any
+                argObj[key] = value.replace(/(^")|("$)/g, '');
+                remainingText = remainingText.slice(match[0].length + 1).trim();
+                continue;
+            }
+
+            // the remainder that matches no named argument is the "unamedArg" previously mentioned
+            unnamedArg = remainingText.trim();
+            remainingText = '';
+        }
+
+        // Excluded commands format in their own function
+        if (!excludedFromRegex.includes(command)) {
+            console.debug(`parse: !excludedFromRegex.includes(${command}`);
+            console.debug(`   parse: unnamedArg before: ${unnamedArg}`);
+            unnamedArg = getRegexedString(
+                unnamedArg,
+                regex_placement.SLASH_COMMAND,
+            );
+            console.debug(`   parse: unnamedArg after: ${unnamedArg}`);
+        }
+
+        // your weird complex command is now transformed into a juicy tiny text or something useful :)
         if (this.commands[command]) {
             return { command: this.commands[command], args: argObj, value: unnamedArg };
         }
 
-        return false;
+        return null;
     }
 
     getHelpString() {

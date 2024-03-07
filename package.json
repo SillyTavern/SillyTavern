@@ -47,6 +47,9 @@
         },
         "axios": {
             "follow-redirects": "^1.15.4"
+        },
+        "@zeldafan0225/ai_horde": {
+            "esbuild": "npm:dry-uninstall"
         }
     },
     "name": "sillytavern",
