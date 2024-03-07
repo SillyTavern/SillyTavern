@@ -96,12 +96,16 @@ body.charListGrid #rm_print_characters_block .group_select .group_name_block {
 body.charListGrid #rm_print_characters_block .ch_description,
 body.charListGrid #rm_print_characters_block .tags_inline,
 body.charListGrid #rm_print_characters_block .character_version,
-body.charListGrid #rm_print_characters_block .bogus_folder_unit,
-body.charListGrid #rm_print_characters_block .group_select_unit,
 body.charListGrid #rm_print_characters_block .group_select_block_list,
 body.charListGrid #rm_print_characters_block .ch_avatar_url,
-#user_avatar_block.gridView .avatar-container .ch_description {
+body.charListGrid #rm_print_characters_block .character_name_block_sub_line,
+#user_avatar_block.gridView .avatar-container .ch_description,
+body.charListGrid #rm_print_characters_block .bogus_folder_select_back .bogus_folder_back_placeholder {
     display: none;
+}
+
+body.charListGrid #rm_print_characters_block .bogus_folder_select_back .avatar {
+    display: flex;
 }
 
 /*big avatars mode page-wide changes*/

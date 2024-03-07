@@ -22,7 +22,7 @@ export const FILTER_TYPES = {
 export const FILTER_STATES = {
     SELECTED: { key: 'SELECTED', class: 'selected' },
     EXCLUDED: { key: 'EXCLUDED', class: 'excluded' },
-    UNDEFINED: { key: 'UNDEFINED', class: undefined },
+    UNDEFINED: { key: 'UNDEFINED', class: 'undefined' },
 };
 
 /**

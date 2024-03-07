@@ -68,6 +68,11 @@
     align-items: center;
 }
 
+.tag.actionable.clearAllFilters {
+    border: 0;
+    background: none;
+}
+
 .tagListHint {
     align-self: center;
     display: flex;
@@ -217,6 +222,10 @@
     opacity: 1;
 }
 
+.rm_tag_bogus_drilldown {
+    height: calc(var(--mainFontSize)* 2 - 2);
+}
+
 .rm_tag_bogus_drilldown .tag:not(:first-child) {
     position: relative;
     margin-left: calc(var(--mainFontSize) * 2);
@@ -238,3 +247,12 @@
     opacity: 1;
 }
 
+.bogus_folder_select_back .avatar {
+    display: none;
+}
+
+.bogus_folder_select_back .bogus_folder_back_placeholder {
+    min-height: calc(var(--mainFontSize)*2);
+    width: var(--avatar-base-width);
+    justify-content: center;
+}

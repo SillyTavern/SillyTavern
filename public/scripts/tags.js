@@ -55,6 +55,7 @@ const ACTIONABLE_TAGS = {
     FOLDER: { id: 4, name: 'Always show folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
     VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
     HINT: { id: 3, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
+    UNFILTER: { id: 5, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
 };
 
 const InListActionable = {
@@ -490,7 +491,7 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
     }
 
     if (tag.excluded && isGeneralList) {
-        toggleTagThreeState(tagElement, FILTER_STATES.EXCLUDED);
+        toggleTagThreeState(tagElement, { stateOverride: FILTER_STATES.EXCLUDED });
     }
 
     if (selectable) {
@@ -536,27 +537,43 @@ function onTagFilterClick(listElement) {
     updateTagFilterIndicator();
 }
 
-function toggleTagThreeState(element, stateOverride = undefined) {
+function toggleTagThreeState(element, { stateOverride = undefined, simulateClick = false } = {}) {
     const states = Object.keys(FILTER_STATES);
 
-    const overrideKey = states.includes(stateOverride) ? stateOverride : states.find(key => FILTER_STATES[key] === stateOverride);
+    const overrideKey = states.includes(stateOverride) ? stateOverride : Object.keys(FILTER_STATES).find(key => FILTER_STATES[key] === stateOverride);
 
-    const currentState = element.attr('data-toggle-state') ?? states[states.length - 1];
-    const nextState = overrideKey ?? states[(states.indexOf(currentState) + 1) % states.length];
+    const currentStateIndex = states.indexOf(element.attr('data-toggle-state')) ?? states.length - 1;
+    const targetStateIndex = overrideKey !== undefined ? states.indexOf(overrideKey) : (currentStateIndex + 1) % states.length;
 
-    element.attr('data-toggle-state', nextState);
-
-    console.debug('toggle three-way filter on', element, 'from', currentState, 'to', nextState);
-
-    // Update css class and remove all others
-    Object.keys(FILTER_STATES).forEach(x => {
-        if (!isFilterState(x, FILTER_STATES.UNDEFINED)) {
-            element.toggleClass(FILTER_STATES[x].class, x === nextState);
+    if (simulateClick) {
+        // Calculate how many clicks are needed to go from the current state to the target state
+        let clickCount = 0;
+        if (targetStateIndex >= currentStateIndex) {
+            clickCount = targetStateIndex - currentStateIndex;
+        } else {
+            clickCount = (states.length - currentStateIndex) + targetStateIndex;
         }
-    });
 
-    return nextState;
+        for (let i = 0; i < clickCount; i++) {
+            $(element).trigger('click');
+        }
+
+        console.debug('manually click-toggle three-way filter from', states[currentStateIndex], 'to', states[targetStateIndex], 'on', element);
+    } else {
+        element.attr('data-toggle-state', states[targetStateIndex]);
+
+        // Update css class and remove all others
+        states.forEach(state => {
+            element.toggleClass(FILTER_STATES[state].class, state === states[targetStateIndex]);
+        });
+
+        console.debug('toggle three-way filter from', states[currentStateIndex], 'to', states[targetStateIndex], 'on', element);
+    }
+
+
+    return states[targetStateIndex];
 }
+
 
 function runTagFilters(listElement) {
     const tagIds = [...($(listElement).find('.tag.selected:not(.actionable)').map((_, el) => $(el).attr('id')))];
@@ -576,10 +593,12 @@ function printTagFilters(type = tag_filter_types.character) {
         .sort(compareTagsForSort);
 
     for (const tag of Object.values(ACTIONABLE_TAGS)) {
+        if (!power_user.bogus_folders && tag.id == ACTIONABLE_TAGS.FOLDER.id) {
+            continue;
+        }
+
         appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: false, action: tag.action, isGeneralList: true });
     }
-
-    $(FILTER_SELECTOR).find('.actionable').last().addClass('margin-right-10px');
 
     for (const tag of Object.values(InListActionable)) {
         appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: false, action: tag.action, isGeneralList: true });
@@ -1062,6 +1081,23 @@ function onTagListHintClick() {
     saveSettingsDebounced();
 
     console.debug('show_tag_filters', power_user.show_tag_filters);
+}
+
+function onClearAllFiltersClick() {
+    console.debug('clear all filters clicked');
+
+    // We have to manually go through the elements and unfilter by clicking...
+    // Thankfully nearly all filter controls are three-state-toggles
+    const filterTags = $('.rm_tag_controls .rm_tag_filter').find('.tag');
+    for(const tag of filterTags) {
+        const toggleState = $(tag).attr('data-toggle-state');
+        if (toggleState !== undefined && !isFilterState(toggleState ?? FILTER_STATES.UNDEFINED, FILTER_STATES.UNDEFINED)) {
+            toggleTagThreeState($(tag), { stateOverride: FILTER_STATES.UNDEFINED, simulateClick: true });
+        }
+    }
+
+    // Reset search too
+    $('#character_search_bar').val('').trigger('input');
 }
 
 jQuery(() => {
