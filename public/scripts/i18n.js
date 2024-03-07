@@ -1,8 +1,11 @@
 import { registerDebugFunction } from './power-user.js';
 import { waitUntilCondition } from './utils.js';
 
+const i18nFolder = "locales";
 const storageKey = 'language';
-export const localeData = await fetch('i18n.json').then(response => response.json());
+export const localeData = await fetch(`${i18nFolder}/lang.json`).then(response => response.json());
+
+console.log('Loaded locale data:', localeData);
 
 function getMissingTranslations() {
     const missingData = [];
@@ -53,14 +56,21 @@ function getMissingTranslations() {
     toastr.success(`Found ${uniqueMissingData.length} missing translations. See browser console for details.`);
 }
 
-export function applyLocale(root = document) {
+async function applyLocale(root = document) {
     const overrideLanguage = localStorage.getItem('language');
     var language = overrideLanguage || navigator.language || navigator.userLanguage;
     language = language.toLowerCase();
     //load the appropriate language file
-    if (localeData.lang.indexOf(language) < 0) language = 'en';
 
     const $root = root instanceof Document ? $(root) : $(new DOMParser().parseFromString(root, 'text/html'));
+
+    let newlangdata = {}
+
+    console.log('overrideLanguage:', overrideLanguage);
+    if (overrideLanguage !== null) {
+        console.log('Fetching language:', overrideLanguage);
+        newlangdata = await fetch(`${i18nFolder}/${overrideLanguage}.json`).then(response => response.json());
+    }
 
     //find all the elements with `data-i18n` attribute
     $root.find('[data-i18n]').each(function () {
@@ -69,12 +79,12 @@ export function applyLocale(root = document) {
         for (const key of keys) {
             const attributeMatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
             if (attributeMatch) { // attribute-tagged key
-                const localizedValue = localeData?.[language]?.[attributeMatch[2]];
+                const localizedValue = newlangdata?.[attributeMatch[2]];
                 if (localizedValue) {
                     $(this).attr(attributeMatch[1], localizedValue);
                 }
             } else { // No attribute tag, treat as 'text'
-                const localizedValue = localeData?.[language]?.[key];
+                const localizedValue = newlangdata?.[key];
                 if (localizedValue) {
                     $(this).text(localizedValue);
                 }
@@ -88,11 +98,7 @@ export function applyLocale(root = document) {
 }
 
 function addLanguagesToDropdown() {
-    if (!Array.isArray(localeData?.lang)) {
-        return;
-    }
-
-    for (const lang of localeData.lang) {
+    for (const lang of localeData) {
         const option = document.createElement('option');
         option.value = lang;
         option.innerText = lang;
@@ -105,9 +111,9 @@ function addLanguagesToDropdown() {
     }
 }
 
-export function initLocales() {
+async function initLocales() {
     waitUntilCondition(() => !!localeData);
-    applyLocale();
+    await applyLocale();
     addLanguagesToDropdown();
 
     $('#ui_language_select').on('change', async function () {
@@ -124,4 +130,9 @@ export function initLocales() {
 
     registerDebugFunction('getMissingTranslations', 'Get missing translations', 'Detects missing localization data and dumps the data into the browser console.', getMissingTranslations);
     registerDebugFunction('applyLocale', 'Apply locale', 'Reapplies the currently selected locale to the page.', applyLocale);
+}
+
+export {
+    applyLocale,
+    initLocales
 }

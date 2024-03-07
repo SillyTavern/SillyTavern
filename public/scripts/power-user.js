@@ -381,8 +381,13 @@ function fixMarkdown(text, forDisplay) {
     if (!forDisplay) {
         return newText;
     }
-
-    const splitText = newText.split('\n');
+    let splitText = [];
+    try {
+        splitText = newText.split('\n');
+    } catch (error) {
+        console.error('Error splitting text:', error);
+        console.error('Original text:', text);
+    }
 
     // Fix asterisks, and quotes that are not paired
     for (let index = 0; index < splitText.length; index++) {

@@ -622,7 +622,7 @@ function getUrlSync(url) {
 
 const templateCache = new Map();
 
-export function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true, fullPath = false) {
+export async function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true, fullPath = false) {
     try {
         const pathToTemplate = fullPath ? templateId : `/scripts/templates/${templateId}.html`;
         let template = templateCache.get(pathToTemplate);
@@ -638,7 +638,7 @@ export function renderTemplate(templateId, templateData = {}, sanitize = true, l
         }
 
         if (localize) {
-            result = applyLocale(result);
+            result = await applyLocale();
         }
 
         return result;
@@ -825,7 +825,7 @@ async function firstLoadInit() {
 
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
-    initLocales();
+    await initLocales();
     await readSecretState();
     await getClientVersion();
     await getSettings();
