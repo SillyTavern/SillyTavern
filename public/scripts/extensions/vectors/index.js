@@ -12,6 +12,7 @@ const settings = {
     // For both
     source: 'transformers',
     include_wi: false,
+    togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
 
     // For chats
     enabled_chats: false,
@@ -514,6 +515,16 @@ function addExtrasHeaders(headers) {
 }
 
 /**
+ * Add headers for the Extras API source.
+ * @param {object} headers Headers object
+ */
+function addTogetherAiHeaders(headers) {
+    Object.assign(headers, {
+        'X-Togetherai-Model': extension_settings.vectors.togetherai_model,
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
@@ -522,7 +533,8 @@ function addExtrasHeaders(headers) {
 async function insertVectorItems(collectionId, items) {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
-        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI]) {
+        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
+        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
@@ -533,6 +545,8 @@ async function insertVectorItems(collectionId, items) {
     const headers = getRequestHeaders();
     if (settings.source === 'extras') {
         addExtrasHeaders(headers);
+    } else if (settings.source === 'togetherai') {
+        addTogetherAiHeaders(headers);
     }
 
     const response = await fetch('/api/vector/insert', {
@@ -582,6 +596,8 @@ async function queryCollection(collectionId, searchText, topK) {
     const headers = getRequestHeaders();
     if (settings.source === 'extras') {
         addExtrasHeaders(headers);
+    } else if (settings.source === 'togetherai') {
+        addTogetherAiHeaders(headers);
     }
 
     const response = await fetch('/api/vector/query', {
@@ -599,8 +615,7 @@ async function queryCollection(collectionId, searchText, topK) {
         throw new Error(`Failed to query collection ${collectionId}`);
     }
 
-    const results = await response.json();
-    return results;
+    return await response.json();
 }
 
 /**
@@ -637,6 +652,7 @@ async function purgeVectorIndex(collectionId) {
 function toggleSettings() {
     $('#vectors_files_settings').toggle(!!settings.enabled_files);
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
+    $('#together_vectorsModel').toggle(settings.source === 'togetherai');
 }
 
 async function onPurgeClick() {
@@ -690,6 +706,7 @@ jQuery(async () => {
     }
 
     Object.assign(settings, extension_settings.vectors);
+
     // Migrate from TensorFlow to Transformers
     settings.source = settings.source !== 'local' ? settings.source : 'transformers';
     $('#extensions_settings2').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
@@ -712,6 +729,13 @@ jQuery(async () => {
     });
     $('#vectors_source').val(settings.source).on('change', () => {
         settings.source = String($('#vectors_source').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+        toggleSettings();
+    });
+
+    $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
+        settings.togetherai_model = String($('#vectors_togetherai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

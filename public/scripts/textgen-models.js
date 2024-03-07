@@ -6,6 +6,7 @@ import { tokenizers } from './tokenizers.js';
 let mancerModels = [];
 let togetherModels = [];
 let infermaticAIModels = [];
+let aphroditeModels = [];
 export let openRouterModels = [];
 
 export async function loadOllamaModels(data) {
@@ -125,6 +126,28 @@ export async function loadOpenRouterModels(data) {
     }
 }
 
+export async function loadAphroditeModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid Aphrodite models data', data);
+        return;
+    }
+
+    aphroditeModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.aphrodite_model)) {
+        textgen_settings.aphrodite_model = data[0]?.id || '';
+    }
+
+    $('#aphrodite_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.aphrodite_model;
+        $('#aphrodite_model').append(option);
+    }
+}
+
 function onMancerModelSelect() {
     const modelId = String($('#mancer_model').val());
     textgen_settings.mancer_model = modelId;
@@ -162,6 +185,12 @@ function onOpenRouterModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
     const model = openRouterModels.find(x => x.id === modelId);
     setGenerationParamsFromPreset({ max_length: model.context_length });
+}
+
+function onAphroditeModelSelect() {
+    const modelId = String($('#aphrodite_model').val());
+    textgen_settings.aphrodite_model = modelId;
+    $('#api_button_textgenerationwebui').trigger('click');
 }
 
 function getMancerModelTemplate(option) {
@@ -230,6 +259,20 @@ function getOpenRouterModelTemplate(option) {
     `));
 }
 
+function getAphroditeModelTemplate(option) {
+    const model = aphroditeModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
+        </div>
+    `));
+}
+
 async function downloadOllamaModel() {
     try {
         const serverUrl = textgen_settings.server_urls[textgen_types.OLLAMA];
@@ -291,6 +334,7 @@ jQuery(function () {
     $('#ollama_model').on('change', onOllamaModelSelect);
     $('#openrouter_model').on('change', onOpenRouterModelSelect);
     $('#ollama_download_model').on('click', downloadOllamaModel);
+    $('#aphrodite_model').on('change', onAphroditeModelSelect);
 
     if (!isMobile()) {
         $('#mancer_model').select2({
@@ -326,6 +370,13 @@ jQuery(function () {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getOpenRouterModelTemplate,
+        });
+        $('#aphrodite_model').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getAphroditeModelTemplate,
         });
     }
 });

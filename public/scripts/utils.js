@@ -970,7 +970,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
     const requestBody = {
         image: dataURL,
         ch_name: characterName,
-        filename: filename,
+        filename: String(filename).replace(/\./g, '_'),
     };
 
     // Send the data URL to your backend using fetch
@@ -1111,11 +1111,13 @@ export function uuidv4() {
     });
 }
 
-function postProcessText(text) {
+function postProcessText(text, collapse = true) {
     // Collapse multiple newlines into one
-    text = collapseNewlines(text);
-    // Trim leading and trailing whitespace, and remove empty lines
-    text = text.split('\n').map(l => l.trim()).filter(Boolean).join('\n');
+    if (collapse) {
+        text = collapseNewlines(text);
+        // Trim leading and trailing whitespace, and remove empty lines
+        text = text.split('\n').map(l => l.trim()).filter(Boolean).join('\n');
+    }
     // Remove carriage returns
     text = text.replace(/\r/g, '');
     // Normalize unicode spaces
@@ -1124,6 +1126,25 @@ function postProcessText(text) {
     text = text.replace(/ {2,}/g, ' ');
     // Remove leading and trailing spaces
     text = text.trim();
+    return text;
+}
+
+/**
+ * Uses Readability.js to parse the text from a web page.
+ * @param {Document} document HTML document
+ * @param {string} [textSelector='body'] The fallback selector for the text to parse.
+ * @returns {Promise<string>} A promise that resolves to the parsed text.
+ */
+export async function getReadableText(document, textSelector = 'body') {
+    if (isProbablyReaderable(document)) {
+        const parser = new Readability(document);
+        const article = parser.parse();
+        return postProcessText(article.textContent, false);
+    }
+
+    const elements = document.querySelectorAll(textSelector);
+    const rawText = Array.from(elements).map(e => e.textContent).join('\n');
+    const text = postProcessText(rawText);
     return text;
 }
 
@@ -1188,10 +1209,7 @@ export async function extractTextFromHTML(blob, textSelector = 'body') {
     const html = await blob.text();
     const domParser = new DOMParser();
     const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
-    const elements = document.querySelectorAll(textSelector);
-    const rawText = Array.from(elements).map(e => e.textContent).join('\n');
-    const text = postProcessText(rawText);
-    return text;
+    return await getReadableText(document, textSelector);
 }
 
 /**
@@ -1205,6 +1223,6 @@ export async function extractTextFromMarkdown(blob) {
     const html = converter.makeHtml(markdown);
     const domParser = new DOMParser();
     const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
-    const text = postProcessText(document.body.textContent);
+    const text = postProcessText(document.body.textContent, false);
     return text;
 }

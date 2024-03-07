@@ -1,6 +1,6 @@
 const fetch = require('node-fetch').default;
 const express = require('express');
-const AIHorde = require('../ai_horde');
+const AIHorde = require('@zeldafan0225/ai_horde');
 const { getVersion, delay, Cache } = require('../util');
 const { readSecret, SECRET_KEYS } = require('./secrets');
 const { jsonParser } = require('../express-common');
