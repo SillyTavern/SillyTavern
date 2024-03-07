@@ -41,6 +41,7 @@ body.charListGrid #rm_print_characters_block {
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select,
 body.charListGrid #rm_print_characters_block .character_select,
+body.charListGrid #rm_print_characters_block .group_select,
 #user_avatar_block.gridView .avatar-container {
     width: 30%;
     align-items: flex-start;
@@ -50,10 +51,19 @@ body.charListGrid #rm_print_characters_block .character_select,
     max-width: 100px;
 }
 
+body.charListGrid #rm_print_characters_block .character_name_block {
+    gap: 0; /* Save a bit of space here */
+    margin-bottom: 0;
+}
+
 body.charListGrid #rm_print_characters_block .bogus_folder_select .ch_name,
+body.charListGrid #rm_print_characters_block .bogus_folder_select .bogus_folder_counter,
 body.charListGrid #rm_print_characters_block .character_select .ch_name,
 body.charListGrid #rm_print_characters_block .group_select .ch_name,
-#user_avatar_block.gridView .avatar-container .ch_name {
+body.charListGrid #rm_print_characters_block .group_select .group_select_counter,
+#user_avatar_block.gridView .avatar-container .ch_name,
+#user_avatar_block.gridView .avatar-container .bogus_folder_counter,
+#user_avatar_block.gridView .avatar-container .group_select_counter {
     width: 100%;
     max-width: 100px;
     text-align: center;
@@ -62,6 +72,7 @@ body.charListGrid #rm_print_characters_block .group_select .ch_name,
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select .character_name_block,
 body.charListGrid #rm_print_characters_block .character_select .character_name_block,
+body.charListGrid #rm_print_characters_block .group_select .group_name_block,
 #user_avatar_block.gridView .avatar-container .character_name_block {
     width: 100%;
     flex-direction: column;
@@ -74,7 +85,9 @@ body.charListGrid #rm_print_characters_block .character_select .character_name_b
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select .character_select_container,
 body.charListGrid #rm_print_characters_block .character_select .character_select_container,
-#user_avatar_block.gridView .avatar-container .character_select_container {
+body.charListGrid #rm_print_characters_block .group_select .group_select_container,
+#user_avatar_block.gridView .avatar-container .character_select_container,
+#user_avatar_block.gridView .avatar-container .group_select_container {
     width: 100%;
     justify-content: center;
     max-width: 100px;
@@ -95,9 +108,9 @@ body.charListGrid #rm_print_characters_block .group_select .group_name_block {
 
 body.charListGrid #rm_print_characters_block .ch_description,
 body.charListGrid #rm_print_characters_block .tags_inline,
-body.charListGrid #rm_print_characters_block .character_version,
 body.charListGrid #rm_print_characters_block .group_select_block_list,
 body.charListGrid #rm_print_characters_block .ch_avatar_url,
+body.charListGrid #rm_print_characters_block .character_version,
 body.charListGrid #rm_print_characters_block .character_name_block_sub_line,
 #user_avatar_block.gridView .avatar-container .ch_description,
 body.charListGrid #rm_print_characters_block .bogus_folder_select_back .bogus_folder_back_placeholder {
@@ -108,9 +121,16 @@ body.charListGrid #rm_print_characters_block .bogus_folder_select_back .avatar {
     display: flex !important;
 }
 
+
+body.charListGrid #rm_print_characters_block .ch_add_placeholder {
+    display: flex !important;
+    opacity: 0; /* Hack for keeping the spacing */
+}
+
 /*big avatars mode page-wide changes*/
 
 body.big-avatars .character_select .avatar,
+body.big-avatars .group_select .avatar,
 body.big-avatars .bogus_folder_select .avatar {
     flex: unset;
 }

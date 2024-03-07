@@ -1644,6 +1644,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     color: var(--grey7070a);
 }
 
+.character_name_block .ch_add_placeholder {
+    display: none;
+}
+
 .ch_avatar_url {
     font-style: italic;
 }
