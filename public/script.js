@@ -163,8 +163,8 @@ import {
     getTagBlock,
     loadTagsSettings,
     printTagFilters,
-    getTagsList,
-    appendTagToList,
+    getTagKeyForEntity,
+    printTagList,
     createTagMapFromList,
     renameTagKey,
     importTags,
@@ -803,8 +803,11 @@ let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
+/** The tag of the active character. (NOT the id) */
 export let active_character = '';
+/** The tag of the active group. (Coincidentally also the id) */
 export let active_group = '';
+
 export const entitiesFilter = new FilterHelper(debounce(printCharacters, 100));
 export const personasFilter = new FilterHelper(debounce(getUserAvatars, 100));
 
@@ -877,12 +880,12 @@ export function setAnimationDuration(ms = null) {
     animation_duration = ms ?? ANIMATION_DURATION_DEFAULT;
 }
 
-export function setActiveCharacter(character) {
-    active_character = character;
+export function setActiveCharacter(entityOrKey) {
+    active_character = getTagKeyForEntity(entityOrKey);
 }
 
-export function setActiveGroup(group) {
-    active_group = group;
+export function setActiveGroup(entityOrKey) {
+    active_group = getTagKeyForEntity(entityOrKey);
 }
 
 /**
@@ -1187,14 +1190,14 @@ function getEmptyBlock() {
  * @param {number} hidden Number of hidden characters
  */
 function getHiddenBlock(hidden) {
-    const hiddenBlick = `
+    const hiddenBlock = `
     <div class="text_block hidden_block">
         <small>
             <p>${hidden} ${hidden > 1 ? 'characters' : 'character'} hidden.</p>
             <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Characters and groups hidden by filters or closed folders" title="Characters and groups hidden by filters or closed folders"></div>
         </small>
     </div>`;
-    return $(hiddenBlick);
+    return $(hiddenBlock);
 }
 
 function getCharacterBlock(item, id) {
@@ -1233,9 +1236,8 @@ function getCharacterBlock(item, id) {
     }
 
     // Display inline tags
-    const tags = getTagsList(item.avatar);
     const tagsElement = template.find('.tags');
-    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+    printTagList(tagsElement, { forEntityOrKey: id });
 
     // Add to the list
     return template;

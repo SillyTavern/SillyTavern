@@ -11,7 +11,6 @@ import {
     setActiveGroup,
     setActiveCharacter,
     getEntitiesList,
-    getThumbnailUrl,
     buildAvatarList,
     selectCharacterById,
     eventSource,
@@ -27,7 +26,8 @@ import {
 } from './power-user.js';
 
 import { LoadLocal, SaveLocal, LoadLocalBool } from './f-localStorage.js';
-import { selected_group, is_group_generating, getGroupAvatar, groups, openGroupById } from './group-chats.js';
+import { selected_group, is_group_generating, openGroupById } from './group-chats.js';
+import { getTagKeyForEntity } from './tags.js';
 import {
     SECRET_KEYS,
     secret_state,
@@ -248,8 +248,7 @@ export function RA_CountCharTokens() {
 async function RA_autoloadchat() {
     if (document.querySelector('#rm_print_characters_block .character_select') !== null) {
         // active character is the name, we should look it up in the character list and get the id
-        let active_character_id = Object.keys(characters).find(key => characters[key].avatar === active_character);
-
+        const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) == active_character);
         if (active_character_id !== null) {
             await selectCharacterById(String(active_character_id));
         }
@@ -805,14 +804,14 @@ export function initRossMods() {
 
     // when a char is selected from the list, save their name as the auto-load character for next page load
     $(document).on('click', '.character_select', function () {
-        const characterId = $(this).find('.avatar').attr('title') || $(this).attr('title');
+        const characterId = $(this).attr('chid') || $(this).data('id');
         setActiveCharacter(characterId);
         setActiveGroup(null);
         saveSettingsDebounced();
     });
 
     $(document).on('click', '.group_select', function () {
-        const groupId = $(this).data('id') || $(this).attr('grid');
+        const groupId = $(this).attr('grid') || $(this).data('id');
         setActiveCharacter(null);
         setActiveGroup(groupId);
         saveSettingsDebounced();

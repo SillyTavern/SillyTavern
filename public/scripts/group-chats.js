@@ -69,7 +69,7 @@ import {
     loadItemizedPrompts,
     animation_duration,
 } from '../script.js';
-import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
+import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 
 export {
@@ -546,9 +546,8 @@ export function getGroupBlock(group) {
     template.find('.group_select_block_list').append(namesList.join(''));
 
     // Display inline tags
-    const tags = getTagsList(group.id);
     const tagsElement = template.find('.tags');
-    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+    printTagList(tagsElement, { forEntityOrKey: group.id });
 
     const avatar = getGroupAvatar(group);
     if (avatar) {
@@ -579,7 +578,7 @@ function isValidImageUrl(url) {
 
 function getGroupAvatar(group) {
     if (!group) {
-        return $(`<div class="avatar" title="[Group] ${group.name}"><img src="${default_avatar}"></div>`);
+        return $(`<div class="avatar"><img src="${default_avatar}"></div>`);
     }
     // if isDataURL or if it's a valid local file url
     if (isValidImageUrl(group.avatar_url)) {
@@ -1185,9 +1184,8 @@ function getGroupCharacterBlock(character) {
     template.toggleClass('disabled', isGroupMemberDisabled(character.avatar));
 
     // Display inline tags
-    const tags = getTagsList(character.avatar);
     const tagsElement = template.find('.tags');
-    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+    printTagList(tagsElement, { forEntityOrKey: characters.indexOf(character) });
 
     if (!openGroupId) {
         template.find('[data-action="speak"]').hide();
@@ -1262,6 +1260,9 @@ function select_group_chats(groupId, skipAnimation) {
     if (!skipAnimation) {
         selectRightMenuWithAnimation('rm_group_chats_block');
     }
+
+    // render tags
+    printTagList($('#groupTagList'), { forEntityOrKey: groupId, tagOptions: { removable: true } });
 
     // render characters list
     printGroupCandidates();
