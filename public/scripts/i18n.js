@@ -5,8 +5,6 @@ const i18nFolder = "locales";
 const storageKey = 'language';
 export const localeData = await fetch(`${i18nFolder}/lang.json`).then(response => response.json());
 
-console.log('Loaded locale data:', localeData);
-
 function getMissingTranslations() {
     const missingData = [];
 
@@ -66,9 +64,7 @@ async function applyLocale(root = document) {
 
     let newlangdata = {}
 
-    console.log('overrideLanguage:', overrideLanguage);
     if (overrideLanguage !== null) {
-        console.log('Fetching language:', overrideLanguage);
         newlangdata = await fetch(`${i18nFolder}/${overrideLanguage}.json`).then(response => response.json());
     }
 
