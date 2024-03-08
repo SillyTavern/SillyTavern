@@ -512,7 +512,7 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplate('help'),
+            mes: renderTemplate('help'),
         },
         slash_commands: {
             name: systemUserName,
@@ -526,21 +526,21 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplate('hotkeys'),
+            mes: renderTemplate('hotkeys'),
         },
         formatting: {
             name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplate('formatting'),
+            mes: renderTemplate('formatting'),
         },
         macros: {
             name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplate('macros'),
+            mes: renderTemplate('macros'),
         },
         welcome:
         {
@@ -548,7 +548,7 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplate('welcome'),
+            mes: renderTemplate('welcome'),
         },
         group: {
             name: systemUserName,
