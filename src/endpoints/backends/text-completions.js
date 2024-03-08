@@ -4,7 +4,7 @@ const _ = require('lodash');
 const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
-const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS, INFERMATICAI_KEYS, OPENROUTER_KEYS } = require('../../constants');
+const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS, INFERMATICAI_KEYS, OPENROUTER_KEYS, DREAMGEN_KEYS } = require('../../constants');
 const { forwardFetchResponse, trimV1 } = require('../../util');
 const { setAdditionalHeaders } = require('../../additional-headers');
 
@@ -109,6 +109,9 @@ router.post('/status', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.INFERMATICAI:
                 case TEXTGEN_TYPES.OPENROUTER:
                     url += '/v1/models';
+                    break;
+                case TEXTGEN_TYPES.DREAMGEN:
+                    url += '/api/openai/v1/models';
                     break;
                 case TEXTGEN_TYPES.MANCER:
                     url += '/oai/v1/models';
@@ -238,6 +241,9 @@ router.post('/generate', jsonParser, async function (request, response) {
                 case TEXTGEN_TYPES.INFERMATICAI:
                     url += '/v1/completions';
                     break;
+                case TEXTGEN_TYPES.DREAMGEN:
+                    url += '/api/openai/v1/completions';
+                    break;
                 case TEXTGEN_TYPES.MANCER:
                     url += '/oai/v1/completions';
                     break;
@@ -270,6 +276,13 @@ router.post('/generate', jsonParser, async function (request, response) {
 
         if (request.body.api_type === TEXTGEN_TYPES.INFERMATICAI) {
             request.body = _.pickBy(request.body, (_, key) => INFERMATICAI_KEYS.includes(key));
+            args.body = JSON.stringify(request.body);
+        }
+
+        if (request.body.api_type === TEXTGEN_TYPES.DREAMGEN) {
+            request.body = _.pickBy(request.body, (_, key) => DREAMGEN_KEYS.includes(key));
+            // NOTE: DreamGen sometimes get confused by the unusual formatting in the character cards.
+            request.body.stop?.push('### User', '## User');
             args.body = JSON.stringify(request.body);
         }
 
