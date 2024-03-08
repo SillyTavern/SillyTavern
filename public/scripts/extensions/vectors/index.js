@@ -12,7 +12,8 @@ const settings = {
     // For both
     source: 'transformers',
     include_wi: false,
-    togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
+    togetherai_model: '',
+    nomicai_key: '',
 
     // For chats
     enabled_chats: false,
@@ -452,6 +453,16 @@ function addTogetherAiHeaders(headers) {
 }
 
 /**
+ * Add headers for the Extras API source.
+ * @param {object} headers Headers object
+ */
+function addNomicAiHeaders(headers) {
+    Object.assign(headers, {
+        'X-NomicAi-Key': extension_settings.vectors.nomicai_key,
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
@@ -474,6 +485,8 @@ async function insertVectorItems(collectionId, items) {
         addExtrasHeaders(headers);
     } else if (settings.source === 'togetherai') {
         addTogetherAiHeaders(headers);
+    } else if (settings.source === 'nomicai') {
+        addNomicAiHeaders(headers);
     }
 
     const response = await fetch('/api/vector/insert', {
@@ -525,6 +538,8 @@ async function queryCollection(collectionId, searchText, topK) {
         addExtrasHeaders(headers);
     } else if (settings.source === 'togetherai') {
         addTogetherAiHeaders(headers);
+    } else if (settings.source === 'nomicai') {
+        addNomicAiHeaders(headers);
     }
 
     const response = await fetch('/api/vector/query', {
@@ -580,6 +595,7 @@ function toggleSettings() {
     $('#vectors_files_settings').toggle(!!settings.enabled_files);
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
+    $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
 }
 
 async function onPurgeClick() {
@@ -655,7 +671,11 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
-
+    $('#vectors_nomicai_apiKey').val(settings.nomicai_key).on('change', () => {
+        settings.nomicai_key = String($('#vectors_nomicai_apiKey').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
     $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
         settings.togetherai_model = String($('#vectors_togetherai_model').val());
         Object.assign(extension_settings.vectors, settings);

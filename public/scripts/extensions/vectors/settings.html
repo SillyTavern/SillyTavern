@@ -16,6 +16,7 @@
                     <option value="palm">Google MakerSuite (PaLM)</option>
                     <option value="mistral">MistralAI</option>
                     <option value="togetherai">TogetherAI</option>
+                    <option value="nomicai">NomicAI</option>
                 </select>
             </div>
             <div class="flex-container flexFlowColumn" id="together_vectorsModel">
@@ -32,6 +33,12 @@
                     <option value="sentence-transformers/msmarco-bert-base-dot-v5">Sentence-BERT</option>
                     <option value="bert-base-uncased">Bert Base Uncased</option>
                 </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="nomicai_apiKey">
+                <label for="vectors_nomicai_apiKey">
+                    <span>NomicAI API Key</span>
+                </label>
+                <input type="text" id="vectors_nomicai_apiKey" class="text_pole widthUnset" />
             </div>
 
             <div class="flex-container flexFlowColumn" title="How many last messages will be matched for relevance.">

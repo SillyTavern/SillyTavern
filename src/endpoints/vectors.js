@@ -5,7 +5,7 @@ const sanitize = require('sanitize-filename');
 const { jsonParser } = require('../express-common');
 
 // Don't forget to add new sources to the SOURCES array
-const SOURCES = ['transformers', 'mistral', 'openai', 'extras', 'palm', 'togetherai'];
+const SOURCES = ['transformers', 'mistral', 'openai', 'extras', 'palm', 'togetherai', 'nomicai'];
 
 /**
  * Gets the vector for the given text from the given source.
@@ -16,10 +16,12 @@ const SOURCES = ['transformers', 'mistral', 'openai', 'extras', 'palm', 'togethe
  */
 async function getVector(source, sourceSettings, text) {
     switch (source) {
+        case 'nomicai':
+            return require('../openai-vectors').getOpenAIVector(text, source, '', sourceSettings.nomicaiKey);
         case 'togetherai':
         case 'mistral':
         case 'openai':
-            return require('../openai-vectors').getOpenAIVector(text, source, sourceSettings.model);
+            return require('../openai-vectors').getOpenAIVector(text, source, sourceSettings.model, '');
         case 'transformers':
             return require('../embedding').getTransformersVector(text);
         case 'extras':
@@ -45,10 +47,13 @@ async function getBatchVector(source, sourceSettings, texts) {
     let results = [];
     for (let batch of batches) {
         switch (source) {
+            case 'nomicai':
+                results.push(...await require('../openai-vectors').getOpenAIBatchVector(batch, source, '', sourceSettings.nomicaiKey));
+                break;
             case 'togetherai':
             case 'mistral':
             case 'openai':
-                results.push(...await require('../openai-vectors').getOpenAIBatchVector(batch, source, sourceSettings.model));
+                results.push(...await require('../openai-vectors').getOpenAIBatchVector(batch, source, sourceSettings.model, ''));
                 break;
             case 'transformers':
                 results.push(...await require('../embedding').getTransformersBatchVector(batch));
@@ -172,6 +177,13 @@ function getSourceSettings(source, request) {
 
         return {
             model: model,
+        };
+    } else if (source === 'nomicai') {
+        let nomicaiKey = '';
+        nomicaiKey = String(request.headers['x-nomicai-key']);
+
+        return {
+            nomicaiKey: nomicaiKey,
         };
     } else {
         // Extras API settings to connect to the Extras embeddings provider
