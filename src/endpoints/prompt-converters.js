@@ -172,7 +172,7 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
     if (prefillString) {
         mergedMessages.push({
             role: 'assistant',
-            content: prefillString,
+            content: prefillString.trimEnd(),
         });
     }
 
