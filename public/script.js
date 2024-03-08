@@ -505,14 +505,14 @@ export const MAX_INJECTION_DEPTH = 1000;
 
 let system_messages = {};
 
-function getSystemMessages() {
+async function getSystemMessages() {
     system_messages = {
         help: {
             name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: renderTemplate('help'),
+            mes: await renderTemplate('help'),
         },
         slash_commands: {
             name: systemUserName,
@@ -526,21 +526,21 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: renderTemplate('hotkeys'),
+            mes: await renderTemplate('hotkeys'),
         },
         formatting: {
             name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: renderTemplate('formatting'),
+            mes: await renderTemplate('formatting'),
         },
         macros: {
             name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: renderTemplate('macros'),
+            mes: await renderTemplate('macros'),
         },
         welcome:
         {
@@ -548,7 +548,7 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: renderTemplate('welcome'),
+            mes: await renderTemplate('welcome'),
         },
         group: {
             name: systemUserName,
@@ -4263,7 +4263,7 @@ async function DupeChar() {
     }
 }
 
-function promptItemize(itemizedPrompts, requestedMesId) {
+async function promptItemize(itemizedPrompts, requestedMesId) {
     console.log('PROMPT ITEMIZE ENTERED');
     var incomingMesId = Number(requestedMesId);
     console.debug(`looking for MesId ${incomingMesId}`);
@@ -4381,10 +4381,10 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     }
 
     if (params.this_main_api == 'openai') {
-        callPopup(renderTemplate('itemizationChat', params), 'text');
+        callPopup(await renderTemplate('itemizationChat', params), 'text');
 
     } else {
-        callPopup(renderTemplate('itemizationText', params), 'text');
+        callPopup(await renderTemplate('itemizationText', params), 'text');
     }
 }
 
