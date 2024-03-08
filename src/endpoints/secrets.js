@@ -31,6 +31,7 @@ const SECRET_KEYS = {
     CUSTOM: 'api_key_custom',
     OOBA: 'api_key_ooba',
     INFERMATICAI: 'api_key_infermaticai',
+    DREAMGEN: 'api_key_dreamgen',
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false
