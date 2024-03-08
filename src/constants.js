@@ -206,6 +206,7 @@ const DREAMGEN_KEYS = [
     'frequency_penalty',
     'presence_penalty',
     'stop',
+    'stream',
     'minimum_message_content_tokens'
 ];
 
