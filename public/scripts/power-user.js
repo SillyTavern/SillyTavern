@@ -1352,8 +1352,8 @@ export function registerDebugFunction(functionId, name, description, func) {
     debug_functions.push({ functionId, name, description, func });
 }
 
-function showDebugMenu() {
-    const template = renderTemplate('debug', { functions: debug_functions });
+async function showDebugMenu() {
+    const template = await renderTemplate('debug', { functions: debug_functions });
     callPopup(template, 'text', '', { wide: true, large: true });
 }
 
