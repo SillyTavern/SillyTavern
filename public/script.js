@@ -1390,10 +1390,16 @@ function getCharacterSource(chId = this_chid) {
         return '';
     }
 
-    const chubId = characters[this_chid]?.data?.extensions?.chub?.full_path;
+    const chubId = characters[chId]?.data?.extensions?.chub?.full_path;
 
     if (chubId) {
         return `https://chub.ai/characters/${chubId}`;
+    }
+
+    const pygmalionId = characters[chId]?.data?.extensions?.pygmalion_id;
+
+    if (pygmalionId) {
+        return `https://pygmalion.chat/${pygmalionId}`;
     }
 
     return '';
