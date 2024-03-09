@@ -1,0 +1,18 @@
+{
+    "system_prompt": "You are an intelligent, skilled, versatile writer.\n\nYour task is to write a role-play based on the information below.",
+    "input_sequence": "<|im_end|>\n<|im_start|>text names= {{user}}\n",
+    "output_sequence": "<|im_end|>\n<|im_start|>text names= {{char}}\n",
+    "first_output_sequence": "",
+    "last_output_sequence": "",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "stop_sequence": "",
+    "separator_sequence": "",
+    "wrap": false,
+    "macro": true,
+    "names": false,
+    "names_force_groups": false,
+    "activation_regex": "",
+    "skip_examples": false,
+    "name": "DreamGen Role-Play V1"
+}

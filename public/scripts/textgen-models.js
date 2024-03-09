@@ -1,11 +1,12 @@
-import { callPopup, getRequestHeaders, setGenerationParamsFromPreset } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
+import { callPopup, getRequestHeaders, setGenerationParamsFromPreset } from '../script.js';
 import { textgenerationwebui_settings as textgen_settings, textgen_types } from './textgen-settings.js';
 import { tokenizers } from './tokenizers.js';
 
 let mancerModels = [];
 let togetherModels = [];
 let infermaticAIModels = [];
+let dreamGenModels = [];
 let aphroditeModels = [];
 export let openRouterModels = [];
 
@@ -79,6 +80,32 @@ export async function loadInfermaticAIModels(data) {
         option.text = model.id;
         option.selected = model.id === textgen_settings.infermaticai_model;
         $('#model_infermaticai_select').append(option);
+    }
+}
+
+export async function loadDreamGenModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid DreamGen models data', data);
+        return;
+    }
+
+    dreamGenModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.dreamgen_model)) {
+        textgen_settings.dreamgen_model = data[0]?.id || '';
+    }
+
+    $('#model_dreamgen_select').empty();
+    for (const model of data) {
+        if (model.display_type === 'image') {
+            continue;
+        }
+
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.dreamgen_model;
+        $('#model_dreamgen_select').append(option);
     }
 }
 
@@ -173,6 +200,13 @@ function onInfermaticAIModelSelect() {
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 
+function onDreamGenModelSelect() {
+    const modelName = String($('#model_dreamgen_select').val());
+    textgen_settings.dreamgen_model = modelName;
+    $('#api_button_textgenerationwebui').trigger('click');
+    // TODO(DreamGen): Consider retuning max_tokens from API and setting it here.
+}
+
 function onOllamaModelSelect() {
     const modelId = String($('#ollama_model').val());
     textgen_settings.ollama_model = modelId;
@@ -228,6 +262,20 @@ function getTogetherModelTemplate(option) {
 
 function getInfermaticAIModelTemplate(option) {
     const model = infermaticAIModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
+        </div>
+    `));
+}
+
+function getDreamGenModelTemplate(option) {
+    const model = dreamGenModels.find(x => x.id === option?.element?.value);
 
     if (!option.id || !model) {
         return option.text;
@@ -327,10 +375,25 @@ export function getCurrentOpenRouterModelTokenizer() {
     }
 }
 
+export function getCurrentDreamGenModelTokenizer() {
+    const modelId = textgen_settings.dreamgen_model;
+    const model = dreamGenModels.find(x => x.id === modelId);
+    if (model.id.startsWith('opus-v1-sm')) {
+        return tokenizers.MISTRAL;
+    } else if (model.id.startsWith('opus-v1-lg')) {
+        return tokenizers.YI;
+    } else if (model.id.startsWith('opus-v1-xl')) {
+        return tokenizers.LLAMA;
+    } else {
+        return tokenizers.MISTRAL;
+    }
+}
+
 jQuery(function () {
     $('#mancer_model').on('change', onMancerModelSelect);
     $('#model_togetherai_select').on('change', onTogetherModelSelect);
     $('#model_infermaticai_select').on('change', onInfermaticAIModelSelect);
+    $('#model_dreamgen_select').on('change', onDreamGenModelSelect);
     $('#ollama_model').on('change', onOllamaModelSelect);
     $('#openrouter_model').on('change', onOpenRouterModelSelect);
     $('#ollama_download_model').on('click', downloadOllamaModel);
@@ -363,6 +426,13 @@ jQuery(function () {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getInfermaticAIModelTemplate,
+        });
+        $('#model_dreamgen_select').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult:  getDreamGenModelTemplate,
         });
         $('#openrouter_model').select2({
             placeholder: 'Select a model',

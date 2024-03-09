@@ -77,8 +77,10 @@ function convertClaudePrompt(messages, addAssistantPostfix, addAssistantPrefill,
  * @param {string}   prefillString User determined prefill string
  * @param {boolean}  useSysPrompt See if we want to use a system prompt
  * @param {string}   humanMsgFix Add Human message between system prompt and assistant.
+ * @param {string}   charName Character name
+ * @param {string}   userName User name
  */
-function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFix) {
+function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFix, charName = '', userName = '') {
     let systemPrompt = '';
     if (useSysPrompt) {
         // Collect all the system messages up until the first instance of a non-system message, and then remove them from the messages array.
@@ -86,6 +88,12 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
         for (i = 0; i < messages.length; i++) {
             if (messages[i].role !== 'system') {
                 break;
+            }
+            if (userName && messages[i].name === 'example_user') {
+                messages[i].content = `${userName}: ${messages[i].content}`;
+            }
+            if (charName && messages[i].name === 'example_assistant') {
+                messages[i].content = `${charName}: ${messages[i].content}`;
             }
             systemPrompt += `${messages[i].content}\n\n`;
         }
@@ -103,6 +111,12 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
     // Now replace all further messages that have the role 'system' with the role 'user'. (or all if we're not using one)
     messages.forEach((message) => {
         if (message.role === 'system') {
+            if (userName && message.name === 'example_user') {
+                message.content = `${userName}: ${message.content}`;
+            }
+            if (charName && message.name === 'example_assistant') {
+                message.content = `${charName}: ${message.content}`;
+            }
             message.role = 'user';
         }
     });
@@ -164,7 +178,7 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
     if (prefillString) {
         mergedMessages.push({
             role: 'assistant',
-            content: prefillString,
+            content: prefillString.trimEnd(),
         });
     }
 

@@ -22,7 +22,7 @@ import {
     parseTabbyLogprobs,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI, OPENROUTER } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
 
 import {
     world_info,
@@ -204,7 +204,7 @@ import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescriptio
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadAphroditeModels } from './scripts/textgen-models.js';
+import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
@@ -1074,6 +1074,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === INFERMATICAI) {
             loadInfermaticAIModels(data?.data);
             online_status = textgen_settings.infermaticai_model;
+        } else if (textgen_settings.type === DREAMGEN) {
+            loadDreamGenModels(data?.data);
+            online_status = textgen_settings.dreamgen_model;
         } else if (textgen_settings.type === OPENROUTER) {
             loadOpenRouterModels(data?.data);
             online_status = textgen_settings.openrouter_model;
@@ -1406,10 +1409,16 @@ function getCharacterSource(chId = this_chid) {
         return '';
     }
 
-    const chubId = characters[this_chid]?.data?.extensions?.chub?.full_path;
+    const chubId = characters[chId]?.data?.extensions?.chub?.full_path;
 
     if (chubId) {
         return `https://chub.ai/characters/${chubId}`;
+    }
+
+    const pygmalionId = characters[chId]?.data?.extensions?.pygmalion_id;
+
+    if (pygmalionId) {
+        return `https://pygmalion.chat/${pygmalionId}`;
     }
 
     return '';
@@ -6013,7 +6022,7 @@ async function saveSettings(type) {
 }
 
 export function setGenerationParamsFromPreset(preset) {
-    const needsUnlock = preset.max_length > MAX_CONTEXT_DEFAULT || preset.genamt > MAX_RESPONSE_DEFAULT;
+    const needsUnlock = (preset.max_length ?? max_context) > MAX_CONTEXT_DEFAULT || (preset.genamt ?? amount_gen) > MAX_RESPONSE_DEFAULT;
     $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
 
     if (preset.genamt !== undefined) {
@@ -7837,6 +7846,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_textgenerationwebui',
         type: textgen_types.INFERMATICAI,
     },
+    'dreamgen': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.DREAMGEN,
+    },
     'openrouter-text': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -8771,6 +8785,11 @@ jQuery(async function () {
         const infermaticAIKey = String($('#api_key_infermaticai').val()).trim();
         if (infermaticAIKey.length) {
             await writeSecret(SECRET_KEYS.INFERMATICAI, infermaticAIKey);
+        }
+
+        const dreamgenKey = String($('#api_key_dreamgen').val()).trim();
+        if (dreamgenKey.length) {
+            await writeSecret(SECRET_KEYS.DREAMGEN, dreamgenKey);
         }
 
         const openRouterKey = String($('#api_key_openrouter-tg').val()).trim();
