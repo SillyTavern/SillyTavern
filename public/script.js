@@ -5960,7 +5960,7 @@ async function saveSettings(type) {
 }
 
 export function setGenerationParamsFromPreset(preset) {
-    const needsUnlock = preset.max_length > MAX_CONTEXT_DEFAULT || preset.genamt > MAX_RESPONSE_DEFAULT;
+    const needsUnlock = (preset.max_length ?? max_context) > MAX_CONTEXT_DEFAULT || (preset.genamt ?? amount_gen) > MAX_RESPONSE_DEFAULT;
     $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
 
     if (preset.genamt !== undefined) {
