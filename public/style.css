@@ -1060,8 +1060,8 @@ select {
 
 @media screen and (min-width: 1001px) {
     #description_textarea {
-        height: 33vh;
-        height: 33svh;
+        height: 30vh;
+        height: 30svh;
     }
 
     #firstmessage_textarea {
