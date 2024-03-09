@@ -1390,10 +1390,16 @@ function getCharacterSource(chId = this_chid) {
         return '';
     }
 
-    const chubId = characters[this_chid]?.data?.extensions?.chub?.full_path;
+    const chubId = characters[chId]?.data?.extensions?.chub?.full_path;
 
     if (chubId) {
         return `https://chub.ai/characters/${chubId}`;
+    }
+
+    const pygmalionId = characters[chId]?.data?.extensions?.pygmalion_id;
+
+    if (pygmalionId) {
+        return `https://pygmalion.chat/${pygmalionId}`;
     }
 
     return '';
@@ -5954,7 +5960,7 @@ async function saveSettings(type) {
 }
 
 export function setGenerationParamsFromPreset(preset) {
-    const needsUnlock = preset.max_length > MAX_CONTEXT_DEFAULT || preset.genamt > MAX_RESPONSE_DEFAULT;
+    const needsUnlock = (preset.max_length ?? max_context) > MAX_CONTEXT_DEFAULT || (preset.genamt ?? amount_gen) > MAX_RESPONSE_DEFAULT;
     $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
 
     if (preset.genamt !== undefined) {

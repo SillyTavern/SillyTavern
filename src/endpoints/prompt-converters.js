@@ -111,6 +111,12 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
     // Now replace all further messages that have the role 'system' with the role 'user'. (or all if we're not using one)
     messages.forEach((message) => {
         if (message.role === 'system') {
+            if (userName && message.name === 'example_user') {
+                message.content = `${userName}: ${message.content}`;
+            }
+            if (charName && message.name === 'example_assistant') {
+                message.content = `${charName}: ${message.content}`;
+            }
             message.role = 'user';
         }
     });
