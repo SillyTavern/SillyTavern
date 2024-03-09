@@ -92,7 +92,6 @@ export function applyLocale(root = document) {
 
 async function addLanguagesToDropdown() {
     const langs = await fetch('/locales/lang.json').then(response => response.json());
-    console.log(langs);
 
     for (const lang of langs) {
         const option = document.createElement('option');
