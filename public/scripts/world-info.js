@@ -2223,7 +2223,7 @@ async function checkWorldInfo(chat, maxContext) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
                 .filter(x => !x.preventRecursion)
-                .map(x => x.content).join('\n');
+                .map(x => substituteParams(x.content)).join('\n');
             buffer.addRecurse(text);
             allActivatedText = (text + '\n' + allActivatedText);
         }
