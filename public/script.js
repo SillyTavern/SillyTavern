@@ -5298,7 +5298,7 @@ function getThumbnailUrl(type, file) {
     return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
 }
 
-function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, selectable = false } = {}) {
+function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, selectable = false, highlightFavs = true } = {}) {
     if (empty) {
         block.empty();
     }
@@ -5318,8 +5318,10 @@ function buildAvatarList(block, entities, { templateId = 'inline_avatar_template
         avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
         avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entity.item.name);
         avatarTemplate.attr('title', `[Character] ${entity.item.name}`);
-        avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
-        avatarTemplate.find('.ch_fav').val(entity.item.fav);
+        if (highlightFavs) {
+            avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
+            avatarTemplate.find('.ch_fav').val(entity.item.fav);
+        }
 
         // If this is a group, we need to hack slightly. We still want to keep most of the css classes and layout, but use a group avatar instead.
         if (entity.type === 'group') {

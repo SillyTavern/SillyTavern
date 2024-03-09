@@ -324,7 +324,7 @@ export function getTagKeyForEntity(entityOrKey) {
     }
 
     // Next lets check if its a valid character or character id, so we can swith it to its tag
-    const character = characters.indexOf(x) > 0 ? x : characters[x];
+    const character = characters.indexOf(x) >= 0 ? x : characters[x];
     if (character) {
         x = character.avatar;
     }

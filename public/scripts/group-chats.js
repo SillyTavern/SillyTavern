@@ -529,9 +529,11 @@ export function getGroupBlock(group) {
     // Build inline name list
     if (Array.isArray(group.members) && group.members.length) {
         for (const member of group.members) {
-            count++;
             const character = characters.find(x => x.avatar === member || x.name === member);
-            namesList.push(`<span class="group_ch_name">${character.name}</span>`);
+            if (character) {
+                namesList.push(character.name);
+                count++;
+            }
         }
     }
 
@@ -543,7 +545,7 @@ export function getGroupBlock(group) {
     template.addClass(group.fav ? 'is_fav' : '');
     template.find('.ch_fav').val(group.fav);
     template.find('.group_select_counter').text(`${count} ${count != 1 ? 'characters' : 'character'}`);
-    template.find('.group_select_block_list').append(namesList.join(''));
+    template.find('.group_select_block_list').text(namesList.join(', '));
 
     // Display inline tags
     const tagsElement = template.find('.tags');
@@ -1761,7 +1763,7 @@ function doCurMemberListPopout() {
 
 jQuery(() => {
     $(document).on('click', '.group_select', function () {
-        const groupId = $(this).data('id');
+        const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');
         openGroupById(groupId);
     });
     $('#rm_group_filter').on('input', filterGroupMembers);

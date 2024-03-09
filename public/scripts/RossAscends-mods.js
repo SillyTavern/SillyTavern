@@ -248,12 +248,14 @@ export function RA_CountCharTokens() {
 async function RA_autoloadchat() {
     if (document.querySelector('#rm_print_characters_block .character_select') !== null) {
         // active character is the name, we should look it up in the character list and get the id
-        const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) == active_character);
-        if (active_character_id !== null) {
-            await selectCharacterById(String(active_character_id));
+        if (active_character !== null && active_character !== undefined) {
+            const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) === active_character);
+            if (active_character_id !== null) {
+                await selectCharacterById(String(active_character_id));
+            }
         }
 
-        if (active_group != null) {
+        if (active_group !== null && active_group !== undefined) {
             await openGroupById(String(active_group));
         }
 
@@ -273,7 +275,7 @@ export async function favsToHotswap() {
         return;
     }
 
-    buildAvatarList(container, favs, { selectable: true });
+    buildAvatarList(container, favs, { selectable: true, highlightFavs: false });
 }
 
 //changes input bar and send button display depending on connection status
@@ -812,7 +814,7 @@ export function initRossMods() {
     });
 
     $(document).on('click', '.group_select', function () {
-        const groupId = $(this).attr('grid') || $(this).data('id');
+        const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');
         setActiveCharacter(null);
         setActiveGroup(groupId);
         saveSettingsDebounced();
