@@ -2189,11 +2189,11 @@ function scrollChatToBottom() {
 /**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
- * @param {*} _name1 - The name of the user. Uses global name1 if not provided.
- * @param {*} _name2 - The name of the character. Uses global name2 if not provided.
- * @param {*} _original - The original message for {{original}} substitution.
- * @param {*} _group - The group members list for {{group}} substitution.
- * @param {boolean} _replaceCharacterCard - Whether to replace character card macros.
+ * @param {string} [_name1] - The name of the user. Uses global name1 if not provided.
+ * @param {string} [_name2] - The name of the character. Uses global name2 if not provided.
+ * @param {string} [_original] - The original message for {{original}} substitution.
+ * @param {string} [_group] - The group members list for {{group}} substitution.
+ * @param {boolean} [_replaceCharacterCard] - Whether to replace character card macros.
  * @returns {string} The string with substituted parameters.
  */
 function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {

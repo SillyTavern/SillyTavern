@@ -419,6 +419,11 @@ hr {
     transition: background-image 0.5s ease-in-out;
 }
 
+body.reduced-motion #bg1,
+body.reduced-motion #bg_custom {
+    transition: none;
+}
+
 #version_display {
     padding: 5px;
     opacity: 0.8;
@@ -1044,6 +1049,7 @@ select {
 #creator_notes_spoiler {
     border: 0;
     font-size: calc(var(--mainFontSize)*.8);
+    padding-top: 5px;
 }
 
 @media screen and (max-width: 1000px) {
@@ -1055,8 +1061,8 @@ select {
 
 @media screen and (min-width: 1001px) {
     #description_textarea {
-        height: 33vh;
-        height: 33svh;
+        height: 30vh;
+        height: 30svh;
     }
 
     #firstmessage_textarea {
