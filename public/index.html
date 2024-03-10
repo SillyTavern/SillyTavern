@@ -5558,12 +5558,14 @@
         toastr.options.positionClass = "toast-top-center"; // Where to position the toast container
     </script>
     <script>
-        const documentHeight = () => {
-            const doc = document.documentElement
-            doc.style.setProperty('--doc-height', `${window.innerHeight}px`)
-        }
-        window.addEventListener('resize', documentHeight)
-        documentHeight()
+        window.addEventListener('load', (event) => {
+            const documentHeight = () => {
+                const doc = document.documentElement;
+                doc.style.setProperty('--doc-height', `${window.innerHeight}px`);
+            }
+            window.addEventListener('resize', documentHeight);
+            documentHeight();
+      });
     </script>
 </body>
 
