@@ -1,0 +1,17 @@
+{
+    "system_prompt": "Avoid repetition, don't loop. Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions.",
+    "input_sequence": "\n### Instruction: (Style: Markdown, Present Tense)",
+    "output_sequence": "\n### Response: (Style: Markdown, Present Tense)",
+    "first_output_sequence": "### Response:",
+    "last_output_sequence": "",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "stop_sequence": "",
+    "separator_sequence": "",
+    "wrap": true,
+    "macro": true,
+    "names": true,
+    "names_force_groups": true,
+    "activation_regex": "",
+    "name": "ul"
+}
