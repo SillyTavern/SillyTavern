@@ -1,22 +1,38 @@
 import { registerDebugFunction } from './power-user.js';
-import { waitUntilCondition } from './utils.js';
 
 const storageKey = 'language';
-const overrideLanguage = localStorage.getItem('language');
+const overrideLanguage = localStorage.getItem(storageKey);
+const localeFile = String(overrideLanguage || navigator.language || navigator.userLanguage || 'en').toLowerCase();
+const langs = await fetch('/locales/lang.json').then(response => response.json());
+const localeData = await getLocaleData(localeFile);
 
-const localeFile = overrideLanguage || navigator.userLanguage || 'lang';
-export const localeData = await fetch(`./locales/${localeFile}.json`).then(response => {
-    console.log(`Loading locale data from ./locales/${localeFile}.json`);
-    if (!response.ok) {
-        throw new Error(`Failed to load locale data: ${response.status} ${response.statusText}`);
+/**
+ * Fetches the locale data for the given language.
+ * @param {string} language Language code
+ * @returns {Promise<Record<string, string>>} Locale data
+ */
+async function getLocaleData(language) {
+    if (!langs.includes(language)) {
+        console.warn(`Unsupported language: ${language}`);
+        return {};
     }
-    return response.json();
-});
 
-function getMissingTranslations() {
+    const data = await fetch(`./locales/${language}.json`).then(response => {
+        console.log(`Loading locale data from ./locales/${language}.json`);
+        if (!response.ok) {
+            return {};
+        }
+        return response.json();
+    });
+
+    return data;
+}
+
+async function getMissingTranslations() {
     const missingData = [];
 
-    for (const language of localeData) {
+    for (const language of langs) {
+        const localeData = await getLocaleData(language);
         $(document).find('[data-i18n]').each(function () {
             const keys = $(this).data('i18n').split(';'); // Multi-key entries are ; delimited
             for (const key of keys) {
@@ -90,9 +106,7 @@ export function applyLocale(root = document) {
     }
 }
 
-async function addLanguagesToDropdown() {
-    const langs = await fetch('/locales/lang.json').then(response => response.json());
-
+function addLanguagesToDropdown() {
     for (const lang of langs) {
         const option = document.createElement('option');
         option.value = lang;
@@ -107,7 +121,6 @@ async function addLanguagesToDropdown() {
 }
 
 export function initLocales() {
-    waitUntilCondition(() => !!localeData);
     applyLocale();
     addLanguagesToDropdown();
 
