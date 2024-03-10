@@ -1049,6 +1049,7 @@ select {
 #creator_notes_spoiler {
     border: 0;
     font-size: calc(var(--mainFontSize)*.8);
+    padding-top: 5px;
 }
 
 @media screen and (max-width: 1000px) {
