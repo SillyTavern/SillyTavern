@@ -1226,3 +1226,27 @@ export async function extractTextFromMarkdown(blob) {
     const text = postProcessText(document.body.textContent, false);
     return text;
 }
+
+/**
+ * Sets a value in an object by a path.
+ * @param {object} obj Object to set value in
+ * @param {string} path Key path
+ * @param {any} value Value to set
+ * @returns {void}
+ */
+export function setValueByPath(obj, path, value) {
+    const keyParts = path.split('.');
+    let currentObject = obj;
+
+    for (let i = 0; i < keyParts.length - 1; i++) {
+        const part = keyParts[i];
+
+        if (!Object.hasOwn(currentObject, part)) {
+            currentObject[part] = {};
+        }
+
+        currentObject = currentObject[part];
+    }
+
+    currentObject[keyParts[keyParts.length - 1]] = value;
+}

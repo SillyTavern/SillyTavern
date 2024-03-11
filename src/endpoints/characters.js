@@ -600,10 +600,10 @@ router.post('/edit-attribute', jsonParser, async function (request, response) {
  * @returns {void}
  * */
 router.post('/merge-attributes', jsonParser, async function (request, response) {
-    const update = request.body;
-    const avatarPath = path.join(DIRECTORIES.characters, update.avatar);
-
     try {
+        const update = request.body;
+        const avatarPath = path.join(DIRECTORIES.characters, update.avatar);
+
         const pngStringData = await charaRead(avatarPath);
 
         if (!pngStringData) {
