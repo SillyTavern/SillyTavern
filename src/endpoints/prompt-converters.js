@@ -101,7 +101,8 @@ function convertClaudeMessages(messages, prefillString, useSysPrompt, humanMsgFi
         messages.splice(0, i);
 
         // Check if the first message in the array is of type user, if not, interject with humanMsgFix or a blank message.
-        if (messages.length > 0 && messages[0].role !== 'user') {
+        // Also prevents erroring out if the messages array is empty.
+        if (messages.length === 0 || (messages.length > 0 && messages[0].role !== 'user')) {
             messages.unshift({
                 role: 'user',
                 content: humanMsgFix || '[Start a new chat]',
