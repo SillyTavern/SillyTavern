@@ -12,7 +12,7 @@ const settings = {
     // For both
     source: 'transformers',
     include_wi: false,
-    togetherai_model: '',
+    togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
 
     // For chats
     enabled_chats: false,
