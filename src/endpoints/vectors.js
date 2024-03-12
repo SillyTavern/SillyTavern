@@ -178,13 +178,6 @@ function getSourceSettings(source, request) {
         return {
             model: model,
         };
-    } else if (source === 'nomicai') {
-        let nomicaiKey = '';
-        nomicaiKey = String(request.headers['x-nomicai-key']);
-
-        return {
-            nomicaiKey: nomicaiKey,
-        };
     } else {
         // Extras API settings to connect to the Extras embeddings provider
         let extrasUrl = '';
