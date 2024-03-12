@@ -602,7 +602,24 @@ export function isOdd(number) {
     return number % 2 !== 0;
 }
 
+const dateCache = new Map();
+
+/**
+ * Cached version of moment() to avoid re-parsing the same date strings.
+ * @param {any} timestamp String or number representing a date.
+ * @returns {*} Moment object
+ */
 export function timestampToMoment(timestamp) {
+    if (dateCache.has(timestamp)) {
+        return dateCache.get(timestamp);
+    }
+
+    const moment = parseTimestamp(timestamp);
+    dateCache.set(timestamp, moment);
+    return moment;
+}
+
+function parseTimestamp(timestamp) {
     if (!timestamp) {
         return moment.invalid();
     }
