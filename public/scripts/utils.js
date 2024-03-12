@@ -606,6 +606,7 @@ const dateCache = new Map();
 
 /**
  * Cached version of moment() to avoid re-parsing the same date strings.
+ * Important: Moment objects are mutable, so use clone() before modifying them!
  * @param {any} timestamp String or number representing a date.
  * @returns {*} Moment object
  */
