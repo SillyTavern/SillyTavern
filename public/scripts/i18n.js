@@ -12,7 +12,9 @@ const localeData = await getLocaleData(localeFile);
  * @returns {Promise<Record<string, string>>} Locale data
  */
 async function getLocaleData(language) {
-    if (!langs.includes(language)) {
+    let supportedLang = langs.find(x => x.lang === language);
+
+    if (!supportedLang) {
         console.warn(`Unsupported language: ${language}`);
         return {};
     }
@@ -106,11 +108,12 @@ export function applyLocale(root = document) {
     }
 }
 
+
 function addLanguagesToDropdown() {
-    for (const lang of langs) {
+    for (const langObj of langs) { // Set the value to the language code
         const option = document.createElement('option');
-        option.value = lang;
-        option.innerText = lang;
+        option.value = langObj["lang"]; // Set the value to the language code
+        option.innerText = langObj["display"]; // Set the display text to the language name
         $('#ui_language_select').append(option);
     }
 

@@ -1,9 +1,11 @@
 [
-    "zh-cn",
-    "ja-jp",
-    "ko-kr",
-    "ru-ru",
-    "it-it",
-    "nl-nl",
-    "es-spa"
+    { "lang": "zh_cn",  "display": "Chinese (Simplified)" },
+    { "lang": "ja_jp",  "display": "Japanese" },
+    { "lang": "ko_kr",  "display": "Korean" },
+    { "lang": "ru_ru",  "display": "Russian" },
+    { "lang": "it_it",  "display": "Italian" },
+    { "lang": "nl_nl",  "display": "Dutch" },
+    { "lang": "es_es", "display": "Spanish" },
+    { "lang": "pt_pt",  "display": "Portuguese (Portugal)" },
+    { "lang": "ar_sa",  "display": "Arabic" }
 ]

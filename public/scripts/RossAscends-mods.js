@@ -335,7 +335,9 @@ export async function favsToHotswap() {
 
     await Promise.allSettled(promises);
     //helpful instruction message if no characters are favorited
-    if (count === 0) { container.html('<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>'); }
+    if (count === 0) { 
+        container.html('<small><span data-i18n="Favorite characters to add them to HotSwaps"><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>'); 
+    }
     //otherwise replace with fav'd characters
     if (count > 0) {
         container.replaceWith(newContainer);
