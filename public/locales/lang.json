@@ -1,6 +1,6 @@
 [
     { "lang": "ar-sa",  "display": "Arabic" },
-    { "lang": "zh-cn",  "display": "Chinese (Simplified)" }
+    { "lang": "zh-cn",  "display": "Chinese (Simplified)" },
     { "lang": "nl-nl",  "display": "Dutch" },
     { "lang": "it-it",  "display": "Italian" },
     { "lang": "es-es",  "display": "Spanish" },
