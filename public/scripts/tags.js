@@ -13,7 +13,7 @@ import {
 import { FILTER_TYPES, FILTER_STATES, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, debounce } from './utils.js';
 import { power_user } from './power-user.js';
 
 export {
@@ -847,10 +847,12 @@ function makeTagListDraggable(tagContainer) {
 
         saveSettingsDebounced();
 
-        // If the order of tags in display has changed, we need to redraw some UI elements
-        printCharacters(false);
-        printTagFilters(tag_filter_types.character);
-        printTagFilters(tag_filter_types.group_member);
+        // If the order of tags in display has changed, we need to redraw some UI elements. Do it debounced so it doesn't block and you can drag multiple tags.
+        debounce(() => {
+            printCharacters(false);
+            printTagFilters(tag_filter_types.character);
+            printTagFilters(tag_filter_types.group_member);
+        }, 100);
     };
 
     // @ts-ignore
