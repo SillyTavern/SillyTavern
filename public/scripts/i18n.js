@@ -81,6 +81,10 @@ async function getMissingTranslations() {
 }
 
 export function applyLocale(root = document) {
+    if (!localeData || Object.keys(localeData).length === 0) {
+        return root;
+    }
+
     const $root = root instanceof Document ? $(root) : $(new DOMParser().parseFromString(root, 'text/html'));
 
     //find all the elements with `data-i18n` attribute
@@ -112,8 +116,8 @@ export function applyLocale(root = document) {
 function addLanguagesToDropdown() {
     for (const langObj of langs) { // Set the value to the language code
         const option = document.createElement('option');
-        option.value = langObj["lang"]; // Set the value to the language code
-        option.innerText = langObj["display"]; // Set the display text to the language name
+        option.value = langObj['lang']; // Set the value to the language code
+        option.innerText = langObj['display']; // Set the display text to the language name
         $('#ui_language_select').append(option);
     }
 
