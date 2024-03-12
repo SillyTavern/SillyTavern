@@ -1,13 +1,12 @@
 [
     { "lang": "ar-sa",  "display": "Arabic" },
-    { "lang": "es-es",  "display": "Spanish" },
+    { "lang": "zh-cn",  "display": "Chinese (Simplified)" }
+    { "lang": "nl-nl",  "display": "Dutch" },
     { "lang": "it-it",  "display": "Italian" },
+    { "lang": "es-es",  "display": "Spanish" },
     { "lang": "ja-jp",  "display": "Japanese" },
     { "lang": "ko-kr",  "display": "Korean" },
-    { "lang": "nl-nl",  "display": "Dutch" },
     { "lang": "pt-pt",  "display": "Portuguese (Portugal)" },
     { "lang": "ru-ru",  "display": "Russian" },
-    { "lang": "vi-vn",  "display": "Vietnamese" },
-    { "lang": "zh-cn",  "display": "Chinese (Simplified)" }
-
+    { "lang": "vi-vn",  "display": "Vietnamese" }
 ]
