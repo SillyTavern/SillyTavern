@@ -42,8 +42,7 @@ async function getOpenAIBatchVector(texts, source, model = '') {
     }
 
     const url = config.url;
-    let response;
-    response = await fetch(`https://${url}/v1/embeddings`, {
+    const response = await fetch(`https://${url}/v1/embeddings`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -71,7 +70,8 @@ async function getOpenAIBatchVector(texts, source, model = '') {
     // Sort data by x.index to ensure the order is correct
     data.data.sort((a, b) => a.index - b.index);
 
-    return data.data.map(x => x.embedding);
+    const vectors = data.data.map(x => x.embedding);
+    return vectors;
 }
 
 /**
@@ -81,7 +81,7 @@ async function getOpenAIBatchVector(texts, source, model = '') {
  * @param model
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getOpenAIVector(text, source, model) {
+async function getOpenAIVector(text, source, model = '') {
     const vectors = await getOpenAIBatchVector([text], source, model);
     return vectors[0];
 }
