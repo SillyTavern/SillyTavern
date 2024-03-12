@@ -1,11 +1,11 @@
 [
-    { "lang": "zh_cn",  "display": "Chinese (Simplified)" },
-    { "lang": "ja_jp",  "display": "Japanese" },
-    { "lang": "ko_kr",  "display": "Korean" },
-    { "lang": "ru_ru",  "display": "Russian" },
-    { "lang": "it_it",  "display": "Italian" },
-    { "lang": "nl_nl",  "display": "Dutch" },
-    { "lang": "es_es", "display": "Spanish" },
-    { "lang": "pt_pt",  "display": "Portuguese (Portugal)" },
-    { "lang": "ar_sa",  "display": "Arabic" }
+    { "lang": "zh-cn",  "display": "Chinese (Simplified)" },
+    { "lang": "ja-jp",  "display": "Japanese" },
+    { "lang": "ko-kr",  "display": "Korean" },
+    { "lang": "ru-ru",  "display": "Russian" },
+    { "lang": "it-it",  "display": "Italian" },
+    { "lang": "nl-nl",  "display": "Dutch" },
+    { "lang": "es-es", "display": "Spanish" },
+    { "lang": "pt-pt",  "display": "Portuguese (Portugal)" },
+    { "lang": "ar-sa",  "display": "Arabic" }
 ]
