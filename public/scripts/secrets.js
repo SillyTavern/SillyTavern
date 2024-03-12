@@ -20,6 +20,7 @@ export const SECRET_KEYS = {
     DREAMGEN: 'api_key_dreamgen',
     CUSTOM: 'api_key_custom',
     OOBA: 'api_key_ooba',
+    NOMICAI: 'api_key_nomicai',
 };
 
 const INPUT_MAP = {
@@ -41,6 +42,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.OOBA]: '#api_key_ooba',
     [SECRET_KEYS.INFERMATICAI]: '#api_key_infermaticai',
     [SECRET_KEYS.DREAMGEN]: '#api_key_dreamgen',
+    [SECRET_KEYS.NOMICAI]: '#api_key_nomicai',
 };
 
 async function clearSecret() {
@@ -48,7 +50,7 @@ async function clearSecret() {
     await writeSecret(key, '');
     secret_state[key] = false;
     updateSecretDisplay();
-    $(INPUT_MAP[key]).val('');
+    $(INPUT_MAP[key]).val('').trigger('input');
     $('#main_api').trigger('change');
 }
 

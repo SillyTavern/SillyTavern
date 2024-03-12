@@ -1,7 +1,7 @@
 import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, extension_settings, getContext, modules, renderExtensionTemplate } from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
-import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
 
 const MODULE_NAME = 'vectors';
@@ -461,7 +461,8 @@ async function insertVectorItems(collectionId, items) {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
-        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI]) {
+        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
+        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
@@ -580,6 +581,7 @@ function toggleSettings() {
     $('#vectors_files_settings').toggle(!!settings.enabled_files);
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
+    $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
 }
 
 async function onPurgeClick() {
@@ -655,7 +657,13 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
-
+    $('#api_key_nomicai').on('change', () => {
+        const nomicKey = String($('#api_key_nomicai').val()).trim();
+        if (nomicKey.length) {
+            writeSecret(SECRET_KEYS.NOMICAI, nomicKey);
+        }
+        saveSettingsDebounced();
+    });
     $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
         settings.togetherai_model = String($('#vectors_togetherai_model').val());
         Object.assign(extension_settings.vectors, settings);
@@ -725,6 +733,10 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
+
+    const validSecret = !!secret_state[SECRET_KEYS.NOMICAI];
+    const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key';
+    $('#api_key_nomicai').attr('placeholder', placeholder);
 
     toggleSettings();
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);
