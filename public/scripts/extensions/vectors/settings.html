@@ -19,6 +19,16 @@
                     <option value="nomicai">NomicAI</option>
                 </select>
             </div>
+            <div class="flex-container flexFlowColumn" id="openai_vectorsModel">
+                <label for="vectors_openai_model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_openai_model" class="text_pole">
+                    <option value="text-embedding-ada-002">text-embedding-ada-002</option>
+                    <option value="text-embedding-3-small">text-embedding-3-small</option>
+                    <option value="text-embedding-3-large">text-embedding-3-large</option>
+                </select>
+            </div>
             <div class="flex-container flexFlowColumn" id="together_vectorsModel">
                 <label for="vectors_togetherai_model">
                     Vectorization Model
@@ -34,6 +44,14 @@
                     <option value="bert-base-uncased">Bert Base Uncased</option>
                 </select>
             </div>
+
+            <small id="vectors_modelWarning">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                <span data-i18n="Vectors Model Warning">
+                    It is recommended to purge vectors when changing the model mid-chat. Otherwise, it will lead to sub-par results.
+                </span>
+            </small>
+
             <div class="flex-container flexFlowColumn" id="nomicai_apiKey">
                 <label for="api_key_nomicai">
                     <span>NomicAI API Key</span>

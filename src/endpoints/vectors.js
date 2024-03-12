@@ -178,6 +178,12 @@ function getSourceSettings(source, request) {
         return {
             model: model,
         };
+    } else if (source === 'openai') {
+        let model = String(request.headers['x-openai-model']);
+
+        return {
+            model: model,
+        };
     } else {
         // Extras API settings to connect to the Extras embeddings provider
         let extrasUrl = '';
