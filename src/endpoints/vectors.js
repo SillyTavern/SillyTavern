@@ -17,11 +17,11 @@ const SOURCES = ['transformers', 'mistral', 'openai', 'extras', 'palm', 'togethe
 async function getVector(source, sourceSettings, text) {
     switch (source) {
         case 'nomicai':
-            return require('../openai-vectors').getOpenAIVector(text, source, '', sourceSettings.nomicaiKey);
+            return require('../nomicai-vectors').getNomicAIVector(text, source);
         case 'togetherai':
         case 'mistral':
         case 'openai':
-            return require('../openai-vectors').getOpenAIVector(text, source, sourceSettings.model, '');
+            return require('../openai-vectors').getOpenAIVector(text, source, sourceSettings.model);
         case 'transformers':
             return require('../embedding').getTransformersVector(text);
         case 'extras':
@@ -48,12 +48,12 @@ async function getBatchVector(source, sourceSettings, texts) {
     for (let batch of batches) {
         switch (source) {
             case 'nomicai':
-                results.push(...await require('../openai-vectors').getOpenAIBatchVector(batch, source, '', sourceSettings.nomicaiKey));
+                results.push(...await require('../nomicai-vectors').getNomicAIBatchVector(batch, source));
                 break;
             case 'togetherai':
             case 'mistral':
             case 'openai':
-                results.push(...await require('../openai-vectors').getOpenAIBatchVector(batch, source, sourceSettings.model, ''));
+                results.push(...await require('../openai-vectors').getOpenAIBatchVector(batch, source, sourceSettings.model));
                 break;
             case 'transformers':
                 results.push(...await require('../embedding').getTransformersBatchVector(batch));

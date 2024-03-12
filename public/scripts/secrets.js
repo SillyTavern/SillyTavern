@@ -20,6 +20,7 @@ export const SECRET_KEYS = {
     DREAMGEN: 'api_key_dreamgen',
     CUSTOM: 'api_key_custom',
     OOBA: 'api_key_ooba',
+    NOMICAI: 'api_key_nomicai',
 };
 
 const INPUT_MAP = {

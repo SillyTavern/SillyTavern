@@ -1,7 +1,7 @@
 import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, extension_settings, getContext, modules, renderExtensionTemplate } from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
-import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
 
 const MODULE_NAME = 'vectors';
@@ -13,7 +13,6 @@ const settings = {
     source: 'transformers',
     include_wi: false,
     togetherai_model: '',
-    nomicai_key: '',
 
     // For chats
     enabled_chats: false,
@@ -453,16 +452,6 @@ function addTogetherAiHeaders(headers) {
 }
 
 /**
- * Add headers for the Extras API source.
- * @param {object} headers Headers object
- */
-function addNomicAiHeaders(headers) {
-    Object.assign(headers, {
-        'X-NomicAi-Key': extension_settings.vectors.nomicai_key,
-    });
-}
-
-/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
@@ -472,7 +461,8 @@ async function insertVectorItems(collectionId, items) {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
-        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI]) {
+        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
+        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
@@ -485,8 +475,6 @@ async function insertVectorItems(collectionId, items) {
         addExtrasHeaders(headers);
     } else if (settings.source === 'togetherai') {
         addTogetherAiHeaders(headers);
-    } else if (settings.source === 'nomicai') {
-        addNomicAiHeaders(headers);
     }
 
     const response = await fetch('/api/vector/insert', {
@@ -538,8 +526,6 @@ async function queryCollection(collectionId, searchText, topK) {
         addExtrasHeaders(headers);
     } else if (settings.source === 'togetherai') {
         addTogetherAiHeaders(headers);
-    } else if (settings.source === 'nomicai') {
-        addNomicAiHeaders(headers);
     }
 
     const response = await fetch('/api/vector/query', {
@@ -671,9 +657,11 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
-    $('#vectors_nomicai_apiKey').val(settings.nomicai_key).on('change', () => {
-        settings.nomicai_key = String($('#vectors_nomicai_apiKey').val());
-        Object.assign(extension_settings.vectors, settings);
+    $('#api_key_nomicai').on('change', () => {
+        const nomicKey = String($('#api_key_nomicai').val()).trim();
+        if (nomicKey.length) {
+            writeSecret(SECRET_KEYS.NOMICAI, nomicKey);
+        }
         saveSettingsDebounced();
     });
     $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
@@ -745,6 +733,10 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
+
+    const validSecret = !!secret_state[SECRET_KEYS.NOMICAI];
+    const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key';
+    $('#api_key_nomicai').attr('placeholder', placeholder);
 
     toggleSettings();
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);
