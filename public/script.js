@@ -8727,44 +8727,23 @@ jQuery(async function () {
     });
 
     $('#api_button_textgenerationwebui').on('click', async function (e) {
-        const mancerKey = String($('#api_key_mancer').val()).trim();
-        if (mancerKey.length) {
-            await writeSecret(SECRET_KEYS.MANCER, mancerKey);
-        }
+        const keys = [
+            { id: 'api_key_mancer', secret: SECRET_KEYS.MANCER },
+            { id: 'api_key_aphrodite', secret: SECRET_KEYS.APHRODITE },
+            { id: 'api_key_tabby', secret: SECRET_KEYS.TABBY },
+            { id: 'api_key_togetherai', secret: SECRET_KEYS.TOGETHERAI },
+            { id: 'api_key_ooba', secret: SECRET_KEYS.OOBA },
+            { id: 'api_key_infermaticai', secret: SECRET_KEYS.INFERMATICAI },
+            { id: 'api_key_dreamgen', secret: SECRET_KEYS.DREAMGEN },
+            { id: 'api_key_openrouter-tg', secret: SECRET_KEYS.OPENROUTER },
+            { id: 'api_key_koboldcpp', secret: SECRET_KEYS.KOBOLDCPP },
+        ];
 
-        const aphroditeKey = String($('#api_key_aphrodite').val()).trim();
-        if (aphroditeKey.length) {
-            await writeSecret(SECRET_KEYS.APHRODITE, aphroditeKey);
-        }
-
-        const tabbyKey = String($('#api_key_tabby').val()).trim();
-        if (tabbyKey.length) {
-            await writeSecret(SECRET_KEYS.TABBY, tabbyKey);
-        }
-
-        const togetherKey = String($('#api_key_togetherai').val()).trim();
-        if (togetherKey.length) {
-            await writeSecret(SECRET_KEYS.TOGETHERAI, togetherKey);
-        }
-
-        const oobaKey = String($('#api_key_ooba').val()).trim();
-        if (oobaKey.length) {
-            await writeSecret(SECRET_KEYS.OOBA, oobaKey);
-        }
-
-        const infermaticAIKey = String($('#api_key_infermaticai').val()).trim();
-        if (infermaticAIKey.length) {
-            await writeSecret(SECRET_KEYS.INFERMATICAI, infermaticAIKey);
-        }
-
-        const dreamgenKey = String($('#api_key_dreamgen').val()).trim();
-        if (dreamgenKey.length) {
-            await writeSecret(SECRET_KEYS.DREAMGEN, dreamgenKey);
-        }
-
-        const openRouterKey = String($('#api_key_openrouter-tg').val()).trim();
-        if (openRouterKey.length) {
-            await writeSecret(SECRET_KEYS.OPENROUTER, openRouterKey);
+        for (const key of keys) {
+            const keyValue = String($(`#${key.id}`).val()).trim();
+            if (keyValue.length) {
+                await writeSecret(key.secret, keyValue);
+            }
         }
 
         validateTextGenUrl();
