@@ -124,8 +124,21 @@ function setAdditionalHeaders(request, args, server) {
             headers = getKoboldCppHeaders();
             break;
         default:
-            headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
+            headers = {};
             break;
+    }
+
+    if (typeof server === 'string' && server.length > 0) {
+        try {
+            const url = new URL(server);
+            const overrideHeaders =  getOverrideHeaders(url.host);
+
+            if (overrideHeaders && Object.keys(overrideHeaders).length > 0) {
+                Object.assign(headers, overrideHeaders);
+            }
+        } catch {
+            // Do nothing
+        }
     }
 
     Object.assign(args.headers, headers);
