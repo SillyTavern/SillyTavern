@@ -3182,11 +3182,18 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     //////////////////////////////////
 
-    // Insert character jailbreak as a last user message (if exists, allowed, preferred, and not using Chat Completion)
+    // Insert character jailbreak as the last user message (if exists, allowed, preferred, and not using Chat Completion)
     if (power_user.context.allow_jailbreak && power_user.prefer_character_jailbreak && main_api !== 'openai' && jailbreak) {
         // Set "original" explicity to empty string since there's no original
         jailbreak = substituteParams(jailbreak, name1, name2, '');
-        coreChat.push({ mes: jailbreak, is_user: true });
+
+        // When continuing generation of previous output, last user message precedes the message to continue
+        if (isContinue) {
+            coreChat.splice(coreChat.length - 1, 0, { mes: jailbreak, is_user: true });
+        }
+        else {
+            coreChat.push({ mes: jailbreak, is_user: true });
+        }
     }
 
     let chat2 = [];
