@@ -446,9 +446,9 @@
     },
     "oai_settings": {
         "preset_settings_openai": "Default",
-        "temp_openai": 0.9,
-        "freq_pen_openai": 0.7,
-        "pres_pen_openai": 0.7,
+        "temp_openai": 1.0,
+        "freq_pen_openai": 0,
+        "pres_pen_openai": 0,
         "count_pen": 0,
         "top_p_openai": 1,
         "top_k_openai": 0,
