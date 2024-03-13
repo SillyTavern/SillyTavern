@@ -384,7 +384,7 @@ function calculateOpenRouterCost() {
         }
     }
 
-    $('#openrouter_max_prompt_cost_tg').text(cost);
+    $('#or_prompt_cost').text(cost);
 
     // Schedule an update when settings change
     eventSource.removeListener(event_types.SETTINGS_UPDATED, calculateOpenRouterCost);
