@@ -1,4 +1,4 @@
-import { doExtrasFetch, getApiUrl, modules } from '../../extensions.js';
+
 import { saveTtsProviderSettings } from './index.js';
 
 export { GSVITtsProvider };
@@ -61,14 +61,14 @@ class GSVITtsProvider {
         const characterList = await response.json();
         this.characterList = characterList;
         this.voices = Object.keys(characterList);
-       
+
     }
 
-    
+
 
     get settingsHtml() {
         let html = `
-        <label for="gsvi_api_language">文本语言</label>
+        <label for="gsvi_api_language">Text Language</label>
         <select id="gsvi_api_language">`;
 
         for (let language in this.languageLabels) {
@@ -107,12 +107,20 @@ class GSVITtsProvider {
         
         <label for="gsvi_tts_streaming" class="checkbox_label">
             <input id="gsvi_tts_streaming" type="checkbox" ${this.defaultSettings.stream ? 'checked' : ''}/>
-            <span>Streaming <small>(RVC not supported)</small></span>
+            <span>Streaming</span>
         </label>
 
         <label for="gsvi_stream_chunk_size">Stream Chunk Size: <span id="gsvi_stream_chunk_size_output">${this.defaultSettings.stream_chunk_size}</span></label>
         <input id="gsvi_stream_chunk_size" type="range" value="${this.defaultSettings.stream_chunk_size}" min="100" max="400" step="1" />
-
+        <title>About GSVI (GPT-Sovits Inference)</title>
+        <p>
+        GSVI (GPT-Sovits Inference) is an inference enhancement project based on 
+            <a href="https://github.com/RVC-Boss/GPT-SoVITS" target="_blank">GPT-Sovits</a>, allowing you to run an API interface locally, offering emotion-rich speech-to-text and convenient model management features.
+        </p>
+        <p>
+            For more information, visit the 
+            <a href="https://github.com/X-T-E-R/GPT-SoVITS-Inference" target="_blank">GSVI project page</a>.
+        </p>
         `;
 
         return html;
@@ -122,7 +130,7 @@ class GSVITtsProvider {
         // Update provider settings based on input fields
         this.settings.provider_endpoint = $('#gsvi_tts_endpoint').val();
         this.settings.language = $('#gsvi_api_language').val();
-        
+
 
         // Update the rest of TTS settings based on input fields
         this.settings.speed = parseFloat($('#gsvi_speed').val());
@@ -134,6 +142,7 @@ class GSVITtsProvider {
         this.settings.stream_chunk_size = parseInt($('#gsvi_stream_chunk_size').val(), 10);
 
         // Update UI to reflect changes
+
         $('#gsvi_tts_speed_output').text(this.settings.speed);
         $('#gsvi_tts_temperature_output').text(this.settings.temperature);
         $('#gsvi_top_k_output').text(this.settings.top_k);
@@ -146,7 +155,7 @@ class GSVITtsProvider {
 
         // Persist settings changes
         saveTtsProviderSettings();
-        
+
     }
 
     async loadSettings(settings) {
@@ -162,7 +171,7 @@ class GSVITtsProvider {
         // Set initial values from the settings
         $('#gsvi_tts_endpoint').val(this.settings.provider_endpoint);
         $('#gsvi_api_language').val(this.settings.language);
-       
+
         $('#gsvi_speed').val(this.settings.speed);
         $('#gsvi_temperature').val(this.settings.temperature);
         $('#gsvi_top_k').val(this.settings.top_k);
@@ -170,18 +179,18 @@ class GSVITtsProvider {
         $('#gsvi_batch_size').val(this.settings.batch_size);
         $('#gsvi_tts_streaming').prop('checked', this.settings.stream);
         $('#gsvi_stream_chunk_size').val(this.settings.stream_chunk_size);
-        
+
         // Update UI to reflect initial settings
         $('#gsvi_tts_speed_output').text(this.settings.speed);
         $('#gsvi_tts_temperature_output').text(this.settings.temperature);
         $('#gsvi_top_k_output').text(this.settings.top_k);
         $('#gsvi_top_p_output').text(this.settings.top_p);
         $('#gsvi_stream_chunk_size_output').text(this.settings.stream_chunk_size);
-        
+
         // Register event listeners to update settings on user interaction
         // (Similar to before, ensure event listeners for character and emotion selection are included)
-                // Register input/change event listeners to update settings on user interaction
-        $('#xtts_tts_endpoint').on('input', () => { this.onSettingsChange(); });
+        // Register input/change event listeners to update settings on user interaction
+        $('#gsvi_tts_endpoint').on('input', () => { this.onSettingsChange(); });
         $('#gsvi_api_language').on('change', () => { this.onSettingsChange(); });
 
         $('#gsvi_speed').on('input', () => { this.onSettingsChange(); });
@@ -191,8 +200,7 @@ class GSVITtsProvider {
         $('#gsvi_batch_size').on('input', () => { this.onSettingsChange(); });
         $('#gsvi_tts_streaming').on('change', () => { this.onSettingsChange(); });
         $('#gsvi_stream_chunk_size').on('input', () => { this.onSettingsChange(); });
-                
-        
+
         await this.checkReady();
         console.debug('GSVI: Settings loaded');
     }
