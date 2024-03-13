@@ -45,6 +45,12 @@ function getFilterHelper(listSelector) {
     return $(listSelector).is(GROUP_FILTER_SELECTOR) ? groupCandidatesFilter : entitiesFilter;
 }
 
+const redrawCharsAndFiltersDebounced = debounce(() => {
+    printCharacters(false);
+    printTagFilters(tag_filter_types.character);
+    printTagFilters(tag_filter_types.group_member);
+}, 100);
+
 export const tag_filter_types = {
     character: 0,
     group_member: 1,
@@ -848,11 +854,7 @@ function makeTagListDraggable(tagContainer) {
         saveSettingsDebounced();
 
         // If the order of tags in display has changed, we need to redraw some UI elements. Do it debounced so it doesn't block and you can drag multiple tags.
-        debounce(() => {
-            printCharacters(false);
-            printTagFilters(tag_filter_types.character);
-            printTagFilters(tag_filter_types.group_member);
-        }, 100);
+        redrawCharsAndFiltersDebounced();
     };
 
     // @ts-ignore
