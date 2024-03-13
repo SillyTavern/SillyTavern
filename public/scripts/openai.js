@@ -3840,7 +3840,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.OPENROUTER:
             return !oai_settings.openrouter_force_instruct && (oai_settings.openrouter_model.includes(gpt4v) || oai_settings.openrouter_model.includes(llava));
         case chat_completion_sources.CUSTOM:
-            return oai_settings.custom_model.includes(gpt4v) || oai_settings.custom_model.includes(llava) || oai_settings.custom_model.includes(geminiProV);
+            return true;
         default:
             return false;
     }
