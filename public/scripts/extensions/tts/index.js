@@ -1,4 +1,4 @@
-import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced, appendMediaToMessage, saveChatDebounced } from '../../../script.js';
+import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced, appendMediaToMessage, saveChatDebounced ,saveChatConditional } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js';
 import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique, saveAudioAsFile } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
@@ -86,6 +86,7 @@ let ttsProviderName;
 let ttsLastMessage = null;
 
 async function onNarrateOneMessage() {
+    console.log('onNarrateOneMessage called');
     audioElement.src = '/sounds/silence.mp3';
     const context = getContext();
     const id = $(this).closest('.mes').attr('mesid');
@@ -96,8 +97,25 @@ async function onNarrateOneMessage() {
     }
     console.log();
     resetTtsPlayback('async function onNarrateOneMessage() message is: ',message);
+    console.log('onNarrateOneMessage about to do ttsJobQueue.push(message);');
     ttsJobQueue.push(message);
     moduleWorker();
+}
+
+async function simulateNarrateOneMessage(messageId) {
+    const context = getContext();
+    const message = context.chat.find(m => m.extra.id === messageId);
+    if (!message) {
+        console.error("Message not found");
+        return;
+    }
+
+    audioElement.src = '/sounds/silence.mp3';
+    resetTtsPlayback();
+    ttsJobQueue.push(message);
+    await moduleWorker();
+
+    // Assuming moduleWorker initiates the process that eventually calls saveGeneratedAudio
 }
 
 async function onNarrateText(args, text) {
@@ -194,8 +212,7 @@ async function moduleWorker() {
         return;
     }
 
-    // clone message object, as things go haywire if message object is altered below (it's passed by reference)
-    const message = structuredClone(chat[chat.length - 1]);
+    const message = chat[chat.length - 1];
 
     // if last message within current message, message got extended. only send diff to TTS.
     if (ttsLastMessage !== null && message.mes.indexOf(ttsLastMessage) !== -1) {
@@ -235,6 +252,7 @@ async function moduleWorker() {
     console.debug(
         `Adding message from ${message.name} for TTS processing: "${message.mes}"`,
     );
+    console.log('ModuleWorker about to run ttsJobQueue.push(message);');
     ttsJobQueue.push(message);
 }
 
@@ -595,13 +613,16 @@ async function tts(text, voiceId, char) {
 
 
 async function processTtsQueue() {
+    
     // Called each moduleWorker iteration to pull chat messages from queue
     if (currentTtsJob || ttsJobQueue.length <= 0 || audioPaused) {
         return;
     }
 
-    console.debug('New message found, running TTS');
+    
+
     currentTtsJob = ttsJobQueue.shift();
+    console.debug('New message found, running TTS. Current TTS Job:', JSON.stringify(currentTtsJob));
     let text = extension_settings.tts.narrate_translated_only ? (currentTtsJob?.extra?.display_text || currentTtsJob.mes) : currentTtsJob.mes;
 
     if (extension_settings.tts.skip_codeblocks) {
@@ -665,7 +686,7 @@ async function processTtsQueue() {
 
         const audioURL = await tts(text, voiceId, char);
         if(audioURL) {
-            saveGeneratedAudio(text, audioURL, char, messageContext);
+            saveGeneratedAudio(text, audioURL, messageContext);
         } else {
             console.error("No audio URL was generated.");
         }
@@ -675,7 +696,7 @@ async function processTtsQueue() {
     }
 }
 
-async function saveGeneratedAudio(prompt, audioURL, char, message) {
+async function saveGeneratedAudio(prompt, audioURL, message) {
     // Ensure we have a 'message_id' to find the DOM element
     const messageId = message.extra.id;
     const $mes = $(`.mes[mesid="${messageId}"]`);
@@ -686,19 +707,27 @@ async function saveGeneratedAudio(prompt, audioURL, char, message) {
     }
 
     // Populate the extra object with audio information
-    message.extra.audio = audioURL.url; // The URL to the audio file
-    message.extra.title = prompt; // Use the prompt as the title
-
-    // Assuming `audioElement` is your Audio object that will play the audioURL
+    message.extra.audio = audioURL.url; 
+    message.extra.title = prompt; 
+  
     audioElement.src = audioURL.url;
 
-
+    console.log('appendMediaToMessage message: ;',message);
+    console.log('appendMediaToMessage $mes: ;',$mes);
     // Append the audio to the message and update the UI
-    appendMediaToMessage(message, $mes);
-    const context = getContext();
-    context.saveChat();
+    await appendMediaToMessage(message, $mes);
 
+    // Introducing a delay before proceeding with save operations
+    console.log('Waiting for 15 seconds before saving the audio...');
+    await new Promise(resolve => setTimeout(resolve, 15000)); // 15-second delay
+
+    const context = getContext();
+    await context.saveChat();
+    await saveChatConditional();
+    await saveChatDebounced();
+    console.log('saved three ways');
 }
+
 
 
 
