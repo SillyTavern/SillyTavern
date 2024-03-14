@@ -4,6 +4,7 @@ const DIRECTORIES = {
     avatars: 'public/User Avatars',
     images: 'public/img/',
     userImages: 'public/user/images/',
+    userAudio: 'public/user/audio/',
     groups: 'public/groups/',
     groupChats: 'public/group chats',
     chats: 'public/chats/',

@@ -1011,6 +1011,48 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
     }
 }
 
+export async function saveAudioAsFile(audioData, characterName, filename = '', ext) {
+    // Assume audioData is either a base64-encoded string or a Blob
+    let dataURL;
+
+    if (audioData instanceof Blob) {
+        // Convert Blob to base64 data URL
+        dataURL = await blobToDataUrl(audioData);
+    } else if (typeof audioData === 'string') {
+        // Directly use the base64 data string
+        dataURL = `data:audio/${ext};base64,${audioData}`;
+    } else {
+        throw new Error('Unsupported audio data type');
+    }
+
+    // Prepare the request body similarly to saveBase64AsFile, but for audio
+    const requestBody = {
+        audio: dataURL,
+        ch_name: characterName,
+        filename: String(filename).replace(/\./g, '_') + `.${ext}`,
+    };
+
+    // Send the data URL to your backend using fetch
+    const response = await fetch('/uploadaudio', { // Ensure this endpoint is configured to handle audio file uploads
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: {
+            ...getRequestHeaders(),
+            'Content-Type': 'application/json',
+        },
+    });
+
+    // If the response is successful, get the saved audio path from the server's response
+    if (response.ok) {
+        const responseData = await response.json();
+        return responseData.path; // The path where the audio file is saved
+    } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload the audio to the server');
+    }
+}
+
+
 /**
  * Loads either a CSS or JS file and appends it to the appropriate document section.
  *

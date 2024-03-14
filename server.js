@@ -399,6 +399,58 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
     }
 });
 
+/**
+ * Endpoint to handle audio uploads.
+ * The audio should be provided in the request body in base64 format.
+ * Optionally, a character name can be provided to save the audio in a sub-folder.
+ *
+ * @route POST /uploadaudio
+ * @param {Object} request.body - The request payload.
+ * @param {string} request.body.audio - The base64 encoded audio data.
+ * @param {string} [request.body.ch_name] - Optional character name to determine the sub-directory.
+ * @returns {Object} response - The response object containing the path where the audio was saved.
+ */
+app.post('/uploadaudio', jsonParser, async (request, response) => {
+    // Check for audio data
+    if (!request.body || !request.body.audio) {
+        return response.status(400).send({ error: 'No audio data provided' });
+    }
+
+    try {
+        // Extracting the base64 data and the audio format
+        const splitParts = request.body.audio.split(',');
+        const format = splitParts[0].split(';')[0].split('/')[1];
+        const base64Data = splitParts[1];
+        const validFormat = ['mp3', 'wav', 'ogg', 'm4a'].includes(format); // Add or remove formats as necessary
+        if (!validFormat) {
+            return response.status(400).send({ error: 'Invalid audio format' });
+        }
+
+        // Constructing filename and path
+        let filename;
+        if (request.body.filename) {
+            filename = `${removeFileExtension(request.body.filename)}.${format}`;
+        } else {
+            filename = `${Date.now()}.${format}`;
+        }
+
+        // If character is defined, save to a subfolder for that character
+        let pathToNewFile = path.join(DIRECTORIES.userAudio, sanitize(filename)); // Ensure DIRECTORIES.userAudio is defined and points to your audio storage directory
+        if (request.body.ch_name) {
+            pathToNewFile = path.join(DIRECTORIES.userAudio, sanitize(request.body.ch_name), sanitize(filename));
+        }
+
+        ensureDirectoryExistence(pathToNewFile);
+        const audioBuffer = Buffer.from(base64Data, 'base64');
+        await fs.promises.writeFile(pathToNewFile, audioBuffer);
+        response.send({ path: clientRelativePath(pathToNewFile) });
+    } catch (error) {
+        console.error(error);
+        response.status(500).send({ error: 'Failed to save the audio' });
+    }
+});
+
+
 app.post('/listimgfiles/:folder', (req, res) => {
     const directoryPath = path.join(process.cwd(), 'public/user/images/', sanitize(req.params.folder));
 

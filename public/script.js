@@ -1870,6 +1870,19 @@ export function appendMediaToMessage(mes, messageElement) {
         text.toggleClass('displayNone', !isInline);
     }
 
+    if (mes.extra?.audio) {
+        messageElement.find('.mes_audio_container').remove(); // Ensure no duplicates
+        const audioTemplate = $('#message_audio_template .mes_audio_container').clone();
+        audioTemplate.find('.mes_audio').attr('src', mes.extra.audio);
+        audioTemplate.find('.mes_audio_controls').show(); // If you have controls to show
+
+        messageElement.find('.mes_block').append(audioTemplate);
+    }
+
+
+
+
+
     // Add file to message
     if (mes.extra?.file) {
         messageElement.find('.mes_file_container').remove();
