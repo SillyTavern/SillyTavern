@@ -2019,7 +2019,7 @@ async function importTheme(file) {
         throw new Error('Theme with that name already exists');
     }
 
-    if (parsed.custom_css.includes('@import')) {
+    if (typeof parsed.custom_css === 'string' && parsed.custom_css.includes('@import')) {
         const confirm = await callPopup('This theme contains @import lines in the Custom CSS. Press "Yes" to proceed.', 'confirm', '', { okButton: 'Yes' });
         if (!confirm) {
             throw new Error('Theme contains @import lines');
