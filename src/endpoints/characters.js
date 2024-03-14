@@ -357,6 +357,16 @@ function charaFormatData(data) {
         }
     }
 
+    if (data.extensions) {
+        try {
+            const extensions = JSON.parse(data.extensions);
+            // Deep merge the extensions object
+            _.set(char, 'data.extensions', deepMerge(char.data.extensions, extensions));
+        } catch {
+            console.debug(`Failed to parse extensions JSON: ${data.extensions}`);
+        }
+    }
+
     return char;
 }
 

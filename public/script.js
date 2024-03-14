@@ -400,6 +400,7 @@ export const event_types = {
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
+    CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
 };
 
 export const eventSource = new EventEmitter();
@@ -745,6 +746,7 @@ let create_save = {
     alternate_greetings: [],
     depth_prompt_prompt: '',
     depth_prompt_depth: depth_prompt_depth_default,
+    extensions: {},
 };
 
 //animation right menu
@@ -7184,6 +7186,8 @@ async function createOrEditCharacter(e) {
                 formData.append('alternate_greetings', value);
             }
 
+            formData.append('extensions', JSON.stringify(create_save.extensions));
+
             await jQuery.ajax({
                 type: 'POST',
                 url: url,
@@ -7216,6 +7220,7 @@ async function createOrEditCharacter(e) {
                         { id: '#character_json_data', callback: () => { } },
                         { id: '#alternate_greetings_template', callback: value => create_save.alternate_greetings = value, defaultValue: [] },
                         { id: '#character_world', callback: value => create_save.world = value },
+                        { id: '#_character_extensions_fake', callback: value => create_save.extensions = {} },
                     ];
 
                     fields.forEach(field => {
@@ -7336,7 +7341,7 @@ window['SillyTavern'].getContext = function () {
         chatMetadata: chat_metadata,
         streamingProcessor,
         eventSource: eventSource,
-        event_types: event_types,
+        eventTypes: event_types,
         addOneMessage: addOneMessage,
         generate: Generate,
         getTokenCount: getTokenCount,
@@ -7366,6 +7371,12 @@ window['SillyTavern'].getContext = function () {
         writeExtensionField: writeExtensionField,
         tags: tags,
         tagMap: tag_map,
+        menuType: menu_type,
+        createCharacterData: create_save,
+        /**
+         * @deprecated Legacy snake-case naming, compatibility with old extensions
+         */
+        event_types: event_types,
     };
 };
 
