@@ -90,12 +90,12 @@ async function onNarrateOneMessage() {
     const context = getContext();
     const id = $(this).closest('.mes').attr('mesid');
     const message = context.chat[id];
-
+    message.extra.id=id;
     if (!message) {
         return;
     }
-
-    resetTtsPlayback();
+    console.log();
+    resetTtsPlayback('async function onNarrateOneMessage() message is: ',message);
     ttsJobQueue.push(message);
     moduleWorker();
 }
@@ -123,6 +123,7 @@ async function onNarrateText(args, text) {
     }
 
     resetTtsPlayback();
+    console.log('async function onNarrateText(args, text) ttsJobQueue.push({ mes: text, name: name });', { mes: text, name: name });
     ttsJobQueue.push({ mes: text, name: name });
     await moduleWorker();
 
@@ -141,7 +142,7 @@ async function moduleWorker() {
     const context = getContext();
     const chat = context.chat;
 
-    processTtsQueue();
+    await processTtsQueue();
     processAudioJobQueue();
     // updateUiAudioPlayState();
 
@@ -223,6 +224,13 @@ async function moduleWorker() {
     // New messages, add new chat to history
     lastMessageHash = hashNew;
     currentMessageNumber = lastMessageNumber;
+
+
+    // const context = getContext();
+    // const id = $(this).closest('.mes').attr('mesid');
+    // const message = context.chat[id];
+    message.extra.id=currentMessageNumber-1;
+
 
     console.debug(
         `Adding message from ${message.name} for TTS processing: "${message.mes}"`,
@@ -332,7 +340,7 @@ async function playAudioData(audioJob) {
     const { audioBlob, char } = audioJob;
 
     // Debug: Log the current audio job details
-    console.log('Current audio job:', audioJob);
+    // console.log('Current audio job:', audioJob);
 
     // Since the current audio job can be canceled, don't playback if it is null
     if (currentAudioJob == null) {
@@ -345,7 +353,7 @@ async function playAudioData(audioJob) {
         const srcUrl = await getBase64Async(audioBlob);
 
         // Debug: Log the generated source URL
-        console.log('Generated base64 URL for audio playback:', srcUrl);
+        // console.log('This is when the Generated base64 URL for audio playback exists. Is it before we try to add the media to the message? ', srcUrl);
 
         // Additional processing, like VRM lip sync
         if (extension_settings.vrm?.enabled && typeof window['vrmLipSync'] === 'function') {
@@ -537,7 +545,7 @@ let currentTtsJob; // Null if nothing is currently being processed
 let currentMessageNumber = 0;
 
 function completeTtsJob() {
-    console.info(`Current TTS job for ${currentTtsJob?.name} completed.`);
+    // console.info(`Current TTS job for ${currentTtsJob?.name} completed.`);
     currentTtsJob = null;
 }
 
@@ -553,13 +561,13 @@ async function tts(text, voiceId, char) {
     let audioUrl = null;
     async function processResponse(response) {
         // Log the type and content of the response for diagnostic purposes
-        console.log('TTS response type:', typeof response);
+        // console.log('TTS response type:', typeof response);
         if(response instanceof Blob) {
-            console.log('TTS response is a Blob.');
+            // console.log('TTS response is a Blob.');
         } else if(typeof response === 'string') {
-            console.log('TTS response is a string:', response);
+            // console.log('TTS response is a string:', response);
         } else {
-            console.log('Unexpected TTS response type.');
+            // console.log('Unexpected TTS response type.');
         }
 
         // Assuming response handling remains the same
@@ -634,7 +642,7 @@ async function processTtsQueue() {
     try {
 
         const messageContext = currentTtsJob;
-
+        console.log('const messageContext = currentTtsJob;',currentTtsJob);
         if (!text) {
             console.warn('Got empty text in TTS queue job.');
             completeTtsJob();
@@ -669,7 +677,7 @@ async function processTtsQueue() {
 
 async function saveGeneratedAudio(prompt, audioURL, char, message) {
     // Ensure we have a 'message_id' to find the DOM element
-    const messageId = message.message_id;
+    const messageId = message.extra.id;
     const $mes = $(`.mes[mesid="${messageId}"]`);
 
     // Ensure the extra object exists
@@ -681,18 +689,19 @@ async function saveGeneratedAudio(prompt, audioURL, char, message) {
     message.extra.audio = audioURL.url; // The URL to the audio file
     message.extra.title = prompt; // Use the prompt as the title
 
+    // Assuming `audioElement` is your Audio object that will play the audioURL
+    audioElement.src = audioURL.url;
+
+
     // Append the audio to the message and update the UI
     appendMediaToMessage(message, $mes);
-    saveChatDebounced();
-    // Update and save chat context
-    // const context = getContext();
-    // context.saveChat();
+    const context = getContext();
+    context.saveChat();
 
-    await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
-
-    // this_edit_mes_id = undefined;
-    // await saveChatConditional();
 }
+
+
+
 
 
 
