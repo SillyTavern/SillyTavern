@@ -45,3 +45,7 @@ access.log
 /cache/
 public/css/user.css
 /plugins/
+SillyTavern/
+git/git add .gitignore
+git commit -m "Update .gitignore to exclude certain files and directories"
+
