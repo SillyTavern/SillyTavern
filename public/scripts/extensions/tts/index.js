@@ -721,9 +721,9 @@ async function saveGeneratedAudio(prompt, audioURL, message) {
     console.log('Waiting for 15 seconds before saving the audio...');
     await new Promise(resolve => setTimeout(resolve, 15000)); // 15-second delay
 
-    const context = getContext();
-    await context.saveChat();
-    await saveChatConditional();
+    // const context = getContext();
+    // await context.saveChat();
+    // await saveChatConditional();
     await saveChatDebounced();
     console.log('saved three ways');
 }
