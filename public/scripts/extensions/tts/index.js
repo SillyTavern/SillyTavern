@@ -648,7 +648,8 @@ async function saveGeneratedAudio(prompt, audioURL, message) {
     console.log('appendMediaToMessage $mes: ;',$mes);
     // Append the audio to the message and update the UI
     await appendMediaToMessage(message, $mes);
-    await saveChatDebounced();
+    const context = getContext();
+    context.saveChat();
 }
 
 // Secret function for now
