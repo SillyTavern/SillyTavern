@@ -1629,6 +1629,10 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
         return '';
     }
 
+    if (Number(messageId) === 0 && !isSystem && !isUser) {
+        mes = substituteParams(mes);
+    }
+
     mesForShowdownParse = mes;
 
     // Force isSystem = false on comment messages so they get formatted properly
@@ -5360,12 +5364,12 @@ function getFirstMessage() {
         is_user: false,
         is_system: false,
         send_date: getMessageTimeStamp(),
-        mes: substituteParams(getRegexedString(firstMes, regex_placement.AI_OUTPUT)),
+        mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
         extra: {},
     };
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
-        const swipes = [message.mes, ...(alternateGreetings.map(greeting => substituteParams(getRegexedString(greeting, regex_placement.AI_OUTPUT))))];
+        const swipes = [message.mes, ...(alternateGreetings.map(greeting => getRegexedString(greeting, regex_placement.AI_OUTPUT)))];
         message['swipe_id'] = 0;
         message['swipes'] = swipes;
         message['swipe_info'] = [];
