@@ -1871,17 +1871,15 @@ export function appendMediaToMessage(mes, messageElement) {
     }
 
     if (mes.extra?.audio) {
-        messageElement.find('.mes_audio_container').remove(); // Ensure no duplicates
-        const audioTemplate = $('#message_audio_template .mes_audio_container').clone();
-        audioTemplate.find('.mes_audio').attr('src', mes.extra.audio);
-        audioTemplate.find('.mes_audio_controls').show(); // If you have controls to show
-
-        messageElement.find('.mes_block').append(audioTemplate);
+        const audioContainer = messageElement.find('.mes_audio_container');
+        audioContainer.show(); // Make the container visible
+        const audioElement = $('<audio>', {
+            class: 'mes_audio',
+            controls: true,
+            style: 'width: 100%; padding-top: 15px;'
+        }).attr('src', mes.extra.audio);
+        audioContainer.empty().append(audioElement);
     }
-
-
-
-
 
     // Add file to message
     if (mes.extra?.file) {
