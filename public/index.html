@@ -445,7 +445,7 @@
                                 </div>
                                 <hr>
                                 <div class="range-block">
-                                    <label for="stream_toggle" title="Enable OpenAI completion streaming" class="checkbox_label widthFreeExpand">
+                                    <label for="stream_toggle" title="Enable OpenAI completion streaming" data-i18n="[title]Enable OpenAI completion streaming" class="checkbox_label widthFreeExpand">
                                         <input id="stream_toggle" type="checkbox" /><span data-i18n="Streaming">
                                             Streaming</span>
                                     </label>
@@ -577,7 +577,7 @@
                                 </div>
                                 <div class="inline-drawer m-t-1 wide100p">
                                     <div class="inline-drawer-toggle inline-drawer-header">
-                                        <b data-i18n="Quick Edit">Quick Prompts Edit</b>
+                                        <b data-i18n="Quick Prompts Edit">Quick Prompts Edit</b>
                                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                     </div>
                                     <div class="inline-drawer-content">
@@ -1239,7 +1239,7 @@
                                     <div data-newbie-hidden data-tg-type="ooba" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Eta Cutoff">Eta Cutoff</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Eta cutoff is the main parameter of the special Eta Sampling technique.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable.&#13;See the paper Truncation Sampling as Language Model Desmoothing by Hewitt et al. (2022) for details."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Eta cutoff is the main parameter of the special Eta Sampling technique.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable.&#13;See the paper Truncation Sampling as Language Model Desmoothing by Hewitt et al. (2022) for details." title="Eta cutoff is the main parameter of the special Eta Sampling technique.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable.&#13;See the paper Truncation Sampling as Language Model Desmoothing by Hewitt et al. (2022) for details."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
@@ -1585,7 +1585,7 @@
                                         <hr class="wide100p">
                                         <h4 class="range-block-title justifyCenter">
                                             <span data-i18n="Sampler Priority">Sampler Priority</span>
-                                            <div class="margin5 fa-solid fa-circle-info opacity50p" title="Ooba only. Determines the order of samplers."></div>
+                                            <div class="margin5 fa-solid fa-circle-info opacity50p" title="Ooba only. Determines the order of samplers." data-i18n="[title]Ooba only. Determines the order of samplers."></div>
                                         </h4>
                                         <div class="toggle-description widthUnset" data-i18n="Ooba only. Determines the order of samplers.">
                                             Ooba only. Determines the order of samplers.
@@ -1613,7 +1613,7 @@
                             <div id="openai_settings">
                                 <div class="">
                                     <div class="range-block">
-                                        <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
+                                        <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" data-i18n="[title]Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
                                             <input id="wrap_in_quotes" type="checkbox" /><span data-i18n="Wrap in Quotes">
                                                 Wrap in Quotes</span>
                                         </label>
@@ -1625,11 +1625,11 @@
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <label for="names_in_completion" title="Add character names" class="checkbox_label widthFreeExpand">
+                                        <label for="names_in_completion" title="Add character names" data-i18n="[title]Add character names" class="checkbox_label widthFreeExpand">
                                             <input id="names_in_completion" type="checkbox" /><span data-i18n="Add character names">Add character names</span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Send names in the message objects.">Send names in the message objects. Helps the model to associate messages with characters.</span>
+                                            <span data-i18n="Send names in the message objects. Helps the model to associate messages with characters.">Send names in the message objects. Helps the model to associate messages with characters.</span>
                                         </div>
                                     </div>
                                     <div class="range-block">
@@ -1638,22 +1638,21 @@
                                             <span data-i18n="Continue prefill">Continue prefill</span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Continue sends the last message.">
+                                            <span data-i18n="Continue sends the last message as assistant role instead of system message with instruction.">
                                                 Continue sends the last message as assistant role instead of system message with instruction.
                                             </span>
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <label for="squash_system_messages" title="Squash system messages" class="checkbox_label widthFreeExpand">
+                                        <label for="squash_system_messages" title="Squash system messages" data-i18n="[title]Squash system messages" class="checkbox_label widthFreeExpand">
                                             <input id="squash_system_messages" type="checkbox" />
                                             <span data-i18n="Squash system messages">
                                                 Squash system messages
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Combines consecutive system messages into one.">
-                                                Combines consecutive system messages into one (excluding example dialogues).
-                                                May improve coherence for some models.
+                                            <span data-i18n="Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.">
+                                                Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.
                                             </span>
                                         </div>
                                     </div>
@@ -1696,7 +1695,7 @@
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Send the system prompt for supported models.">
+                                            <span data-i18n="Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.">
                                                 Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.
                                             </span>
                                         </div>
