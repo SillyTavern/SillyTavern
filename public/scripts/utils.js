@@ -43,6 +43,10 @@ export function isValidUrl(value) {
 export function stringToRange(input, min, max) {
     let start, end;
 
+    if (typeof input !== 'string') {
+        input = String(input);
+    }
+
     if (input.includes('-')) {
         const parts = input.split('-');
         start = parts[0] ? parseInt(parts[0], 10) : NaN;
