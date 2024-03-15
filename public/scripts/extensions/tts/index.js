@@ -1,6 +1,6 @@
-import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced, appendMediaToMessage, saveChatDebounced } from '../../../script.js';
+import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js';
-import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique, saveAudioAsFile } from '../../utils.js';
+import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
 import { ElevenLabsTtsProvider } from './elevenlabs.js';
 import { SileroTtsProvider } from './silerotts.js';
@@ -14,7 +14,6 @@ import { XTTSTtsProvider } from './xtts.js';
 import { AllTalkTtsProvider } from './alltalk.js';
 import { SpeechT5TtsProvider } from './speecht5.js';
 export { talkingAnimation };
-import { humanizedDateTime } from '../../RossAscends-mods.js';
 
 const UPDATE_INTERVAL = 1000;
 
@@ -90,7 +89,6 @@ async function onNarrateOneMessage() {
     const context = getContext();
     const id = $(this).closest('.mes').attr('mesid');
     const message = context.chat[id];
-    message.extra.id=id;
 
     if (!message) {
         return;
@@ -194,7 +192,8 @@ async function moduleWorker() {
         return;
     }
 
-    const message = chat[chat.length - 1];
+    // clone message object, as things go haywire if message object is altered below (it's passed by reference)
+    const message = structuredClone(chat[chat.length - 1]);
 
     // if last message within current message, message got extended. only send diff to TTS.
     if (ttsLastMessage !== null && message.mes.indexOf(ttsLastMessage) !== -1) {
@@ -224,12 +223,9 @@ async function moduleWorker() {
     lastMessageHash = hashNew;
     currentMessageNumber = lastMessageNumber;
 
-    message.extra.id=currentMessageNumber-1;
-
     console.debug(
         `Adding message from ${message.name} for TTS processing: "${message.mes}"`,
     );
-
     ttsJobQueue.push(message);
 }
 
@@ -345,7 +341,6 @@ async function playAudioData(audioJob) {
             await window['vrmLipSync'](audioBlob, char);
         }
 
-        // Set the source URL to the audio element for playback
         audioElement.src = srcUrl;
     } else if (typeof audioBlob === 'string') {
         audioElement.src = audioBlob;
@@ -447,47 +442,16 @@ function completeCurrentAudioJob() {
  * @param {Response} response
  */
 async function addAudioJob(response, char) {
-    const context = getContext();
-    const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
-    let audioUrl;
-    let base64AudioData;
-
     if (typeof response === 'string') {
-        audioJobQueue.push({ audioBlob: response, char: char }); // For playback
-        audioUrl = response;
-    }
-    else if (response instanceof Blob) {
-        base64AudioData = await blobToBase64(response);
-        // Save the audio and get the URL
-        const filename = `${characterName}_${humanizedDateTime()}`;
-        audioUrl = await saveAudioAsFile(base64AudioData, char, filename, 'mp3'); // Adjust 'audioFileName' and 'mp3' as necessary
-    }
-    // Handling Response objects, assuming .blob() method availability
-    else if (response instanceof Response) {
+        audioJobQueue.push({ audioBlob: response, char: char });
+    } else {
         const audioData = await response.blob();
         if (!audioData.type.startsWith('audio/')) {
             throw `TTS received HTTP response with invalid data format. Expecting audio/*, got ${audioData.type}`;
         }
         audioJobQueue.push({ audioBlob: audioData, char: char });
-        base64AudioData = await blobToBase64(audioData);
-        // Save the audio and get the URL
-        const filename = `${characterName}_${humanizedDateTime()}`;
-        audioUrl = await saveAudioAsFile(base64AudioData, char, filename, 'mp3'); // Adjust 'audioFileName' and 'mp3' as necessary
-    } else {
-        console.error('Unexpected audio response type:', typeof response);
-        return;
     }
-    console.debug('Pushed audio job to queue with URL:', audioUrl);
-    return { url: audioUrl }; // Return the URL for further processing, wrapped in an object for consistency
-}
-
-function blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]); // split to get the base64 part only
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
+    console.debug('Pushed audio job to queue.');
 }
 
 async function processAudioJobQueue() {
@@ -528,12 +492,12 @@ function saveLastValues() {
 }
 
 async function tts(text, voiceId, char) {
-    let audioUrl = null;
     async function processResponse(response) {
-        if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function') {
+        // RVC injection
+        if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
             response = await window['rvcVoiceConversion'](response, char, text);
-        }
-        return await addAudioJob(response, char);
+
+        await addAudioJob(response, char);
     }
 
     let response = await ttsProvider.generateTts(text, voiceId);
@@ -541,17 +505,16 @@ async function tts(text, voiceId, char) {
     // If async generator, process every chunk as it comes in
     if (typeof response[Symbol.asyncIterator] === 'function') {
         for await (const chunk of response) {
-            audioUrl = await processResponse(chunk);
+            await processResponse(chunk);
         }
     } else {
-        audioUrl = await processResponse(response);
+        await processResponse(response);
     }
 
     completeTtsJob();
-    return audioUrl;
 }
 
-async function processTtsQueue() { 
+async function processTtsQueue() {
     // Called each moduleWorker iteration to pull chat messages from queue
     if (currentTtsJob || ttsJobQueue.length <= 0 || audioPaused) {
         return;
@@ -597,8 +560,6 @@ async function processTtsQueue() {
     }
 
     try {
-
-        const messageContext = currentTtsJob;
         if (!text) {
             console.warn('Got empty text in TTS queue job.');
             completeTtsJob();
@@ -616,39 +577,11 @@ async function processTtsQueue() {
             toastr.error(`Specified voice for ${char} was not found. Check the TTS extension settings.`);
             throw `Unable to attain voiceId for ${char}`;
         }
-        const audioURL = await tts(text, voiceId, char);
-        if(audioURL) {
-            saveGeneratedAudio(text, audioURL, messageContext);
-        } else {
-            console.error("No audio URL was generated.");
-        }
+        tts(text, voiceId, char);
     } catch (error) {
         console.error(error);
         currentTtsJob = null;
     }
-}
-
-async function saveGeneratedAudio(prompt, audioURL, message) {
-    // Ensure we have a 'message_id' to find the DOM element
-    const messageId = message.extra.id;
-    const $mes = $(`.mes[mesid="${messageId}"]`);
-
-    // Ensure the extra object exists
-    if (typeof message.extra !== 'object') {
-        message.extra = {};
-    }
-
-    // Populate the extra object with audio information
-    message.extra.audio = audioURL.url; 
-    message.extra.title = prompt; 
-  
-    audioElement.src = audioURL.url;
-
-    console.log('appendMediaToMessage message: ;',message);
-    console.log('appendMediaToMessage $mes: ;',$mes);
-    // Append the audio to the message and update the UI
-    await appendMediaToMessage(message, $mes);
-    saveChatDebounced();
 }
 
 // Secret function for now
