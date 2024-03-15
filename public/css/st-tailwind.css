@@ -271,15 +271,18 @@
     flex-wrap: wrap;
 }
 
-.flexnowrap {
+.flexnowrap,
+.flexNoWrap {
     flex-wrap: nowrap;
 }
 
-.alignitemscenter {
+.alignitemscenter,
+.alignItemsCenter {
     align-items: center;
 }
 
-.alignitemsstart {
+.alignitemsstart,
+.alignItemsStart {
     align-items: start;
 }
 

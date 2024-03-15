@@ -1074,13 +1074,6 @@ async function applyThemeColor(type) {
 async function applyCustomCSS() {
     power_user.custom_css = String(localStorage.getItem(storage_keys.custom_css) ?? '');
 
-    if (power_user.custom_css.includes('@import')) {
-        var removeImport = /@import[^;]+;/gm;
-        power_user.custom_css = power_user.custom_css.replace(removeImport, '');
-        localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
-        toastr.warning('@import not allowed in Custom CSS. @import lines removed.');
-    }
-
     $('#customCSS').val(power_user.custom_css);
     var styleId = 'custom-style';
     var style = document.getElementById(styleId);
@@ -2024,6 +2017,13 @@ async function importTheme(file) {
 
     if (themes.some(t => t.name === parsed.name)) {
         throw new Error('Theme with that name already exists');
+    }
+
+    if (typeof parsed.custom_css === 'string' && parsed.custom_css.includes('@import')) {
+        const confirm = await callPopup('This theme contains @import lines in the Custom CSS. Press "Yes" to proceed.', 'confirm', '', { okButton: 'Yes' });
+        if (!confirm) {
+            throw new Error('Theme contains @import lines');
+        }
     }
 
     themes.push(parsed);
