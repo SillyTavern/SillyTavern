@@ -16,6 +16,11 @@ import { SpeechT5TtsProvider } from './speecht5.js';
 export { talkingAnimation };
 import { humanizedDateTime } from '../../RossAscends-mods.js';
 
+
+let preGenerationChatLength = 0;
+let isMessageRegenerated = false;
+
+
 const UPDATE_INTERVAL = 1000;
 
 let voiceMapEntries = [];
@@ -98,8 +103,46 @@ async function onNarrateOneMessage() {
 
     resetTtsPlayback();
     ttsJobQueue.push(message);
-    moduleWorker();
+    // moduleWorker();
 }
+
+async function generateTTSForLastMessage() {
+    // Ensure audio playback is reset before starting
+    audioElement.src = '/sounds/silence.mp3';
+
+    // Obtain the current chat context
+    const context = getContext();
+
+    // Ensure there are messages in the chat
+    if (context.chat.length === 0) {
+        console.log("No messages in chat to narrate.");
+        return;
+    }
+
+    // Get the last message in the chat
+    const lastMessageIndex = context.chat.length - 1;
+    const lastMessage = context.chat[lastMessageIndex];
+
+    // Assign an ID to the message for reference (optional, depends on your logic)
+    lastMessage.extra.id = lastMessageIndex.toString();
+
+    // Additional logic can go here, for example, checking if the message is from the user
+    // and whether user messages should be narrated
+    if (lastMessage.is_user && !extension_settings.tts.narrate_user) {
+        console.log("User messages are not set to be narrated. Skipping.");
+        return;
+    }
+
+    // Reset TTS playback before queuing a new job
+    resetTtsPlayback();
+
+    // Queue the message for TTS
+    ttsJobQueue.push(lastMessage);
+
+
+}
+
+
 
 async function onNarrateText(args, text) {
     if (!text) {
@@ -132,105 +175,18 @@ async function onNarrateText(args, text) {
 }
 
 async function moduleWorker() {
-    // Primarily determining when to add new chat to the TTS queue
-    const enabled = $('#tts_enabled').is(':checked');
-    $('body').toggleClass('tts', enabled);
-    if (!enabled) {
-        return;
-    }
-
-    const context = getContext();
-    const chat = context.chat;
-
     processTtsQueue();
     processAudioJobQueue();
     updateUiAudioPlayState();
+    // TODO reimplement this part about if (ttsLastMessage !== null && message.mes.indexOf(ttsLastMessage) !== -1)
+    // if (ttsLastMessage !== null && message.mes.indexOf(ttsLastMessage) !== -1) {
+    //     let tmp = message.mes;
+    //     message.mes = message.mes.replace(ttsLastMessage, '');
+    //     ttsLastMessage = tmp;
+    // } else {
+    //     ttsLastMessage = message.mes;
+    // }
 
-    // Auto generation is disabled
-    if (extension_settings.tts.auto_generation == false) {
-        return;
-    }
-
-    // no characters or group selected
-    if (!context.groupId && context.characterId === undefined) {
-        return;
-    }
-
-    // Chat changed
-    if (
-        context.chatId !== lastChatId
-    ) {
-        currentMessageNumber = context.chat.length ? context.chat.length : 0;
-        saveLastValues();
-
-        // Force to speak on the first message in the new chat
-        if (context.chat.length === 1) {
-            lastMessageHash = -1;
-        }
-
-        return;
-    }
-
-    // take the count of messages
-    let lastMessageNumber = context.chat.length ? context.chat.length : 0;
-
-    // There's no new messages
-    let diff = lastMessageNumber - currentMessageNumber;
-    let hashNew = getStringHash((chat.length && chat[chat.length - 1].mes) ?? '');
-
-    // if messages got deleted, diff will be < 0
-    if (diff < 0) {
-        // necessary actions will be taken by the onChatDeleted() handler
-        return;
-    }
-
-    // if no new messages, or same message, or same message hash, do nothing
-    if (diff == 0 && hashNew === lastMessageHash) {
-        return;
-    }
-
-    // If streaming, wait for streaming to finish before processing new messages
-    if (context.streamingProcessor && !context.streamingProcessor.isFinished) {
-        return;
-    }
-
-    const message = chat[chat.length - 1];
-
-    // if last message within current message, message got extended. only send diff to TTS.
-    if (ttsLastMessage !== null && message.mes.indexOf(ttsLastMessage) !== -1) {
-        let tmp = message.mes;
-        message.mes = message.mes.replace(ttsLastMessage, '');
-        ttsLastMessage = tmp;
-    } else {
-        ttsLastMessage = message.mes;
-    }
-
-    // We're currently swiping. Don't generate voice
-    if (!message || message.mes === '...' || message.mes === '') {
-        return;
-    }
-
-    // Don't generate if message doesn't have a display text
-    if (extension_settings.tts.narrate_translated_only && !(message?.extra?.display_text)) {
-        return;
-    }
-
-    // Don't generate if message is a user message and user message narration is disabled
-    if (message.is_user && !extension_settings.tts.narrate_user) {
-        return;
-    }
-
-    // New messages, add new chat to history
-    lastMessageHash = hashNew;
-    currentMessageNumber = lastMessageNumber;
-
-    message.extra.id=currentMessageNumber-1;
-
-    console.debug(
-        `Adding message from ${message.name} for TTS processing: "${message.mes}"`,
-    );
-
-    ttsJobQueue.push(message);
 }
 
 function talkingAnimation(switchValue) {
@@ -1129,6 +1085,107 @@ $(document).ready(function () {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.on(event_types.MESSAGE_DELETED, onChatDeleted);
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged);
+    eventSource.on(event_types.GENERATION_ENDED, function() {
+        console.log("TTS enabled check:", $('#tts_enabled').is(':checked'));
+        console.log("Auto-generation check:", extension_settings.tts.auto_generation);
+        console.log("Narrate user messages check:", extension_settings.tts.narrate_user);
+    
+        const context = getContext();
+        if(context.chat.length === 0) return; // Ensures there's content to process
+    
+        const lastMessage = context.chat[context.chat.length - 1];
+        console.log("Last message is user message:", lastMessage.is_user);
+        console.log("Last message content:", lastMessage.mes);
+        const enabled = $('#tts_enabled').is(':checked');
+        if (!enabled) {
+            console.log("TTS is disabled. Skipping TTS generation.");
+            return;
+        }
+
+            // Check if auto-generation is enabled
+        if (!extension_settings.tts.auto_generation) {
+            console.log("Auto-generation for TTS is disabled. Skipping TTS generation.");
+            return;
+        }
+
+        if (!context.groupId && context.characterId === undefined) {
+            console.log("Not in a group or character-specific context. Skipping TTS generation.");
+            return;
+        }
+
+        const currentChatLength = context.chat.length;
+    
+        // Determine if a new message was added or a message was regenerated
+        const isNewMessageGenerated = currentChatLength > preGenerationChatLength;
+        const isRegeneratedMessage = isMessageRegenerated;
+    
+        // Proceed if a new message is generated or a message is regenerated
+        if (isNewMessageGenerated || isRegeneratedMessage) {
+            // Reset flags as appropriate
+            isMessageRegenerated = false;
+    
+            // Check if the last message is from the user and if user messages should be narrated
+            const lastMessage = context.chat[currentChatLength - 1];
+    
+            // Skip TTS generation for "..." or empty messages
+            if (lastMessage.mes === '...' || lastMessage.mes.trim() === '') {
+                console.log("Skipping TTS for '...' or empty message.");
+                return;
+            }
+
+
+            if (extension_settings.tts.narrate_translated_only && !(lastMessage.extra?.display_text)) {
+                console.log("Narrating only translated text is enabled, but the last message does not have translated text. Skipping TTS creation.");
+                return;
+            }
+    
+            if (!lastMessage.is_user || (lastMessage.is_user && extension_settings.tts.narrate_user)) {
+                generateTTSForLastMessage();
+            } else {
+                console.log("Last message is a user message and user messages are not set to be narrated.");
+            }
+        } else {
+            console.log("No new message generated or message regeneration did not change content. Skipping TTS creation.");
+        }
+    });
+    
+    
+    eventSource.on(event_types.GENERATION_STARTED, function() {
+        const context = getContext();
+        preGenerationChatLength = context.chat.length;
+        console.log("Generation started. Chat length before generation:", preGenerationChatLength);
+    
+        // Additional logging for context inspection
+        console.log("Current chat context at generation start:", context);
+        console.log("Chat ID:", context.chatId);
+        console.log("Group ID:", context.groupId);
+        console.log("Character ID:", context.characterId);
+        console.log("User name:", context.name1);
+        console.log("Character name:", context.name2);
+    });
+    
+    eventSource.on(event_types.MESSAGE_SWIPED, function() {
+        isMessageRegenerated = true;
+        console.log("Message regeneration (swipe) detected.");
+    
+        // Additional logging for context inspection
+        const context = getContext();
+        console.log("Current chat context at message swipe:", context);
+        console.log("Chat ID:", context.chatId);
+        console.log("Group ID:", context.groupId);
+        console.log("Character ID:", context.characterId);
+        console.log("User name:", context.name1);
+        console.log("Character name:", context.name2);
+    
+        // Log the message being regenerated if possible
+        if (context.chat.length > 0) {
+            const lastMessage = context.chat[context.chat.length - 1];
+            console.log("Last message details before regeneration:", lastMessage);
+        } else {
+            console.log("Chat is currently empty.");
+        }
+    });
+    
     registerSlashCommand('speak', onNarrateText, ['narrate', 'tts'], '<span class="monospace">(text)</span>  – narrate any text using currently selected character\'s voice. Use voice="Character Name" argument to set other voice from the voice map, example: <tt>/speak voice="Donald Duck" Quack!</tt>', true, true);
     document.body.appendChild(audioElement);
 });
