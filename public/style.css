@@ -3046,8 +3046,27 @@ body .ui-widget-content li:hover {
     width: 0px;
 }
 
+#group_avatar_preview .missing-avatar {
+    display: inline;
+    vertical-align: middle;
+}
+
+body.big-avatars .group_select .missing-avatar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+body.big-avatars .missing-avatar {
+    width: calc(var(--avatar-base-width)* var(--big-avatar-width-factor));
+    height: calc(var(--avatar-base-height)* var(--big-avatar-height-factor));
+}
+
 .missing-avatar {
     font-size: 36px;
+    width: var(--avatar-base-width);
+    height: var(--avatar-base-height);
+    text-align: center;
 }
 
 @keyframes ellipsis {
