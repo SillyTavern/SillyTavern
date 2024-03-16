@@ -1322,6 +1322,10 @@ input[type="file"] {
     align-items: center;
 }
 
+.hidden_block {
+    cursor: default;
+}
+
 #rm_print_characters_block .hidden_block p {
     display: inline;
 }
