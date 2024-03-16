@@ -93,7 +93,7 @@ const cliArguments = yargs(hideBin(process.argv))
     }).parseSync();
 
 // change all relative paths
-console.log(`Running in ${process.env.NODE_ENV} environment`);
+console.log(`Node version: ${process.version}. Running in ${process.env.NODE_ENV} environment.`);
 const serverDirectory = __dirname;
 process.chdir(serverDirectory);
 

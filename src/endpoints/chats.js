@@ -38,6 +38,103 @@ function backupChat(name, chat) {
     }
 }
 
+function importOobaChat(user_name, ch_name, jsonData, avatar_url) {
+    /** @type {object[]} */
+    const chat = [{
+        user_name: user_name,
+        character_name: ch_name,
+        create_date: humanizedISO8601DateTime(),
+    }];
+
+    for (const arr of jsonData.data_visible) {
+        if (arr[0]) {
+            const userMessage = {
+                name: user_name,
+                is_user: true,
+                send_date: humanizedISO8601DateTime(),
+                mes: arr[0],
+            };
+            chat.push(userMessage);
+        }
+        if (arr[1]) {
+            const charMessage = {
+                name: ch_name,
+                is_user: false,
+                send_date: humanizedISO8601DateTime(),
+                mes: arr[1],
+            };
+            chat.push(charMessage);
+        }
+    }
+
+    const chatContent = chat.map(obj => JSON.stringify(obj)).join('\n');
+    writeFileAtomicSync(`${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chatContent, 'utf8');
+}
+
+function importAgnaiChat(user_name, ch_name, jsonData, avatar_url) {
+    /** @type {object[]} */
+    const chat = [{
+        user_name: user_name,
+        character_name: ch_name,
+        create_date: humanizedISO8601DateTime(),
+    }];
+
+    for (const message of jsonData.messages) {
+        const isUser = !!message.userId;
+        chat.push({
+            name: isUser ? user_name : ch_name,
+            is_user: isUser,
+            send_date: humanizedISO8601DateTime(),
+            mes: message.msg,
+        });
+    }
+
+    const chatContent = chat.map(obj => JSON.stringify(obj)).join('\n');
+    writeFileAtomicSync(`${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chatContent, 'utf8');
+}
+
+function importCAIChat(user_name, ch_name, jsonData, avatar_url) {
+    const chat = {
+        from(history) {
+            return [
+                {
+                    user_name: user_name,
+                    character_name: ch_name,
+                    create_date: humanizedISO8601DateTime(),
+                },
+                ...history.msgs.map(
+                    (message) => ({
+                        name: message.src.is_human ? user_name : ch_name,
+                        is_user: message.src.is_human,
+                        send_date: humanizedISO8601DateTime(),
+                        mes: message.text,
+                    }),
+                ),
+            ];
+        },
+    };
+
+    const newChats = [];
+    (jsonData.histories.histories ?? []).forEach((history) => {
+        newChats.push(chat.from(history));
+    });
+
+    const errors = [];
+
+    for (const chat of newChats) {
+        const filePath = `${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`;
+        const fileContent = chat.map(tryParse).filter(x => x).join('\n');
+
+        try {
+            writeFileAtomicSync(filePath, fileContent, 'utf8');
+        } catch (err) {
+            errors.push(err);
+        }
+    }
+
+    return errors;
+}
+
 const router = express.Router();
 
 router.post('/save', jsonParser, function (request, response) {
@@ -253,83 +350,20 @@ router.post('/import', urlencodedParser, function (request, response) {
         if (format === 'json') {
             const jsonData = JSON.parse(data);
             if (jsonData.histories !== undefined) {
-                //console.log('/api/chats/import confirms JSON histories are defined');
-                const chat = {
-                    from(history) {
-                        return [
-                            {
-                                user_name: user_name,
-                                character_name: ch_name,
-                                create_date: humanizedISO8601DateTime(),
-                            },
-                            ...history.msgs.map(
-                                (message) => ({
-                                    name: message.src.is_human ? user_name : ch_name,
-                                    is_user: message.src.is_human,
-                                    send_date: humanizedISO8601DateTime(),
-                                    mes: message.text,
-                                }),
-                            )];
-                    },
-                };
-
-                const newChats = [];
-                (jsonData.histories.histories ?? []).forEach((history) => {
-                    newChats.push(chat.from(history));
-                });
-
-                const errors = [];
-
-                for (const chat of newChats) {
-                    const filePath = `${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`;
-                    const fileContent = chat.map(tryParse).filter(x => x).join('\n');
-
-                    try {
-                        writeFileAtomicSync(filePath, fileContent, 'utf8');
-                    } catch (err) {
-                        errors.push(err);
-                    }
-                }
-
+                // CAI Tools format
+                const errors = importCAIChat(user_name, ch_name, jsonData, avatar_url);
                 if (0 < errors.length) {
-                    response.send('Errors occurred while writing character files. Errors: ' + JSON.stringify(errors));
+                    return response.send('Errors occurred while writing character files. Errors: ' + JSON.stringify(errors));
                 }
-
-                response.send({ res: true });
+                return response.send({ res: true });
             } else if (Array.isArray(jsonData.data_visible)) {
                 // oobabooga's format
-                /** @type {object[]} */
-                const chat = [{
-                    user_name: user_name,
-                    character_name: ch_name,
-                    create_date: humanizedISO8601DateTime(),
-                }];
-
-                for (const arr of jsonData.data_visible) {
-                    if (arr[0]) {
-                        const userMessage = {
-                            name: user_name,
-                            is_user: true,
-                            send_date: humanizedISO8601DateTime(),
-                            mes: arr[0],
-                        };
-                        chat.push(userMessage);
-                    }
-                    if (arr[1]) {
-                        const charMessage = {
-                            name: ch_name,
-                            is_user: false,
-                            send_date: humanizedISO8601DateTime(),
-                            mes: arr[1],
-                        };
-                        chat.push(charMessage);
-                    }
-                }
-
-                const chatContent = chat.map(obj => JSON.stringify(obj)).join('\n');
-                writeFileAtomicSync(`${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chatContent, 'utf8');
-
-                response.send({ res: true });
+                importOobaChat(user_name, ch_name, jsonData, avatar_url);
+                return response.send({ res: true });
+            } else if (Array.isArray(jsonData.messages)) {
+                // Agnai format
+                importAgnaiChat(user_name, ch_name, jsonData, avatar_url);
+                return response.send({ res: true });
             } else {
                 console.log('Incorrect chat format .json');
                 return response.send({ error: true });
