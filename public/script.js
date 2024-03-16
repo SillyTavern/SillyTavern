@@ -1357,7 +1357,7 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
     }
 
     // Run over all entities between first and second filter to save some states
-    for(const entity of entities) {
+    for (const entity of entities) {
         // For folders, we remember the sub entities so they can be displayed later, even if they might be filtered
         // Those sub entities should be filtered and have the search filters applied too
         if (entity.type === 'tag') {
