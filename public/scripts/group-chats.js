@@ -574,6 +574,8 @@ function updateGroupAvatar(group) {
             $(this).find('.avatar').replaceWith(getGroupAvatar(group));
         }
     });
+
+    favsToHotswap();
 }
 
 // check if isDataURLor if it's a valid local file url
