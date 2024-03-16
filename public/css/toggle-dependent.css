@@ -51,8 +51,9 @@ body.charListGrid #rm_print_characters_block .group_select,
     max-width: 100px;
 }
 
+/* Save a bit of space here */
 body.charListGrid #rm_print_characters_block .character_name_block {
-    gap: 0; /* Save a bit of space here */
+    gap: 0;
     margin-bottom: 0;
 }
 
@@ -121,10 +122,10 @@ body.charListGrid #rm_print_characters_block .bogus_folder_select_back .avatar {
     display: flex !important;
 }
 
-
+/* Hack for keeping the spacing */
 body.charListGrid #rm_print_characters_block .ch_add_placeholder {
     display: flex !important;
-    opacity: 0; /* Hack for keeping the spacing */
+    opacity: 0;
 }
 
 /*big avatars mode page-wide changes*/
