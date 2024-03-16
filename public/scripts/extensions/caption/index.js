@@ -284,9 +284,11 @@ jQuery(function () {
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'openai' && (secret_state[SECRET_KEYS.OPENAI] || extension_settings.caption.allow_reverse_proxy)) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'openrouter' && secret_state[SECRET_KEYS.OPENROUTER]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'google' && secret_state[SECRET_KEYS.MAKERSUITE]) ||
+                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'anthropic' && secret_state[SECRET_KEYS.CLAUDE]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ollama' && textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'llamacpp' && textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ooba' && textgenerationwebui_settings.server_urls[textgen_types.OOBA]) ||
+                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'koboldcpp' && textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'custom') ||
                 extension_settings.caption.source === 'local' ||
                 extension_settings.caption.source === 'horde';
@@ -316,7 +318,8 @@ jQuery(function () {
         $('#caption_multimodal_model').val(extension_settings.caption.multimodal_model);
         $('#caption_multimodal_block [data-type]').each(function () {
             const type = $(this).data('type');
-            $(this).toggle(type === extension_settings.caption.multimodal_api);
+            const types = type.split(',');
+            $(this).toggle(types.includes(extension_settings.caption.multimodal_api));
         });
         $('#caption_multimodal_api').on('change', () => {
             const api = String($('#caption_multimodal_api').val());
@@ -343,7 +346,7 @@ jQuery(function () {
                     <label for="caption_source">Source</label>
                     <select id="caption_source" class="text_pole">
                         <option value="local">Local</option>
-                        <option value="multimodal">Multimodal (OpenAI / llama / Google)</option>
+                        <option value="multimodal">Multimodal (OpenAI / Anthropic / llama / Google)</option>
                         <option value="extras">Extras</option>
                         <option value="horde">Horde</option>
                     </select>
@@ -353,8 +356,10 @@ jQuery(function () {
                             <select id="caption_multimodal_api" class="flex1 text_pole">
                                 <option value="llamacpp">llama.cpp</option>
                                 <option value="ooba">Text Generation WebUI (oobabooga)</option>
+                                <option value="koboldcpp">KoboldCpp</option>
                                 <option value="ollama">Ollama</option>
                                 <option value="openai">OpenAI</option>
+                                <option value="anthropic">Anthropic</option>
                                 <option value="openrouter">OpenRouter</option>
                                 <option value="google">Google MakerSuite</option>
                                 <option value="custom">Custom (OpenAI-compatible)</option>
@@ -364,6 +369,9 @@ jQuery(function () {
                             <label for="caption_multimodal_model">Model</label>
                             <select id="caption_multimodal_model" class="flex1 text_pole">
                                 <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
+                                <option data-type="anthropic" value="claude-3-opus-20240229">claude-3-opus-20240229</option>
+                                <option data-type="anthropic" value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
+                                <option data-type="anthropic" value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                                 <option data-type="google" value="gemini-pro-vision">gemini-pro-vision</option>
                                 <option data-type="openrouter" value="openai/gpt-4-vision-preview">openai/gpt-4-vision-preview</option>
                                 <option data-type="openrouter" value="haotian-liu/llava-13b">haotian-liu/llava-13b</option>
@@ -372,10 +380,11 @@ jQuery(function () {
                                 <option data-type="ollama" value="llava:latest">llava:latest</option>
                                 <option data-type="llamacpp" value="llamacpp_current">[Currently loaded]</option>
                                 <option data-type="ooba" value="ooba_current">[Currently loaded]</option>
+                                <option data-type="koboldcpp" value="koboldcpp_current">[Currently loaded]</option>
                                 <option data-type="custom" value="custom_current">[Currently selected]</option>
                             </select>
                         </div>
-                        <label data-type="openai" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
+                        <label data-type="openai,anthropic" class="checkbox_label flexBasis100p" for="caption_allow_reverse_proxy" title="Allow using reverse proxy if defined and valid.">
                             <input id="caption_allow_reverse_proxy" type="checkbox" class="checkbox">
                             Allow reverse proxy
                         </label>

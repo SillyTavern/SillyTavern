@@ -1,11 +1,13 @@
-import { callPopup, getRequestHeaders, setGenerationParamsFromPreset } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
+import { amount_gen, callPopup, eventSource, event_types, getRequestHeaders, max_context, setGenerationParamsFromPreset } from '../script.js';
 import { textgenerationwebui_settings as textgen_settings, textgen_types } from './textgen-settings.js';
 import { tokenizers } from './tokenizers.js';
 
 let mancerModels = [];
 let togetherModels = [];
 let infermaticAIModels = [];
+let dreamGenModels = [];
+let aphroditeModels = [];
 export let openRouterModels = [];
 
 export async function loadOllamaModels(data) {
@@ -81,6 +83,32 @@ export async function loadInfermaticAIModels(data) {
     }
 }
 
+export async function loadDreamGenModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid DreamGen models data', data);
+        return;
+    }
+
+    dreamGenModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.dreamgen_model)) {
+        textgen_settings.dreamgen_model = data[0]?.id || '';
+    }
+
+    $('#model_dreamgen_select').empty();
+    for (const model of data) {
+        if (model.display_type === 'image') {
+            continue;
+        }
+
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.dreamgen_model;
+        $('#model_dreamgen_select').append(option);
+    }
+}
+
 export async function loadMancerModels(data) {
     if (!Array.isArray(data)) {
         console.error('Invalid Mancer models data', data);
@@ -123,6 +151,31 @@ export async function loadOpenRouterModels(data) {
         option.selected = model.id === textgen_settings.openrouter_model;
         $('#openrouter_model').append(option);
     }
+
+    // Calculate the cost of the selected model + update on settings change
+    calculateOpenRouterCost();
+}
+
+export async function loadAphroditeModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid Aphrodite models data', data);
+        return;
+    }
+
+    aphroditeModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.aphrodite_model)) {
+        textgen_settings.aphrodite_model = data[0]?.id || '';
+    }
+
+    $('#aphrodite_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.aphrodite_model;
+        $('#aphrodite_model').append(option);
+    }
 }
 
 function onMancerModelSelect() {
@@ -150,6 +203,13 @@ function onInfermaticAIModelSelect() {
     setGenerationParamsFromPreset({ max_length: model.context_length });
 }
 
+function onDreamGenModelSelect() {
+    const modelName = String($('#model_dreamgen_select').val());
+    textgen_settings.dreamgen_model = modelName;
+    $('#api_button_textgenerationwebui').trigger('click');
+    // TODO(DreamGen): Consider retuning max_tokens from API and setting it here.
+}
+
 function onOllamaModelSelect() {
     const modelId = String($('#ollama_model').val());
     textgen_settings.ollama_model = modelId;
@@ -162,6 +222,12 @@ function onOpenRouterModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
     const model = openRouterModels.find(x => x.id === modelId);
     setGenerationParamsFromPreset({ max_length: model.context_length });
+}
+
+function onAphroditeModelSelect() {
+    const modelId = String($('#aphrodite_model').val());
+    textgen_settings.aphrodite_model = modelId;
+    $('#api_button_textgenerationwebui').trigger('click');
 }
 
 function getMancerModelTemplate(option) {
@@ -211,6 +277,20 @@ function getInfermaticAIModelTemplate(option) {
     `));
 }
 
+function getDreamGenModelTemplate(option) {
+    const model = dreamGenModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
+        </div>
+    `));
+}
+
 function getOpenRouterModelTemplate(option) {
     const model = openRouterModels.find(x => x.id === option?.element?.value);
 
@@ -226,6 +306,20 @@ function getOpenRouterModelTemplate(option) {
     return $((`
         <div class="flex-container flexFlowColumn" title="${DOMPurify.sanitize(model.id)}">
             <div><strong>${DOMPurify.sanitize(model.name)}</strong> | ${model.context_length} ctx | <small>${price}</small></div>
+        </div>
+    `));
+}
+
+function getAphroditeModelTemplate(option) {
+    const model = aphroditeModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
         </div>
     `));
 }
@@ -271,6 +365,32 @@ async function downloadOllamaModel() {
     }
 }
 
+function calculateOpenRouterCost() {
+    if (textgen_settings.type !== textgen_types.OPENROUTER) {
+        return;
+    }
+
+    let cost = 'Unknown';
+    const model = openRouterModels.find(x => x.id === textgen_settings.openrouter_model);
+
+    if (model?.pricing) {
+        const completionCost = Number(model.pricing.completion);
+        const promptCost = Number(model.pricing.prompt);
+        const completionTokens = amount_gen;
+        const promptTokens = (max_context - completionTokens);
+        const totalCost = (completionCost * completionTokens) + (promptCost * promptTokens);
+        if (!isNaN(totalCost)) {
+            cost = '$' + totalCost.toFixed(3);
+        }
+    }
+
+    $('#or_prompt_cost').text(cost);
+
+    // Schedule an update when settings change
+    eventSource.removeListener(event_types.SETTINGS_UPDATED, calculateOpenRouterCost);
+    eventSource.once(event_types.SETTINGS_UPDATED, calculateOpenRouterCost);
+}
+
 export function getCurrentOpenRouterModelTokenizer() {
     const modelId = textgen_settings.openrouter_model;
     const model = openRouterModels.find(x => x.id === modelId);
@@ -284,13 +404,29 @@ export function getCurrentOpenRouterModelTokenizer() {
     }
 }
 
+export function getCurrentDreamGenModelTokenizer() {
+    const modelId = textgen_settings.dreamgen_model;
+    const model = dreamGenModels.find(x => x.id === modelId);
+    if (model.id.startsWith('opus-v1-sm')) {
+        return tokenizers.MISTRAL;
+    } else if (model.id.startsWith('opus-v1-lg')) {
+        return tokenizers.YI;
+    } else if (model.id.startsWith('opus-v1-xl')) {
+        return tokenizers.LLAMA;
+    } else {
+        return tokenizers.MISTRAL;
+    }
+}
+
 jQuery(function () {
     $('#mancer_model').on('change', onMancerModelSelect);
     $('#model_togetherai_select').on('change', onTogetherModelSelect);
     $('#model_infermaticai_select').on('change', onInfermaticAIModelSelect);
+    $('#model_dreamgen_select').on('change', onDreamGenModelSelect);
     $('#ollama_model').on('change', onOllamaModelSelect);
     $('#openrouter_model').on('change', onOpenRouterModelSelect);
     $('#ollama_download_model').on('click', downloadOllamaModel);
+    $('#aphrodite_model').on('change', onAphroditeModelSelect);
 
     if (!isMobile()) {
         $('#mancer_model').select2({
@@ -320,12 +456,26 @@ jQuery(function () {
             width: '100%',
             templateResult: getInfermaticAIModelTemplate,
         });
+        $('#model_dreamgen_select').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult:  getDreamGenModelTemplate,
+        });
         $('#openrouter_model').select2({
             placeholder: 'Select a model',
             searchInputPlaceholder: 'Search models...',
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getOpenRouterModelTemplate,
+        });
+        $('#aphrodite_model').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getAphroditeModelTemplate,
         });
     }
 });

@@ -21,15 +21,17 @@ export async function getMultimodalCaption(base64Img, prompt) {
     }
 
     // OpenRouter has a payload limit of ~2MB. Google is 4MB, but we love democracy.
-    // Ooba requires all images to be JPEGs.
+    // Ooba requires all images to be JPEGs. Koboldcpp just asked nicely.
     const isGoogle = extension_settings.caption.multimodal_api === 'google';
+    const isClaude = extension_settings.caption.multimodal_api === 'anthropic';
     const isOllama = extension_settings.caption.multimodal_api === 'ollama';
     const isLlamaCpp = extension_settings.caption.multimodal_api === 'llamacpp';
     const isCustom = extension_settings.caption.multimodal_api === 'custom';
     const isOoba = extension_settings.caption.multimodal_api === 'ooba';
+    const isKoboldCpp = extension_settings.caption.multimodal_api === 'koboldcpp';
     const base64Bytes = base64Img.length * 0.75;
     const compressionLimit = 2 * 1024 * 1024;
-    if ((['google', 'openrouter'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) || isOoba) {
+    if ((['google', 'openrouter'].includes(extension_settings.caption.multimodal_api) && base64Bytes > compressionLimit) || isOoba || isKoboldCpp) {
         const maxSide = 1024;
         base64Img = await createThumbnail(base64Img, maxSide, maxSide, 'image/jpeg');
 
@@ -39,7 +41,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     }
 
     const useReverseProxy =
-        extension_settings.caption.multimodal_api === 'openai'
+        (extension_settings.caption.multimodal_api === 'openai' || extension_settings.caption.multimodal_api === 'anthropic')
         && extension_settings.caption.allow_reverse_proxy
         && oai_settings.reverse_proxy
         && isValidUrl(oai_settings.reverse_proxy);
@@ -75,6 +77,10 @@ export async function getMultimodalCaption(base64Img, prompt) {
         requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.OOBA];
     }
 
+    if (isKoboldCpp) {
+        requestBody.server_url = textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP];
+    }
+
     if (isCustom) {
         requestBody.server_url = oai_settings.custom_url;
         requestBody.model = oai_settings.custom_model || 'gpt-4-vision-preview';
@@ -87,6 +93,8 @@ export async function getMultimodalCaption(base64Img, prompt) {
         switch (extension_settings.caption.multimodal_api) {
             case 'google':
                 return '/api/google/caption-image';
+            case 'anthropic':
+                return '/api/anthropic/caption-image';
             case 'llamacpp':
                 return '/api/backends/text-completions/llamacpp/caption-image';
             case 'ollama':
@@ -137,6 +145,10 @@ function throwIfInvalidModel() {
 
     if (extension_settings.caption.multimodal_api === 'ooba' && !textgenerationwebui_settings.server_urls[textgen_types.OOBA]) {
         throw new Error('Text Generation WebUI server URL is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'koboldcpp' && !textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP]) {
+        throw new Error('KoboldCpp server URL is not set.');
     }
 
     if (extension_settings.caption.multimodal_api === 'custom' && !oai_settings.custom_url) {

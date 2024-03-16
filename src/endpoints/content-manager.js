@@ -357,7 +357,7 @@ function getUuidFromUrl(url) {
 
 const router = express.Router();
 
-router.post('/import', jsonParser, async (request, response) => {
+router.post('/importURL', jsonParser, async (request, response) => {
     if (!request.body.url) {
         return response.sendStatus(400);
     }
@@ -406,6 +406,49 @@ router.post('/import', jsonParser, async (request, response) => {
         if (result.fileType) response.set('Content-Type', result.fileType);
         response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
         response.set('X-Custom-Content-Type', type);
+        return response.send(result.buffer);
+    } catch (error) {
+        console.log('Importing custom content failed', error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/importUUID', jsonParser, async (request, response) => {
+    if (!request.body.url) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const uuid = request.body.url;
+        let result;
+
+        const isJannny = uuid.includes('_character');
+        const isPygmalion = (!isJannny && uuid.length == 36);
+        const uuidType = uuid.includes('lorebook') ? 'lorebook' : 'character';
+
+        if (isPygmalion) {
+            console.log('Downloading Pygmalion character:', uuid);
+            result = await downloadPygmalionCharacter(uuid);
+        } else if (isJannny) {
+            console.log('Downloading Janitor character:', uuid.split('_')[0]);
+            result = await downloadJannyCharacter(uuid.split('_')[0]);
+        } else {
+            if (uuidType === 'character') {
+                console.log('Downloading chub character:', uuid);
+                result = await downloadChubCharacter(uuid);
+            }
+            else if (uuidType === 'lorebook') {
+                console.log('Downloading chub lorebook:', uuid);
+                result = await downloadChubLorebook(uuid);
+            }
+            else {
+                return response.sendStatus(404);
+            }
+        }
+
+        if (result.fileType) response.set('Content-Type', result.fileType);
+        response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
+        response.set('X-Custom-Content-Type', uuidType);
         return response.send(result.buffer);
     } catch (error) {
         console.log('Importing custom content failed', error);

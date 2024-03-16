@@ -266,7 +266,7 @@ function countWords(str) {
  * @param {string} oldMesssage - The old message that's being processed.
  */
 async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
-    if (this_chid === undefined) {
+    if (this_chid === undefined || characters[this_chid] === undefined) {
         return;
     }
     await getStats();

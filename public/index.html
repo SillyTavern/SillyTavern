@@ -47,6 +47,8 @@
     <script src="lib/pagination.js"></script>
     <script src="lib/toolcool-color-picker.js"></script>
     <script src="lib/svg-inject.js"></script>
+    <script src="lib/Readability.js"></script>
+    <script src="lib/Readability-readerable.js"></script>
     <script type="module" src="lib/structured-clone/monkey-patch.js"></script>
     <script type="module" src="lib/swiped-events.js"></script>
     <script type="module" src="lib/eventemitter.js"></script>
@@ -143,7 +145,7 @@
                                     <div class="flex-container flexBasis100p justifyCenter">
                                         <input type="file" hidden data-preset-manager-file="kobold" accept=".json, .settings">
                                         <i data-newbie-hidden data-preset-manager-update="kobold" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                        <i data-newbie-hidden data-preset-manager-new="kobold" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                        <i data-newbie-hidden data-preset-manager-new="kobold" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                         <i data-newbie-hidden data-preset-manager-import="kobold" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
                                         <i data-newbie-hidden data-preset-manager-export="kobold" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                         <i data-newbie-hidden data-preset-manager-restore="kobold" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
@@ -165,7 +167,7 @@
                                     <div class="flex-container flexBasis100p justifyCenter">
                                         <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings">
                                         <i data-newbie-hidden data-preset-manager-update="novel" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                        <i data-newbie-hidden data-preset-manager-new="novel" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                        <i data-newbie-hidden data-preset-manager-new="novel" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                         <i data-newbie-hidden data-preset-manager-import="novel" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
                                         <i data-newbie-hidden data-preset-manager-export="novel" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                         <i data-newbie-hidden data-preset-manager-restore="novel" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
@@ -183,7 +185,7 @@
                                         <div class="flex-container flexBasis100p justifyCenter">
                                             <input id="openai_preset_import_file" type="file" accept=".json,.settings" hidden />
                                             <i id="update_oai_preset" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                            <i id="new_oai_preset" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                            <i id="new_oai_preset" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                             <i data-newbie-hidden title="Import preset" id="import_oai_preset" class="menu_button fa-solid fa-file-import" data-i18n="[title]Import preset"></i>
                                             <i data-newbie-hidden title="Export preset" id="export_oai_preset" class="menu_button fa-solid fa-file-export" data-i18n="[title]Export preset"></i>
                                             <i data-newbie-hidden id="delete_oai_preset" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
@@ -199,7 +201,7 @@
                                     <div class="flex-container flexBasis100p justifyCenter">
                                         <input type="file" hidden data-preset-manager-file="textgenerationwebui" accept=".json, .settings">
                                         <i data-newbie-hidden data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                        <i data-newbie-hidden data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                        <i data-newbie-hidden data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                         <i data-newbie-hidden data-preset-manager-import="textgenerationwebui" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
                                         <i data-newbie-hidden data-preset-manager-export="textgenerationwebui" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                         <i data-newbie-hidden data-preset-manager-restore="textgenerationwebui" class="menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
@@ -264,6 +266,9 @@
                                         </label>
                                     </div>
                                 </div>
+                                <small data-tg-type="openrouter">
+                                    Max prompt cost: <span id="or_prompt_cost">&ndash;</span>
+                                </small>
                             </div>
                             <hr>
                         </div>
@@ -440,7 +445,7 @@
                                 </div>
                                 <hr>
                                 <div class="range-block">
-                                    <label for="stream_toggle" title="Enable OpenAI completion streaming" class="checkbox_label widthFreeExpand">
+                                    <label for="stream_toggle" title="Enable OpenAI completion streaming" data-i18n="[title]Enable OpenAI completion streaming" class="checkbox_label widthFreeExpand">
                                         <input id="stream_toggle" type="checkbox" /><span data-i18n="Streaming">
                                             Streaming</span>
                                     </label>
@@ -572,7 +577,7 @@
                                 </div>
                                 <div class="inline-drawer m-t-1 wide100p">
                                     <div class="inline-drawer-toggle inline-drawer-header">
-                                        <b data-i18n="Quick Edit">Quick Prompts Edit</b>
+                                        <b data-i18n="Quick Prompts Edit">Quick Prompts Edit</b>
                                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                     </div>
                                     <div class="inline-drawer-content">
@@ -1164,7 +1169,7 @@
                                 </div>
                                 <div data-newbie-hidden data-tg-type="aphrodite" class="flex-container flexFlowColumn alignitemscenter flexBasis100p flexGrow flexShrink gap0">
                                     <small data-i18n="Multiple swipes per generation">Multiple swipes per generation</small>
-                                    <input type="number" id="n_textgenerationwebui" class="text_pole textAlignCenter" min="1" value="1" />
+                                    <input type="number" id="n_textgenerationwebui" class="text_pole textAlignCenter" min="1" value="1" step="1" />
                                 </div>
                                 <div class="flex-container gap10h5v justifyCenter">
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
@@ -1234,7 +1239,7 @@
                                     <div data-newbie-hidden data-tg-type="ooba" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Eta Cutoff">Eta Cutoff</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Eta cutoff is the main parameter of the special Eta Sampling technique.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable.&#13;See the paper Truncation Sampling as Language Model Desmoothing by Hewitt et al. (2022) for details."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Eta cutoff is the main parameter of the special Eta Sampling technique.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable.&#13;See the paper Truncation Sampling as Language Model Desmoothing by Hewitt et al. (2022) for details." title="Eta cutoff is the main parameter of the special Eta Sampling technique.&#13;In units of 1e-4; a reasonable value is 3.&#13;Set to 0 to disable.&#13;See the paper Truncation Sampling as Language Model Desmoothing by Hewitt et al. (2022) for details."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
@@ -1269,7 +1274,7 @@
                                         <input class="neo-range-slider" type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-newbie-hidden data-tg-type="ooba, dreamgen" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Min Length">Min Length</small>
                                         <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
@@ -1278,6 +1283,11 @@
                                         <small data-i18n="Smoothing Factor">Smoothing Factor</small>
                                         <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
                                         <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-newbie-hidden data-tg-type="ooba" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                        <small data-i18n="Max Tokens Second">Maximum tokens/second</small>
+                                        <input class="neo-range-slider" type="range" id="max_tokens_second_textgenerationwebui" name="volume" min="0" max="20" step="1" />
+                                        <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui">
                                     </div>
                                     <!--
                                         <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Responses">
@@ -1575,7 +1585,7 @@
                                         <hr class="wide100p">
                                         <h4 class="range-block-title justifyCenter">
                                             <span data-i18n="Sampler Priority">Sampler Priority</span>
-                                            <div class="margin5 fa-solid fa-circle-info opacity50p" title="Ooba only. Determines the order of samplers."></div>
+                                            <div class="margin5 fa-solid fa-circle-info opacity50p" title="Ooba only. Determines the order of samplers." data-i18n="[title]Ooba only. Determines the order of samplers."></div>
                                         </h4>
                                         <div class="toggle-description widthUnset" data-i18n="Ooba only. Determines the order of samplers.">
                                             Ooba only. Determines the order of samplers.
@@ -1603,7 +1613,7 @@
                             <div id="openai_settings">
                                 <div class="">
                                     <div class="range-block">
-                                        <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
+                                        <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" data-i18n="[title]Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
                                             <input id="wrap_in_quotes" type="checkbox" /><span data-i18n="Wrap in Quotes">
                                                 Wrap in Quotes</span>
                                         </label>
@@ -1615,11 +1625,11 @@
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <label for="names_in_completion" title="Add character names" class="checkbox_label widthFreeExpand">
+                                        <label for="names_in_completion" title="Add character names" data-i18n="[title]Add character names" class="checkbox_label widthFreeExpand">
                                             <input id="names_in_completion" type="checkbox" /><span data-i18n="Add character names">Add character names</span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Send names in the message objects.">Send names in the message objects. Helps the model to associate messages with characters.</span>
+                                            <span data-i18n="Send names in the message objects. Helps the model to associate messages with characters.">Send names in the message objects. Helps the model to associate messages with characters.</span>
                                         </div>
                                     </div>
                                     <div class="range-block">
@@ -1628,31 +1638,30 @@
                                             <span data-i18n="Continue prefill">Continue prefill</span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Continue sends the last message.">
+                                            <span data-i18n="Continue sends the last message as assistant role instead of system message with instruction.">
                                                 Continue sends the last message as assistant role instead of system message with instruction.
                                             </span>
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <label for="squash_system_messages" title="Squash system messages" class="checkbox_label widthFreeExpand">
+                                        <label for="squash_system_messages" title="Squash system messages" data-i18n="[title]Squash system messages" class="checkbox_label widthFreeExpand">
                                             <input id="squash_system_messages" type="checkbox" />
                                             <span data-i18n="Squash system messages">
                                                 Squash system messages
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Combines consecutive system messages into one.">
-                                                Combines consecutive system messages into one (excluding example dialogues).
-                                                May improve coherence for some models.
+                                            <span data-i18n="Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.">
+                                                Combines consecutive system messages into one (excluding example dialogues). May improve coherence for some models.
                                             </span>
                                         </div>
                                     </div>
-                                    <div class="range-block" data-source="openai,openrouter,makersuite,custom">
+                                    <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                                Sends images in prompts if the model supports it (e.g. GPT-4V or Llava 13B).
+                                                Sends images in prompts if the model supports it (e.g. GPT-4V, Claude 3 or Llava 13B).
                                                 Use the <code><i class="fa-solid fa-paperclip"></i></code> action on any message or the
                                                 <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image file to the chat.
                                             </div>
@@ -1675,26 +1684,7 @@
                                         </div>
                                     </div>
                                     <div data-newbie-hidden class="range-block" data-source="claude">
-                                        <label for="claude_exclude_prefixes" title="Exclude Human/Assistant prefixes" class="checkbox_label widthFreeExpand">
-                                            <input id="claude_exclude_prefixes" type="checkbox" />
-                                            <span data-i18n="Exclude Human/Assistant prefixes">Exclude Human/Assistant prefixes</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Exclude Human/Assistant prefixes from being added to the prompt.">
-                                                Exclude Human/Assistant prefixes from being added to the prompt, except very first/last message, system prompt Human message and Assistant suffix.
-                                                Requires 'Add character names' checked.
-                                            </span>
-                                        </div>
-                                        <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
-                                            <input id="exclude_assistant" type="checkbox" />
-                                            <span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">
-                                                Exclude the assistant suffix from being added to the end of prompt. Requires jailbreak with 'Assistant:' in it.
-                                            </span>
-                                        </div>
-                                        <div id="claude_assistant_prefill_block" class="wide100p">
+                                        <div class="wide100p">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                             <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
@@ -1705,19 +1695,18 @@
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Exclude the 'Human: ' prefix from being added to the beginning of the prompt.">
-                                                Exclude the 'Human: ' prefix from being added to the beginning of the prompt.
-                                                Instead, place it between the system prompt and the first message with the role 'assistant' (right before 'Chat History' by default).
+                                            <span data-i18n="Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.">
+                                                Send the system prompt for supported models. If disabled, the user message is added to the beginning of the prompt.
                                             </span>
                                         </div>
                                         <div id="claude_human_sysprompt_message_block" class="wide100p">
                                             <div class="range-block-title openai_restorable">
-                                                <span data-i18n="Human: first message">Human: first message</span>
-                                                <div id="claude_human_sysprompt_message_restore" title="Restore Human: first message" class="right_menu_button">
+                                                <span data-i18n="User first message">User first message</span>
+                                                <div id="claude_human_sysprompt_message_restore" title="Restore User first message" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
-                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user' or manually adding the 'Human: ' prefix."></textarea>
+                                            <textarea id="claude_human_sysprompt_textarea" class="text_pole textarea_compact" rows="4" maxlength="10000" data-i18n="[placeholder]Human message" placeholder="Human message, instruction, etc.&#10;Adds nothing when empty, i.e. requires a new prompt with the role 'user'."></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -1797,7 +1786,7 @@
                                             account for faster queue times</a>
                                     </li>
                                     <li>
-                                        <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme" data-i18n="Learn how to contribute your idle GPU cycles to the Horde">Learn
+                                        <a target="_blank" href="https://github.com/Haidra-Org/horde-worker-reGen?tab=readme-ov-file#ai-horde-worker-regen" data-i18n="Learn how to contribute your idle GPU cycles to the Horde">Learn
                                             how to contribute your idle GPU cycles to the Horde</a>
                                     </li>
                                 </ul>
@@ -1910,15 +1899,16 @@
                                 <h4 data-i18n="API Type">API Type</h4>
                                 <select id="textgen_type">
                                     <option value="ooba" data-i18n="Default (oobabooga)">Default (oobabooga)</option>
-                                    <option value="mancer">Mancer</option>
                                     <option value="aphrodite">Aphrodite</option>
-                                    <option value="tabby">TabbyAPI</option>
+                                    <option value="dreamgen">DreamGen</option>
+                                    <option value="infermaticai">InfermaticAI</option>
                                     <option value="koboldcpp">KoboldCpp</option>
                                     <option value="llamacpp">llama.cpp</option>
-                                    <option value="openrouter">OpenRouter</option>
+                                    <option value="mancer">Mancer</option>
                                     <option value="ollama">Ollama</option>
+                                    <option value="openrouter">OpenRouter</option>
+                                    <option value="tabby">TabbyAPI</option>
                                     <option value="togetherai">TogetherAI</option>
-                                    <option value="infermaticai">InfermaticAI</option>
                                 </select>
                             </div>
                             <div data-tg-type="togetherai" class="flex-container flexFlowColumn">
@@ -1975,6 +1965,29 @@
                                 <div>
                                     <h4 data-i18n="InfermaticAI Model">InfermaticAI Model</h4>
                                     <select id="model_infermaticai_select">
+                                        <option>
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div data-tg-type="dreamgen" class="flex-container flexFlowColumn">
+                                <h4 data-i18n="DreamGen API key">
+                                    DreamGen API key
+                                    <a href="https://dreamgen.com/account/api-keys" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </h4>
+                                <div class="flex-container">
+                                    <input id="api_key_dreamgen" name="api_key_dreamgen" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_dreamgen"></div>
+                                </div>
+                                <div data-for="api_key_dreamgen" class="neutral_warning">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <div>
+                                    <h4 data-i18n="DreamGen Model">DreamGen Model</h4>
+                                    <select id="model_dreamgen_select">
                                         <option>
                                             -- Connect to the API --
                                         </option>
@@ -2055,6 +2068,14 @@
                                     <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="aphrodite_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="aphrodite">
                                 </div>
+                                <div>
+                                    <h4 data-i18n="Aphrodite Model">Aphrodite Model</h4>
+                                    <select id="aphrodite_model">
+                                        <option data-i18n="-- Connect to the API --">
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
                             <div data-tg-type="llamacpp">
                                 <div class="flex-container flexFlowColumn">
@@ -2121,6 +2142,15 @@
                                     <a href="https://github.com/LostRuins/koboldcpp" target="_blank">
                                         LostRuins/koboldcpp
                                     </a>
+                                </div>
+                                <h4 data-i18n="koboldcpp API key (optional)">koboldcpp API key (optional)</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_koboldcpp" name="api_key_koboldcpp" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_koboldcpp">
+                                    </div>
+                                </div>
+                                <div data-for="api_key_koboldcpp" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
@@ -2332,24 +2362,15 @@
                             <div>
                                 <h4 data-i18n="Claude Model">Claude Model</h4>
                                 <select id="model_claude_select">
-                                    <optgroup label="Latest">
-                                        <option value="claude-2">claude-2</option>
-                                        <option value="claude-v1">claude-v1</option>
-                                        <option value="claude-v1-100k">claude-v1-100k</option>
-                                        <option value="claude-instant-v1">claude-instant-v1</option>
-                                        <option value="claude-instant-v1-100k">claude-instant-v1-100k</option>
-                                    </optgroup>
-                                    <optgroup label="Sub-versions">
+                                    <optgroup label="Versions">
+                                        <option value="claude-3-opus-20240229">claude-3-opus-20240229</option>
+                                        <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
+                                        <option value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                                         <option value="claude-2.1">claude-2.1</option>
                                         <option value="claude-2.0">claude-2.0</option>
-                                        <option value="claude-v1.3">claude-v1.3</option>
-                                        <option value="claude-v1.3-100k">claude-v1.3-100k</option>
-                                        <option value="claude-v1.2">claude-v1.2</option>
-                                        <option value="claude-v1.0">claude-v1.0</option>
+                                        <option value="claude-1.3">claude-1.3</option>
                                         <option value="claude-instant-1.2">claude-instant-1.2</option>
-                                        <option value="claude-instant-v1.1">claude-instant-v1.1</option>
-                                        <option value="claude-instant-v1.1-100k">claude-instant-v1.1-100k</option>
-                                        <option value="claude-instant-v1.0">claude-instant-v1.0</option>
+                                        <option value="claude-instant-1.1">claude-instant-1.1</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -2425,6 +2446,10 @@
                             <div class="marginTopBot5">
                                 <label for="openrouter_force_instruct" class="checkbox_label">
                                     <input id="openrouter_force_instruct" type="checkbox" />
+                                    <span class="flex-container alignItemsBaseline" title="This option is outdated and will be removed in the future. To use instruct formatting, please switch to OpenRouter under Text Completion API instead.">
+                                        <i class="fa-solid fa-circle-exclamation neutral_warning"></i>
+                                        <b data-i18n="LEGACY">LEGACY</b>
+                                    </span>
                                     <span data-i18n="Force Instruct Mode formatting">Force Instruct Mode formatting</span>
                                 </label>
                                 <div class="toggle-description justifyLeft wide100p">
@@ -2620,7 +2645,7 @@
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
                                 <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode." data-i18n="[title]Auto-select this preset for Instruct Mode"></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                <i data-newbie-hidden data-preset-manager-new="context" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                <i data-newbie-hidden data-preset-manager-new="context" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                 <i data-newbie-hidden data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
                                 <i data-newbie-hidden data-preset-manager-export="context" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                 <i data-newbie-hidden id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
@@ -2651,6 +2676,10 @@
                                 <label class="checkbox_label" title="Add Chat Start and Example Separator to a list of stopping strings.">
                                     <input id="context_use_stop_strings" type="checkbox" />
                                     <small data-i18n="Use as Stop Strings">Use as Stop Strings</small>
+                                </label>
+                                <label class="checkbox_label" title="Includes Jailbreak at the end of the prompt, if defined in the character card AND ''Prefer Char. Jailbreak'' is enabled.&#10;THIS IS NOT RECOMMENDED FOR TEXT COMPLETION MODELS, CAN LEAD TO BAD OUTPUT.">
+                                    <input id="context_allow_jailbreak" type="checkbox" />
+                                    <small data-i18n="Allow Jailbreak">Allow Jailbreak</small>
                                 </label>
                             </div>
 
@@ -2715,7 +2744,7 @@
                                 <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
                                 <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection." data-i18n="[title]Auto-select this preset on API connection"></i>
                                 <i data-newbie-hidden data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                <i data-newbie-hidden data-preset-manager-new="instruct" class="menu_button fa-solid fa-paste" title="Save preset as" data-i18n="[title]Save preset as"></i>
+                                <i data-newbie-hidden data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
                                 <i data-newbie-hidden data-preset-manager-import="instruct" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
                                 <i data-newbie-hidden data-preset-manager-export="instruct" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                 <i data-newbie-hidden data-preset-manager-delete="instruct" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
@@ -2736,6 +2765,10 @@
                                 <label for="instruct_macro" class="checkbox_label">
                                     <input id="instruct_macro" type="checkbox" />
                                     <span data-i18n="Replace Macro in Sequences">Replace Macro in Sequences</span>
+                                </label>
+                                <label for="instruct_skip_examples" class="checkbox_label">
+                                    <input id="instruct_skip_examples" type="checkbox" />
+                                    <span data-i18n="Skip Example Dialogues Formatting">Skip Example Dialogues Formatting</span>
                                 </label>
                                 <label for="instruct_names" class="checkbox_label">
                                     <input id="instruct_names" type="checkbox" />
@@ -3213,7 +3246,7 @@
                             <span data-i18n="UI Language">Language:</span>
                             <select id="ui_language_select" class="widthNatural flex1 margin0">
                                 <option value="" data-i18n="Default">Default</option>
-                                <option value="en">en</option>
+                                <option value="en">English</option>
                             </select>
                         </div>
                         <small id="version_display"></small>
@@ -3244,7 +3277,7 @@
                                     <i class="fa-solid fa-save"></i>
                                 </div>
                                 <div id="ui-preset-save-button" title="Save as a new theme" data-i18n="[title]Save as a new theme" class="menu_button margin0">
-                                    <i class="fa-solid fa-paste"></i>
+                                    <i class="fa-solid fa-file-circle-plus"></i>
                                 </div>
                             </div>
                         </div>
@@ -3276,6 +3309,10 @@
                                 <div class="flex-container">
                                     <toolcool-color-picker id="italics-color-picker"></toolcool-color-picker>
                                     <span data-i18n="Italics Text">Italics Text</span>
+                                </div>
+                                <div class="flex-container">
+                                    <toolcool-color-picker id="underline-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="Underlined Text">Underlined Text</span>
                                 </div>
                                 <div class="flex-container">
                                     <toolcool-color-picker id="quote-color-picker"></toolcool-color-picker>
@@ -3569,7 +3606,7 @@
                                     <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
                                 </label>
                             </div>
-                            <div name="ChatMessageHandlingToggles" >
+                            <div name="ChatMessageHandlingToggles">
                                 <h4 data-i18n="Chat/Message Handling">Chat/Message Handling</h4>
                                 <div data-newbie-hidden class="flex-container alignitemscenter">
                                     <span data-i18n="Send on Enter">
@@ -3598,7 +3635,7 @@
                                         <input id="swipes-checkbox" type="checkbox" />
                                         <span data-i18n="Swipes">Swipes</span><i class="fa-solid fa-desktop"></i><i class="fa-solid fa-mobile-screen-button"></i>
                                     </label>
-                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox" title="Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC.", data-i18n="[title]Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC">
+                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox" title="Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC." , data-i18n="[title]Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC">
                                         <input id="gestures-checkbox" type="checkbox" />
                                         <span data-i18n="Gestures">Gestures</span>
                                         <i class="fa-solid fa-mobile-screen-button"></i>
@@ -3681,7 +3718,7 @@
                                 </div>
                             </div>
                             <div data-newbie-hidden class="flex-container">
-                                <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat." >
+                                <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat.">
                                     <span data-i18n="Reload Chat">Reload Chat</span>
                                 </div>
                                 <div id="debug_menu" class="menu_button whitespacenowrap" data-i18n="Debug Menu">
@@ -3744,11 +3781,11 @@
                         </label>
                         <div id="extensions_details" class="menu_button_icon menu_button">
                             <i class="fa-solid fa-cubes"></i>
-                            Manage extensions
+                            <span data-i18n="Manage extensions">Manage extensions</span>
                         </div>
-                        <div id="third_party_extension_button" title="Import Extension From Git Repo" class="menu_button menu_button_icon">
+                        <div id="third_party_extension_button" title="Import Extension From Git Repo" data-i18n="[title]Import Extension From Git Repo" class="menu_button menu_button_icon">
                             <i class="fa-solid fa-cloud-arrow-down"></i>
-                            Install extension
+                            <span data-i18n="Install extension">Install extension</span>
                         </div>
                     </div>
                     <div id="extensions_settings" class="flex1 wide50p">
@@ -3847,7 +3884,7 @@
                                 <h4 data-i18n="Persona Description">Persona Description</h4>
                                 <textarea id="persona_description" name="persona_description" data-i18n="[placeholder]Example: [{{user}} is a 28-year-old Romanian cat girl.]" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="50000" value="" autocomplete="off" rows="8"></textarea>
                                 <div class="extension_token_counter">
-                                    Tokens: <span id="persona_description_token_count">0</span>
+                                    <span data-i18n="Tokens persona description">Tokens</span>: <span id="persona_description_token_count">0</span>
                                 </div>
                                 <div data-newbie-hidden>
                                     <label for="persona_description_position" data-i18n="Position:">Position:</label>
@@ -3971,6 +4008,12 @@
                                                     <option id="renameCharButton" data-i18n="Rename">
                                                         Rename
                                                     </option>
+                                                    <option id="character_source" data-i18n="Link to Source">
+                                                        Link to Source
+                                                    </option>
+                                                    <option id="replace_update" data-i18n="Replace / Update">
+                                                        Replace / Update
+                                                    </option>
                                                     <!--<option id="dupe_button">
                                                             Duplicate
                                                         </option>
@@ -3983,7 +4026,7 @@
                                                 </select>
                                             </label>
                                         </div>
-                                        <div id="tags_div" class="marginBot5">
+                                        <div id="tags_div">
                                             <div class="tag_controls">
                                                 <input id="tagInput" class="text_pole tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="50" />
                                                 <div class="tags_view menu_button fa-solid fa-tags" title="View all tags" data-i18n="[title]View all tags"></div>
@@ -3995,44 +4038,47 @@
                             </div>
                         </div>
                         <hr>
-                        <div id="description_div" class="marginBot5 flex-container alignitemscenter">
-                            <span data-i18n="Character Description">Description</span>
-                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
-                            <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
-                                <span class="fa-solid fa-circle-question note-link-span"></span>
-                            </a>
+                        <div id="spoiler_free_desc" class="flex-container flexFlowColumn flex1 flexNoGap">
+                            <div id="creators_notes_div" class="title_restorable">
+                                <span data-i18n="Creator's Notes">Creator's Notes</span>
+                                <div id="spoiler_free_desc_button" class="margin0 menu_button fa-solid fa-eye" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
+                            </div>
+                            <div id="creator_notes_spoiler" class="flex1"></div>
+                            <!-- A button to show / hide description_div and description_textarea and first_message_div and firstmessage_textarea-->
                         </div>
-                        <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
-                        <div class="extension_token_counter">
-                            Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
-                        </div>
-                        <div id="first_message_div" class="marginBot5 title_restorable">
-                            <div class="flex-container alignitemscenter">
-                                <span data-i18n="First message">First message</span>
-                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor"></i>
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
+                        <div id="descriptionWrapper" class="flex-container flexFlowColumn flex1">
+                            <hr>
+                            <div id="description_div" class="marginBot5 flex-container alignitemscenter">
+                                <span data-i18n="Character Description">Description</span>
+                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
                                     <span class="fa-solid fa-circle-question note-link-span"></span>
                                 </a>
                             </div>
-                            <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
-                                <span data-i18n="Alt. Greetings">
-                                    Alt. Greetings
-                                </span>
+                            <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." name="description" placeholder=""></textarea>
+                            <div class="extension_token_counter">
+                                Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
                             </div>
                         </div>
-                        <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
-                        <div class="extension_token_counter">
-                            Tokens: <span data-token-counter="firstmessage_textarea">counting...</span>
-                        </div>
-                        <div id="spoiler_free_desc">
-                            <div id="creators_notes_div" class="marginBot5 title_restorable">
-                                <span data-i18n="Creator's Notes">Creator's Notes</span>
-                                <div id="spoiler_free_desc_button" class="menu_button fa-solid fa-eye" title="Show / Hide Description and First Message" data-i18n="[title]Show / Hide Description and First Message"></div>
-                                </a>
+                        <div id="firstMessageWrapper" class="flex-container flexFlowColumn flex1">
+                            <div id="first_message_div" class="marginBot5 title_restorable">
+                                <div class="flex-container alignitemscenter flex1">
+                                    <span data-i18n="First message">First message</span>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor"></i>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </div>
+                                <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
+                                    <span data-i18n="Alt. Greetings">
+                                        Alt. Greetings
+                                    </span>
+                                </div>
                             </div>
-                            <hr>
-                            <div id="creator_notes_spoiler" data-i18n="[placeholder]Creator's Notes" placeholder="Creator's Notes" class="marginBot5" name="creator_notes_spoiler"></div>
-                            <!-- A button to show / hide description_div and description_textarea and first_message_div and firstmessage_textarea-->
+                            <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." name="first_mes" placeholder=""></textarea>
+                            <div class="extension_token_counter">
+                                Tokens: <span data-token-counter="firstmessage_textarea">counting...</span>
+                            </div>
                         </div>
                         <!-- these divs are invisible and used for server communication purposes -->
                         <div id="hidden-divs">
@@ -4166,6 +4212,7 @@
                         <input multiple type="file" id="character_import_file" accept=".json, image/png, .yaml, .yml" name="avatar">
                         <input id="character_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off">
                     </form>
+                    <input type="file" id="character_replace_file" accept="image/png" name="replace_avatar" hidden>
                 </div>
                 <div name="Character List Panel" id="rm_characters_block" class="right_menu">
                     <div id="charListFixedTop">
@@ -4196,9 +4243,9 @@
                     </div>
 
                     <div id="rm_print_characters_pagination">
-                        <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view"></i>
-                        <i id="bulkEditButton" class="fa-solid fa-edit menu_button bulkEditButton" title="Bulk edit characters"></i>
-                        <i id="bulkDeleteButton" class="fa-solid fa-trash menu_button bulkDeleteButton" title="Bulk delete characters" style="display: none;"></i>
+                        <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view" data-i18n="[title]Toggle character grid view"></i>
+                        <i id="bulkEditButton" class="fa-solid fa-edit menu_button bulkEditButton" title="Bulk edit characters" data-i18n="[title]Bulk edit characters"></i>
+                        <i id="bulkDeleteButton" class="fa-solid fa-trash menu_button bulkDeleteButton" title="Bulk delete characters" data-i18n="[title]Bulk delete characters" style="display: none;"></i>
                     </div>
                     <div id="rm_print_characters_block" class="flexFlowColumn"></div>
                 </div>
@@ -4275,7 +4322,7 @@
                 </div>
                 <div class="flex-container flexnowrap">
                     <div class="flex1">
-                        <h4 data-i18n="Creator's Notes">Creator's Notes</h4>
+                        <h4 class="flex-box" data-i18n="Creator's Notes">Creator's Notes<i class="editor_maximize fa-solid fa-maximize" data-for="creator_notes_textarea" title="Expand the editor"></i></h4>
                         <textarea id="creator_notes_textarea" name="creator_notes" data-i18n="[placeholder](Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" placeholder="(Describe the bot, give use tips, or list the chat models it has been tested on. This will be displayed in the character list.)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="20000"></textarea>
                     </div>
                     <div class="flex1">
@@ -4398,7 +4445,7 @@
                     <span id="ChatHistoryCharName"></span><span data-i18n="Chat History">Chat History</span>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/chatfilemanagement/#chat-import" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
                 </div>
-                <div id="newChatFromManageScreenButton" class="menu_button menu_button_icon" >
+                <div id="newChatFromManageScreenButton" class="menu_button menu_button_icon">
                     <i class="fa-solid fa-plus"></i>
                     <span data-i18n="New Chat">New Chat</span>
                 </div>
@@ -4544,7 +4591,7 @@
                                         <textarea class="text_pole autoSetHeight" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                     </div>
                                     <!-- <span class="world_entry_form_position_value"></span> -->
-                                    <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal❌ Disabled" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural margin0">
+                                    <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal❌ Disabled" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="text_pole widthNatural margin0">
                                         <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="constant" data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal❌ Disabled">🔵</option>
                                         <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="normal" data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal❌ Disabled">🟢</option>
                                         <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="disabled" data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal❌ Disabled">❌</option>
@@ -4553,7 +4600,7 @@
                                 <div class="WIEnteryHeaderControls flex-container">
                                     <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios wi-enter-footer-text">
                                         <label for="position" class="WIEntryHeaderTitleMobile" data-i18n="Position:">Position:</label>
-                                        <select name="position" class="widthNatural margin0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">
+                                        <select name="position" class="text_pole widthNatural margin0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">
                                             <option value="0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="Before Char Defs">↑Char</span></option>
                                             <option value="1" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="After Char Defs">↓Char</span></option>
                                             <option value="2" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="Before AN">↑AN</span></option>
@@ -4857,7 +4904,7 @@
                 <div class="mes_timer"></div>
                 <div class="tokenCounterDisplay"></div>
             </div>
-            <div class="swipe_left fa-solid fa-chevron-left"></div>
+            <div class="swipe_left fa-solid fa-chevron-left" style="display: none;"></div>
             <div class="mes_block">
                 <div class="ch_name flex-container justifySpaceBetween">
                     <div class="flex-container flex1 alignitemscenter">
@@ -4873,7 +4920,7 @@
                             <div title="Translate message" class="mes_translate fa-solid fa-language" data-i18n="[title]Translate message"></div>
                             <div title="Generate Image" class="sd_message_gen fa-solid fa-paintbrush" data-i18n="[title]Generate Image"></div>
                             <div title="Narrate" class="mes_narrate fa-solid fa-bullhorn" data-i18n="[title]Narrate"></div>
-                            <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt"></div>
+                            <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt" style="display: none;"></div>
                             <div title="Exclude message from prompts" class="mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
                             <div title="Include message in prompts" class="mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
                             <div title="Embed file or image" class="mes_embed fa-solid fa-paperclip" data-i18n="[title]Embed file or image"></div>
@@ -4905,7 +4952,7 @@
                 </div>
                 <div class="mes_bias"></div>
             </div>
-            <div class="swipe_right fa-solid fa-chevron-right">
+            <div class="swipe_right fa-solid fa-chevron-right" style="display: none;">
                 <div class="swipes-counter"></div>
             </div>
         </div>
@@ -5527,12 +5574,14 @@
         toastr.options.positionClass = "toast-top-center"; // Where to position the toast container
     </script>
     <script>
-        const documentHeight = () => {
-            const doc = document.documentElement
-            doc.style.setProperty('--doc-height', `${window.innerHeight}px`)
-        }
-        window.addEventListener('resize', documentHeight)
-        documentHeight()
+        window.addEventListener('load', (event) => {
+            const documentHeight = () => {
+                const doc = document.documentElement;
+                doc.style.setProperty('--doc-height', `${window.innerHeight}px`);
+            }
+            window.addEventListener('resize', documentHeight);
+            documentHeight();
+        });
     </script>
 </body>
 

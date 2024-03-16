@@ -1334,12 +1334,12 @@ class PromptManager {
                     <select id="${this.configuration.prefix}prompt_manager_footer_append_prompt" class="text_pole" name="append-prompt">
                         ${prompts}
                     </select>
-                    <a class="menu_button fa-chain fa-solid" title="Insert prompt" data-i18n="Insert"></a>
-                    <a class="caution menu_button fa-x fa-solid" title="Delete prompt" data-i18n="Delete"></a>
-                    <a class="menu_button fa-file-import fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="Import"></a>
-                    <a class="menu_button fa-file-export fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="Export"></a>
-                    <a class="menu_button fa-undo fa-solid" id="prompt-manager-reset-character" title="Reset current character" data-i18n="Reset current character"></a>
-                    <a class="menu_button fa-plus-square fa-solid" title="New prompt" data-i18n="New"></a>
+                    <a class="menu_button fa-chain fa-solid" title="Insert prompt" data-i18n="[title]Insert prompt"></a>
+                    <a class="caution menu_button fa-x fa-solid" title="Delete prompt" data-i18n="[title]Delete prompt"></a>
+                    <a class="menu_button fa-file-import fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="[title]Import a prompt list"></a>
+                    <a class="menu_button fa-file-export fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="[title]Export this prompt list"></a>
+                    <a class="menu_button fa-undo fa-solid" id="prompt-manager-reset-character" title="Reset current character" data-i18n="[title]Reset current character"></a>
+                    <a class="menu_button fa-plus-square fa-solid" title="New prompt" data-i18n="[title]New prompt"></a>
                 </div>
             `;
 

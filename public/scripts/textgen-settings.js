@@ -4,7 +4,6 @@ import {
     getRequestHeaders,
     getStoppingStrings,
     max_context,
-    online_status,
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
     setOnlineStatus,
@@ -14,7 +13,7 @@ import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasList
 
 import { power_user, registerDebugFunction } from './power-user.js';
 import EventSourceStream from './sse-stream.js';
-import { getCurrentOpenRouterModelTokenizer } from './textgen-models.js';
+import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer } from './textgen-models.js';
 import { SENTENCEPIECE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
 
@@ -35,10 +34,11 @@ export const textgen_types = {
     LLAMACPP: 'llamacpp',
     OLLAMA: 'ollama',
     INFERMATICAI: 'infermaticai',
+    DREAMGEN: 'dreamgen',
     OPENROUTER: 'openrouter',
 };
 
-const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, OPENROUTER } = textgen_types;
+const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
     'top_k',
@@ -71,6 +71,7 @@ const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
 let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 let TOGETHERAI_SERVER = 'https://api.together.xyz';
 let INFERMATICAI_SERVER = 'https://api.totalgpt.ai';
+let DREAMGEN_SERVER = 'https://dreamgen.com';
 let OPENROUTER_SERVER = 'https://openrouter.ai/api';
 
 const SERVER_INPUTS = {
@@ -111,6 +112,7 @@ const settings = {
     max_temp: 2.0,
     dynatemp_exponent: 1.0,
     smoothing_factor: 0.0,
+    max_tokens_second: 0,
     seed: -1,
     preset: 'Default',
     add_bos_token: true,
@@ -141,6 +143,8 @@ const settings = {
     infermaticai_model: '',
     ollama_model: '',
     openrouter_model: 'openrouter/auto',
+    aphrodite_model: '',
+    dreamgen_model: 'opus-v1-xl/text',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
     logit_bias: [],
@@ -178,6 +182,7 @@ const setting_names = [
     'max_temp',
     'dynatemp_exponent',
     'smoothing_factor',
+    'max_tokens_second',
     'encoder_rep_pen',
     'freq_pen',
     'presence_pen',
@@ -244,6 +249,10 @@ export function getTextGenServer() {
         return INFERMATICAI_SERVER;
     }
 
+    if (settings.type === DREAMGEN) {
+        return DREAMGEN_SERVER;
+    }
+
     if (settings.type === OPENROUTER) {
         return OPENROUTER_SERVER;
     }
@@ -272,7 +281,7 @@ async function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         // Mancer/Together/InfermaticAI doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI || settings.type === OPENROUTER) {
+        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI || settings.type === DREAMGEN || settings.type === OPENROUTER) {
             return value;
         }
 
@@ -307,6 +316,10 @@ function getTokenizerForTokenIds() {
 
     if (settings.type === OPENROUTER) {
         return getCurrentOpenRouterModelTokenizer();
+    }
+
+    if (settings.type === DREAMGEN) {
+        return getCurrentDreamGenModelTokenizer();
     }
 
     return tokenizers.LLAMA;
@@ -934,12 +947,16 @@ function getModel() {
         return settings.infermaticai_model;
     }
 
+    if (settings.type === DREAMGEN) {
+        return settings.dreamgen_model;
+    }
+
     if (settings.type === OPENROUTER) {
         return settings.openrouter_model;
     }
 
     if (settings.type === APHRODITE) {
-        return online_status;
+        return settings.aphrodite_model;
     }
 
     if (settings.type === OLLAMA) {
@@ -973,6 +990,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'presence_penalty': settings.presence_pen,
         'top_k': settings.top_k,
         'min_length': settings.type === OOBA ? settings.min_length : undefined,
+        'minimum_message_content_tokens': settings.type === DREAMGEN ? settings.min_length : undefined,
         'min_tokens': settings.min_length,
         'num_beams': settings.type === OOBA ? settings.num_beams : undefined,
         'length_penalty': settings.length_penalty,
@@ -984,6 +1002,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : 0,
         'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : 1,
         'smoothing_factor': settings.smoothing_factor,
+        'max_tokens_second': settings.max_tokens_second,
         'sampler_priority': settings.type === OOBA ? settings.sampler_priority : undefined,
         'samplers': settings.type === LLAMACPP ? settings.samplers : undefined,
         'stopping_strings': getStoppingStrings(isImpersonate, isContinue),

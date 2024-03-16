@@ -335,7 +335,9 @@ export async function favsToHotswap() {
 
     await Promise.allSettled(promises);
     //helpful instruction message if no characters are favorited
-    if (count === 0) { container.html('<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>'); }
+    if (count === 0) { 
+        container.html('<small><span data-i18n="Favorite characters to add them to HotSwaps"><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>'); 
+    }
     //otherwise replace with fav'd characters
     if (count > 0) {
         container.replaceWith(newContainer);
@@ -391,8 +393,9 @@ function RA_autoconnect(PrevApi) {
             case 'textgenerationwebui':
                 if ((textgen_settings.type === textgen_types.MANCER && secret_state[SECRET_KEYS.MANCER])
                     || (textgen_settings.type === textgen_types.TOGETHERAI && secret_state[SECRET_KEYS.TOGETHERAI])
-                    || (textgen_settings.type === textgen_types.INFERMATICAI && secret_state[SECRET_KEYS.INFERMATICAI]
-                    || (textgen_settings.type === textgen_types.OPENROUTER && secret_state[SECRET_KEYS.OPENROUTER]))
+                    || (textgen_settings.type === textgen_types.INFERMATICAI && secret_state[SECRET_KEYS.INFERMATICAI])
+                    || (textgen_settings.type === textgen_types.DREAMGEN && secret_state[SECRET_KEYS.DREAMGEN])
+                    || (textgen_settings.type === textgen_types.OPENROUTER && secret_state[SECRET_KEYS.OPENROUTER])
                 ) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }

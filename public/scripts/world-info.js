@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { registerSlashCommand } from './slash-commands.js';
@@ -950,20 +950,7 @@ function setOriginalDataValue(data, uid, key, value) {
             return;
         }
 
-        const keyParts = key.split('.');
-        let currentObject = originalEntry;
-
-        for (let i = 0; i < keyParts.length - 1; i++) {
-            const part = keyParts[i];
-
-            if (!Object.hasOwn(currentObject, part)) {
-                currentObject[part] = {};
-            }
-
-            currentObject = currentObject[part];
-        }
-
-        currentObject[keyParts[keyParts.length - 1]] = value;
+        setValueByPath(originalEntry, key, value);
     }
 }
 
@@ -1542,7 +1529,7 @@ function getWorldEntry(name, data, entry) {
             return;
         }
 
-        data.entries[uid].scanDepth = !isEmpty && !isNaN(value) && value >= 0 && value < MAX_SCAN_DEPTH ? Math.floor(value) : null;
+        data.entries[uid].scanDepth = !isEmpty && !isNaN(value) && value >= 0 && value <= MAX_SCAN_DEPTH ? Math.floor(value) : null;
         setOriginalDataValue(data, uid, 'extensions.scan_depth', data.entries[uid].scanDepth);
         saveWorldInfo(name, data);
     });
@@ -2223,7 +2210,7 @@ async function checkWorldInfo(chat, maxContext) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
                 .filter(x => !x.preventRecursion)
-                .map(x => x.content).join('\n');
+                .map(x => substituteParams(x.content)).join('\n');
             buffer.addRecurse(text);
             allActivatedText = (text + '\n' + allActivatedText);
         }

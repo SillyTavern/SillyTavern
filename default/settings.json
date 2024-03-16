@@ -113,6 +113,7 @@
         "shadow_width": 2,
         "main_text_color": "rgba(220, 220, 210, 1)",
         "italics_text_color": "rgba(145, 145, 145, 1)",
+        "underline_text_color": "rgba(188, 231, 207, 1)",
         "quote_text_color": "rgba(225, 138, 36, 1)",
         "blur_tint_color": "rgba(23, 23, 23, 1)",
         "user_mes_blur_tint_color": "rgba(0, 0, 0, 0.9)",
@@ -445,9 +446,9 @@
     },
     "oai_settings": {
         "preset_settings_openai": "Default",
-        "temp_openai": 0.9,
-        "freq_pen_openai": 0.7,
-        "pres_pen_openai": 0.7,
+        "temp_openai": 1.0,
+        "freq_pen_openai": 0,
+        "pres_pen_openai": 0,
         "count_pen": 0,
         "top_p_openai": 1,
         "top_k_openai": 0,
@@ -622,7 +623,6 @@
         "show_external_models": false,
         "proxy_password": "",
         "assistant_prefill": "",
-        "use_ai21_tokenizer": false,
-        "exclude_assistant": false
+        "use_ai21_tokenizer": false
     }
 }

@@ -309,12 +309,15 @@ class PresetManager {
             'mancer_model',
             'togetherai_model',
             'ollama_model',
+            'aphrodite_model',
             'server_urls',
             'type',
             'custom_model',
             'bypass_status_check',
             'infermaticai_model',
+            'dreamgen_model',
             'openrouter_model',
+            'max_tokens_second',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 

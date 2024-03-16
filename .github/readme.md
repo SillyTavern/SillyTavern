@@ -12,6 +12,8 @@ Based on a fork of [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8
 
 2. Missing extensions after the update? Since the 1.10.6 release version, most of the previously built-in extensions have been converted to downloadable add-ons. You can download them via the built-in "Download Extensions and Assets" menu in the extensions panel (stacked blocks icon in the top bar).
 
+3. Unsupported platform: android arm LEtime-web. 32-bit Android requires an external dependency that can't be installed with npm. Use the following command to install it: `pkg install esbuild`. Then run the usual installation steps.
+
 ### Brought to you by Cohee, RossAscends, and the SillyTavern community
 
 ### What is SillyTavern or TavernAI?

@@ -1,7 +1,7 @@
 {
-   "temperature": 0.9,
-   "frequency_penalty": 0.7,
-   "presence_penalty": 0.7,
+   "temperature": 1.0,
+   "frequency_penalty": 0,
+   "presence_penalty": 0,
    "openai_max_context": 4095,
    "openai_max_tokens": 300,
    "nsfw_toggle": true,

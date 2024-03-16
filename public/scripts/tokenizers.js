@@ -5,9 +5,9 @@ import { groups, selected_group } from './group-chats.js';
 import { getStringHash } from './utils.js';
 import { kai_flags } from './kai-settings.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
-import { getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
+import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
 
-const { OOBA, TABBY, KOBOLDCPP, APHRODITE, LLAMACPP, OPENROUTER } = textgen_types;
+const { OOBA, TABBY, KOBOLDCPP, APHRODITE, LLAMACPP, OPENROUTER, DREAMGEN } = textgen_types;
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
@@ -205,6 +205,9 @@ export function getTokenizerBestMatch(forApi) {
             }
             if (forApi === 'textgenerationwebui' && textgen_settings.type === OPENROUTER) {
                 return getCurrentOpenRouterModelTokenizer();
+            }
+            if (forApi === 'textgenerationwebui' && textgen_settings.type === DREAMGEN) {
+                return getCurrentDreamGenModelTokenizer();
             }
         }
 

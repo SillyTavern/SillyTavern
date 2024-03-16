@@ -50,6 +50,7 @@
     /*Default Theme, will be changed by ToolCool Color Picker*/
     --SmartThemeBodyColor: rgb(220, 220, 210);
     --SmartThemeEmColor: rgb(145, 145, 145);
+    --SmartThemeUnderlineColor: rgb(188, 231, 207);
     --SmartThemeQuoteColor: rgb(225, 138, 36);
     /* --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9); */
     --SmartThemeBlurTintColor: rgba(23, 23, 23, 1);
@@ -274,6 +275,10 @@ table.responsiveTable {
     color: var(--SmartThemeEmColor);
 }
 
+.mes_text u {
+    color: var(--SmartThemeUnderlineColor);
+}
+
 .mes_text q {
     color: var(--SmartThemeQuoteColor);
 }
@@ -412,6 +417,11 @@ hr {
     width: 100%;
     height: 100%;
     transition: background-image 0.5s ease-in-out;
+}
+
+body.reduced-motion #bg1,
+body.reduced-motion #bg_custom {
+    transition: none;
 }
 
 #version_display {
@@ -1013,6 +1023,19 @@ select {
     order: 3;
 }
 
+#character_popup .editor_maximize {
+    cursor: pointer;
+    margin: 5px;
+    opacity: 0.75;
+    filter: grayscale(1);
+    -webkit-transition: all 250ms ease-in-out;
+    transition: all 250ms ease-in-out;
+}
+
+#character_popup .editor_maximize:hover {
+    opacity: 1;
+}
+
 .text_pole::placeholder {
     color: rgb(139, 139, 139);
 }
@@ -1021,6 +1044,12 @@ select {
     color: var(--SmartThemeEmColor);
     text-align: center;
     white-space: nowrap;
+}
+
+#creator_notes_spoiler {
+    border: 0;
+    font-size: calc(var(--mainFontSize)*.8);
+    padding-top: 5px;
 }
 
 @media screen and (max-width: 1000px) {
@@ -1032,8 +1061,8 @@ select {
 
 @media screen and (min-width: 1001px) {
     #description_textarea {
-        height: 33vh;
-        height: 33svh;
+        height: 30vh;
+        height: 30svh;
     }
 
     #firstmessage_textarea {

@@ -5,6 +5,7 @@ const FormData = require('form-data');
 const fs = require('fs');
 const { jsonParser, urlencodedParser } = require('../express-common');
 const { getConfigValue, mergeObjectWithYaml, excludeKeysByYaml, trimV1 } = require('../util');
+const { setAdditionalHeaders } = require('../additional-headers');
 
 const router = express.Router();
 
@@ -37,7 +38,11 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             bodyParams.temperature = 0.1;
         }
 
-        if (!key && !request.body.reverse_proxy && request.body.api !== 'custom' && request.body.api !== 'ooba') {
+        if (request.body.api === 'koboldcpp') {
+            key = readSecret(SECRET_KEYS.KOBOLDCPP);
+        }
+
+        if (!key && !request.body.reverse_proxy && ['custom', 'ooba', 'koboldcpp'].includes(request.body.api) === false) {
             console.log('No key found for API', request.body.api);
             return response.sendStatus(400);
         }
@@ -103,6 +108,12 @@ router.post('/caption-image', jsonParser, async (request, response) => {
                 image_url: imgMessage?.content?.[1]?.image_url?.url,
             });
         }
+
+        if (request.body.api === 'koboldcpp') {
+            apiUrl = `${trimV1(request.body.server_url)}/v1/chat/completions`;
+        }
+
+        setAdditionalHeaders(request, { headers }, apiUrl);
 
         const result = await fetch(apiUrl, {
             method: 'POST',
