@@ -22,7 +22,7 @@ import {
     parseTabbyLogprobs,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER , TABBY } = textgen_types;
 
 import {
     world_info,
@@ -1149,6 +1149,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === APHRODITE) {
             loadAphroditeModels(data?.data);
             online_status = textgen_settings.aphrodite_model;
+        } else if (textgen_settings.type === TABBY) {
+            loadTabbyApiModels(data?.data);
+            online_status = textgen_settings.tabby_api_model;
         } else {
             online_status = data?.result;
         }

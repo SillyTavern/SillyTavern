@@ -146,6 +146,7 @@ const settings = {
     ollama_model: '',
     openrouter_model: 'openrouter/auto',
     aphrodite_model: '',
+    tabby_api_model: '',
     dreamgen_model: 'opus-v1-xl/text',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
@@ -1113,4 +1114,3 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
 
     return params;
 }
-
