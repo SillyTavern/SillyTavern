@@ -206,7 +206,7 @@ export async function loadTabbyApiModels(data) {
         const option = document.createElement('option');
         option.value = model.id;
         option.text = model.id;
-        option.selected = model.id === textgen_settings.aphrodite_model;
+        option.selected = model.id === textgen_settings.tabby_api_model;
         $('#tabby_api_model').append(option);
     }
 }
