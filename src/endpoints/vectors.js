@@ -5,7 +5,7 @@ const sanitize = require('sanitize-filename');
 const { jsonParser } = require('../express-common');
 
 // Don't forget to add new sources to the SOURCES array
-const SOURCES = ['transformers', 'mistral', 'openai', 'extras', 'palm', 'togetherai'];
+const SOURCES = ['transformers', 'mistral', 'openai', 'extras', 'palm', 'togetherai', 'nomicai'];
 
 /**
  * Gets the vector for the given text from the given source.
@@ -16,6 +16,8 @@ const SOURCES = ['transformers', 'mistral', 'openai', 'extras', 'palm', 'togethe
  */
 async function getVector(source, sourceSettings, text) {
     switch (source) {
+        case 'nomicai':
+            return require('../nomicai-vectors').getNomicAIVector(text, source);
         case 'togetherai':
         case 'mistral':
         case 'openai':
@@ -45,6 +47,9 @@ async function getBatchVector(source, sourceSettings, texts) {
     let results = [];
     for (let batch of batches) {
         switch (source) {
+            case 'nomicai':
+                results.push(...await require('../nomicai-vectors').getNomicAIBatchVector(batch, source));
+                break;
             case 'togetherai':
             case 'mistral':
             case 'openai':
@@ -169,6 +174,12 @@ async function queryCollection(collectionId, source, sourceSettings, searchText,
 function getSourceSettings(source, request) {
     if (source === 'togetherai') {
         let model = String(request.headers['x-togetherai-model']);
+
+        return {
+            model: model,
+        };
+    } else if (source === 'openai') {
+        let model = String(request.headers['x-openai-model']);
 
         return {
             model: model,

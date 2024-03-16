@@ -1,7 +1,7 @@
 import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, extension_settings, getContext, modules, renderExtensionTemplate } from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
-import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
 
 const MODULE_NAME = 'vectors';
@@ -13,6 +13,7 @@ const settings = {
     source: 'transformers',
     include_wi: false,
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
+    openai_model: 'text-embedding-ada-002',
 
     // For chats
     enabled_chats: false,
@@ -429,6 +430,24 @@ async function getSavedHashes(collectionId) {
     return hashes;
 }
 
+function getVectorHeaders() {
+    const headers = getRequestHeaders();
+    switch (settings.source) {
+        case 'extras':
+            addExtrasHeaders(headers);
+            break;
+        case 'togetherai':
+            addTogetherAiHeaders(headers);
+            break;
+        case 'openai':
+            addOpenAiHeaders(headers);
+            break;
+        default:
+            break;
+    }
+    return headers;
+}
+
 /**
  * Add headers for the Extras API source.
  * @param {object} headers Headers object
@@ -442,12 +461,22 @@ function addExtrasHeaders(headers) {
 }
 
 /**
- * Add headers for the Extras API source.
+ * Add headers for the TogetherAI API source.
  * @param {object} headers Headers object
  */
 function addTogetherAiHeaders(headers) {
     Object.assign(headers, {
         'X-Togetherai-Model': extension_settings.vectors.togetherai_model,
+    });
+}
+
+/**
+ * Add headers for the OpenAI API source.
+ * @param {object} headers Header object
+ */
+function addOpenAiHeaders(headers) {
+    Object.assign(headers, {
+        'X-OpenAI-Model': extension_settings.vectors.openai_model,
     });
 }
 
@@ -461,7 +490,8 @@ async function insertVectorItems(collectionId, items) {
     if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
-        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI]) {
+        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
+        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
@@ -469,12 +499,7 @@ async function insertVectorItems(collectionId, items) {
         throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
     }
 
-    const headers = getRequestHeaders();
-    if (settings.source === 'extras') {
-        addExtrasHeaders(headers);
-    } else if (settings.source === 'togetherai') {
-        addTogetherAiHeaders(headers);
-    }
+    const headers = getVectorHeaders();
 
     const response = await fetch('/api/vector/insert', {
         method: 'POST',
@@ -520,12 +545,7 @@ async function deleteVectorItems(collectionId, hashes) {
  * @returns {Promise<{ hashes: number[], metadata: object[]}>} - Hashes of the results
  */
 async function queryCollection(collectionId, searchText, topK) {
-    const headers = getRequestHeaders();
-    if (settings.source === 'extras') {
-        addExtrasHeaders(headers);
-    } else if (settings.source === 'togetherai') {
-        addTogetherAiHeaders(headers);
-    }
+    const headers = getVectorHeaders();
 
     const response = await fetch('/api/vector/query', {
         method: 'POST',
@@ -580,6 +600,8 @@ function toggleSettings() {
     $('#vectors_files_settings').toggle(!!settings.enabled_files);
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
+    $('#openai_vectorsModel').toggle(settings.source === 'openai');
+    $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
 }
 
 async function onPurgeClick() {
@@ -643,6 +665,7 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
+    $('#vectors_modelWarning').hide();
     $('#vectors_enabled_files').prop('checked', settings.enabled_files).on('input', () => {
         settings.enabled_files = $('#vectors_enabled_files').prop('checked');
         Object.assign(extension_settings.vectors, settings);
@@ -655,9 +678,22 @@ jQuery(async () => {
         saveSettingsDebounced();
         toggleSettings();
     });
-
+    $('#api_key_nomicai').on('change', () => {
+        const nomicKey = String($('#api_key_nomicai').val()).trim();
+        if (nomicKey.length) {
+            writeSecret(SECRET_KEYS.NOMICAI, nomicKey);
+        }
+        saveSettingsDebounced();
+    });
     $('#vectors_togetherai_model').val(settings.togetherai_model).on('change', () => {
+        $('#vectors_modelWarning').show();
         settings.togetherai_model = String($('#vectors_togetherai_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_openai_model').val(settings.openai_model).on('change', () => {
+        $('#vectors_modelWarning').show();
+        settings.openai_model = String($('#vectors_openai_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
@@ -725,6 +761,10 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
+
+    const validSecret = !!secret_state[SECRET_KEYS.NOMICAI];
+    const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key';
+    $('#api_key_nomicai').attr('placeholder', placeholder);
 
     toggleSettings();
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);

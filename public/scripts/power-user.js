@@ -217,6 +217,7 @@ let power_user = {
         chat_start: defaultChatStart,
         example_separator: defaultExampleSeparator,
         use_stop_strings: true,
+        allow_jailbreak: false,
     },
 
     personas: {},
@@ -295,6 +296,7 @@ const contextControls = [
     { id: 'context_example_separator', property: 'example_separator', isCheckbox: false, isGlobalSetting: false },
     { id: 'context_chat_start', property: 'chat_start', isCheckbox: false, isGlobalSetting: false },
     { id: 'context_use_stop_strings', property: 'use_stop_strings', isCheckbox: true, isGlobalSetting: false, defaultValue: false },
+    { id: 'context_allow_jailbreak', property: 'allow_jailbreak', isCheckbox: true, isGlobalSetting: false, defaultValue: false },
 
     // Existing power user settings
     { id: 'always-force-name2-checkbox', property: 'always_force_name2', isCheckbox: true, isGlobalSetting: true, defaultValue: true },
@@ -462,6 +464,7 @@ function switchReducedMotion() {
     const overrideDuration = power_user.reduced_motion ? 0 : ANIMATION_DURATION_DEFAULT;
     setAnimationDuration(overrideDuration);
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
+    $('body').toggleClass('reduced-motion', power_user.reduced_motion);
 }
 
 function switchCompactInputArea() {
@@ -1071,13 +1074,6 @@ async function applyThemeColor(type) {
 
 async function applyCustomCSS() {
     power_user.custom_css = String(localStorage.getItem(storage_keys.custom_css) ?? '');
-
-    if (power_user.custom_css.includes('@import')) {
-        var removeImport = /@import[^;]+;/gm;
-        power_user.custom_css = power_user.custom_css.replace(removeImport, '');
-        localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
-        toastr.warning('@import not allowed in Custom CSS. @import lines removed.');
-    }
 
     $('#customCSS').val(power_user.custom_css);
     var styleId = 'custom-style';
@@ -2022,6 +2018,13 @@ async function importTheme(file) {
 
     if (themes.some(t => t.name === parsed.name)) {
         throw new Error('Theme with that name already exists');
+    }
+
+    if (typeof parsed.custom_css === 'string' && parsed.custom_css.includes('@import')) {
+        const confirm = await callPopup('This theme contains @import lines in the Custom CSS. Press "Yes" to proceed.', 'confirm', '', { okButton: 'Yes' });
+        if (!confirm) {
+            throw new Error('Theme contains @import lines');
+        }
     }
 
     themes.push(parsed);

@@ -43,6 +43,10 @@ export function isValidUrl(value) {
 export function stringToRange(input, min, max) {
     let start, end;
 
+    if (typeof input !== 'string') {
+        input = String(input);
+    }
+
     if (input.includes('-')) {
         const parts = input.split('-');
         start = parts[0] ? parseInt(parts[0], 10) : NaN;
@@ -602,7 +606,25 @@ export function isOdd(number) {
     return number % 2 !== 0;
 }
 
+const dateCache = new Map();
+
+/**
+ * Cached version of moment() to avoid re-parsing the same date strings.
+ * Important: Moment objects are mutable, so use clone() before modifying them!
+ * @param {any} timestamp String or number representing a date.
+ * @returns {*} Moment object
+ */
 export function timestampToMoment(timestamp) {
+    if (dateCache.has(timestamp)) {
+        return dateCache.get(timestamp);
+    }
+
+    const moment = parseTimestamp(timestamp);
+    dateCache.set(timestamp, moment);
+    return moment;
+}
+
+function parseTimestamp(timestamp) {
     if (!timestamp) {
         return moment.invalid();
     }
@@ -1225,4 +1247,28 @@ export async function extractTextFromMarkdown(blob) {
     const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
     const text = postProcessText(document.body.textContent, false);
     return text;
+}
+
+/**
+ * Sets a value in an object by a path.
+ * @param {object} obj Object to set value in
+ * @param {string} path Key path
+ * @param {any} value Value to set
+ * @returns {void}
+ */
+export function setValueByPath(obj, path, value) {
+    const keyParts = path.split('.');
+    let currentObject = obj;
+
+    for (let i = 0; i < keyParts.length - 1; i++) {
+        const part = keyParts[i];
+
+        if (!Object.hasOwn(currentObject, part)) {
+            currentObject[part] = {};
+        }
+
+        currentObject = currentObject[part];
+    }
+
+    currentObject[keyParts[keyParts.length - 1]] = value;
 }

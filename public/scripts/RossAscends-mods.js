@@ -271,7 +271,7 @@ export async function favsToHotswap() {
 
     //helpful instruction message if no characters are favorited
     if (favs.length == 0) {
-        container.html('<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>');
+        container.html('<small><span><i class="fa-solid fa-star"></i> <span data-i18n="Favorite characters to add them to HotSwaps">Favorite characters to add them to HotSwaps</span></span></small>');
         return;
     }
 

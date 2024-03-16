@@ -357,6 +357,16 @@ function charaFormatData(data) {
         }
     }
 
+    if (data.extensions) {
+        try {
+            const extensions = JSON.parse(data.extensions);
+            // Deep merge the extensions object
+            _.set(char, 'data.extensions', deepMerge(char.data.extensions, extensions));
+        } catch {
+            console.debug(`Failed to parse extensions JSON: ${data.extensions}`);
+        }
+    }
+
     return char;
 }
 
@@ -600,10 +610,10 @@ router.post('/edit-attribute', jsonParser, async function (request, response) {
  * @returns {void}
  * */
 router.post('/merge-attributes', jsonParser, async function (request, response) {
-    const update = request.body;
-    const avatarPath = path.join(DIRECTORIES.characters, update.avatar);
-
     try {
+        const update = request.body;
+        const avatarPath = path.join(DIRECTORIES.characters, update.avatar);
+
         const pngStringData = await charaRead(avatarPath);
 
         if (!pngStringData) {

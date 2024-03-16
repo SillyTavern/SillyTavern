@@ -288,6 +288,7 @@ jQuery(function () {
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ollama' && textgenerationwebui_settings.server_urls[textgen_types.OLLAMA]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'llamacpp' && textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'ooba' && textgenerationwebui_settings.server_urls[textgen_types.OOBA]) ||
+                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'koboldcpp' && textgenerationwebui_settings.server_urls[textgen_types.KOBOLDCPP]) ||
                 (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'custom') ||
                 extension_settings.caption.source === 'local' ||
                 extension_settings.caption.source === 'horde';
@@ -355,6 +356,7 @@ jQuery(function () {
                             <select id="caption_multimodal_api" class="flex1 text_pole">
                                 <option value="llamacpp">llama.cpp</option>
                                 <option value="ooba">Text Generation WebUI (oobabooga)</option>
+                                <option value="koboldcpp">KoboldCpp</option>
                                 <option value="ollama">Ollama</option>
                                 <option value="openai">OpenAI</option>
                                 <option value="anthropic">Anthropic</option>
@@ -369,6 +371,7 @@ jQuery(function () {
                                 <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                                 <option data-type="anthropic" value="claude-3-opus-20240229">claude-3-opus-20240229</option>
                                 <option data-type="anthropic" value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
+                                <option data-type="anthropic" value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                                 <option data-type="google" value="gemini-pro-vision">gemini-pro-vision</option>
                                 <option data-type="openrouter" value="openai/gpt-4-vision-preview">openai/gpt-4-vision-preview</option>
                                 <option data-type="openrouter" value="haotian-liu/llava-13b">haotian-liu/llava-13b</option>
@@ -377,6 +380,7 @@ jQuery(function () {
                                 <option data-type="ollama" value="llava:latest">llava:latest</option>
                                 <option data-type="llamacpp" value="llamacpp_current">[Currently loaded]</option>
                                 <option data-type="ooba" value="ooba_current">[Currently loaded]</option>
+                                <option data-type="koboldcpp" value="koboldcpp_current">[Currently loaded]</option>
                                 <option data-type="custom" value="custom_current">[Currently selected]</option>
                             </select>
                         </div>

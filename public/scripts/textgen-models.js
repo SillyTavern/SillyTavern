@@ -1,5 +1,5 @@
 import { isMobile } from './RossAscends-mods.js';
-import { callPopup, getRequestHeaders, setGenerationParamsFromPreset } from '../script.js';
+import { amount_gen, callPopup, eventSource, event_types, getRequestHeaders, max_context, setGenerationParamsFromPreset } from '../script.js';
 import { textgenerationwebui_settings as textgen_settings, textgen_types } from './textgen-settings.js';
 import { tokenizers } from './tokenizers.js';
 
@@ -151,6 +151,9 @@ export async function loadOpenRouterModels(data) {
         option.selected = model.id === textgen_settings.openrouter_model;
         $('#openrouter_model').append(option);
     }
+
+    // Calculate the cost of the selected model + update on settings change
+    calculateOpenRouterCost();
 }
 
 export async function loadAphroditeModels(data) {
@@ -360,6 +363,32 @@ async function downloadOllamaModel() {
         console.error(err);
         toastr.error('Failed to download Ollama model. Please try again.');
     }
+}
+
+function calculateOpenRouterCost() {
+    if (textgen_settings.type !== textgen_types.OPENROUTER) {
+        return;
+    }
+
+    let cost = 'Unknown';
+    const model = openRouterModels.find(x => x.id === textgen_settings.openrouter_model);
+
+    if (model?.pricing) {
+        const completionCost = Number(model.pricing.completion);
+        const promptCost = Number(model.pricing.prompt);
+        const completionTokens = amount_gen;
+        const promptTokens = (max_context - completionTokens);
+        const totalCost = (completionCost * completionTokens) + (promptCost * promptTokens);
+        if (!isNaN(totalCost)) {
+            cost = '$' + totalCost.toFixed(3);
+        }
+    }
+
+    $('#or_prompt_cost').text(cost);
+
+    // Schedule an update when settings change
+    eventSource.removeListener(event_types.SETTINGS_UPDATED, calculateOpenRouterCost);
+    eventSource.once(event_types.SETTINGS_UPDATED, calculateOpenRouterCost);
 }
 
 export function getCurrentOpenRouterModelTokenizer() {

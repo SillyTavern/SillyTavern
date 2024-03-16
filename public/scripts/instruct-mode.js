@@ -269,6 +269,7 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
 
     if (power_user.instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);
+        sequence = sequence.replace(/{{name}}/gi, name || 'System');
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
@@ -346,6 +347,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
 
     if (power_user.instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);
+        sequence = sequence.replace(/{{name}}/gi, name || 'System');
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';

@@ -68,6 +68,14 @@ function getOobaHeaders() {
     }) : {};
 }
 
+function getKoboldCppHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.KOBOLDCPP);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
 function getOverrideHeaders(urlHost) {
     const requestOverrides = getConfigValue('requestOverrides', []);
     const overrideHeaders = requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
@@ -112,9 +120,25 @@ function setAdditionalHeaders(request, args, server) {
         case TEXTGEN_TYPES.OPENROUTER:
             headers = getOpenRouterHeaders();
             break;
-        default:
-            headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
+        case TEXTGEN_TYPES.KOBOLDCPP:
+            headers = getKoboldCppHeaders();
             break;
+        default:
+            headers = {};
+            break;
+    }
+
+    if (typeof server === 'string' && server.length > 0) {
+        try {
+            const url = new URL(server);
+            const overrideHeaders =  getOverrideHeaders(url.host);
+
+            if (overrideHeaders && Object.keys(overrideHeaders).length > 0) {
+                Object.assign(headers, overrideHeaders);
+            }
+        } catch {
+            // Do nothing
+        }
     }
 
     Object.assign(args.headers, headers);

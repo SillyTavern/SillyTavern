@@ -184,9 +184,9 @@ const prefixMap = selected_group ? {
 
 const default_settings = {
     preset_settings_openai: 'Default',
-    temp_openai: 0.9,
-    freq_pen_openai: 0.7,
-    pres_pen_openai: 0.7,
+    temp_openai: 1.0,
+    freq_pen_openai: 0,
+    pres_pen_openai: 0,
     count_pen: 0.0,
     top_p_openai: 1.0,
     top_k_openai: 0,
@@ -3840,7 +3840,7 @@ export function isImageInliningSupported() {
         case chat_completion_sources.OPENROUTER:
             return !oai_settings.openrouter_force_instruct && (oai_settings.openrouter_model.includes(gpt4v) || oai_settings.openrouter_model.includes(llava));
         case chat_completion_sources.CUSTOM:
-            return oai_settings.custom_model.includes(gpt4v) || oai_settings.custom_model.includes(llava) || oai_settings.custom_model.includes(geminiProV);
+            return true;
         default:
             return false;
     }
