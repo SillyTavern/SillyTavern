@@ -466,6 +466,10 @@ let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popu
     placement: 'right',
 });
 
+// Saved here for performance reasons
+const messageTemplate = $('#message_template .mes');
+const chatElement = $('#chat');
+
 let dialogueResolve = null;
 let dialogueCloseStop = false;
 let chat_metadata = {};
@@ -1524,7 +1528,7 @@ async function printMessages() {
 
     for (let i = startIndex; i < chat.length; i++) {
         const item = chat[i];
-        addOneMessage(item, { scroll: i === chat.length - 1, forceId: i });
+        addOneMessage(item, { scroll: i === chat.length - 1, forceId: i, showSwipes: false });
     }
 
     // Scroll to bottom when all images are loaded
@@ -1541,6 +1545,11 @@ async function printMessages() {
             }
         }
     }
+
+    $('#chat .mes').removeClass('last_mes');
+    $('#chat .mes').last().addClass('last_mes');
+    hideSwipeButtons();
+    showSwipeButtons();
 
     function incrementAndCheck() {
         imagesLoaded++;
@@ -1822,7 +1831,7 @@ function getMessageFromTemplate({
     tokenCount,
     extra,
 } = {}) {
-    const mes = $('#message_template .mes').clone();
+    const mes = messageTemplate.clone();
     mes.attr({
         'mesid': mesId,
         'ch_name': characterName,
@@ -1916,8 +1925,8 @@ export function addCopyToCodeBlocks(messageElement) {
 }
 
 
-function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null } = {}) {
-    var messageText = mes['mes'];
+function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
+    let messageText = mes['mes'];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
 
@@ -1932,7 +1941,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         mes.swipes = [mes.mes];
     }
 
-    var avatarImg = getUserAvatar(user_avatar);
+    let avatarImg = getUserAvatar(user_avatar);
     const isSystem = mes.is_system;
     const title = mes.title;
     generatedPromptCache = '';
@@ -1968,17 +1977,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
     );
     const bias = messageFormatting(mes.extra?.bias ?? '', '', false, false, -1);
     let bookmarkLink = mes?.extra?.bookmark_link ?? '';
-    // Verify bookmarked chat still exists
-    // Cohee: Commented out for now. I'm worried of performance issues.
-    /*if (bookmarkLink !== '') {
-        let chat_names = selected_group
-            ? getGroupChatNames(selected_group)
-            : Object.values(getPastCharacterChats()).map(({ file_name }) => file_name);
 
-        if (!chat_names.includes(bookmarkLink)) {
-            bookmarkLink = ''
-        }
-    }*/
     let params = {
         mesId: forceId ?? chat.length - 1,
         characterName: mes.name,
@@ -1995,22 +1994,18 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count),
     };
 
-    const HTMLForEachMes = getMessageFromTemplate(params);
+    const renderedMessage = getMessageFromTemplate(params);
 
     if (type !== 'swipe') {
         if (!insertAfter && !insertBefore) {
-            $('#chat').append(HTMLForEachMes);
+            chatElement.append(renderedMessage);
         }
         else if (insertAfter) {
-            const target = $('#chat').find(`.mes[mesid="${insertAfter}"]`);
-            $(HTMLForEachMes).insertAfter(target);
-            $(HTMLForEachMes).find('.swipe_left').css('display', 'none');
-            $(HTMLForEachMes).find('.swipe_right').css('display', 'none');
+            const target = chatElement.find(`.mes[mesid="${insertAfter}"]`);
+            $(renderedMessage).insertAfter(target);
         } else {
-            const target = $('#chat').find(`.mes[mesid="${insertBefore}"]`);
-            $(HTMLForEachMes).insertBefore(target);
-            $(HTMLForEachMes).find('.swipe_left').css('display', 'none');
-            $(HTMLForEachMes).find('.swipe_right').css('display', 'none');
+            const target = chatElement.find(`.mes[mesid="${insertBefore}"]`);
+            $(renderedMessage).insertBefore(target);
         }
     }
 
@@ -2021,49 +2016,19 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
     const isSmallSys = mes?.extra?.isSmallSys;
     newMessage.data('isSystem', isSystem);
 
-    if (isSystem) {
-        // newMessage.find(".mes_edit").hide();
-        newMessage.find('.mes_prompt').hide(); //don't need prompt button for sys
-    }
-
     if (isSmallSys === true) {
         newMessage.addClass('smallSysMes');
-    }
-
-    // don't need prompt button for user
-    if (params.isUser === true) {
-        newMessage.find('.mes_prompt').hide();
-        //console.log(`hiding prompt for user mesID ${params.mesId}`);
     }
 
     //shows or hides the Prompt display button
     let mesIdToFind = type == 'swipe' ? params.mesId - 1 : params.mesId;  //Number(newMessage.attr('mesId'));
 
     //if we have itemized messages, and the array isn't null..
-    if (params.isUser === false && itemizedPrompts.length !== 0 && itemizedPrompts.length !== null) {
-        // console.log('looking through itemized prompts...');
-        //console.log(`mesIdToFind = ${mesIdToFind} from ${params.avatarImg}`);
-        //console.log(`itemizedPrompts.length = ${itemizedPrompts.length}`)
-        //console.log(itemizedPrompts);
-
-        for (var i = 0; i < itemizedPrompts.length; i++) {
-            //console.log(`itemized array item ${i} is MesID ${Number(itemizedPrompts[i].mesId)}, does it match ${Number(mesIdToFind)}?`);
-            if (Number(itemizedPrompts[i].mesId) === Number(mesIdToFind)) {
-                newMessage.find('.mes_prompt').show();
-                //console.log(`showing button for mesID ${params.mesId} from ${params.characterName}`);
-                break;
-
-            } /*else {
-                console.log(`no cache obj for mesID ${mesIdToFind}, hiding this prompt button`);
-                newMessage.find(".mes_prompt").hide();
-                console.log(itemizedPrompts);
-            } */
+    if (params.isUser === false && Array.isArray(itemizedPrompts) && itemizedPrompts.length > 0) {
+        const itemizedPrompt = itemizedPrompts.find(x => Number(x.mesId) === Number(mesIdToFind));
+        if (itemizedPrompt) {
+            newMessage.find('.mes_prompt').show();
         }
-    } else {
-        //console.log('itemizedprompt array empty null, or user, hiding this prompt buttons');
-        //$(".mes_prompt").hide();
-        newMessage.find('.mes_prompt').hide();
-        //console.log(itemizedPrompts);
     }
 
     newMessage.find('.avatar img').on('error', function () {
@@ -2072,38 +2037,36 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
     });
 
     if (type === 'swipe') {
-        const swipeMessage = $('#chat').find(`[mesid="${chat.length - 1}"]`);
-        swipeMessage.find('.mes_text').html('');
-        swipeMessage.find('.mes_text').append(messageText);
-        appendMediaToMessage(mes, swipeMessage);
-        swipeMessage.attr('title', title);
+        const swipeMessage = chatElement.find(`[mesid="${chat.length - 1}"]`);
+        swipeMessage.find('.mes_text').html(messageText).attr('title', title);
         swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
+        appendMediaToMessage(mes, swipeMessage);
         if (power_user.timestamp_model_icon && params.extra?.api) {
             insertSVGIcon(swipeMessage, params.extra);
         }
 
         if (mes.swipe_id == mes.swipes.length - 1) {
-            swipeMessage.find('.mes_timer').text(params.timerValue);
-            swipeMessage.find('.mes_timer').attr('title', params.timerTitle);
+            swipeMessage.find('.mes_timer').text(params.timerValue).attr('title', params.timerTitle);
             swipeMessage.find('.tokenCounterDisplay').text(`${params.tokenCount}t`);
         } else {
-            swipeMessage.find('.mes_timer').html('');
-            swipeMessage.find('.tokenCounterDisplay').html('');
+            swipeMessage.find('.mes_timer').empty();
+            swipeMessage.find('.tokenCounterDisplay').empty();
         }
     } else {
         const messageId = forceId ?? chat.length - 1;
-        $('#chat').find(`[mesid="${messageId}"]`).find('.mes_text').append(messageText);
+        chatElement.find(`[mesid="${messageId}"] .mes_text`).append(messageText);
         appendMediaToMessage(mes, newMessage);
-        hideSwipeButtons();
+        showSwipes && hideSwipeButtons();
     }
 
     addCopyToCodeBlocks(newMessage);
 
-    $('#chat .mes').last().addClass('last_mes');
-    $('#chat .mes').eq(-2).removeClass('last_mes');
-
-    hideSwipeButtons();
-    showSwipeButtons();
+    if (showSwipes) {
+        $('#chat .mes').last().addClass('last_mes');
+        $('#chat .mes').eq(-2).removeClass('last_mes');
+        hideSwipeButtons();
+        showSwipeButtons();
+    }
 
     // Don't scroll if not inserting last
     if (!insertAfter && !insertBefore && scroll) {
@@ -2177,7 +2140,6 @@ function formatGenerationTimer(gen_started, gen_finished, tokenCount) {
 
 function scrollChatToBottom() {
     if (power_user.auto_scroll_chat_to_bottom) {
-        const chatElement = $('#chat');
         let position = chatElement[0].scrollHeight;
 
         if (power_user.waifuMode) {
