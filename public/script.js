@@ -22,7 +22,7 @@ import {
     parseTabbyLogprobs,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER , TABBY } = textgen_types;
 
 import {
     world_info,
@@ -198,7 +198,16 @@ import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescriptio
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
+import {
+    loadMancerModels,
+    loadOllamaModels,
+    loadTogetherAIModels,
+    loadInfermaticAIModels,
+    loadOpenRouterModels,
+    loadAphroditeModels,
+    loadTabbyApiModels,
+    loadDreamGenModels,
+} from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
@@ -1079,6 +1088,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === APHRODITE) {
             loadAphroditeModels(data?.data);
             online_status = textgen_settings.aphrodite_model;
+        } else if (textgen_settings.type === TABBY) {
+            loadTabbyApiModels(data?.data);
+            online_status = textgen_settings.tabby_api_model;
         } else {
             online_status = data?.result;
         }

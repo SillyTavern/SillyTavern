@@ -144,6 +144,7 @@ const settings = {
     ollama_model: '',
     openrouter_model: 'openrouter/auto',
     aphrodite_model: '',
+    tabby_api_model: '',
     dreamgen_model: 'opus-v1-xl/text',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
@@ -959,6 +960,10 @@ function getModel() {
         return settings.aphrodite_model;
     }
 
+    if (settings.type === TABBY) {
+        return settings.tabby_api_model;
+    }
+
     if (settings.type === OLLAMA) {
         if (!settings.ollama_model) {
             toastr.error('No Ollama model selected.', 'Text Completion API');
@@ -1089,4 +1094,3 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
 
     return params;
 }
-

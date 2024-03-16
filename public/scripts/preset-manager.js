@@ -310,6 +310,7 @@ class PresetManager {
             'togetherai_model',
             'ollama_model',
             'aphrodite_model',
+            'tabby_api_model',
             'server_urls',
             'type',
             'custom_model',
