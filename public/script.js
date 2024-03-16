@@ -5351,9 +5351,12 @@ async function getChat() {
         await getChatResult();
         eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
 
+        // Focus on the textarea if not already focused on a visible text input
         setTimeout(function () {
-            $('#send_textarea').click();
-            $('#send_textarea').focus();
+            if ($(document.activeElement).is('input:visible, textarea:visible')) {
+                return;
+            }
+            $('#send_textarea').trigger('click').trigger('focus');
         }, 200);
     } catch (error) {
         await getChatResult();
