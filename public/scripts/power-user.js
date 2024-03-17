@@ -235,6 +235,7 @@ let power_user = {
     encode_tags: false,
     servers: [],
     bogus_folders: false,
+    show_tag_filters: false,
     aux_field: 'character_version',
     restore_user_input: true,
     reduced_motion: false,

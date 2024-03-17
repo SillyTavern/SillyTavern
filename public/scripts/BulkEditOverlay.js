@@ -15,7 +15,7 @@ import {
 import { favsToHotswap } from './RossAscends-mods.js';
 import { hideLoader, showLoader } from './loader.js';
 import { convertCharacterToPersona } from './personas.js';
-import { createTagInput, getTagKeyForCharacter, tag_map } from './tags.js';
+import { createTagInput, getTagKeyForEntity, tag_map } from './tags.js';
 
 // Utility object for popup messages.
 const popupMessage = {
@@ -243,7 +243,7 @@ class BulkTagPopupHandler {
      */
     static resetTags(characterIds) {
         characterIds.forEach((characterId) => {
-            const key = getTagKeyForCharacter(characterId);
+            const key = getTagKeyForEntity(characterId);
             if (key) tag_map[key] = [];
         });
 

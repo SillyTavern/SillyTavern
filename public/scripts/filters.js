@@ -8,11 +8,36 @@ import { tag_map } from './tags.js';
 export const FILTER_TYPES = {
     SEARCH: 'search',
     TAG: 'tag',
+    FOLDER: 'folder',
     FAV: 'fav',
     GROUP: 'group',
     WORLD_INFO_SEARCH: 'world_info_search',
     PERSONA_SEARCH: 'persona_search',
 };
+
+/**
+ * The filter states.
+ * @type {Object.<string, Object>}
+ */
+export const FILTER_STATES = {
+    SELECTED: { key: 'SELECTED', class: 'selected' },
+    EXCLUDED: { key: 'EXCLUDED', class: 'excluded' },
+    UNDEFINED: { key: 'UNDEFINED', class: 'undefined' },
+};
+
+/**
+ * Robust check if one state equals the other. It does not care whether it's the state key or the state value object.
+ * @param {Object} a First state
+ * @param {Object} b Second state
+ */
+export function isFilterState(a, b) {
+    const states = Object.keys(FILTER_STATES);
+
+    const aKey = states.includes(a) ? a : states.find(key => FILTER_STATES[key] === a);
+    const bKey = states.includes(b) ? b : states.find(key => FILTER_STATES[key] === b);
+
+    return aKey === bKey;
+}
 
 /**
  * Helper class for filtering data.
@@ -36,8 +61,9 @@ export class FilterHelper {
      */
     filterFunctions = {
         [FILTER_TYPES.SEARCH]: this.searchFilter.bind(this),
-        [FILTER_TYPES.GROUP]: this.groupFilter.bind(this),
         [FILTER_TYPES.FAV]: this.favFilter.bind(this),
+        [FILTER_TYPES.GROUP]: this.groupFilter.bind(this),
+        [FILTER_TYPES.FOLDER]: this.folderFilter.bind(this),
         [FILTER_TYPES.TAG]: this.tagFilter.bind(this),
         [FILTER_TYPES.WORLD_INFO_SEARCH]: this.wiSearchFilter.bind(this),
         [FILTER_TYPES.PERSONA_SEARCH]: this.personaSearchFilter.bind(this),
@@ -49,8 +75,9 @@ export class FilterHelper {
      */
     filterData = {
         [FILTER_TYPES.SEARCH]: '',
-        [FILTER_TYPES.GROUP]: false,
         [FILTER_TYPES.FAV]: false,
+        [FILTER_TYPES.GROUP]: false,
+        [FILTER_TYPES.FOLDER]: false,
         [FILTER_TYPES.TAG]: { excluded: [], selected: [] },
         [FILTER_TYPES.WORLD_INFO_SEARCH]: '',
         [FILTER_TYPES.PERSONA_SEARCH]: '',
@@ -116,6 +143,7 @@ export class FilterHelper {
         }
 
         const getIsTagged = (entity) => {
+            const isTag = entity.type === 'tag';
             const tagFlags = selected.map(tagId => this.isElementTagged(entity, tagId));
             const trueFlags = tagFlags.filter(x => x);
             const isTagged = TAG_LOGIC_AND ? tagFlags.length === trueFlags.length : trueFlags.length > 0;
@@ -123,7 +151,9 @@ export class FilterHelper {
             const excludedTagFlags = excluded.map(tagId => this.isElementTagged(entity, tagId));
             const isExcluded = excludedTagFlags.includes(true);
 
-            if (isExcluded) {
+            if (isTag) {
+                return true;
+            } else if (isExcluded) {
                 return false;
             } else if (selected.length > 0 && !isTagged) {
                 return false;
@@ -141,11 +171,10 @@ export class FilterHelper {
      * @returns {any[]} The filtered data.
      */
     favFilter(data) {
-        if (!this.filterData[FILTER_TYPES.FAV]) {
-            return data;
-        }
+        const state = this.filterData[FILTER_TYPES.FAV];
+        const isFav = entity => entity.item.fav || entity.item.fav == 'true';
 
-        return data.filter(entity => entity.item.fav || entity.item.fav == 'true');
+        return this.filterDataByState(data, state, isFav, { includeFolders: true });
     }
 
     /**
@@ -154,11 +183,35 @@ export class FilterHelper {
      * @returns {any[]} The filtered data.
      */
     groupFilter(data) {
-        if (!this.filterData[FILTER_TYPES.GROUP]) {
-            return data;
+        const state = this.filterData[FILTER_TYPES.GROUP];
+        const isGroup = entity => entity.type === 'group';
+
+        return this.filterDataByState(data, state, isGroup, { includeFolders: true });
+    }
+
+    /**
+     * Applies a "folder" filter to the data.
+     * @param {any[]} data The data to filter.
+     * @returns {any[]} The filtered data.
+     */
+    folderFilter(data) {
+        const state = this.filterData[FILTER_TYPES.FOLDER];
+        // Slightly different than the other filters, as a positive folder filter means it doesn't filter anything (folders get "not hidden" at another place),
+        // while a negative state should then filter out all folders.
+        const isFolder = entity => isFilterState(state, FILTER_STATES.SELECTED) ? true : entity.type === 'tag';
+
+        return this.filterDataByState(data, state, isFolder);
+    }
+
+    filterDataByState(data, state, filterFunc, { includeFolders } = {}) {
+        if (isFilterState(state, FILTER_STATES.SELECTED)) {
+            return data.filter(entity => filterFunc(entity) || (includeFolders && entity.type == 'tag'));
+        }
+        if (isFilterState(state, FILTER_STATES.EXCLUDED)) {
+            return data.filter(entity => !filterFunc(entity) || (includeFolders && entity.type == 'tag'));
         }
 
-        return data.filter(entity => entity.type === 'group');
+        return data;
     }
 
     /**
