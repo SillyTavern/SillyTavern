@@ -123,8 +123,8 @@ class CharacterContextMenu {
             cache: 'no-cache',
         }).then(response => {
             if (response.ok) {
+                eventSource.emit(event_types.CHARACTER_DELETED, { id: characterId, character: character });
                 return deleteCharacter(character.name, character.avatar, false).then(() => {
-                    eventSource.emit(event_types.CHARACTER_DELETED, { id: characterId, character: characters[characterId] });
                     if (deleteChats) getPastCharacterChats(characterId).then(pastChats => {
                         for (const chat of pastChats) {
                             const name = chat.file_name.replace('.jsonl', '');
