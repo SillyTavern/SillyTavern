@@ -47,6 +47,42 @@ function getLastMessage() {
 }
 
 /**
+ * Returns the last message from the user.
+ * @returns {string} The last message from the user.
+ */
+function getLastUserMessage() {
+    if (!Array.isArray(chat) || chat.length === 0) {
+        return '';
+    }
+
+    for (let i = chat.length - 1; i >= 0; i--) {
+        if (chat[i].is_user && !chat[i].is_system) {
+            return chat[i].mes;
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Returns the last message from the bot.
+ * @returns {string} The last message from the bot.
+ */
+function getLastCharMessage() {
+    if (!Array.isArray(chat) || chat.length === 0) {
+        return '';
+    }
+
+    for (let i = chat.length - 1; i >= 0; i--) {
+        if (!chat[i].is_user && !chat[i].is_system) {
+            return chat[i].mes;
+        }
+    }
+
+    return '';
+}
+
+/**
  * Returns the ID of the last swipe.
  * @returns {string} The 1-based ID of the last swipe
  */
@@ -238,6 +274,8 @@ export function evaluateMacros(content, env) {
     content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
     content = content.replace(/{{lastMessage}}/gi, () => getLastMessage());
     content = content.replace(/{{lastMessageId}}/gi, () => getLastMessageId());
+    content = content.replace(/{{lastUserMessage}}/gi, () => getLastUserMessage());
+    content = content.replace(/{{lastCharMessage}}/gi, () => getLastCharMessage());
     content = content.replace(/{{firstIncludedMessageId}}/gi, () => getFirstIncludedMessageId());
     content = content.replace(/{{lastSwipeId}}/gi, () => getLastSwipeId());
     content = content.replace(/{{currentSwipeId}}/gi, () => getCurrentSwipeId());
