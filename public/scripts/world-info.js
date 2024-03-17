@@ -7,7 +7,7 @@ import { isMobile } from './RossAscends-mods.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { getTokenCount } from './tokenizers.js';
 import { power_user } from './power-user.js';
-import { getTagKeyForCharacter } from './tags.js';
+import { getTagKeyForEntity } from './tags.js';
 import { resolveVariable } from './variables.js';
 
 export {
@@ -2055,7 +2055,7 @@ async function checkWorldInfo(chat, maxContext) {
             }
 
             if (entry.characterFilter && entry.characterFilter?.tags?.length > 0) {
-                const tagKey = getTagKeyForCharacter(this_chid);
+                const tagKey = getTagKeyForEntity(this_chid);
 
                 if (tagKey) {
                     const tagMapEntry = context.tagMap[tagKey];

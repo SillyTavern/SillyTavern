@@ -201,7 +201,8 @@
     #left-nav-panel,
     #floatingPrompt,
     #cfgConfig,
-    #logprobsViewer {
+    #logprobsViewer,
+    #movingDivs > div {
         height: calc(100vh - 45px);
         height: calc(100svh - 45px);
         min-width: 100% !important;
@@ -219,7 +220,8 @@
 
     #floatingPrompt,
     #cfgConfig,
-    #logprobsViewer {
+    #logprobsViewer,
+    #movingDivs > div {
         height: min-content;
     }
 

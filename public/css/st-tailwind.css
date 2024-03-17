@@ -332,6 +332,10 @@
     margin-right: 5px;
 }
 
+.flex0 {
+    flex: 0;
+}
+
 .flex1 {
     flex: 1;
 }
@@ -518,6 +522,10 @@ textarea:disabled {
 
 .opacity50p {
     opacity: 0.5
+}
+
+.grayscale {
+    filter: grayscale(100%);
 }
 
 .opacity1 {

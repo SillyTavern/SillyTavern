@@ -11,7 +11,7 @@ import {
     setActiveGroup,
     setActiveCharacter,
     getEntitiesList,
-    getThumbnailUrl,
+    buildAvatarList,
     selectCharacterById,
     eventSource,
     menu_type,
@@ -26,7 +26,8 @@ import {
 } from './power-user.js';
 
 import { LoadLocal, SaveLocal, LoadLocalBool } from './f-localStorage.js';
-import { selected_group, is_group_generating, getGroupAvatar, groups, openGroupById } from './group-chats.js';
+import { selected_group, is_group_generating, openGroupById } from './group-chats.js';
+import { getTagKeyForEntity } from './tags.js';
 import {
     SECRET_KEYS,
     secret_state,
@@ -247,13 +248,14 @@ export function RA_CountCharTokens() {
 async function RA_autoloadchat() {
     if (document.querySelector('#rm_print_characters_block .character_select') !== null) {
         // active character is the name, we should look it up in the character list and get the id
-        let active_character_id = Object.keys(characters).find(key => characters[key].avatar === active_character);
-
-        if (active_character_id !== null) {
-            await selectCharacterById(String(active_character_id));
+        if (active_character !== null && active_character !== undefined) {
+            const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) === active_character);
+            if (active_character_id !== null) {
+                await selectCharacterById(String(active_character_id));
+            }
         }
 
-        if (active_group != null) {
+        if (active_group !== null && active_group !== undefined) {
             await openGroupById(String(active_group));
         }
 
@@ -264,84 +266,16 @@ async function RA_autoloadchat() {
 export async function favsToHotswap() {
     const entities = getEntitiesList({ doFilter: false });
     const container = $('#right-nav-panel .hotswap');
-    const template = $('#hotswap_template .hotswapAvatar');
-    const DEFAULT_COUNT = 6;
-    const WIDTH_PER_ITEM = 60; // 50px + 5px gap + 5px padding
-    const containerWidth = container.outerWidth();
-    const maxCount = containerWidth > 0 ? Math.floor(containerWidth / WIDTH_PER_ITEM) : DEFAULT_COUNT;
-    let count = 0;
 
-    const promises = [];
-    const newContainer = container.clone();
-    newContainer.empty();
+    const favs = entities.filter(x => x.item.fav || x.item.fav == 'true');
 
-    for (const entity of entities) {
-        if (count >= maxCount) {
-            break;
-        }
-
-        const isFavorite = entity.item.fav || entity.item.fav == 'true';
-
-        if (!isFavorite) {
-            continue;
-        }
-
-        const isCharacter = entity.type === 'character';
-        const isGroup = entity.type === 'group';
-
-        const grid = isGroup ? entity.id : '';
-        const chid = isCharacter ? entity.id : '';
-
-        let slot = template.clone();
-        slot.toggleClass('character_select', isCharacter);
-        slot.toggleClass('group_select', isGroup);
-        slot.attr('grid', isGroup ? grid : '');
-        slot.attr('chid', isCharacter ? chid : '');
-        slot.data('id', isGroup ? grid : chid);
-
-        if (isGroup) {
-            const group = groups.find(x => x.id === grid);
-            const avatar = getGroupAvatar(group);
-            $(slot).find('img').replaceWith(avatar);
-            $(slot).attr('title', group.name);
-        }
-
-        if (isCharacter) {
-            const imgLoadPromise = new Promise((resolve) => {
-                const avatarUrl = getThumbnailUrl('avatar', entity.item.avatar);
-                $(slot).find('img').attr('src', avatarUrl).on('load', resolve);
-                $(slot).attr('title', entity.item.avatar);
-            });
-
-            // if the image doesn't load in 500ms, resolve the promise anyway
-            promises.push(Promise.race([imgLoadPromise, delay(500)]));
-        }
-
-        $(slot).css('cursor', 'pointer');
-        newContainer.append(slot);
-        count++;
-    }
-
-    // don't fill leftover spaces with avatar placeholders
-    // just evenly space the selected avatars instead
-    /*
-   if (count < maxCount) { //if any space is left over
-        let leftOverSlots = maxCount - count;
-        for (let i = 1; i <= leftOverSlots; i++) {
-            newContainer.append(template.clone());
-        }
-    }
-    */
-
-    await Promise.allSettled(promises);
     //helpful instruction message if no characters are favorited
-    if (count === 0) { 
-        container.html('<small><span data-i18n="Favorite characters to add them to HotSwaps"><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>'); 
+    if (favs.length == 0) {
+        container.html('<small><span><i class="fa-solid fa-star"></i> <span data-i18n="Favorite characters to add them to HotSwaps">Favorite characters to add them to HotSwaps</span></span></small>');
+        return;
     }
-    //otherwise replace with fav'd characters
-    if (count > 0) {
-        container.replaceWith(newContainer);
-    }
+
+    buildAvatarList(container, favs, { selectable: true, highlightFavs: false });
 }
 
 //changes input bar and send button display depending on connection status
@@ -873,14 +807,14 @@ export function initRossMods() {
 
     // when a char is selected from the list, save their name as the auto-load character for next page load
     $(document).on('click', '.character_select', function () {
-        const characterId = $(this).find('.avatar').attr('title') || $(this).attr('title');
+        const characterId = $(this).attr('chid') || $(this).data('id');
         setActiveCharacter(characterId);
         setActiveGroup(null);
         saveSettingsDebounced();
     });
 
     $(document).on('click', '.group_select', function () {
-        const groupId = $(this).data('id') || $(this).attr('grid');
+        const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');
         setActiveCharacter(null);
         setActiveGroup(groupId);
         saveSettingsDebounced();
@@ -1138,6 +1072,7 @@ export function initRossMods() {
                 .not('#floatingPrompt')
                 .not('#cfgConfig')
                 .not('#logprobsViewer')
+                .not('#movingDivs > div')
                 .is(':visible')) {
                 let visibleDrawerContent = $('.drawer-content:visible')
                     .not('#WorldInfo')
@@ -1145,7 +1080,8 @@ export function initRossMods() {
                     .not('#right-nav-panel')
                     .not('#floatingPrompt')
                     .not('#cfgConfig')
-                    .not('#logprobsViewer');
+                    .not('#logprobsViewer')
+                    .not('#movingDivs > div');
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
                 return;
             }
@@ -1169,6 +1105,13 @@ export function initRossMods() {
                 $('#logprobsViewerClose').trigger('click');
                 return;
             }
+
+            $('#movingDivs > div').each(function () {
+                if ($(this).is(':visible')) {
+                    $('#movingDivs > div .floating_panel_close').trigger('click');
+                    return;
+                }
+            });
 
             if ($('#left-nav-panel').is(':visible') &&
                 $(LPanelPin).prop('checked') === false) {

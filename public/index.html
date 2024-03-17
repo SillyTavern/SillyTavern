@@ -1279,15 +1279,26 @@
                                         <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba, koboldcpp, aphrodite, tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Smoothing Factor">Smoothing Factor</small>
-                                        <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
-                                        <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
-                                    </div>
                                     <div data-newbie-hidden data-tg-type="ooba" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Max Tokens Second">Maximum tokens/second</small>
                                         <input class="neo-range-slider" type="range" id="max_tokens_second_textgenerationwebui" name="volume" min="0" max="20" step="1" />
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="max_tokens_second_textgenerationwebui" id="max_tokens_second_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-newbie-hidden name="smoothingBlock" class="wide100p">
+                                        <h4 class="wide100p textAlignCenter">
+                                            <label data-i18n="Smooth Sampling">Smooth Sampling</label>
+                                            <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Smooth Sampling" title="Allows you to use quadratic/cubic transformations to adjust the distribution. Lower Smoothing Factor values will be more creative, usually between 0.2-0.3 is the sweetspot (assuming the curve = 1). Higher Smoothing Curve values will make the curve steeper, which will punish low probability choices more aggressively. 1.0 curve is equivalent to only using Smoothing Factor."></div>
+                                        </h4>
+                                        <div data-newbie-hidden data-tg-type="ooba, koboldcpp, aphrodite, tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <small data-i18n="Smoothing Factor">Smoothing Factor</small>
+                                            <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
+                                            <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
+                                        </div>
+                                        <div data-newbie-hidden data-tg-type="ooba, koboldcpp, aphrodite, tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <small data-i18n="Smoothing Curve">Smoothing Curve</small>
+                                            <input class="neo-range-slider" type="range" id="smoothing_curve_textgenerationwebui" name="volume" min="1" max="10" step="0.01" />
+                                            <input class="neo-range-input" type="number" min="1" max="10" step="0.01" data-for="smoothing_curve_textgenerationwebui" id="smoothing_curve_counter_textgenerationwebui">
+                                        </div>
                                     </div>
                                     <!--
                                         <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Responses">
@@ -3928,7 +3939,7 @@
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters" data-i18n="[title]Select/Create Characters"></div>
                     </div>
                     <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto width100p">
-                        <div class="hotswap flex-container flex1"></div>
+                        <div class="hotswap avatars_inline flex-container"></div>
                     </div>
                 </div>
                 <hr>
@@ -4238,6 +4249,7 @@
                         </form>
                         <div class="rm_tag_controls">
                             <div class="tags rm_tag_filter"></div>
+                            <div class="tags rm_tag_bogus_drilldown"></div>
                         </div>
                         <hr>
                     </div>
@@ -4570,6 +4582,10 @@
     </div>
     <div id="tag_view_template" class="template_element">
         <div class="tag_view_item">
+            <div class="drag-handle" data-i18n="[title]Drag to reorder tag">☰</div>
+            <div title="Tag as folder" class="tag_as_folder fa-solid fa-folder-open right_menu_button" data-i18n="[title]Use tag as folder">
+                <span class="tag_folder_indicator"></span>
+            </div>
             <div class="tagColorPickerHolder"></div>
             <div class="tagColorPicker2Holder"></div>
             <div class="tag_view_name" contenteditable="true"></div>
@@ -4783,8 +4799,9 @@
             <div class="flex-container wide100pLess70px character_select_container">
                 <div class="wide100p character_name_block">
                     <span class="ch_name"></span>
-                    <small class="character_version"></small>
-                    <small class="ch_avatar_url"></small>
+                    <small class="ch_additional_info ch_add_placeholder">+++</small>
+                    <small class="ch_additional_info character_version"></small>
+                    <small class="ch_additional_info ch_avatar_url"></small>
                 </div>
                 <i class="ch_fav_icon fa-solid fa-star"></i>
                 <input class="ch_fav" value="" hidden />
@@ -5032,10 +5049,15 @@
             <div class="avatar">
                 <img src="">
             </div>
-            <div class="flex-container wide100pLess70px gap5px group_name_block">
-                <div class="ch_name"></div>
+            <div class="flex-container wide100pLess70px gap5px group_select_container">
+                <div class="wide100p group_name_block character_name_block">
+                    <div class="ch_name"></div>
+                    <small class="ch_additional_info group_select_counter"></small>
+                </div>
+                <small class="character_name_block_sub_line">in this group</small>
                 <i class='group_fav_icon fa-solid fa-star'></i>
                 <input class="ch_fav" value="" hidden />
+                <div class="group_select_block_list ch_description"></div>
                 <div class="tags tags_inline"></div>
             </div>
         </div>
@@ -5043,22 +5065,24 @@
     <div id="bogus_folder_template" class="template_element">
         <div class="bogus_folder_select flex-container wide100p alignitemsflexstart">
             <div class="avatar flex alignitemscenter textAlignCenter">
-                <i class="bogus_folder_icon fa-solid fa-folder-open fa-xl"></i>
+                <i class="bogus_folder_icon fa-solid fa-xl"></i>
             </div>
             <div class="flex-container wide100pLess70px character_select_container">
                 <div class="wide100p character_name_block">
                     <span class="ch_name"></span>
+                    <small class="ch_additional_info bogus_folder_counter"></small>
                 </div>
-                <div class="bogus_folder_counter_block">
-                    <span class="bogus_folder_counter"></span>
-                    <span data="character card(s)">character card(s)</span>
-                </div>
+                <small class="character_name_block_sub_line bogus_folder_hidden_counter"></small>
+                <div class="bogus_folder_avatars_block avatars_inline avatars_inline_small tags tags_inline"></div>
             </div>
         </div>
     </div>
     <div id="bogus_folder_back_template" class="template_element">
-        <div class="bogus_folder_select flex-container wide100p alignitemsflexstart" id="BogusFolderBack" tagid="back">
+        <div class="bogus_folder_select bogus_folder_select_back flex-container wide100p alignitemsflexstart" id="BogusFolderBack" tagid="back">
             <div class="avatar flex alignitemscenter textAlignCenter">
+                <i class="bogus_folder_icon fa-solid fa-xl fa-right-from-bracket fa-flip-horizontal"></i>
+            </div>
+            <div class="bogus_folder_back_placeholder flex alignitemscenter textAlignCenter">
                 <i class="bogus_folder_icon fa-solid fa-xl fa-right-from-bracket fa-flip-horizontal"></i>
             </div>
             <div class="flex-container wide100pLess70px character_select_container height100p alignitemscenter">
@@ -5068,9 +5092,9 @@
             </div>
         </div>
     </div>
-    <div id="hotswap_template" class="template_element">
-        <div class="hotswapAvatar" title="Add a character/group to favorites to display it here!">
-            <img src="/img/ai4.png">
+    <div id="inline_avatar_template" class="template_element">
+        <div class="avatar inline_avatar flex alignitemscenter textAlignCenter">
+            <img src="">
         </div>
     </div>
     <div id="alternate_greetings_template" class="template_element">

@@ -208,7 +208,7 @@ const DREAMGEN_KEYS = [
     'presence_penalty',
     'stop',
     'stream',
-    'minimum_message_content_tokens'
+    'minimum_message_content_tokens',
 ];
 
 // https://docs.together.ai/reference/completions
