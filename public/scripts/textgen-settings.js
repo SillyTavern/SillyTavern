@@ -112,6 +112,7 @@ const settings = {
     max_temp: 2.0,
     dynatemp_exponent: 1.0,
     smoothing_factor: 0.0,
+    smoothing_curve: 1.0,
     max_tokens_second: 0,
     seed: -1,
     preset: 'Default',
@@ -182,6 +183,7 @@ const setting_names = [
     'max_temp',
     'dynatemp_exponent',
     'smoothing_factor',
+    'smoothing_curve',
     'max_tokens_second',
     'encoder_rep_pen',
     'freq_pen',
@@ -658,6 +660,7 @@ jQuery(function () {
             'typical_p_textgenerationwebui': 1, // Added entry
             'guidance_scale_textgenerationwebui': 1,
             'smoothing_factor_textgenerationwebui': 0,
+            'smoothing_curve_textgenerationwebui': 1,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
@@ -1002,6 +1005,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : 0,
         'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : 1,
         'smoothing_factor': settings.smoothing_factor,
+        'smoothing_curve': settings.smoothing_curve,
         'max_tokens_second': settings.max_tokens_second,
         'sampler_priority': settings.type === OOBA ? settings.sampler_priority : undefined,
         'samplers': settings.type === LLAMACPP ? settings.samplers : undefined,
