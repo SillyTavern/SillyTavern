@@ -1072,6 +1072,7 @@ export function initRossMods() {
                 .not('#floatingPrompt')
                 .not('#cfgConfig')
                 .not('#logprobsViewer')
+                .not('#movingDivs > div')
                 .is(':visible')) {
                 let visibleDrawerContent = $('.drawer-content:visible')
                     .not('#WorldInfo')
@@ -1079,7 +1080,8 @@ export function initRossMods() {
                     .not('#right-nav-panel')
                     .not('#floatingPrompt')
                     .not('#cfgConfig')
-                    .not('#logprobsViewer');
+                    .not('#logprobsViewer')
+                    .not('#movingDivs > div');
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
                 return;
             }
@@ -1103,6 +1105,13 @@ export function initRossMods() {
                 $('#logprobsViewerClose').trigger('click');
                 return;
             }
+
+            $('#movingDivs > div').each(function () {
+                if ($(this).is(':visible')) {
+                    $('#movingDivs > div .floating_panel_close').trigger('click');
+                    return;
+                }
+            });
 
             if ($('#left-nav-panel').is(':visible') &&
                 $(LPanelPin).prop('checked') === false) {
