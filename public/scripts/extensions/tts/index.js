@@ -616,6 +616,7 @@ function loadSettings() {
     $('#tts_narrate_translated_only').prop('checked', extension_settings.tts.narrate_translated_only);
     $('#tts_narrate_user').prop('checked', extension_settings.tts.narrate_user);
     $('#tts_pass_asterisks').prop('checked', extension_settings.tts.pass_asterisks);
+    $('#tts_skip_codeblocks').prop('checked', extension_settings.tts.skip_codeblocks);
     $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
 
