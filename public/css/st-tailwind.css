@@ -524,6 +524,10 @@ textarea:disabled {
     opacity: 0.5
 }
 
+.grayscale {
+    filter: grayscale(100%);
+}
+
 .opacity1 {
     opacity: 1 !important;
 }
