@@ -7389,6 +7389,7 @@ window['SillyTavern'].getContext = function () {
         saveReply,
         registerSlashCommand: registerSlashCommand,
         executeSlashCommands: executeSlashCommands,
+        timestampToMoment: timestampToMoment,
         /**
          * @deprecated Handlebars for extensions are no longer supported.
          */
@@ -7402,6 +7403,8 @@ window['SillyTavern'].getContext = function () {
         getTokenizerModel: getTokenizerModel,
         generateQuietPrompt: generateQuietPrompt,
         writeExtensionField: writeExtensionField,
+        getThumbnailUrl: getThumbnailUrl,
+        selectCharacterById: selectCharacterById,
         tags: tags,
         tagMap: tag_map,
         menuType: menu_type,
