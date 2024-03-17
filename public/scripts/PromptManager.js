@@ -606,7 +606,7 @@ class PromptManager {
         });
 
         // Sanitize settings after character has been deleted.
-        eventSource.on('characterDeleted', (event) => {
+        eventSource.on(event_types.CHARACTER_DELETED, (event) => {
             this.handleCharacterDeleted(event);
             this.saveServiceSettings().then(() => this.renderDebounced());
         });

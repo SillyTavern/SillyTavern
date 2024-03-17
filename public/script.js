@@ -408,6 +408,8 @@ export const event_types = {
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
+    // TODO: Naming convention is inconsistent with other events
+    CHARACTER_DELETED: 'characterDeleted',
 };
 
 export const eventSource = new EventEmitter();
@@ -8492,7 +8494,7 @@ jQuery(async function () {
         if (popup_type == 'del_ch') {
             const deleteChats = !!$('#del_char_checkbox').prop('checked');
             await handleDeleteCharacter(popup_type, this_chid, deleteChats);
-            eventSource.emit('characterDeleted', { id: this_chid, character: characters[this_chid] });
+            eventSource.emit(event_types.CHARACTER_DELETED, { id: this_chid, character: characters[this_chid] });
         }
         if (popup_type == 'alternate_greeting' && menu_type !== 'create') {
             createOrEditCharacter();
