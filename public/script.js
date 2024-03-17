@@ -8511,8 +8511,8 @@ jQuery(async function () {
             await clearChat();
             chat.length = 0;
 
-            chat_file_for_del = getCurrentChatDetails().sessionName
-            const isDelChatCheckbox = document.getElementById('del_chat_checkbox').checked
+            chat_file_for_del = getCurrentChatDetails().sessionName;
+            const isDelChatCheckbox = document.getElementById('del_chat_checkbox').checked;
 
             if (selected_group) {
                 //Fix it; When you're creating a new group chat (but not when initially converting from the existing regular chat), the first greeting message doesn't automatically get translated.
