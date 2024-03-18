@@ -3456,7 +3456,7 @@ a {
     margin: 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    z-index: 1000 !important;
+    /* z-index: 1000 !important; */
 }
 
 .drawer-content.maximized {
