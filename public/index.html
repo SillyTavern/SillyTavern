@@ -5138,8 +5138,11 @@
     </div>
     <div id="movingDivs">
         <div id="floatingPrompt" class="drawer-content flexGap5">
-            <div class="panelControlBar flex-container">
+            <div class="panelControlBar flex-container flexGap10">
                 <div id="floatingPromptheader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="floatingPromptMaximize" class="inline-drawer-maximize fa-solid">
+                    <i class="floating_panel_maximize fa-solid fa-window-maximize"></i>
+                </div>
                 <div id="ANClose" class="fa-solid fa-circle-xmark floating_panel_close"></div>
             </div>
             <div name="floatingPromptHolder" class="scrollY">
@@ -5251,8 +5254,11 @@
             </div>
         </div>
         <div id="cfgConfig" class="drawer-content flexGap5">
-            <div class="panelControlBar flex-container">
+            <div class="panelControlBar flex-container flexGap10">
                 <div id="cfgConfigHeader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="cfgConfigMaximize" class="inline-drawer-maximize fa-solid">
+                    <i class="floating_panel_maximize fa-solid fa-window-maximize"></i>
+                </div>
                 <div id="CFGClose" class="fa-solid fa-circle-xmark floating_panel_close"></div>
             </div>
             <div name="cfgConfigHolder" class="scrollY">
@@ -5419,7 +5425,12 @@
                     <b data-i18n="Token Probabilities">Token Probabilities</b>
                 </div>
                 <div class="logprobs_panel_controls">
-                    <div id="logprovsViewerBlockToggle" class="logprobs_panel_control_button inline-drawer-toggle inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    <div id="logprobsMaximizeToggle" class="logprobs_panel_control_button inline-drawer-maximize fa-solid">
+                        <i class="inline-drawer-icon fa-solid fa-window-maximize"></i>
+                    </div>
+                    <div id="logprovsViewerBlockToggle" class="logprobs_panel_control_button inline-drawer-toggle">
+                        <i class="inline-drawer-icon fa-solid fa-circle-chevron-up up"></i>
+                    </div>
                     <div id="logprobsViewerClose" class="logprobs_panel_control_button inline-drawer-icon fa-solid fa-circle-xmark "></div>
                 </div>
             </div>

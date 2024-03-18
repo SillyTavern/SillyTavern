@@ -1397,7 +1397,8 @@ input[type="file"] {
     line-height: 1.2;
 }
 
-.floating_panel_close {
+.floating_panel_close,
+.floating_panel_maximize {
     height: 15px;
     aspect-ratio: 1 / 1;
     font-size: 20px;
@@ -1405,6 +1406,7 @@ input[type="file"] {
     transition: all 250ms;
 }
 
+.floating_panel_maximize:hover,
 .floating_panel_close:hover {
     cursor: pointer;
     opacity: 1;
@@ -3404,6 +3406,7 @@ a {
     opacity: 0.8;
 }
 
+.custom-drawer-icon,
 .inline-drawer-icon {
     display: block;
     cursor: pointer;
@@ -3454,6 +3457,13 @@ a {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     z-index: 1000 !important;
+}
+
+.drawer-content.maximized {
+    width: var(--sheldWidth) !important;
+    top: var(--topBarBlockSize) !important;
+    margin: 0 auto !important;
+    right: 0 !important;
 }
 
 /*to prevent draggables from being made too small to see*/
