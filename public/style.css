@@ -460,7 +460,7 @@ body.reduced-motion #bg_custom {
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    z-index: 3000;
+    z-index: 3005;
 }
 
 #sheld {
@@ -3355,7 +3355,7 @@ a {
     margin: 0 auto;
     height: var(--topBarBlockSize);
     justify-content: center;
-    z-index: 3000;
+    z-index: 3005;
     position: relative;
     width: var(--sheldWidth);
 
@@ -3459,7 +3459,11 @@ a {
     /* z-index: 1000 !important; */
 }
 
-.drawer-content.maximized {
+body.movingUI .inline-drawer-maximize {
+    display: none;
+}
+
+body:not(.movingUI) .drawer-content.maximized {
     width: var(--sheldWidth) !important;
     top: var(--topBarBlockSize) !important;
     margin: 0 auto !important;

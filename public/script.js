@@ -81,6 +81,7 @@ import {
     switchSimpleMode,
     flushEphemeralStoppingStrings,
     context_presets,
+    resetMovableStyles,
 } from './scripts/power-user.js';
 
 import {
@@ -9793,7 +9794,10 @@ jQuery(async function () {
     $(document).on('click', '.inline-drawer-maximize', function () {
         const icon = $(this).find('.inline-drawer-icon, .floating_panel_maximize');
         icon.toggleClass('fa-window-maximize fa-window-restore');
-        $(this).closest('.drawer-content').toggleClass('maximized');
+        const drawerContent = $(this).closest('.drawer-content');
+        drawerContent.toggleClass('maximized');
+        const drawerId = drawerContent.attr('id');
+        resetMovableStyles(drawerId);
     });
 
     $(document).on('click', '.mes .avatar', function () {

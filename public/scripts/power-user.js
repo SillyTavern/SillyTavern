@@ -945,6 +945,9 @@ function peekSpoilerMode() {
 
 
 function switchMovingUI() {
+    $('.drawer-content.maximized').each(function () {
+        $(this).find('.inline-drawer-maximize').trigger('click');
+    });
     const movingUI = localStorage.getItem(storage_keys.movingUI);
     power_user.movingUI = movingUI === null ? false : movingUI == 'true';
     $('body').toggleClass('movingUI', power_user.movingUI);
@@ -2162,6 +2165,22 @@ async function saveMovingUI() {
     }
 }
 
+/**
+ * Resets the movable styles of the given element to their unset values.
+ * @param {string} id Element ID
+ */
+export function resetMovableStyles(id) {
+    const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin'];
+
+    const panel = document.getElementById(id);
+
+    if (panel) {
+        panelStyles.forEach((style) => {
+            panel.style[style] = '';
+        });
+    }
+}
+
 async function resetMovablePanels(type) {
     const panelIds = [
         'sheld',
@@ -2173,6 +2192,8 @@ async function resetMovablePanels(type) {
         'groupMemberListPopout',
         'summaryExtensionPopout',
         'gallery',
+        'logprobsViewer',
+        'cfgConfig',
     ];
 
     const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin'];
