@@ -239,27 +239,20 @@ export function validateTextGenUrl() {
 }
 
 export function getTextGenServer() {
-    if (settings.type === MANCER) {
-        return MANCER_SERVER;
+    switch (settings.type) {
+        case MANCER:
+            return MANCER_SERVER;
+        case TOGETHERAI:
+            return TOGETHERAI_SERVER;
+        case INFERMATICAI:
+            return INFERMATICAI_SERVER;
+        case DREAMGEN:
+            return DREAMGEN_SERVER;
+        case OPENROUTER:
+            return OPENROUTER_SERVER;
+        default:
+            return settings.server_urls[settings.type] ?? '';
     }
-
-    if (settings.type === TOGETHERAI) {
-        return TOGETHERAI_SERVER;
-    }
-
-    if (settings.type === INFERMATICAI) {
-        return INFERMATICAI_SERVER;
-    }
-
-    if (settings.type === DREAMGEN) {
-        return DREAMGEN_SERVER;
-    }
-
-    if (settings.type === OPENROUTER) {
-        return OPENROUTER_SERVER;
-    }
-
-    return settings.server_urls[settings.type] ?? '';
 }
 
 async function selectPreset(name) {
@@ -282,8 +275,8 @@ async function selectPreset(name) {
 
 function formatTextGenURL(value) {
     try {
-        // Mancer/Together/InfermaticAI doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI || settings.type === DREAMGEN || settings.type === OPENROUTER) {
+        const noFormatTypes = [MANCER, TOGETHERAI, INFERMATICAI, DREAMGEN, OPENROUTER];
+        if (noFormatTypes.includes(settings.type)) {
             return value;
         }
 
@@ -871,7 +864,7 @@ export function parseTextgenLogprobs(token, logprobs) {
             if (!logprobs?.length) {
                 return null;
             }
-            const candidates = logprobs[0].probs.map(x => [ x.tok_str, x.prob ]);
+            const candidates = logprobs[0].probs.map(x => [x.tok_str, x.prob]);
             return { token, topLogprobs: candidates };
         }
         default:
@@ -934,41 +927,32 @@ function toIntArray(string) {
 }
 
 function getModel() {
-    if (settings.type === OOBA && settings.custom_model) {
-        return settings.custom_model;
-    }
-
-    if (settings.type === MANCER) {
-        return settings.mancer_model;
-    }
-
-    if (settings.type === TOGETHERAI) {
-        return settings.togetherai_model;
-    }
-
-    if (settings.type === INFERMATICAI) {
-        return settings.infermaticai_model;
-    }
-
-    if (settings.type === DREAMGEN) {
-        return settings.dreamgen_model;
-    }
-
-    if (settings.type === OPENROUTER) {
-        return settings.openrouter_model;
-    }
-
-    if (settings.type === APHRODITE) {
-        return settings.aphrodite_model;
-    }
-
-    if (settings.type === OLLAMA) {
-        if (!settings.ollama_model) {
-            toastr.error('No Ollama model selected.', 'Text Completion API');
-            throw new Error('No Ollama model selected');
-        }
-
-        return settings.ollama_model;
+    switch (settings.type) {
+        case OOBA:
+            if (settings.custom_model) {
+                return settings.custom_model;
+            }
+            break;
+        case MANCER:
+            return settings.mancer_model;
+        case TOGETHERAI:
+            return settings.togetherai_model;
+        case INFERMATICAI:
+            return settings.infermaticai_model;
+        case DREAMGEN:
+            return settings.dreamgen_model;
+        case OPENROUTER:
+            return settings.openrouter_model;
+        case APHRODITE:
+            return settings.aphrodite_model;
+        case OLLAMA:
+            if (!settings.ollama_model) {
+                toastr.error('No Ollama model selected.', 'Text Completion API');
+                throw new Error('No Ollama model selected');
+            }
+            return settings.ollama_model;
+        default:
+            return undefined;
     }
 
     return undefined;
