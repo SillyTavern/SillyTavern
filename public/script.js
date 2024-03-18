@@ -8546,6 +8546,15 @@ jQuery(async function () {
         }
     });
 
+    $('#access_key_aws, #secret_key_aws').on('change', async function(e){
+        e.stopPropagation();
+
+        const access_key_aws = String($('#access_key_aws').val()).trim();
+        const secret_key_aws = String($('#secret_key_aws').val()).trim();
+
+        $('#api_key_bedrock').val(JSON.stringify([access_key_aws, secret_key_aws]));
+    });
+
     $('#api_button_textgenerationwebui').on('click', async function (e) {
         const mancerKey = String($('#api_key_mancer').val()).trim();
         if (mancerKey.length) {
@@ -8570,6 +8579,11 @@ jQuery(async function () {
         const oobaKey = String($('#api_key_ooba').val()).trim();
         if (oobaKey.length) {
             await writeSecret(SECRET_KEYS.OOBA, oobaKey);
+        }
+
+        const bedrockKey = String($('#api_key_bedrock').val()).trim();
+        if (bedrockKey.length) {
+            await writeSecret(SECRET_KEYS.BEDROCK, bedrockKey);
         }
 
         validateTextGenUrl();

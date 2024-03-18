@@ -18,6 +18,7 @@ export const SECRET_KEYS = {
     TOGETHERAI: 'api_key_togetherai',
     CUSTOM: 'api_key_custom',
     OOBA: 'api_key_ooba',
+    BEDROCK: 'api_key_bedrock',
 };
 
 const INPUT_MAP = {
@@ -37,6 +38,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.CUSTOM]: '#api_key_custom',
     [SECRET_KEYS.TOGETHERAI]: '#api_key_togetherai',
     [SECRET_KEYS.OOBA]: '#api_key_ooba',
+    [SECRET_KEYS.BEDROCK]: '#api_key_bedrock',
 };
 
 async function clearSecret() {
@@ -45,6 +47,10 @@ async function clearSecret() {
     secret_state[key] = false;
     updateSecretDisplay();
     $(INPUT_MAP[key]).val('');
+    if (key == SECRET_KEYS.BEDROCK) {
+        $('#access_key_aws').val('');
+        $('#secret_key_aws').val('');
+    }
     $('#main_api').trigger('change');
 }
 

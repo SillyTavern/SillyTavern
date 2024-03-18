@@ -30,6 +30,7 @@ const SECRET_KEYS = {
     MISTRALAI: 'api_key_mistralai',
     CUSTOM: 'api_key_custom',
     OOBA: 'api_key_ooba',
+    BEDROCK: 'api_key_bedrock',
 };
 
 /**

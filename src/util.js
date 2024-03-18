@@ -400,6 +400,31 @@ function forwardFetchResponse(from, to) {
 }
 
 /**
+ * Pipe a fetch() response to an Express.js Response, including status code.
+ * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
+ * @param {Express.Response} to The Express response to pipe to.
+ */
+async function forwardBedrockStreamResponse(from, to) {
+    for await (const event of from.body) {
+        if (event.chunk && event.chunk.bytes) {
+            const chunk = JSON.parse(Buffer.from(event.chunk.bytes).toString("utf-8"));
+            // chunks.push(chunk.completion); // change this line
+            to.write(chunk);
+        } else if (
+            event.internalServerException ||
+            event.modelStreamErrorException ||
+            event.throttlingException ||
+            event.validationException
+        ) {
+            console.error(event);
+            break;
+        }
+    }
+
+    to.end();
+}
+
+/**
  * Adds YAML-serialized object to the object.
  * @param {object} obj Object
  * @param {string} yamlString YAML-serialized object
@@ -542,6 +567,7 @@ module.exports = {
     removeOldBackups,
     getImages,
     forwardFetchResponse,
+    forwardBedrockStreamResponse,
     getHexString,
     mergeObjectWithYaml,
     excludeKeysByYaml,

@@ -2052,6 +2052,7 @@
                             <option value="windowai">Window AI</option>
                             <option value="openrouter">OpenRouter</option>
                             <option value="claude">Claude</option>
+                            <option value="bedrock">Amazon Bedrock</option>
                             <option value="scale">Scale</option>
                             <option value="ai21">AI21</option>
                             <option value="makersuite">Google MakerSuite</option>
@@ -2206,6 +2207,57 @@
                                     <input id="openai_show_external_models" type="checkbox" />
                                     <span data-i18n="Show External models (provided by API)">Show "External" models (provided by API)</span>
                                 </label>
+                            </div>
+                        </form>
+                        <form id="bedrock_form" data-source="bedrock" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <div>
+                                <h4>AWS Region</h4>
+                                <select id="aws_region_select">
+                                    <option value="us-east-1">us-east-1</option>
+                                    <option value="us-west-2">us-west-2</option>
+                                </select>
+                            </div>
+
+                            <h4>AWS AKSK(Optional, if you use IAM Role)</h4>
+                            <!-- <div>
+                                <span data-i18n="Get your key from">Get your key from </span> <a target="_blank" href="https://console.anthropic.com/account/keys" data-i18n="Anthropic's developer console">Anthropic's developer console</a>.
+                            </div> -->
+                            <div class="flex-container">
+                                <input id="api_key_bedrock" name="api_key_bedrock" placeholder="Bedrock Key(AWS AK/SK)" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your Access key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_bedrock"></div>
+                            </div>
+                            <div class="flex-container">
+                                <input id="access_key_aws" name="access_key_aws" placeholder="AWS Access Key" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your Access key" data-i18n="[title]Clear your Access key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="access_key_aws"></div>
+                            </div>
+                            <div class="flex-container">
+                                <input id="secret_key_aws" name="secret_key_aws" placeholder="AWS Secret Key" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your Secret key" data-i18n="[title]Clear your Secret key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="secret_key_aws"></div>
+                            </div>
+                            <div data-for="access_key_aws" class="neutral_warning">
+                                For privacy reasons, your Access key will be hidden after you reload the page.
+                            </div>
+                            <div data-for="secret_key_aws" class="neutral_warning">
+                                For privacy reasons, your Secret key will be hidden after you reload the page.
+                            </div>
+                            <div>
+                                <h4 data-i18n="Amazon Bedrock Model">Amazon Bedrock Model</h4>
+                                <select id="model_bedrock_select">
+                                    <optgroup label="Claude 3">
+                                        <option value="anthropic.claude-3-sonnet-20240229-v1:0">claude-3-Sonnet</option>
+                                        <option value="anthropic.claude-3-haiku-20240307-v1:0">claude-3-Haiku</option>
+                                    </optgroup>
+                                    <optgroup label="Claude 2">
+                                        <option value="anthropic.claude-2">claude-2</option>
+                                        <option value="anthropic.claude-v2:1">claude-2.1</option>
+                                    </optgroup>
+                                    <optgroup label="Claude Instant">
+                                        <option value="anthropic.claude-instant-v1">claude-instant-v1</option>
+                                    </optgroup>
+                                    <!-- <optgroup label="LLaMA">
+                                        <option value="anthropic.llama-13b-chat">llama-13b-chat</option>
+                                    </optgroup> -->
+                                </select>
                             </div>
                         </form>
                         <form id="claude_form" data-source="claude" action="javascript:void(null);" method="post" enctype="multipart/form-data">

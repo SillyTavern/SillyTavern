@@ -4,15 +4,18 @@ const { Readable } = require('stream');
 
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY } = require('../../constants');
-const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
+const { forwardFetchResponse, forwardBedrockStreamResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
 const { convertClaudePrompt, convertGooglePrompt, convertTextCompletionPrompt } = require('../prompt-converters');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
 const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
 
+const { listTextModels, invokeModel, invokeModelWithStreaming } = require('../../bedrock');
+
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
 const API_MISTRAL = 'https://api.mistral.ai/v1';
+
 /**
  * Sends a request to Claude API.
  * @param {express.Request} request Express request
@@ -497,6 +500,151 @@ async function sendMistralAIRequest(request, response) {
     }
 }
 
+/**
+ * Sends a request to Amazon Bedrock
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendBedrockRequest(request, response) {
+    // const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.BEDROCK);
+    const divider = '-'.repeat(process.stdout.columns);
+
+    if (!apiKey) {
+        console.log(color.red(`Claude API key is missing.\n${divider}`));
+        return response.status(400).send({ error: true });
+    }
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const isSysPromptSupported = request.body.model === 'anthropic.claude-2' || request.body.model === 'anthropic.claude-2.1';
+        const requestPrompt = convertClaudePrompt(request.body.messages, !request.body.exclude_assistant, request.body.assistant_prefill, isSysPromptSupported, request.body.claude_use_sysprompt, request.body.human_sysprompt_message, request.body.claude_exclude_prefixes);
+
+        // Check Claude messages sequence and prefixes presence.
+        let sequenceError = [];
+        const sequence = requestPrompt.split('\n').filter(x => x.startsWith('Human:') || x.startsWith('Assistant:'));
+        const humanFound = sequence.some(line => line.startsWith('Human:'));
+        const assistantFound = sequence.some(line => line.startsWith('Assistant:'));
+        let humanErrorCount = 0;
+        let assistantErrorCount = 0;
+
+        for (let i = 0; i < sequence.length - 1; i++) {
+            if (sequence[i].startsWith(sequence[i + 1].split(':')[0])) {
+                if (sequence[i].startsWith('Human:')) {
+                    humanErrorCount++;
+                } else if (sequence[i].startsWith('Assistant:')) {
+                    assistantErrorCount++;
+                }
+            }
+        }
+
+        if (!humanFound) {
+            sequenceError.push(`${divider}\nWarning: No 'Human:' prefix found in the prompt.\n${divider}`);
+        }
+        if (!assistantFound) {
+            sequenceError.push(`${divider}\nWarning: No 'Assistant: ' prefix found in the prompt.\n${divider}`);
+        }
+        if (sequence[0] && !sequence[0].startsWith('Human:')) {
+            sequenceError.push(`${divider}\nWarning: The messages sequence should start with 'Human:' prefix.\nMake sure you have '\\n\\nHuman:' prefix at the very beggining of the prompt, or after the system prompt.\n${divider}`);
+        }
+        if (humanErrorCount > 0 || assistantErrorCount > 0) {
+            sequenceError.push(`${divider}\nWarning: Detected incorrect Prefix sequence(s).`);
+            sequenceError.push(`Incorrect "Human:" prefix(es): ${humanErrorCount}.\nIncorrect "Assistant: " prefix(es): ${assistantErrorCount}.`);
+            sequenceError.push('Check the prompt above and fix it in the SillyTavern.');
+            sequenceError.push('\nThe correct sequence in the console should look like this:\n(System prompt msg) <-(for the sysprompt format only, else have \\n\\n above the first human\'s  message.)');
+            sequenceError.push(`\\n +      <-----(Each message beginning with the "Assistant:/Human:" prefix must have \\n\\n before it.)\n\\n +\nHuman: \\n +\n\\n +\nAssistant: \\n +\n...\n\\n +\nHuman: \\n +\n\\n +\nAssistant: \n${divider}`);
+        }
+
+        // Add custom stop sequences
+        const stopSequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
+        if (Array.isArray(request.body.stop)) {
+            stopSequences.push(...request.body.stop);
+        }
+
+        // const requestBody = {
+        //     prompt: requestPrompt,
+        //     model: request.body.model,
+        //     max_tokens_to_sample: request.body.max_tokens,
+        //     stop_sequences: stopSequences,
+        //     temperature: request.body.temperature,
+        //     top_p: request.body.top_p,
+        //     top_k: request.body.top_k,
+        //     stream: request.body.stream,
+        // };
+
+        const modelBody = {
+            'prompt': requestPrompt,
+            'temperature': request.body.temperature || 0.9,
+            'top_p': request.body.top_p || 0.999,
+            'top_k': request.body.top_k || 250,
+            'max_tokens_to_sample': request.body.max_tokens,
+            'stop_sequences': stopSequences,
+        };
+        const bedrockClaudeRequestBody = { // InvokeModelRequest
+            body: JSON.stringify(modelBody), //new Uint8Array(), // e.g. Buffer.from("") or new TextEncoder().encode("")   // required
+            contentType: 'application/json',
+            accept: 'application/json',
+            modelId: request.body.model, // required
+        };
+
+        console.log('Claude request:', bedrockClaudeRequestBody);
+
+        sequenceError.forEach(sequenceError => {
+            console.log(color.red(sequenceError));
+        });
+
+        // const generateResponse = await fetch(apiUrl + '/complete', {
+        //     method: 'POST',
+        //     signal: controller.signal,
+        //     body: JSON.stringify(bedrockClaudeRequestBody),
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         'anthropic-version': '2023-06-01',
+        //         'x-api-key': apiKey,
+        //     },
+        //     timeout: 0,
+        // });
+
+        if (request.body.stream) {
+            const respBedrockStream = await invokeModelWithStreaming('us-east-1', bedrockClaudeRequestBody);
+
+            await forwardBedrockStreamResponse(respBedrockStream, response);
+            // Pipe remote SSE stream to Express response
+            // forwardFetchResponse(generateResponse, response);
+        } else {
+            // if (!generateResponse.ok) {
+            //     console.log(color.red(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText}\n${await generateResponse.text()}\n${divider}`));
+            //     return response.status(generateResponse.status).send({ error: true });
+            // }
+            const resp = await invokeModel('us-east-1', bedrockClaudeRequestBody);
+            const statusCode = resp['$metadata']['httpStatusCode'];
+            const body = resp.body.transformToString();
+
+            if (statusCode !== 200 ){
+                console.log(color.red(`Claude API returned error: ${resp['$metadata']['httpStatusCode']} ${body}\n${divider}`));
+                return response.status(statusCode).send({ error: true });
+            }
+
+            console.log('Claude response:', body);
+
+            // Wrap it back to OAI format
+            const reply = { choices: [{ 'message': { 'content': JSON.parse(body)['completion'] } }] };
+            return response.send(reply);
+        }
+    } catch (error) {
+        console.log(color.red(`Error communicating with Claude: ${error}\n${divider}`));
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        }
+    }
+}
+
+
 const router = express.Router();
 
 router.post('/status', jsonParser, async function (request, response_getstatus_openai) {
@@ -524,9 +672,31 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         api_key_openai = readSecret(SECRET_KEYS.CUSTOM);
         headers = {};
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
+        var bedrock_region = request.body.bedrock_region;
+        // api_key_openai = readSecret(SECRET_KEYS.BEDROCK);
     } else {
         console.log('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
+    }
+
+    // todo: should check Key or IAM Role permission
+    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
+        try {
+            let resp = await listTextModels(bedrock_region);
+            let models = resp.modelSummaries;
+            response_getstatus_openai.send(models);
+            console.log('Available Bedrock Text models:', models);
+        } catch(e) {
+            console.error(e);
+
+            if (!response_getstatus_openai.headersSent) {
+                response_getstatus_openai.send({ error: true });
+            } else {
+                response_getstatus_openai.end();
+            }
+        }
+        return;
     }
 
     if (!api_key_openai && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
@@ -672,6 +842,7 @@ router.post('/generate', jsonParser, function (request, response) {
         case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.BEDROCK: return sendBedrockRequest(request, response);
     }
 
     let apiUrl;
@@ -733,6 +904,11 @@ router.post('/generate', jsonParser, function (request, response) {
             bodyParams.logprobs = true;
         }
 
+        mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
+        mergeObjectWithYaml(headers, request.body.custom_include_headers);
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
+        console.log(request);
+        apiKey = readSecret(SECRET_KEYS.BEDROCK);
         mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
     } else {
