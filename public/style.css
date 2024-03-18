@@ -1373,6 +1373,10 @@ input[type="file"] {
 
 }
 
+#movingDivs > div {
+    z-index: 3000;
+}
+
 .floating_prompt_radio_group,
 .radio_group {
     display: flex;
