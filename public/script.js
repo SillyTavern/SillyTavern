@@ -842,12 +842,12 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
+    await getClientVersion();
+    await getSettings();
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     initLocales();
     await readSecretState();
-    await getClientVersion();
-    await getSettings();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -5771,6 +5771,16 @@ async function doOnboarding(avatarId) {
     }
 }
 
+function reloadLoop() {
+    const MAX_RELOADS = 5;
+    let reloads = Number(sessionStorage.getItem('reloads') || 0);
+    if (reloads < MAX_RELOADS) {
+        reloads++;
+        sessionStorage.setItem('reloads', String(reloads));
+        window.location.reload();
+    }
+}
+
 //***************SETTINGS****************//
 ///////////////////////////////////////////
 async function getSettings() {
@@ -5782,7 +5792,8 @@ async function getSettings() {
     });
 
     if (!response.ok) {
-        toastr.error('Settings could not be loaded. Try reloading the page.');
+        reloadLoop();
+        toastr.error('Settings could not be loaded after multiple attempts. Please try again later.');
         throw new Error('Error getting settings');
     }
 
