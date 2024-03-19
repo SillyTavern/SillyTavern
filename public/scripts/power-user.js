@@ -1995,6 +1995,45 @@ async function updateTheme() {
     toastr.success('Theme saved.');
 }
 
+async function deleteTheme() {
+    const themeName = power_user.theme;
+
+    if (!themeName) {
+        toastr.info('No theme selected.');
+        return;
+    }
+
+    const confirm = await callPopup(`Are you sure you want to delete the theme "${themeName}"?`, 'confirm', '', { okButton: 'Yes' });
+
+    if (!confirm) {
+        return;
+    }
+
+    const response = await fetch('/api/themes/delete', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ name: themeName }),
+    });
+
+    if (!response.ok) {
+        toastr.error('Failed to delete theme. Check the console for more information.');
+        return;
+    }
+
+    const themeIndex = themes.findIndex(x => x.name == themeName);
+
+    if (themeIndex !== -1) {
+        themes.splice(themeIndex, 1);
+        $(`#themes option[value="${themeName}"]`).remove();
+        power_user.theme = themes[0]?.name;
+        saveSettingsDebounced();
+        if (power_user.theme) {
+            await applyTheme(power_user.theme);
+        }
+        toastr.success('Theme deleted.');
+    }
+}
+
 /**
  * Exports the current theme to a file.
  */
@@ -2094,7 +2133,7 @@ async function saveTheme(name = undefined) {
         compact_input_area: power_user.compact_input_area,
     };
 
-    const response = await fetch('/savetheme', {
+    const response = await fetch('/api/themes/save', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(theme),
@@ -2992,6 +3031,7 @@ $(document).ready(() => {
 
     $('#ui-preset-save-button').on('click', () => saveTheme());
     $('#ui-preset-update-button').on('click', () => updateTheme());
+    $('#ui-preset-delete-button').on('click', () => deleteTheme());
     $('#movingui-preset-save-button').on('click', saveMovingUI);
 
     $('#never_resize_avatars').on('input', function () {

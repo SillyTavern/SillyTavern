@@ -261,17 +261,6 @@ app.post('/deleteuseravatar', jsonParser, function (request, response) {
     return response.sendStatus(404);
 });
 
-app.post('/savetheme', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.themes, sanitize(request.body.name) + '.json');
-    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
-
-    return response.sendStatus(200);
-});
-
 app.post('/savemovingui', jsonParser, (request, response) => {
     if (!request.body || !request.body.name) {
         return response.sendStatus(400);
@@ -498,6 +487,12 @@ redirect('/getbackgrounds', '/api/backgrounds/all');
 redirect('/delbackground', '/api/backgrounds/delete');
 redirect('/renamebackground', '/api/backgrounds/rename');
 redirect('/downloadbackground', '/api/backgrounds/upload'); // yes, the downloadbackground endpoint actually uploads one
+
+// Redirect deprecated theme API endpoints
+redirect('/savetheme', '/api/themes/save');
+
+// Theme management
+app.use('/api/themes', require('./src/endpoints/themes').router);
 
 // OpenAI API
 app.use('/api/openai', require('./src/endpoints/openai').router);
