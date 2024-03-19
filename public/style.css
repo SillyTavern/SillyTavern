@@ -1364,7 +1364,7 @@ input[type="file"] {
     display: none;
     flex-direction: column;
     box-shadow: 0 0 10px var(--black70a);
-    z-index: 3000;
+    z-index: 4000;
     left: 0;
     top: 0;
     margin: 0;
@@ -1374,6 +1374,10 @@ input[type="file"] {
 }
 
 #movingDivs > div {
+    z-index: 4000;
+}
+
+#left-nav-panel {
     z-index: 3000;
 }
 
@@ -3363,6 +3367,10 @@ a {
     position: relative;
     width: var(--sheldWidth);
 
+}
+
+body:has(.drawer-content.maximized) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)) {
+    z-index: 4005;
 }
 
 .drawer {
