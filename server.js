@@ -244,32 +244,6 @@ app.post('/savemovingui', jsonParser, (request, response) => {
     return response.sendStatus(200);
 });
 
-app.post('/savequickreply', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.quickreplies, sanitize(request.body.name) + '.json');
-    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
-
-    return response.sendStatus(200);
-});
-
-app.post('/deletequickreply', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.quickreplies, sanitize(request.body.name) + '.json');
-    if (fs.existsSync(filename)) {
-        fs.unlinkSync(filename);
-    }
-
-    return response.sendStatus(200);
-});
-
-
-
 /**
  * Ensure the directory for the provided file path exists.
  * If not, it will recursively create the directory.
@@ -443,6 +417,13 @@ redirect('/savetheme', '/api/themes/save');
 redirect('/getuseravatars', '/api/avatars/get');
 redirect('/deleteuseravatar', '/api/avatars/delete');
 redirect('/uploaduseravatar', '/api/avatars/upload');
+
+// Redirect deprecated quick reply endpoints
+redirect('/deletequickreply', '/api/quick-replies/delete');
+redirect('/savequickreply', '/api/quick-replies/save');
+
+// Quick reply management
+app.use('/api/quick-replies', require('./src/endpoints/quick-replies').router);
 
 // Avatar management
 app.use('/api/avatars', require('./src/endpoints/avatars').router);
