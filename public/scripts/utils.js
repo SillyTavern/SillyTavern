@@ -996,7 +996,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
     };
 
     // Send the data URL to your backend using fetch
-    const response = await fetch('/uploadimage', {
+    const response = await fetch('/api/images/upload', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: {
