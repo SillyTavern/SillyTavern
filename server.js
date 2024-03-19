@@ -29,9 +29,6 @@ const net = require('net');
 const dns = require('dns');
 const fetch = require('node-fetch').default;
 
-// image processing related library imports
-const jimp = require('jimp');
-
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
@@ -39,13 +36,12 @@ util.inspect.defaultOptions.maxStringLength = null;
 // local library imports
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
-const { jsonParser, urlencodedParser } = require('./src/express-common.js');
+const { jsonParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
 const {
     getVersion,
     getConfigValue,
     color,
-    tryParse,
     clientRelativePath,
     removeFileExtension,
     getImages,
@@ -106,7 +102,7 @@ const server_port = process.env.SILLY_TAVERN_PORT || getConfigValue('port', 8000
 const autorun = (getConfigValue('autorun', false) || cliArguments.autorun) && !cliArguments.ssl;
 const listen = getConfigValue('listen', false);
 
-const { DIRECTORIES, UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('./src/constants');
+const { DIRECTORIES, UPLOADS_PATH } = require('./src/constants');
 
 // CORS Settings //
 const CORS = cors({
@@ -237,30 +233,6 @@ app.get('/version', async function (_, response) {
     response.send(data);
 });
 
-app.post('/getuseravatars', jsonParser, function (request, response) {
-    var images = getImages('public/User Avatars');
-    response.send(JSON.stringify(images));
-
-});
-
-app.post('/deleteuseravatar', jsonParser, function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-
-    if (request.body.avatar !== sanitize(request.body.avatar)) {
-        console.error('Malicious avatar name prevented');
-        return response.sendStatus(403);
-    }
-
-    const fileName = path.join(DIRECTORIES.avatars, sanitize(request.body.avatar));
-
-    if (fs.existsSync(fileName)) {
-        fs.rmSync(fileName);
-        return response.send({ result: 'ok' });
-    }
-
-    return response.sendStatus(404);
-});
-
 app.post('/savemovingui', jsonParser, (request, response) => {
     if (!request.body || !request.body.name) {
         return response.sendStatus(400);
@@ -296,30 +268,6 @@ app.post('/deletequickreply', jsonParser, (request, response) => {
     return response.sendStatus(200);
 });
 
-
-app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
-    if (!request.file) return response.sendStatus(400);
-
-    try {
-        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
-        const crop = tryParse(request.query.crop);
-        let rawImg = await jimp.read(pathToUpload);
-
-        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
-            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
-        }
-
-        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
-
-        const filename = request.body.overwrite_name || `${Date.now()}.png`;
-        const pathToNewFile = path.join(DIRECTORIES.avatars, filename);
-        writeFileAtomicSync(pathToNewFile, image);
-        fs.rmSync(pathToUpload);
-        return response.send({ path: filename });
-    } catch (err) {
-        return response.status(400).send('Is not a valid image');
-    }
-});
 
 
 /**
@@ -490,6 +438,14 @@ redirect('/downloadbackground', '/api/backgrounds/upload'); // yes, the download
 
 // Redirect deprecated theme API endpoints
 redirect('/savetheme', '/api/themes/save');
+
+// Redirect deprecated avatar API endpoints
+redirect('/getuseravatars', '/api/avatars/get');
+redirect('/deleteuseravatar', '/api/avatars/delete');
+redirect('/uploaduseravatar', '/api/avatars/upload');
+
+// Avatar management
+app.use('/api/avatars', require('./src/endpoints/avatars').router);
 
 // Theme management
 app.use('/api/themes', require('./src/endpoints/themes').router);
