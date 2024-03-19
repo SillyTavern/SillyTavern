@@ -2175,7 +2175,7 @@ async function saveMovingUI() {
     };
     console.log(movingUIPreset);
 
-    const response = await fetch('/savemovingui', {
+    const response = await fetch('/api/moving-ui/save', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(movingUIPreset),

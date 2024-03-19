@@ -10,8 +10,6 @@ const util = require('util');
 
 // cli/fs related library imports
 const open = require('open');
-const sanitize = require('sanitize-filename');
-const writeFileAtomicSync = require('write-file-atomic').sync;
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 
@@ -36,7 +34,6 @@ util.inspect.defaultOptions.maxStringLength = null;
 // local library imports
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
-const { jsonParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
 const {
     getVersion,
@@ -200,7 +197,7 @@ if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
 app.use(express.static(process.cwd() + '/public', {}));
 
 app.use('/backgrounds', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), 'public/backgrounds', req.url.replace(/%20/g, ' ')));
+    const filePath = decodeURIComponent(path.join(process.cwd(), DIRECTORIES.backgrounds, req.url.replace(/%20/g, ' ')));
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.status(404).send('File not found');
@@ -228,17 +225,6 @@ app.get('/', function (request, response) {
 app.get('/version', async function (_, response) {
     const data = await getVersion();
     response.send(data);
-});
-
-app.post('/savemovingui', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.movingUI, sanitize(request.body.name) + '.json');
-    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
-
-    return response.sendStatus(200);
 });
 
 function cleanUploads() {
@@ -339,6 +325,12 @@ redirect('/savequickreply', '/api/quick-replies/save');
 // Redirect deprecated image endpoints
 redirect('/uploadimage', '/api/images/upload');
 redirect('/listimgfiles/:folder', '/api/images/list/:folder');
+
+// Redirect deprecated moving UI endpoints
+redirect('/savemovingui', '/api/moving-ui/save');
+
+// Moving UI
+app.use('/api/moving-ui', require('./src/endpoints/moving-ui').router);
 
 // Image management
 app.use('/api/images', require('./src/endpoints/images').router);
