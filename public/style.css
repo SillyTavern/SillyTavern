@@ -3340,6 +3340,10 @@ a {
     transition: all 250ms;
 }
 
+#ui_language_select {
+    width: 10em;
+}
+
 #extensions_settings .inline-drawer-toggle.inline-drawer-header:hover,
 #extensions_settings2 .inline-drawer-toggle.inline-drawer-header:hover {
     filter: brightness(150%);
