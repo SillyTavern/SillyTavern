@@ -1623,6 +1623,39 @@
                             </div><!-- end of textgen settings-->
                             <div id="openai_settings">
                                 <div class="">
+                                    <div class="range-block marginBot10">
+                                        <h4 class="range-block-title justifyLeft marginBot5"
+                                            <span data-i18n="Character Names Behavior">Character Names Behavior</span>
+                                        </h4>
+                                        <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_none">
+                                            <input type="radio" id="character_names_none" name="character_names" value="0">
+                                            <span data-i18n="None">None</span>
+                                            <i class="right_menu_button fa-solid fa-circle-exclamation" title="Except for groups and past personas. Otherwise, make sure you provide names in the prompt."></i>
+                                            <small class="flexBasis100p" data-i18n="Don't add character names.">
+                                                Don't add character names.
+                                            </small>
+                                        </label>
+                                        <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_completion">
+                                            <input type="radio" id="character_names_completion" name="character_names" value="1">
+                                            <span data-i18n="Completion">Completion Object</span>
+                                            <i class="right_menu_button fa-solid fa-circle-exclamation" title="Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google."></i>
+                                            <small class="flexBasis100p" data-i18n="Add character names to completion objects.">
+                                                Add character names to completion objects.
+                                            </small>
+                                        </label>
+                                        <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_content">
+                                            <input type="radio" id="character_names_content" name="character_names" value="2">
+                                            <span data-i18n="Message Content">Message Content</span>
+                                            <small class="flexBasis100p" data-i18n="Prepend character names to message contents.">
+                                                Prepend character names to message contents.
+                                            </small>
+                                        </label>
+                                        <div class="toggle-description justifyLeft marginTop5">
+                                            <span data-i18n="Helps the model to associate messages with characters.">Helps the model to associate messages with characters.</span>
+                                        </div>
+                                        <!-- Hidden input for loading radio buttons from presets. Don't remove! -->
+                                        <input type="hidden" id="names_behavior" class="displayNone" />
+                                    </div>
                                     <div class="range-block">
                                         <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" data-i18n="[title]Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
                                             <input id="wrap_in_quotes" type="checkbox" /><span data-i18n="Wrap in Quotes">
@@ -1633,14 +1666,6 @@
                                                 entire user message in quotes before sending.</span><br>
                                             <span data-i18n="Leave off if you use quotes manually for speech.">Leave off
                                                 if you use quotes manually for speech.</span>
-                                        </div>
-                                    </div>
-                                    <div class="range-block">
-                                        <label for="names_in_completion" title="Add character names" data-i18n="[title]Add character names" class="checkbox_label widthFreeExpand">
-                                            <input id="names_in_completion" type="checkbox" /><span data-i18n="Add character names">Add character names</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Send names in the message objects. Helps the model to associate messages with characters.">Send names in the message objects. Helps the model to associate messages with characters.</span>
                                         </div>
                                     </div>
                                     <div class="range-block">
