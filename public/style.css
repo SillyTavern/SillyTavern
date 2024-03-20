@@ -636,7 +636,8 @@ body.reduced-motion #bg_custom {
     transition: all 300ms;
 }
 
-#send_form>#nonQRFormItems>div>div:hover {
+#rightSendForm>div:hover,
+#leftSendForm>div:hover {
     opacity: 1;
     filter: brightness(1.2);
 }
