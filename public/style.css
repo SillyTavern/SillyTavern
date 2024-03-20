@@ -2736,7 +2736,7 @@ input[type="range"]::-webkit-slider-thumb {
     max-height: calc(100vh - 84px);
     max-height: calc(100svh - 84px);
     position: absolute;
-    z-index: 3000;
+    z-index: 4001;
     margin-left: auto;
     margin-right: auto;
     left: 0;
@@ -2814,7 +2814,7 @@ h5 {
     width: 100%;
     height: 100vh;
     height: 100svh;
-    z-index: 3001;
+    z-index: 4100;
     top: 0;
     background-color: var(--black70a);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
@@ -3374,7 +3374,8 @@ a {
 }
 
 body:has(.drawer-content.maximized) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)),
-body:has(.drawer-content.open) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)) {
+body:has(.drawer-content.open) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)),
+body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)) {
     z-index: 4005;
 }
 

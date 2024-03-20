@@ -8433,8 +8433,7 @@ jQuery(async function () {
     $('#advanced_div').click(function () {
         if (!is_advanced_char_open) {
             is_advanced_char_open = true;
-            $('#character_popup').css('display', 'flex');
-            $('#character_popup').css('opacity', 0.0);
+            $('#character_popup').css({'display': 'flex', 'opacity': 0.0}).addClass('open');
             $('#character_popup').transition({
                 opacity: 1.0,
                 duration: animation_duration,
@@ -8442,7 +8441,7 @@ jQuery(async function () {
             });
         } else {
             is_advanced_char_open = false;
-            $('#character_popup').css('display', 'none');
+            $('#character_popup').css('display', 'none').removeClass('open');
         }
     });
 
