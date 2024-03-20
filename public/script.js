@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -7419,6 +7419,9 @@ window['SillyTavern'].getContext = function () {
         writeExtensionField: writeExtensionField,
         getThumbnailUrl: getThumbnailUrl,
         selectCharacterById: selectCharacterById,
+        messageFormatting: messageFormatting,
+        shouldSendOnEnter: shouldSendOnEnter,
+        isMobile: isMobile,
         tags: tags,
         tagMap: tag_map,
         menuType: menu_type,
