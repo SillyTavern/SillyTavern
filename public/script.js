@@ -843,11 +843,11 @@ async function firstLoadInit() {
     }
 
     await getClientVersion();
+    await readSecretState();
     await getSettings();
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     initLocales();
-    await readSecretState();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
