@@ -4750,7 +4750,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
         type = 'normal';
     }
 
-    if (chat.length && !chat[chat.length - 1]['extra']) {
+    if (chat.length && (!chat[chat.length - 1]['extra'] || typeof chat[chat.length - 1]['extra'] !== 'object')) {
         chat[chat.length - 1]['extra'] = {};
     }
 
@@ -4899,7 +4899,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
 
 function saveImageToMessage(img, mes) {
     if (mes && img.image) {
-        if (typeof mes.extra !== 'object') {
+        if (!mes.extra || typeof mes.extra !== 'object') {
             mes.extra = {};
         }
         mes.extra.image = img.image;
