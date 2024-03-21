@@ -115,6 +115,7 @@ const max_16k = 16383;
 const max_32k = 32767;
 const max_128k = 128 * 1000;
 const max_200k = 200 * 1000;
+const max_1mil = 1000 * 1000;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const claude_100k_max = 99000;
@@ -3434,6 +3435,8 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
+        } else if (value === 'gemini-1.5-pro')  {
+            $('#openai_max_context').attr('max', max_1mil);
         } else if (value === 'gemini-pro') {
             $('#openai_max_context').attr('max', max_32k);
         } else if (value === 'gemini-pro-vision') {
