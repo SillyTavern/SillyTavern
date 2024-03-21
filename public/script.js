@@ -4750,7 +4750,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
         type = 'normal';
     }
 
-    if (chat.length && typeof chat[chat.length - 1]['extra'] !== 'object') {
+    if (chat.length && !chat[chat.length - 1]['extra']) {
         chat[chat.length - 1]['extra'] = {};
     }
 
