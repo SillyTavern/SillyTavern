@@ -1303,6 +1303,11 @@ class PromptManager {
      * Empties, then re-assembles the container containing the prompt list.
      */
     renderPromptManager() {
+        let selectedPromptIndex = 0;
+        const existingAppendSelect = document.getElementById(`${this.configuration.prefix}prompt_manager_footer_append_prompt`);
+        if (existingAppendSelect instanceof HTMLSelectElement) {
+            selectedPromptIndex = existingAppendSelect.selectedIndex;
+        }
         const promptManagerDiv = this.containerElement;
         promptManagerDiv.innerHTML = '';
 
@@ -1332,13 +1337,21 @@ class PromptManager {
         if (null !== this.activeCharacter) {
             const prompts = [...this.serviceSettings.prompts]
                 .filter(prompt => prompt && !prompt?.system_prompt)
-                .sort((promptA, promptB) => promptA.name.localeCompare(promptB.name))
-                .reduce((acc, prompt) => acc + `<option value="${prompt.identifier}">${escapeHtml(prompt.name)}</option>`, '');
+                .sort((promptA, promptB) => promptA.name.localeCompare(promptB.name));
+            const promptsHtml = prompts.reduce((acc, prompt) => acc + `<option value="${prompt.identifier}">${escapeHtml(prompt.name)}</option>`, '');
+
+            if (selectedPromptIndex > 0) {
+                selectedPromptIndex = Math.min(selectedPromptIndex, prompts.length - 1);
+            }
+
+            if (selectedPromptIndex === -1 && prompts.length) {
+                selectedPromptIndex = 0;
+            }
 
             const footerHtml = `
                 <div class="${this.configuration.prefix}prompt_manager_footer">
                     <select id="${this.configuration.prefix}prompt_manager_footer_append_prompt" class="text_pole" name="append-prompt">
-                        ${prompts}
+                        ${promptsHtml}
                     </select>
                     <a class="menu_button fa-chain fa-solid" title="Insert prompt" data-i18n="[title]Insert prompt"></a>
                     <a class="caution menu_button fa-x fa-solid" title="Delete prompt" data-i18n="[title]Delete prompt"></a>
@@ -1357,6 +1370,7 @@ class PromptManager {
             footerDiv.querySelector('.menu_button:nth-child(2)').addEventListener('click', this.handleAppendPrompt);
             footerDiv.querySelector('.caution').addEventListener('click', this.handleDeletePrompt);
             footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
+            footerDiv.querySelector('select').selectedIndex = selectedPromptIndex;
 
             // Add prompt export dialogue and options
             const exportForCharacter = `
@@ -1371,7 +1385,7 @@ class PromptManager {
                                 <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
                                 <span class="tooltip fa-solid fa-info-circle" title="Export all your prompts to a file"></span>
                             </div>
-                            ${'global' === this.configuration.promptOrder.strategy ? '' : exportForCharacter }
+                            ${'global' === this.configuration.promptOrder.strategy ? '' : exportForCharacter}
                         </div>
                 </div>
                 `;
