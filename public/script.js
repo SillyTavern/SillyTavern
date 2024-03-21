@@ -150,6 +150,7 @@ import {
     humanFileSize,
     Stopwatch,
     isValidUrl,
+    ensureImageFormatSupported,
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
@@ -5713,6 +5714,12 @@ async function uploadUserAvatar(e) {
         }
     }
 
+    const rawFile = formData.get('avatar');
+    if (rawFile instanceof File){
+        const convertedFile = await ensureImageFormatSupported(rawFile);
+        formData.set('avatar', convertedFile);
+    }
+
     jQuery.ajax({
         type: 'POST',
         url: url,
@@ -7212,8 +7219,15 @@ function addAlternateGreeting(template, greeting, index, getArray) {
 
 async function createOrEditCharacter(e) {
     $('#rm_info_avatar').html('');
-    var formData = new FormData($('#form_create').get(0));
+    const formData = new FormData($('#form_create').get(0));
     formData.set('fav', fav_ch_checked);
+
+    const rawFile = formData.get('avatar');
+    if (rawFile instanceof File){
+        const convertedFile = await ensureImageFormatSupported(rawFile);
+        formData.set('avatar', convertedFile);
+    }
+
     if ($('#form_create').attr('actiontype') == 'createcharacter') {
         if ($('#character_name_pole').val().length > 0) {
             if (is_group_generating || is_send_press) {
