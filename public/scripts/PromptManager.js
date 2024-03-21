@@ -310,7 +310,8 @@ class PromptManager {
 
             counts[promptID] = null;
             promptOrderEntry.enabled = !promptOrderEntry.enabled;
-            this.saveServiceSettings().then(() => this.render());
+            this.render();
+            this.saveServiceSettings();
         };
 
         // Open edit form and load selected prompt
@@ -350,7 +351,8 @@ class PromptManager {
             this.detachPrompt(prompt, this.activeCharacter);
             this.hidePopup();
             this.clearEditForm();
-            this.saveServiceSettings().then(() => this.render());
+            this.render();
+            this.saveServiceSettings();
         };
 
         // Save prompt edit form to settings and close form.
@@ -374,7 +376,8 @@ class PromptManager {
 
             this.hidePopup();
             this.clearEditForm();
-            this.saveServiceSettings().then(() => this.render());
+            this.render();
+            this.saveServiceSettings();
         };
 
         // Reset prompt should it be a system prompt
@@ -420,7 +423,8 @@ class PromptManager {
 
             if (prompt) {
                 this.appendPrompt(prompt, this.activeCharacter);
-                this.saveServiceSettings().then(() => this.render());
+                this.render();
+                this.saveServiceSettings();
             }
         };
 
@@ -437,7 +441,8 @@ class PromptManager {
 
                 this.hidePopup();
                 this.clearEditForm();
-                this.saveServiceSettings().then(() => this.render());
+                this.render();
+                this.saveServiceSettings();
             }
         };
 
@@ -541,7 +546,8 @@ class PromptManager {
                     this.removePromptOrderForCharacter(this.activeCharacter);
                     this.addPromptOrderForCharacter(this.activeCharacter, promptManagerDefaultPromptOrder);
 
-                    this.saveServiceSettings().then(() => this.render());
+                    this.render();
+                    this.saveServiceSettings();
                 });
         };
 
