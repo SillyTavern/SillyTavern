@@ -2,11 +2,31 @@
 const { BedrockRuntimeClient, InvokeModelCommand, InvokeModelWithResponseStreamCommand } = require("@aws-sdk/client-bedrock-runtime");
 const { BedrockClient, ListFoundationModelsCommand } = require("@aws-sdk/client-bedrock");
 
+const { readSecret, SECRET_KEYS } = require('./endpoints/secrets');
+
 const getClient = (function() {
     const client = {};
+    let aksk = '';
     return function(region_name) {
-        if(! client[region_name]) {
-            client[region_name] = new BedrockClient({ region: region_name });
+        const secrets = readSecret(SECRET_KEYS.BEDROCK);
+        const _aksk = secrets[0] + secrets[1];
+        const refresh = _aksk != aksk;
+
+        if(! client[region_name] || refresh) {
+            aksk = _aksk;
+            const secrets = readSecret(SECRET_KEYS.BEDROCK);
+            if (secrets[0] && secrets[1]) {
+                client[region_name] = new BedrockClient({
+                    region: region_name,
+                    credentials: {
+                        accessKeyId: secrets[0],
+                        secretAccessKey: secrets[1]
+                    }
+                });
+            } else {
+                console.log('warn: secrets not found for bedrock, will fallback to default provider.');
+                client[region_name] = new BedrockClient({region: region_name});
+            }
         }
         return client[region_name];
     };
@@ -14,10 +34,28 @@ const getClient = (function() {
 
 const getRuntimeClient = (function() {
     const client = {};
+    let aksk = '';
     return function(region_name) {
-        if(! client[region_name]) {
-            client[region_name] = new BedrockRuntimeClient({ region: region_name });
+        const secrets = readSecret(SECRET_KEYS.BEDROCK);
+        const _aksk = secrets[0] + secrets[1];
+        const refresh = _aksk != aksk;
+
+        if(! client[region_name] || refresh) {
+            aksk = _aksk;
+            if (secrets[0] && secrets[1]) {
+                client[region_name] = new BedrockRuntimeClient({
+                    region: region_name,
+                    credentials: {
+                        accessKeyId: secrets[0],
+                        secretAccessKey: secrets[1]
+                    }
+                });
+            } else {
+                console.log('warn: secrets not found for bedrock, will fallback to default provider.');
+                client[region_name] = new BedrockRuntimeClient({region: region_name});
+            }
         }
+
         return client[region_name];
     };
 })();

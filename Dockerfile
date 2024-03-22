@@ -12,11 +12,14 @@ ENTRYPOINT [ "tini", "--" ]
 # Create app directory
 WORKDIR ${APP_HOME}
 
+# Set NODE_ENV to production
+ENV NODE_ENV=production
+
 # Install app dependencies
 COPY package*.json post-install.js ./
 RUN \
   echo "*** Install npm packages ***" && \
-  npm install && npm cache clean --force
+  npm i --no-audit --no-fund --quiet --omit=dev && npm cache clean --force
 
 # Bundle app source
 COPY . ./

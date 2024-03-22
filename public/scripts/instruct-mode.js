@@ -30,6 +30,7 @@ const controls = [
     { id: 'instruct_last_output_sequence', property: 'last_output_sequence', isCheckbox: false },
     { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
     { id: 'instruct_bind_to_context', property: 'bind_to_context', isCheckbox: true },
+    { id: 'instruct_skip_examples', property: 'skip_examples', isCheckbox: true },
 ];
 
 /**
@@ -43,6 +44,10 @@ export function loadInstructMode(data) {
 
     if (power_user.instruct.names_force_groups === undefined) {
         power_user.instruct.names_force_groups = true;
+    }
+
+    if (power_user.instruct.skip_examples === undefined) {
+        power_user.instruct.skip_examples = false;
     }
 
     controls.forEach(control => {
@@ -264,6 +269,7 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
 
     if (power_user.instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);
+        sequence = sequence.replace(/{{name}}/gi, name || 'System');
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
@@ -302,6 +308,10 @@ export function formatInstructModeSystemPrompt(systemPrompt){
  * @returns {string} Formatted example messages string.
  */
 export function formatInstructModeExamples(mesExamples, name1, name2) {
+    if (power_user.instruct.skip_examples) {
+        return mesExamples;
+    }
+
     const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
 
     let inputSequence = power_user.instruct.input_sequence;
@@ -337,6 +347,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
 
     if (power_user.instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);
+        sequence = sequence.replace(/{{name}}/gi, name || 'System');
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';

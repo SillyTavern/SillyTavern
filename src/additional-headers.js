@@ -1,4 +1,4 @@
-const { TEXTGEN_TYPES } = require('./constants');
+const { TEXTGEN_TYPES, OPENROUTER_HEADERS } = require('./constants');
 const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
 const { getConfigValue } = require('./util');
 
@@ -17,6 +17,29 @@ function getTogetherAIHeaders() {
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
     }) : {};
+}
+
+function getInfermaticAIHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.INFERMATICAI);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
+function getDreamGenHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.DREAMGEN);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
+function getOpenRouterHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.OPENROUTER);
+    const baseHeaders = { ...OPENROUTER_HEADERS };
+
+    return apiKey ? Object.assign(baseHeaders, { 'Authorization': `Bearer ${apiKey}` }) : baseHeaders;
 }
 
 function getAphroditeHeaders() {
@@ -39,6 +62,14 @@ function getTabbyHeaders() {
 
 function getOobaHeaders() {
     const apiKey = readSecret(SECRET_KEYS.OOBA);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
+function getKoboldCppHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.KOBOLDCPP);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -80,9 +111,34 @@ function setAdditionalHeaders(request, args, server) {
         case TEXTGEN_TYPES.OOBA:
             headers = getOobaHeaders();
             break;
-        default:
-            headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
+        case TEXTGEN_TYPES.INFERMATICAI:
+            headers = getInfermaticAIHeaders();
             break;
+        case TEXTGEN_TYPES.DREAMGEN:
+            headers = getDreamGenHeaders();
+            break;
+        case TEXTGEN_TYPES.OPENROUTER:
+            headers = getOpenRouterHeaders();
+            break;
+        case TEXTGEN_TYPES.KOBOLDCPP:
+            headers = getKoboldCppHeaders();
+            break;
+        default:
+            headers = {};
+            break;
+    }
+
+    if (typeof server === 'string' && server.length > 0) {
+        try {
+            const url = new URL(server);
+            const overrideHeaders =  getOverrideHeaders(url.host);
+
+            if (overrideHeaders && Object.keys(overrideHeaders).length > 0) {
+                Object.assign(headers, overrideHeaders);
+            }
+        } catch {
+            // Do nothing
+        }
     }
 
     Object.assign(args.headers, headers);

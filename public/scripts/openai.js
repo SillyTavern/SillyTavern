@@ -119,7 +119,7 @@ const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const claude_100k_max = 99000;
 let ai21_max = 9200; //can easily fit 9k gpt tokens because j2's tokenizer is efficient af
-const unlocked_max = 100 * 1024;
+const unlocked_max = max_200k;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0; //same as j2
 const j2_max_topk = 10.0;
@@ -185,9 +185,9 @@ const prefixMap = selected_group ? {
 
 const default_settings = {
     preset_settings_openai: 'Default',
-    temp_openai: 0.9,
-    freq_pen_openai: 0.7,
-    pres_pen_openai: 0.7,
+    temp_openai: 1.0,
+    freq_pen_openai: 0,
+    pres_pen_openai: 0,
     count_pen: 0.0,
     top_p_openai: 1.0,
     top_k_openai: 0,
@@ -214,10 +214,10 @@ const default_settings = {
     scenario_format: default_scenario_format,
     personality_format: default_personality_format,
     openai_model: 'gpt-3.5-turbo',
-    claude_model: 'claude-instant-v1',
+    claude_model: 'claude-2.1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
-    mistralai_model: 'mistral-medium',
+    mistralai_model: 'mistral-medium-latest',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -240,9 +240,7 @@ const default_settings = {
     human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
-    exclude_assistant: false,
     claude_use_sysprompt: false,
-    claude_exclude_prefixes: false,
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
@@ -283,12 +281,12 @@ const oai_settings = {
     scenario_format: default_scenario_format,
     personality_format: default_personality_format,
     openai_model: 'gpt-3.5-turbo',
-    claude_model: 'claude-instant-v1',
+    claude_model: 'claude-2.1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
-    mistralai_model: 'mistral-medium',
     bedrock_model: 'anthropic.claude-instant-v1',
     bedrock_region: 'us-west-2',
+    mistralai_model: 'mistral-medium-latest',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -311,9 +309,7 @@ const oai_settings = {
     human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
-    exclude_assistant: false,
     claude_use_sysprompt: false,
-    claude_exclude_prefixes: false,
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
@@ -354,8 +350,19 @@ function validateReverseProxy() {
     }
 }
 
+/**
+ * Converts the Chat Completion object to an Instruct Mode prompt string.
+ * @param {object[]} messages Array of messages
+ * @param {string} type Generation type
+ * @returns {string} Text completion prompt
+ */
 function convertChatCompletionToInstruct(messages, type) {
-    messages = messages.filter(x => x.content !== oai_settings.new_chat_prompt && x.content !== oai_settings.new_example_chat_prompt);
+    const newChatPrompts = [
+        substituteParams(oai_settings.new_chat_prompt),
+        substituteParams(oai_settings.new_example_chat_prompt),
+        substituteParams(oai_settings.new_group_chat_prompt),
+    ];
+    messages = messages.filter(x => !newChatPrompts.includes(x.content));
 
     let chatMessagesText = '';
     let systemPromptText = '';
@@ -673,10 +680,9 @@ export function isOpenRouterWithInstruct() {
 async function populateChatHistory(messages, prompts, chatCompletion, type = null, cyclePrompt = null) {
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
-    let names = (selected_group && groups.find(x => x.id === selected_group)?.members.map(member => characters.find(c => c.avatar === member)?.name).filter(Boolean).join(', ')) || '';
     // Reserve budget for new chat message
     const newChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
-    const newChatMessage = new Message('system', substituteParams(newChat, null, null, null, names), 'newMainChat');
+    const newChatMessage = new Message('system', substituteParams(newChat), 'newMainChat');
     chatCompletion.reserveBudget(newChatMessage);
 
     // Reserve budget for group nudge
@@ -770,7 +776,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 function populateDialogueExamples(prompts, chatCompletion, messageExamples) {
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (Array.isArray(messageExamples) && messageExamples.length) {
-        const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
+        const newExampleChat = new Message('system', substituteParams(oai_settings.new_example_chat_prompt), 'newChat');
         [...messageExamples].forEach((dialogue, dialogueIndex) => {
             let examplesAdded = 0;
 
@@ -1603,6 +1609,8 @@ async function sendOpenAIRequest(type, messages, signal) {
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
         'chat_completion_source': oai_settings.chat_completion_source,
         'n': canMultiSwipe ? oai_settings.n : undefined,
+        'user_name': name1,
+        'char_name': name2,
     };
 
     // Empty array will produce a validation error
@@ -1630,13 +1638,11 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     if (isClaude) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['exclude_assistant'] = oai_settings.exclude_assistant;
         generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
-        generate_data['claude_exclude_prefixes'] = oai_settings.claude_exclude_prefixes;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
         // Don't add a prefill on quiet gens (summarization)
-        if (!isQuiet && !oai_settings.exclude_assistant) {
+        if (!isQuiet) {
             generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
         }
     }
@@ -1674,13 +1680,13 @@ async function sendOpenAIRequest(type, messages, signal) {
         const nameStopString = isImpersonate ? `\n${name2}:` : `\n${name1}:`;
         const stopStringsLimit = 3; // 5 - 2 (nameStopString and new_chat_prompt)
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['stop'] = [nameStopString, oai_settings.new_chat_prompt, ...getCustomStoppingStrings(stopStringsLimit)];
+        generate_data['stop'] = [nameStopString, substituteParams(oai_settings.new_chat_prompt), ...getCustomStoppingStrings(stopStringsLimit)];
     }
 
     if (isAI21) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['count_pen'] = Number(oai_settings.count_pen);
-        generate_data['stop_tokens'] = [name1 + ':', oai_settings.new_chat_prompt, oai_settings.new_group_chat_prompt];
+        generate_data['stop_tokens'] = [name1 + ':', substituteParams(oai_settings.new_chat_prompt), substituteParams(oai_settings.new_group_chat_prompt)];
     }
 
     if (isMistral) {
@@ -1760,7 +1766,7 @@ async function sendOpenAIRequest(type, messages, signal) {
 
 function getStreamingReply(data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        return data?.completion || '';
+        return data?.delta?.text || '';
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
@@ -2185,8 +2191,13 @@ class ChatCompletion {
         let squashedMessages = [];
 
         for (let message of this.messages.collection) {
+            // Force exclude empty messages
+            if (message.role === 'system' && !message.content) {
+                continue;
+            }
+
             if (!excludeList.includes(message.identifier) && message.role === 'system' && !message.name) {
-                if (lastMessage && message.content && lastMessage.role === 'system') {
+                if (lastMessage && lastMessage.role === 'system') {
                     lastMessage.content += '\n' + message.content;
                     lastMessage.tokens = tokenHandler.count({ role: lastMessage.role, content: lastMessage.content });
                 }
@@ -2568,9 +2579,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
     if (settings.use_ai21_tokenizer !== undefined) { oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer; oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200; }
     if (settings.use_google_tokenizer !== undefined) oai_settings.use_google_tokenizer = !!settings.use_google_tokenizer;
-    if (settings.exclude_assistant !== undefined) oai_settings.exclude_assistant = !!settings.exclude_assistant;
     if (settings.claude_use_sysprompt !== undefined) oai_settings.claude_use_sysprompt = !!settings.claude_use_sysprompt;
-    if (settings.claude_exclude_prefixes !== undefined) oai_settings.claude_exclude_prefixes = !!settings.claude_exclude_prefixes;
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
@@ -2608,9 +2617,7 @@ function loadOpenAISettings(data, settings) {
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#use_ai21_tokenizer').prop('checked', oai_settings.use_ai21_tokenizer);
     $('#use_google_tokenizer').prop('checked', oai_settings.use_google_tokenizer);
-    $('#exclude_assistant').prop('checked', oai_settings.exclude_assistant);
     $('#claude_use_sysprompt').prop('checked', oai_settings.claude_use_sysprompt);
-    $('#claude_exclude_prefixes').prop('checked', oai_settings.claude_exclude_prefixes);
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
     $('#openrouter_force_instruct').prop('checked', oai_settings.openrouter_force_instruct);
@@ -2836,9 +2843,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         human_sysprompt_message: settings.human_sysprompt_message,
         use_ai21_tokenizer: settings.use_ai21_tokenizer,
         use_google_tokenizer: settings.use_google_tokenizer,
-        exclude_assistant: settings.exclude_assistant,
         claude_use_sysprompt: settings.claude_use_sysprompt,
-        claude_exclude_prefixes: settings.claude_exclude_prefixes,
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
@@ -3213,9 +3218,7 @@ function onSettingsPresetChange() {
         human_sysprompt_message: ['#claude_human_sysprompt_textarea', 'human_sysprompt_message', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', true],
         use_google_tokenizer: ['#use_google_tokenizer', 'use_google_tokenizer', true],
-        exclude_assistant: ['#exclude_assistant', 'exclude_assistant', true],
         claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true],
-        claude_exclude_prefixes: ['#claude_exclude_prefixes', 'claude_exclude_prefixes', true],
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
         image_inlining: ['#openai_image_inlining', 'image_inlining', true],
@@ -3338,8 +3341,15 @@ async function onModelChange() {
     let value = String($(this).val() || '');
 
     if ($(this).is('#model_claude_select')) {
+        if (value.includes('-v')) {
+            value = value.replace('-v', '-');
+        } else if (value === '' || value === 'claude-2') {
+            value = default_settings.claude_model;
+        }
         console.log('Claude model changed to', value);
         oai_settings.claude_model = value;
+        $('#model_claude_select').val(oai_settings.claude_model);
+
     }
 
     if ($(this).is('#model_windowai_select')) {
@@ -3373,8 +3383,16 @@ async function onModelChange() {
     }
 
     if ($(this).is('#model_mistralai_select')) {
+        // Upgrade old mistral models to new naming scheme
+        // would have done this in loadOpenAISettings, but it wasn't updating on preset change?
+        if (value === 'mistral-medium' || value === 'mistral-small' || value === 'mistral-tiny') {
+            value = value + '-latest';
+        } else if (value === '') {
+            value = default_settings.mistralai_model;
+        }
         console.log('MistralAI model changed to', value);
         oai_settings.mistralai_model = value;
+        $('#model_mistralai_select').val(oai_settings.mistralai_model);
     }
 
     if (value && $(this).is('#model_custom_select')) {
@@ -3444,7 +3462,7 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_200k);
         }
-        else if (value == 'claude-2.1' || value == 'claude-2') {
+        else if (value == 'claude-2.1' || value.startsWith('claude-3')) {
             $('#openai_max_context').attr('max', max_200k);
         }
         else if (value.endsWith('100k') || value.startsWith('claude-2') || value === 'claude-instant-1.2') {
@@ -3723,9 +3741,7 @@ async function onConnectButtonClick(e) {
         const access_key_aws = String($('#access_key_aws').val()).trim();
         const secret_key_aws = String($('#secret_key_aws').val()).trim();
 
-        if (access_key_aws.length && secret_key_aws.length) {
-            await writeSecret(SECRET_KEYS.BEDROCK, [access_key_aws, secret_key_aws]);
-        }
+        await writeSecret(SECRET_KEYS.BEDROCK, [access_key_aws, secret_key_aws]);
 
         if (!secret_state[SECRET_KEYS.BEDROCK]) {
             console.log('No secret key saved for Amazon Bedrock');
@@ -3779,7 +3795,6 @@ function toggleChatCompletionForms() {
     });
 
     if (chat_completion_sources.CLAUDE == oai_settings.chat_completion_source) {
-        $('#claude_assistant_prefill_block').toggle(!oai_settings.exclude_assistant);
         $('#claude_human_sysprompt_message_block').toggle(oai_settings.claude_use_sysprompt);
     }
 }
@@ -3803,9 +3818,11 @@ async function testApiConnection() {
 }
 
 function reconnectOpenAi() {
-    setOnlineStatus('no_connection');
-    resultCheckStatus();
-    $('#api_button_openai').trigger('click');
+    if (main_api == 'openai') {
+        setOnlineStatus('no_connection');
+        resultCheckStatus();
+        $('#api_button_openai').trigger('click');
+    }
 }
 
 function onProxyPasswordShowClick() {
@@ -3872,6 +3889,7 @@ export function isImageInliningSupported() {
 
     const gpt4v = 'gpt-4-vision';
     const geminiProV = 'gemini-pro-vision';
+    const claude = 'claude-3';
     const llava = 'llava';
 
     if (!oai_settings.image_inlining) {
@@ -3883,10 +3901,12 @@ export function isImageInliningSupported() {
             return oai_settings.openai_model.includes(gpt4v);
         case chat_completion_sources.MAKERSUITE:
             return oai_settings.google_model.includes(geminiProV);
+        case chat_completion_sources.CLAUDE:
+            return oai_settings.claude_model.includes(claude);
         case chat_completion_sources.OPENROUTER:
             return !oai_settings.openrouter_force_instruct && (oai_settings.openrouter_model.includes(gpt4v) || oai_settings.openrouter_model.includes(llava));
         case chat_completion_sources.CUSTOM:
-            return oai_settings.custom_model.includes(gpt4v) || oai_settings.custom_model.includes(llava) || oai_settings.custom_model.includes(geminiProV);
+            return true;
         default:
             return false;
     }
@@ -4118,20 +4138,9 @@ $(document).ready(async function () {
         saveSettingsDebounced();
     });
 
-    $('#exclude_assistant').on('change', function () {
-        oai_settings.exclude_assistant = !!$('#exclude_assistant').prop('checked');
-        $('#claude_assistant_prefill_block').toggle(!oai_settings.exclude_assistant);
-        saveSettingsDebounced();
-    });
-
     $('#claude_use_sysprompt').on('change', function () {
         oai_settings.claude_use_sysprompt = !!$('#claude_use_sysprompt').prop('checked');
         $('#claude_human_sysprompt_message_block').toggle(oai_settings.claude_use_sysprompt);
-        saveSettingsDebounced();
-    });
-
-    $('#claude_exclude_prefixes').on('change', function () {
-        oai_settings.claude_exclude_prefixes = !!$('#claude_exclude_prefixes').prop('checked');
         saveSettingsDebounced();
     });
 
@@ -4266,11 +4275,7 @@ $(document).ready(async function () {
         oai_settings.chat_completion_source = String($(this).find(':selected').val());
         toggleChatCompletionForms();
         saveSettingsDebounced();
-
-        if (main_api == 'openai') {
-            reconnectOpenAi();
-        }
-
+        reconnectOpenAi();
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
     });
 

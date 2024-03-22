@@ -15,7 +15,55 @@
                     <option value="openai">OpenAI</option>
                     <option value="palm">Google MakerSuite (PaLM)</option>
                     <option value="mistral">MistralAI</option>
+                    <option value="togetherai">TogetherAI</option>
+                    <option value="nomicai">NomicAI</option>
                 </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="openai_vectorsModel">
+                <label for="vectors_openai_model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_openai_model" class="text_pole">
+                    <option value="text-embedding-ada-002">text-embedding-ada-002</option>
+                    <option value="text-embedding-3-small">text-embedding-3-small</option>
+                    <option value="text-embedding-3-large">text-embedding-3-large</option>
+                </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="together_vectorsModel">
+                <label for="vectors_togetherai_model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_togetherai_model" class="text_pole">
+                    <option value="togethercomputer/m2-bert-80M-32k-retrieval">M2-BERT-Retrieval-32k</option>
+                    <option value="togethercomputer/m2-bert-80M-8k-retrieval">M2-BERT-Retrieval-8k</option>
+                    <option value="togethercomputer/m2-bert-80M-2k-retrieval">M2-BERT-Retrieval-2K</option>
+                    <option value="WhereIsAI/UAE-Large-V1">UAE-Large-V1</option>
+                    <option value="BAAI/bge-large-en-v1.5">BAAI-Bge-Large-1p5</option>
+                    <option value="BAAI/bge-base-en-v1.5">BAAI-Bge-Base-1p5</option>
+                    <option value="sentence-transformers/msmarco-bert-base-dot-v5">Sentence-BERT</option>
+                    <option value="bert-base-uncased">Bert Base Uncased</option>
+                </select>
+            </div>
+
+            <small id="vectors_modelWarning">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                <span data-i18n="Vectors Model Warning">
+                    It is recommended to purge vectors when changing the model mid-chat. Otherwise, it will lead to sub-par results.
+                </span>
+            </small>
+
+            <div class="flex-container flexFlowColumn" id="nomicai_apiKey">
+                <label for="api_key_nomicai">
+                    <span>NomicAI API Key</span>
+                </label>
+                <div class="flex-container">
+                    <input id="api_key_nomicai" name="api_key_nomicai" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                    <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_nomicai">
+                    </div>
+                </div>
+                <div data-for="api_key_nomicai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                    For privacy reasons, your API key will be hidden after you reload the page.
+                </div>
             </div>
 
             <div class="flex-container flexFlowColumn" title="How many last messages will be matched for relevance.">

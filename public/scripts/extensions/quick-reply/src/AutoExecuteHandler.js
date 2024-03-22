@@ -82,4 +82,20 @@ export class AutoExecuteHandler {
         ];
         await this.performAutoExecute(qrList);
     }
+
+    /**
+     * @param {any[]} entries Set of activated entries
+     */
+    async handleWIActivation(entries) {
+        if (!this.checkExecute() || !Array.isArray(entries) || entries.length === 0) return;
+        const automationIds = entries.map(entry => entry.automationId).filter(Boolean);
+        if (automationIds.length === 0) return;
+
+        const qrList = [
+            ...this.settings.config.setList.map(link=>link.set.qrList.filter(qr=>qr.automationId && automationIds.includes(qr.automationId))).flat(),
+            ...(this.settings.chatConfig?.setList?.map(link=>link.set.qrList.filter(qr=>qr.automationId && automationIds.includes(qr.automationId)))?.flat() ?? []),
+        ];
+
+        await this.performAutoExecute(qrList);
+    }
 }

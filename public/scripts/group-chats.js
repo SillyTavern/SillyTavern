@@ -197,7 +197,7 @@ export async function getGroupChat(groupId) {
                     continue;
                 }
 
-                const mes = getFirstCharacterMessage(character);
+                const mes = await getFirstCharacterMessage(character);
                 chat.push(mes);
                 addOneMessage(mes);
             }
@@ -374,13 +374,20 @@ export function getGroupCharacterCards(groupId, characterId) {
     return { description, personality, scenario, mesExamples };
 }
 
-function getFirstCharacterMessage(character) {
+async function getFirstCharacterMessage(character) {
     let messageText = character.first_mes;
 
     // if there are alternate greetings, pick one at random
     if (Array.isArray(character.data?.alternate_greetings)) {
         const messageTexts = [character.first_mes, ...character.data.alternate_greetings].filter(x => x);
         messageText = messageTexts[Math.floor(Math.random() * messageTexts.length)];
+    }
+
+    // Allow extensions to change the first message
+    const eventArgs = { input: messageText, output: '', character: character };
+    await eventSource.emit(event_types.CHARACTER_FIRST_MESSAGE_SELECTED, eventArgs);
+    if (eventArgs.output) {
+        messageText = eventArgs.output;
     }
 
     const mes = {};
@@ -596,6 +603,11 @@ function getGroupAvatar(group) {
         }
 
         return groupAvatar;
+    }
+
+    // catch edge case where group had one member and that member is deleted
+    if (avatarCount === 0) {
+        return $('<div class="missing-avatar fa-solid fa-user-slash"></div>');
     }
 
     // default avatar
@@ -1622,7 +1634,7 @@ export async function deleteGroupChat(groupId, chatId) {
 
     if (response.ok) {
         if (group.chats.length) {
-            await openGroupChat(groupId, group.chats[0]);
+            await openGroupChat(groupId, group.chats[group.chats.length - 1]);
         } else {
             await createNewGroupChat(groupId);
         }
