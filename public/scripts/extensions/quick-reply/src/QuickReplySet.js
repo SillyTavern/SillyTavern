@@ -177,7 +177,7 @@ export class QuickReplySet {
 
 
     async performSave() {
-        const response = await fetch('/savequickreply', {
+        const response = await fetch('/api/quick-replies/save', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(this),
@@ -191,7 +191,7 @@ export class QuickReplySet {
     }
 
     async delete() {
-        const response = await fetch('/deletequickreply', {
+        const response = await fetch('/api/quick-replies/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(this),

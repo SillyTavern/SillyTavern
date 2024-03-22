@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -81,6 +81,7 @@ import {
     switchSimpleMode,
     flushEphemeralStoppingStrings,
     context_presets,
+    resetMovableStyles,
 } from './scripts/power-user.js';
 
 import {
@@ -149,6 +150,7 @@ import {
     humanFileSize,
     Stopwatch,
     isValidUrl,
+    ensureImageFormatSupported,
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
@@ -156,14 +158,20 @@ import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, proce
 import {
     tag_map,
     tags,
+    filterByTagState,
+    isBogusFolder,
+    isBogusFolderOpen,
+    chooseBogusFolder,
+    getTagBlock,
     loadTagsSettings,
     printTagFilters,
-    getTagsList,
-    appendTagToList,
+    getTagKeyForEntity,
+    printTagList,
     createTagMapFromList,
     renameTagKey,
     importTags,
     tag_filter_types,
+    compareTagsForSort,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -252,6 +260,7 @@ export {
     scrollChatToBottom,
     isStreamingEnabled,
     getThumbnailUrl,
+    buildAvatarList,
     getStoppingStrings,
     reloadMarkdownProcessor,
     getCurrentChatId,
@@ -410,6 +419,8 @@ export const event_types = {
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
+    // TODO: Naming convention is inconsistent with other events
+    CHARACTER_DELETED: 'characterDeleted',
 };
 
 export const eventSource = new EventEmitter();
@@ -811,8 +822,11 @@ let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
+/** The tag of the active character. (NOT the id) */
 export let active_character = '';
+/** The tag of the active group. (Coincidentally also the id) */
 export let active_group = '';
+
 export const entitiesFilter = new FilterHelper(debounce(printCharacters, 100));
 export const personasFilter = new FilterHelper(debounce(getUserAvatars, 100));
 
@@ -838,12 +852,12 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
+    await getClientVersion();
+    await readSecretState();
+    await getSettings();
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     initLocales();
-    await readSecretState();
-    await getClientVersion();
-    await getSettings();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -885,12 +899,12 @@ export function setAnimationDuration(ms = null) {
     animation_duration = ms ?? ANIMATION_DURATION_DEFAULT;
 }
 
-export function setActiveCharacter(character) {
-    active_character = character;
+export function setActiveCharacter(entityOrKey) {
+    active_character = getTagKeyForEntity(entityOrKey);
 }
 
-export function setActiveGroup(group) {
-    active_group = group;
+export function setActiveGroup(entityOrKey) {
+    active_group = getTagKeyForEntity(entityOrKey);
 }
 
 /**
@@ -1179,23 +1193,6 @@ export async function selectCharacterById(id) {
     }
 }
 
-function getTagBlock(item, entities) {
-    let count = 0;
-
-    for (const entity of entities) {
-        if (entitiesFilter.isElementTagged(entity, item.id)) {
-            count++;
-        }
-    }
-
-    const template = $('#bogus_folder_template .bogus_folder_select').clone();
-    template.attr({ 'tagid': item.id, 'id': `BogusFolder${item.id}` });
-    template.find('.avatar').css({ 'background-color': item.color, 'color': item.color2 });
-    template.find('.ch_name').text(item.name);
-    template.find('.bogus_folder_counter').text(count);
-    return template;
-}
-
 function getBackBlock() {
     const template = $('#bogus_folder_back_template .bogus_folder_select').clone();
     return template;
@@ -1206,12 +1203,26 @@ function getEmptyBlock() {
     const texts = ['Here be dragons', 'Otterly empty', 'Kiwibunga', 'Pump-a-Rum', 'Croak it'];
     const roll = new Date().getMinutes() % icons.length;
     const emptyBlock = `
-    <div class="empty_block">
+    <div class="text_block empty_block">
         <i class="fa-solid ${icons[roll]} fa-4x"></i>
         <h1>${texts[roll]}</h1>
         <p>There are no items to display.</p>
     </div>`;
     return $(emptyBlock);
+}
+
+/**
+ * @param {number} hidden Number of hidden characters
+ */
+function getHiddenBlock(hidden) {
+    const hiddenBlock = `
+    <div class="text_block hidden_block">
+        <small>
+            <p>${hidden} ${hidden > 1 ? 'characters' : 'character'} hidden.</p>
+            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Characters and groups hidden by filters or closed folders" title="Characters and groups hidden by filters or closed folders"></div>
+        </small>
+    </div>`;
+    return $(hiddenBlock);
 }
 
 function getCharacterBlock(item, id) {
@@ -1222,9 +1233,9 @@ function getCharacterBlock(item, id) {
     // Populate the template
     const template = $('#character_template .character_select').clone();
     template.attr({ 'chid': id, 'id': `CharID${id}` });
-    template.find('img').attr('src', this_avatar);
-    template.find('.avatar').attr('title', item.avatar);
-    template.find('.ch_name').text(item.name);
+    template.find('img').attr('src', this_avatar).attr('alt', item.name);
+    template.find('.avatar').attr('title', `[Character] ${item.name}`);
+    template.find('.ch_name').text(item.name).attr('title', `[Character] ${item.name}`);
     if (power_user.show_card_avatar_urls) {
         template.find('.ch_avatar_url').text(item.avatar);
     }
@@ -1250,9 +1261,8 @@ function getCharacterBlock(item, id) {
     }
 
     // Display inline tags
-    const tags = getTagsList(item.avatar);
     const tagsElement = template.find('.tags');
-    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+    printTagList(tagsElement, { forEntityOrKey: id });
 
     // Add to the list
     return template;
@@ -1263,11 +1273,6 @@ async function printCharacters(fullRefresh = false) {
         saveCharactersPage = 0;
         printTagFilters(tag_filter_types.character);
         printTagFilters(tag_filter_types.group_member);
-
-        // Return to main list
-        if (isBogusFolderOpen()) {
-            entitiesFilter.setFilterData(FILTER_TYPES.TAG, { excluded: [], selected: [] });
-        }
 
         await delay(1);
     }
@@ -1297,19 +1302,28 @@ async function printCharacters(fullRefresh = false) {
             if (!data.length) {
                 $(listId).append(getEmptyBlock());
             }
+            let displayCount = 0;
             for (const i of data) {
                 switch (i.type) {
                     case 'character':
                         $(listId).append(getCharacterBlock(i.item, i.id));
+                        displayCount++;
                         break;
                     case 'group':
                         $(listId).append(getGroupBlock(i.item));
+                        displayCount++;
                         break;
                     case 'tag':
-                        $(listId).append(getTagBlock(i.item, entities));
+                        $(listId).append(getTagBlock(i.item, i.entities, i.hidden));
                         break;
                 }
             }
+
+            const hidden = (characters.length + groups.length) - displayCount;
+            if (hidden > 0) {
+                $(listId).append(getHiddenBlock(hidden));
+            }
+
             eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
         },
         afterSizeSelectorChange: function (e) {
@@ -1326,15 +1340,7 @@ async function printCharacters(fullRefresh = false) {
     favsToHotswap();
 }
 
-/**
- * Indicates whether a user is currently in a bogus folder.
- * @returns {boolean} If currently viewing a folder
- */
-function isBogusFolderOpen() {
-    return !!entitiesFilter.getFilterData(FILTER_TYPES.TAG)?.bogus;
-}
-
-export function getEntitiesList({ doFilter } = {}) {
+export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
     function characterToEntity(character, id) {
         return { item: character, id, type: 'character' };
     }
@@ -1344,36 +1350,53 @@ export function getEntitiesList({ doFilter } = {}) {
     }
 
     function tagToEntity(tag) {
-        return { item: structuredClone(tag), id: tag.id, type: 'tag' };
+        return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
     }
 
     let entities = [
         ...characters.map((item, index) => characterToEntity(item, index)),
         ...groups.map(item => groupToEntity(item)),
-        ...(power_user.bogus_folders ? tags.map(item => tagToEntity(item)) : []),
+        ...(power_user.bogus_folders ? tags.filter(isBogusFolder).sort(compareTagsForSort).map(item => tagToEntity(item)) : []),
     ];
 
+    // We need to do multiple filter runs in a specific order, otherwise different settings might override each other
+    // and screw up tags and search filter, sub lists or similar.
+    // The specific filters are written inside the "filterByTagState" method and its different parameters.
+    // Generally what we do is the following:
+    //   1. First swipe over the list to remove the most obvious things
+    //   2. Build sub entity lists for all folders, filtering them similarly to the second swipe
+    //   3. We do the last run, where global filters are applied, and the search filters last
+
+    // First run filters, that will hide what should never be displayed
     if (doFilter) {
+        entities = filterByTagState(entities);
+    }
+
+    // Run over all entities between first and second filter to save some states
+    for (const entity of entities) {
+        // For folders, we remember the sub entities so they can be displayed later, even if they might be filtered
+        // Those sub entities should be filtered and have the search filters applied too
+        if (entity.type === 'tag') {
+            let subEntities = filterByTagState(entities, { subForEntity: entity, filterHidden: false });
+            const subCount = subEntities.length;
+            subEntities = filterByTagState(entities, { subForEntity: entity });
+            if (doFilter) {
+                subEntities = entitiesFilter.applyFilters(subEntities);
+            }
+            entity.entities = subEntities;
+            entity.hidden = subCount - subEntities.length;
+        }
+    }
+
+    // Second run filters, hiding whatever should be filtered later
+    if (doFilter) {
+        entities = filterByTagState(entities, { globalDisplayFilters: true });
         entities = entitiesFilter.applyFilters(entities);
     }
 
-    if (isBogusFolderOpen()) {
-        // Get tags of entities within the bogus folder
-        const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
-        entities = entities.filter(x => x.type !== 'tag');
-        const otherTags = tags.filter(x => !filterData.selected.includes(x.id));
-        const bogusTags = [];
-        for (const entity of entities) {
-            for (const tag of otherTags) {
-                if (!bogusTags.includes(tag) && entitiesFilter.isElementTagged(entity, tag.id)) {
-                    bogusTags.push(tag);
-                }
-            }
-        }
-        entities.push(...bogusTags.map(item => tagToEntity(item)));
+    if (doSort) {
+        sortEntitiesList(entities);
     }
-
-    sortEntitiesList(entities);
     return entities;
 }
 
@@ -4739,7 +4762,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
         type = 'normal';
     }
 
-    if (chat.length && typeof chat[chat.length - 1]['extra'] !== 'object') {
+    if (chat.length && (!chat[chat.length - 1]['extra'] || typeof chat[chat.length - 1]['extra'] !== 'object')) {
         chat[chat.length - 1]['extra'] = {};
     }
 
@@ -4888,7 +4911,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
 
 function saveImageToMessage(img, mes) {
     if (mes && img.image) {
-        if (typeof mes.extra !== 'object') {
+        if (!mes.extra || typeof mes.extra !== 'object') {
             mes.extra = {};
         }
         mes.extra.image = img.image;
@@ -5273,6 +5296,51 @@ function getThumbnailUrl(type, file) {
     return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
 }
 
+function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, selectable = false, highlightFavs = true } = {}) {
+    if (empty) {
+        block.empty();
+    }
+
+    for (const entity of entities) {
+        const id = entity.id;
+
+        // Populate the template
+        const avatarTemplate = $(`#${templateId} .avatar`).clone();
+
+        let this_avatar = default_avatar;
+        if (entity.item.avatar !== undefined && entity.item.avatar != 'none') {
+            this_avatar = getThumbnailUrl('avatar', entity.item.avatar);
+        }
+
+        avatarTemplate.attr('data-type', entity.type);
+        avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
+        avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entity.item.name);
+        avatarTemplate.attr('title', `[Character] ${entity.item.name}`);
+        if (highlightFavs) {
+            avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
+            avatarTemplate.find('.ch_fav').val(entity.item.fav);
+        }
+
+        // If this is a group, we need to hack slightly. We still want to keep most of the css classes and layout, but use a group avatar instead.
+        if (entity.type === 'group') {
+            const grpTemplate = getGroupAvatar(entity.item);
+
+            avatarTemplate.addClass(grpTemplate.attr('class'));
+            avatarTemplate.empty();
+            avatarTemplate.append(grpTemplate.children());
+            avatarTemplate.attr('title', `[Group] ${entity.item.name}`);
+        }
+
+        if (selectable) {
+            avatarTemplate.addClass('selectable');
+            avatarTemplate.toggleClass('character_select', entity.type === 'character');
+            avatarTemplate.toggleClass('group_select', entity.type === 'group');
+        }
+
+        block.append(avatarTemplate);
+    }
+}
+
 async function getChat() {
     //console.log('/api/chats/get -- entered for -- ' + characters[this_chid].name);
     try {
@@ -5299,9 +5367,12 @@ async function getChat() {
         await getChatResult();
         eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
 
+        // Focus on the textarea if not already focused on a visible text input
         setTimeout(function () {
-            $('#send_textarea').click();
-            $('#send_textarea').focus();
+            if ($(document.activeElement).is('input:visible, textarea:visible')) {
+                return;
+            }
+            $('#send_textarea').trigger('click').trigger('focus');
         }, 200);
     } catch (error) {
         await getChatResult();
@@ -5494,7 +5565,7 @@ function changeMainAPI() {
  * @returns {Promise<string[]>} List of avatar file names
  */
 export async function getUserAvatars(doRender = true, openPageAt = '') {
-    const response = await fetch('/getuseravatars', {
+    const response = await fetch('/api/avatars/get', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -5641,7 +5712,7 @@ async function uploadUserAvatar(e) {
 
     const formData = new FormData($('#form_upload_avatar').get(0));
     const dataUrl = await getBase64Async(file);
-    let url = '/uploaduseravatar';
+    let url = '/api/avatars/upload';
 
     if (!power_user.never_resize_avatars) {
         $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
@@ -5653,6 +5724,12 @@ async function uploadUserAvatar(e) {
         if (crop_data !== undefined) {
             url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
         }
+    }
+
+    const rawFile = formData.get('avatar');
+    if (rawFile instanceof File){
+        const convertedFile = await ensureImageFormatSupported(rawFile);
+        formData.set('avatar', convertedFile);
     }
 
     jQuery.ajax({
@@ -5713,6 +5790,16 @@ async function doOnboarding(avatarId) {
     }
 }
 
+function reloadLoop() {
+    const MAX_RELOADS = 5;
+    let reloads = Number(sessionStorage.getItem('reloads') || 0);
+    if (reloads < MAX_RELOADS) {
+        reloads++;
+        sessionStorage.setItem('reloads', String(reloads));
+        window.location.reload();
+    }
+}
+
 //***************SETTINGS****************//
 ///////////////////////////////////////////
 async function getSettings() {
@@ -5724,7 +5811,8 @@ async function getSettings() {
     });
 
     if (!response.ok) {
-        toastr.error('Settings could not be loaded. Try reloading the page.');
+        reloadLoop();
+        toastr.error('Settings could not be loaded after multiple attempts. Please try again later.');
         throw new Error('Error getting settings');
     }
 
@@ -7143,8 +7231,15 @@ function addAlternateGreeting(template, greeting, index, getArray) {
 
 async function createOrEditCharacter(e) {
     $('#rm_info_avatar').html('');
-    var formData = new FormData($('#form_create').get(0));
+    const formData = new FormData($('#form_create').get(0));
     formData.set('fav', fav_ch_checked);
+
+    const rawFile = formData.get('avatar');
+    if (rawFile instanceof File){
+        const convertedFile = await ensureImageFormatSupported(rawFile);
+        formData.set('avatar', convertedFile);
+    }
+
     if ($('#form_create').attr('actiontype') == 'createcharacter') {
         if ($('#character_name_pole').val().length > 0) {
             if (is_group_generating || is_send_press) {
@@ -7334,6 +7429,7 @@ window['SillyTavern'].getContext = function () {
         saveReply,
         registerSlashCommand: registerSlashCommand,
         executeSlashCommands: executeSlashCommands,
+        timestampToMoment: timestampToMoment,
         /**
          * @deprecated Handlebars for extensions are no longer supported.
          */
@@ -7347,6 +7443,11 @@ window['SillyTavern'].getContext = function () {
         getTokenizerModel: getTokenizerModel,
         generateQuietPrompt: generateQuietPrompt,
         writeExtensionField: writeExtensionField,
+        getThumbnailUrl: getThumbnailUrl,
+        selectCharacterById: selectCharacterById,
+        messageFormatting: messageFormatting,
+        shouldSendOnEnter: shouldSendOnEnter,
+        isMobile: isMobile,
         tags: tags,
         tagMap: tag_map,
         menuType: menu_type,
@@ -8283,25 +8384,8 @@ jQuery(async function () {
 
     $(document).on('click', '.bogus_folder_select', function () {
         const tagId = $(this).attr('tagid');
-        console.log('Bogus folder clicked', tagId);
-
-        const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
-
-        if (!Array.isArray(filterData.selected)) {
-            filterData.selected = [];
-            filterData.excluded = [];
-            filterData.bogus = false;
-        }
-
-        if (tagId === 'back') {
-            filterData.selected.pop();
-            filterData.bogus = filterData.selected.length > 0;
-        } else {
-            filterData.selected.push(tagId);
-            filterData.bogus = true;
-        }
-
-        entitiesFilter.setFilterData(FILTER_TYPES.TAG, filterData);
+        console.debug('Bogus folder clicked', tagId);
+        chooseBogusFolder($(this), tagId);
     });
 
     $(document).on('input', '.edit_textarea', function () {
@@ -8378,8 +8462,7 @@ jQuery(async function () {
     $('#advanced_div').click(function () {
         if (!is_advanced_char_open) {
             is_advanced_char_open = true;
-            $('#character_popup').css('display', 'flex');
-            $('#character_popup').css('opacity', 0.0);
+            $('#character_popup').css({'display': 'flex', 'opacity': 0.0}).addClass('open');
             $('#character_popup').transition({
                 opacity: 1.0,
                 duration: animation_duration,
@@ -8387,7 +8470,7 @@ jQuery(async function () {
             });
         } else {
             is_advanced_char_open = false;
-            $('#character_popup').css('display', 'none');
+            $('#character_popup').css('display', 'none').removeClass('open');
         }
     });
 
@@ -8450,8 +8533,8 @@ jQuery(async function () {
         }
         if (popup_type == 'del_ch') {
             const deleteChats = !!$('#del_char_checkbox').prop('checked');
+            eventSource.emit(event_types.CHARACTER_DELETED, { id: this_chid, character: characters[this_chid] });
             await handleDeleteCharacter(popup_type, this_chid, deleteChats);
-            eventSource.emit('characterDeleted', { id: this_chid, character: characters[this_chid] });
         }
         if (popup_type == 'alternate_greeting' && menu_type !== 'create') {
             createOrEditCharacter();
@@ -8473,8 +8556,8 @@ jQuery(async function () {
             await clearChat();
             chat.length = 0;
 
-            chat_file_for_del = getCurrentChatDetails().sessionName
-            const isDelChatCheckbox = document.getElementById('del_chat_checkbox').checked
+            chat_file_for_del = getCurrentChatDetails().sessionName;
+            const isDelChatCheckbox = document.getElementById('del_chat_checkbox').checked;
 
             if (selected_group) {
                 //Fix it; When you're creating a new group chat (but not when initially converting from the existing regular chat), the first greeting message doesn't automatically get translated.
@@ -9745,6 +9828,15 @@ jQuery(async function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function () {
             resetScrollHeight($(this));
         });
+    });
+
+    $(document).on('click', '.inline-drawer-maximize', function () {
+        const icon = $(this).find('.inline-drawer-icon, .floating_panel_maximize');
+        icon.toggleClass('fa-window-maximize fa-window-restore');
+        const drawerContent = $(this).closest('.drawer-content');
+        drawerContent.toggleClass('maximized');
+        const drawerId = drawerContent.attr('id');
+        resetMovableStyles(drawerId);
     });
 
     $(document).on('click', '.mes .avatar', function () {

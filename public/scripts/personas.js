@@ -46,7 +46,7 @@ async function uploadUserAvatar(url, name) {
 
     return jQuery.ajax({
         type: 'POST',
-        url: '/uploaduseravatar',
+        url: '/api/avatars/upload',
         data: formData,
         beforeSend: () => { },
         cache: false,
@@ -355,7 +355,7 @@ async function deleteUserAvatar(e) {
         return;
     }
 
-    const request = await fetch('/deleteuseravatar', {
+    const request = await fetch('/api/avatars/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({

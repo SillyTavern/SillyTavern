@@ -16,7 +16,7 @@
 .assets-list-git {
     font-size: calc(var(--mainFontSize) * 0.8);
     opacity: 0.8;
-    margin-bottom: 1em;
+    margin-bottom: 0.25em;
 }
 
 .assets-list-div h3 {

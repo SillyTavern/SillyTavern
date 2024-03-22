@@ -85,15 +85,9 @@
                         Sanitize prompts (recommended)
                     </span>
                 </label>
-                <label for="sd_horde_karras" class="checkbox_label">
-                    <input id="sd_horde_karras" type="checkbox" />
-                    <span data-i18n="Karras (not all samplers supported)">
-                        Karras (not all samplers supported)
-                    </span>
-                </label>
             </div>
             <div data-sd-source="novel">
-                <div class="flex-container">
+                <div class="flex-container flexFlowColumn">
                     <label for="sd_novel_anlas_guard" class="checkbox_label flex1" title="Automatically adjust generation parameters to ensure free image generations.">
                         <input id="sd_novel_anlas_guard" type="checkbox" />
                         <span data-i18n="Avoid spending Anlas">
@@ -160,6 +154,26 @@
             <select id="sd_model"></select>
             <label for="sd_sampler">Sampling method</label>
             <select id="sd_sampler"></select>
+            <label data-sd-source="horde" for="sd_horde_karras" class="checkbox_label">
+                <input id="sd_horde_karras" type="checkbox" />
+                <span data-i18n="Karras (not all samplers supported)">
+                    Karras (not all samplers supported)
+                </span>
+            </label>
+            <div data-sd-source="novel" class="flex-container">
+                <label class="flex1 checkbox_label" title="SMEA versions of samplers are modified to perform better at high resolution.">
+                    <input id="sd_novel_sm" type="checkbox" />
+                    <span data-i18n="SMEA">
+                        SMEA
+                    </span>
+                </label>
+                <label class="flex1 checkbox_label" title="DYN variants of SMEA samplers often lead to more varied output, but may fail at very high resolutions.">
+                    <input id="sd_novel_sm_dyn" type="checkbox" />
+                    <span data-i18n="DYN">
+                        DYN
+                    </span>
+                </label>
+            </div>
             <label for="sd_resolution">Resolution</label>
             <select id="sd_resolution"><!-- Populated in JS --></select>
             <div data-sd-source="comfy">

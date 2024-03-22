@@ -456,7 +456,6 @@
         "openai_max_context": 4095,
         "openai_max_tokens": 300,
         "wrap_in_quotes": false,
-        "names_in_completion": false,
         "prompts": [
             {
                 "name": "Main Prompt",

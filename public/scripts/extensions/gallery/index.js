@@ -29,7 +29,7 @@ let galleryMaxRows = 3;
  * @returns {Promise<Array>} - Resolves with an array of gallery item objects, rejects on error.
  */
 async function getGalleryItems(url) {
-    const response = await fetch(`/listimgfiles/${url}`, {
+    const response = await fetch(`/api/images/list/${url}`, {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -201,7 +201,7 @@ async function uploadFile(file, url) {
                 'Content-Type': 'application/json',
             });
 
-            const response = await fetch('/uploadimage', {
+            const response = await fetch('/api/images/upload', {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(payload),

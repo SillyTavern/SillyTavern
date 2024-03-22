@@ -101,7 +101,9 @@ function drawChunks(chunks, ids) {
         }
 
         const color = pastelRainbow[i % pastelRainbow.length];
-        const chunkHtml = $(`<code style="background-color: ${color};">${chunk}</code>`);
+        const chunkHtml = $('<code></code>');
+        chunkHtml.css('background-color', color);
+        chunkHtml.text(chunk);
         chunkHtml.attr('title', ids[i]);
         $('#tokenized_chunks_display').append(chunkHtml);
     }

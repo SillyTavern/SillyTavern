@@ -8,7 +8,7 @@ const { DIRECTORIES, UPLOADS_PATH } = require('../constants');
 const { invalidateThumbnail } = require('./thumbnails');
 const { getImages } = require('../util');
 
-const router = new express.Router();
+const router = express.Router();
 
 router.post('/all', jsonParser, function (request, response) {
     var images = getImages('public/backgrounds');

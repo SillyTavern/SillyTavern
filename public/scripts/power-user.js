@@ -235,6 +235,7 @@ let power_user = {
     encode_tags: false,
     servers: [],
     bogus_folders: false,
+    show_tag_filters: false,
     aux_field: 'character_version',
     restore_user_input: true,
     reduced_motion: false,
@@ -629,6 +630,7 @@ async function CreateZenSliders(elmnt) {
     if (sliderID == 'min_temp_textgenerationwebui' ||
         sliderID == 'max_temp_textgenerationwebui' ||
         sliderID == 'dynatemp_exponent_textgenerationwebui' ||
+        sliderID == 'smoothing_curve_textgenerationwebui' ||
         sliderID == 'smoothing_factor_textgenerationwebui') {
         decimals = 2;
     }
@@ -689,6 +691,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'top_k' ||
         sliderID == 'rep_pen_slope' ||
         sliderID == 'smoothing_factor_textgenerationwebui' ||
+        sliderID == 'smoothing_curve_textgenerationwebui' ||
         sliderID == 'min_length_textgenerationwebui') {
         offVal = 0;
     }
@@ -942,6 +945,9 @@ function peekSpoilerMode() {
 
 
 function switchMovingUI() {
+    $('.drawer-content.maximized').each(function () {
+        $(this).find('.inline-drawer-maximize').trigger('click');
+    });
     const movingUI = localStorage.getItem(storage_keys.movingUI);
     power_user.movingUI = movingUI === null ? false : movingUI == 'true';
     $('body').toggleClass('movingUI', power_user.movingUI);
@@ -1989,6 +1995,45 @@ async function updateTheme() {
     toastr.success('Theme saved.');
 }
 
+async function deleteTheme() {
+    const themeName = power_user.theme;
+
+    if (!themeName) {
+        toastr.info('No theme selected.');
+        return;
+    }
+
+    const confirm = await callPopup(`Are you sure you want to delete the theme "${themeName}"?`, 'confirm', '', { okButton: 'Yes' });
+
+    if (!confirm) {
+        return;
+    }
+
+    const response = await fetch('/api/themes/delete', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ name: themeName }),
+    });
+
+    if (!response.ok) {
+        toastr.error('Failed to delete theme. Check the console for more information.');
+        return;
+    }
+
+    const themeIndex = themes.findIndex(x => x.name == themeName);
+
+    if (themeIndex !== -1) {
+        themes.splice(themeIndex, 1);
+        $(`#themes option[value="${themeName}"]`).remove();
+        power_user.theme = themes[0]?.name;
+        saveSettingsDebounced();
+        if (power_user.theme) {
+            await applyTheme(power_user.theme);
+        }
+        toastr.success('Theme deleted.');
+    }
+}
+
 /**
  * Exports the current theme to a file.
  */
@@ -2088,7 +2133,7 @@ async function saveTheme(name = undefined) {
         compact_input_area: power_user.compact_input_area,
     };
 
-    const response = await fetch('/savetheme', {
+    const response = await fetch('/api/themes/save', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(theme),
@@ -2130,7 +2175,7 @@ async function saveMovingUI() {
     };
     console.log(movingUIPreset);
 
-    const response = await fetch('/savemovingui', {
+    const response = await fetch('/api/moving-ui/save', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(movingUIPreset),
@@ -2159,6 +2204,22 @@ async function saveMovingUI() {
     }
 }
 
+/**
+ * Resets the movable styles of the given element to their unset values.
+ * @param {string} id Element ID
+ */
+export function resetMovableStyles(id) {
+    const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin'];
+
+    const panel = document.getElementById(id);
+
+    if (panel) {
+        panelStyles.forEach((style) => {
+            panel.style[style] = '';
+        });
+    }
+}
+
 async function resetMovablePanels(type) {
     const panelIds = [
         'sheld',
@@ -2170,6 +2231,8 @@ async function resetMovablePanels(type) {
         'groupMemberListPopout',
         'summaryExtensionPopout',
         'gallery',
+        'logprobsViewer',
+        'cfgConfig',
     ];
 
     const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin'];
@@ -2968,6 +3031,7 @@ $(document).ready(() => {
 
     $('#ui-preset-save-button').on('click', () => saveTheme());
     $('#ui-preset-update-button').on('click', () => updateTheme());
+    $('#ui-preset-delete-button').on('click', () => deleteTheme());
     $('#movingui-preset-save-button').on('click', saveMovingUI);
 
     $('#never_resize_avatars').on('input', function () {

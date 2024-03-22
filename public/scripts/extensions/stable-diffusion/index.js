@@ -237,6 +237,8 @@ const defaultSettings = {
     novel_upscale_ratio_step: 0.1,
     novel_upscale_ratio: 1.0,
     novel_anlas_guard: false,
+    novel_sm: false,
+    novel_sm_dyn: false,
 
     // OpenAI settings
     openai_style: 'vivid',
@@ -372,6 +374,9 @@ async function loadSettings() {
     $('#sd_hr_second_pass_steps').val(extension_settings.sd.hr_second_pass_steps).trigger('input');
     $('#sd_novel_upscale_ratio').val(extension_settings.sd.novel_upscale_ratio).trigger('input');
     $('#sd_novel_anlas_guard').prop('checked', extension_settings.sd.novel_anlas_guard);
+    $('#sd_novel_sm').prop('checked', extension_settings.sd.novel_sm);
+    $('#sd_novel_sm_dyn').prop('checked', extension_settings.sd.novel_sm_dyn);
+    $('#sd_novel_sm_dyn').prop('disabled', !extension_settings.sd.novel_sm);
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
     $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
@@ -796,6 +801,22 @@ function onNovelUpscaleRatioInput() {
 
 function onNovelAnlasGuardInput() {
     extension_settings.sd.novel_anlas_guard = !!$('#sd_novel_anlas_guard').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onNovelSmInput() {
+    extension_settings.sd.novel_sm = !!$('#sd_novel_sm').prop('checked');
+    saveSettingsDebounced();
+
+    if (!extension_settings.sd.novel_sm) {
+        $('#sd_novel_sm_dyn').prop('checked', false).prop('disabled', true).trigger('input');
+    } else {
+        $('#sd_novel_sm_dyn').prop('disabled', false);
+    }
+}
+
+function onNovelSmDynInput() {
+    extension_settings.sd.novel_sm_dyn = !!$('#sd_novel_sm_dyn').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -2165,7 +2186,7 @@ async function generateAutoImage(prompt, negativePrompt) {
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateNovelImage(prompt, negativePrompt) {
-    const { steps, width, height } = getNovelParams();
+    const { steps, width, height, sm, sm_dyn } = getNovelParams();
 
     const result = await fetch('/api/novelai/generate-image', {
         method: 'POST',
@@ -2180,6 +2201,8 @@ async function generateNovelImage(prompt, negativePrompt) {
             height: height,
             negative_prompt: negativePrompt,
             upscale_ratio: extension_settings.sd.novel_upscale_ratio,
+            sm: sm,
+            sm_dyn: sm_dyn,
         }),
     });
 
@@ -2194,16 +2217,23 @@ async function generateNovelImage(prompt, negativePrompt) {
 
 /**
  * Adjusts extension parameters for NovelAI. Applies Anlas guard if needed.
- * @returns {{steps: number, width: number, height: number}} - A tuple of parameters for NovelAI API.
+ * @returns {{steps: number, width: number, height: number, sm: boolean, sm_dyn: boolean}} - A tuple of parameters for NovelAI API.
  */
 function getNovelParams() {
     let steps = extension_settings.sd.steps;
     let width = extension_settings.sd.width;
     let height = extension_settings.sd.height;
+    let sm = extension_settings.sd.novel_sm;
+    let sm_dyn = extension_settings.sd.novel_sm_dyn;
+
+    if (extension_settings.sd.sampler === 'ddim') {
+        sm = false;
+        sm_dyn = false;
+    }
 
     // Don't apply Anlas guard if it's disabled.
     if (!extension_settings.sd.novel_anlas_guard) {
-        return { steps, width, height };
+        return { steps, width, height, sm, sm_dyn };
     }
 
     const MAX_STEPS = 28;
@@ -2244,7 +2274,7 @@ function getNovelParams() {
         steps = MAX_STEPS;
     }
 
-    return { steps, width, height };
+    return { steps, width, height, sm, sm_dyn };
 }
 
 async function generateOpenAiImage(prompt) {
@@ -2725,6 +2755,8 @@ jQuery(async () => {
     $('#sd_novel_upscale_ratio').on('input', onNovelUpscaleRatioInput);
     $('#sd_novel_anlas_guard').on('input', onNovelAnlasGuardInput);
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
+    $('#sd_novel_sm').on('input', onNovelSmInput);
+    $('#sd_novel_sm_dyn').on('input', onNovelSmDynInput);;
     $('#sd_comfy_validate').on('click', validateComfyUrl);
     $('#sd_comfy_url').on('input', onComfyUrlInput);
     $('#sd_comfy_workflow').on('change', onComfyWorkflowChange);

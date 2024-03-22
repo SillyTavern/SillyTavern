@@ -529,6 +529,10 @@ async function processTtsQueue() {
         text = text.replace(/```.*?```/gs, '').trim();
     }
 
+    if (extension_settings.tts.skip_tags) {
+        text = text.replace(/<.*?>.*?<\/.*?>/g, '').trim();
+    }
+
     if (!extension_settings.tts.pass_asterisks) {
         text = extension_settings.tts.narrate_dialogues_only
             ? text.replace(/\*[^*]*?(\*|$)/g, '').trim() // remove asterisks content
@@ -616,6 +620,8 @@ function loadSettings() {
     $('#tts_narrate_translated_only').prop('checked', extension_settings.tts.narrate_translated_only);
     $('#tts_narrate_user').prop('checked', extension_settings.tts.narrate_user);
     $('#tts_pass_asterisks').prop('checked', extension_settings.tts.pass_asterisks);
+    $('#tts_skip_codeblocks').prop('checked', extension_settings.tts.skip_codeblocks);
+    $('#tts_skip_tags').prop('checked', extension_settings.tts.skip_tags);
     $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
 
@@ -691,6 +697,11 @@ function onNarrateTranslatedOnlyClick() {
 
 function onSkipCodeblocksClick() {
     extension_settings.tts.skip_codeblocks = !!$('#tts_skip_codeblocks').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onSkipTagsClick() {
+    extension_settings.tts.skip_tags = !!$('#tts_skip_tags').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -1017,6 +1028,10 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_skip_codeblocks">
                             <small>Skip codeblocks</small>
                         </label>
+                        <label class="checkbox_label" for="tts_skip_tags">
+                            <input type="checkbox" id="tts_skip_tags">
+                            <small>Skip &lt;tagged&gt; blocks</small>
+                        </label>
                         <label class="checkbox_label" for="tts_pass_asterisks">
                         <input type="checkbox" id="tts_pass_asterisks">
                         <small>Pass Asterisks to TTS Engine</small>
@@ -1042,6 +1057,7 @@ $(document).ready(function () {
         $('#tts_narrate_quoted').on('click', onNarrateQuotedClick);
         $('#tts_narrate_translated_only').on('click', onNarrateTranslatedOnlyClick);
         $('#tts_skip_codeblocks').on('click', onSkipCodeblocksClick);
+        $('#tts_skip_tags').on('click', onSkipTagsClick);
         $('#tts_pass_asterisks').on('click', onPassAsterisksClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);

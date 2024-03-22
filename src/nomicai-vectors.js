@@ -6,7 +6,7 @@ const SOURCES = {
         secretKey: SECRET_KEYS.NOMICAI,
         url: 'api-atlas.nomic.ai/v1/embedding/text',
         model: 'nomic-embed-text-v1.5',
-    }
+    },
 };
 
 /**

@@ -10,8 +10,6 @@ const util = require('util');
 
 // cli/fs related library imports
 const open = require('open');
-const sanitize = require('sanitize-filename');
-const writeFileAtomicSync = require('write-file-atomic').sync;
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 
@@ -29,9 +27,6 @@ const net = require('net');
 const dns = require('dns');
 const fetch = require('node-fetch').default;
 
-// image processing related library imports
-const jimp = require('jimp');
-
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
@@ -39,16 +34,11 @@ util.inspect.defaultOptions.maxStringLength = null;
 // local library imports
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
-const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
 const {
     getVersion,
     getConfigValue,
     color,
-    tryParse,
-    clientRelativePath,
-    removeFileExtension,
-    getImages,
     forwardFetchResponse,
 } = require('./src/util');
 const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
@@ -106,7 +96,7 @@ const server_port = process.env.SILLY_TAVERN_PORT || getConfigValue('port', 8000
 const autorun = (getConfigValue('autorun', false) || cliArguments.autorun) && !cliArguments.ssl;
 const listen = getConfigValue('listen', false);
 
-const { DIRECTORIES, UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('./src/constants');
+const { DIRECTORIES, UPLOADS_PATH } = require('./src/constants');
 
 // CORS Settings //
 const CORS = cors({
@@ -207,7 +197,7 @@ if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
 app.use(express.static(process.cwd() + '/public', {}));
 
 app.use('/backgrounds', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), 'public/backgrounds', req.url.replace(/%20/g, ' ')));
+    const filePath = decodeURIComponent(path.join(process.cwd(), DIRECTORIES.backgrounds, req.url.replace(/%20/g, ' ')));
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.status(404).send('File not found');
@@ -236,185 +226,6 @@ app.get('/version', async function (_, response) {
     const data = await getVersion();
     response.send(data);
 });
-
-app.post('/getuseravatars', jsonParser, function (request, response) {
-    var images = getImages('public/User Avatars');
-    response.send(JSON.stringify(images));
-
-});
-
-app.post('/deleteuseravatar', jsonParser, function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-
-    if (request.body.avatar !== sanitize(request.body.avatar)) {
-        console.error('Malicious avatar name prevented');
-        return response.sendStatus(403);
-    }
-
-    const fileName = path.join(DIRECTORIES.avatars, sanitize(request.body.avatar));
-
-    if (fs.existsSync(fileName)) {
-        fs.rmSync(fileName);
-        return response.send({ result: 'ok' });
-    }
-
-    return response.sendStatus(404);
-});
-
-app.post('/savetheme', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.themes, sanitize(request.body.name) + '.json');
-    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
-
-    return response.sendStatus(200);
-});
-
-app.post('/savemovingui', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.movingUI, sanitize(request.body.name) + '.json');
-    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
-
-    return response.sendStatus(200);
-});
-
-app.post('/savequickreply', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.quickreplies, sanitize(request.body.name) + '.json');
-    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
-
-    return response.sendStatus(200);
-});
-
-app.post('/deletequickreply', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.quickreplies, sanitize(request.body.name) + '.json');
-    if (fs.existsSync(filename)) {
-        fs.unlinkSync(filename);
-    }
-
-    return response.sendStatus(200);
-});
-
-
-app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
-    if (!request.file) return response.sendStatus(400);
-
-    try {
-        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
-        const crop = tryParse(request.query.crop);
-        let rawImg = await jimp.read(pathToUpload);
-
-        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
-            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
-        }
-
-        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
-
-        const filename = request.body.overwrite_name || `${Date.now()}.png`;
-        const pathToNewFile = path.join(DIRECTORIES.avatars, filename);
-        writeFileAtomicSync(pathToNewFile, image);
-        fs.rmSync(pathToUpload);
-        return response.send({ path: filename });
-    } catch (err) {
-        return response.status(400).send('Is not a valid image');
-    }
-});
-
-
-/**
- * Ensure the directory for the provided file path exists.
- * If not, it will recursively create the directory.
- *
- * @param {string} filePath - The full path of the file for which the directory should be ensured.
- */
-function ensureDirectoryExistence(filePath) {
-    const dirname = path.dirname(filePath);
-    if (fs.existsSync(dirname)) {
-        return true;
-    }
-    ensureDirectoryExistence(dirname);
-    fs.mkdirSync(dirname);
-}
-
-/**
- * Endpoint to handle image uploads.
- * The image should be provided in the request body in base64 format.
- * Optionally, a character name can be provided to save the image in a sub-folder.
- *
- * @route POST /uploadimage
- * @param {Object} request.body - The request payload.
- * @param {string} request.body.image - The base64 encoded image data.
- * @param {string} [request.body.ch_name] - Optional character name to determine the sub-directory.
- * @returns {Object} response - The response object containing the path where the image was saved.
- */
-app.post('/uploadimage', jsonParser, async (request, response) => {
-    // Check for image data
-    if (!request.body || !request.body.image) {
-        return response.status(400).send({ error: 'No image data provided' });
-    }
-
-    try {
-        // Extracting the base64 data and the image format
-        const splitParts = request.body.image.split(',');
-        const format = splitParts[0].split(';')[0].split('/')[1];
-        const base64Data = splitParts[1];
-        const validFormat = ['png', 'jpg', 'webp', 'jpeg', 'gif'].includes(format);
-        if (!validFormat) {
-            return response.status(400).send({ error: 'Invalid image format' });
-        }
-
-        // Constructing filename and path
-        let filename;
-        if (request.body.filename) {
-            filename = `${removeFileExtension(request.body.filename)}.${format}`;
-        } else {
-            filename = `${Date.now()}.${format}`;
-        }
-
-        // if character is defined, save to a sub folder for that character
-        let pathToNewFile = path.join(DIRECTORIES.userImages, sanitize(filename));
-        if (request.body.ch_name) {
-            pathToNewFile = path.join(DIRECTORIES.userImages, sanitize(request.body.ch_name), sanitize(filename));
-        }
-
-        ensureDirectoryExistence(pathToNewFile);
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-        await fs.promises.writeFile(pathToNewFile, imageBuffer);
-        response.send({ path: clientRelativePath(pathToNewFile) });
-    } catch (error) {
-        console.log(error);
-        response.status(500).send({ error: 'Failed to save the image' });
-    }
-});
-
-app.post('/listimgfiles/:folder', (req, res) => {
-    const directoryPath = path.join(process.cwd(), 'public/user/images/', sanitize(req.params.folder));
-
-    if (!fs.existsSync(directoryPath)) {
-        fs.mkdirSync(directoryPath, { recursive: true });
-    }
-
-    try {
-        const images = getImages(directoryPath);
-        return res.send(images);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send({ error: 'Unable to retrieve files' });
-    }
-});
-
 
 function cleanUploads() {
     try {
@@ -498,6 +309,40 @@ redirect('/getbackgrounds', '/api/backgrounds/all');
 redirect('/delbackground', '/api/backgrounds/delete');
 redirect('/renamebackground', '/api/backgrounds/rename');
 redirect('/downloadbackground', '/api/backgrounds/upload'); // yes, the downloadbackground endpoint actually uploads one
+
+// Redirect deprecated theme API endpoints
+redirect('/savetheme', '/api/themes/save');
+
+// Redirect deprecated avatar API endpoints
+redirect('/getuseravatars', '/api/avatars/get');
+redirect('/deleteuseravatar', '/api/avatars/delete');
+redirect('/uploaduseravatar', '/api/avatars/upload');
+
+// Redirect deprecated quick reply endpoints
+redirect('/deletequickreply', '/api/quick-replies/delete');
+redirect('/savequickreply', '/api/quick-replies/save');
+
+// Redirect deprecated image endpoints
+redirect('/uploadimage', '/api/images/upload');
+redirect('/listimgfiles/:folder', '/api/images/list/:folder');
+
+// Redirect deprecated moving UI endpoints
+redirect('/savemovingui', '/api/moving-ui/save');
+
+// Moving UI
+app.use('/api/moving-ui', require('./src/endpoints/moving-ui').router);
+
+// Image management
+app.use('/api/images', require('./src/endpoints/images').router);
+
+// Quick reply management
+app.use('/api/quick-replies', require('./src/endpoints/quick-replies').router);
+
+// Avatar management
+app.use('/api/avatars', require('./src/endpoints/avatars').router);
+
+// Theme management
+app.use('/api/themes', require('./src/endpoints/themes').router);
 
 // OpenAI API
 app.use('/api/openai', require('./src/endpoints/openai').router);

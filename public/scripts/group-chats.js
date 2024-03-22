@@ -69,7 +69,7 @@ import {
     loadItemizedPrompts,
     animation_duration,
 } from '../script.js';
-import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
+import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 
 export {
@@ -530,18 +530,33 @@ async function getGroups() {
 }
 
 export function getGroupBlock(group) {
+    let count = 0;
+    let namesList = [];
+
+    // Build inline name list
+    if (Array.isArray(group.members) && group.members.length) {
+        for (const member of group.members) {
+            const character = characters.find(x => x.avatar === member || x.name === member);
+            if (character) {
+                namesList.push(character.name);
+                count++;
+            }
+        }
+    }
+
     const template = $('#group_list_template .group_select').clone();
     template.data('id', group.id);
     template.attr('grid', group.id);
-    template.find('.ch_name').text(group.name);
+    template.find('.ch_name').text(group.name).attr('title', `[Group] ${group.name}`);
     template.find('.group_fav_icon').css('display', 'none');
     template.addClass(group.fav ? 'is_fav' : '');
     template.find('.ch_fav').val(group.fav);
+    template.find('.group_select_counter').text(`${count} ${count != 1 ? 'characters' : 'character'}`);
+    template.find('.group_select_block_list').text(namesList.join(', '));
 
     // Display inline tags
-    const tags = getTagsList(group.id);
     const tagsElement = template.find('.tags');
-    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+    printTagList(tagsElement, { forEntityOrKey: group.id });
 
     const avatar = getGroupAvatar(group);
     if (avatar) {
@@ -559,6 +574,8 @@ function updateGroupAvatar(group) {
             $(this).find('.avatar').replaceWith(getGroupAvatar(group));
         }
     });
+
+    favsToHotswap();
 }
 
 // check if isDataURLor if it's a valid local file url
@@ -576,7 +593,7 @@ function getGroupAvatar(group) {
     }
     // if isDataURL or if it's a valid local file url
     if (isValidImageUrl(group.avatar_url)) {
-        return $(`<div class="avatar"><img src="${group.avatar_url}"></div>`);
+        return $(`<div class="avatar" title="[Group] ${group.name}"><img src="${group.avatar_url}"></div>`);
     }
 
     const memberAvatars = [];
@@ -602,6 +619,7 @@ function getGroupAvatar(group) {
             groupAvatar.find(`.img_${i + 1}`).attr('src', memberAvatars[i]);
         }
 
+        groupAvatar.attr('title', `[Group] ${group.name}`);
         return groupAvatar;
     }
 
@@ -613,6 +631,7 @@ function getGroupAvatar(group) {
     // default avatar
     const groupAvatar = $('#group_avatars_template .collage_1').clone();
     groupAvatar.find('.img_1').attr('src', group.avatar_url || system_avatar);
+    groupAvatar.attr('title', `[Group] ${group.name}`);
     return groupAvatar;
 }
 
@@ -1176,9 +1195,8 @@ function getGroupCharacterBlock(character) {
     template.toggleClass('disabled', isGroupMemberDisabled(character.avatar));
 
     // Display inline tags
-    const tags = getTagsList(character.avatar);
     const tagsElement = template.find('.tags');
-    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+    printTagList(tagsElement, { forEntityOrKey: characters.indexOf(character) });
 
     if (!openGroupId) {
         template.find('[data-action="speak"]').hide();
@@ -1253,6 +1271,9 @@ function select_group_chats(groupId, skipAnimation) {
     if (!skipAnimation) {
         selectRightMenuWithAnimation('rm_group_chats_block');
     }
+
+    // render tags
+    printTagList($('#groupTagList'), { forEntityOrKey: groupId, tagOptions: { removable: true } });
 
     // render characters list
     printGroupCandidates();
@@ -1751,7 +1772,7 @@ function doCurMemberListPopout() {
 
 jQuery(() => {
     $(document).on('click', '.group_select', function () {
-        const groupId = $(this).data('id');
+        const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');
         openGroupById(groupId);
     });
     $('#rm_group_filter').on('input', filterGroupMembers);

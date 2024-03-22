@@ -25,6 +25,37 @@ let currentAssets = {};
 //  Extension UI and Settings  //
 //#############################//
 
+function filterAssets() {
+    const searchValue = String($('#assets_search').val()).toLowerCase().trim();
+    const typeValue = String($('#assets_type_select').val());
+
+    if (typeValue === '') {
+        $('#assets_menu .assets-list-div').show();
+        $('#assets_menu .assets-list-div h3').show();
+    } else {
+        $('#assets_menu .assets-list-div h3').hide();
+        $('#assets_menu .assets-list-div').hide();
+        $(`#assets_menu .assets-list-div[data-type="${typeValue}"]`).show();
+    }
+
+    if (searchValue === '') {
+        $('#assets_menu .asset-block').show();
+    } else {
+        $('#assets_menu .asset-block').hide();
+        $('#assets_menu .asset-block').filter(function () {
+            return $(this).text().toLowerCase().includes(searchValue);
+        }).show();
+    }
+}
+
+const KNOWN_TYPES = {
+    'extension': 'Extensions',
+    'character': 'Characters',
+    'ambient': 'Ambient sounds',
+    'bgm': 'Background music',
+    'blip': 'Blip sounds',
+};
+
 function downloadAssetsList(url) {
     updateCurrentAssets().then(function () {
         fetch(url, { cache: 'no-cache' })
@@ -48,9 +79,26 @@ function downloadAssetsList(url) {
                 // First extensions, then everything else
                 const assetTypes = Object.keys(availableAssets).sort((a, b) => (a === 'extension') ? -1 : (b === 'extension') ? 1 : 0);
 
+                $('#assets_type_select').empty();
+                $('#assets_search').val('');
+                $('#assets_type_select').append($('<option />', { value: '', text: 'All' }));
+
+                for (const type of assetTypes) {
+                    const option = $('<option />', { value: type, text: KNOWN_TYPES[type] || type });
+                    $('#assets_type_select').append(option);
+                }
+
+                if (assetTypes.includes('extension')) {
+                    $('#assets_type_select').val('extension');
+                }
+
+                $('#assets_type_select').off('change').on('change', filterAssets);
+                $('#assets_search').off('input').on('input', filterAssets);
+
                 for (const assetType of assetTypes) {
                     let assetTypeMenu = $('<div />', { id: 'assets_audio_ambient_div', class: 'assets-list-div' });
-                    assetTypeMenu.append(`<h3>${assetType}</h3>`);
+                    assetTypeMenu.attr('data-type', assetType);
+                    assetTypeMenu.append(`<h3>${KNOWN_TYPES[assetType] || assetType}</h3>`).hide();
 
                     if (assetType == 'extension') {
                         assetTypeMenu.append(`
@@ -152,12 +200,16 @@ function downloadAssetsList(url) {
                             assetBlock.find('.asset-name').prepend(`<div class="avatar"><img src="${asset['url']}" alt="${displayName}"></div>`);
                         }
 
+                        assetBlock.addClass('asset-block');
+
                         assetTypeMenu.append(assetBlock);
                     }
                     assetTypeMenu.appendTo('#assets_menu');
                     assetTypeMenu.on('click', 'a.asset_preview', previewAsset);
                 }
 
+                filterAssets();
+                $('#assets_filters').show();
                 $('#assets_menu').show();
             })
             .catch((error) => {
@@ -340,5 +392,6 @@ jQuery(async () => {
         }
     });
 
+    windowHtml.find('#assets_filters').hide();
     $('#extensions_settings').append(windowHtml);
 });
