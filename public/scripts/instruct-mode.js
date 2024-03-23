@@ -354,7 +354,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
     let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
 
     if (!isImpersonate && promptBias) {
-        text += (includeNames ? promptBias : (separator + promptBias));
+        text += (includeNames ? promptBias : (separator + promptBias.trimStart()));
     }
 
     return (power_user.instruct.wrap ? text.trimEnd() : text) + (includeNames ? '' : separator);
