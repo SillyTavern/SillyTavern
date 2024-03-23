@@ -5202,7 +5202,7 @@
                             <b>Unique to this chat</b>.<br>
                             Checkpoints inherit the Note from their parent, and can be changed individually after that.<br>
                         </small>
-                        <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="50000"></textarea>
+                        <textarea id="extension_floating_prompt" class="text_pole textarea_compact" rows="8" maxlength="50000"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_prompt_token_counter">0</span>
                         </div>
@@ -5211,22 +5211,34 @@
                             <span data-i18n="Include in World Info Scanning">Include in World Info Scanning</span>
                         </label>
                         <div class="floating_prompt_radio_group">
-                            <label>
-                                <input type="radio" name="extension_floating_position" value="2" />
-                                Before Main Prompt / Story String
+                            <label class="checkbox_label" for="extension_floating_position_before">
+                                <input type="radio" id="extension_floating_position_before" name="extension_floating_position" value="2" />
+                                <span data-i18n="Before Main Prompt / Story String">Before Main Prompt / Story String</span>
                             </label>
-                            <label>
-                                <input type="radio" name="extension_floating_position" value="0" />
-                                After Main Prompt / Story String
+                            <label class="checkbox_label" for="extension_floating_position_after">
+                                <input type="radio" id="extension_floating_position_after" name="extension_floating_position" value="0" />
+                                <span data-i18n="After Main Prompt / Story String">After Main Prompt / Story String</span>
                             </label>
-                            <label>
-                                <input type="radio" name="extension_floating_position" value="1" />
-                                In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
+                            <label class="checkbox_label alignItemsCenter" for="extension_floating_position_depth">
+                                <input type="radio" id="extension_floating_position_depth" name="extension_floating_position" value="1" />
+                                <span data-i18n="In-chat @ Depth">In-chat @ Depth</span>
+                                <input id="extension_floating_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="999" />
+                                <span data-i18n="as">as</span>
+                                <select id="extension_floating_role" class="text_pole widthNatural">
+                                    <option value="0">System</option>
+                                    <option value="1">User</option>
+                                    <option value="2">Assistant</option>
+                                </select>
                             </label>
                         </div>
                         <!--<label for="extension_floating_interval">In-Chat Insertion Depth</label>-->
-                        <label for="extension_floating_interval">Insertion Frequency</label>
-                        <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999" /><small> (0 = Disable, 1 = Always)</small>
+                        <div class="flex-container">
+                            <label for="extension_floating_interval" class="flex-container flexNoGap flexFlowColumn">
+                                <span data-i18n="Insertion Frequency">Insertion Frequency</span>
+                                <small data-i18n="(0 = Disable, 1 = Always)">(0 = Disable, 1 = Always)</small>
+                            </label>
+                            <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999" />
+                        </div>
                         <br>
                         <span>User inputs until next insertion: <span id="extension_floating_counter">(disabled)</span></span>
                     </div>
@@ -5247,7 +5259,7 @@
                     <div class="inline-drawer-content">
                         <small>Will be automatically added as the author's note for this character. Will be used in groups, but
                             can't be modified when a group chat is open.</small>
-                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_chara" class="text_pole textarea_compact" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_chara_token_counter">0</span>
                         </div>
@@ -5279,22 +5291,38 @@
                     </div>
                     <div class="inline-drawer-content">
                         <small>Will be automatically added as the Author's Note for all new chats.</small>
-                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_default" class="text_pole textarea_compact" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_default_token_counter">0</span>
                         </div>
                         <div class="floating_prompt_radio_group">
-                            <label>
-                                <input type="radio" name="extension_default_position" value="0" />
-                                After Main Prompt / Story String
+                            <label class="checkbox_label" for="extension_default_position_before">
+                                <input type="radio" id="extension_default_position_before" name="extension_default_position" value="2" />
+                                <span data-i18n="Before Main Prompt / Story String">Before Main Prompt / Story String</span>
                             </label>
-                            <label>
-                                <input type="radio" name="extension_default_position" value="1" />
-                                In-chat @ Depth <input id="extension_default_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
+                            <label class="checkbox_label" for="extension_default_position_after">
+                                <input type="radio" id="extension_default_position_after" name="extension_default_position" value="0" />
+                                <span data-i18n="After Main Prompt / Story String">After Main Prompt / Story String</span>
+                            </label>
+                            <label class="checkbox_label alignItemsCenter" for="extension_default_position_depth">
+                                <input type="radio" id="extension_default_position_depth" name="extension_default_position" value="1" />
+                                <span data-i18n="In-chat @ Depth">In-chat @ Depth</span>
+                                <input id="extension_default_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="999" />
+                                <span data-i18n="as">as</span>
+                                <select id="extension_default_role" class="text_pole widthNatural">
+                                    <option value="0">System</option>
+                                    <option value="1">User</option>
+                                    <option value="2">Assistant</option>
+                                </select>
                             </label>
                         </div>
-                        <label for="extension_default_interval">Insertion Frequency</label>
-                        <input id="extension_default_interval" class="text_pole widthUnset" type="number" min="0" max="999" /><small> (0 = Disable, 1 = Always)</small>
+                        <div class="flex-container">
+                            <label for="extension_default_interval" class="flex-container flexNoGap flexFlowColumn">
+                                <span data-i18n="Insertion Frequency">Insertion Frequency</span>
+                                <small data-i18n="(0 = Disable, 1 = Always)">(0 = Disable, 1 = Always)</small>
+                            </label>
+                            <input id="extension_default_interval" class="text_pole widthUnset" type="number" min="0" max="999" />
+                        </div>
                     </div>
                 </div>
             </div>
