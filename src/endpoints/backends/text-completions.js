@@ -7,6 +7,7 @@ const { jsonParser } = require('../../express-common');
 const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS, INFERMATICAI_KEYS, OPENROUTER_KEYS, DREAMGEN_KEYS } = require('../../constants');
 const { forwardFetchResponse, trimV1 } = require('../../util');
 const { setAdditionalHeaders } = require('../../additional-headers');
+const { readSecret, SECRET_KEYS } = require('../secrets');
 
 const router = express.Router();
 
@@ -473,6 +474,42 @@ llamacpp.post('/caption-image', jsonParser, async function (request, response) {
     }
 });
 
+const tabbyapi = express.Router();
+
+tabbyapi.post('/verify-key', jsonParser, async function (request, response) {
+    try {
+        if (request.body.api_server.indexOf('localhost') !== -1) {
+            request.body.api_server = request.body.api_server.replace('localhost', '127.0.0.1');
+        }
+
+        console.log('Trying to connect to API:', request.body);
+        const baseUrl = trimV1(request.body.api_server);
+        const apiKey = readSecret(SECRET_KEYS.TABBY);
+
+        const fetchResponse = await fetch(`${baseUrl}/v1/auth/permission`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+            },
+            timeout: 0,
+        });
+
+        if (!fetchResponse.ok) {
+            console.log('TabbyAPI error:', fetchResponse.status, fetchResponse.statusText);
+            return response.status(500).send({ error: true });
+        }
+
+        const data = await fetchResponse.json();
+
+        return response.send({ 'isAdminKey': data?.permission === 'admin' });
+
+    } catch (error) {
+        console.error(error);
+        return response.status(500);
+    }
+});
+
 llamacpp.post('/props', jsonParser, async function (request, response) {
     try {
         if (!request.body.server_url) {
@@ -545,5 +582,6 @@ llamacpp.post('/slots', jsonParser, async function (request, response) {
 
 router.use('/ollama', ollama);
 router.use('/llamacpp', llamacpp);
+router.use('/tabbyapi', tabbyapi);
 
 module.exports = { router };

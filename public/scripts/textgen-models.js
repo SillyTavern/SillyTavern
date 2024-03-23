@@ -189,13 +189,17 @@ export async function loadAphroditeModels(data) {
     }
 }
 
-export async function loadTabbyApiModels(data) {
+export async function loadTabbyApiModels(active, data) {
     if (!Array.isArray(data)) {
         console.error('Invalid Tabby API models data', data);
         return;
     }
 
     tabbyApiModels = data;
+
+    if (textgen_settings.tabby_api_model !== active) {
+        textgen_settings.tabby_api_model = active;
+    }
 
     if (!data.find(x => x.id === textgen_settings.tabby_api_model)) {
         textgen_settings.tabby_api_model = data[0]?.id || '';

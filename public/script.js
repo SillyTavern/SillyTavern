@@ -1150,7 +1150,7 @@ async function getStatusTextgen() {
             loadAphroditeModels(data?.data);
             online_status = textgen_settings.aphrodite_model;
         } else if (textgen_settings.type === TABBY) {
-            loadTabbyApiModels(data?.data);
+            loadTabbyApiModels(data?.result, data?.data);
             online_status = textgen_settings.tabby_api_model;
         } else {
             online_status = data?.result;
@@ -9220,11 +9220,35 @@ jQuery(async function () {
             }
         }
 
+        if (SECRET_KEYS.TABBY.length) {
+            const endpoint = getTextGenServer();
+
+            if (!endpoint) {
+                console.warn('No endpoint for key check');
+                online_status = 'no_connection';
+            }
+
+            const response = await fetch('/api/backends/text-completions/tabbyapi/verify-key', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    api_server: endpoint,
+                }),
+            });
+
+            const data = await response.json();
+            if (data?.isAdminKey) {
+                $('#tabby_api_model_selection').show();
+            } else {
+                $('#tabby_api_model_selection').hide();
+            }
+        }
+
         validateTextGenUrl();
         startStatusLoading();
         main_api = 'textgenerationwebui';
         saveSettingsDebounced();
-        getStatusTextgen();
+        await getStatusTextgen();
     });
 
     $('#api_button_novel').on('click', async function (e) {
