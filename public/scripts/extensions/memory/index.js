@@ -1,6 +1,6 @@
 import { getStringHash, debounce, waitUntilCondition, extractAllWords } from '../../utils.js';
 import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules } from '../../extensions.js';
-import { animation_duration, eventSource, event_types, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { animation_duration, eventSource, event_types, extension_prompt_roles, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { is_group_generating, selected_group } from '../../group-chats.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { loadMovingUIState } from '../../power-user.js';
@@ -49,6 +49,7 @@ const defaultSettings = {
     prompt: defaultPrompt,
     template: defaultTemplate,
     position: extension_prompt_types.IN_PROMPT,
+    role: extension_prompt_roles.SYSTEM,
     depth: 2,
     promptWords: 200,
     promptMinWords: 25,
@@ -83,6 +84,7 @@ function loadSettings() {
     $('#memory_prompt_interval').val(extension_settings.memory.promptInterval).trigger('input');
     $('#memory_template').val(extension_settings.memory.template).trigger('input');
     $('#memory_depth').val(extension_settings.memory.depth).trigger('input');
+    $('#memory_role').val(extension_settings.memory.role).trigger('input');
     $(`input[name="memory_position"][value="${extension_settings.memory.position}"]`).prop('checked', true).trigger('input');
     $('#memory_prompt_words_force').val(extension_settings.memory.promptForceWords).trigger('input');
     switchSourceControls(extension_settings.memory.source);
@@ -144,6 +146,13 @@ function onMemoryTemplateInput() {
 function onMemoryDepthInput() {
     const value = $(this).val();
     extension_settings.memory.depth = Number(value);
+    reinsertMemory();
+    saveSettingsDebounced();
+}
+
+function onMemoryRoleInput() {
+    const value = $(this).val();
+    extension_settings.memory.role = Number(value);
     reinsertMemory();
     saveSettingsDebounced();
 }
@@ -480,11 +489,12 @@ function reinsertMemory() {
 
 function setMemoryContext(value, saveToMessage) {
     const context = getContext();
-    context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth);
+    context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth, false, extension_settings.memory.role);
     $('#memory_contents').val(value);
     console.log('Summary set to: ' + value);
     console.debug('Position: ' + extension_settings.memory.position);
     console.debug('Depth: ' + extension_settings.memory.depth);
+    console.debug('Role: ' + extension_settings.memory.role);
 
     if (saveToMessage && context.chat.length) {
         const idx = context.chat.length - 2;
@@ -560,6 +570,7 @@ function setupListeners() {
     $('#memory_force_summarize').off('click').on('click', forceSummarizeChat);
     $('#memory_template').off('click').on('input', onMemoryTemplateInput);
     $('#memory_depth').off('click').on('input', onMemoryDepthInput);
+    $('#memory_role').off('click').on('input', onMemoryRoleInput);
     $('input[name="memory_position"]').off('click').on('change', onMemoryPositionChange);
     $('#memory_prompt_words_force').off('click').on('input', onMemoryPromptWordsForceInput);
     $('#summarySettingsBlockToggle').off('click').on('click', function () {
@@ -620,9 +631,15 @@ jQuery(function () {
                                     <input type="radio" name="memory_position" value="0" />
                                     After Main Prompt / Story String
                                 </label>
-                                <label for="memory_depth" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
+                                <label class="flex-container alignItemsCenter" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
                                     <input type="radio" name="memory_position" value="1" />
                                     In-chat @ Depth <input id="memory_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
+                                    as
+                                    <select id="memory_role" class="text_pole widthNatural">
+                                        <option value="0">System</option>
+                                        <option value="1">User</option>
+                                        <option value="2">Assistant</option>
+                                    </select>
                                 </label>
                             </div>
                             <div data-source="main" class="memory_contents_controls">

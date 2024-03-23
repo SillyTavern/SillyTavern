@@ -842,6 +842,24 @@ function getPromptPosition(position) {
 }
 
 /**
+ * Gets a Chat Completion role based on the prompt role.
+ * @param {number} role Role of the prompt.
+ * @returns {string} Mapped role.
+ */
+function getPromptRole(role) {
+    switch (role) {
+        case extension_prompt_roles.SYSTEM:
+            return 'system';
+        case extension_prompt_roles.USER:
+            return 'user';
+        case extension_prompt_roles.ASSISTANT:
+            return 'assistant';
+        default:
+            return 'system';
+    }
+}
+
+/**
  * Populate a chat conversation by adding prompts to the conversation and managing system and user prompts.
  *
  * @param {PromptCollection} prompts - PromptCollection containing all prompts where the key is the prompt identifier and the value is the prompt object.
@@ -1020,7 +1038,7 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
     // Tavern Extras - Summary
     const summary = extensionPrompts['1_memory'];
     if (summary && summary.value) systemPrompts.push({
-        role: 'system',
+        role: getPromptRole(summary.role),
         content: summary.value,
         identifier: 'summary',
         position: getPromptPosition(summary.position),
@@ -1029,7 +1047,7 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
     // Authors Note
     const authorsNote = extensionPrompts['2_floating_prompt'];
     if (authorsNote && authorsNote.value) systemPrompts.push({
-        role: 'system',
+        role: getPromptRole(authorsNote.role),
         content: authorsNote.value,
         identifier: 'authorsNote',
         position: getPromptPosition(authorsNote.position),
