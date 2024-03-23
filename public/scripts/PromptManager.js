@@ -884,7 +884,7 @@ class PromptManager {
      * @returns {boolean} True if the prompt can be deleted, false otherwise.
      */
     isPromptToggleAllowed(prompt) {
-        const forceTogglePrompts = ['charDescription', 'charPersonality', 'scenario', 'personaDescription', 'worldInfoBefore', 'worldInfoAfter'];
+        const forceTogglePrompts = ['charDescription', 'charPersonality', 'scenario', 'personaDescription', 'worldInfoBefore', 'worldInfoAfter', 'main'];
         return prompt.marker && !forceTogglePrompts.includes(prompt.identifier) ? false : !this.configuration.toggleDisabled.includes(prompt.identifier);
     }
 
@@ -1254,6 +1254,12 @@ class PromptManager {
         promptOrder.forEach(entry => {
             if (true === entry.enabled) {
                 const prompt = this.getPromptById(entry.identifier);
+                if (prompt) promptCollection.add(this.preparePrompt(prompt));
+            } else if (!entry.enabled && entry.identifier === 'main') {
+                // Some extensions require main prompt to be present for relative inserts.
+                // So we make a GMO-free vegan replacement.
+                const prompt = this.getPromptById(entry.identifier);
+                prompt.content = '';
                 if (prompt) promptCollection.add(this.preparePrompt(prompt));
             }
         });

@@ -549,7 +549,7 @@ function setupChatCompletionPromptManager(openAiSettings) {
         prefix: 'completion_',
         containerIdentifier: 'completion_prompt_manager',
         listIdentifier: 'completion_prompt_manager_list',
-        toggleDisabled: ['main'],
+        toggleDisabled: [],
         sortableDelay: getSortableDelay(),
         defaultPrompts: {
             main: default_main_prompt,
@@ -881,7 +881,7 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         // We need the prompts array to determine a position for the source.
         if (false === prompts.has(source)) return;
 
-        if (promptManager.isPromptDisabledForActiveCharacter(source)) {
+        if (promptManager.isPromptDisabledForActiveCharacter(source) && source !== 'main') {
             promptManager.log(`Skipping prompt ${source} because it is disabled`);
             return;
         }
