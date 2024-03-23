@@ -4646,12 +4646,28 @@
                                 <div class="WIEnteryHeaderControls flex-container">
                                     <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios wi-enter-footer-text">
                                         <label for="position" class="WIEntryHeaderTitleMobile" data-i18n="Position:">Position:</label>
-                                        <select name="position" class="text_pole widthNatural margin0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">
-                                            <option value="0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="Before Char Defs">↑Char</span></option>
-                                            <option value="1" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="After Char Defs">↓Char</span></option>
-                                            <option value="2" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="Before AN">↑AN</span></option>
-                                            <option value="3" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="After AN">↓AN</span></option>
-                                            <option value="4" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;"><span data-i18n="at Depth">@D</span></option>
+                                        <select name="position" class="text_pole widthNatural margin0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D ⚙️: at Depth (System)&#13;@D 👤: at Depth (User)&#13;@D 🤖: at Depth (Assistant)">
+                                            <option value="0" data-role="" data-i18n="Before Char Defs">
+                                                ↑Char
+                                            </option>
+                                            <option value="1" data-role="" data-i18n="After Char Defs">
+                                                ↓Char
+                                            </option>
+                                            <option value="2" data-role="" data-i18n="Before AN">
+                                                ↑AN
+                                            </option>
+                                            <option value="3" data-role="" data-i18n="After AN">
+                                                ↓AN
+                                            </option>
+                                            <option value="4" data-role="0" data-i18n="at Depth System" >
+                                                @D ⚙️
+                                            </option>
+                                            <option value="4" data-role="1" data-i18n="at Depth User">
+                                                @D 👤
+                                            </option>
+                                            <option value="4" data-role="2" data-i18n="at Depth AI">
+                                                @D 🤖
+                                            </option>
                                         </select>
                                     </div>
                                     <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap">
