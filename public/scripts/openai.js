@@ -727,19 +727,12 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     let continueMessage = null;
     const instruct = isOpenRouterWithInstruct();
     if (type === 'continue' && cyclePrompt && !instruct && !oai_settings.continue_prefill) {
-        const promptObject = oai_settings.continue_prefill ?
-            {
-                identifier: 'continueNudge',
-                role: 'assistant',
-                content: cyclePrompt,
-                system_prompt: true,
-            } :
-            {
-                identifier: 'continueNudge',
-                role: 'system',
-                content: oai_settings.continue_nudge_prompt.replace('{{lastChatMessage}}', cyclePrompt),
-                system_prompt: true,
-            };
+        const promptObject = {
+            identifier: 'continueNudge',
+            role: 'system',
+            content: oai_settings.continue_nudge_prompt.replace('{{lastChatMessage}}', String(cyclePrompt).trim()),
+            system_prompt: true,
+        };
         const continuePrompt = new Prompt(promptObject);
         const preparedPrompt = promptManager.preparePrompt(continuePrompt);
         continueMessage = Message.fromPrompt(preparedPrompt);
@@ -3494,7 +3487,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (value === 'gemini-1.5-pro')  {
+        } else if (value === 'gemini-1.5-pro') {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value === 'gemini-pro') {
             $('#openai_max_context').attr('max', max_32k);
