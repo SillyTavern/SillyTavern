@@ -1656,6 +1656,28 @@
                                         <!-- Hidden input for loading radio buttons from presets. Don't remove! -->
                                         <input type="hidden" id="names_behavior" class="displayNone" />
                                     </div>
+                                    <div class="range-block marginBot10">
+                                        <h4 class="range-block-title justifyLeft marginBot5 flex-container alignItemsCenter">
+                                            <span data-i18n="Continue Postfix">Continue Postfix</span>
+                                            <i class="right_menu_button fa-solid fa-circle-exclamation" title="The next chunk of the continued message will be appended using this as a separator."></i>
+                                        </h4>
+                                        <div class="flex-container flexFlowColumn">
+                                            <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_space">
+                                                <input type="radio" id="continue_postfix_space" name="continue_postfix" value="0">
+                                                <span data-i18n="Space">Space</span>
+                                            </label>
+                                            <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_newline">
+                                                <input type="radio" id="continue_postfix_newline" name="continue_postfix" value="1">
+                                                <span data-i18n="Newline">Newline</span>
+                                            </label>
+                                            <label class="checkbox_label flexWrap alignItemsCenter" for="continue_postfix_double_newline">
+                                                <input type="radio" id="continue_postfix_double_newline" name="continue_postfix" value="2">
+                                                <span data-i18n="Double Newline">Double Newline</span>
+                                            </label>
+                                        </div>
+                                        <!-- Hidden input for loading radio buttons from presets. Don't remove! -->
+                                        <input type="hidden" id="continue_postfix" class="displayNone" />
+                                    </div>
                                     <div class="range-block">
                                         <label for="wrap_in_quotes" title="Wrap user messages in quotes before sending" data-i18n="[title]Wrap user messages in quotes before sending" class="checkbox_label widthFreeExpand">
                                             <input id="wrap_in_quotes" type="checkbox" /><span data-i18n="Wrap in Quotes">
@@ -5225,9 +5247,9 @@
                                 <input id="extension_floating_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="999" />
                                 <span data-i18n="as">as</span>
                                 <select id="extension_floating_role" class="text_pole widthNatural">
-                                    <option value="0">System</option>
-                                    <option value="1">User</option>
-                                    <option value="2">Assistant</option>
+                                    <option data-i18n="System" value="0">System</option>
+                                    <option data-i18n="User" value="1">User</option>
+                                    <option data-i18n="Assistant" value="2">Assistant</option>
                                 </select>
                             </label>
                         </div>
@@ -5310,9 +5332,9 @@
                                 <input id="extension_default_depth" class="text_pole textarea_compact widthNatural" type="number" min="0" max="999" />
                                 <span data-i18n="as">as</span>
                                 <select id="extension_default_role" class="text_pole widthNatural">
-                                    <option value="0">System</option>
-                                    <option value="1">User</option>
-                                    <option value="2">Assistant</option>
+                                    <option data-i18n="System" value="0">System</option>
+                                    <option data-i18n="User" value="1">User</option>
+                                    <option data-i18n="Assistant" value="2">Assistant</option>
                                 </select>
                             </label>
                         </div>

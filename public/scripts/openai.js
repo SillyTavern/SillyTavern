@@ -179,6 +179,12 @@ const character_names_behavior = {
     CONTENT: 2,
 };
 
+const continue_postfix_types = {
+    SPACE: ' ',
+    NEWLINE: '\n',
+    DOUBLE_NEWLINE: '\n\n',
+};
+
 const prefixMap = selected_group ? {
     assistant: '',
     user: '',
@@ -253,6 +259,7 @@ const default_settings = {
     bypass_status_check: false,
     continue_prefill: false,
     names_behavior: character_names_behavior.NONE,
+    continue_postfix: continue_postfix_types.SPACE,
     seed: -1,
     n: 1,
 };
@@ -320,6 +327,7 @@ const oai_settings = {
     bypass_status_check: false,
     continue_prefill: false,
     names_behavior: character_names_behavior.NONE,
+    continue_postfix: continue_postfix_types.SPACE,
     seed: -1,
     n: 1,
 };
@@ -718,7 +726,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
     // Reserve budget for continue nudge
     let continueMessage = null;
     const instruct = isOpenRouterWithInstruct();
-    if (type === 'continue' && cyclePrompt && !instruct) {
+    if (type === 'continue' && cyclePrompt && !instruct && !oai_settings.continue_prefill) {
         const promptObject = oai_settings.continue_prefill ?
             {
                 identifier: 'continueNudge',
@@ -2600,6 +2608,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.squash_system_messages = settings.squash_system_messages ?? default_settings.squash_system_messages;
     oai_settings.continue_prefill = settings.continue_prefill ?? default_settings.continue_prefill;
     oai_settings.names_behavior = settings.names_behavior ?? default_settings.names_behavior;
+    oai_settings.continue_postfix = settings.continue_postfix ?? default_settings.continue_postfix;
 
     // Migrate from old settings
     if (settings.names_in_completion === true) {
@@ -2716,6 +2725,7 @@ function loadOpenAISettings(data, settings) {
     }
 
     setNamesBehaviorControls();
+    setContinuePostfixControls();
 
     $('#chat_completion_source').val(oai_settings.chat_completion_source).trigger('change');
     $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);
@@ -2733,6 +2743,27 @@ function setNamesBehaviorControls() {
             $('#character_names_content').prop('checked', true);
             break;
     }
+}
+
+function setContinuePostfixControls() {
+    switch (oai_settings.continue_postfix) {
+        case continue_postfix_types.SPACE:
+            $('#continue_postfix_space').prop('checked', true);
+            break;
+        case continue_postfix_types.NEWLINE:
+            $('#continue_postfix_newline').prop('checked', true);
+            break;
+        case continue_postfix_types.DOUBLE_NEWLINE:
+            $('#continue_postfix_double_newline').prop('checked', true);
+            break;
+        default:
+            // Prevent preset value abuse
+            oai_settings.continue_postfix = continue_postfix_types.SPACE;
+            $('#continue_postfix_space').prop('checked', true);
+            break;
+    }
+
+    $('#continue_postfix').val(oai_settings.continue_postfix);
 }
 
 async function getStatusOpen() {
@@ -2891,6 +2922,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         image_inlining: settings.image_inlining,
         bypass_status_check: settings.bypass_status_check,
         continue_prefill: settings.continue_prefill,
+        continue_postfix: settings.continue_postfix,
         seed: settings.seed,
         n: settings.n,
     };
@@ -3265,6 +3297,7 @@ function onSettingsPresetChange() {
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
         image_inlining: ['#openai_image_inlining', 'image_inlining', true],
         continue_prefill: ['#continue_prefill', 'continue_prefill', true],
+        continue_postfix: ['#continue_postfix', 'continue_postfix', false],
         seed: ['#seed_openai', 'seed', false],
         n: ['#n_openai', 'n', false],
     };
@@ -4384,6 +4417,27 @@ $(document).ready(async function () {
 
     $('#character_names_content').on('input', function () {
         oai_settings.names_behavior = character_names_behavior.CONTENT;
+        saveSettingsDebounced();
+    });
+
+    $('#continue_postifx').on('input', function () {
+        oai_settings.continue_postfix = String($(this).val());
+        setContinuePostfixControls();
+        saveSettingsDebounced();
+    });
+
+    $('#continue_postfix_space').on('input', function () {
+        oai_settings.continue_postfix = continue_postfix_types.SPACE;
+        saveSettingsDebounced();
+    });
+
+    $('#continue_postfix_newline').on('input', function () {
+        oai_settings.continue_postfix = continue_postfix_types.NEWLINE;
+        saveSettingsDebounced();
+    });
+
+    $('#continue_postfix_double_newline').on('input', function () {
+        oai_settings.continue_postfix = continue_postfix_types.DOUBLE_NEWLINE;
         saveSettingsDebounced();
     });
 

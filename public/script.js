@@ -3258,7 +3258,12 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     let continue_mag = '';
     for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
         if (main_api == 'openai') {
-            break;
+            chat2[i] = coreChat[j].mes;
+            if (i === 0 && isContinue) {
+                chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
+                continue_mag = coreChat[j].mes;
+            }
+            continue;
         }
 
         chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, false);
@@ -3399,8 +3404,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         // Coping mechanism for OAI spacing
         const isForceInstruct = isOpenRouterWithInstruct();
         if (main_api === 'openai' && !isForceInstruct && !cyclePrompt.endsWith(' ')) {
-            cyclePrompt += ' ';
-            continue_mag += ' ';
+            cyclePrompt += oai_settings.continue_postfix;
+            continue_mag += oai_settings.continue_postfix;
         }
         message_already_generated = continue_mag;
     }
