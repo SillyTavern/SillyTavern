@@ -4962,10 +4962,20 @@
                         </div>
                     </div>
                     <div class="completion_prompt_manager_popup_entry_form_control">
-                        <label for="completion_prompt_manager_popup_entry_form_prompt">
-                            <span>Prompt</span>
-                        </label>
-                        <div class="text_muted">The prompt to be sent.</div>
+                        <div class="flex-container alignItemsCenter">
+                            <div class="flex1">
+                                <label for="completion_prompt_manager_popup_entry_form_prompt">
+                                    <span>Prompt</span>
+                                </label>
+                                <div class="text_muted">The prompt to be sent.</div>
+                            </div>
+                            <div id="completion_prompt_manager_forbid_overrides_block">
+                                <label class="checkbox_label" for="completion_prompt_manager_popup_entry_form_forbid_overrides" title="This prompt cannot be overridden by character cards, even if overrides are preferred.">
+                                    <input type="checkbox" id="completion_prompt_manager_popup_entry_form_forbid_overrides" name="forbid_overrides" />
+                                    <span>Forbid Overrides</span>
+                                </label>
+                            </div>
+                        </div>
                         <textarea id="completion_prompt_manager_popup_entry_form_prompt" class="text_pole" name="prompt">
                         </textarea>
                     </div>
