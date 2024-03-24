@@ -2750,6 +2750,9 @@ function setNamesBehaviorControls() {
             $('#character_names_content').prop('checked', true);
             break;
     }
+
+    const checkedItemText = $('input[name="character_names"]:checked ~ span').text().trim();
+    $('#character_names_display').text(checkedItemText);
 }
 
 function setContinuePostfixControls() {
@@ -2771,6 +2774,8 @@ function setContinuePostfixControls() {
     }
 
     $('#continue_postfix').val(oai_settings.continue_postfix);
+    const checkedItemText = $('input[name="continue_postfix"]:checked ~ span').text().trim();
+    $('#continue_postfix_display').text(checkedItemText);
 }
 
 async function getStatusOpen() {
@@ -4414,16 +4419,19 @@ $(document).ready(async function () {
 
     $('#character_names_none').on('input', function () {
         oai_settings.names_behavior = character_names_behavior.NONE;
+        setNamesBehaviorControls();
         saveSettingsDebounced();
     });
 
     $('#character_names_completion').on('input', function () {
         oai_settings.names_behavior = character_names_behavior.COMPLETION;
+        setNamesBehaviorControls();
         saveSettingsDebounced();
     });
 
     $('#character_names_content').on('input', function () {
         oai_settings.names_behavior = character_names_behavior.CONTENT;
+        setNamesBehaviorControls();
         saveSettingsDebounced();
     });
 
@@ -4435,16 +4443,19 @@ $(document).ready(async function () {
 
     $('#continue_postfix_space').on('input', function () {
         oai_settings.continue_postfix = continue_postfix_types.SPACE;
+        setContinuePostfixControls();
         saveSettingsDebounced();
     });
 
     $('#continue_postfix_newline').on('input', function () {
         oai_settings.continue_postfix = continue_postfix_types.NEWLINE;
+        setContinuePostfixControls();
         saveSettingsDebounced();
     });
 
     $('#continue_postfix_double_newline').on('input', function () {
         oai_settings.continue_postfix = continue_postfix_types.DOUBLE_NEWLINE;
+        setContinuePostfixControls();
         saveSettingsDebounced();
     });
 
