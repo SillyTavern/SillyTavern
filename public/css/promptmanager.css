@@ -241,6 +241,13 @@
     font-weight: 600;
 }
 
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .completion_prompt_manager_prompt_name .fa-solid.prompt-manager-overridden {
+    margin-left: 5px;
+    color: var(--SmartThemeQuoteColor);
+    cursor: pointer;
+    opacity: 0.8;
+}
+
 #completion_prompt_manager_footer_append_prompt {
     font-size: 16px;
 }

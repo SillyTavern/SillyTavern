@@ -104,6 +104,7 @@ class Prompt {
  */
 class PromptCollection {
     collection = [];
+    overriddenPrompts = [];
 
     /**
      * Create a new PromptCollection instance.
@@ -178,6 +179,11 @@ class PromptCollection {
     has(identifier) {
         return this.index(identifier) !== -1;
     }
+
+    override(prompt, position) {
+        this.set(prompt, position);
+        this.overriddenPrompts.push(prompt.identifier);
+    }
 }
 
 class PromptManager {
@@ -193,6 +199,8 @@ class PromptManager {
             'main',
             'jailbreak',
         ];
+
+        this.overriddenPrompts = [];
 
         this.configuration = {
             version: 1,
@@ -1290,7 +1298,7 @@ class PromptManager {
     /**
      * Setter for messages property
      *
-     * @param {MessageCollection} messages
+     * @param {import('./openai.js').MessageCollection} messages
      */
     setMessages(messages) {
         this.messages = messages;
@@ -1299,19 +1307,20 @@ class PromptManager {
     /**
      * Set and process a finished chat completion object
      *
-     * @param {ChatCompletion} chatCompletion
+     * @param {import('./openai.js').ChatCompletion} chatCompletion
      */
     setChatCompletion(chatCompletion) {
         const messages = chatCompletion.getMessages();
 
         this.setMessages(messages);
         this.populateTokenCounts(messages);
+        this.overriddenPrompts = chatCompletion.getOverriddenPrompts();
     }
 
     /**
      * Populates the token handler
      *
-     * @param {MessageCollection} messages
+     * @param {import('./openai.js').MessageCollection} messages
      */
     populateTokenCounts(messages) {
         this.tokenHandler.resetCounts();
@@ -1525,6 +1534,7 @@ class PromptManager {
             const isImportantPrompt = !prompt.marker && prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE  && prompt.forbid_overrides;
             const isUserPrompt = !prompt.marker && !prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
             const isInjectionPrompt = !prompt.marker && prompt.injection_position === INJECTION_POSITION.ABSOLUTE;
+            const isOverriddenPrompt = Array.isArray(this.overriddenPrompts) && this.overriddenPrompts.includes(prompt.identifier);
             const importantClass = isImportantPrompt ? `${prefix}prompt_manager_important` : '';
             listItemHtml += `
                 <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass} ${importantClass}" data-pm-identifier="${prompt.identifier}">
@@ -1536,6 +1546,7 @@ class PromptManager {
                         ${isInjectionPrompt ? '<span class="fa-fw fa-solid fa-syringe" title="In-Chat Injection"></span>' : ''}
                         ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${encodedName}</a>` : encodedName}
                         ${isInjectionPrompt ? `<small class="prompt-manager-injection-depth">@ ${prompt.injection_depth}</small>` : ''}
+                        ${isOverriddenPrompt ? '<small class="fa-solid fa-address-card prompt-manager-overridden" title="Pulled from a character card"></small>' : ''}
                     </span>
                     <span>
                             <span class="prompt_manager_prompt_controls">

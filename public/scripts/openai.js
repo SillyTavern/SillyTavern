@@ -904,6 +904,7 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     addToChatCompletion('personaDescription');
 
     // Collection of control prompts that will always be positioned last
+    chatCompletion.setOverriddenPrompts(prompts.overriddenPrompts);
     const controlPrompts = new MessageCollection('controlPrompts');
 
     const impersonateMessage = Message.fromPrompt(prompts.get('impersonate')) ?? null;
@@ -1095,7 +1096,7 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
         const mainOriginalContent = systemPrompt.content;
         systemPrompt.content = systemPromptOverride;
         const mainReplacement = promptManager.preparePrompt(systemPrompt, mainOriginalContent);
-        prompts.set(mainReplacement, prompts.index('main'));
+        prompts.override(mainReplacement, prompts.index('main'));
     }
 
     // Apply character-specific jailbreak
@@ -1104,7 +1105,7 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
         const jbOriginalContent = jailbreakPrompt.content;
         jailbreakPrompt.content = jailbreakPromptOverride;
         const jbReplacement = promptManager.preparePrompt(jailbreakPrompt, jbOriginalContent);
-        prompts.set(jbReplacement, prompts.index('jailbreak'));
+        prompts.override(jbReplacement, prompts.index('jailbreak'));
     }
 
     return prompts;
@@ -2205,7 +2206,7 @@ class MessageCollection {
  * @see https://platform.openai.com/docs/guides/gpt/chat-completions-api
  *
  */
-class ChatCompletion {
+export class ChatCompletion {
 
     /**
      * Combines consecutive system messages into one if they have no name attached.
@@ -2250,6 +2251,7 @@ class ChatCompletion {
         this.tokenBudget = 0;
         this.messages = new MessageCollection('root');
         this.loggingEnabled = false;
+        this.overriddenPrompts = [];
     }
 
     /**
@@ -2523,6 +2525,18 @@ class ChatCompletion {
             throw new IdentifierNotFoundError(identifier);
         }
         return index;
+    }
+
+    /**
+     * Sets the list of overridden prompts.
+     * @param {string[]} list A list of prompts that were overridden.
+     */
+    setOverriddenPrompts(list) {
+        this.overriddenPrompts = list;
+    }
+
+    getOverriddenPrompts() {
+        return this.overriddenPrompts ?? [];
     }
 }
 
