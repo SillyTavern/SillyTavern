@@ -115,13 +115,13 @@ async function onExtensionFloatingDepthInput() {
 }
 
 async function onExtensionFloatingPositionInput(e) {
-    chat_metadata[metadata_keys.position] = e.target.value;
+    chat_metadata[metadata_keys.position] = Number(e.target.value);
     updateSettings();
     saveMetadataDebounced();
 }
 
 async function onDefaultPositionInput(e) {
-    extension_settings.note.defaultPosition = e.target.value;
+    extension_settings.note.defaultPosition = Number(e.target.value);
     saveSettingsDebounced();
 }
 

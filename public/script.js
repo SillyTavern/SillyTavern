@@ -2491,8 +2491,8 @@ function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth =
         .sort()
         .map((x) => extension_prompts[x])
         .filter(x => x.position == position && x.value)
-        .filter(x => x.depth === undefined || x.depth === depth)
-        .filter(x => x.role === undefined || x.role === role)
+        .filter(x => depth === undefined || x.depth === undefined || x.depth === depth)
+        .filter(x => role === undefined || x.role === undefined || x.role === role)
         .map(x => x.value.trim())
         .join(separator);
     if (extension_prompt.length && !extension_prompt.startsWith(separator)) {
