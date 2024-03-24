@@ -3985,7 +3985,7 @@ function doChatInject(messages, isContinue) {
             [extension_prompt_roles.SYSTEM]: '',
             [extension_prompt_roles.USER]: name1,
             [extension_prompt_roles.ASSISTANT]: name2,
-        }
+        };
         const roleMessages = [];
         const separator = '\n';
 
