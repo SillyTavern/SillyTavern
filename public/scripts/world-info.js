@@ -1,4 +1,4 @@
-import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId } from '../script.js';
+import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
@@ -931,6 +931,7 @@ const originalDataKeyMap = {
     'depth': 'extensions.depth',
     'probability': 'extensions.probability',
     'position': 'extensions.position',
+    'role': 'extensions.role',
     'content': 'content',
     'enabled': 'enabled',
     'key': 'keys',
@@ -1375,9 +1376,12 @@ function getWorldEntry(name, data, entry) {
             depthInput.prop('disabled', false);
             depthInput.css('visibility', 'visible');
             //depthInput.parent().show();
+            const role = Number($(this).find(':selected').data('role'));
+            data.entries[uid].role = role;
         } else {
             depthInput.prop('disabled', true);
             depthInput.css('visibility', 'hidden');
+            data.entries[uid].role = null;
             //depthInput.parent().hide();
         }
         updatePosOrdDisplay(uid);
@@ -1385,11 +1389,13 @@ function getWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, 'position', data.entries[uid].position == 0 ? 'before_char' : 'after_char');
         // Write the original value as extensions field
         setOriginalDataValue(data, uid, 'extensions.position', data.entries[uid].position);
+        setOriginalDataValue(data, uid, 'extensions.role', data.entries[uid].role);
         saveWorldInfo(name, data);
     });
 
+    const roleValue = entry.position === world_info_position.atDepth ? String(entry.role ?? extension_prompt_roles.SYSTEM) : '';
     template
-        .find(`select[name="position"] option[value=${entry.position}]`)
+        .find(`select[name="position"] option[value=${entry.position}][data-role="${roleValue}"]`)
         .prop('selected', true)
         .trigger('input');
 
@@ -1610,7 +1616,7 @@ function getWorldEntry(name, data, entry) {
  * @returns {(input: any, output: any) => any} Callback function for the autocomplete
  */
 function getInclusionGroupCallback(data) {
-    return function(input, output) {
+    return function (input, output) {
         const groups = new Set();
         for (const entry of Object.values(data.entries)) {
             if (entry.group) {
@@ -1633,7 +1639,7 @@ function getInclusionGroupCallback(data) {
 }
 
 function getAutomationIdCallback(data) {
-    return function(input, output) {
+    return function (input, output) {
         const ids = new Set();
         for (const entry of Object.values(data.entries)) {
             if (entry.automationId) {
@@ -1714,6 +1720,7 @@ const newEntryTemplate = {
     caseSensitive: null,
     matchWholeWords: null,
     automationId: '',
+    role: 0,
 };
 
 function createWorldInfoEntry(name, data, fromSlashCommand = false) {
@@ -2255,13 +2262,14 @@ async function checkWorldInfo(chat, maxContext) {
                 ANBottomEntries.unshift(entry.content);
                 break;
             case world_info_position.atDepth: {
-                const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === entry.depth ?? DEFAULT_DEPTH);
+                const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === (entry.depth ?? DEFAULT_DEPTH) && e.role === (entry.role ?? extension_prompt_roles.SYSTEM));
                 if (existingDepthIndex !== -1) {
                     WIDepthEntries[existingDepthIndex].entries.unshift(entry.content);
                 } else {
                     WIDepthEntries.push({
                         depth: entry.depth,
                         entries: [entry.content],
+                        role: entry.role ?? extension_prompt_roles.SYSTEM,
                     });
                 }
                 break;
@@ -2277,7 +2285,7 @@ async function checkWorldInfo(chat, maxContext) {
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
         const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`;
-        context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan);
+        context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
     return { worldInfoBefore, worldInfoAfter, WIDepthEntries, allActivatedEntries };
@@ -2358,6 +2366,7 @@ function convertAgnaiMemoryBook(inputObj) {
 
     inputObj.entries.forEach((entry, index) => {
         outputObj.entries[index] = {
+            ...newEntryTemplate,
             uid: index,
             key: entry.keywords,
             keysecondary: [],
@@ -2375,6 +2384,11 @@ function convertAgnaiMemoryBook(inputObj) {
             probability: null,
             useProbability: false,
             group: '',
+            scanDepth: entry.extensions?.scan_depth ?? null,
+            caseSensitive: entry.extensions?.case_sensitive ?? null,
+            matchWholeWords: entry.extensions?.match_whole_words ?? null,
+            automationId: entry.extensions?.automation_id ?? '',
+            role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
         };
     });
 
@@ -2386,6 +2400,7 @@ function convertRisuLorebook(inputObj) {
 
     inputObj.data.forEach((entry, index) => {
         outputObj.entries[index] = {
+            ...newEntryTemplate,
             uid: index,
             key: entry.key.split(',').map(x => x.trim()),
             keysecondary: entry.secondkey ? entry.secondkey.split(',').map(x => x.trim()) : [],
@@ -2403,6 +2418,11 @@ function convertRisuLorebook(inputObj) {
             probability: entry.activationPercent ?? null,
             useProbability: entry.activationPercent ?? false,
             group: '',
+            scanDepth: entry.extensions?.scan_depth ?? null,
+            caseSensitive: entry.extensions?.case_sensitive ?? null,
+            matchWholeWords: entry.extensions?.match_whole_words ?? null,
+            automationId: entry.extensions?.automation_id ?? '',
+            role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
         };
     });
 
@@ -2419,6 +2439,7 @@ function convertNovelLorebook(inputObj) {
         const addMemo = displayName !== undefined && displayName.trim() !== '';
 
         outputObj.entries[index] = {
+            ...newEntryTemplate,
             uid: index,
             key: entry.keys,
             keysecondary: [],
@@ -2436,6 +2457,11 @@ function convertNovelLorebook(inputObj) {
             probability: null,
             useProbability: false,
             group: '',
+            scanDepth: entry.extensions?.scan_depth ?? null,
+            caseSensitive: entry.extensions?.case_sensitive ?? null,
+            matchWholeWords: entry.extensions?.match_whole_words ?? null,
+            automationId: entry.extensions?.automation_id ?? '',
+            role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
         };
     });
 
@@ -2452,6 +2478,7 @@ function convertCharacterBook(characterBook) {
         }
 
         result.entries[entry.id] = {
+            ...newEntryTemplate,
             uid: entry.id,
             key: entry.keys,
             keysecondary: entry.secondary_keys || [],
@@ -2475,6 +2502,7 @@ function convertCharacterBook(characterBook) {
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
             automationId: entry.extensions?.automation_id ?? '',
+            role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
         };
     });
 
