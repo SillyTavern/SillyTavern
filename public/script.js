@@ -4531,6 +4531,7 @@ function parseAndSaveLogprobs(data, continueFrom) {
                     logprobs = data?.completion_probabilities?.map(x => parseTextgenLogprobs(x.content, [x])) || null;
                 } break;
                 case textgen_types.APHRODITE:
+                case textgen_types.MANCER:
                 case textgen_types.TABBY: {
                     logprobs = parseTabbyLogprobs(data) || null;
                 } break;
@@ -4585,7 +4586,7 @@ function extractMultiSwipes(data, type) {
         return swipes;
     }
 
-    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && textgen_settings.type === textgen_types.APHRODITE)) {
+    if (main_api === 'openai' || main_api === 'mancer' || (main_api === 'textgenerationwebui' && textgen_settings.type === textgen_types.APHRODITE)) {
         if (!Array.isArray(data.choices)) {
             return swipes;
         }
