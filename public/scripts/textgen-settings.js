@@ -1048,13 +1048,13 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
     };
 
     if (settings.type === MANCER) {
-        params.n = canMultiSwipe ? settings.n : 1
-        params.epsilon_cutoff /= 1000
-        params.eta_cutoff /= 1000
-        params.dynatemp_mode = 
-        params.dynatemp_min = params.dynamic_temperature ? params.dynatemp_low : 0
-        params.dynatemp_max = params.dynamic_temperature ? params.dynatemp_high : 0
-        delete params.dynatemp_low, params.dynatemp_high
+        params.n = canMultiSwipe ? settings.n : 1;
+        params.epsilon_cutoff /= 1000;
+        params.eta_cutoff /= 1000;
+        params.dynatemp_mode = params.dynamic_temperature ? true : false;
+        params.dynatemp_min = params.dynamic_temperature ? params.dynatemp_low : 0;
+        params.dynatemp_max = params.dynamic_temperature ? params.dynatemp_high : 0;
+        delete params.dynatemp_low, params.dynatemp_high;
     }
 
     if (settings.type === APHRODITE) {

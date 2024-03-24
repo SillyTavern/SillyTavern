@@ -4586,7 +4586,7 @@ function extractMultiSwipes(data, type) {
         return swipes;
     }
 
-    if (main_api === 'openai' || main_api === 'mancer' || (main_api === 'textgenerationwebui' && textgen_settings.type === textgen_types.APHRODITE)) {
+    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && [MANCER, APHRODITE].includes(textgen_settings.type))) {
         if (!Array.isArray(data.choices)) {
             return swipes;
         }
