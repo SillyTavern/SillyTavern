@@ -5670,7 +5670,7 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
 
 function highlightSelectedAvatar() {
     $('#user_avatar_block .avatar-container').removeClass('selected');
-    $(`#user_avatar_block .avatar-container[imgfile='${user_avatar}']`).addClass('selected');
+    $(`#user_avatar_block .avatar-container[imgfile="${user_avatar}"]`).addClass('selected');
 }
 
 /**
