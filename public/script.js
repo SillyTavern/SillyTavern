@@ -2028,7 +2028,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         forceAvatar: mes.force_avatar,
         timestamp: timestamp,
         extra: mes.extra,
-        tokenCount: mes.extra?.token_count,
+        tokenCount: mes.extra?.token_count ?? 0,
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count),
     };
 
