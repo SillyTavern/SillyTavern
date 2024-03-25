@@ -139,7 +139,7 @@ function renderTopLogprobs() {
     const candidates = topLogprobs
         .sort(([, logA], [, logB]) => logB - logA)
         .map(([text, log]) => {
-            if (log < 0) {
+            if (log <= 0) {
                 const probability = Math.exp(log);
                 sum += probability;
                 return [text, probability, log];
