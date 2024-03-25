@@ -1038,6 +1038,31 @@ select {
     order: 3;
 }
 
+.slashCommandAutoComplete {
+    --bottom: 50vh;
+    background: black;
+    border: 1px solid white;
+    color: rgb(204 204 204);
+    max-height: calc(95vh - var(--bottom));
+    list-style: none;
+    margin: 0px;
+    overflow: auto;
+    padding: 0px;
+    position: fixed;
+    z-index: 10000;
+
+    > .item {
+        cursor: pointer;
+        &:hover {
+            background-color: rgb(43 45 46);
+        }
+        &.selected {
+            background-color: #20395C;
+            color: white;
+        }
+    }
+}
+
 #character_popup .editor_maximize {
     cursor: pointer;
     margin: 5px;

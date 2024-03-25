@@ -33,6 +33,9 @@ import {
     system_message_types,
     this_chid,
 } from '../script.js';
+import { SlashCommandParser as NewSlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommandParserError } from './slash-commands/SlashCommandParserError.js';
+import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { hideChatMessage, unhideChatMessage } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
@@ -43,7 +46,7 @@ import { autoSelectPersona } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
-import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 export {
     executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
@@ -181,7 +184,7 @@ class SlashCommandParser {
     }
 }
 
-const parser = new SlashCommandParser();
+export const parser = new NewSlashCommandParser();
 const registerSlashCommand = parser.addCommand.bind(parser);
 const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
@@ -1684,10 +1687,35 @@ function modelCallback(_, model) {
  * @param {boolean} unescape Whether to unescape the batch separator
  * @returns {Promise<{interrupt: boolean, newText: string, pipe: string} | boolean>}
  */
-async function executeSlashCommands(text, unescape = false) {
+async function executeSlashCommands(text, unescape = false, handleParserErrors = true, scope = null) {
     if (!text) {
         return false;
     }
+
+    let closure;
+    try {
+        closure = parser.parse(text);
+        closure.scope.parent = scope;
+    } catch (e) {
+        if (handleParserErrors && e instanceof SlashCommandParserError) {
+            /**@type {SlashCommandParserError}*/
+            const ex = e;
+            const toast = `
+                <div>${ex.message}</div>
+                <div>Line: ${ex.line} Column: ${ex.column}</div>
+                <pre style="text-align:left;">${ex.hint}</pre>
+            `;
+            toastr.error(
+                toast,
+                'SlashCommandParserError',
+                { escapeHtml:false, timeOut: 10000, onclick:()=>callPopup(toast, 'text') },
+            );
+        } else {
+            throw e;
+        }
+    }
+
+    return await closure.execute();
 
     // Unescape the pipe character and macro braces
     if (unescape) {
@@ -1782,40 +1810,321 @@ async function executeSlashCommands(text, unescape = false) {
 }
 
 function setSlashCommandAutocomplete(textarea) {
+    /**@type {Number}*/
+    let width;
+    /**@type {HTMLTextAreaElement}*/
+    let element;
+    /**@type {String}*/
+    let text;
+    /**@type {SlashCommandExecutor}*/
+    let executor;
+    /**@type {Boolean}*/
+    let isReplacable;
+    textarea[0].addEventListener('keyup', ()=>isReplacable ? null : textarea.autocomplete('search'));
     textarea.autocomplete({
         source: (input, output) => {
-            // Only show for slash commands and if there's no space
-            if (!input.term.startsWith('/') || input.term.includes(' ')) {
+            // Only show for slash commands
+            if (!input.term.startsWith('/')) {
                 output([]);
                 return;
             }
 
-            const slashCommand = input.term.toLowerCase().substring(1); // Remove the slash
-            const result = Object
-                .keys(parser.helpStrings) // Get all slash commands
+            element = textarea[0];
+            text = input.term;
+            executor = parser.getCommandAt(text, element.selectionStart);
+            const slashCommand = executor?.name?.toLowerCase() ?? '';
+            isReplacable = !executor ? true : element.selectionStart + 1 == executor.start + executor.name.length;
+
+            window.parser = parser;
+            const helpStrings = Object
+                .keys(parser.commands) // Get all slash commands
                 .filter(x => x.startsWith(slashCommand)) // Filter by the input
                 .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
-                // .slice(0, 20) // Limit to 20 results
-                .map(x => ({ label: parser.helpStrings[x], value: `/${x} ` })); // Map to the help string
+            ;
+            const result = helpStrings
+                .filter((it,idx)=>helpStrings.indexOf(it) == idx) // remove duplicates
+                .map(x => ({ label: parser.commands[x].helpStringFormatted, value: `/${x} ` })) // Map to the help string
+            ;
 
+            // add notice if no match found
+            if (result.length == 0) {
+                result.push({ label:`No matching commands for "/${slashCommand}"`, value:'' });
+            }
+            console.log(result);
+
+            // determine textarea width *once* before generating output
+            width = element.getBoundingClientRect().width;
             output(result); // Return the results
         },
         select: (e, u) => {
-            // unfocus the input
-            $(e.target).val(u.item.value);
+            e.preventDefault();
+            // only update value if no space after command name
+            if (isReplacable) {
+                element.value = `${text.slice(0, executor.start - 2)}${u.item.value}${text.slice(executor.start + executor.name.length)}`;
+                element.selectionStart = executor.start + u.item.value.length - 2;
+                element.selectionEnd = element.selectionStart;
+            } else {
+                console.log('[AUTOCOMPLETE]', '[SELECT]', {e, u});
+            }
+        },
+        focus: (e, u) => {
+            e.preventDefault();
+            // only update value if no space after command name
+            if (isReplacable) {
+                element.value = `${text.slice(0, executor.start - 2)}${u.item.value}${text.slice(executor.start + executor.name.length)}`;
+                element.selectionStart = executor.start + u.item.value.length - 2;
+                element.selectionEnd = element.selectionStart;
+            } else {
+                switch (e.key) {
+                    case 'ArrowUp': {
+                        const line = text.slice(0, element.selectionStart).replace(/[^\n]/g, '').length;
+                        if (line == 0) {
+                            element.selectionStart = 0;
+                        } else {
+                            const lines = text.slice(0, element.selectionStart).split('\n');
+                            console.log(lines.slice(-2)[0]);
+                            element.selectionStart -= Math.max(lines.slice(-1)[0].length + 1, lines.slice(-2)[0].length + 1);
+                        }
+                        element.selectionEnd = element.selectionStart;
+                        break;
+                    }
+                    case 'ArrowDown': {
+                        const line = text.slice(0, element.selectionStart).replace(/[^\n]/g, '').length;
+                        const lines = text.split('\n');
+                        if (line + 1 == lines.length) {
+                            element.selectionStart = text.length;
+                        } else {
+                            element.selectionStart += lines[line].length + 1;
+                        }
+                        element.selectionEnd = element.selectionStart;
+                        break;
+                    }
+                }
+            }
         },
         minLength: 1,
         position: { my: 'left bottom', at: 'left top', collision: 'none' },
     });
 
     textarea.autocomplete('instance')._renderItem = function (ul, item) {
-        const width = $(textarea).innerWidth();
-        const content = $('<div></div>').html(item.label);
-        return $('<li>').width(width).append(content).appendTo(ul);
+        const li = document.createElement('li'); {
+            li.style.width = `${width}px`;
+            const div = document.createElement('div'); {
+                div.innerHTML = item.label;
+                li.append(div);
+            }
+            ul.append(li);
+        }
+        return $(li);
     };
+}
+/**
+ *
+ * @param {HTMLTextAreaElement} textarea
+ */
+export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
+    const dom = document.createElement('ul'); {
+        dom.classList.add('slashCommandAutoComplete');
+    }
+    let isReplacable = false;
+    let result = [];
+    let selectedItem = null;
+    let isActive = false;
+    let text;
+    let executor;
+    let clone;
+    let hasFocus = false;
+    const hide = () => {
+        dom?.remove();
+        isActive = false;
+    };
+    const show = () => {
+        text = textarea.value;
+        // only show with textarea in focus
+        if (document.activeElement != textarea) return hide();
+        // only show for slash commands
+        if (text[0] != '/') return hide();
+
+        executor = parser.getCommandAt(text, textarea.selectionStart);
+        const slashCommand = executor?.name?.toLowerCase() ?? '';
+        isReplacable = !executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length + 1;
+
+        // don't show if no executor found, i.e. cursor's area is not a command
+        if (!executor) return hide();
+        else {
+            const helpStrings = Object
+                .keys(parser.commands) // Get all slash commands
+                .filter(it => executor.name == '' || isReplacable ? it.toLowerCase().startsWith(slashCommand) : it.toLowerCase() == slashCommand) // Filter by the input
+                .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
+            ;
+            result = helpStrings
+                .filter((it,idx)=>[idx, -1].includes(helpStrings.indexOf(parser.commands[it].name.toLowerCase()))) // remove duplicates
+                .map(it => ({ label: parser.commands[it].helpStringFormatted, value: `/${it} `, li:null })) // Map to the help string
+            ;
+        }
+
+        // add notice if no match found
+        if (result.length == 0) {
+            result.push({ label:`No matching commands for "/${slashCommand}"`, value:'', li:null });
+        } else if (result.length == 1 && result[0].value == `/${executor.name} `) {
+            isReplacable = false;
+        }
+
+        dom.innerHTML = '';
+        for (const item of result) {
+            const li = document.createElement('li'); {
+                li.classList.add('item');
+                if (item == result[0]) {
+                    li.classList.add('selected');
+                }
+                li.innerHTML = item.label;
+                li.addEventListener('click', ()=>{
+                    selectedItem = item;
+                    select();
+                });
+                item.li = li;
+                dom.append(li);
+            }
+        }
+        selectedItem = result[0];
+        if (isFloating) {
+            const location = getCursorPosition();
+            if (location.y <= window.innerHeight / 2) {
+                dom.style.top = `${location.bottom}px`;
+                dom.style.bottom = 'auto';
+                dom.style.left = `${location.left}px`;
+                dom.style.right = 'auto';
+                dom.style.maxWidth = `calc(99vw - ${location.left}px)`;
+                dom.style.maxHeight = `calc(99vh - ${location.bottom}px)`;
+            } else {
+                dom.style.top = 'auto';
+                dom.style.bottom = `calc(100vh - ${location.top}px)`;
+                dom.style.left = `${location.left}px`;
+                dom.style.right = 'auto';
+                dom.style.maxWidth = `calc(99vw - ${location.left}px)`;
+                dom.style.maxHeight = `calc(99vh - ${location.top}px)`;
+            }
+        } else {
+            const rect = textarea.getBoundingClientRect();
+            dom.style.setProperty('--bottom', `${window.innerHeight - rect.top}px`);
+            dom.style.bottom = `${window.innerHeight - rect.top}px`;
+            dom.style.left = `${rect.left}px`;
+            dom.style.right = `${window.innerWidth - rect.right}px`;
+        }
+        document.body.append(dom);
+        isActive = true;
+    };
+    const getCursorPosition = () => {
+        const inputRect = textarea.getBoundingClientRect();
+        clone?.remove();
+        clone = document.createElement('div');
+        const style = window.getComputedStyle(textarea);
+        for (const key of style) {
+            clone.style[key] = style[key];
+        }
+        clone.style.height = `${inputRect.height}px`;
+        clone.style.left = `${inputRect.left}px`;
+        clone.style.top = `${inputRect.top}px`;
+        clone.style.position = 'fixed';
+        // clone.style.whiteSpace = 'pre-wrap';
+        clone.style.zIndex = '10000';
+        clone.style.visibility = 'hidden';
+        // clone.style.opacity = 0.5;
+        const text = textarea.value;
+        const before = text.slice(0, textarea.selectionStart);
+        clone.textContent = before;
+        const locator = document.createElement('span');
+        // locator.textContent = '.';
+        locator.textContent = text[textarea.selectionStart];
+        clone.append(locator);
+        clone.append(text.slice(textarea.selectionStart + 1));
+        document.body.append(clone);
+        clone.scrollTop = textarea.scrollTop;
+        const locatorRect = locator.getBoundingClientRect();
+        const location = {
+            left: locatorRect.left,
+            top: locatorRect.top,// - textarea.scrollTop,
+            bottom: locatorRect.bottom,// - textarea.scrollTop,
+        };
+        clone.remove();
+        return location;
+    };
+    const select = () => {
+        if (isReplacable) {
+            textarea.focus();
+            textarea.value = `${text.slice(0, executor.start - 2)}${selectedItem.value}${text.slice(executor.start - 2 + executor.name.length + 1)}`;
+            textarea.selectionStart = executor.start - 2 + selectedItem.value.length;
+            textarea.selectionEnd = textarea.selectionStart;
+            show();
+        }
+    };
+    const showAutoCompleteDebounced = debounce(()=>show(), 100);
+    textarea.addEventListener('input', ()=>showAutoCompleteDebounced());
+    textarea.addEventListener('click', ()=>showAutoCompleteDebounced());
+    textarea.addEventListener('keydown', (evt)=>{
+        if (isActive && isReplacable) {
+            switch (evt.key) {
+                case 'ArrowUp': {
+                    if (evt.ctrlKey || evt.altKey || evt.shiftKey) return;
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    const idx = result.indexOf(selectedItem);
+                    let newIdx;
+                    if (idx == 0) newIdx = result.length - 1;
+                    else newIdx = idx - 1;
+                    selectedItem.li.classList.remove('selected');
+                    selectedItem = result[newIdx];
+                    selectedItem.li.classList.add('selected');
+                    const rect = selectedItem.li.getBoundingClientRect();
+                    const rectParent = dom.getBoundingClientRect();
+                    if (rect.top < rectParent.top || rect.bottom > rectParent.bottom ) {
+                        selectedItem.li.scrollIntoView();
+                    }
+                    return;
+                }
+                case 'ArrowDown': {
+                    if (evt.ctrlKey || evt.altKey || evt.shiftKey) return;
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    const idx = result.indexOf(selectedItem);
+                    const  newIdx = (idx + 1) % result.length;
+                    selectedItem.li.classList.remove('selected');
+                    selectedItem = result[newIdx];
+                    selectedItem.li.classList.add('selected');
+                    const rect = selectedItem.li.getBoundingClientRect();
+                    const rectParent = dom.getBoundingClientRect();
+                    if (rect.top < rectParent.top || rect.bottom > rectParent.bottom ) {
+                        selectedItem.li.scrollIntoView();
+                    }
+                    return;
+                }
+                case 'Tab': {
+                    if (evt.ctrlKey || evt.altKey || evt.shiftKey) return;
+                    evt.preventDefault();
+                    evt.stopImmediatePropagation();
+                    select();
+                    return;
+                }
+            }
+        }
+        if (isActive) {
+            switch (evt.key) {
+                case 'Escape': {
+                    if (evt.ctrlKey || evt.altKey || evt.shiftKey) return;
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    hide();
+                    return;
+                }
+            }
+        }
+        showAutoCompleteDebounced();
+    });
+    textarea.addEventListener('blur', ()=>hide());
 }
 
 jQuery(function () {
     const textarea = $('#send_textarea');
-    setSlashCommandAutocomplete(textarea);
+    // setSlashCommandAutocomplete(textarea);
+    setNewSlashCommandAutoComplete(document.querySelector('#send_textarea'));
 });

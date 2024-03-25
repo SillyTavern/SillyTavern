@@ -1,4 +1,5 @@
 import { callPopup } from '../../../../script.js';
+import { setNewSlashCommandAutoComplete } from '../../../slash-commands.js';
 import { getSortableDelay } from '../../../utils.js';
 import { log, warn } from '../index.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
@@ -213,6 +214,7 @@ export class QuickReply {
             message.addEventListener('input', () => {
                 this.updateMessage(message.value);
             });
+            setNewSlashCommandAutoComplete(message, true);
             //TODO move tab support for textarea into its own helper(?) and use for both this and .editor_maximize
             message.addEventListener('keydown', (evt) => {
                 if (evt.key == 'Tab' && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
