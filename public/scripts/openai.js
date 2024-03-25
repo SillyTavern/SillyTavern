@@ -671,12 +671,13 @@ function populationInjectionPrompts(prompts, messages) {
         const roles = ['system', 'user', 'assistant'];
         const roleMessages = [];
         const separator = '\n';
+        const wrap = false;
 
         for (const role of roles) {
             // Get prompts for current role
             const rolePrompts = depthPrompts.filter(prompt => prompt.role === role).map(x => x.content).join(separator);
             // Get extension prompt
-            const extensionPrompt = getExtensionPrompt(extension_prompt_types.IN_CHAT, i, separator, roleTypes[role]);
+            const extensionPrompt = getExtensionPrompt(extension_prompt_types.IN_CHAT, i, separator, roleTypes[role], wrap);
 
             const jointPrompt = [rolePrompts, extensionPrompt].filter(x => x).map(x => x.trim()).join(separator);
 

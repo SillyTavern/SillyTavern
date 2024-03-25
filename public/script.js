@@ -2484,9 +2484,10 @@ function getExtensionPromptByName(moduleName) {
  * @param {number} [depth] Depth of the prompt
  * @param {string} [separator] Separator for joining multiple prompts
  * @param {number} [role] Role of the prompt
+ * @param {boolean} [wrap] Wrap start and end with a separator
  * @returns {string} Extension prompt
  */
-function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n', role = undefined) {
+function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n', role = undefined, wrap = true) {
     let extension_prompt = Object.keys(extension_prompts)
         .sort()
         .map((x) => extension_prompts[x])
@@ -2495,10 +2496,10 @@ function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth =
         .filter(x => role === undefined || x.role === undefined || x.role === role)
         .map(x => x.value.trim())
         .join(separator);
-    if (extension_prompt.length && !extension_prompt.startsWith(separator)) {
+    if (wrap && extension_prompt.length && !extension_prompt.startsWith(separator)) {
         extension_prompt = separator + extension_prompt;
     }
-    if (extension_prompt.length && !extension_prompt.endsWith(separator)) {
+    if (wrap && extension_prompt.length && !extension_prompt.endsWith(separator)) {
         extension_prompt = extension_prompt + separator;
     }
     if (extension_prompt.length) {
@@ -3988,10 +3989,10 @@ function doChatInject(messages, isContinue) {
         };
         const roleMessages = [];
         const separator = '\n';
+        const wrap = false;
 
         for (const role of roles) {
-            // Get extension prompt
-            const extensionPrompt = String(getExtensionPrompt(extension_prompt_types.IN_CHAT, i, separator, role)).trimStart();
+            const extensionPrompt = String(getExtensionPrompt(extension_prompt_types.IN_CHAT, i, separator, role, wrap)).trimStart();
             const isNarrator = role === extension_prompt_roles.SYSTEM;
             const isUser = role === extension_prompt_roles.USER;
             const name = names[role];
@@ -4003,7 +4004,7 @@ function doChatInject(messages, isContinue) {
                     mes: extensionPrompt,
                     extra: {
                         type: isNarrator ? system_message_types.NARRATOR : null,
-                    }
+                    },
                 });
             }
         }
