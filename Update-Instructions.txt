@@ -22,6 +22,9 @@ You can also try running the 'UpdateAndStart.bat' file, which will almost do the
 Alternatively, if the command prompt gives you problems (and you have GitHub Desktop installed), you can use the 'Repository' menu and select 'Pull'.
 The updates are applied automatically and safely.
 
+If you are a developer and use a fork of ST or switch branches regularly, you can use the 'UpdateForkAndStart.bat', which works similarly to 'UpdateAndStart.bat',
+but automatically pulls changes into your fork and handles switched branches gracefully by asking if you want to switch back.
+
 Method 2 - ZIP
 
 If you insist on installing via a zip, here is the tedious process for doing the update:
