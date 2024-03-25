@@ -1985,14 +1985,14 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
             ;
             result = helpStrings
                 .filter((it,idx)=>[idx, -1].includes(helpStrings.indexOf(parser.commands[it].name.toLowerCase()))) // remove duplicates
-                .map(it => ({ label: parser.commands[it].helpStringFormatted, value: `/${it} `, li:null })) // Map to the help string
+                .map(it => ({ label: parser.commands[it].helpStringFormatted, value: `/${it}`, li:null })) // Map to the help string
             ;
         }
 
         // add notice if no match found
         if (result.length == 0) {
             result.push({ label:`No matching commands for "/${slashCommand}"`, value:'', li:null });
-        } else if (result.length == 1 && result[0].value == `/${executor.name} `) {
+        } else if (result.length == 1 && result[0].value == `/${executor.name}`) {
             isReplacable = false;
         }
 
