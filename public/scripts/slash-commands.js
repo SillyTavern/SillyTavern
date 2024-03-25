@@ -2219,6 +2219,9 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
                 }
             }
         }
+        if (['Control', 'Shift', 'Alt'].includes(evt.key)) {
+            return;
+        }
         showAutoCompleteDebounced();
     });
     textarea.addEventListener('blur', ()=>hide());
