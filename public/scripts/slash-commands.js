@@ -1964,7 +1964,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         dom?.remove();
         isActive = false;
     };
-    const show = () => {
+    const show = (isInput = false) => {
         text = textarea.value;
         // only show with textarea in focus
         if (document.activeElement != textarea) return hide();
@@ -1973,7 +1973,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
 
         executor = parser.getCommandAt(text, textarea.selectionStart);
         const slashCommand = executor?.name?.toLowerCase() ?? '';
-        isReplacable = !executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length + 1;
+        isReplacable = isInput && (!executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length + 1);
 
         // don't show if no executor found, i.e. cursor's area is not a command
         if (!executor) return hide();
@@ -2084,8 +2084,8 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
             show();
         }
     };
-    const showAutoCompleteDebounced = debounce(()=>show(), 100);
-    textarea.addEventListener('input', ()=>showAutoCompleteDebounced());
+    const showAutoCompleteDebounced = debounce((isInput)=>show(isInput), 100);
+    textarea.addEventListener('input', ()=>showAutoCompleteDebounced(true));
     textarea.addEventListener('click', ()=>showAutoCompleteDebounced());
     textarea.addEventListener('keydown', (evt)=>{
         if (isActive && isReplacable) {
