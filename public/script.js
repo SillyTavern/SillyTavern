@@ -3237,8 +3237,9 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     }
 
     // Inject all Depth prompts. Chat Completion does it separately
+    let injectedIndices = [];
     if (main_api !== 'openai') {
-        doChatInject(coreChat, isContinue);
+        injectedIndices = doChatInject(coreChat, isContinue);
     }
 
     // Insert character jailbreak as the last user message (if exists, allowed, preferred, and not using Chat Completion)
@@ -3656,6 +3657,10 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             return combinedPrompt;
         };
 
+        finalMesSend.forEach((item, i) => {
+            item.injected = Array.isArray(injectedIndices) && injectedIndices.includes(i);
+        });
+
         let data = {
             api: main_api,
             combinedPrompt: null,
@@ -3973,9 +3978,10 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
  * Injects extension prompts into chat messages.
  * @param {object[]} messages Array of chat messages
  * @param {boolean} isContinue Whether the generation is a continuation. If true, the extension prompts of depth 0 are injected at position 1.
- * @returns {void}
+ * @returns {number[]} Array of indices where the extension prompts were injected
  */
 function doChatInject(messages, isContinue) {
+    const injectedIndices = [];
     let totalInsertedMessages = 0;
     messages.reverse();
 
@@ -4014,10 +4020,16 @@ function doChatInject(messages, isContinue) {
             const injectIdx = depth + totalInsertedMessages;
             messages.splice(injectIdx, 0, ...roleMessages);
             totalInsertedMessages += roleMessages.length;
+            injectedIndices.push(...Array.from({ length: roleMessages.length }, (_, i) => injectIdx + i));
         }
     }
 
+    for (let i = 0; i < injectedIndices.length; i++) {
+        injectedIndices[i] = messages.length - injectedIndices[i] - 1;
+    }
+
     messages.reverse();
+    return injectedIndices;
 }
 
 function flushWIDepthInjections() {
