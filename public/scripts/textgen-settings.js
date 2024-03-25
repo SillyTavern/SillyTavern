@@ -1051,9 +1051,9 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         params.n = canMultiSwipe ? settings.n : 1;
         params.epsilon_cutoff /= 1000;
         params.eta_cutoff /= 1000;
-        params.dynatemp_mode = params.dynamic_temperature ? true : false;
-        params.dynatemp_min = params.dynamic_temperature ? params.dynatemp_low : 0;
-        params.dynatemp_max = params.dynamic_temperature ? params.dynatemp_high : 0;
+        params.dynatemp_mode = params.dynamic_temperature ? 1 : 0;
+        params.dynatemp_min = params.dynatemp_low;
+        params.dynatemp_max = params.dynatemp_high;
         delete params.dynatemp_low, params.dynatemp_high;
     }
 
