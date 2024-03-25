@@ -884,8 +884,9 @@ export function initRossMods() {
     }
 
     $(document).on('keydown', function (event) {
-        processHotkeys(event.originalEvent);
+        processHotkeysDebounced(event.originalEvent);
     });
+    const processHotkeysDebounced = debounce(processHotkeys);
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
     /**
