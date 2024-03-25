@@ -1,13 +1,24 @@
 import { isMobile } from './RossAscends-mods.js';
-import { amount_gen, callPopup, eventSource, event_types, getRequestHeaders, max_context, setGenerationParamsFromPreset } from '../script.js';
+import {
+    amount_gen,
+    callPopup,
+    eventSource,
+    event_types,
+    getRequestHeaders,
+    max_context,
+    setGenerationParamsFromPreset,
+    token, settings,
+} from '../script.js';
 import { textgenerationwebui_settings as textgen_settings, textgen_types } from './textgen-settings.js';
 import { tokenizers } from './tokenizers.js';
+import { findSecret, readSecretState, SECRET_KEYS } from './secrets.js';
 
 let mancerModels = [];
 let togetherModels = [];
 let infermaticAIModels = [];
 let dreamGenModels = [];
 let aphroditeModels = [];
+let tabbyApiModels = [];
 export let openRouterModels = [];
 
 export async function loadOllamaModels(data) {
@@ -178,6 +189,32 @@ export async function loadAphroditeModels(data) {
     }
 }
 
+export async function loadTabbyApiModels(active, data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid Tabby API models data', data);
+        return;
+    }
+
+    tabbyApiModels = data;
+
+    if (textgen_settings.tabby_api_model !== active) {
+        textgen_settings.tabby_api_model = active;
+    }
+
+    if (!data.find(x => x.id === textgen_settings.tabby_api_model)) {
+        textgen_settings.tabby_api_model = data[0]?.id || '';
+    }
+
+    $('#tabby_api_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.tabby_api_model;
+        $('#tabby_api_model').append(option);
+    }
+}
+
 function onMancerModelSelect() {
     const modelId = String($('#mancer_model').val());
     textgen_settings.mancer_model = modelId;
@@ -227,6 +264,37 @@ function onOpenRouterModelSelect() {
 function onAphroditeModelSelect() {
     const modelId = String($('#aphrodite_model').val());
     textgen_settings.aphrodite_model = modelId;
+    $('#api_button_textgenerationwebui').trigger('click');
+}
+
+async function onTabbyApiModelSelect() {
+    const modelId = String($('#tabby_api_model').val());
+    textgen_settings.tabby_api_model = modelId;
+
+    try {
+        const url = String($('#tabby_api_url_text').val()) + 'v1/model/load';
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': token,
+                'x-admin-key': await findSecret(SECRET_KEYS.TABBY),
+            },
+            body: JSON.stringify({
+                name:  textgen_settings.tabby_api_model,
+            }),
+        }).then(
+            (value) => {
+                console.log(value); // Success!
+            },
+            (reason) => {
+                console.error('Could not load model: ' + reason); // Error!
+            },
+        );
+    } catch (err) {
+        console.error('Error setting model ', err);
+    }
+
     $('#api_button_textgenerationwebui').trigger('click');
 }
 
@@ -312,6 +380,20 @@ function getOpenRouterModelTemplate(option) {
 
 function getAphroditeModelTemplate(option) {
     const model = aphroditeModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
+        </div>
+    `));
+}
+
+function getTabbyApiModelTemplate(option) {
+    const model = tabbyApiModels.find(x => x.id === option?.element?.value);
 
     if (!option.id || !model) {
         return option.text;
@@ -427,6 +509,7 @@ jQuery(function () {
     $('#openrouter_model').on('change', onOpenRouterModelSelect);
     $('#ollama_download_model').on('click', downloadOllamaModel);
     $('#aphrodite_model').on('change', onAphroditeModelSelect);
+    $('#tabby_api_model').on('change', onTabbyApiModelSelect);
 
     if (!isMobile()) {
         $('#mancer_model').select2({
@@ -476,6 +559,13 @@ jQuery(function () {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getAphroditeModelTemplate,
+        });
+        $('#tabby_api_model').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getTabbyApiModelTemplate,
         });
     }
 });

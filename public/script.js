@@ -22,7 +22,7 @@ import {
     parseTabbyLogprobs,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER , TABBY } = textgen_types;
 
 import {
     world_info,
@@ -206,7 +206,16 @@ import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescriptio
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
+import {
+    loadMancerModels,
+    loadOllamaModels,
+    loadTogetherAIModels,
+    loadInfermaticAIModels,
+    loadOpenRouterModels,
+    loadAphroditeModels,
+    loadTabbyApiModels,
+    loadDreamGenModels,
+} from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
@@ -1108,6 +1117,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === APHRODITE) {
             loadAphroditeModels(data?.data);
             online_status = textgen_settings.aphrodite_model;
+        } else if (textgen_settings.type === TABBY) {
+            loadTabbyApiModels(data?.result, data?.data);
+            online_status = textgen_settings.tabby_api_model;
         } else {
             online_status = data?.result;
         }
@@ -8871,11 +8883,35 @@ jQuery(async function () {
             }
         }
 
+        if (SECRET_KEYS.TABBY.length) {
+            const endpoint = getTextGenServer();
+
+            if (!endpoint) {
+                console.warn('No endpoint for key check');
+                online_status = 'no_connection';
+            }
+
+            const response = await fetch('/api/backends/text-completions/tabbyapi/verify-key', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    api_server: endpoint,
+                }),
+            });
+
+            const data = await response.json();
+            if (data?.isAdminKey) {
+                $('#tabby_api_model_selection').show();
+            } else {
+                $('#tabby_api_model_selection').hide();
+            }
+        }
+
         validateTextGenUrl();
         startStatusLoading();
         main_api = 'textgenerationwebui';
         saveSettingsDebounced();
-        getStatusTextgen();
+        await getStatusTextgen();
     });
 
     $('#api_button_novel').on('click', async function (e) {

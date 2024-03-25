@@ -5,6 +5,7 @@ export const SECRET_KEYS = {
     MANCER: 'api_key_mancer',
     APHRODITE: 'api_key_aphrodite',
     TABBY: 'api_key_tabby',
+    TABBY_ADMIN: 'api_key_admin_tabby',
     OPENAI: 'api_key_openai',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
