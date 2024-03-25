@@ -48,11 +48,13 @@ export class SlashCommandParser {
             });
         }
 
-        let stringBuilder = `<span class="monospace">/${command}</span> ${helpString} `;
+        let stringBuilder = `${helpString} `;
         if (Array.isArray(aliases) && aliases.length) {
             let aliasesString = `(alias: ${aliases.map(x => `<span class="monospace">/${x}</span>`).join(', ')})`;
             stringBuilder += aliasesString;
         }
+        fnObj.helpStringFormattedWithoutName = stringBuilder;
+        stringBuilder = `<span class="monospace">/${command}</span> ${stringBuilder}`;
         this.helpStrings[command] = stringBuilder;
         fnObj.helpStringFormatted = stringBuilder;
     }

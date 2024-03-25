@@ -1062,6 +1062,10 @@ select {
             background-color: #20395C;
             color: white;
         }
+        .matched {
+            color: #6CABFB;
+            font-weight: bold;
+        }
     }
 }
 

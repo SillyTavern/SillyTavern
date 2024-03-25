@@ -47,7 +47,7 @@ import { autoSelectPersona } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
-import { debounce, delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, escapeRegex, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 export {
     executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
@@ -1890,7 +1890,7 @@ function setSlashCommandAutocomplete(textarea) {
                 element.selectionStart = executor.start + u.item.value.length - 2;
                 element.selectionEnd = element.selectionStart;
             } else {
-                console.log('[AUTOCOMPLETE]', '[SELECT]', {e, u});
+                console.log('[AUTOCOMPLETE]', '[SELECT]', { e, u });
             }
         },
         focus: (e, u) => {
@@ -1975,17 +1975,92 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         const slashCommand = executor?.name?.toLowerCase() ?? '';
         isReplacable = isInput && (!executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length + 1);
 
+        const matchType = power_user.stscript?.matching ?? 'strict';
+        const fuzzyRegex = new RegExp(`^(.*)${slashCommand.split('').map(char=>`(${escapeRegex(char)})`).join('(.*)')}(.*)$`, 'i');
+        const matchers = {
+            'strict': (cmd) => cmd.toLowerCase().startsWith(slashCommand),
+            'includes': (cmd) => cmd.toLowerCase().includes(slashCommand),
+            'fuzzy': (cmd) => fuzzyRegex.test(cmd),
+        };
+        const fuzzyScore = (name) => {
+            const parts = fuzzyRegex.exec(name).slice(1, -1);
+            let start = null;
+            let consecutive = [];
+            let current = '';
+            let offset = 0;
+            parts.forEach((part, idx) => {
+                if (idx % 2 == 0) {
+                    if (part.length > 0) {
+                        if (current.length > 0) {
+                            consecutive.push(current);
+                        }
+                        current = '';
+                    }
+                } else {
+                    if (start === null) {
+                        start = offset;
+                    }
+                    current += part;
+                }
+                offset += part.length;
+            });
+            if (current.length > 0) {
+                consecutive.push(current);
+            }
+            consecutive.sort((a,b)=>b.length - a.length);
+            console.log({ name, parts, start, consecutive, longestConsecutive:consecutive[0]?.length ?? 0 });
+            return { name, start, longestConsecutive:consecutive[0]?.length ?? 0 };
+        };
+        const fuzzyScoreCompare = (a, b) => {
+            if (a.score.start < b.score.start) return -1;
+            if (a.score.start > b.score.start) return 1;
+            if (a.score.longestConsecutive > b.score.longestConsecutive) return -1;
+            if (a.score.longestConsecutive < b.score.longestConsecutive) return 1;
+            return a.name.localeCompare(b.name);
+        };
+        const buildHelpStringName = (name) => {
+            switch (matchType) {
+                case 'strict': {
+                    return `<span class="monospace">/<span class="matched">${name.slice(0, slashCommand.length)}</span>${name.slice(slashCommand.length)}</span> `;
+                }
+                case 'includes': {
+                    const start = name.toLowerCase().search(slashCommand);
+                    return `<span class="monospace">/${name.slice(0, start)}<span class="matched">${name.slice(start, start + slashCommand.length)}</span>${name.slice(start + slashCommand.length)}</span> `;
+                }
+                case 'fuzzy': {
+                    const matched = name.replace(fuzzyRegex, (_, ...parts)=>{
+                        parts.splice(-2, 2);
+                        return parts.map((it, idx)=>{
+                            if (it === null || it.length == 0) return '';
+                            if (idx % 2 == 1) {
+                                return `<span class="matched">${it}</span>`;
+                            }
+                            return it;
+                        }).join('');
+                    });
+                    return `<span class="monospace">/${matched}</span> `;
+                }
+            }
+        };
+
         // don't show if no executor found, i.e. cursor's area is not a command
         if (!executor) return hide();
         else {
             const helpStrings = Object
                 .keys(parser.commands) // Get all slash commands
-                .filter(it => executor.name == '' || isReplacable ? it.toLowerCase().startsWith(slashCommand) : it.toLowerCase() == slashCommand) // Filter by the input
-                .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
+                .filter(it => executor.name == '' || isReplacable ? matchers[matchType](it) : it.toLowerCase() == slashCommand) // Filter by the input
+                // .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
             ;
             result = helpStrings
                 .filter((it,idx)=>[idx, -1].includes(helpStrings.indexOf(parser.commands[it].name.toLowerCase()))) // remove duplicates
-                .map(it => ({ label: parser.commands[it].helpStringFormatted, value: `/${it}`, li:null })) // Map to the help string
+                .map(it => ({
+                    name: it,
+                    label: `${buildHelpStringName(it)}${parser.commands[it].helpStringFormattedWithoutName}`,
+                    value: `/${it}`,
+                    score: matchType == 'fuzzy' ? fuzzyScore(it) : null,
+                    li: null,
+                })) // Map to the help string
+                .toSorted(matchType == 'fuzzy' ? fuzzyScoreCompare : (a, b) => a.name.localeCompare(b.name))
             ;
         }
 
