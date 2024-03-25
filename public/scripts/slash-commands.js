@@ -11,6 +11,7 @@ import {
     default_avatar,
     eventSource,
     event_types,
+    extension_prompt_roles,
     extension_prompt_types,
     extractMessageBias,
     generateQuietPrompt,
@@ -50,6 +51,11 @@ export {
 };
 
 class SlashCommandParser {
+    static COMMENT_KEYWORDS = ['#', '/'];
+    static RESERVED_KEYWORDS = [
+        ...this.COMMENT_KEYWORDS,
+    ];
+
     constructor() {
         this.commands = {};
         this.helpStrings = {};
@@ -57,6 +63,11 @@ class SlashCommandParser {
 
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
         const fnObj = { callback, helpString, interruptsGeneration, purgeFromMessage };
+
+        if ([command, ...aliases].some(x => SlashCommandParser.RESERVED_KEYWORDS.includes(x))) {
+            console.error('ERROR: Reserved slash command keyword used!');
+            return;
+        }
 
         if ([command, ...aliases].some(x => Object.hasOwn(this.commands, x))) {
             console.trace('WARN: Duplicate slash command registered!');
@@ -231,7 +242,7 @@ parser.addCommand('buttons', buttonsCallback, [], '<span class="monospace">label
 parser.addCommand('trimtokens', trimTokensCallback, [], '<span class="monospace">limit=number (direction=start/end [text])</span> – trims the start or end of text to the specified number of tokens.', true, true);
 parser.addCommand('trimstart', trimStartCallback, [], '<span class="monospace">(text)</span> – trims the text to the start of the first full sentence.', true, true);
 parser.addCommand('trimend', trimEndCallback, [], '<span class="monospace">(text)</span> – trims the text to the end of the last full sentence.', true, true);
-parser.addCommand('inject', injectCallback, [], '<span class="monospace">id=injectId (position=before/after/chat depth=number [text])</span> – injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4).', true, true);
+parser.addCommand('inject', injectCallback, [], '<span class="monospace">id=injectId (position=before/after/chat depth=number scan=true/false role=system/user/assistant [text])</span> – injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false).', true, true);
 parser.addCommand('listinjects', listInjectsCallback, [], ' – lists all script injections for the current chat.', true, true);
 parser.addCommand('flushinjects', flushInjectsCallback, [], ' – removes all script injections for the current chat.', true, true);
 parser.addCommand('tokens', (_, text) => getTokenCount(text), [], '<span class="monospace">(text)</span> – counts the number of tokens in the text.', true, true);
@@ -249,6 +260,11 @@ function injectCallback(args, value) {
         'after': extension_prompt_types.IN_PROMPT,
         'chat': extension_prompt_types.IN_CHAT,
     };
+    const roles = {
+        'system': extension_prompt_roles.SYSTEM,
+        'user': extension_prompt_roles.USER,
+        'assistant': extension_prompt_roles.ASSISTANT,
+    };
 
     const id = resolveVariable(args?.id);
 
@@ -264,6 +280,9 @@ function injectCallback(args, value) {
     const position = positions[positionValue] ?? positions[defaultPosition];
     const depthValue = Number(args?.depth) ?? defaultDepth;
     const depth = isNaN(depthValue) ? defaultDepth : depthValue;
+    const roleValue = typeof args?.role === 'string' ? args.role.toLowerCase().trim() : Number(args?.role ?? extension_prompt_roles.SYSTEM);
+    const role = roles[roleValue] ?? roles[extension_prompt_roles.SYSTEM];
+    const scan = isTrueBoolean(args?.scan);
     value = value || '';
 
     const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
@@ -276,9 +295,11 @@ function injectCallback(args, value) {
         value,
         position,
         depth,
+        scan,
+        role,
     };
 
-    setExtensionPrompt(prefixedId, value, position, depth);
+    setExtensionPrompt(prefixedId, value, position, depth, scan, role);
     saveMetadataDebounced();
     return '';
 }
@@ -293,7 +314,7 @@ function listInjectsCallback() {
         .map(([id, inject]) => {
             const position = Object.entries(extension_prompt_types);
             const positionName = position.find(([_, value]) => value === inject.position)?.[0] ?? 'unknown';
-            return `* **${id}**: <code>${inject.value}</code> (${positionName}, depth: ${inject.depth})`;
+            return `* **${id}**: <code>${inject.value}</code> (${positionName}, depth: ${inject.depth}, scan: ${inject.scan ?? false}, role: ${inject.role ?? extension_prompt_roles.SYSTEM})`;
         })
         .join('\n');
 
@@ -311,7 +332,7 @@ function flushInjectsCallback() {
 
     for (const [id, inject] of Object.entries(chat_metadata.script_injects)) {
         const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
-        setExtensionPrompt(prefixedId, '', inject.position, inject.depth);
+        setExtensionPrompt(prefixedId, '', inject.position, inject.depth, inject.scan, inject.role);
     }
 
     chat_metadata.script_injects = {};
@@ -338,7 +359,7 @@ export function processChatSlashCommands() {
     for (const [id, inject] of Object.entries(context.chatMetadata.script_injects)) {
         const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
         console.log('Adding script injection', id);
-        setExtensionPrompt(prefixedId, inject.value, inject.position, inject.depth);
+        setExtensionPrompt(prefixedId, inject.value, inject.position, inject.depth, inject.scan, inject.role);
     }
 }
 
@@ -1721,6 +1742,11 @@ async function executeSlashCommands(text, unescape = false) {
         const result = parser.parse(trimmedLine);
 
         if (!result) {
+            continue;
+        }
+
+        // Skip comment commands. They don't run macros or interrupt pipes.
+        if (SlashCommandParser.COMMENT_KEYWORDS.includes(result.command)) {
             continue;
         }
 

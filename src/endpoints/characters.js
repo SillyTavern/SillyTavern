@@ -406,6 +406,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 match_whole_words: entry.matchWholeWords ?? null,
                 case_sensitive: entry.caseSensitive ?? null,
                 automation_id: entry.automationId ?? '',
+                role: entry.role ?? 0,
             },
         };
 

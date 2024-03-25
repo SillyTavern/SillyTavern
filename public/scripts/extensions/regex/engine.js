@@ -118,7 +118,7 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     newString = rawString.replace(findRegex, function(match) {
         const args = [...arguments];
         const replaceString = regexScript.replaceString.replace(/{{match}}/gi, '$0');
-        const replaceWithGroups = replaceString.replaceAll(/\$(\d)+/g, (_, num) => {
+        const replaceWithGroups = replaceString.replaceAll(/\$(\d+)/g, (_, num) => {
             // Get a full match or a capture group
             const match = args[Number(num)];
 

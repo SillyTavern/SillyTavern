@@ -630,7 +630,8 @@ body.reduced-motion #bg_custom {
     padding-right: 2px;
 }
 
-#send_form>#nonQRFormItems>div>div:not(.mes_stop) {
+#rightSendForm>div:not(.mes_stop),
+#leftSendForm>div {
     width: var(--bottomFormBlockSize);
     height: var(--bottomFormBlockSize);
     margin: 0;
@@ -645,7 +646,8 @@ body.reduced-motion #bg_custom {
     transition: all 300ms;
 }
 
-#send_form>#nonQRFormItems>div>div:hover {
+#rightSendForm>div:hover,
+#leftSendForm>div:hover {
     opacity: 1;
     filter: brightness(1.2);
 }
@@ -1383,7 +1385,7 @@ input[type="file"] {
 
 }
 
-#movingDivs > div {
+#movingDivs>div {
     z-index: 4000;
 }
 
@@ -2746,7 +2748,7 @@ input[type="range"]::-webkit-slider-thumb {
     max-height: calc(100vh - 84px);
     max-height: calc(100svh - 84px);
     position: absolute;
-    z-index: 3000;
+    z-index: 4001;
     margin-left: auto;
     margin-right: auto;
     left: 0;
@@ -2824,7 +2826,7 @@ h5 {
     width: 100%;
     height: 100vh;
     height: 100svh;
-    z-index: 3001;
+    z-index: 4100;
     top: 0;
     background-color: var(--black70a);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
@@ -3384,7 +3386,8 @@ a {
 }
 
 body:has(.drawer-content.maximized) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)),
-body:has(.drawer-content.open) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)) {
+body:has(.drawer-content.open) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)),
+body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)) {
     z-index: 4005;
 }
 

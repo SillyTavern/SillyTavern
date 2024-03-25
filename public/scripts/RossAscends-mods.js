@@ -126,7 +126,7 @@ export function isMobile() {
     return mobileTypes.includes(parsedUA?.platform?.type);
 }
 
-function shouldSendOnEnter() {
+export function shouldSendOnEnter() {
     if (!power_user) {
         return false;
     }
