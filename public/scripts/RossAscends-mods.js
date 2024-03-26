@@ -399,6 +399,7 @@ function saveUserInput() {
     const userInput = String($('#send_textarea').val());
     SaveLocal('userInput', userInput);
 }
+const saveUserInputDebounced = debounce(saveUserInput);
 
 // Make the DIV element draggable:
 
@@ -848,7 +849,7 @@ export function initRossMods() {
         } else {
             autoFitSendTextAreaDebounced();
         }
-        saveUserInput();
+        saveUserInputDebounced();
     });
 
     restoreUserInput();
