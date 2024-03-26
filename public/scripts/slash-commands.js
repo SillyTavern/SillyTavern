@@ -25,6 +25,8 @@ import {
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
+    setActiveCharacter,
+    setActiveGroup,
     setCharacterId,
     setCharacterName,
     setExtensionPrompt,
@@ -1248,11 +1250,15 @@ async function goToCharacterCallback(_, name) {
 
     if (characterIndex !== -1) {
         await openChat(new String(characterIndex));
+        setActiveCharacter(characters[characterIndex]?.avatar);
+        setActiveGroup(null);
         return characters[characterIndex]?.name;
     } else {
         const group = groups.find(it => it.name.toLowerCase() == name.toLowerCase());
         if (group) {
             await openGroupById(group.id);
+            setActiveCharacter(null);
+            setActiveGroup(group.id);
             return group.name;
         } else {
             console.warn(`No matches found for name "${name}"`);
