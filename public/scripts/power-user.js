@@ -21,6 +21,8 @@ import {
     saveChatConditional,
     setAnimationDuration,
     ANIMATION_DURATION_DEFAULT,
+    setActiveGroup,
+    setActiveCharacter,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -2306,6 +2308,8 @@ async function doRandomChat() {
     resetSelectedGroup();
     const characterId = Math.floor(Math.random() * characters.length).toString();
     setCharacterId(characterId);
+    setActiveCharacter(characters[characterId]?.avatar);
+    setActiveGroup(null);
     await delay(1);
     await reloadCurrentChat();
     return characters[characterId]?.name;

@@ -850,6 +850,7 @@ export function parseTextgenLogprobs(token, logprobs) {
     switch (settings.type) {
         case TABBY:
         case APHRODITE:
+        case MANCER:
         case OOBA: {
             /** @type {Record<string, number>[]} */
             const topLogprobs = logprobs.top_logprobs;
@@ -971,6 +972,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'typical_p': settings.typical_p,
         'typical': settings.typical_p,
         'sampler_seed': settings.seed,
+        'seed': settings.seed,
         'min_p': settings.min_p,
         'repetition_penalty': settings.rep_pen,
         'frequency_penalty': settings.freq_pen,
@@ -1000,12 +1002,12 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'skip_special_tokens': settings.skip_special_tokens,
         'top_a': settings.top_a,
         'tfs': settings.tfs,
-        'epsilon_cutoff': settings.type === OOBA ? settings.epsilon_cutoff : undefined,
-        'eta_cutoff': settings.type === OOBA ? settings.eta_cutoff : undefined,
+        'epsilon_cutoff': [OOBA, MANCER].includes(settings.type) ? settings.epsilon_cutoff : undefined,
+        'eta_cutoff': [OOBA, MANCER].includes(settings.type) ? settings.eta_cutoff : undefined,
         'mirostat_mode': settings.mirostat_mode,
         'mirostat_tau': settings.mirostat_tau,
         'mirostat_eta': settings.mirostat_eta,
-        'custom_token_bans': settings.type === textgen_types.APHRODITE ?
+        'custom_token_bans': [APHRODITE, MANCER].includes(settings.type) ?
             toIntArray(getCustomTokenBans()) :
             getCustomTokenBans(),
         'api_type': settings.type,
@@ -1022,7 +1024,6 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'penalty_alpha': settings.type === OOBA ? settings.penalty_alpha : undefined,
         'temperature_last': (settings.type === OOBA || settings.type === APHRODITE || settings.type == TABBY) ? settings.temperature_last : undefined,
         'do_sample': settings.type === OOBA ? settings.do_sample : undefined,
-        'seed': settings.seed,
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
         'grammar_string': settings.grammar_string,
@@ -1045,6 +1046,17 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         //'logprobs': settings.log_probs_aphrodite,
         //'prompt_logprobs': settings.prompt_log_probs_aphrodite,
     };
+
+    if (settings.type === MANCER) {
+        params.n = canMultiSwipe ? settings.n : 1;
+        params.epsilon_cutoff /= 1000;
+        params.eta_cutoff /= 1000;
+        params.dynatemp_mode = params.dynamic_temperature ? 1 : 0;
+        params.dynatemp_min = params.dynatemp_low;
+        params.dynatemp_max = params.dynatemp_high;
+        delete params.dynatemp_low, params.dynatemp_high;
+    }
+
     if (settings.type === APHRODITE) {
         params = Object.assign(params, aphroditeParams);
     } else {

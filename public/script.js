@@ -2028,7 +2028,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         forceAvatar: mes.force_avatar,
         timestamp: timestamp,
         extra: mes.extra,
-        tokenCount: mes.extra?.token_count,
+        tokenCount: mes.extra?.token_count ?? 0,
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count),
     };
 
@@ -3237,8 +3237,9 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     }
 
     // Inject all Depth prompts. Chat Completion does it separately
+    let injectedIndices = [];
     if (main_api !== 'openai') {
-        doChatInject(coreChat, isContinue);
+        injectedIndices = doChatInject(coreChat, isContinue);
     }
 
     // Insert character jailbreak as the last user message (if exists, allowed, preferred, and not using Chat Completion)
@@ -3656,6 +3657,10 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             return combinedPrompt;
         };
 
+        finalMesSend.forEach((item, i) => {
+            item.injected = Array.isArray(injectedIndices) && injectedIndices.includes(i);
+        });
+
         let data = {
             api: main_api,
             combinedPrompt: null,
@@ -3973,9 +3978,10 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
  * Injects extension prompts into chat messages.
  * @param {object[]} messages Array of chat messages
  * @param {boolean} isContinue Whether the generation is a continuation. If true, the extension prompts of depth 0 are injected at position 1.
- * @returns {void}
+ * @returns {number[]} Array of indices where the extension prompts were injected
  */
 function doChatInject(messages, isContinue) {
+    const injectedIndices = [];
     let totalInsertedMessages = 0;
     messages.reverse();
 
@@ -4014,10 +4020,16 @@ function doChatInject(messages, isContinue) {
             const injectIdx = depth + totalInsertedMessages;
             messages.splice(injectIdx, 0, ...roleMessages);
             totalInsertedMessages += roleMessages.length;
+            injectedIndices.push(...Array.from({ length: roleMessages.length }, (_, i) => injectIdx + i));
         }
     }
 
+    for (let i = 0; i < injectedIndices.length; i++) {
+        injectedIndices[i] = messages.length - injectedIndices[i] - 1;
+    }
+
     messages.reverse();
+    return injectedIndices;
 }
 
 function flushWIDepthInjections() {
@@ -4563,6 +4575,7 @@ function parseAndSaveLogprobs(data, continueFrom) {
                     logprobs = data?.completion_probabilities?.map(x => parseTextgenLogprobs(x.content, [x])) || null;
                 } break;
                 case textgen_types.APHRODITE:
+                case textgen_types.MANCER:
                 case textgen_types.TABBY: {
                     logprobs = parseTabbyLogprobs(data) || null;
                 } break;
@@ -4617,7 +4630,7 @@ function extractMultiSwipes(data, type) {
         return swipes;
     }
 
-    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && textgen_settings.type === textgen_types.APHRODITE)) {
+    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && [MANCER, APHRODITE].includes(textgen_settings.type))) {
         if (!Array.isArray(data.choices)) {
             return swipes;
         }
@@ -5657,7 +5670,7 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
 
 function highlightSelectedAvatar() {
     $('#user_avatar_block .avatar-container').removeClass('selected');
-    $(`#user_avatar_block .avatar-container[imgfile='${user_avatar}']`).addClass('selected');
+    $(`#user_avatar_block .avatar-container[imgfile="${user_avatar}"]`).addClass('selected');
 }
 
 /**
