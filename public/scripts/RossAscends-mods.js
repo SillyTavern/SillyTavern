@@ -658,6 +658,28 @@ export async function initMovingUI() {
     }
 }
 
+/**@type {HTMLTextAreaElement} */
+const sendTextArea = document.querySelector('#send_textarea');
+/**
+ * this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
+ */
+function autoFitSendTextArea() {
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    /**@type {HTMLDivElement} */
+    const chatBlock = document.querySelector('#chat');
+    const originalScrollBottom = chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
+    if (sendTextArea.scrollHeight == sendTextArea.offsetHeight) {
+        sendTextArea.style.height = window.getComputedStyle(sendTextArea).getPropertyValue('min-height');
+    }
+    sendTextArea.style.height = sendTextArea.scrollHeight + 0.3 + 'px';
+
+    if (!isFirefox) {
+        const newScrollTop = Math.round(chatBlock.scrollHeight - (chatBlock.offsetHeight + originalScrollBottom));
+        chatBlock.scrollTop = newScrollTop;
+    }
+}
+export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea);
+
 // ---------------------------------------------------
 
 export function initRossMods() {
@@ -820,17 +842,11 @@ export function initRossMods() {
         saveSettingsDebounced();
     });
 
-    //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
-    $('#send_textarea').on('input', function () {
-        const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-        const chatBlock = $('#chat');
-        const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
-        this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
-        this.style.height = this.scrollHeight + 0.3 + 'px';
-
-        if (!isFirefox) {
-            const newScrollTop = Math.round(chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom));
-            chatBlock.scrollTop(newScrollTop);
+    sendTextArea.addEventListener('input', ()=>{
+        if (sendTextArea.scrollHeight > sendTextArea.offsetHeight) {
+            autoFitSendTextArea();
+        } else {
+            autoFitSendTextAreaDebounced();
         }
         saveUserInput();
     });
