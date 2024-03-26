@@ -528,6 +528,7 @@ body.reduced-motion #bg_custom {
     top: 5px;
     margin-right: 5px;
     z-index: 2000;
+    min-width: 55px;
 }
 
 .panelControlBar .drag-grabber {
