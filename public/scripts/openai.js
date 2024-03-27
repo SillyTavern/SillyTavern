@@ -588,7 +588,7 @@ function setupChatCompletionPromptManager(openAiSettings) {
  * Parses the example messages into individual messages.
  * @param {string} messageExampleString - The string containing the example messages
  * @param {boolean} appendNamesForGroup - Whether to append the character name for group chats
- * @returns {object[]} Array of message objects
+ * @returns {Message[]} Array of message objects
  */
 export function parseExampleIntoIndividual(messageExampleString, appendNamesForGroup = true) {
     let result = []; // array of msgs

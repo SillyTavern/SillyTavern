@@ -2909,7 +2909,7 @@
                                         </div>
                                     </div>
                                     <div class="flex-container">
-                                        <div class="flex1" title="Inserted before a System (added by slash commands or extensions) message and as a last prompt line when generating a neutral/system reply. Defaults to User Prefix if not defined.">
+                                        <div class="flex1" title="Inserted before a System (added by slash commands or extensions) message and as a last prompt line when generating a neutral/system reply.">
                                             <label for="instruct_system_sequence">
                                                 <small data-i18n="System Message Prefix">System Message Prefix</small>
                                             </label>
@@ -2917,13 +2917,19 @@
                                                 <textarea id="instruct_system_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
-                                        <div class="flex1" title="Inserted after a System message. Defaults to User Suffix if not defined.">
+                                        <div class="flex1" title="Inserted after a System message.">
                                             <label for="instruct_system_suffix">
                                                 <small data-i18n="System Message Suffix">System Message Suffix</small>
                                             </label>
                                             <div>
                                                 <textarea id="instruct_system_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
+                                        </div>
+                                        <div class="flexBasis100p" title="If enabled, System Sequences will be the same as User Sequences.">
+                                            <label class="checkbox_label" for="instruct_system_same_as_user">
+                                                <input id="instruct_system_same_as_user" type="checkbox" />
+                                                <small data-i18n="System same as User">System same as User</small>
+                                            </label>
                                         </div>
                                     </div>
                                     <h5 class="textAlignCenter" data-i18n="System Prompt Wrapping">

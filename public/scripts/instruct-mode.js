@@ -1,7 +1,8 @@
 'use strict';
 
-import { saveSettingsDebounced, substituteParams } from '../script.js';
+import { name1, name2, saveSettingsDebounced, substituteParams } from '../script.js';
 import { selected_group } from './group-chats.js';
+import { parseExampleIntoIndividual } from './openai.js';
 import {
     power_user,
     context_presets,
@@ -35,6 +36,7 @@ const controls = [
     { id: 'instruct_activation_regex', property: 'activation_regex', isCheckbox: false },
     { id: 'instruct_bind_to_context', property: 'bind_to_context', isCheckbox: true },
     { id: 'instruct_skip_examples', property: 'skip_examples', isCheckbox: true },
+    { id: 'instruct_system_same_as_user', property: 'system_same_as_user', isCheckbox: true, trigger: true },
 ];
 
 /**
@@ -75,6 +77,10 @@ function migrateInstructModeSettings(settings) {
     if (settings.skip_examples === undefined) {
         settings.skip_examples = false;
     }
+
+    if (settings.system_same_as_user === undefined) {
+        settings.system_same_as_user = false;
+    }
 }
 
 /**
@@ -104,6 +110,10 @@ export function loadInstructMode(data) {
                 resetScrollHeight($element);
             }
         });
+
+        if (control.trigger) {
+            $element.trigger('input');
+        }
     });
 
     instruct_presets.forEach((preset) => {
@@ -248,12 +258,14 @@ export function getInstructStoppingSequences() {
     const result = [];
 
     if (power_user.instruct.enabled) {
-        const input_sequence = power_user.instruct.input_sequence;
-        const output_sequence = power_user.instruct.output_sequence;
-        const first_output_sequence = power_user.instruct.first_output_sequence;
-        const last_output_sequence = power_user.instruct.last_output_sequence;
+        const stop_sequence = power_user.instruct.stop_sequence;
+        const input_sequence = power_user.instruct.input_sequence.replace(/{{name}}/gi, name1);
+        const output_sequence = power_user.instruct.output_sequence.replace(/{{name}}/gi, name2);
+        const first_output_sequence = power_user.instruct.first_output_sequence.replace(/{{name}}/gi, name2);
+        const last_output_sequence = power_user.instruct.last_output_sequence.replace(/{{name}}/gi, name2);
+        const system_sequence = power_user.instruct.system_sequence.replace(/{{name}}/gi, 'System');
 
-        const combined_sequence = `${input_sequence}\n${output_sequence}\n${first_output_sequence}\n${last_output_sequence}`;
+        const combined_sequence = `${stop_sequence}\n${input_sequence}\n${output_sequence}\n${first_output_sequence}\n${last_output_sequence}\n${system_sequence}`;
 
         combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
     }
@@ -295,26 +307,48 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
         includeNames = true;
     }
 
-    let sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
-
-    if (forceOutputSequence && sequence === power_user.instruct.output_sequence) {
-        if (forceOutputSequence === force_output_sequence.FIRST && power_user.instruct.first_output_sequence) {
-            sequence = power_user.instruct.first_output_sequence;
-        } else if (forceOutputSequence === force_output_sequence.LAST && power_user.instruct.last_output_sequence) {
-            sequence = power_user.instruct.last_output_sequence;
+    function getPrefix() {
+        if (isNarrator) {
+            return power_user.instruct.system_same_as_user ? power_user.instruct.input_sequence : power_user.instruct.system_sequence;
         }
+
+        if (isUser) {
+            return power_user.instruct.input_sequence;
+        }
+
+        if (forceOutputSequence === force_output_sequence.FIRST) {
+            return power_user.instruct.first_output_sequence || power_user.instruct.output_sequence;
+        }
+
+        if (forceOutputSequence === force_output_sequence.LAST) {
+            return power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
+        }
+
+        return power_user.instruct.output_sequence;
     }
 
+    function getSuffix() {
+        if (isNarrator) {
+            return power_user.instruct.system_same_as_user ? power_user.instruct.input_suffix : power_user.instruct.system_suffix;
+        }
+
+        if (isUser) {
+            return power_user.instruct.input_suffix;
+        }
+
+        return power_user.instruct.output_suffix;
+    }
+
+    let prefix = getPrefix() || '';
+    let suffix = getSuffix() || '';
+
     if (power_user.instruct.macro) {
-        sequence = substituteParams(sequence, name1, name2);
-        sequence = sequence.replace(/{{name}}/gi, name || 'System');
+        prefix = substituteParams(prefix, name1, name2);
+        prefix = prefix.replace(/{{name}}/gi, name || 'System');
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const separatorSequence = power_user.instruct.separator_sequence && !isUser
-        ? power_user.instruct.separator_sequence
-        : separator;
-    const textArray = includeNames ? [sequence, `${name}: ${mes}` + separatorSequence] : [sequence, mes + separatorSequence];
+    const textArray = includeNames ? [prefix, `${name}: ${mes}` + suffix] : [prefix, mes + suffix];
     const text = textArray.filter(x => x).join(separator);
     return text;
 }
@@ -324,7 +358,7 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
  * @param {string} systemPrompt System prompt string.
  * @returns {string} Formatted instruct mode system prompt.
  */
-export function formatInstructModeSystemPrompt(systemPrompt){
+export function formatInstructModeSystemPrompt(systemPrompt) {
     const separator = power_user.instruct.wrap ? '\n' : '';
 
     if (power_user.instruct.system_sequence_prefix) {
@@ -340,33 +374,59 @@ export function formatInstructModeSystemPrompt(systemPrompt){
 
 /**
  * Formats example messages according to instruct mode settings.
- * @param {string} mesExamples Example messages string.
+ * @param {string[]} mesExamplesArray Example messages array.
  * @param {string} name1 User name.
  * @param {string} name2 Character name.
- * @returns {string} Formatted example messages string.
+ * @returns {string[]} Formatted example messages string.
  */
-export function formatInstructModeExamples(mesExamples, name1, name2) {
+export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
     if (power_user.instruct.skip_examples) {
-        return mesExamples;
+        return mesExamplesArray.map(x => x.replace(/<START>\n/i, ''));
     }
 
     const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
 
-    let inputSequence = power_user.instruct.input_sequence;
-    let outputSequence = power_user.instruct.output_sequence;
+    let inputPrefix = power_user.instruct.input_sequence || '';
+    let outputPrefix = power_user.instruct.output_sequence || '';
+    let inputSuffix = power_user.instruct.output_suffix || '';
+    let outputSuffix = power_user.instruct.output_suffix || '';
 
     if (power_user.instruct.macro) {
-        inputSequence = substituteParams(inputSequence, name1, name2);
-        outputSequence = substituteParams(outputSequence, name1, name2);
+        inputPrefix = substituteParams(inputPrefix, name1, name2);
+        outputPrefix = substituteParams(outputPrefix, name1, name2);
+        inputSuffix = substituteParams(inputSuffix, name1, name2);
+        outputSuffix = substituteParams(outputSuffix, name1, name2);
+
+        inputPrefix = inputPrefix.replace(/{{name}}/gi, name1);
+        outputPrefix = outputPrefix.replace(/{{name}}/gi, name2);
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const separatorSequence = power_user.instruct.separator_sequence ? power_user.instruct.separator_sequence : separator;
+    const parsedExamples = [];
 
-    mesExamples = mesExamples.replace(new RegExp(`\n${name1}: `, 'gm'), separatorSequence + inputSequence + separator + (includeNames ? `${name1}: ` : ''));
-    mesExamples = mesExamples.replace(new RegExp(`\n${name2}: `, 'gm'), separator + outputSequence + separator + (includeNames ? `${name2}: ` : ''));
+    for (const item of mesExamplesArray) {
+        const cleanedItem = item.replace(/<START>/i, '{Example Dialogue:}').replace(/\r/gm, '');
+        const blockExamples = parseExampleIntoIndividual(cleanedItem);
+        parsedExamples.push(...blockExamples);
+    }
 
-    return mesExamples;
+    // Not something we can parse, return as is
+    if (!Array.isArray(parsedExamples) || parsedExamples.length === 0) {
+        return mesExamplesArray;
+    }
+
+    const formattedExamples = [];
+
+    for (const example of parsedExamples) {
+        const prefix = example.name == 'example_user' ? inputPrefix : outputPrefix;
+        const suffix = example.name == 'example_user' ? inputSuffix : outputSuffix;
+        const name = example.name == 'example_user' ? name1 : name2;
+        const messageContent = includeNames ? `${name}: ${example.content}` : example.content;
+        const formattedMessage = [prefix, messageContent + suffix].filter(x => x).join(separator);
+        formattedExamples.push(formattedMessage);
+    }
+
+    return formattedExamples;
 }
 
 /**
@@ -458,6 +518,12 @@ jQuery(() => {
         saveSettingsDebounced();
     });
 
+    $('#instruct_system_same_as_user').on('input', function () {
+        const state = !!$(this).prop('checked');
+        $('#instruct_system_sequence').prop('disabled', state);
+        $('#instruct_system_suffix').prop('disabled', state);
+    });
+
     $('#instruct_enabled').on('change', function () {
         if (!power_user.instruct.bind_to_context) {
             return;
@@ -466,8 +532,8 @@ jQuery(() => {
         // When instruct mode gets enabled, select context template matching selected instruct preset
         if (power_user.instruct.enabled) {
             selectMatchingContextTemplate(power_user.instruct.preset);
-        // When instruct mode gets disabled, select default context preset
         } else {
+            // When instruct mode gets disabled, select default context preset
             selectContextPreset(power_user.default_context);
         }
     });

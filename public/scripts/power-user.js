@@ -214,6 +214,7 @@ let power_user = {
         activation_regex: '',
         bind_to_context: false,
         user_alignment_message: '',
+        system_same_as_user: false,
         /** @deprecated Use output_suffix instead */
         separator_sequence: '',
     },
