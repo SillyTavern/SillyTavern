@@ -196,7 +196,13 @@ function convertGooglePrompt(messages, model) {
     let lastRole = '';
     let currentText = '';
 
-    const isMultimodal = model === 'gemini-pro-vision';
+    const visionSupportedModels = [
+        'gemini-1.0-pro-vision-latest',
+        'gemini-1.5-pro-latest',
+        'gemini-pro-vision',
+    ];
+
+    const isMultimodal = visionSupportedModels.includes(model);
 
     if (isMultimodal) {
         const combinedText = messages.map((message) => {
