@@ -4178,9 +4178,10 @@ export function removeMacros(str) {
  * @param {string} messageText Message text.
  * @param {string} messageBias Message bias.
  * @param {number} [insertAt] Optional index to insert the message at.
+ * @params {boolean} [compact] Send as a compact display message.
  * @returns {Promise<void>} A promise that resolves when the message is inserted.
  */
-export async function sendMessageAsUser(messageText, messageBias, insertAt = null) {
+export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false) {
     messageText = getRegexedString(messageText, regex_placement.USER_INPUT);
 
     const message = {
@@ -4189,7 +4190,9 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         is_system: false,
         send_date: getMessageTimeStamp(),
         mes: substituteParams(messageText),
-        extra: {},
+        extra: {
+            isSmallSys: compact,
+        },
     };
 
     if (power_user.message_token_count_enabled) {
