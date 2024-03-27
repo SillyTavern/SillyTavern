@@ -19,9 +19,13 @@ const controls = [
     { id: 'instruct_system_prompt', property: 'system_prompt', isCheckbox: false },
     { id: 'instruct_system_sequence_prefix', property: 'system_sequence_prefix', isCheckbox: false },
     { id: 'instruct_system_sequence_suffix', property: 'system_sequence_suffix', isCheckbox: false },
-    { id: 'instruct_separator_sequence', property: 'separator_sequence', isCheckbox: false },
     { id: 'instruct_input_sequence', property: 'input_sequence', isCheckbox: false },
+    { id: 'instruct_input_suffix', property: 'input_suffix', isCheckbox: false },
     { id: 'instruct_output_sequence', property: 'output_sequence', isCheckbox: false },
+    { id: 'instruct_output_suffix', property: 'output_suffix', isCheckbox: false },
+    { id: 'instruct_system_sequence', property: 'system_sequence', isCheckbox: false },
+    { id: 'instruct_system_suffix', property: 'system_suffix', isCheckbox: false },
+    { id: 'instruct_user_alignment_message', property: 'user_alignment_message', isCheckbox: false },
     { id: 'instruct_stop_sequence', property: 'stop_sequence', isCheckbox: false },
     { id: 'instruct_names', property: 'names', isCheckbox: true },
     { id: 'instruct_macro', property: 'macro', isCheckbox: true },
@@ -34,6 +38,46 @@ const controls = [
 ];
 
 /**
+ * Migrates instruct mode settings into the evergreen format.
+ * @param {object} settings Instruct mode settings.
+ * @returns {void}
+ */
+function migrateInstructModeSettings(settings) {
+    // Separator sequence => Output suffix
+    if (settings.separator_sequence === undefined) {
+        return;
+    }
+
+    settings.output_suffix = settings.separator_sequence || '';
+    delete settings.separator_sequence;
+
+    // Init the rest with default values
+    if (settings.input_suffix === undefined) {
+        settings.input_suffix = '';
+    }
+
+    if (settings.system_sequence === undefined) {
+        settings.system_sequence = '';
+    }
+
+    if (settings.system_suffix === undefined) {
+        settings.system_suffix = '';
+    }
+
+    if (settings.user_alignment_message === undefined) {
+        settings.user_alignment_message = '';
+    }
+
+    if (settings.names_force_groups === undefined) {
+        settings.names_force_groups = true;
+    }
+
+    if (settings.skip_examples === undefined) {
+        settings.skip_examples = false;
+    }
+}
+
+/**
  * Loads instruct mode settings from the given data object.
  * @param {object} data Settings data object.
  */
@@ -42,13 +86,7 @@ export function loadInstructMode(data) {
         instruct_presets = data.instruct;
     }
 
-    if (power_user.instruct.names_force_groups === undefined) {
-        power_user.instruct.names_force_groups = true;
-    }
-
-    if (power_user.instruct.skip_examples === undefined) {
-        power_user.instruct.skip_examples = false;
-    }
+    migrateInstructModeSettings(power_user.instruct);
 
     controls.forEach(control => {
         const $element = $(`#${control.id}`);
@@ -441,6 +479,8 @@ jQuery(() => {
         if (!preset) {
             return;
         }
+
+        migrateInstructModeSettings(preset);
 
         power_user.instruct.preset = String(name);
         controls.forEach(control => {
