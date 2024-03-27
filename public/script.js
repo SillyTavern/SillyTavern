@@ -5735,6 +5735,12 @@ export function setUserAvatar(imgfile) {
     $('.zoomed_avatar[forchar]').remove();
 }
 
+export function retriggerFirstMessageOnEmptyChat() {
+    if (this_chid >= 0 && !selected_group && chat.length === 1) {
+        $('#firstmessage_textarea').trigger('input');
+    }
+}
+
 async function uploadUserAvatar(e) {
     const file = e.target.files[0];
 
@@ -8469,9 +8475,7 @@ jQuery(async function () {
         setUserAvatar(imgfile);
 
         // force firstMes {{user}} update on persona switch
-        if (this_chid >= 0 && !selected_group && chat.length === 1) {
-            $('#firstmessage_textarea').trigger('input');
-        }
+        retriggerFirstMessageOnEmptyChat();
     });
     $(document).on('click', '#user_avatar_block .avatar_upload', function () {
         $('#avatar_upload_overwrite').val('');
@@ -9575,6 +9579,7 @@ jQuery(async function () {
         const userName = String($('#your_name').val()).trim();
         setUserName(userName);
         await updatePersonaNameIfExists(user_avatar, userName);
+        retriggerFirstMessageOnEmptyChat();
     });
 
     $('#sync_name_button').on('click', async function () {
