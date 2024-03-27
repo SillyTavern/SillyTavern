@@ -8603,8 +8603,13 @@ jQuery(async function () {
             await clearChat();
             chat.length = 0;
 
-            chat_file_for_del = getCurrentChatDetails().sessionName;
-            const isDelChatCheckbox = document.getElementById('del_chat_checkbox').checked;
+            chat_file_for_del = getCurrentChatDetails()?.sessionName;
+            const isDelChatCheckbox = document.getElementById('del_chat_checkbox')?.checked;
+
+            // Make it easier to find in backups
+            if (isDelChatCheckbox) {
+                await saveChatConditional();
+            }
 
             if (selected_group) {
                 //Fix it; When you're creating a new group chat (but not when initially converting from the existing regular chat), the first greeting message doesn't automatically get translated.
@@ -8670,14 +8675,13 @@ jQuery(async function () {
     $('#form_create').submit(createOrEditCharacter);
 
     $('#delete_button').on('click', function () {
-        popup_type = 'del_ch';
         callPopup(`
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
                 <label for="del_char_checkbox" class="checkbox_label justifyCenter">
                     <input type="checkbox" id="del_char_checkbox" />
-                    <span>Also delete the chat files</span>
-                </label><br></b>`,
+                    <small>Also delete the chat files</small>
+                </label><br></b>`, 'del_ch', '',
         );
     });
 
@@ -8985,7 +8989,7 @@ jQuery(async function () {
                     <label for="del_chat_checkbox" class="checkbox_label justifyCenter"
                     title="If necessary, you can later restore this chat file from the /backups folder">
                         <input type="checkbox" id="del_chat_checkbox" />
-                        <span>Also delete the current chat file</span>
+                        <small>Also delete the current chat file</small>
                     </label><br>
                 `, 'new_chat', '');
             }
