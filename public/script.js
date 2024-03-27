@@ -1855,6 +1855,7 @@ function insertSVGIcon(mes, extra) {
 
 function getMessageFromTemplate({
     mesId,
+    swipeId,
     characterName,
     isUser,
     avatarImg,
@@ -1872,6 +1873,7 @@ function getMessageFromTemplate({
     const mes = messageTemplate.clone();
     mes.attr({
         'mesid': mesId,
+        'swipeid': swipeId,
         'ch_name': characterName,
         'is_user': isUser,
         'is_system': !!isSystem,
@@ -2018,6 +2020,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
 
     let params = {
         mesId: forceId ?? chat.length - 1,
+        swipeId: mes.swipe_id ?? 0,
         characterName: mes.name,
         isUser: mes.is_user,
         avatarImg: avatarImg,
