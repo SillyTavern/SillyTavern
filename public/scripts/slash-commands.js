@@ -1982,7 +1982,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         isReplacable = isInput && (!executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length + 1);
 
         const matchType = power_user.stscript?.matching ?? 'strict';
-        const fuzzyRegex = new RegExp(`^(.*)${slashCommand.split('').map(char=>`(${escapeRegex(char)})`).join('(.*)')}(.*)$`, 'i');
+        const fuzzyRegex = new RegExp(`^(.*?)${slashCommand.split('').map(char=>`(${escapeRegex(char)})`).join('(.*?)')}(.*?)$`, 'i');
         const matchers = {
             'strict': (cmd) => cmd.toLowerCase().startsWith(slashCommand),
             'includes': (cmd) => cmd.toLowerCase().includes(slashCommand),
