@@ -279,6 +279,7 @@ export {
     default_ch_mes,
     extension_prompt_types,
     mesForShowdownParse,
+    characterGroupOverlay,
     printCharacters,
     isOdd,
     countOccurrences,
@@ -1343,19 +1344,19 @@ async function printCharacters(fullRefresh = false) {
     favsToHotswap();
 }
 
+export function characterToEntity(character, id) {
+    return { item: character, id, type: 'character' };
+}
+
+export function groupToEntity(group) {
+    return { item: group, id: group.id, type: 'group' };
+}
+
+export function tagToEntity(tag) {
+    return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
+}
+
 export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
-    function characterToEntity(character, id) {
-        return { item: character, id, type: 'character' };
-    }
-
-    function groupToEntity(group) {
-        return { item: group, id: group.id, type: 'group' };
-    }
-
-    function tagToEntity(tag) {
-        return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
-    }
-
     let entities = [
         ...characters.map((item, index) => characterToEntity(item, index)),
         ...groups.map(item => groupToEntity(item)),

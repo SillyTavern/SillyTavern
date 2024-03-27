@@ -10,6 +10,8 @@ import {
     getPastCharacterChats,
     getRequestHeaders,
     printCharacters,
+    buildAvatarList,
+    characterToEntity,
 } from '../script.js';
 
 import { favsToHotswap } from './RossAscends-mods.js';
@@ -194,7 +196,8 @@ class BulkTagPopupHandler {
             <div id="bulk_tag_popup">
                 <div id="bulk_tag_popup_holder">
                     <h3 class="marginBot5">Modify tags of ${characterIds.length} characters</h3>
-                    <small class="bulk_tags_desc m-b-1">This popup allows you to modify the mutual tags of all selected characters.</small>
+                    <small class="bulk_tags_desc m-b-1">Add or remove the mutual tags of all selected characters.</small>
+                    <div id="bulk_tags_avatars_block" class="avatars_inline avatars_inline_small tags tags_inline"></div>
                     <br>
                     <div id="bulk_tags_div" class="marginBot5" data-characters='${characterData}'>
                         <div class="tag_controls">
@@ -233,7 +236,8 @@ class BulkTagPopupHandler {
 
         document.body.insertAdjacentHTML('beforeend', this.#getHtml(characterIds));
 
-        this.mutualTags = this.getMutualTags(characterIds);
+        const entities = characterIds.map(id => characterToEntity(characters[id], id)).filter(entity => entity.item !== undefined);
+        buildAvatarList($('#bulk_tags_avatars_block'), entities);
 
         // Print the tag list with all mutuable tags, marking them as removable. That is the initial fill
         printTagList($('#bulkTagList'), { tags: () => this.getMutualTags(characterIds), tagOptions: { removable: true } });
@@ -257,7 +261,7 @@ class BulkTagPopupHandler {
         }
 
         // Find mutual tags for multiple characters
-        const allTags = characterIds.map(c => getTagsList(getTagKeyForEntity(c)));
+        const allTags = characterIds.map(cid => getTagsList(getTagKeyForEntity(cid)));
         const mutualTags = allTags.reduce((mutual, characterTags) =>
             mutual.filter(tag => characterTags.some(cTag => cTag.id === tag.id))
         );
@@ -345,6 +349,7 @@ class BulkEditOverlay {
     static selectModeClass = 'group_overlay_mode_select';
     static selectedClass = 'character_selected';
     static legacySelectedClass = 'bulk_select_checkbox';
+    static bulkSelectedCountId = 'bulkSelectedCount';
 
     static longPressDelay = 2500;
 
@@ -352,6 +357,17 @@ class BulkEditOverlay {
     #longPress = false;
     #stateChangeCallbacks = [];
     #selectedCharacters = [];
+
+    /**
+     * @typedef {object} LastSelected - An object noting the last selected character and its state.
+     * @property {string} [characterId] - The character id of the last selected character.
+     * @property {boolean} [select] - The selected state of the last selected character. <c>true</c> if it was selected, <c>false</c> if it was deselected.
+     */
+
+    /**
+     * @type {LastSelected} - An object noting the last selected character and its state.
+     */
+    lastSelected = { characterId: undefined, select: undefined };
 
     /**
      * Locks other pointer actions when the context menu is open
@@ -588,25 +604,78 @@ class BulkEditOverlay {
         event.stopPropagation();
 
         const character = event.currentTarget;
-        const characterId = character.getAttribute('chid');
 
-        const alreadySelected = this.selectedCharacters.includes(characterId);
+        if (!this.#contextMenuOpen && !this.#cancelNextToggle) {
+            if (event.shiftKey) {
+                // Shift click might have selected text that we don't want to. Unselect it.
+                document.getSelection().removeAllRanges();
 
-        const legacyBulkEditCheckbox = character.querySelector('.' + BulkEditOverlay.legacySelectedClass);
-
-        // Only toggle when context menu is closed and wasn't just closed.
-        if (!this.#contextMenuOpen && !this.#cancelNextToggle)
-            if (alreadySelected) {
-                character.classList.remove(BulkEditOverlay.selectedClass);
-                if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
-                this.dismissCharacter(characterId);
+                this.handleShiftClick(character);
             } else {
-                character.classList.add(BulkEditOverlay.selectedClass);
-                if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = true;
-                this.selectCharacter(characterId);
+                this.toggleSingleCharacter(character);
             }
+        }
 
         this.#cancelNextToggle = false;
+    };
+
+    handleShiftClick = (currentCharacter) => {
+        const characterId = currentCharacter.getAttribute('chid');
+        const select = !this.selectedCharacters.includes(characterId);
+
+        if (this.lastSelected.characterId && this.lastSelected.select !== undefined) {
+            // Only if select state and the last select state match we execute the range select
+            if (select === this.lastSelected.select) {
+                this.selectCharactersInRange(currentCharacter, select);
+            }
+        }
+    };
+
+    toggleSingleCharacter = (character, { markState = true } = {}) => {
+        const characterId = character.getAttribute('chid');
+
+        const select = !this.selectedCharacters.includes(characterId);
+        const legacyBulkEditCheckbox = character.querySelector('.' + BulkEditOverlay.legacySelectedClass);
+
+        if (select) {
+            character.classList.add(BulkEditOverlay.selectedClass);
+            if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = true;
+            this.selectCharacter(characterId);
+        } else {
+            character.classList.remove(BulkEditOverlay.selectedClass);
+            if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
+            this.dismissCharacter(characterId);
+        }
+
+        this.updateSelectedCount();
+
+        if (markState) {
+            this.lastSelected.characterId = characterId;
+            this.lastSelected.select = select;
+        }
+    };
+
+    updateSelectedCount = (countOverride = undefined) => {
+        const count = countOverride ?? this.selectedCharacters.length;
+        $(`#${BulkEditOverlay.bulkSelectedCountId}`).text(count).attr('title', `${count} characters selected`);
+    };
+
+    selectCharactersInRange = (currentCharacter, select) => {
+        const currentCharacterId = currentCharacter.getAttribute('chid');
+        const characters = Array.from(document.querySelectorAll('#' + BulkEditOverlay.containerId + ' .' + BulkEditOverlay.characterClass));
+
+        const startIndex = characters.findIndex(c => c.getAttribute('chid') === this.lastSelected.characterId);
+        const endIndex = characters.findIndex(c => c.getAttribute('chid') === currentCharacterId);
+
+        for (let i = Math.min(startIndex, endIndex); i <= Math.max(startIndex, endIndex); i++) {
+            const character = characters[i];
+            const characterId = character.getAttribute('chid');
+            const isCharacterSelected = this.selectedCharacters.includes(characterId);
+
+            if (select && !isCharacterSelected || !select && isCharacterSelected) {
+                this.toggleSingleCharacter(character, { markState: currentCharacterId == i });
+            }
+        }
     };
 
     handleContextMenuShow = (event) => {

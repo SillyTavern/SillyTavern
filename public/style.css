@@ -2126,6 +2126,10 @@ grammarly-extension {
     background-color: var(--crimson-hover);
 }
 
+#bulk_tags_avatars_block {
+    max-height: 70vh;
+}
+
 #dialogue_popup_input {
     margin: 10px 0;
     width: 100%;
