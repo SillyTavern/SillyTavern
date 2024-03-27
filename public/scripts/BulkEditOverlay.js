@@ -15,7 +15,7 @@ import {
 import { favsToHotswap } from './RossAscends-mods.js';
 import { hideLoader, showLoader } from './loader.js';
 import { convertCharacterToPersona } from './personas.js';
-import { createTagInput, getTagKeyForEntity, tag_map } from './tags.js';
+import { createTagInput, getTagKeyForEntity, getTagsList, printTagList, tag_map, compareTagsForSort, removeTagFromMap } from './tags.js';
 
 // Utility object for popup messages.
 const popupMessage = {
@@ -193,8 +193,9 @@ class BulkTagPopupHandler {
         return `<div id="bulk_tag_shadow_popup">
             <div id="bulk_tag_popup">
                 <div id="bulk_tag_popup_holder">
-                <h3 class="m-b-1">Add tags to ${characterIds.length} characters</h3>
-                <br>
+                    <h3 class="marginBot5">Modify tags of ${characterIds.length} characters</h3>
+                    <small class="bulk_tags_desc m-b-1">This popup allows you to modify the mutual tags of all selected characters.</small>
+                    <br>
                     <div id="bulk_tags_div" class="marginBot5" data-characters='${characterData}'>
                         <div class="tag_controls">
                             <input id="bulkTagInput" class="text_pole tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="25" />
@@ -203,8 +204,15 @@ class BulkTagPopupHandler {
                         <div id="bulkTagList" class="m-t-1 tags"></div>
                     </div>
                     <div id="dialogue_popup_controls" class="m-t-1">
+                        <div id="bulk_tag_popup_reset" class="menu_button" title="Remove all tags from the selected characters" data-i18n="[title]Remove all tags from the selected characters">
+                            <i class="fa-solid fa-trash-can margin-right-10px"></i>
+                            All
+                        </div>
+                        <div id="bulk_tag_popup_remove_mutual" class="menu_button" title="Remove all mutual tags from the selected characters" data-i18n="[title]Remove all mutual tags from the selected characters">
+                            <i class="fa-solid fa-trash-can margin-right-10px"></i>
+                            Mutual
+                        </div>
                         <div id="bulk_tag_popup_cancel" class="menu_button" data-i18n="Cancel">Close</div>
-                        <div id="bulk_tag_popup_reset" class="menu_button" data-i18n="Cancel">Remove all</div>
                     </div>
                 </div>
             </div>
@@ -215,13 +223,47 @@ class BulkTagPopupHandler {
     /**
      * Append and show the tag control
      *
-     * @param characters - The characters assigned to this control
+     * @param characterIds - The characters assigned to this control
      */
-    static show(characters) {
-        document.body.insertAdjacentHTML('beforeend', this.#getHtml(characters));
-        createTagInput('#bulkTagInput', '#bulkTagList');
+    static show(characterIds) {
+        if (characterIds.length == 0) {
+            console.log('No characters selected for bulk edit tags.');
+            return;
+        }
+
+        document.body.insertAdjacentHTML('beforeend', this.#getHtml(characterIds));
+
+        this.mutualTags = this.getMutualTags(characterIds);
+
+        // Print the tag list with all mutuable tags, marking them as removable. That is the initial fill
+        printTagList($('#bulkTagList'), { tags: () => this.getMutualTags(characterIds), tagOptions: { removable: true } });
+
+        // Tag input with empty tags so new tag gets added and it doesn't get emptied on redraw
+        createTagInput('#bulkTagInput', '#bulkTagList', { tags: () => this.getMutualTags(characterIds), tagOptions: { removable: true }});
+
+        document.querySelector('#bulk_tag_popup_reset').addEventListener('click', this.resetTags.bind(this, characterIds));
+        document.querySelector('#bulk_tag_popup_remove_mutual').addEventListener('click', this.removeMutual.bind(this, characterIds));
         document.querySelector('#bulk_tag_popup_cancel').addEventListener('click', this.hide.bind(this));
-        document.querySelector('#bulk_tag_popup_reset').addEventListener('click', this.resetTags.bind(this, characters));
+    }
+
+    static getMutualTags(characterIds) {
+        if (characterIds.length == 0) {
+            return [];
+        }
+
+        if (characterIds.length === 1) {
+            // Just use tags of the single character
+            return getTagsList(getTagKeyForEntity(characterIds[0]));
+        }
+
+        // Find mutual tags for multiple characters
+        const allTags = characterIds.map(c => getTagsList(getTagKeyForEntity(c)));
+        const mutualTags = allTags.reduce((mutual, characterTags) =>
+            mutual.filter(tag => characterTags.some(cTag => cTag.id === tag.id))
+        );
+
+        this.mutualTags = mutualTags.sort(compareTagsForSort);
+        return this.mutualTags;
     }
 
     /**
@@ -242,10 +284,31 @@ class BulkTagPopupHandler {
      * @param characterIds
      */
     static resetTags(characterIds) {
-        characterIds.forEach((characterId) => {
+        for (const characterId of characterIds) {
             const key = getTagKeyForEntity(characterId);
             if (key) tag_map[key] = [];
-        });
+        }
+
+        $('#bulkTagList').empty();
+
+        printCharacters(true);
+    }
+
+    /**
+     * Empty the tag map for the given characters
+     *
+     * @param characterIds
+     */
+    static removeMutual(characterIds) {
+        const mutualTags = this.getMutualTags(characterIds);
+
+        for (const characterId of characterIds) {
+            for(const tag of mutualTags) {
+                removeTagFromMap(tag.id, characterId);
+            }
+        }
+
+        $('#bulkTagList').empty();
 
         printCharacters(true);
     }

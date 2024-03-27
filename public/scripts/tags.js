@@ -36,6 +36,7 @@ export {
     importTags,
     sortTags,
     compareTagsForSort,
+    removeTagFromMap,
 };
 
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
@@ -57,12 +58,12 @@ export const tag_filter_types = {
 };
 
 const ACTIONABLE_TAGS = {
-    FAV: { id: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
-    GROUP: { id: 0, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
-    FOLDER: { id: 4, name: 'Always show folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
-    VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
-    HINT: { id: 3, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
-    UNFILTER: { id: 5, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
+    FAV: { id: 1, sort_order: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
+    GROUP: { id: 0, sort_order: 2, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
+    FOLDER: { id: 4, sort_order: 3, name: 'Always show folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
+    VIEW: { id: 2, sort_order: 4, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
+    HINT: { id: 3, sort_order: 5, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
+    UNFILTER: { id: 5, sort_order: 6, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
 };
 
 const InListActionable = {
@@ -390,7 +391,15 @@ function findTag(request, resolve, listSelector) {
     resolve(result);
 }
 
-function selectTag(event, ui, listSelector) {
+/**
+ * Select a tag and add it to the list. This function is mostly used as an event handler for the tag selector control.
+ * @param {*} event -
+ * @param {*} ui -
+ * @param {*} listSelector - The selector of the list to print/add to
+ * @param {PrintTagListOptions} [tagListOptions] - Optional parameters for printing the tag list. Can be set to be consistent with the expected behavior of tags in the list that was defined before.
+ * @returns {boolean} <c>false</c>, to keep the input clear
+ */
+function selectTag(event, ui, listSelector, tagListOptions = {}) {
     let tagName = ui.item.value;
     let tag = tags.find(t => t.name === tagName);
 
@@ -414,9 +423,28 @@ function selectTag(event, ui, listSelector) {
 
     saveSettingsDebounced();
 
+    // If we have a manual list of tags to print, we should add this tag here to that manual list, otherwise it may not get printed
+    if (tagListOptions.tags !== undefined) {
+        const tagExists = (tags, tag) => tags.some(x => x.id === tag.id);
+
+        if (typeof tagListOptions.tags === 'function') {
+            // If 'tags' is a function, wrap it to include new tag upon invocation
+            const originalTagsFunction = tagListOptions.tags;
+            tagListOptions.tags = () => {
+                const currentTags = originalTagsFunction();
+                return tagExists(currentTags, tag) ? currentTags : [...currentTags, tag];
+            };
+        } else {
+            tagListOptions.tags = tagExists(tagListOptions.tags, tag) ? tags : [...tagListOptions.tags, tag];
+        }
+    }
+
     // add tag to the UI and internal map - we reprint so sorting and new markup is done correctly
-    printTagList(listSelector, { tagOptions: { removable: true } });
-    printTagList($(getInlineListSelector()));
+    printTagList(listSelector, tagListOptions);
+    const inlineSelector = getInlineListSelector();
+    if (inlineSelector) {
+        printTagList($(inlineSelector), tagListOptions);
+    }
 
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
@@ -492,7 +520,7 @@ function createNewTag(tagName) {
 }
 
 /**
- * @typedef {object} TagOptions
+ * @typedef {object} TagOptions - Options for tag behavior. (Same object will be passed into "appendTagToList")
  * @property {boolean} [removable=false] - Whether tags can be removed.
  * @property {boolean} [selectable=false] - Whether tags can be selected.
  * @property {function} [action=undefined] - Action to perform on tag interaction.
@@ -501,19 +529,23 @@ function createNewTag(tagName) {
  */
 
 /**
+ * @typedef {object} PrintTagListOptions - Optional parameters for printing the tag list.
+ * @property {Array<object>|function(): Array<object>} [tags=undefined] Optional override of tags that should be printed. Those will not be sorted. If no supplied, tags for the relevant character are printed. Can also be a function that returns the tags.
+ * @property {object|number|string} [forEntityOrKey=undefined] - Optional override for the chosen entity, otherwise the currently selected is chosen. Can be an entity with id property (character, group, tag), or directly an id or tag key.
+ * @property {boolean} [empty=true] - Whether the list should be initially empty.
+ * @property {function(object): function} [tagActionSelector=undefined] - An optional override for the action property that can be assigned to each tag via tagOptions.
+ * If set, the selector is executed on each tag as input argument. This allows a list of tags to be provided and each tag can have it's action based on the tag object itself.
+ * @property {TagOptions} [tagOptions={}] - Options for tag behavior. (Same object will be passed into "appendTagToList")
+ */
+
+/**
  * Prints the list of tags.
  * @param {JQuery<HTMLElement>} element - The container element where the tags are to be printed.
- * @param {object} [options] - Optional parameters for printing the tag list.
- * @param {Array<object>} [options.tags] Optional override of tags that should be printed. Those will not be sorted. If no supplied, tags for the relevant character are printed.
- * @param {object|number|string} [options.forEntityOrKey=undefined] - Optional override for the chosen entity, otherwise the currently selected is chosen. Can be an entity with id property (character, group, tag), or directly an id or tag key.
- * @param {boolean} [options.empty=true] - Whether the list should be initially empty.
- * @param {function(object): function} [options.tagActionSelector=undefined] - An optional override for the action property that can be assigned to each tag via tagOptions.
- * If set, the selector is executed on each tag as input argument. This allows a list of tags to be provided and each tag can have it's action based on the tag object itself.
- * @param {TagOptions} [options.tagOptions={}] - Options for tag behavior. (Same object will be passed into "appendTagToList")
+ * @param {PrintTagListOptions} [options] - Optional parameters for printing the tag list.
  */
 function printTagList(element, { tags = undefined, forEntityOrKey = undefined, empty = true, tagActionSelector = undefined, tagOptions = {} } = {}) {
     const key = forEntityOrKey !== undefined ? getTagKeyForEntity(forEntityOrKey) : getTagKey();
-    const printableTags = tags ?? getTagsList(key);
+    const printableTags = tags !== undefined ? (typeof tags === 'function' ? tags() : tags).sort(compareTagsForSort) : getTagsList(key);
 
     if (empty) {
         $(element).empty();
@@ -730,6 +762,8 @@ function onTagRemoveClick(event) {
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
     saveSettingsDebounced();
+
+
 }
 
 // @ts-ignore
@@ -764,12 +798,18 @@ function applyTagsOnGroupSelect() {
     // Nothing to do here at the moment. Tags in group interface get automatically redrawn.
 }
 
-export function createTagInput(inputSelector, listSelector) {
+/**
+ *
+ * @param {string} inputSelector - the selector for the tag input control
+ * @param {string} listSelector - the selector for the list of the tags modified by the input control
+ * @param {PrintTagListOptions} [tagListOptions] - Optional parameters for printing the tag list. Can be set to be consistent with the expected behavior of tags in the list that was defined before.
+ */
+export function createTagInput(inputSelector, listSelector, tagListOptions = {}) {
     $(inputSelector)
         // @ts-ignore
         .autocomplete({
             source: (i, o) => findTag(i, o, listSelector),
-            select: (e, u) => selectTag(e, u, listSelector),
+            select: (e, u) => selectTag(e, u, listSelector, tagListOptions),
             minLength: 0,
         })
         .focus(onTagInputFocus); // <== show tag list on click
@@ -1152,8 +1192,8 @@ function onClearAllFiltersClick() {
 }
 
 jQuery(() => {
-    createTagInput('#tagInput', '#tagList');
-    createTagInput('#groupTagInput', '#groupTagList');
+    createTagInput('#tagInput', '#tagList', { tagOptions: { removable: true } });
+    createTagInput('#groupTagInput', '#groupTagList', { tagOptions: { removable: true } });
 
     $(document).on('click', '#rm_button_create', onCharacterCreateClick);
     $(document).on('click', '#rm_button_group_chats', onGroupCreateClick);

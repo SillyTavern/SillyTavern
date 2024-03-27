@@ -37,6 +37,7 @@
 
     --fullred: rgba(255, 0, 0, 1);
     --crimson70a: rgba(100, 0, 0, 0.7);
+    --crimson-hover: rgba(150, 50, 50, 0.5);
     --okGreen70a: rgba(0, 100, 0, 0.7);
     --cobalt30a: rgba(100, 100, 255, 0.3);
     --greyCAIbg: rgb(36, 36, 37);
@@ -2113,9 +2114,16 @@ grammarly-extension {
 }
 
 #bulk_tag_popup_reset,
+#bulk_tag_popup_remove_mutual,
 #dialogue_popup_ok {
     background-color: var(--crimson70a);
     cursor: pointer;
+}
+
+#bulk_tag_popup_reset:hover,
+#bulk_tag_popup_remove_mutual:hover,
+#dialogue_popup_ok:hover {
+    background-color: var(--crimson-hover);
 }
 
 #dialogue_popup_input {
