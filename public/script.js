@@ -5720,9 +5720,6 @@ export function setUserName(value) {
         toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
     }
     saveSettingsDebounced();
-
-    // force firstMes {{user}} update on persona switch
-    retriggerFirstMessageOnEmptychat();
 }
 
 /**
@@ -5736,12 +5733,9 @@ export function setUserAvatar(imgfile) {
     selectCurrentPersona();
     saveSettingsDebounced();
     $('.zoomed_avatar[forchar]').remove();
-
-    // force firstMes {{user}} update on persona switch
-    retriggerFirstMessageOnEmptychat();
 }
 
-function retriggerFirstMessageOnEmptychat() {
+export function retriggerFirstMessageOnEmptyChat() {
     if (this_chid >= 0 && !selected_group && chat.length === 1) {
         $('#firstmessage_textarea').trigger('input');
     }
@@ -8479,6 +8473,9 @@ jQuery(async function () {
     $(document).on('click', '#user_avatar_block .avatar-container', function () {
         const imgfile = $(this).attr('imgfile');
         setUserAvatar(imgfile);
+
+        // force firstMes {{user}} update on persona switch
+        retriggerFirstMessageOnEmptyChat();
     });
     $(document).on('click', '#user_avatar_block .avatar_upload', function () {
         $('#avatar_upload_overwrite').val('');
@@ -9582,6 +9579,7 @@ jQuery(async function () {
         const userName = String($('#your_name').val()).trim();
         setUserName(userName);
         await updatePersonaNameIfExists(user_avatar, userName);
+        retriggerFirstMessageOnEmptyChat();
     });
 
     $('#sync_name_button').on('click', async function () {
