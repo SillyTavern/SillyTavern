@@ -382,6 +382,11 @@ small {
     text-align: center;
 }
 
+.mes.smallSysMes .swipe_right,
+.mes.smallSysMes .swipe_left {
+    display: none !important;
+}
+
 .mes.smallSysMes .mes_text {
     padding: 0 !important;
     text-align: center;
