@@ -5720,6 +5720,9 @@ export function setUserName(value) {
         toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
     }
     saveSettingsDebounced();
+
+    // force firstMes {{user}} update on persona switch
+    retriggerFirstMessageOnEmptychat();
 }
 
 /**
@@ -5733,6 +5736,15 @@ export function setUserAvatar(imgfile) {
     selectCurrentPersona();
     saveSettingsDebounced();
     $('.zoomed_avatar[forchar]').remove();
+
+    // force firstMes {{user}} update on persona switch
+    retriggerFirstMessageOnEmptychat();
+}
+
+function retriggerFirstMessageOnEmptychat() {
+    if (this_chid >= 0 && !selected_group && chat.length === 1) {
+        $('#firstmessage_textarea').trigger('input');
+    }
 }
 
 async function uploadUserAvatar(e) {
@@ -8467,11 +8479,6 @@ jQuery(async function () {
     $(document).on('click', '#user_avatar_block .avatar-container', function () {
         const imgfile = $(this).attr('imgfile');
         setUserAvatar(imgfile);
-
-        // force firstMes {{user}} update on persona switch
-        if (this_chid >= 0 && !selected_group && chat.length === 1) {
-            $('#firstmessage_textarea').trigger('input');
-        }
     });
     $(document).on('click', '#user_avatar_block .avatar_upload', function () {
         $('#avatar_upload_overwrite').val('');
