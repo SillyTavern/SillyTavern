@@ -2604,11 +2604,20 @@
                             <div>
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
-                                    <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
-                                    <option value="gemini-pro">Gemini Pro</option>
-                                    <option value="gemini-pro-vision">Gemini Pro Vision</option>
-                                    <option value="text-bison-001">Bison Text</option>
-                                    <option value="chat-bison-001">Bison Chat</option>
+                                    <optgroup label="Latest">
+                                        <!-- Points to 1.0, no default 1.5 endpoint -->
+                                        <option value="gemini-pro">Gemini Pro</option>
+                                        <option value="gemini-pro-vision">Gemini Pro Vision</option>
+                                        <option value="gemini-ultra">Gemini Ultra</option>
+                                        <option value="text-bison-001">Bison Text</option>
+                                        <option value="chat-bison-001">Bison Chat</option>
+                                    </optgroup>
+                                    <optgroup label="Sub-versions">
+                                        <option value="gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
+                                        <option value="gemini-1.0-pro-latest">Gemini 1.0 Pro</option>
+                                        <option value="gemini-1.0-pro-vision-latest">Gemini 1.0 Pro Vision</option>
+                                        <option value="gemini-1.0-ultra-latest">Gemini 1.0 Ultra</option>
+                                    </optgroup>
                                 </select>
                             </div>
                         </form>
