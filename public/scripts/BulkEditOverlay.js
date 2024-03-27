@@ -57,7 +57,7 @@ class CharacterContextMenu {
         const result = await fetch('/api/characters/duplicate', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify(),
+            body: JSON.stringify(body),
         });
 
         if (!result.ok) {
