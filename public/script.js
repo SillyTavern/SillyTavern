@@ -2020,7 +2020,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
 
     let params = {
         mesId: forceId ?? chat.length - 1,
-        swipeId: mes.swipes?.indexOf(mes.mes) ?? mes.swipe_id ?? 0,
+        swipeId: mes.swipe_id ?? 0,
         characterName: mes.name,
         isUser: mes.is_user,
         avatarImg: avatarImg,
