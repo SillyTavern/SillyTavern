@@ -2233,6 +2233,11 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
                     hide();
                     return;
                 }
+                case 'Enter': {
+                    if (!evt.shiftKey) {
+                        hide();
+                    }
+                }
             }
         }
         if (['Control', 'Shift', 'Alt'].includes(evt.key)) {
