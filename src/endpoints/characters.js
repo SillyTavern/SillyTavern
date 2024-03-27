@@ -1008,7 +1008,7 @@ router.post('/duplicate', jsonParser, async function (request, response) {
 
         fs.copyFileSync(filename, newFilename);
         console.log(`${filename} was copied to ${newFilename}`);
-        response.sendStatus(200);
+        response.send({ path: path.parse(newFilename).base });
     }
     catch (error) {
         console.error(error);
