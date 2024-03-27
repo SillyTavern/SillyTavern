@@ -22,6 +22,7 @@ import {
     name1,
     reloadCurrentChat,
     removeMacros,
+    retriggerFirstMessageOnEmptyChat,
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
@@ -1343,12 +1344,14 @@ function setNameCallback(_, name) {
     for (let persona of Object.values(power_user.personas)) {
         if (persona.toLowerCase() === name.toLowerCase()) {
             autoSelectPersona(name);
+            retriggerFirstMessageOnEmptyChat();
             return;
         }
     }
 
     // Otherwise, set just the name
     setUserName(name); //this prevented quickReply usage
+    retriggerFirstMessageOnEmptyChat();
 }
 
 async function setNarratorName(_, text) {
