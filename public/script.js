@@ -172,6 +172,7 @@ import {
     importTags,
     tag_filter_types,
     compareTagsForSort,
+    initTags,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -412,6 +413,7 @@ export const event_types = {
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
+    CHARACTER_DUPLICATED: 'character_duplicated',
 };
 
 export const eventSource = new EventEmitter();
@@ -864,6 +866,7 @@ async function firstLoadInit() {
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     initLocales();
+    initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -4323,6 +4326,8 @@ async function DupeChar() {
     });
     if (response.ok) {
         toastr.success('Character Duplicated');
+        const data = await response.json();
+        await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
         getCharacters();
     }
 }
