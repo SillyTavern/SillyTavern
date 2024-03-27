@@ -423,21 +423,8 @@ function selectTag(event, ui, listSelector, tagListOptions = {}) {
 
     saveSettingsDebounced();
 
-    // If we have a manual list of tags to print, we should add this tag here to that manual list, otherwise it may not get printed
-    if (tagListOptions.tags !== undefined) {
-        const tagExists = (tags, tag) => tags.some(x => x.id === tag.id);
-
-        if (typeof tagListOptions.tags === 'function') {
-            // If 'tags' is a function, wrap it to include new tag upon invocation
-            const originalTagsFunction = tagListOptions.tags;
-            tagListOptions.tags = () => {
-                const currentTags = originalTagsFunction();
-                return tagExists(currentTags, tag) ? currentTags : [...currentTags, tag];
-            };
-        } else {
-            tagListOptions.tags = tagExists(tagListOptions.tags, tag) ? tags : [...tagListOptions.tags, tag];
-        }
-    }
+    // We should manually add the selected tag to the print tag function, so we cover places where the tag list did not automatically include it
+    tagListOptions.addTag = tag;
 
     // add tag to the UI and internal map - we reprint so sorting and new markup is done correctly
     printTagList(listSelector, tagListOptions);
@@ -530,9 +517,10 @@ function createNewTag(tagName) {
 
 /**
  * @typedef {object} PrintTagListOptions - Optional parameters for printing the tag list.
- * @property {Array<object>|function(): Array<object>} [tags=undefined] Optional override of tags that should be printed. Those will not be sorted. If no supplied, tags for the relevant character are printed. Can also be a function that returns the tags.
+ * @property {Array<object>|function(): Array<object>} [tags=undefined] - Optional override of tags that should be printed. Those will not be sorted. If no supplied, tags for the relevant character are printed. Can also be a function that returns the tags.
+ * @property {object} [addTag=undefined] - Optionally provide a tag that should be manually added to this print. Either to the overriden tag list or the found tags based on the entity/key. Will respect the tag exists check.
  * @property {object|number|string} [forEntityOrKey=undefined] - Optional override for the chosen entity, otherwise the currently selected is chosen. Can be an entity with id property (character, group, tag), or directly an id or tag key.
- * @property {boolean} [empty=true] - Whether the list should be initially empty.
+ * @property {boolean|string} [empty=true] - Whether the list should be initially empty. If a string string is provided, 'always' will always empty the list, otherwise it'll evaluate to a boolean.
  * @property {function(object): function} [tagActionSelector=undefined] - An optional override for the action property that can be assigned to each tag via tagOptions.
  * If set, the selector is executed on each tag as input argument. This allows a list of tags to be provided and each tag can have it's action based on the tag object itself.
  * @property {TagOptions} [tagOptions={}] - Options for tag behavior. (Same object will be passed into "appendTagToList")
@@ -543,18 +531,27 @@ function createNewTag(tagName) {
  * @param {JQuery<HTMLElement>} element - The container element where the tags are to be printed.
  * @param {PrintTagListOptions} [options] - Optional parameters for printing the tag list.
  */
-function printTagList(element, { tags = undefined, forEntityOrKey = undefined, empty = true, tagActionSelector = undefined, tagOptions = {} } = {}) {
+function printTagList(element, { tags = undefined, addTag = undefined, forEntityOrKey = undefined, empty = true, tagActionSelector = undefined, tagOptions = {} } = {}) {
     const key = forEntityOrKey !== undefined ? getTagKeyForEntity(forEntityOrKey) : getTagKey();
-    const printableTags = tags !== undefined ? (typeof tags === 'function' ? tags() : tags).sort(compareTagsForSort) : getTagsList(key);
+    let printableTags = tags ? (typeof tags === 'function' ? tags() : tags) : getTagsList(key);
 
-    if (empty) {
+    if (empty === 'always' || (empty && (printableTags?.length > 0 || key))) {
         $(element).empty();
     }
 
+    if (addTag && (tagOptions.skipExistsCheck || !printableTags.some(x => x.id === addTag.id))) {
+        printableTags = [...printableTags, addTag];
+    }
+
+    // one last sort, because we might have modified the tag list or manually retrieved it from a function
+    printableTags = printableTags.sort(compareTagsForSort);
+
+    const customAction = typeof tagActionSelector === 'function' ? tagActionSelector : null;
+
     for (const tag of printableTags) {
         // If we have a custom action selector, we override that tag options for each tag
-        if (tagActionSelector && typeof tagActionSelector === 'function') {
-            const action = tagActionSelector(tag);
+        if (customAction) {
+            const action = customAction(tag);
             if (action && typeof action !== 'function') {
                 console.error('The action parameter must return a function for tag.', tag);
             } else {
