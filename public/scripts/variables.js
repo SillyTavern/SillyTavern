@@ -1,6 +1,8 @@
 import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from '../script.js';
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
 import { executeSlashCommands, registerSlashCommand } from './slash-commands.js';
+import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
+import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { isFalseBoolean } from './utils.js';
 
 const MAX_LOOPS = 100;
@@ -189,9 +191,14 @@ function decrementGlobalVariable(name) {
 /**
  * Resolves a variable name to its value or returns the string as is if the variable does not exist.
  * @param {string} name Variable name
+ * @param {SlashCommandScope} scope Scope
  * @returns {string} Variable value or the string literal
  */
-export function resolveVariable(name) {
+export function resolveVariable(name, scope = null) {
+    if (scope?.existsVariable(name)) {
+        return scope.getVariable(name);
+    }
+
     if (existsLocalVariable(name)) {
         return getLocalVariable(name);
     }
@@ -312,7 +319,8 @@ async function whileCallback(args, command) {
         const result = evalBoolean(rule, a, b);
 
         if (result && command) {
-            await executeSubCommands(command);
+            if (command instanceof SlashCommandClosure) await command.execute();
+            else await executeSubCommands(command, args._scope);
         } else {
             break;
         }
@@ -322,13 +330,24 @@ async function whileCallback(args, command) {
 }
 
 async function timesCallback(args, value) {
-    const [repeats, ...commandParts] = value.split(' ');
-    const command = commandParts.join(' ');
+    let repeats;
+    let command;
+    if (Array.isArray(value)) {
+        [repeats, command] = value;
+    } else {
+        [repeats, ...command] = value.split(' ');
+        command = command.join(' ');
+    }
     const isGuardOff = isFalseBoolean(args.guard);
     const iterations = Math.min(Number(repeats), isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS);
-
     for (let i = 0; i < iterations; i++) {
-        await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i));
+        if (command instanceof SlashCommandClosure) {
+            command.scope.setMacro('timesIndex', i);
+            await command.execute();
+        }
+        else {
+            await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i), args._scope);
+        }
     }
 
     return '';
@@ -339,9 +358,11 @@ async function ifCallback(args, command) {
     const result = evalBoolean(rule, a, b);
 
     if (result && command) {
-        return await executeSubCommands(command);
-    } else if (!result && args.else && typeof args.else === 'string' && args.else !== '') {
-        return await executeSubCommands(args.else);
+        if (command instanceof SlashCommandClosure) return await command.execute();
+        return await executeSubCommands(command, args._scope);
+    } else if (!result && args.else && ((typeof args.else === 'string' && args.else !== '') || args.else instanceof SlashCommandClosure)) {
+        if (args.else instanceof SlashCommandClosure) return await args.else.execute(args._scope);
+        return await executeSubCommands(args.else, args._scope);
     }
 
     return '';
@@ -384,6 +405,11 @@ function parseBooleanOperands(args) {
 
         if (!isNaN(operandNumber)) {
             return operandNumber;
+        }
+
+        if (args._scope.existsVariable(operand)) {
+            const operandVariable = args._scope.getVariable(operand);
+            return operandVariable ?? '';
         }
 
         if (existsLocalVariable(operand)) {
@@ -483,7 +509,7 @@ function evalBoolean(rule, a, b) {
  * @param {string} command Command to execute. May contain escaped macro and batch separators.
  * @returns {Promise<string>} Pipe result
  */
-async function executeSubCommands(command) {
+async function executeSubCommands(command, scope = null) {
     if (command.startsWith('"')) {
         command = command.slice(1);
     }
@@ -493,7 +519,7 @@ async function executeSubCommands(command) {
     }
 
     const unescape = false;
-    const result = await executeSlashCommands(command, unescape);
+    const result = await executeSlashCommands(command, unescape, true, scope);
 
     if (!result || typeof result !== 'object') {
         return '';
@@ -537,9 +563,10 @@ function deleteGlobalVariable(name) {
 /**
  * Parses a series of numeric values from a string.
  * @param {string} value A space-separated list of numeric values or variable names
+ * @param {SlashCommandScope} scope Scope
  * @returns {number[]} An array of numeric values
  */
-function parseNumericSeries(value) {
+function parseNumericSeries(value, scope = null) {
     if (typeof value === 'number') {
         return [value];
     }
@@ -548,18 +575,18 @@ function parseNumericSeries(value) {
         .split(' ')
         .map(i => i.trim())
         .filter(i => i !== '')
-        .map(i => isNaN(Number(i)) ? Number(resolveVariable(i)) : Number(i))
+        .map(i => isNaN(Number(i)) ? Number(resolveVariable(i, scope)) : Number(i))
         .filter(i => !isNaN(i));
 
     return array;
 }
 
-function performOperation(value, operation, singleOperand = false) {
+function performOperation(value, operation, singleOperand = false, scope = null) {
     if (!value) {
         return 0;
     }
 
-    const array = parseNumericSeries(value);
+    const array = parseNumericSeries(value, scope);
 
     if (array.length === 0) {
         return 0;
@@ -574,72 +601,72 @@ function performOperation(value, operation, singleOperand = false) {
     return result;
 }
 
-function addValuesCallback(value) {
-    return performOperation(value, (array) => array.reduce((a, b) => a + b, 0));
+function addValuesCallback(args, value) {
+    return performOperation(value, (array) => array.reduce((a, b) => a + b, 0), false, args._scope);
 }
 
-function mulValuesCallback(value) {
-    return performOperation(value, (array) => array.reduce((a, b) => a * b, 1));
+function mulValuesCallback(args, value) {
+    return performOperation(value, (array) => array.reduce((a, b) => a * b, 1), false, args._scope);
 }
 
-function minValuesCallback(value) {
-    return performOperation(value, (array) => Math.min(...array));
+function minValuesCallback(args, value) {
+    return performOperation(value, (array) => Math.min(...array), false, args._scope);
 }
 
-function maxValuesCallback(value) {
-    return performOperation(value, (array) => Math.max(...array));
+function maxValuesCallback(args, value) {
+    return performOperation(value, (array) => Math.max(...array), false, args._scope);
 }
 
-function subValuesCallback(value) {
-    return performOperation(value, (array) => array[0] - array[1]);
+function subValuesCallback(args, value) {
+    return performOperation(value, (array) => array[0] - array[1], false, args._scope);
 }
 
-function divValuesCallback(value) {
+function divValuesCallback(args, value) {
     return performOperation(value, (array) => {
         if (array[1] === 0) {
             console.warn('Division by zero.');
             return 0;
         }
         return array[0] / array[1];
-    });
+    }, false, args._scope);
 }
 
-function modValuesCallback(value) {
+function modValuesCallback(args, value) {
     return performOperation(value, (array) => {
         if (array[1] === 0) {
             console.warn('Division by zero.');
             return 0;
         }
         return array[0] % array[1];
-    });
+    }, false, args._scope);
 }
 
-function powValuesCallback(value) {
-    return performOperation(value, (array) => Math.pow(array[0], array[1]));
+function powValuesCallback(args, value) {
+    return performOperation(value, (array) => Math.pow(array[0], array[1]), false, args._scope);
 }
 
-function sinValuesCallback(value) {
-    return performOperation(value, Math.sin, true);
+function sinValuesCallback(args, value) {
+    return performOperation(value, Math.sin, true, args._scope);
 }
 
-function cosValuesCallback(value) {
-    return performOperation(value, Math.cos, true);
+function cosValuesCallback(args, value) {
+    return performOperation(value, Math.cos, true, args._scope);
 }
 
-function logValuesCallback(value) {
-    return performOperation(value, Math.log, true);
+function logValuesCallback(args, value) {
+    return performOperation(value, Math.log, true, args._scope);
 }
 
-function roundValuesCallback(value) {
-    return performOperation(value, Math.round, true);
+function roundValuesCallback(args, value) {
+    return performOperation(value, Math.round, true, args._scope);
 }
 
-function absValuesCallback(value) {
-    return performOperation(value, Math.abs, true);
+function absValuesCallback(args, value) {
+    return performOperation(value, Math.abs, true, args._scope);
 }
 
-function sqrtValuesCallback(value) {
-    return performOperation(value, Math.sqrt, true);
+function sqrtValuesCallback(args, value) {
+    return performOperation(value, Math.sqrt, true, args._scope);
 }
 
 function lenValuesCallback(value) {
@@ -696,20 +723,38 @@ export function registerVariableCommands() {
     registerSlashCommand('times', (args, value) => timesCallback(args, value), [], '<span class="monospace">(repeats) "(command)"</span> – execute any valid slash command enclosed in quotes <tt>repeats</tt> number of times, e.g. <tt>/setvar key=i 1 | /times 5 "/addvar key=i 1"</tt> adds 1 to the value of "i" 5 times. <tt>{{timesIndex}}</tt> is replaced with the iteration number (zero-based), e.g. <tt>/times 4 "/echo {{timesIndex}}"</tt> echos the numbers 0 through 4. Loops are limited to 100 iterations by default, pass guard=off to disable.', true, true);
     registerSlashCommand('flushvar', (_, value) => deleteLocalVariable(value), [], '<span class="monospace">(key)</span> – delete a local variable, e.g. <tt>/flushvar score</tt>', true, true);
     registerSlashCommand('flushglobalvar', (_, value) => deleteGlobalVariable(value), [], '<span class="monospace">(key)</span> – delete a global variable, e.g. <tt>/flushglobalvar score</tt>', true, true);
-    registerSlashCommand('add', (_, value) => addValuesCallback(value), [], '<span class="monospace">(a b c d)</span> – performs an addition of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/add 10 i 30 j</tt>', true, true);
-    registerSlashCommand('mul', (_, value) => mulValuesCallback(value), [], '<span class="monospace">(a b c d)</span> – performs a multiplication of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/mul 10 i 30 j</tt>', true, true);
-    registerSlashCommand('max', (_, value) => maxValuesCallback(value), [], '<span class="monospace">(a b c d)</span> – returns the maximum value of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/max 10 i 30 j</tt>', true, true);
-    registerSlashCommand('min', (_, value) => minValuesCallback(value), [], '<span class="monospace">(a b c d)</span> – returns the minimum value of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/min 10 i 30 j</tt>', true, true);
-    registerSlashCommand('sub', (_, value) => subValuesCallback(value), [], '<span class="monospace">(a b)</span> – performs a subtraction of two values and passes the result down the pipe, can use variable names, e.g. <tt>/sub i 5</tt>', true, true);
-    registerSlashCommand('div', (_, value) => divValuesCallback(value), [], '<span class="monospace">(a b)</span> – performs a division of two values and passes the result down the pipe, can use variable names, e.g. <tt>/div 10 i</tt>', true, true);
-    registerSlashCommand('mod', (_, value) => modValuesCallback(value), [], '<span class="monospace">(a b)</span> – performs a modulo operation of two values and passes the result down the pipe, can use variable names, e.g. <tt>/mod i 2</tt>', true, true);
-    registerSlashCommand('pow', (_, value) => powValuesCallback(value), [], '<span class="monospace">(a b)</span> – performs a power operation of two values and passes the result down the pipe, can use variable names, e.g. <tt>/pow i 2</tt>', true, true);
-    registerSlashCommand('sin', (_, value) => sinValuesCallback(value), [], '<span class="monospace">(a)</span> – performs a sine operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/sin i</tt>', true, true);
-    registerSlashCommand('cos', (_, value) => cosValuesCallback(value), [], '<span class="monospace">(a)</span> – performs a cosine operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/cos i</tt>', true, true);
-    registerSlashCommand('log', (_, value) => logValuesCallback(value), [], '<span class="monospace">(a)</span> – performs a logarithm operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/log i</tt>', true, true);
-    registerSlashCommand('abs', (_, value) => absValuesCallback(value), [], '<span class="monospace">(a)</span> – performs an absolute value operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/abs i</tt>', true, true);
-    registerSlashCommand('sqrt', (_, value) => sqrtValuesCallback(value), [], '<span class="monospace">(a)</span> – performs a square root operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/sqrt i</tt>', true, true);
-    registerSlashCommand('round', (_, value) => roundValuesCallback(value), [], '<span class="monospace">(a)</span> – rounds a value and passes the result down the pipe, can use variable names, e.g. <tt>/round i</tt>', true, true);
+    registerSlashCommand('add', (args, value) => addValuesCallback(args, value), [], '<span class="monospace">(a b c d)</span> – performs an addition of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/add 10 i 30 j</tt>', true, true);
+    registerSlashCommand('mul', (args, value) => mulValuesCallback(args, value), [], '<span class="monospace">(a b c d)</span> – performs a multiplication of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/mul 10 i 30 j</tt>', true, true);
+    registerSlashCommand('max', (args, value) => maxValuesCallback(args, value), [], '<span class="monospace">(a b c d)</span> – returns the maximum value of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/max 10 i 30 j</tt>', true, true);
+    registerSlashCommand('min', (args, value) => minValuesCallback(args, value), [], '<span class="monospace">(a b c d)</span> – returns the minimum value of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/min 10 i 30 j</tt>', true, true);
+    registerSlashCommand('sub', (args, value) => subValuesCallback(args, value), [], '<span class="monospace">(a b)</span> – performs a subtraction of two values and passes the result down the pipe, can use variable names, e.g. <tt>/sub i 5</tt>', true, true);
+    registerSlashCommand('div', (args, value) => divValuesCallback(args, value), [], '<span class="monospace">(a b)</span> – performs a division of two values and passes the result down the pipe, can use variable names, e.g. <tt>/div 10 i</tt>', true, true);
+    registerSlashCommand('mod', (args, value) => modValuesCallback(args, value), [], '<span class="monospace">(a b)</span> – performs a modulo operation of two values and passes the result down the pipe, can use variable names, e.g. <tt>/mod i 2</tt>', true, true);
+    registerSlashCommand('pow', (args, value) => powValuesCallback(args, value), [], '<span class="monospace">(a b)</span> – performs a power operation of two values and passes the result down the pipe, can use variable names, e.g. <tt>/pow i 2</tt>', true, true);
+    registerSlashCommand('sin', (args, value) => sinValuesCallback(args, value), [], '<span class="monospace">(a)</span> – performs a sine operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/sin i</tt>', true, true);
+    registerSlashCommand('cos', (args, value) => cosValuesCallback(args, value), [], '<span class="monospace">(a)</span> – performs a cosine operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/cos i</tt>', true, true);
+    registerSlashCommand('log', (args, value) => logValuesCallback(args, value), [], '<span class="monospace">(a)</span> – performs a logarithm operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/log i</tt>', true, true);
+    registerSlashCommand('abs', (args, value) => absValuesCallback(args, value), [], '<span class="monospace">(a)</span> – performs an absolute value operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/abs i</tt>', true, true);
+    registerSlashCommand('sqrt', (args, value) => sqrtValuesCallback(args, value), [], '<span class="monospace">(a)</span> – performs a square root operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/sqrt i</tt>', true, true);
+    registerSlashCommand('round', (args, value) => roundValuesCallback(args, value), [], '<span class="monospace">(a)</span> – rounds a value and passes the result down the pipe, can use variable names, e.g. <tt>/round i</tt>', true, true);
     registerSlashCommand('len', (_, value) => lenValuesCallback(value), [], '<span class="monospace">(a)</span> – gets the length of a value and passes the result down the pipe, can use variable names, e.g. <tt>/len i</tt>', true, true);
     registerSlashCommand('rand', (args, value) => randValuesCallback(Number(args.from ?? 0), Number(args.to ?? (value.length ? value : 1)), args), [], '<span class="monospace">(from=number=0 to=number=1 round=round|ceil|floor)</span> – returns a random number between from and to, e.g. <tt>/rand</tt> or <tt>/rand 10</tt> or <tt>/rand from=5 to=10</tt>', true, true);
+    registerSlashCommand('var', (args, value) => {
+        if (value.includes(' ')) {
+            const key = value.split(' ')[0];
+            const val = value.split(' ').slice(1).join(' ');
+            args._scope.setVariable(key, val, args.index);
+            return val;
+        }
+        return args._scope.getVariable(value, args.index);
+    }, [], '<span class="monospace">[optional index] (variableName) (optional variable value)</span> – Get or set a variable. Example: <code>/let x foo | /var x foo bar | /var x | /echo</code>', true, true);
+    registerSlashCommand('let', (args, value) => {
+        if (value.includes(' ')) {
+            const key = value.split(' ')[0];
+            const val = value.split(' ').slice(1).join(' ');
+            args._scope.letVariable(key, val);
+            return val;
+        }
+        args._scope.letVariable(value);
+    }, [], '<span class="monospace">(variableName) (optional variable value)</span> – Declares a new variable in the current scope. Example: <code>/let x foo bar | /echo {{var::x}}</code> or <code>/let y</code>', true, true);
 }

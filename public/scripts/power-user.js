@@ -239,6 +239,9 @@ let power_user = {
     bogus_folders: false,
     show_tag_filters: false,
     aux_field: 'character_version',
+    stscript: {
+        matching: 'fuzzy',
+    },
     restore_user_input: true,
     reduced_motion: false,
     compact_input_area: true,
@@ -1529,6 +1532,7 @@ function loadPowerUserSettings(settings, data) {
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
+    $('#stscript_matching').val(power_user.stscript.matching);
     $('#restore_user_input').prop('checked', power_user.restore_user_input);
 
     $('#chat_truncation').val(power_user.chat_truncation);
@@ -3374,6 +3378,12 @@ $(document).ready(() => {
         power_user.aux_field = String(value);
         saveSettingsDebounced();
         printCharacters(false);
+    });
+
+    $('#stscript_matching').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.stscript.matching = String(value);
+        saveSettingsDebounced();
     });
 
     $('#restore_user_input').on('input', function () {
