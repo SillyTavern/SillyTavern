@@ -11,6 +11,7 @@ import { power_user } from '../../power-user.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { OpenAITtsProvider } from './openai.js';
 import { XTTSTtsProvider } from './xtts.js';
+import { GSVITtsProvider } from './gsvi.js';
 import { AllTalkTtsProvider } from './alltalk.js';
 import { SpeechT5TtsProvider } from './speecht5.js';
 export { talkingAnimation };
@@ -71,6 +72,7 @@ let ttsProviders = {
     ElevenLabs: ElevenLabsTtsProvider,
     Silero: SileroTtsProvider,
     XTTSv2: XTTSTtsProvider,
+    GSVI: GSVITtsProvider,
     System: SystemTtsProvider,
     Coqui: CoquiTtsProvider,
     Edge: EdgeTtsProvider,
