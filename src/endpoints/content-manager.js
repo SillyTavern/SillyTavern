@@ -159,6 +159,10 @@ function getTargetByType(type) {
             return DIRECTORIES.novelAI_Settings;
         case 'textgen_preset':
             return DIRECTORIES.textGen_Settings;
+        case 'instruct':
+            return DIRECTORIES.instruct;
+        case 'context':
+            return DIRECTORIES.context;
         default:
             return null;
     }
