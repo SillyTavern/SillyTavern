@@ -3973,6 +3973,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
         }
 
+        generatedPromptCache = '';
+
         unblockGeneration();
         console.log(exception);
         streamingProcessor = null;
