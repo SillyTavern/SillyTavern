@@ -2869,6 +2869,27 @@
                                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                 </div>
                                 <div class="inline-drawer-content">
+                                    <h5 class="textAlignCenter" data-i18n="System Prompt Wrapping">
+                                        System Prompt Wrapping
+                                    </h5>
+                                    <div class="flex-container">
+                                        <div class="flex1" title="Inserted before a System prompt.">
+                                            <label for="instruct_system_sequence_prefix">
+                                                <small data-i18n="System Prompt Prefix">System Prompt Prefix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="flex1" title="Inserted after a System prompt.">
+                                            <label for="instruct_system_sequence_suffix">
+                                                <small data-i18n="System Prompt Suffix">System Prompt Suffix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <h5 class="textAlignCenter" data-i18n="Chat Messages Wrapping">
                                         Chat Messages Wrapping
                                     </h5>
@@ -2932,27 +2953,6 @@
                                             </label>
                                         </div>
                                     </div>
-                                    <h5 class="textAlignCenter" data-i18n="System Prompt Wrapping">
-                                        System Prompt Wrapping
-                                    </h5>
-                                    <div class="flex-container">
-                                        <div class="flex1" title="Inserted before a System prompt.">
-                                            <label for="instruct_system_sequence_prefix">
-                                                <small data-i18n="System Prompt Prefix">System Prompt Prefix</small>
-                                            </label>
-                                            <div>
-                                                <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
-                                            </div>
-                                        </div>
-                                        <div class="flex1" title="Inserted after a System prompt.">
-                                            <label for="instruct_system_sequence_suffix">
-                                                <small data-i18n="System Prompt Suffix">System Prompt Suffix</small>
-                                            </label>
-                                            <div>
-                                                <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
                                     <h5 class="textAlignCenter" data-i18n="Misc. Sequences">
                                         Misc. Sequences
                                     </h5>
@@ -2965,7 +2965,7 @@
                                                 <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
-                                        <div class="flex1" title="Inserted after the last Assistant's message.">
+                                        <div class="flex1" title="Inserted before the last Assistant's message.">
                                             <label for="instruct_last_output_sequence">
                                                 <small data-i18n="Last Output Prefix">Last Output Prefix</small>
                                             </label>
@@ -2977,13 +2977,13 @@
                                     <div class="flex-container">
                                         <div class="flex1" title="Will be inserted at the start of the chat history if it doesn't start with a User message.">
                                             <label for="instruct_user_alignment_message">
-                                                <small data-i18n="User Alignment Message">User Alignment Message</small>
+                                                <small data-i18n="User Filler Message">User Filler Message</small>
                                             </label>
                                             <div>
                                                 <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
-                                        <div class="flex1" title="If a stop sequence is generated, everything past it will be removed (inclusive).">
+                                        <div class="flex1" title="If a stop sequence is generated, everything past it will be removed from the output (inclusive).">
                                             <label for="instruct_stop_sequence">
                                                 <small data-i18n="Stop Sequence">Stop Sequence</small>
                                             </label>
