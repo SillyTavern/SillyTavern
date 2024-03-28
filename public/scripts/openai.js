@@ -448,8 +448,10 @@ function convertChatCompletionToInstruct(messages, type) {
 
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
+    const isQuiet = type === 'quiet';
+    const isQuietToLoud = false; // Quiet to loud not implemented for Chat Completion
     const promptName = isImpersonate ? name1 : name2;
-    const promptLine = isContinue ? '' : formatInstructModePrompt(promptName, isImpersonate, '', name1, name2).trimStart();
+    const promptLine = isContinue ? '' : formatInstructModePrompt(promptName, isImpersonate, '', name1, name2, isQuiet, isQuietToLoud).trimStart();
 
     let prompt = [systemPromptText, examplesText, chatMessagesText, promptLine]
         .filter(x => x)

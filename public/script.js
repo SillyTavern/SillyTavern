@@ -2845,20 +2845,22 @@ class StreamingProcessor {
  * @param {string} prompt Prompt to generate a message from
  * @param {string} api API to use. Main API is used if not specified.
  * @param {boolean} instructOverride true to override instruct mode, false to use the default value
+ * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
  * @returns {Promise<string>} Generated message
  */
-export async function generateRaw(prompt, api, instructOverride) {
+export async function generateRaw(prompt, api, instructOverride, quietToLoud) {
     if (!api) {
         api = main_api;
     }
 
     const abortController = new AbortController();
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai' && main_api !== 'novel' && !instructOverride;
+    const isQuiet = true;
 
     prompt = substituteParams(prompt);
     prompt = api == 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
     prompt = isInstruct ? formatInstructModeChat(name1, prompt, false, true, '', name1, name2, false) : prompt;
-    prompt = isInstruct ? (prompt + formatInstructModePrompt(name2, false, '', name1, name2)) : (prompt + '\n');
+    prompt = isInstruct ? (prompt + formatInstructModePrompt(name2, false, '', name1, name2, isQuiet, quietToLoud)) : (prompt + '\n');
 
     let generateData = {};
 
@@ -3561,7 +3563,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         // Get instruct mode line
         if (isInstruct && !isContinue) {
             const name = (quiet_prompt && !quietToLoud) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
-            lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
+            const isQuiet = quiet_prompt && type == 'quiet';
+            lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, quietToLoud);
         }
 
         // Get non-instruct impersonation line
@@ -8351,7 +8354,7 @@ function addDebugFunctions() {
     registerDebugFunction('generationTest', 'Send a generation request', 'Generates text using the currently selected API.', async () => {
         const text = prompt('Input text:', 'Hello');
         toastr.info('Working on it...');
-        const message = await generateRaw(text, null, '');
+        const message = await generateRaw(text, null, false, false);
         alert(message);
     });
 

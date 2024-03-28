@@ -46,40 +46,25 @@ const controls = [
  */
 function migrateInstructModeSettings(settings) {
     // Separator sequence => Output suffix
-    if (settings.separator_sequence === undefined) {
-        return;
+    if (settings.separator_sequence !== undefined) {
+        settings.output_suffix = settings.separator_sequence || '';
+        delete settings.separator_sequence;
     }
 
-    settings.output_suffix = settings.separator_sequence || '';
-    delete settings.separator_sequence;
+    const defaults = {
+        input_suffix: '',
+        system_sequence: '',
+        system_suffix: '',
+        user_alignment_message: '',
+        names_force_groups: true,
+        skip_examples: false,
+        system_same_as_user: false,
+    };
 
-    // Init the rest with default values
-    if (settings.input_suffix === undefined) {
-        settings.input_suffix = '';
-    }
-
-    if (settings.system_sequence === undefined) {
-        settings.system_sequence = '';
-    }
-
-    if (settings.system_suffix === undefined) {
-        settings.system_suffix = '';
-    }
-
-    if (settings.user_alignment_message === undefined) {
-        settings.user_alignment_message = '';
-    }
-
-    if (settings.names_force_groups === undefined) {
-        settings.names_force_groups = true;
-    }
-
-    if (settings.skip_examples === undefined) {
-        settings.skip_examples = false;
-    }
-
-    if (settings.system_same_as_user === undefined) {
-        settings.system_same_as_user = false;
+    for (let key in defaults) {
+        if (settings[key] === undefined) {
+            settings[key] = defaults[key];
+        }
     }
 }
 
@@ -436,12 +421,34 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
  * @param {string} promptBias Prompt bias string.
  * @param {string} name1 User name.
  * @param {string} name2 Character name.
+ * @param {boolean} isQuiet Is quiet mode generation.
+ * @param {boolean} isQuietToLoud Is quiet to loud generation.
  * @returns {string} Formatted instruct mode last prompt line.
  */
-export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
-    const includeNames = name && (power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups));
-    const getOutputSequence = () => power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
-    let sequence = isImpersonate ? power_user.instruct.input_sequence : getOutputSequence();
+export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, isQuietToLoud) {
+    const includeNames = name && (power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups)) && !(isQuiet && !isQuietToLoud);
+
+    function getSequence() {
+        // User impersonation prompt
+        if (isImpersonate) {
+            return power_user.instruct.input_sequence;
+        }
+
+        // Neutral / system prompt
+        if (isQuiet && !isQuietToLoud) {
+            return power_user.instruct.output_sequence;
+        }
+
+        // Quiet in-character prompt
+        if (isQuiet && isQuietToLoud) {
+            return power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
+        }
+
+        // Default AI response
+        return power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
+    }
+
+    let sequence = getSequence() || '';
 
     if (power_user.instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);
