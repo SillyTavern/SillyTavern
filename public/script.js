@@ -2733,9 +2733,7 @@ class StreamingProcessor {
         const continueMsg = this.type === 'continue' ? this.messageAlreadyGenerated : undefined;
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), continueMsg);
         await saveChatConditional();
-        activateSendButtons();
-        showSwipeButtons();
-        setGenerationProgress(0);
+        unblockGeneration();
         generatedPromptCache = '';
 
         //console.log("Generated text size:", text.length, text)
@@ -2778,11 +2776,8 @@ class StreamingProcessor {
         this.isStopped = true;
 
         this.hideMessageButtons(this.messageId);
-        $('#send_textarea').removeAttr('disabled');
-        is_send_press = false;
-        activateSendButtons();
-        setGenerationProgress(0);
-        showSwipeButtons();
+        generatedPromptCache = '';
+        unblockGeneration();
     }
 
     setFirstSwipe(messageId) {
