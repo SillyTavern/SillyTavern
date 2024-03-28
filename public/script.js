@@ -3384,21 +3384,19 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     }
 
     // Collect enough messages to fill the context
-    let arrMes = [];
+    let arrMes = new Array(chat2.length);
     let tokenCount = getMessagesTokenCount();
     let lastAddedIndex = -1;
-    for (let i = 0; i < chat2.length; i++) {
-        // not needed for OAI prompting
-        if (main_api == 'openai') {
-            break;
-        }
 
-        const item = chat2[i];
+    // Pre-allocate all injections first.
+    // If it doesn't fit - user shot himself in the foot
+    for (const index of injectedIndices) {
+        const item = chat2[index];
         tokenCount += getTokenCount(item.replace(/\r/gm, ''));
         chatString = item + chatString;
         if (tokenCount < this_max_context) {
-            arrMes[arrMes.length] = item;
-            lastAddedIndex = i;
+            arrMes[index] = item;
+            lastAddedIndex = Math.max(lastAddedIndex, index);
         } else {
             break;
         }
@@ -3407,18 +3405,54 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         await delay(1);
     }
 
+    for (let i = 0; i < chat2.length; i++) {
+        // not needed for OAI prompting
+        if (main_api == 'openai') {
+            break;
+        }
+
+        // Skip already injected messages
+        if (arrMes[i] !== undefined) {
+            continue;
+        }
+
+        const item = chat2[i];
+        tokenCount += getTokenCount(item.replace(/\r/gm, ''));
+        chatString = item + chatString;
+        if (tokenCount < this_max_context) {
+            arrMes[i] = item;
+            lastAddedIndex = Math.max(lastAddedIndex, i);
+        } else {
+            break;
+        }
+
+        // Prevent UI thread lock on tokenization
+        await delay(1);
+    }
+
+    // Add user alignment message if last message is not a user message
     const stoppedAtUser = userMessageIndices.includes(lastAddedIndex);
     if (addUserAlignment && !stoppedAtUser) {
         tokenCount += getTokenCount(userAlignmentMessage.replace(/\r/gm, ''));
         chatString = userAlignmentMessage + chatString;
-        arrMes[arrMes.length] = userAlignmentMessage;
-        // Injected indices shift by 1 for user alignment message at the beginning
-        injectedIndices.forEach((value, index) => (injectedIndices[index] = value + 1));
-        injectedIndices.push(0);
+        arrMes.push(userAlignmentMessage);
+        injectedIndices.push(arrMes.length - 1);
     }
 
-    // Filter injections which don't fit in the context
-    injectedIndices = injectedIndices.filter(value => value < arrMes.length);
+    // Unsparse the array. Adjust injected indices
+    const newArrMes = [];
+    const newInjectedIndices = [];
+    for (let i = 0; i < arrMes.length; i++) {
+        if (arrMes[i] !== undefined) {
+            newArrMes.push(arrMes[i]);
+            if (injectedIndices.includes(i)) {
+                newInjectedIndices.push(newArrMes.length - 1);
+            }
+        }
+    }
+
+    arrMes = newArrMes;
+    injectedIndices = newInjectedIndices;
 
     if (main_api !== 'openai') {
         setInContextMessages(arrMes.length - injectedIndices.length, type);
