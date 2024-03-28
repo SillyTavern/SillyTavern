@@ -495,15 +495,19 @@ export function replaceInstructMacros(input) {
         return '';
     }
 
-    input = input.replace(/{{instructSystem}}/gi, power_user.instruct.enabled ? power_user.instruct.system_prompt : '');
-    input = input.replace(/{{instructSystemPrefix}}/gi, power_user.instruct.enabled ? power_user.instruct.system_sequence_prefix : '');
-    input = input.replace(/{{instructSystemSuffix}}/gi, power_user.instruct.enabled ? power_user.instruct.system_sequence_suffix : '');
-    input = input.replace(/{{instructInput}}/gi, power_user.instruct.enabled ? power_user.instruct.input_sequence : '');
-    input = input.replace(/{{instructOutput}}/gi, power_user.instruct.enabled ? power_user.instruct.output_sequence : '');
-    input = input.replace(/{{instructFirstOutput}}/gi, power_user.instruct.enabled ? (power_user.instruct.first_output_sequence || power_user.instruct.output_sequence) : '');
-    input = input.replace(/{{instructLastOutput}}/gi, power_user.instruct.enabled ? (power_user.instruct.last_output_sequence || power_user.instruct.output_sequence) : '');
-    input = input.replace(/{{instructSeparator}}/gi, power_user.instruct.enabled ? power_user.instruct.separator_sequence : '');
+    input = input.replace(/{{(instructSystem|instructSystemPrompt)}}/gi, power_user.instruct.enabled ? power_user.instruct.system_prompt : '');
+    input = input.replace(/{{instructSystemPromptPrefix}}/gi, power_user.instruct.enabled ? power_user.instruct.system_sequence_prefix : '');
+    input = input.replace(/{{instructSystemPromptSuffix}}/gi, power_user.instruct.enabled ? power_user.instruct.system_sequence_suffix : '');
+    input = input.replace(/{{(instructInput|instructUserPrefix)}}/gi, power_user.instruct.enabled ? power_user.instruct.input_sequence : '');
+    input = input.replace(/{{instructUserSuffix}}/gi, power_user.instruct.enabled ? power_user.instruct.input_suffix : '');
+    input = input.replace(/{{(instructOutput|instructAssistantPrefix)}}/gi, power_user.instruct.enabled ? power_user.instruct.output_sequence : '');
+    input = input.replace(/{{(instructSeparator|instructAssistantSuffix)}}/gi, power_user.instruct.enabled ? power_user.instruct.output_suffix : '');
+    input = input.replace(/{{instructSystemPrefix}}/gi, power_user.instruct.enabled ? power_user.instruct.system_sequence : '');
+    input = input.replace(/{{instructSystemSuffix}}/gi, power_user.instruct.enabled ? power_user.instruct.system_suffix : '');
+    input = input.replace(/{{(instructFirstOutput|instructFirstAssistantPrefix)}}/gi, power_user.instruct.enabled ? (power_user.instruct.first_output_sequence || power_user.instruct.output_sequence) : '');
+    input = input.replace(/{{(instructLastOutput|instructLastAssistantPrefix)}}/gi, power_user.instruct.enabled ? (power_user.instruct.last_output_sequence || power_user.instruct.output_sequence) : '');
     input = input.replace(/{{instructStop}}/gi, power_user.instruct.enabled ? power_user.instruct.stop_sequence : '');
+    input = input.replace(/{{instructUserFiller}}/gi, power_user.instruct.enabled ? power_user.instruct.user_alignment_message : '');
     input = input.replace(/{{exampleSeparator}}/gi, power_user.context.example_separator);
     input = input.replace(/{{chatStart}}/gi, power_user.context.chat_start);
 
