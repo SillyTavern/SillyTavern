@@ -5,7 +5,6 @@
     "last_output_sequence": "",
     "system_sequence": "",
     "stop_sequence": "",
-    "separator_sequence": "",
     "wrap": true,
     "macro": true,
     "names": false,
@@ -14,5 +13,11 @@
     "system_sequence_prefix": "",
     "system_sequence_suffix": "",
     "first_output_sequence": "",
+    "skip_examples": false,
+    "output_suffix": "",
+    "input_suffix": "",
+    "system_suffix": "",
+    "user_alignment_message": "",
+    "system_same_as_user": false,
     "name": "Adventure"
 }
