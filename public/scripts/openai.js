@@ -448,8 +448,10 @@ function convertChatCompletionToInstruct(messages, type) {
 
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
+    const isQuiet = type === 'quiet';
+    const isQuietToLoud = false; // Quiet to loud not implemented for Chat Completion
     const promptName = isImpersonate ? name1 : name2;
-    const promptLine = isContinue ? '' : formatInstructModePrompt(promptName, isImpersonate, '', name1, name2).trimStart();
+    const promptLine = isContinue ? '' : formatInstructModePrompt(promptName, isImpersonate, '', name1, name2, isQuiet, isQuietToLoud).trimStart();
 
     let prompt = [systemPromptText, examplesText, chatMessagesText, promptLine]
         .filter(x => x)
@@ -523,7 +525,7 @@ function setOpenAIMessageExamples(mesExamplesArray) {
     for (let item of mesExamplesArray) {
         // remove <START> {Example Dialogue:} and replace \r\n with just \n
         let replaced = item.replace(/<START>/i, '{Example Dialogue:}').replace(/\r/gm, '');
-        let parsed = parseExampleIntoIndividual(replaced);
+        let parsed = parseExampleIntoIndividual(replaced, true);
         // add to the example message blocks array
         examples.push(parsed);
     }
@@ -584,7 +586,13 @@ function setupChatCompletionPromptManager(openAiSettings) {
     return promptManager;
 }
 
-function parseExampleIntoIndividual(messageExampleString) {
+/**
+ * Parses the example messages into individual messages.
+ * @param {string} messageExampleString - The string containing the example messages
+ * @param {boolean} appendNamesForGroup - Whether to append the character name for group chats
+ * @returns {Message[]} Array of message objects
+ */
+export function parseExampleIntoIndividual(messageExampleString, appendNamesForGroup = true) {
     let result = []; // array of msgs
     let tmp = messageExampleString.split('\n');
     let cur_msg_lines = [];
@@ -597,7 +605,7 @@ function parseExampleIntoIndividual(messageExampleString) {
         // strip to remove extra spaces
         let parsed_msg = cur_msg_lines.join('\n').replace(name + ':', '').trim();
 
-        if (selected_group && ['example_user', 'example_assistant'].includes(system_name)) {
+        if (appendNamesForGroup && selected_group && ['example_user', 'example_assistant'].includes(system_name)) {
             parsed_msg = `${name}: ${parsed_msg}`;
         }
 

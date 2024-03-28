@@ -231,7 +231,7 @@ parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="m
 parser.addCommand('echo', echoCallback, [], '<span class="monospace">(title=string severity=info/warning/error/success [text])</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
 //parser.addCommand('#', (_, value) => '', [], ' – a comment, does nothing, e.g. <tt>/# the next three commands switch variables a and b</tt>', true, true);
 parser.addCommand('gen', generateCallback, [], '<span class="monospace">(lock=on/off name="System" [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating and allowing to configure the in-prompt name for instruct mode (default = "System").', true, true);
-parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>', true, true);
+parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(lock=on/off instruct=on/off stop=[] as=system/char [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>. "as" argument controls the role of the output prompt: system (default) or char.', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
 parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] threshold=0.4 (text to search) – performs a fuzzy match of each items of list within the text to search. If any item matches then its name is returned. If no item list matches the text to search then no value is returned. The optional threshold (default is 0.4) allows some control over the matching. A low value (min 0.0) means the match is very strict. At 1.0 (max) the match is very loose and probably matches anything. The returned value passes to the next command through the pipe.', true, true); parser.addCommand('pass', (_, arg) => arg, ['return'], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
@@ -659,6 +659,8 @@ async function generateRawCallback(args, value) {
     // Prevent generate recursion
     $('#send_textarea').val('').trigger('input');
     const lock = isTrueBoolean(args?.lock);
+    const as = args?.as || 'system';
+    const quietToLoud = as === 'char';
 
     try {
         if (lock) {
@@ -666,7 +668,7 @@ async function generateRawCallback(args, value) {
         }
 
         setEphemeralStopStrings(resolveVariable(args?.stop));
-        const result = await generateRaw(value, '', isFalseBoolean(args?.instruct));
+        const result = await generateRaw(value, '', isFalseBoolean(args?.instruct), quietToLoud);
         return result;
     } finally {
         if (lock) {
