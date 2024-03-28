@@ -337,6 +337,9 @@ export let proxies = [
         name: 'None',
         url: '',
         password: '',
+        save_source: false,
+        model: '',
+        source: '',
     },
 ];
 export let selected_proxy = proxies[0];
@@ -2598,7 +2601,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
-    oai_settings.proxy_password = settings.proxy_password ?? default_settings.proxy_password;
     oai_settings.assistant_prefill = settings.assistant_prefill ?? default_settings.assistant_prefill;
     oai_settings.human_sysprompt_message = settings.human_sysprompt_message ?? default_settings.human_sysprompt_message;
     oai_settings.image_inlining = settings.image_inlining ?? default_settings.image_inlining;
@@ -2631,7 +2633,6 @@ function loadOpenAISettings(data, settings) {
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
-    $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
     $('#claude_human_sysprompt_textarea').val(oai_settings.human_sysprompt_message);
     $('#openai_image_inlining').prop('checked', oai_settings.image_inlining);
@@ -2711,11 +2712,6 @@ function loadOpenAISettings(data, settings) {
     $('#repetition_penalty_counter_openai').val(Number(oai_settings.repetition_penalty_openai));
     $('#seed_openai').val(oai_settings.seed);
     $('#n_openai').val(oai_settings.n);
-
-    if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
-    $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
-
-    $('.reverse_proxy_warning').toggle(oai_settings.reverse_proxy !== '');
 
     $('#openai_logit_bias_preset').empty();
     for (const preset of Object.keys(oai_settings.bias_presets)) {
@@ -2913,8 +2909,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         new_example_chat_prompt: settings.new_example_chat_prompt,
         continue_nudge_prompt: settings.continue_nudge_prompt,
         bias_preset_selected: settings.bias_preset_selected,
-        reverse_proxy: settings.reverse_proxy,
-        proxy_password: settings.proxy_password,
         max_context_unlocked: settings.max_context_unlocked,
         wi_format: settings.wi_format,
         scenario_format: settings.scenario_format,
@@ -3290,7 +3284,6 @@ function onSettingsPresetChange() {
         new_example_chat_prompt: ['#newexamplechat_prompt_textarea', 'new_example_chat_prompt', false],
         continue_nudge_prompt: ['#continue_nudge_prompt_textarea', 'continue_nudge_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
-        reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
         wi_format: ['#wi_format_textarea', 'wi_format', false],
         scenario_format: ['#scenario_format_textarea', 'scenario_format', false],
         personality_format: ['#personality_format_textarea', 'personality_format', false],
@@ -3300,7 +3293,6 @@ function onSettingsPresetChange() {
         prompt_order: ['', 'prompt_order', false],
         api_url_scale: ['#api_url_scale', 'api_url_scale', false],
         show_external_models: ['#openai_show_external_models', 'show_external_models', true],
-        proxy_password: ['#openai_proxy_password', 'proxy_password', false],
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
         human_sysprompt_message: ['#claude_human_sysprompt_textarea', 'human_sysprompt_message', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', true],
@@ -3653,6 +3645,7 @@ async function onModelChange() {
 
     saveSettingsDebounced();
     eventSource.emit(event_types.CHATCOMPLETION_MODEL_CHANGED, value);
+    $('#proxy_current_source').text(`Current source: ${oai_settings.chat_completion_source}/${retrieveModel()}`);
 }
 
 async function onOpenrouterModelSortChange() {
@@ -3979,7 +3972,8 @@ export function loadProxyPresets(settings) {
     } else {
         proxies = proxyPresets;
     }
-
+    //sort alphabetically
+    proxyPresets.sort((a, b) => a.name.localeCompare(b.name));
     $('#openai_proxy_preset').empty();
 
     for (const preset of proxyPresets) {
@@ -3990,17 +3984,91 @@ export function loadProxyPresets(settings) {
         $('#openai_proxy_preset').append(option);
     }
     $('#openai_proxy_preset').val(selected_proxy.name);
-    setProxyPreset(selected_proxy.name, selected_proxy.url, selected_proxy.password);
+    setProxyPreset(selected_proxy.name, selected_proxy.url, selected_proxy.password, selected_proxy.save_source, selected_proxy.model, selected_proxy.source);
 }
 
-function setProxyPreset(name, url, password) {
+// two of the functions of all time
+function retrieveModel() {
+    let model;
+    switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.OPENAI:
+            model = oai_settings.openai_model;
+            break;
+        case chat_completion_sources.CLAUDE:
+            model = oai_settings.claude_model;
+            break;
+        case chat_completion_sources.WINDOWAI:
+            model = oai_settings.windowai_model;
+            break;
+        case chat_completion_sources.OPENROUTER:
+            model = oai_settings.openrouter_model;
+            break;
+        case chat_completion_sources.AI21:
+            model = oai_settings.ai21_model;
+            break;
+        case chat_completion_sources.MISTRALAI:
+            model = oai_settings.mistralai_model;
+            break;
+        case chat_completion_sources.CUSTOM:
+            model = oai_settings.custom_model;
+            break;
+        default:
+            model = '';
+    }
+    return model;
+}
+
+function setModel(model) {
+    switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.OPENAI:
+            oai_settings.openai_model = model;
+            $('#model_openai_select').val(model);
+            break;
+        case chat_completion_sources.CLAUDE:
+            oai_settings.claude_model = model;
+            $('#model_claude_select').val(model);
+            break;
+        case chat_completion_sources.WINDOWAI:
+            oai_settings.windowai_model = model;
+            $('#model_windowai_select').val(model);
+            break;
+        case chat_completion_sources.MAKERSUITE:
+            oai_settings.google_model = model;
+            $('#model_google_select').val(model);
+            break;
+        case chat_completion_sources.OPENROUTER:
+            oai_settings.openrouter_model = model;
+            $('#model_openrouter_select').val(model);
+            break;
+        case chat_completion_sources.AI21:
+            oai_settings.ai21_model = model;
+            $('#model_ai21_select').val(model);
+            break;
+        case chat_completion_sources.MISTRALAI:
+            oai_settings.mistralai_model = model;
+            $('#model_mistralai_select').val(model);
+            break;
+        default:
+            console.log('Invalid chat completion source');
+    }
+    toggleChatCompletionForms();
+}
+
+function setProxyPreset(name, url, password, save_source, update) {
+    name = name.trim();
     const preset = proxies.find(p => p.name === name);
+
+    const model = save_source ? (update ? retrieveModel() : preset.model) : '';
+    const source = save_source ? (update ? oai_settings.chat_completion_source : preset.source) : '';
     if (preset) {
         preset.url = url;
         preset.password = password;
+        preset.save_source = save_source;
+        preset.model = model;
+        preset.source = source;
         selected_proxy = preset;
     } else {
-        let new_proxy = { name, url, password };
+        let new_proxy = { name, url, password, save_source, model, source };
         proxies.push(new_proxy);
         selected_proxy = new_proxy;
     }
@@ -4010,7 +4078,15 @@ function setProxyPreset(name, url, password) {
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
     oai_settings.proxy_password = password;
     $('#openai_proxy_password').val(oai_settings.proxy_password);
+    $('#proxy_save_completion_source').prop('checked', save_source === undefined ? false : save_source);
+    if (save_source && model && source) {
+        oai_settings.chat_completion_source = source;
+        $('#chat_completion_source').val(oai_settings.chat_completion_source).trigger('change');
+        setModel(model);
+    }
+
     reconnectOpenAi();
+    $('.reverse_proxy_warning').toggle(oai_settings.reverse_proxy !== '');
 }
 
 function onProxyPresetChange() {
@@ -4018,7 +4094,7 @@ function onProxyPresetChange() {
     const selectedPreset = proxies.find(preset => preset.name === value);
 
     if (selectedPreset) {
-        setProxyPreset(selectedPreset.name, selectedPreset.url, selectedPreset.password);
+        setProxyPreset(selectedPreset.name, selectedPreset.url, selectedPreset.password, selectedPreset.save_source);
     } else {
         console.error(`Proxy preset "${value}" not found in proxies array.`);
     }
@@ -4026,11 +4102,12 @@ function onProxyPresetChange() {
 }
 
 $('#save_proxy').on('click', async function () {
-    const presetName = $('#openai_reverse_proxy_name').val();
-    const reverseProxy = $('#openai_reverse_proxy').val();
-    const proxyPassword = $('#openai_proxy_password').val();
+    const presetName = $('#openai_reverse_proxy_name').val().trim();
+    const reverseProxy = $('#openai_reverse_proxy').val().trim();
+    const proxyPassword = $('#openai_proxy_password').val().trim();
+    const saveSource = $('#proxy_save_completion_source').is(':checked');
 
-    setProxyPreset(presetName, reverseProxy, proxyPassword);
+    setProxyPreset(presetName, reverseProxy, proxyPassword, saveSource, saveSource);
     saveSettingsDebounced();
     toastr.success('Proxy Saved');
     if ($('#openai_proxy_preset').val() !== presetName) {
@@ -4044,7 +4121,7 @@ $('#save_proxy').on('click', async function () {
 });
 
 $('#delete_proxy').on('click', async function () {
-    const presetName = $('#openai_reverse_proxy_name').val();
+    const presetName = $('#openai_reverse_proxy_name').val().trim();
     const index = proxies.findIndex(preset => preset.name === presetName);
 
     if (index !== -1) {
@@ -4055,7 +4132,7 @@ $('#delete_proxy').on('click', async function () {
             const newIndex = Math.max(0, index - 1);
             selected_proxy = proxies[newIndex];
         } else {
-            selected_proxy = { name: 'None', url: '', password: '' };
+            selected_proxy = { name: 'None', url: '', password: '', save_source: false, model: '', source: '' };
         }
 
         $('#openai_reverse_proxy_name').val(selected_proxy.name);
@@ -4063,7 +4140,11 @@ $('#delete_proxy').on('click', async function () {
         $('#openai_reverse_proxy').val(selected_proxy.url);
         oai_settings.proxy_password = selected_proxy.password;
         $('#openai_proxy_password').val(selected_proxy.password);
-
+        if (selected_proxy.save_source) {
+            oai_settings.chat_completion_source = selected_proxy.source;
+            $('#chat_completion_source').val(oai_settings.chat_completion_source).trigger('change');
+            setModel(selected_proxy.model);
+        }
         saveSettingsDebounced();
         $('#openai_proxy_preset').val(selected_proxy.name);
         toastr.success('Proxy Deleted');
