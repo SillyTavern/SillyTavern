@@ -90,7 +90,6 @@
             </label>
 
             <div id="vectors_files_settings">
-
                 <div class="flex-container">
                     <div class="flex1" title="Only files past this size will be vectorized.">
                         <label for="vectors_size_threshold">
@@ -111,6 +110,11 @@
                         <input id="vectors_chunk_count" type="number" class="text_pole widthUnset" min="1" max="99999" />
                     </div>
                 </div>
+
+                <label class="checkbox_label" for="vectors_science_mode" title="Sanitize input text to improve retrieval quality for scientific paper inputs.">
+                    <input id="vectors_science_mode" type="checkbox" class="checkbox">
+                    Science mode
+                </label>
             </div>
 
             <hr>

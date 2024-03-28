@@ -27,6 +27,7 @@ const settings = {
 
     // For files
     enabled_files: false,
+    science_mode: false,
     size_threshold: 10,
     chunk_size: 5000,
     chunk_count: 2,
@@ -43,7 +44,7 @@ async function onVectorizeAllClick() {
         const chatId = getCurrentChatId();
 
         if (!chatId) {
-            toastr.info('No chat selected', 'Vectorization aborted');
+            toastr.info('No chat selected. Vectorization aborted.', 'Vector Storage');
             return;
         }
 
@@ -56,7 +57,7 @@ async function onVectorizeAllClick() {
 
         while (!finished) {
             if (is_send_press) {
-                toastr.info('Message generation is in progress.', 'Vectorization aborted');
+                toastr.info('Message generation is in progress. Vectorization aborted.', 'Vector Storage');
                 throw new Error('Message generation is in progress.');
             }
 
@@ -83,6 +84,7 @@ async function onVectorizeAllClick() {
         }
     } catch (error) {
         console.error('Vectors: Failed to vectorize all', error);
+        toastr.error(`Vectorize all failed. ${new String(error)}`, 'Vector Storage')
     } finally {
         $('#vectorize_progress').hide();
     }
@@ -166,14 +168,14 @@ async function synchronizeChat(batchSize = 5) {
                 case 'extras_module_missing':
                     return 'Extras API must provide an "embeddings" module.';
                 default:
-                    return 'Check server console for more details';
+                    return 'Check server console for more details.';
             }
         }
 
         console.error('Vectors: Failed to synchronize chat', error);
 
         const message = getErrorMessage(error.cause);
-        toastr.error(message, 'Vectorization failed');
+        toastr.error(`Vectorization failed. ${message}`, 'Vector Storage');
         return -1;
     } finally {
         syncBlocked = false;
@@ -219,6 +221,7 @@ async function processFiles(chat) {
             if (!message?.extra?.file) {
                 continue;
             }
+            console.debug(`Vectors: processFiles: message ${message.index}: has a file attachment, processing.`)
 
             // Trim file inserted by the script
             const fileText = String(message.mes)
@@ -230,6 +233,7 @@ async function processFiles(chat) {
 
             // File is too small
             if (fileText.length < thresholdLength) {
+                console.debug(`Vectors: processFiles: message ${message.index}: text of file "${message.extra.file.name}" shorter than vectorization threshold (${fileText.length} < ${thresholdLength} chars), keeping inlined.`)
                 continue;
             }
 
@@ -241,11 +245,16 @@ async function processFiles(chat) {
 
             // File is already in the collection
             if (!hashesInCollection.length) {
+                console.debug(`Vectors: processFiles: message ${message.index}: file "${fileName}" not yet in collection, vectorizing.`)
                 await vectorizeFile(fileText, fileName, collectionId);
+            } else {
+                console.debug(`Vectors: processFiles: message ${message.index}: file "${fileName}" found in collection.`)
             }
 
+            console.debug(`Vectors: processFiles: message ${message.index}: querying vector DB.`)
             const queryText = getQueryText(chat);
             const fileChunks = await retrieveFileChunks(queryText, collectionId);
+            console.debug(`Vectors: processFiles: message ${message.index}: retrieved ${fileChunks.length} chars.`);
 
             // Wrap it back in a code block
             message.mes = `\`\`\`\n${fileChunks}\n\`\`\`\n\n${message.mes}`;
@@ -272,6 +281,62 @@ async function retrieveFileChunks(queryText, collectionId) {
 }
 
 /**
+ * Sanitizes the text content of a scientific paper to obtain higher-quality text for vectorization.
+ *
+ * This is a really simplistic, classical regex-based algorithm. An LLM could likely do better, but that would be slow.
+ * We hope to get a result that's not horribly broken and that won't include irrelevant RAG query poisoning stuff.
+ *
+ * Currently, we:
+ *
+ *   - Strip the reference list.
+ *
+ *     The reference list contains the highest concentration of keywords of any kind (in the titles of the cited studies),
+ *     so it usually poisons RAG queries so that no matter what you search for, you'll only get chunks of the reference list.
+ *     Omitting the reference list from the text to be vectorized, RAG will look for matches in the paper content only.
+ *
+ *   - F IX H EADINGS T HAT L OOK L IKE T HIS.
+ *
+ *     This is a rather common issue in text extraction from a PDF.
+ *
+ * @param {string} fileText The text to sanitize
+ * @returns {string} The sanitized text
+ */
+function sanitizeScientificInput(fileText) {
+    // Fix section headings
+    //
+    const brokenUppercaseWordsFinder = new RegExp(/(?<!\b[A-Z]\s+)\b([A-Z])\s+([A-Z]+)\b/, 'g');  // "H EADING", but not "C  H EADING" (appendix section)
+    fileText = fileText.replaceAll(brokenUppercaseWordsFinder, '$1$2');
+    const brokenAppendixHeadingFinder = new RegExp(/([A-Z])\s+([A-Z])\s+([A-Z]+)\b/, 'g');  // "C H EADING"
+    fileText = fileText.replaceAll(brokenAppendixHeadingFinder, '$1 $2$3');  // -> "C HEADING"
+
+    const brokenHeadingsFinder = new RegExp(/^\s*([A-Z])\s+([a-z]+)\s*$/, 'mg');  // "H eading", on its own line
+    fileText = fileText.replaceAll(brokenHeadingsFinder, '$1$2');
+
+    // Strip reference list (easier now that the headings are already fixed).
+    //
+    // Linefeeds are sometimes lost, so the references may begin in the middle of a line.
+    // Since we can't trigger on any random mention of the word "References", we trigger in the middle of a line
+    // only for an all-uppercase "REFERENCES".
+    //
+    const referencesFinder = new RegExp(/(^\s*References\s*$|^\s*REFERENCES\s*$|\bREFERENCES\s*)/, 'mg');
+    const referencesMatches = [...fileText.matchAll(referencesFinder)];
+    if (referencesMatches.length > 0) {  // Detected a reference list
+        const appendixFinder = new RegExp(/(^\s*Appendi(x|ces)\s*$|^\s*A\s*PPENDI(X|CES)\s*$|\bAPPENDI(X|CES)\s*)/, 'mg');
+        // Some documents just start appendices like "A  Some stuff..." without a heading, but there's not much we can do about that.
+        // In those cases, we will simply ignore the appendices.
+        const appendixMatches = [...fileText.matchAll(appendixFinder)];
+        if (appendixMatches.length > 0) {  // Detected both a reference list and appendices
+            fileText = fileText.substring(0, referencesMatches[0].index).trim() + fileText.substring(appendixMatches[0].index);
+        } else {  // Detected only a reference list, no appendices
+            fileText = fileText.substring(0, referencesMatches[0].index).trim();
+        }
+    }
+
+    console.debug(fileText);
+    return fileText;
+}
+
+/**
  * Vectorizes a file and inserts it into the vector index.
  * @param {string} fileText File text
  * @param {string} fileName File name
@@ -279,16 +344,24 @@ async function retrieveFileChunks(queryText, collectionId) {
  */
 async function vectorizeFile(fileText, fileName, collectionId) {
     try {
-        toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
+        toastr.info(`Ingesting file ${fileName}. Vectorization may take some time, please wait...`, 'Vector Storage');
+
+        if (settings.science_mode) {
+            console.debug(`Vectors: Science mode is enabled. Sanitizing input ${fileName}.`);
+            fileText = sanitizeScientificInput(fileText);
+        }
+
         const chunks = splitRecursive(fileText, settings.chunk_size);
         console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks`, chunks);
 
         const items = chunks.map((chunk, index) => ({ hash: getStringHash(chunk), text: chunk, index: index }));
         await insertVectorItems(collectionId, items);
+        toastr.info(`Vectorization complete for ${fileName}.`, `Vector Storage`);
 
         console.log(`Vectors: Inserted ${chunks.length} vector items for file ${fileName} into ${collectionId}`);
     } catch (error) {
         console.error('Vectors: Failed to vectorize file', error);
+        toastr.error(`Vectorization failed for ${fileName}. ${new String(error)}`, 'Vector Storage');
     }
 }
 
@@ -607,20 +680,20 @@ function toggleSettings() {
 async function onPurgeClick() {
     const chatId = getCurrentChatId();
     if (!chatId) {
-        toastr.info('No chat selected', 'Purge aborted');
+        toastr.info('No chat selected. Purge aborted.', 'Vector Storage');
         return;
     }
     if (await purgeVectorIndex(chatId)) {
-        toastr.success('Vector index purged', 'Purge successful');
+        toastr.success('Vector index purged successfully.', 'Vector Storage');
     } else {
-        toastr.error('Failed to purge vector index', 'Purge failed');
+        toastr.error('Failed to purge vector index', 'Vector Storage');
     }
 }
 
 async function onViewStatsClick() {
     const chatId = getCurrentChatId();
     if (!chatId) {
-        toastr.info('No chat selected');
+        toastr.info('No chat selected', 'Vector Storage');
         return;
     }
 
@@ -671,6 +744,11 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
         toggleSettings();
+    });
+    $('#vectors_science_mode').prop('checked', settings.science_mode).on('input', () => {
+        settings.science_mode = $('#vectors_science_mode').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
     });
     $('#vectors_source').val(settings.source).on('change', () => {
         settings.source = String($('#vectors_source').val());
