@@ -65,7 +65,7 @@ export class SlashCommandParser {
 
         const COMMAND = {
             scope: 'command',
-            begin: /\/\w+/,
+            begin: /\/\S+/,
             beginScope: 'title.function',
             end: /\||$|:}/,
             contains: [], // defined later
