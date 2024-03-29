@@ -22,6 +22,7 @@ import {
     name1,
     reloadCurrentChat,
     removeMacros,
+    retriggerFirstMessageOnEmptyChat,
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
@@ -203,10 +204,10 @@ parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace"
 parser.addCommand('sync', syncCallback, [], ' – syncs the user persona in user-attributed messages in the current chat', true, true);
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed', false, true);
-parser.addCommand('sendas', sendMessageAs, [], ' – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <tt>/sendas name="Chloe" Hello, guys!</tt>', true, true);
-parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
+parser.addCommand('sendas', sendMessageAs, [], '<span class="monospace">[name=CharName compact=true/false (text)] – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <tt>/sendas name="Chloe" Hello, guys!</tt>. If "compact" is set to true, the message is sent using a compact layout.', true, true);
+parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">[compact=true/false (text)]</span> – sends message as a system narrator. If "compact" is set to true, the message is sent using a compact layout.', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
-parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
+parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">[compact=true/false (text)]</span> – adds a note/comment message not part of the chat. If "compact" is set to true, the message is sent using a compact layout.', false, true);
 parser.addCommand('single', setStoryModeCallback, ['story'], ' – sets the message style to single document mode without names or avatars visible', true, true);
 parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the message style to bubble chat mode', true, true);
 parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
@@ -215,7 +216,7 @@ parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace
 parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
 parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</span> – asks a specified character card a prompt', true, true);
 parser.addCommand('delname', deleteMessagesByNameCallback, ['cancel'], '<span class="monospace">(name)</span> – deletes all messages attributed to a specified name', true, true);
-parser.addCommand('send', sendUserMessageCallback, [], '<span class="monospace">(text)</span> – adds a user message to the chat log without triggering a generation', true, true);
+parser.addCommand('send', sendUserMessageCallback, [], '<span class="monospace">[compact=true/false (text)]</span> – adds a user message to the chat log without triggering a generation. If "compact" is set to true, the message is sent using a compact layout.', true, true);
 parser.addCommand('trigger', triggerGenerationCallback, [], ' <span class="monospace">await=true/false</span> – triggers a message generation. If in group, can trigger a message for the specified group member index or name. If <code>await=true</code> named argument passed, the command will await for the triggered generation before continuing.', true, true);
 parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index or range)</span> – hides a chat message from the prompt', true, true);
 parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index or range)</span> – unhides a message from the prompt', true, true);
@@ -1175,9 +1176,10 @@ async function sendUserMessageCallback(args, text) {
     }
 
     text = text.trim();
+    const compact = isTrueBoolean(args?.compact);
     const bias = extractMessageBias(text);
     const insertAt = Number(resolveVariable(args?.at));
-    await sendMessageAsUser(text, bias, insertAt);
+    await sendMessageAsUser(text, bias, insertAt, compact);
     return '';
 }
 
@@ -1340,12 +1342,14 @@ function setNameCallback(_, name) {
     for (let persona of Object.values(power_user.personas)) {
         if (persona.toLowerCase() === name.toLowerCase()) {
             autoSelectPersona(name);
+            retriggerFirstMessageOnEmptyChat();
             return;
         }
     }
 
     // Otherwise, set just the name
     setUserName(name); //this prevented quickReply usage
+    retriggerFirstMessageOnEmptyChat();
 }
 
 async function setNarratorName(_, text) {
@@ -1388,6 +1392,7 @@ export async function sendMessageAs(args, text) {
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
     const isSystem = bias && !removeMacros(mesText).length;
+    const compact = isTrueBoolean(args?.compact);
 
     const character = characters.find(x => x.name === name);
     let force_avatar, original_avatar;
@@ -1412,6 +1417,7 @@ export async function sendMessageAs(args, text) {
         extra: {
             bias: bias.trim().length ? bias : null,
             gen_id: Date.now(),
+            isSmallSys: compact,
         },
     };
 
@@ -1441,6 +1447,7 @@ export async function sendNarratorMessage(args, text) {
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(text);
     const isSystem = bias && !removeMacros(text).length;
+    const compact = isTrueBoolean(args?.compact);
 
     const message = {
         name: name,
@@ -1453,6 +1460,7 @@ export async function sendNarratorMessage(args, text) {
             type: system_message_types.NARRATOR,
             bias: bias.trim().length ? bias : null,
             gen_id: Date.now(),
+            isSmallSys: compact,
         },
     };
 
@@ -1517,6 +1525,7 @@ async function sendCommentMessage(args, text) {
         return;
     }
 
+    const compact = isTrueBoolean(args?.compact);
     const message = {
         name: COMMENT_NAME_DEFAULT,
         is_user: false,
@@ -1527,6 +1536,7 @@ async function sendCommentMessage(args, text) {
         extra: {
             type: system_message_types.COMMENT,
             gen_id: Date.now(),
+            isSmallSys: compact,
         },
     };
 

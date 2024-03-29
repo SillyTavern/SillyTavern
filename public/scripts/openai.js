@@ -3507,11 +3507,11 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
-        } else if (value === 'gemini-1.5-pro') {
+        } else if (value === 'gemini-1.5-pro-latest') {
             $('#openai_max_context').attr('max', max_1mil);
-        } else if (value === 'gemini-pro') {
+        } else if (value === 'gemini-ultra' || value === 'gemini-1.0-pro-latest' || value === 'gemini-pro' || value === 'gemini-1.0-ultra-latest') {
             $('#openai_max_context').attr('max', max_32k);
-        } else if (value === 'gemini-pro-vision') {
+        } else if (value === 'gemini-1.0-pro-vision-latest' || value === 'gemini-pro-vision') {
             $('#openai_max_context').attr('max', max_16k);
         } else {
             $('#openai_max_context').attr('max', max_8k);
@@ -3939,21 +3939,26 @@ export function isImageInliningSupported() {
         return false;
     }
 
-    const gpt4v = 'gpt-4-vision';
-    const geminiProV = 'gemini-pro-vision';
-    const claude = 'claude-3';
-
     if (!oai_settings.image_inlining) {
         return false;
     }
 
+    // gultra just isn't being offered as multimodal, thanks google.
+    const visionSupportedModels = [
+        'gpt-4-vision',
+        'gemini-1.0-pro-vision-latest',
+        'gemini-1.5-pro-latest',
+        'gemini-pro-vision',
+        'claude-3'
+    ];
+
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
-            return oai_settings.openai_model.includes(gpt4v);
+            return visionSupportedModels.some(model => oai_settings.openai_model.includes(model));
         case chat_completion_sources.MAKERSUITE:
-            return oai_settings.google_model.includes(geminiProV);
+            return visionSupportedModels.some(model => oai_settings.google_model.includes(model));
         case chat_completion_sources.CLAUDE:
-            return oai_settings.claude_model.includes(claude);
+            return visionSupportedModels.some(model => oai_settings.claude_model.includes(model));
         case chat_completion_sources.OPENROUTER:
             return !oai_settings.openrouter_force_instruct;
         case chat_completion_sources.CUSTOM:

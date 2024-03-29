@@ -383,6 +383,15 @@ small {
     text-align: center;
 }
 
+.mes.smallSysMes .mes_text p:last-child {
+    margin: 0;
+}
+
+.mes.smallSysMes .swipe_right,
+.mes.smallSysMes .swipe_left {
+    display: none !important;
+}
+
 .mes.smallSysMes .mes_text {
     padding: 0 !important;
     text-align: center;
@@ -1408,7 +1417,7 @@ input[type="file"] {
 }
 
 .extension_token_counter {
-    font-size: calc(var(--mainFontSize) * 0.9);
+    font-size: calc(var(--mainFontSize) * 0.875);
     width: 100%;
     text-align: right;
     margin-bottom: 5px;

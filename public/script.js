@@ -172,6 +172,7 @@ import {
     importTags,
     tag_filter_types,
     compareTagsForSort,
+    initTags,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -413,6 +414,7 @@ export const event_types = {
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
+    CHARACTER_DUPLICATED: 'character_duplicated',
 };
 
 export const eventSource = new EventEmitter();
@@ -865,6 +867,7 @@ async function firstLoadInit() {
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     initLocales();
+    initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -1238,7 +1241,7 @@ function getCharacterBlock(item, id) {
     const template = $('#character_template .character_select').clone();
     template.attr({ 'chid': id, 'id': `CharID${id}` });
     template.find('img').attr('src', this_avatar).attr('alt', item.name);
-    template.find('.avatar').attr('title', `[Character] ${item.name}`);
+    template.find('.avatar').attr('title', `[Character] ${item.name}\nFile: ${item.avatar}`);
     template.find('.ch_name').text(item.name).attr('title', `[Character] ${item.name}`);
     if (power_user.show_card_avatar_urls) {
         template.find('.ch_avatar_url').text(item.avatar);
@@ -1856,6 +1859,7 @@ function insertSVGIcon(mes, extra) {
 
 function getMessageFromTemplate({
     mesId,
+    swipeId,
     characterName,
     isUser,
     avatarImg,
@@ -1873,6 +1877,7 @@ function getMessageFromTemplate({
     const mes = messageTemplate.clone();
     mes.attr({
         'mesid': mesId,
+        'swipeid': swipeId,
         'ch_name': characterName,
         'is_user': isUser,
         'is_system': !!isSystem,
@@ -2019,6 +2024,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
 
     let params = {
         mesId: forceId ?? chat.length - 1,
+        swipeId: mes.swipe_id ?? 0,
         characterName: mes.name,
         isUser: mes.is_user,
         avatarImg: avatarImg,
@@ -2728,9 +2734,7 @@ class StreamingProcessor {
         const continueMsg = this.type === 'continue' ? this.messageAlreadyGenerated : undefined;
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), continueMsg);
         await saveChatConditional();
-        activateSendButtons();
-        showSwipeButtons();
-        setGenerationProgress(0);
+        unblockGeneration();
         generatedPromptCache = '';
 
         //console.log("Generated text size:", text.length, text)
@@ -2773,11 +2777,8 @@ class StreamingProcessor {
         this.isStopped = true;
 
         this.hideMessageButtons(this.messageId);
-        $('#send_textarea').removeAttr('disabled');
-        is_send_press = false;
-        activateSendButtons();
-        setGenerationProgress(0);
-        showSwipeButtons();
+        generatedPromptCache = '';
+        unblockGeneration();
     }
 
     setFirstSwipe(messageId) {
@@ -3968,6 +3969,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
         }
 
+        generatedPromptCache = '';
+
         unblockGeneration();
         console.log(exception);
         streamingProcessor = null;
@@ -4179,9 +4182,10 @@ export function removeMacros(str) {
  * @param {string} messageText Message text.
  * @param {string} messageBias Message bias.
  * @param {number} [insertAt] Optional index to insert the message at.
+ * @params {boolean} [compact] Send as a compact display message.
  * @returns {Promise<void>} A promise that resolves when the message is inserted.
  */
-export async function sendMessageAsUser(messageText, messageBias, insertAt = null) {
+export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false) {
     messageText = getRegexedString(messageText, regex_placement.USER_INPUT);
 
     const message = {
@@ -4190,7 +4194,9 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         is_system: false,
         send_date: getMessageTimeStamp(),
         mes: substituteParams(messageText),
-        extra: {},
+        extra: {
+            isSmallSys: compact,
+        },
     };
 
     if (power_user.message_token_count_enabled) {
@@ -4318,6 +4324,8 @@ async function DupeChar() {
     });
     if (response.ok) {
         toastr.success('Character Duplicated');
+        const data = await response.json();
+        await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
         getCharacters();
     }
 }
@@ -5734,6 +5742,12 @@ export function setUserAvatar(imgfile) {
     selectCurrentPersona();
     saveSettingsDebounced();
     $('.zoomed_avatar[forchar]').remove();
+}
+
+export function retriggerFirstMessageOnEmptyChat() {
+    if (this_chid >= 0 && !selected_group && chat.length === 1) {
+        $('#firstmessage_textarea').trigger('input');
+    }
 }
 
 async function uploadUserAvatar(e) {
@@ -8470,9 +8484,7 @@ jQuery(async function () {
         setUserAvatar(imgfile);
 
         // force firstMes {{user}} update on persona switch
-        if (this_chid >= 0 && !selected_group && chat.length === 1) {
-            $('#firstmessage_textarea').trigger('input');
-        }
+        retriggerFirstMessageOnEmptyChat();
     });
     $(document).on('click', '#user_avatar_block .avatar_upload', function () {
         $('#avatar_upload_overwrite').val('');
@@ -8597,11 +8609,15 @@ jQuery(async function () {
             await clearChat();
             chat.length = 0;
 
-            chat_file_for_del = getCurrentChatDetails().sessionName;
-            const isDelChatCheckbox = document.getElementById('del_chat_checkbox').checked;
+            chat_file_for_del = getCurrentChatDetails()?.sessionName;
+            const isDelChatCheckbox = document.getElementById('del_chat_checkbox')?.checked;
+
+            // Make it easier to find in backups
+            if (isDelChatCheckbox) {
+                await saveChatConditional();
+            }
 
             if (selected_group) {
-                //Fix it; When you're creating a new group chat (but not when initially converting from the existing regular chat), the first greeting message doesn't automatically get translated.
                 await createNewGroupChat(selected_group);
                 if (isDelChatCheckbox) await deleteGroupChat(selected_group, chat_file_for_del);
             }
@@ -8664,14 +8680,13 @@ jQuery(async function () {
     $('#form_create').submit(createOrEditCharacter);
 
     $('#delete_button').on('click', function () {
-        popup_type = 'del_ch';
         callPopup(`
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
                 <label for="del_char_checkbox" class="checkbox_label justifyCenter">
                     <input type="checkbox" id="del_char_checkbox" />
-                    <span>Also delete the chat files</span>
-                </label><br></b>`,
+                    <small>Also delete the chat files</small>
+                </label><br></b>`, 'del_ch', '',
         );
     });
 
@@ -8979,7 +8994,7 @@ jQuery(async function () {
                     <label for="del_chat_checkbox" class="checkbox_label justifyCenter"
                     title="If necessary, you can later restore this chat file from the /backups folder">
                         <input type="checkbox" id="del_chat_checkbox" />
-                        <span>Also delete the current chat file</span>
+                        <small>Also delete the current chat file</small>
                     </label><br>
                 `, 'new_chat', '');
             }
@@ -9576,6 +9591,7 @@ jQuery(async function () {
         const userName = String($('#your_name').val()).trim();
         setUserName(userName);
         await updatePersonaNameIfExists(user_avatar, userName);
+        retriggerFirstMessageOnEmptyChat();
     });
 
     $('#sync_name_button').on('click', async function () {

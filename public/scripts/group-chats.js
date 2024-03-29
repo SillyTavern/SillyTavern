@@ -189,6 +189,8 @@ export async function getGroupChat(groupId) {
         await printMessages();
     } else {
         sendSystemMessage(system_message_types.GROUP, '', { isSmallSys: true });
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
         if (group && Array.isArray(group.members)) {
             for (let member of group.members) {
                 const character = characters.find(x => x.avatar === member || x.name === member);
@@ -199,7 +201,9 @@ export async function getGroupChat(groupId) {
 
                 const mes = await getFirstCharacterMessage(character);
                 chat.push(mes);
+                await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                 addOneMessage(mes);
+                await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
             }
         }
         await saveGroupChat(groupId, false);
