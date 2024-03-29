@@ -10,6 +10,7 @@ export class SlashCommandParser {
     /**@type {Map<String, SlashCommand>}*/ commands = {};
     // @ts-ignore
     /**@type {Map<String, String>}*/ helpStrings = {};
+    /**@type {Boolean}*/ verifyCommandNames = true;
     /**@type {String}*/ text;
     /**@type {String}*/ keptText;
     /**@type {Number}*/ index;
@@ -74,9 +75,10 @@ export class SlashCommandParser {
 
     getCommandAt(text, index) {
         try {
-            this.parse(text);
+            this.parse(text, false);
         } catch (e) {
             // do nothing
+            console.warn(e);
         }
         index += 2;
         return this.commandIndex.filter(it=>it.start <= index && (it.end >= index || it.end == null)).slice(-1)[0]
@@ -95,7 +97,8 @@ export class SlashCommandParser {
     }
 
 
-    parse(text) {
+    parse(text, verifyCommandNames = true) {
+        this.verifyCommandNames = verifyCommandNames;
         this.text = `{:${text}:}`;
         this.keptText = '';
         this.index = 0;
@@ -150,7 +153,7 @@ export class SlashCommandParser {
         this.commandIndex.push(cmd);
         while (!/\s/.test(this.char) && !this.testCommandEnd()) cmd.name += this.take(); // take chars until whitespace or end
         while (/\s/.test(this.char)) this.take(); // discard whitespace
-        if (!this.commands[cmd.name]) throw new SlashCommandParserError(`Unknown command at position ${this.index - cmd.name.length - 2}: "/${cmd.name}"`, this.text, this.index - cmd.name.length);
+        if (this.verifyCommandNames && !this.commands[cmd.name]) throw new SlashCommandParserError(`Unknown command at position ${this.index - cmd.name.length - 2}: "/${cmd.name}"`, this.text, this.index - cmd.name.length);
         cmd.command = this.commands[cmd.name];
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
@@ -163,7 +166,7 @@ export class SlashCommandParser {
         }
         if (this.testCommandEnd()) {
             cmd.end = this.index;
-            if (!cmd.command.purgeFromMessage) this.keptText += this.text.slice(cmd.start, cmd.end);
+            if (!cmd.command?.purgeFromMessage) this.keptText += this.text.slice(cmd.start, cmd.end);
             return cmd;
         } else {
             console.warn(this.behind, this.char, this.ahead);
