@@ -84,32 +84,8 @@ async function deleteCharacter(this_chid) {
 async function onDeleteButtonClick() {
     console.log('Delete button clicked');
 
-    // Create a mapping of chid to avatar
-    let toDelete = [];
-    $('.bulk_select_checkbox:checked').each((i, el) => {
-        const chid = $(el).parent().attr('chid');
-        const avatar = characters[chid].avatar;
-        // Add the avatar to the list of avatars to delete
-        toDelete.push(avatar);
-    });
-
-    const confirm = await callPopup('<h3>Are you sure you want to delete these characters?</h3>You would need to delete the chat files manually.<br>', 'confirm');
-
-    if (!confirm) {
-        console.log('User cancelled delete');
-        return;
-    }
-
-    // Delete the characters
-    for (const avatar of toDelete) {
-        console.log(`Deleting character with avatar ${avatar}`);
-        await getCharacters();
-
-        //chid should be the key of the character with the given avatar
-        const chid = Object.keys(characters).find((key) => characters[key].avatar === avatar);
-        console.log(`Deleting character with chid ${chid}`);
-        await deleteCharacter(chid);
-    }
+    // We just let the button trigger the context menu delete option
+    await characterGroupOverlay.handleContextMenuDelete();
 }
 
 /**

@@ -19,18 +19,6 @@ import { hideLoader, showLoader } from './loader.js';
 import { convertCharacterToPersona } from './personas.js';
 import { createTagInput, getTagKeyForEntity, getTagsList, printTagList, tag_map, compareTagsForSort, removeTagFromMap } from './tags.js';
 
-// Utility object for popup messages.
-const popupMessage = {
-    deleteChat(characterCount) {
-        return `<h3>Delete ${characterCount} characters?</h3>
-                <b>THIS IS PERMANENT!<br><br>
-                <label for="del_char_checkbox" class="checkbox_label justifyCenter">
-                    <input type="checkbox" id="del_char_checkbox" />
-                    <span>Also delete the chat files</span>
-                </label><br></b>`;
-    },
-};
-
 /**
  * Static object representing the actions of the
  * character context menu override.
@@ -198,6 +186,12 @@ class CharacterContextMenu {
  * Represents a tag control not bound to a single character
  */
 class BulkTagPopupHandler {
+    /**
+     * Gets the HTML as a string that is going to be the popup for the bulk tag edit
+     *
+     * @param {Array<number>} characterIds - The characters that are shown inside the popup
+     * @returns String containing the html for the popup
+     */
     static #getHtml = (characterIds) => {
         const characterData = JSON.stringify({ characterIds: characterIds });
         return `<div id="bulk_tag_shadow_popup">
@@ -227,8 +221,7 @@ class BulkTagPopupHandler {
                     </div>
                 </div>
             </div>
-        </div>
-    `;
+        </div>`;
     };
 
     /**
@@ -430,7 +423,7 @@ class BulkEditOverlay {
 
     /**
      *
-     * @returns {*[]}
+     * @returns {number[]}
      */
     get selectedCharacters() {
         return this.#selectedCharacters;
@@ -776,14 +769,38 @@ class BulkEditOverlay {
     };
 
     /**
+     * Gets the HTML as a string that is displayed inside the popup for the bulk delete
+     *
+     * @param {Array<number>} characterIds - The characters that are shown inside the popup
+     * @returns String containing the html for the popup content
+     */
+    static #getDeletePopupContentHtml = (characterIds) => {
+        return `
+            <h3 class="marginBot5">Delete ${characterIds.length} characters?</h3>
+            <span class="bulk_delete_note">
+                <i class="fa-solid fa-triangle-exclamation warning margin-r5"></i>
+                <b>THIS IS PERMANENT!</b>
+            </span>
+            <div id="bulk_delete_avatars_block" class="avatars_inline avatars_inline_small tags tags_inline m-t-1"></div>
+            <br>
+            <div id="bulk_delete_options" class="m-b-1">
+                <label for="del_char_checkbox" class="checkbox_label justifyCenter">
+                    <input type="checkbox" id="del_char_checkbox" />
+                    <span>Also delete the chat files</span>
+                </label>
+            </div>`;
+    }
+
+    /**
      * Request user input before concurrently handle deletion
      * requests.
      *
      * @returns {Promise<number>}
      */
     handleContextMenuDelete = () => {
-        callPopup(
-            popupMessage.deleteChat(this.selectedCharacters.length), null)
+        const characterIds = this.selectedCharacters;
+        const popupContent = BulkEditOverlay.#getDeletePopupContentHtml(characterIds);
+        const promise = callPopup(popupContent, null)
             .then((accept) => {
                 if (true !== accept) return;
 
@@ -791,11 +808,17 @@ class BulkEditOverlay {
 
                 showLoader();
                 toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
-                Promise.allSettled(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
+                return Promise.allSettled(characterIds.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
                     .then(() => getCharacters())
                     .then(() => this.browseState())
                     .finally(() => hideLoader());
             });
+
+        // At this moment the popup is already changed in the dom, but not yet closed/resolved. We build the avatar list here
+        const entities = characterIds.map(id => characterToEntity(characters[id], id)).filter(entity => entity.item !== undefined);
+        buildAvatarList($('#bulk_delete_avatars_block'), entities);
+
+        return promise;
     };
 
     /**

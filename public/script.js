@@ -5357,7 +5357,7 @@ function buildAvatarList(block, entities, { templateId = 'inline_avatar_template
         avatarTemplate.attr('data-type', entity.type);
         avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
         avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entity.item.name);
-        avatarTemplate.attr('title', `[Character] ${entity.item.name}`);
+        avatarTemplate.attr('title', `[Character] ${entity.item.name}\nFile: ${entity.item.avatar}`);
         if (highlightFavs) {
             avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
             avatarTemplate.find('.ch_fav').val(entity.item.fav);
