@@ -2,5 +2,17 @@
 #critical:
 #    - '(critical|urgent)'
 
-Environment:
-    - '(🪟 Windows|🍎 Mac|🐋 Docker|📱 Termux|🐧 Linux)'
+🪟 Windows:
+    - '(🪟 Windows)'
+
+🍎 Mac:
+    - '(🍎 Mac)'
+
+🐋 Docker:
+    - '(🐋 Docker)'
+
+📱 Termux:
+    - '(📱 Termux)'
+
+🐧 Linux:
+    - '(🐧 Linux)'
