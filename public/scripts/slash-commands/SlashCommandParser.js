@@ -31,6 +31,107 @@ export class SlashCommandParser {
         return this.index >= this.text.length || /^\s+$/.test(this.ahead);
     }
 
+
+    constructor() {
+        // NUMBER mode is copied from highlightjs's own implementation for JavaScript
+        // https://tc39.es/ecma262/#sec-literals-numeric-literals
+        const decimalDigits = '[0-9](_?[0-9])*';
+        const frac = `\\.(${decimalDigits})`;
+        // DecimalIntegerLiteral, including Annex B NonOctalDecimalIntegerLiteral
+        // https://tc39.es/ecma262/#sec-additional-syntax-numeric-literals
+        const decimalInteger = '0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*';
+        const NUMBER = {
+            className: 'number',
+            variants: [
+                // DecimalLiteral
+                { begin: `(\\b(${decimalInteger})((${frac})|\\.)?|(${frac}))` +
+        `[eE][+-]?(${decimalDigits})\\b` },
+                { begin: `\\b(${decimalInteger})\\b((${frac})\\b|\\.)?|(${frac})\\b` },
+
+                // DecimalBigIntegerLiteral
+                { begin: '\\b(0|[1-9](_?[0-9])*)n\\b' },
+
+                // NonDecimalIntegerLiteral
+                { begin: '\\b0[xX][0-9a-fA-F](_?[0-9a-fA-F])*n?\\b' },
+                { begin: '\\b0[bB][0-1](_?[0-1])*n?\\b' },
+                { begin: '\\b0[oO][0-7](_?[0-7])*n?\\b' },
+
+                // LegacyOctalIntegerLiteral (does not include underscore separators)
+                // https://tc39.es/ecma262/#sec-additional-syntax-numeric-literals
+                { begin: '\\b0[0-7]+n?\\b' },
+            ],
+            relevance: 0,
+        };
+
+        const COMMAND = {
+            scope: 'command',
+            begin: /\/\w+/,
+            beginScope: 'title.function',
+            end: /\||$|:}/,
+            contains: [], // defined later
+        };
+        const CLOSURE = {
+            scope: 'closure',
+            begin: /{:/,
+            end: /:}/,
+            contains: [], // defined later
+        };
+        const CLOSURE_ARGS = {
+            scope: 'params',
+            begin: /:}\(/,
+            end: /\)/,
+            contains: [],
+        };
+        const NAMED_ARG = {
+            scope: 'type',
+            begin: /\w+=/,
+            end: '',
+        };
+        const MACRO = {
+            scope: 'operator',
+            begin: /{{/,
+            end: /}}/,
+        };
+        COMMAND.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            hljs.QUOTE_STRING_MODE,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+            CLOSURE_ARGS,
+        );
+        CLOSURE.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            hljs.QUOTE_STRING_MODE,
+            NUMBER,
+            MACRO,
+            COMMAND,
+            'self',
+            CLOSURE_ARGS,
+        );
+        CLOSURE_ARGS.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            hljs.QUOTE_STRING_MODE,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+            'self',
+        );
+        hljs.registerLanguage('stscript', ()=>({
+            case_insensitive: false,
+            keywords: ['|'],
+            contains: [
+                hljs.BACKSLASH_ESCAPE,
+                COMMAND,
+                CLOSURE,
+                CLOSURE_ARGS,
+            ],
+        }));
+    }
+
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
         if (['/', '#'].includes(command[0])) {
             throw new Error(`Illegal Name. Slash commandn name cannot begin with "${command[0]}".`);
