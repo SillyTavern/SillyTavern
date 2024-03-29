@@ -18,8 +18,8 @@ export class SlashCommandClosure {
             .replace(/{{pipe}}/g, this.scope.pipe)
             .replace(/{{var::(\w+?)}}/g, (_, key)=>this.scope.getVariable(key))
         ;
-        for (const key of Object.keys(this.scope.macros)) {
-            text = text.replace(new RegExp(`{{${key}}}`), this.scope.macros[key]);
+        for (const { key, value } of this.scope.macroList) {
+            text = text.replace(new RegExp(`{{${key}}}`), value);
         }
         return text;
     }

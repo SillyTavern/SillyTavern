@@ -3,6 +3,9 @@ export class SlashCommandScope {
     /**@type {Map<String, Object>}*/ variables = {};
     // @ts-ignore
     /**@type {Map<String, Object>}*/ macros = {};
+    get macroList() {
+        return [...Object.keys(this.macros).map(key=>({ key, value:this.macros[key] })), ...(this.parent?.macroList ?? [])];
+    }
     /**@type {SlashCommandScope}*/ parent;
     /**@type {String}*/ #pipe;
     get pipe() {
