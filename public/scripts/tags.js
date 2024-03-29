@@ -8,6 +8,8 @@ import {
     entitiesFilter,
     printCharacters,
     buildAvatarList,
+    eventSource,
+    event_types,
 } from '../script.js';
 // eslint-disable-next-line no-unused-vars
 import { FILTER_TYPES, FILTER_STATES, isFilterState, FilterHelper } from './filters.js';
@@ -132,7 +134,7 @@ function filterByTagState(entities, { globalDisplayFilters = false, subForEntity
     }
 
     if (subForEntity !== undefined && subForEntity.type === 'tag') {
-        entities = filterTagSubEntities(subForEntity.item, entities, { filterHidden : filterHidden });
+        entities = filterTagSubEntities(subForEntity.item, entities, { filterHidden: filterHidden });
     }
 
     return entities;
@@ -1140,7 +1142,7 @@ function onClearAllFiltersClick() {
     // We have to manually go through the elements and unfilter by clicking...
     // Thankfully nearly all filter controls are three-state-toggles
     const filterTags = $('.rm_tag_controls .rm_tag_filter').find('.tag');
-    for(const tag of filterTags) {
+    for (const tag of filterTags) {
         const toggleState = $(tag).attr('data-toggle-state');
         if (toggleState !== undefined && !isFilterState(toggleState ?? FILTER_STATES.UNDEFINED, FILTER_STATES.UNDEFINED)) {
             toggleTagThreeState($(tag), { stateOverride: FILTER_STATES.UNDEFINED, simulateClick: true });
@@ -1151,7 +1153,17 @@ function onClearAllFiltersClick() {
     $('#character_search_bar').val('').trigger('input');
 }
 
-jQuery(() => {
+/**
+ * Copy tags from one character to another.
+ * @param {{oldAvatar: string, newAvatar: string}} data Event data
+ */
+function copyTags(data) {
+    const prevTagMap = tag_map[data.oldAvatar] || [];
+    const newTagMap = tag_map[data.newAvatar] || [];
+    tag_map[data.newAvatar] = Array.from(new Set([...prevTagMap, ...newTagMap]));
+}
+
+export function initTags() {
     createTagInput('#tagInput', '#tagList');
     createTagInput('#groupTagInput', '#groupTagList');
 
@@ -1168,5 +1180,5 @@ jQuery(() => {
     $(document).on('click', '.tag_view_create', onTagCreateClick);
     $(document).on('click', '.tag_view_backup', onTagsBackupClick);
     $(document).on('click', '.tag_view_restore', onBackupRestoreClick);
-});
-
+    eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
+}

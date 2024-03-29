@@ -48,16 +48,24 @@ class CharacterContextMenu {
      * Duplicate one or more characters
      *
      * @param characterId
-     * @returns {Promise<Response>}
+     * @returns {Promise<any>}
      */
     static duplicate = async (characterId) => {
         const character = CharacterContextMenu.#getCharacter(characterId);
+        const body = { avatar_url: character.avatar };
 
-        return fetch('/api/characters/duplicate', {
+        const result = await fetch('/api/characters/duplicate', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ avatar_url: character.avatar }),
+            body: JSON.stringify(body),
         });
+
+        if (!result.ok) {
+            throw new Error('Character not duplicated');
+        }
+
+        const data = await result.json();
+        await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
     };
 
     /**

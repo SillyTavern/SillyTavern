@@ -1445,7 +1445,7 @@ input[type="file"] {
 }
 
 .extension_token_counter {
-    font-size: calc(var(--mainFontSize) * 0.9);
+    font-size: calc(var(--mainFontSize) * 0.875);
     width: 100%;
     text-align: right;
     margin-bottom: 5px;

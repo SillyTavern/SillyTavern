@@ -172,6 +172,7 @@ import {
     importTags,
     tag_filter_types,
     compareTagsForSort,
+    initTags,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -412,6 +413,7 @@ export const event_types = {
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
+    CHARACTER_DUPLICATED: 'character_duplicated',
 };
 
 export const eventSource = new EventEmitter();
@@ -864,6 +866,7 @@ async function firstLoadInit() {
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     initLocales();
+    initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -1237,7 +1240,7 @@ function getCharacterBlock(item, id) {
     const template = $('#character_template .character_select').clone();
     template.attr({ 'chid': id, 'id': `CharID${id}` });
     template.find('img').attr('src', this_avatar).attr('alt', item.name);
-    template.find('.avatar').attr('title', `[Character] ${item.name}`);
+    template.find('.avatar').attr('title', `[Character] ${item.name}\nFile: ${item.avatar}`);
     template.find('.ch_name').text(item.name).attr('title', `[Character] ${item.name}`);
     if (power_user.show_card_avatar_urls) {
         template.find('.ch_avatar_url').text(item.avatar);
@@ -1855,6 +1858,7 @@ function insertSVGIcon(mes, extra) {
 
 function getMessageFromTemplate({
     mesId,
+    swipeId,
     characterName,
     isUser,
     avatarImg,
@@ -1872,6 +1876,7 @@ function getMessageFromTemplate({
     const mes = messageTemplate.clone();
     mes.attr({
         'mesid': mesId,
+        'swipeid': swipeId,
         'ch_name': characterName,
         'is_user': isUser,
         'is_system': !!isSystem,
@@ -2018,6 +2023,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
 
     let params = {
         mesId: forceId ?? chat.length - 1,
+        swipeId: mes.swipe_id ?? 0,
         characterName: mes.name,
         isUser: mes.is_user,
         avatarImg: avatarImg,
@@ -2727,9 +2733,7 @@ class StreamingProcessor {
         const continueMsg = this.type === 'continue' ? this.messageAlreadyGenerated : undefined;
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), continueMsg);
         await saveChatConditional();
-        activateSendButtons();
-        showSwipeButtons();
-        setGenerationProgress(0);
+        unblockGeneration();
         generatedPromptCache = '';
 
         //console.log("Generated text size:", text.length, text)
@@ -2772,11 +2776,8 @@ class StreamingProcessor {
         this.isStopped = true;
 
         this.hideMessageButtons(this.messageId);
-        $('#send_textarea').removeAttr('disabled');
-        is_send_press = false;
-        activateSendButtons();
-        setGenerationProgress(0);
-        showSwipeButtons();
+        generatedPromptCache = '';
+        unblockGeneration();
     }
 
     setFirstSwipe(messageId) {
@@ -3967,6 +3968,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
         }
 
+        generatedPromptCache = '';
+
         unblockGeneration();
         console.log(exception);
         streamingProcessor = null;
@@ -4320,6 +4323,8 @@ async function DupeChar() {
     });
     if (response.ok) {
         toastr.success('Character Duplicated');
+        const data = await response.json();
+        await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
         getCharacters();
     }
 }
