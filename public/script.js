@@ -3389,6 +3389,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     // If it doesn't fit - user shot himself in the foot
     for (const index of injectedIndices) {
         const item = chat2[index];
+
+        if (typeof item !== 'string') {
+            continue;
+        }
+
         tokenCount += getTokenCount(item.replace(/\r/gm, ''));
         chatString = item + chatString;
         if (tokenCount < this_max_context) {
@@ -3414,6 +3419,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         }
 
         const item = chat2[i];
+
+        if (typeof item !== 'string') {
+            continue;
+        }
+
         tokenCount += getTokenCount(item.replace(/\r/gm, ''));
         chatString = item + chatString;
         if (tokenCount < this_max_context) {
