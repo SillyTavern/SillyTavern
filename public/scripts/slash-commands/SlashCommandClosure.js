@@ -6,6 +6,10 @@ import { SlashCommandScope } from './SlashCommandScope.js';
 export class SlashCommandClosure {
     /**@type {SlashCommandScope}*/ scope;
     /**@type {Boolean}*/ executeNow = false;
+    // @ts-ignore
+    /**@type {Map<string,string|SlashCommandClosure>}*/ arguments = {};
+    // @ts-ignore
+    /**@type {Map<string,string|SlashCommandClosure>}*/ providedArguments = {};
     /**@type {SlashCommandExecutor[]}*/ executorList = [];
     /**@type {String}*/ keptText;
 
@@ -28,6 +32,8 @@ export class SlashCommandClosure {
         const closure = new SlashCommandClosure();
         closure.scope = this.scope.getCopy();
         closure.executeNow = this.executeNow;
+        closure.arguments = this.arguments;
+        closure.providedArguments = this.providedArguments;
         closure.executorList = this.executorList;
         closure.keptText = this.keptText;
         return closure;
@@ -40,6 +46,56 @@ export class SlashCommandClosure {
 
     async executeDirect() {
         let interrupt = false;
+
+        // closure arguments
+        for (const key of Object.keys(this.arguments)) {
+            let v = this.arguments[key];
+            if (v instanceof SlashCommandClosure) {
+                /**@type {SlashCommandClosure}*/
+                const closure = v;
+                closure.scope.parent = this.scope;
+                if (closure.executeNow) {
+                    v = (await closure.execute())?.pipe;
+                } else {
+                    v = closure;
+                }
+            } else {
+                v = this.substituteParams(v);
+            }
+            // unescape value
+            if (typeof v == 'string') {
+                v = v
+                    ?.replace(/\\\|/g, '|')
+                    ?.replace(/\\\{/g, '{')
+                    ?.replace(/\\\}/g, '}')
+                ;
+            }
+            this.scope.letVariable(key, v);
+        }
+        for (const key of Object.keys(this.providedArguments)) {
+            let v = this.providedArguments[key];
+            if (v instanceof SlashCommandClosure) {
+                /**@type {SlashCommandClosure}*/
+                const closure = v;
+                closure.scope.parent = this.scope;
+                if (closure.executeNow) {
+                    v = (await closure.execute())?.pipe;
+                } else {
+                    v = closure;
+                }
+            } else {
+                v = this.substituteParams(v);
+            }
+            // unescape value
+            if (typeof v == 'string') {
+                v = v
+                    ?.replace(/\\\|/g, '|')
+                    ?.replace(/\\\{/g, '{')
+                    ?.replace(/\\\}/g, '}')
+                ;
+            }
+            this.scope.setVariable(key, v);
+        }
 
         for (const executor of this.executorList) {
             interrupt = executor.command.interruptsGeneration;

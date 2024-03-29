@@ -95,6 +95,9 @@ export class SlashCommandParser {
         if (keep) this.keptText += content;
         return content;
     }
+    discardWhitespace() {
+        while (/\s/.test(this.char)) this.take(); // discard whitespace
+    }
 
 
     parse(text, verifyCommandNames = true) {
@@ -121,7 +124,12 @@ export class SlashCommandParser {
         this.take(2); // discard opening {:
         let closure = new SlashCommandClosure(this.scope);
         this.scope = closure.scope;
-        while (/\s/.test(this.char)) this.take(); // discard whitespace
+        this.discardWhitespace();
+        while (this.testNamedArgument()) {
+            const arg = this.parseNamedArgument();
+            closure.arguments[arg.key] = arg.value;
+            this.discardWhitespace();
+        }
         while (!this.testClosureEnd()) {
             if (this.testCommand()) {
                 closure.executorList.push(this.parseCommand());
@@ -131,9 +139,20 @@ export class SlashCommandParser {
             while (/\s|\|/.test(this.char)) this.take(); // discard whitespace and pipe (command separator)
         }
         this.take(2); // discard closing :}
-        if (this.char == '(' && this.ahead[0] == ')') {
-            this.take(2); // discard ()
+        this.discardWhitespace();
+        if (this.char == '(') {
+            this.take(); // discard opening (
             closure.executeNow = true;
+            this.discardWhitespace();
+            while (this.testNamedArgument()) {
+                const arg = this.parseNamedArgument();
+                if (!Object.keys(closure.arguments).includes(arg.key)) throw new SlashCommandParserError(`Invalid named argument for closure "${arg.key}" at position ${this.index - 2}`, this.text, this.index);
+                closure.providedArguments[arg.key] = arg.value;
+                this.discardWhitespace();
+            }
+            // @ts-ignore
+            if (this.char != ')') throw new SlashCommandParserError(`Missing closing ")" at position ${this.index - 2}.`, this.text, this.index);
+            this.take(); // discard closing )
         }
         while (/\s/.test(this.char)) this.take(); // discard trailing whitespace
         this.scope = closure.scope.parent;
@@ -152,15 +171,15 @@ export class SlashCommandParser {
         this.take(); // discard "/"
         this.commandIndex.push(cmd);
         while (!/\s/.test(this.char) && !this.testCommandEnd()) cmd.name += this.take(); // take chars until whitespace or end
-        while (/\s/.test(this.char)) this.take(); // discard whitespace
+        this.discardWhitespace();
         if (this.verifyCommandNames && !this.commands[cmd.name]) throw new SlashCommandParserError(`Unknown command at position ${this.index - cmd.name.length - 2}: "/${cmd.name}"`, this.text, this.index - cmd.name.length);
         cmd.command = this.commands[cmd.name];
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
             cmd.args[arg.key] = arg.value;
-            while (/\s/.test(this.char)) this.take(); // discard whitespace
+            this.discardWhitespace();
         }
-        while (/\s/.test(this.char)) this.take(); // discard whitespace
+        this.discardWhitespace();
         if (this.testUnnamedArgument()) {
             cmd.value = this.parseUnnamedArgument();
         }
