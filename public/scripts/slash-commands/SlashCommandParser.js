@@ -134,7 +134,7 @@ export class SlashCommandParser {
 
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
         if (['/', '#'].includes(command[0])) {
-            throw new Error(`Illegal Name. Slash commandn name cannot begin with "${command[0]}".`);
+            throw new Error(`Illegal Name. Slash command name cannot begin with "${command[0]}".`);
         }
         const fnObj = Object.assign(new SlashCommand(), { name:command, callback, helpString, interruptsGeneration, purgeFromMessage, aliases });
 
