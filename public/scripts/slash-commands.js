@@ -1980,7 +1980,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         dom?.remove();
         isActive = false;
     };
-    const show = (isInput = false) => {
+    const show = (isInput = false, isForced = false) => {
         text = textarea.value;
         // only show with textarea in focus
         if (document.activeElement != textarea) return hide();
@@ -1988,8 +1988,14 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         if (text[0] != '/') return hide();
 
         executor = parser.getCommandAt(text, textarea.selectionStart);
-        const slashCommand = executor?.name?.toLowerCase() ?? '';
+        let slashCommand = executor?.name?.toLowerCase() ?? '';
         isReplacable = isInput && (!executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length + 1);
+        if (isForced && textarea.selectionStart > executor.start - 2 && textarea.selectionStart <= executor.start - 2 + executor.name.length + 1) {
+            slashCommand = slashCommand.slice(0, textarea.selectionStart - (executor.start - 2) - 1);
+            executor.name = slashCommand;
+            executor.end = executor.start + slashCommand.length;
+            isReplacable = true;
+        }
 
         const matchType = power_user.stscript?.matching ?? 'strict';
         const fuzzyRegex = new RegExp(`^(.*?)${slashCommand.split('').map(char=>`(${escapeRegex(char)})`).join('(.*?)')}(.*?)$`, 'i');
@@ -2064,7 +2070,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         else {
             const helpStrings = Object
                 .keys(parser.commands) // Get all slash commands
-                .filter(it => executor.name == '' || isReplacable ? matchers[matchType](it) : it.toLowerCase() == slashCommand) // Filter by the input
+                .filter(it => executor.name == '' || isReplacable || isForced ? matchers[matchType](it) : it.toLowerCase() == slashCommand) // Filter by the input
                 // .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
             ;
             result = helpStrings
@@ -2082,7 +2088,13 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
 
         // add notice if no match found
         if (result.length == 0) {
-            result.push({ label:`No matching commands for "/${slashCommand}"`, value:'', li:null });
+            result.push({
+                name: '',
+                label: `No matching commands for "/${slashCommand}"`,
+                value:'',
+                score: null,
+                li: null,
+            });
         } else if (result.length == 1 && result[0].value == `/${executor.name}`) {
             isReplacable = false;
         }
@@ -2175,10 +2187,11 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
             show();
         }
     };
-    const showAutoCompleteDebounced = debounce((isInput)=>show(isInput), 100);
+    const showAutoCompleteDebounced = debounce(show, 100);
     textarea.addEventListener('input', ()=>showAutoCompleteDebounced(true));
     textarea.addEventListener('click', ()=>showAutoCompleteDebounced());
     textarea.addEventListener('keydown', (evt)=>{
+        // autocomplete is shown and cursor at end of current command name
         if (isActive && isReplacable) {
             switch (evt.key) {
                 case 'ArrowUp': {
@@ -2224,6 +2237,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
                 }
             }
         }
+        // autocomplete is shown, cursor can be anywhere
         if (isActive) {
             switch (evt.key) {
                 case 'Escape': {
@@ -2236,8 +2250,20 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
                 case 'Enter': {
                     if (!evt.shiftKey) {
                         hide();
+                        return;
                     }
+                    break;
                 }
+            }
+        }
+        // autocomplete shown or not, cursor anywhere
+        switch (evt.key) {
+            case ' ': {
+                if (evt.ctrlKey) {
+                    showAutoCompleteDebounced(true, true);
+                    return;
+                }
+                break;
             }
         }
         if (['Control', 'Shift', 'Alt'].includes(evt.key)) {
