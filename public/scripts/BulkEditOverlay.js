@@ -40,7 +40,7 @@ class CharacterContextMenu {
      * Tag one or more characters,
      * opens a popup.
      *
-     * @param selectedCharacters
+     * @param {Array<number>} selectedCharacters
      */
     static tag = (selectedCharacters) => {
         BulkTagPopupHandler.show(selectedCharacters);
@@ -49,7 +49,7 @@ class CharacterContextMenu {
     /**
      * Duplicate one or more characters
      *
-     * @param characterId
+     * @param {number} characterId
      * @returns {Promise<any>}
      */
     static duplicate = async (characterId) => {
@@ -74,7 +74,7 @@ class CharacterContextMenu {
      * Favorite a character
      * and highlight it.
      *
-     * @param characterId
+     * @param {number} characterId
      * @returns {Promise<void>}
      */
     static favorite = async (characterId) => {
@@ -110,7 +110,7 @@ class CharacterContextMenu {
      * Convert one or more characters to persona,
      * may open a popup for one or more characters.
      *
-     * @param characterId
+     * @param {number} characterId
      * @returns {Promise<void>}
      */
     static persona = async (characterId) => await convertCharacterToPersona(characterId);
@@ -119,8 +119,8 @@ class CharacterContextMenu {
      * Delete one or more characters,
      * opens a popup.
      *
-     * @param characterId
-     * @param deleteChats
+     * @param {number} characterId
+     * @param {boolean} [deleteChats]
      * @returns {Promise<void>}
      */
     static delete = async (characterId, deleteChats = false) => {
@@ -234,7 +234,7 @@ class BulkTagPopupHandler {
     /**
      * Append and show the tag control
      *
-     * @param characterIds - The characters assigned to this control
+     * @param {Array<number>} characterIds - The characters assigned to this control
      */
     static show(characterIds) {
         if (characterIds.length == 0) {
@@ -250,7 +250,7 @@ class BulkTagPopupHandler {
         // Print the tag list with all mutuable tags, marking them as removable. That is the initial fill
         printTagList($('#bulkTagList'), { tags: () => this.getMutualTags(characterIds), tagOptions: { removable: true } });
 
-        // Tag input with empty tags so new tag gets added and it doesn't get emptied on redraw
+        // Tag input with resolvable list for the mutual tags to get redrawn, so that newly added tags get sorted correctly
         createTagInput('#bulkTagInput', '#bulkTagList', { tags: () => this.getMutualTags(characterIds), tagOptions: { removable: true }});
 
         document.querySelector('#bulk_tag_popup_reset').addEventListener('click', this.resetTags.bind(this, characterIds));
@@ -258,6 +258,12 @@ class BulkTagPopupHandler {
         document.querySelector('#bulk_tag_popup_cancel').addEventListener('click', this.hide.bind(this));
     }
 
+    /**
+     * Builds a list of all tags that the provided characters have in common.
+     *
+     * @param {Array<number>} characterIds - The characters to find mutual tags for
+     * @returns {Array<object>} A list of mutual tags
+     */
     static getMutualTags(characterIds) {
         if (characterIds.length == 0) {
             return [];
@@ -293,7 +299,7 @@ class BulkTagPopupHandler {
     /**
      * Empty the tag map for the given characters
      *
-     * @param characterIds
+     * @param {Array<number>} characterIds
      */
     static resetTags(characterIds) {
         for (const characterId of characterIds) {
@@ -307,9 +313,9 @@ class BulkTagPopupHandler {
     }
 
     /**
-     * Empty the tag map for the given characters
+     * Remove the mutual tags for all given characters
      *
-     * @param characterIds
+     * @param {Array<number>} characterIds
      */
     static removeMutual(characterIds) {
         const mutualTags = this.getMutualTags(characterIds);
@@ -627,6 +633,15 @@ class BulkEditOverlay {
         this.#cancelNextToggle = false;
     };
 
+    /**
+     * When shift click was held down, this function handles the multi select of characters in a single click.
+     *
+     * If the last clicked character was deselected, and the current one was deselected too, it will deselect all currently selected characters between those two.
+     * If the last clicked character was selected, and the current one was selected too, it will select all currently not selected characters between those two.
+     * If the states do not match, nothing will happen.
+     *
+     * @param {HTMLElement} currentCharacter - The html element of the currently toggled character
+     */
     handleShiftClick = (currentCharacter) => {
         const characterId = currentCharacter.getAttribute('chid');
         const select = !this.selectedCharacters.includes(characterId);
@@ -634,11 +649,18 @@ class BulkEditOverlay {
         if (this.lastSelected.characterId && this.lastSelected.select !== undefined) {
             // Only if select state and the last select state match we execute the range select
             if (select === this.lastSelected.select) {
-                this.selectCharactersInRange(currentCharacter, select);
+                this.toggleCharactersInRange(currentCharacter, select);
             }
         }
     };
 
+    /**
+     * Toggles the selection of a given characters
+     *
+     * @param {HTMLElement} character - The html element of a character
+     * @param {object} param1 - Optional params
+     * @param {boolean} [param1.markState] - Whether the toggle of this character should be remembered as the last done toggle
+     */
     toggleSingleCharacter = (character, { markState = true } = {}) => {
         const characterId = character.getAttribute('chid');
 
@@ -648,11 +670,11 @@ class BulkEditOverlay {
         if (select) {
             character.classList.add(BulkEditOverlay.selectedClass);
             if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = true;
-            this.selectCharacter(characterId);
+            this.#selectedCharacters.push(String(characterId));
         } else {
             character.classList.remove(BulkEditOverlay.selectedClass);
             if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
-            this.dismissCharacter(characterId);
+            this.#selectedCharacters = this.#selectedCharacters.filter(item => String(characterId) !== item)
         }
 
         this.updateSelectedCount();
@@ -663,12 +685,24 @@ class BulkEditOverlay {
         }
     };
 
+    /**
+     * Updates the selected count element with the current count
+     *
+     * @param {number} [countOverride] - optional override for a manual number to set
+     */
     updateSelectedCount = (countOverride = undefined) => {
         const count = countOverride ?? this.selectedCharacters.length;
         $(`#${BulkEditOverlay.bulkSelectedCountId}`).text(count).attr('title', `${count} characters selected`);
     };
 
-    selectCharactersInRange = (currentCharacter, select) => {
+    /**
+     * Toggles the selection of characters in a given range.
+     * The range is provided by the given character and the last selected one remembered in the selection state.
+     *
+     * @param {HTMLElement} currentCharacter - The html element of the currently toggled character
+     * @param {boolean} select - <c>true</c> if the characters in the range are to be selected, <c>false</c> if deselected
+     */
+    toggleCharactersInRange = (currentCharacter, select) => {
         const currentCharacterId = currentCharacter.getAttribute('chid');
         const characters = Array.from(document.querySelectorAll('#' + BulkEditOverlay.containerId + ' .' + BulkEditOverlay.characterClass));
 
@@ -680,8 +714,10 @@ class BulkEditOverlay {
             const characterId = character.getAttribute('chid');
             const isCharacterSelected = this.selectedCharacters.includes(characterId);
 
-            if (select && !isCharacterSelected || !select && isCharacterSelected) {
-                this.toggleSingleCharacter(character, { markState: currentCharacterId == i });
+            // Only toggle the character if it wasn't on the state we have are toggling towards.
+            // Also doing a weird type check, because typescript checker doesn't like the return of 'querySelectorAll'.
+            if ((select && !isCharacterSelected || !select && isCharacterSelected) && character instanceof HTMLElement) {
+                this.toggleSingleCharacter(character, { markState: currentCharacterId == characterId });
             }
         }
     };
@@ -770,10 +806,6 @@ class BulkEditOverlay {
     };
 
     addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
-
-    selectCharacter = characterId => this.selectedCharacters.push(String(characterId));
-
-    dismissCharacter = characterId => this.#selectedCharacters = this.selectedCharacters.filter(item => String(characterId) !== item);
 
     /**
      * Clears internal character storage and

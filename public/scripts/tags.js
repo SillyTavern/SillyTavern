@@ -320,7 +320,8 @@ function getTagKey() {
 
 /**
  * Gets the tag key for any provided entity/id/key. If a valid tag key is provided, it just returns this.
- * Robust method to find a valid tag key for any entity
+ * Robust method to find a valid tag key for any entity.
+ *
  * @param {object|number|string} entityOrKey An entity with id property (character, group, tag), or directly an id or tag key.
  * @returns {string} The tag key that can be found.
  */
@@ -394,9 +395,10 @@ function findTag(request, resolve, listSelector) {
 }
 
 /**
- * Select a tag and add it to the list. This function is mostly used as an event handler for the tag selector control.
- * @param {*} event -
- * @param {*} ui -
+ * Select a tag and add it to the list. This function is (mostly) used as an event handler for the tag selector control.
+ *
+ * @param {*} event - The event that fired on autocomplete select
+ * @param {*} ui - An Object with label and value properties for the selected option
  * @param {*} listSelector - The selector of the list to print/add to
  * @param {PrintTagListOptions} [tagListOptions] - Optional parameters for printing the tag list. Can be set to be consistent with the expected behavior of tags in the list that was defined before.
  * @returns {boolean} <c>false</c>, to keep the input clear
@@ -529,7 +531,8 @@ function createNewTag(tagName) {
  */
 
 /**
- * Prints the list of tags.
+ * Prints the list of tags
+ *
  * @param {JQuery<HTMLElement>} element - The container element where the tags are to be printed.
  * @param {PrintTagListOptions} [options] - Optional parameters for printing the tag list.
  */
@@ -798,6 +801,7 @@ function applyTagsOnGroupSelect() {
 }
 
 /**
+ * Create a tag input by enabling the autocomplete feature of a given input element. Tags will be added to the given list.
  *
  * @param {string} inputSelector - the selector for the tag input control
  * @param {string} listSelector - the selector for the list of the tags modified by the input control
