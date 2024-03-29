@@ -339,6 +339,12 @@ export function getTagKeyForEntity(entityOrKey) {
         x = character.avatar;
     }
 
+    // Uninitialized character tag map
+    if (character && !(x in tag_map)) {
+        tag_map[x] = [];
+        return x;
+    }
+
     // We should hopefully have a key now. Let's check
     if (x in tag_map) {
         return x;
@@ -349,7 +355,7 @@ export function getTagKeyForEntity(entityOrKey) {
 }
 
 function addTagToMap(tagId, characterId = null) {
-    const key = getTagKey() ?? getTagKeyForEntity(characterId);
+    const key = characterId !== null && characterId !== undefined ? getTagKeyForEntity(characterId) : getTagKey();
 
     if (!key) {
         return;
@@ -365,7 +371,7 @@ function addTagToMap(tagId, characterId = null) {
 }
 
 function removeTagFromMap(tagId, characterId = null) {
-    const key = getTagKey() ?? getTagKeyForEntity(characterId);
+    const key = characterId !== null && characterId !== undefined ? getTagKeyForEntity(characterId) : getTagKey();
 
     if (!key) {
         return;
