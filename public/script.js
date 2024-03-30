@@ -3513,6 +3513,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
             // Cohee: This removes a newline from the end of the last message in the context
             // Last prompt line will add a newline if it's not a continuation
+            // In instruct mode it only removes it if wrap is enabled and it's not a quiet generation
             if (i === arrMes.length - 1 && type !== 'continue') {
                 if (!isInstruct || (power_user.instruct.wrap && type !== 'quiet')) {
                     item = item.replace(/\n?$/, '');
