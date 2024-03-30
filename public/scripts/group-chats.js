@@ -68,6 +68,7 @@ import {
     depth_prompt_depth_default,
     loadItemizedPrompts,
     animation_duration,
+    depth_prompt_role_default,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -284,7 +285,7 @@ export function findGroupMemberId(arg) {
  * Gets depth prompts for group members.
  * @param {string} groupId Group ID
  * @param {number} characterId Current Character ID
- * @returns {{depth: number, text: string}[]} Array of depth prompts
+ * @returns {{depth: number, text: string, role: string}[]} Array of depth prompts
  */
 export function getGroupDepthPrompts(groupId, characterId) {
     if (!groupId) {
@@ -320,9 +321,10 @@ export function getGroupDepthPrompts(groupId, characterId) {
 
         const depthPromptText = baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim(), name1, character.name) || '';
         const depthPromptDepth = character.data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
+        const depthPromptRole = character.data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default;
 
         if (depthPromptText) {
-            depthPrompts.push({ text: depthPromptText, depth: depthPromptDepth });
+            depthPrompts.push({ text: depthPromptText, depth: depthPromptDepth, role: depthPromptRole });
         }
     }
 
