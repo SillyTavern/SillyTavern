@@ -15,7 +15,7 @@ import {
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, debounce } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay } from './utils.js';
 import { power_user } from './power-user.js';
 
 export {
@@ -54,12 +54,12 @@ export const tag_filter_types = {
 };
 
 const ACTIONABLE_TAGS = {
-    FAV: { id: "1", sort_order: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
-    GROUP: { id: "0", sort_order: 2, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
-    FOLDER: { id: "4", sort_order: 3, name: 'Always show folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
-    VIEW: { id: "2", sort_order: 4, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
-    HINT: { id: "3", sort_order: 5, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
-    UNFILTER: { id: "5", sort_order: 6, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
+    FAV: { id: '1', sort_order: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
+    GROUP: { id: '0', sort_order: 2, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
+    FOLDER: { id: '4', sort_order: 3, name: 'Always show folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
+    VIEW: { id: '2', sort_order: 4, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
+    HINT: { id: '3', sort_order: 5, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
+    UNFILTER: { id: '5', sort_order: 6, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
 };
 
 const InListActionable = {
@@ -983,7 +983,7 @@ function sortTags(tags) {
  *
  * @param {Tag} a - First tag
  * @param {Tag} b - Second tag
- * @returns The compare result
+ * @returns {number} The compare result
  */
 function compareTagsForSort(a, b) {
     if (a.sort_order !== undefined && b.sort_order !== undefined) {
@@ -1196,7 +1196,7 @@ function onTagDeleteClick() {
 
     const id = $(this).closest('.tag_view_item').attr('id');
     for (const key of Object.keys(tag_map)) {
-        tag_map[key] = tag_map[key].filter(x => x.id !== id);
+        tag_map[key] = tag_map[key].filter(x => x !== id);
     }
     const index = tags.findIndex(x => x.id === id);
     tags.splice(index, 1);
