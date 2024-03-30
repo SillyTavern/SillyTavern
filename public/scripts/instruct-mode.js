@@ -458,6 +458,11 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
     const separator = power_user.instruct.wrap ? '\n' : '';
     let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
 
+    // Quiet prompt already has a newline at the end
+    if (isQuiet && separator) {
+        text = text.slice(separator.length);
+    }
+
     if (!isImpersonate && promptBias) {
         text += (includeNames ? promptBias : (separator + promptBias.trimStart()));
     }

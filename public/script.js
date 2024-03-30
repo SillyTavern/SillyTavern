@@ -3555,7 +3555,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             //TODO: respect output_sequence vs last_output_sequence settings
             //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
             if (isInstruct) {
-                lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
+                lastMesString += quietAppend; // + power_user.instruct.output_sequence + '\n';
             } else {
                 lastMesString += quietAppend;
             }
