@@ -373,7 +373,7 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
 
     let inputPrefix = power_user.instruct.input_sequence || '';
     let outputPrefix = power_user.instruct.output_sequence || '';
-    let inputSuffix = power_user.instruct.output_suffix || '';
+    let inputSuffix = power_user.instruct.input_suffix || '';
     let outputSuffix = power_user.instruct.output_suffix || '';
 
     if (power_user.instruct.macro) {
