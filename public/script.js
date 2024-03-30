@@ -3505,15 +3505,18 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         console.debug('generating prompt');
         chatString = '';
         arrMes = arrMes.reverse();
-        arrMes.forEach(function (item, i, arr) {// For added anchors and others
+        arrMes.forEach(function (item, i, arr) {
             // OAI doesn't need all of this
             if (main_api === 'openai') {
                 return;
             }
 
-            // Cohee: I'm not even sure what this is for anymore
+            // Cohee: This removes a newline from the end of the last message in the context
+            // Last prompt line will add a newline if it's not a continuation
             if (i === arrMes.length - 1 && type !== 'continue') {
-                item = item.replace(/\n?$/, '');
+                if (!isInstruct || power_user.instruct.wrap) {
+                    item = item.replace(/\n?$/, '');
+                }
             }
 
             mesSend[mesSend.length] = { message: item, extensionPrompts: [] };
