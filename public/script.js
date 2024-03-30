@@ -8991,6 +8991,7 @@ jQuery(async function () {
             { id: 'api_key_dreamgen', secret: SECRET_KEYS.DREAMGEN },
             { id: 'api_key_openrouter-tg', secret: SECRET_KEYS.OPENROUTER },
             { id: 'api_key_koboldcpp', secret: SECRET_KEYS.KOBOLDCPP },
+            { id: 'api_key_llamacpp', secret: SECRET_KEYS.LLAMACPP },
         ];
 
         for (const key of keys) {
