@@ -24,6 +24,7 @@ export const FILTER_STATES = {
     EXCLUDED: { key: 'EXCLUDED', class: 'excluded' },
     UNDEFINED: { key: 'UNDEFINED', class: 'undefined' },
 };
+export const DEFAULT_FILTER_STATE = FILTER_STATES.UNDEFINED.key;
 
 /**
  * Robust check if one state equals the other. It does not care whether it's the state key or the state value object.
@@ -203,7 +204,7 @@ export class FilterHelper {
         return this.filterDataByState(data, state, isFolder);
     }
 
-    filterDataByState(data, state, filterFunc, { includeFolders } = {}) {
+    filterDataByState(data, state, filterFunc, { includeFolders = false } = {}) {
         if (isFilterState(state, FILTER_STATES.SELECTED)) {
             return data.filter(entity => filterFunc(entity) || (includeFolders && entity.type == 'tag'));
         }

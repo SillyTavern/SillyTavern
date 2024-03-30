@@ -13,7 +13,7 @@ import {
     event_types,
 } from '../script.js';
 // eslint-disable-next-line no-unused-vars
-import { FILTER_TYPES, FILTER_STATES, isFilterState, FilterHelper } from './filters.js';
+import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
 import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, debounce } from './utils.js';
@@ -180,6 +180,7 @@ function isBogusFolderOpen() {
 
 /**
  * Function to be called when a specific tag/folder is chosen to "drill down".
+ *
  * @param {*} source The jQuery element clicked when choosing the folder
  * @param {string} tagId The tag id that is behind the chosen folder
  * @param {boolean} remove Whether the given tag should be removed (otherwise it is added/chosen)
@@ -197,12 +198,9 @@ function chooseBogusFolder(source, tagId, remove = false) {
     // Instead of manually updating the filter conditions, we just "click" on the filter tag
     // We search inside which filter block we are located in and use that one
     const FILTER_SELECTOR = ($(source).closest('#rm_characters_block') ?? $(source).closest('#rm_group_chats_block')).find('.rm_tag_filter');
-    if (remove) {
-        // Click twice to skip over the 'excluded' state
-        $(FILTER_SELECTOR).find(`.tag[id=${tagId}]`).trigger('click').trigger('click');
-    } else {
-        $(FILTER_SELECTOR).find(`.tag[id=${tagId}]`).trigger('click');
-    }
+    const tagElement = $(FILTER_SELECTOR).find(`.tag[id=${tagId}]`);
+
+    toggleTagThreeState(tagElement, { stateOverride: DEFAULT_FILTER_STATE, simulateClick: true });
 }
 
 /**
@@ -603,8 +601,8 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
         tagElement.find('.tag_name').text('').attr('title', tag.name).addClass(tag.icon);
     }
 
-    if (tag.excluded && isGeneralList) {
-        toggleTagThreeState(tagElement, { stateOverride: FILTER_STATES.EXCLUDED });
+    if (selectable && isGeneralList) {
+        toggleTagThreeState(tagElement, { stateOverride: tag.filterState ?? DEFAULT_FILTER_STATE });
     }
 
     if (selectable) {
@@ -629,34 +627,28 @@ function onTagFilterClick(listElement) {
 
     let state = toggleTagThreeState($(this));
 
-    // Manual undefined check required for three-state boolean
     if (existingTag) {
-        existingTag.excluded = isFilterState(state, FILTER_STATES.EXCLUDED);
-
+        existingTag.filterState = state;
         saveSettingsDebounced();
     }
 
-    // Update bogus folder if applicable
-    if (isBogusFolder(existingTag)) {
-        // Update bogus drilldown
-        if ($(this).hasClass('selected')) {
-            appendTagToList($('.rm_tag_controls .rm_tag_bogus_drilldown'), existingTag, { removable: true });
-        } else {
-            $(listElement).closest('.rm_tag_controls').find(`.rm_tag_bogus_drilldown .tag[id=${tagId}]`).remove();
-        }
-    }
-
+    // We don't print anything manually, updating the filter will automatically trigger a redraw of all relevant stuff
     runTagFilters(listElement);
-    updateTagFilterIndicator();
 }
 
 function toggleTagThreeState(element, { stateOverride = undefined, simulateClick = false } = {}) {
     const states = Object.keys(FILTER_STATES);
 
+    // Make it clear we're getting indexes and handling the 'not found' case in one place
+    function getStateIndex(key, fallback) {
+        const index = states.indexOf(key);
+        return index !== -1 ? index : states.indexOf(fallback);
+    }
+
     const overrideKey = states.includes(stateOverride) ? stateOverride : Object.keys(FILTER_STATES).find(key => FILTER_STATES[key] === stateOverride);
 
-    const currentStateIndex = states.indexOf(element.attr('data-toggle-state')) ?? states.length - 1;
-    const targetStateIndex = overrideKey !== undefined ? states.indexOf(overrideKey) : (currentStateIndex + 1) % states.length;
+    const currentStateIndex = getStateIndex(element.attr('data-toggle-state'), DEFAULT_FILTER_STATE);
+    const targetStateIndex = overrideKey !== undefined ? getStateIndex(overrideKey, DEFAULT_FILTER_STATE) : (currentStateIndex + 1) % states.length;
 
     if (simulateClick) {
         // Calculate how many clicks are needed to go from the current state to the target state
@@ -695,10 +687,8 @@ function runTagFilters(listElement) {
 }
 
 function printTagFilters(type = tag_filter_types.character) {
-    const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
     const FILTER_SELECTOR = type === tag_filter_types.character ? CHARACTER_FILTER_SELECTOR : GROUP_FILTER_SELECTOR;
     $(FILTER_SELECTOR).empty();
-    $(FILTER_SELECTOR).siblings('.rm_tag_bogus_drilldown').empty();
 
     // Print all action tags. (Exclude folder if that setting isn't chosen)
     const actionTags = Object.values(ACTIONABLE_TAGS).filter(tag => power_user.bogus_folders || tag.id != ACTIONABLE_TAGS.FOLDER.id);
@@ -708,17 +698,20 @@ function printTagFilters(type = tag_filter_types.character) {
     printTagList($(FILTER_SELECTOR), { empty: false, tags: inListActionTags, tagActionSelector: tag => tag.action, tagOptions: { isGeneralList: true } });
 
     const characterTagIds = Object.values(tag_map).flat();
-    const tagsToDisplay = tags
-        .filter(x => characterTagIds.includes(x.id))
-        .sort(compareTagsForSort);
+    const tagsToDisplay = tags.filter(x => characterTagIds.includes(x.id)).sort(compareTagsForSort);
     printTagList($(FILTER_SELECTOR), { empty: false, tags: tagsToDisplay, tagOptions: { selectable: true, isGeneralList: true } });
 
-    runTagFilters(FILTER_SELECTOR);
+    // Print bogus folder navigation
+    const bogusDrilldown = $(FILTER_SELECTOR).siblings('.rm_tag_bogus_drilldown');
+    bogusDrilldown.empty();
+    if (power_user.bogus_folders && bogusDrilldown.length > 0) {
+        const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
+        const navigatedTags = filterData.selected.map(x => tags.find(t => t.id == x)).filter(x => isBogusFolder(x));
 
-    // Simulate clicks on all "selected" tags when we reprint, otherwise their filter gets lost. "excluded" is persisted.
-    for (const tagId of filterData.selected) {
-        toggleTagThreeState($(`${FILTER_SELECTOR} .tag[id="${tagId}"]`), { stateOverride: FILTER_STATES.SELECTED, simulateClick: true });
+        printTagList(bogusDrilldown, { tags: navigatedTags, tagOptions: { removable: true } });
     }
+
+    runTagFilters(FILTER_SELECTOR);
 
     if (power_user.show_tag_filters) {
         $('.rm_tag_controls .showTagList').addClass('selected');
