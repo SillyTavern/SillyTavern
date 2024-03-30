@@ -139,11 +139,13 @@
     cursor: pointer;
     opacity: 0.6;
     filter: brightness(0.8);
+}
+
+.rm_tag_filter .tag.actionable {
     transition: opacity 200ms;
 }
 
 .rm_tag_filter .tag:hover {
-
     opacity: 1;
     filter: brightness(1);
 }
