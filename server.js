@@ -30,7 +30,7 @@ const fetch = require('node-fetch').default;
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
-util.inspect.defaultOptions.depth = null;
+util.inspect.defaultOptions.depth = 4;
 
 // local library imports
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
