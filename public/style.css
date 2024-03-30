@@ -2081,6 +2081,7 @@ grammarly-extension {
     display: flex;
     flex-direction: column;
     overflow-y: hidden;
+    overflow-x: hidden;
 }
 
 .rm_stat_block {
@@ -2099,6 +2100,14 @@ grammarly-extension {
     aspect-ratio: 1 / 1;
     width: unset !important;
     min-width: var(--sheldWidth);
+}
+
+.horizontal_scrolling_dialogue_popup {
+    overflow-x: unset !important;
+}
+
+.vertical_scrolling_dialogue_popup {
+    overflow-y: unset !important;
 }
 
 #bulk_tag_popup_holder,
