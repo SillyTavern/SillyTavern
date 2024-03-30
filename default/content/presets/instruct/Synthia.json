@@ -18,6 +18,6 @@
     "input_suffix": "\n",
     "system_suffix": "\n",
     "user_alignment_message": "Let's get started. Please respond based on the information and instructions provided above.",
-    "system_same_as_user": true,
+    "system_same_as_user": false,
     "name": "Synthia"
 }
