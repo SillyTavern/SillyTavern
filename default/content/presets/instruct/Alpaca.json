@@ -18,6 +18,6 @@
     "input_suffix": "\n\n",
     "system_suffix": "\n\n",
     "user_alignment_message": "",
-    "system_same_as_user": true,
+    "system_same_as_user": false,
     "name": "Alpaca"
 }
