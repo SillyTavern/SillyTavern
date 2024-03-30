@@ -655,6 +655,18 @@ const setupTasks = async function () {
     if (listen) {
         console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
+
+    if (getConfigValue("basicAuthMode", false)) {
+        const basicAuthUser = getConfigValue("basicAuthUser", null);
+        if (!basicAuthUser.username || !basicAuthUser.password) {
+            console.warn(
+                color.yellow(
+                    "Basic Authentication is set, but username or password is not set or empty!"
+                )
+            );
+        }
+    }
+
 };
 
 /**
