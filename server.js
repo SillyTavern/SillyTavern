@@ -542,7 +542,7 @@ async function loadPlugins() {
     }
 }
 
-if (listen && !getConfigValue('whitelistMode', true) && !getConfigValue('basicAuthMode', false)) {
+if (listen && !getConfigValue('whitelistMode', true) && !basicAuthMode) {
     if (getConfigValue('securityOverride', false)) {
         console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
     }
