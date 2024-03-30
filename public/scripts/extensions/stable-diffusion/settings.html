@@ -36,6 +36,7 @@
                 <option value="horde">Stable Horde</option>
                 <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
                 <option value="vlad">SD.Next (vladmandic)</option>
+                <option value="drawthings">DrawThings HTTP API</option>
                 <option value="novel">NovelAI Diffusion</option>
                 <option value="openai">OpenAI (DALL-E)</option>
                 <option value="comfy">ComfyUI</option>
@@ -55,6 +56,21 @@
                 <label for="sd_auto_auth">Authentication (optional)</label>
                 <input id="sd_auto_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
                 <i><b>Important:</b> run SD Web UI with the <tt>--api</tt> flag! The server must be accessible from the SillyTavern host machine.</i>
+            </div>
+            <div data-sd-source="drawthings">
+                <label for="sd_drawthings_url">DrawThings API URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_drawthings_url" type="text" class="text_pole" placeholder="Example: {{drawthings_url}}" value="{{drawthings_url}}" />
+                    <div id="sd_drawthings_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <label for="sd_drawthings_auth">Authentication (optional)</label>
+                <input id="sd_drawthings_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
+                <i><b>Important:</b> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine.</i>
             </div>
             <div data-sd-source="vlad">
                 <label for="sd_vlad_url">SD.Next API URL</label>
