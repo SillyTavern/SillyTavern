@@ -4,6 +4,9 @@ import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
 import { replaceVariableMacros } from './variables.js';
 
+// Register any macro that you want to leave in the compiled story string
+Handlebars.registerHelper('trim', () => '{{trim}}');
+
 /**
  * Returns the ID of the last message in the chat.
  * @returns {string} The ID of the last message in the chat.
@@ -257,6 +260,7 @@ export function evaluateMacros(content, env) {
     content = replaceInstructMacros(content);
     content = replaceVariableMacros(content);
     content = content.replace(/{{newline}}/gi, '\n');
+    content = content.replace(/\n*{{trim}}\n*/gi, '');
     content = content.replace(/{{input}}/gi, () => String($('#send_textarea').val()));
 
     // Substitute passed-in variables

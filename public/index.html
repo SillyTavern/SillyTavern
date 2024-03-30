@@ -2715,8 +2715,14 @@
                 <div class="flex-container">
                     <div id="PygOverrides">
                         <div>
-                            <h4 data-i18n="Context Template">
-                                Context Template
+                            <h4 class="standoutHeader title_restorable">
+                                <span data-i18n="Context Template">Context Template</span>
+                                <div class="flex-container">
+                                    <i data-newbie-hidden data-preset-manager-import="context" class="margin0 menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                    <i data-newbie-hidden data-preset-manager-export="context" class="margin0 menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                    <i data-newbie-hidden data-preset-manager-restore="context" class="margin0 menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
+                                    <i data-newbie-hidden id="context_delete_preset" data-preset-manager-delete="context" class="margin0 menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                </div>
                             </h4>
                             <div class="flex-container">
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
@@ -2724,9 +2730,6 @@
                                 <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode." data-i18n="[title]Auto-select this preset for Instruct Mode"></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                 <i data-newbie-hidden data-preset-manager-new="context" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                <i data-newbie-hidden data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                <i data-newbie-hidden data-preset-manager-export="context" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                <i data-newbie-hidden id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                             </div>
                             <div data-newbie-hidden>
                                 <label for="context_story_string">
@@ -2799,10 +2802,19 @@
                             </div>
                         </div>
                         <div>
-                            <h4 data-i18n="Instruct Mode">Instruct Mode
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
-                                    <span class="fa-solid fa-circle-question note-link-span"></span>
-                                </a>
+                            <h4 class="standoutHeader title_restorable">
+                                <div>
+                                    <span data-i18n="Instruct Mode">Instruct Mode</span>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </div>
+                                <div class="flex-container">
+                                    <i data-newbie-hidden data-preset-manager-import="instruct" class="margin0 menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                    <i data-newbie-hidden data-preset-manager-export="instruct" class="margin0 menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                    <i data-newbie-hidden data-preset-manager-restore="instruct" class="margin0 menu_button fa-solid fa-recycle" title="Restore current preset" data-i18n="[title]Restore current preset"></i>
+                                    <i data-newbie-hidden data-preset-manager-delete="instruct" class="margin0 menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                </div>
                             </h4>
                             <div class="flex-container">
                                 <label for="instruct_enabled" class="checkbox_label flex1">
@@ -2823,9 +2835,6 @@
                                 <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection." data-i18n="[title]Auto-select this preset on API connection"></i>
                                 <i data-newbie-hidden data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                 <i data-newbie-hidden data-preset-manager-new="instruct" class="menu_button fa-solid fa-file-circle-plus" title="Save preset as" data-i18n="[title]Save preset as"></i>
-                                <i data-newbie-hidden data-preset-manager-import="instruct" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                <i data-newbie-hidden data-preset-manager-export="instruct" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                <i data-newbie-hidden data-preset-manager-delete="instruct" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                             </div>
                             <label data-newbie-hidden>
                                 <small data-i18n="Activation Regex">
@@ -2869,36 +2878,105 @@
                                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                 </div>
                                 <div class="inline-drawer-content">
+                                    <h5 class="textAlignCenter" data-i18n="System Prompt Wrapping">
+                                        System Prompt Wrapping
+                                    </h5>
                                     <div class="flex-container">
-                                        <div class="flex1">
+                                        <div class="flex1" title="Inserted before a System prompt.">
+                                            <label for="instruct_system_sequence_prefix">
+                                                <small data-i18n="System Prompt Prefix">System Prompt Prefix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="flex1" title="Inserted after a System prompt.">
+                                            <label for="instruct_system_sequence_suffix">
+                                                <small data-i18n="System Prompt Suffix">System Prompt Suffix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <h5 class="textAlignCenter" data-i18n="Chat Messages Wrapping">
+                                        Chat Messages Wrapping
+                                    </h5>
+                                    <div class="flex-container">
+                                        <div class="flex1" title="Inserted before a User message and as a last prompt line when impersonating.">
                                             <label for="instruct_input_sequence">
-                                                <small data-i18n="Input Sequence">Input Sequence</small>
+                                                <small data-i18n="User Message Prefix">User Message Prefix</small>
                                             </label>
                                             <div>
                                                 <textarea id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
-                                        <div class="flex1">
+                                        <div class="flex1" title="Inserted after a User message.">
+                                            <label for="instruct_input_suffix">
+                                                <small data-i18n="User Message Suffix">User Message Suffix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_input_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex1" title="Inserted before an Assistant message and as a last prompt line when generating an AI reply.">
                                             <label for="instruct_output_sequence">
-                                                <small data-i18n="Output Sequence">Output Sequence</small>
+                                                <small data-i18n="Assistant Message Prefix">Assistant Message Prefix</small>
                                             </label>
                                             <div>
                                                 <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
+                                        <div class="flex1" title="Inserted after an Assistant message.">
+                                            <label for="instruct_output_suffix">
+                                                <small data-i18n="Assistant Message Suffix">Assistant Message Suffix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_output_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="flex-container">
-                                        <div class="flex1">
+                                        <div class="flex1" title="Inserted before a System (added by slash commands or extensions) message.">
+                                            <label for="instruct_system_sequence">
+                                                <small data-i18n="System Message Prefix">System Message Prefix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_system_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="flex1" title="Inserted after a System message.">
+                                            <label for="instruct_system_suffix">
+                                                <small data-i18n="System Message Suffix">System Message Suffix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_system_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="flexBasis100p" title="If enabled, System Sequences will be the same as User Sequences.">
+                                            <label class="checkbox_label" for="instruct_system_same_as_user">
+                                                <input id="instruct_system_same_as_user" type="checkbox" />
+                                                <small data-i18n="System same as User">System same as User</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <h5 class="textAlignCenter" data-i18n="Misc. Sequences">
+                                        Misc. Sequences
+                                    </h5>
+                                    <div class="flex-container">
+                                        <div class="flex1" title="Inserted before the first Assistant's message.">
                                             <label for="instruct_first_output_sequence">
-                                                <small data-i18n="First Output Sequence">First Output Sequence</small>
+                                                <small data-i18n="First Assistant Prefix">First Assistant Prefix</small>
                                             </label>
                                             <div>
                                                 <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
-                                        <div class="flex1">
+                                        <div class="flex1" title="Inserted before the last Assistant's message or as a last prompt line when generating an AI reply (except a neutral/system role).">
                                             <label for="instruct_last_output_sequence">
-                                                <small data-i18n="Last Output Sequence">Last Output Sequence</small>
+                                                <small data-i18n="Last Assistant Prefix">Last Assistant Prefix</small>
                                             </label>
                                             <div>
                                                 <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
@@ -2906,38 +2984,20 @@
                                         </div>
                                     </div>
                                     <div class="flex-container">
-                                        <div class="flex1">
-                                            <label for="instruct_system_sequence_prefix">
-                                                <small data-i18n="System Sequence Prefix">System Sequence Prefix</small>
+                                        <div class="flex1" title="Will be inserted at the start of the chat history if it doesn't start with a User message.">
+                                            <label for="instruct_user_alignment_message">
+                                                <small data-i18n="User Filler Message">User Filler Message</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
-                                        <div class="flex1">
-                                            <label for="instruct_system_sequence_suffix">
-                                                <small data-i18n="System Sequence Suffix">System Sequence Suffix</small>
-                                            </label>
-                                            <div>
-                                                <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="flex-container">
-                                        <div class="flex1">
+                                        <div class="flex1" title="If a stop sequence is generated, everything past it will be removed from the output (inclusive).">
                                             <label for="instruct_stop_sequence">
                                                 <small data-i18n="Stop Sequence">Stop Sequence</small>
                                             </label>
                                             <div>
                                                 <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
-                                            </div>
-                                        </div>
-                                        <div class="flex1">
-                                            <label for="instruct_separator_sequence">
-                                                <small data-i18n="Separator">Separator</small>
-                                            </label>
-                                            <div>
-                                                <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>
