@@ -3887,6 +3887,7 @@ body:not(.movingUI) .drawer-content.maximized {
 .paginationjs-size-changer select {
     width: unset;
     margin: 0;
+    font-size: calc(var(--mainFontSize) * 0.85);
 }
 
 .paginationjs-pages ul li a {
@@ -3916,10 +3917,10 @@ body:not(.movingUI) .drawer-content.maximized {
 }
 
 .paginationjs-nav {
-    padding: 5px;
+    padding: 2px;
     font-size: calc(var(--mainFontSize) * .8);
     font-weight: bold;
-    width: max-content;
+    width: auto;
 }
 
 .onboarding {
