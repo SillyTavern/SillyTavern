@@ -47,6 +47,7 @@ const sources = {
     openai: 'openai',
     comfy: 'comfy',
     togetherai: 'togetherai',
+    drawthings: 'drawthings',
 };
 
 const generationMode = {
@@ -217,6 +218,9 @@ const defaultSettings = {
     vlad_url: 'http://localhost:7860',
     vlad_auth: '',
 
+    drawthings_url: 'http://localhost:7860',
+    drawthings_auth: '',
+
     hr_upscaler: 'Latent',
     hr_scale: 2.0,
     hr_scale_min: 1.0,
@@ -314,6 +318,8 @@ function getSdRequestBody() {
             return { url: extension_settings.sd.vlad_url, auth: extension_settings.sd.vlad_auth };
         case sources.auto:
             return { url: extension_settings.sd.auto_url, auth: extension_settings.sd.auto_auth };
+        case sources.drawthings:
+            return { url: extension_settings.sd.drawthings_url, auth: extension_settings.sd.drawthings_auth };
         default:
             throw new Error('Invalid SD source.');
     }
@@ -390,6 +396,8 @@ async function loadSettings() {
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
     $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
+    $('#sd_drawthings_url').val(extension_settings.sd.drawthings_url);
+    $('#sd_drawthings_auth').val(extension_settings.sd.drawthings_auth);
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
@@ -865,6 +873,16 @@ function onVladAuthInput() {
     saveSettingsDebounced();
 }
 
+function onDrawthingsUrlInput() {
+    extension_settings.sd.drawthings_url = $('#sd_drawthings_url').val();
+    saveSettingsDebounced();
+}
+
+function onDrawthingsAuthInput() {
+    extension_settings.sd.drawthings_auth = $('#sd_drawthings_auth').val();
+    saveSettingsDebounced();
+}
+
 function onHrUpscalerChange() {
     extension_settings.sd.hr_upscaler = $('#sd_hr_upscaler').find(':selected').val();
     saveSettingsDebounced();
@@ -928,6 +946,29 @@ async function validateAutoUrl() {
         toastr.success('SD WebUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD WebUI API: ${error.message}`);
+    }
+}
+
+async function validateDrawthingsUrl() {
+    try {
+        if (!extension_settings.sd.drawthings_url) {
+            throw new Error('URL is not set.');
+        }
+
+        const result = await fetch('/api/sd/drawthings/ping', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD Drawthings returned an error.');
+        }
+
+        await loadSettingOptions();
+        toastr.success('SD Drawthings API connected.');
+    } catch (error) {
+        toastr.error(`Could not validate SD Drawthings API: ${error.message}`);
     }
 }
 
@@ -1011,6 +1052,27 @@ async function getAutoRemoteModel() {
         }
 
         const data = await result.text();
+        return data;
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+}
+
+async function getDrawthingsRemoteModel() {
+    try {
+        const result = await fetch('/api/sd/drawthings/get-model', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD DrawThings API returned an error.');
+        }
+
+        const data = await result.text();
+
         return data;
     } catch (error) {
         console.error(error);
@@ -1108,6 +1170,9 @@ async function loadSamplers() {
         case sources.auto:
             samplers = await loadAutoSamplers();
             break;
+        case sources.drawthings:
+            samplers = await loadDrawthingsSamplers();
+            break;
         case sources.novel:
             samplers = await loadNovelSamplers();
             break;
@@ -1193,6 +1258,11 @@ async function loadAutoSamplers() {
     }
 }
 
+async function loadDrawthingsSamplers() {
+    // The app developer doesn't provide an API to get these yet
+    return ["UniPC", "DPM++ 2M Karras", "Euler a", "DPM++ SDE Karras", "PLMS", "DDIM", "LCM", "Euler A Substep", "DPM++ SDE Substep", "TCD"];
+}
+
 async function loadVladSamplers() {
     if (!extension_settings.sd.vlad_url) {
         return [];
@@ -1268,6 +1338,9 @@ async function loadModels() {
             break;
         case sources.auto:
             models = await loadAutoModels();
+            break;
+        case sources.drawthings:
+            models = await loadDrawthingsModels();
             break;
         case sources.novel:
             models = await loadNovelModels();
@@ -1405,6 +1478,27 @@ async function loadAutoModels() {
     }
 }
 
+async function loadDrawthingsModels() {
+    if (!extension_settings.sd.drawthings_url) {
+        return [];
+    }
+
+    try {
+        const currentModel = await getDrawthingsRemoteModel();
+
+        if (currentModel) {
+            extension_settings.sd.model = currentModel;
+        }
+
+        const data = [{value: currentModel, text: currentModel}];
+
+        return data;
+    } catch (error) {
+        console.log("Error loading DrawThings API models:", error);
+        return [];
+    }
+}
+
 async function loadOpenAiModels() {
     return [
         { value: 'dall-e-3', text: 'DALL-E 3' },
@@ -1527,6 +1621,9 @@ async function loadSchedulers() {
         case sources.vlad:
             schedulers = ['N/A'];
             break;
+        case sources.drawthings:
+            schedulers = ['N/A'];
+            break;
         case sources.openai:
             schedulers = ['N/A'];
             break;
@@ -1587,6 +1684,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.vlad:
+            vaes = ['N/A'];
+            break;
+        case sources.drawthings:
             vaes = ['N/A'];
             break;
         case sources.openai:
@@ -1996,6 +2096,9 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
             case sources.vlad:
                 result = await generateAutoImage(prefixedPrompt, negativePrompt);
                 break;
+            case sources.drawthings:
+                result = await generateDrawthingsImage(prefixedPrompt, negativePrompt);
+                break;
             case sources.auto:
                 result = await generateAutoImage(prefixedPrompt, negativePrompt);
                 break;
@@ -2166,6 +2269,42 @@ async function generateAutoImage(prompt, negativePrompt) {
             send_images: true,
             do_not_save_grid: false,
             do_not_save_samples: false,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'png', data: data.images[0] };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
+ * Generates an image in Drawthings API using the provided prompt and configuration settings.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateDrawthingsImage(prompt, negativePrompt) {
+    const result = await fetch('/api/sd/drawthings/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            ...getSdRequestBody(),
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            sampler_name: extension_settings.sd.sampler,
+            steps: extension_settings.sd.steps,
+            cfg_scale: extension_settings.sd.scale,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+            restore_faces: !!extension_settings.sd.restore_faces,
+            enable_hr: !!extension_settings.sd.enable_hr,
+            denoising_strength: extension_settings.sd.denoising_strength,
+            // TODO: advanced API parameters: hr, upscaler
         }),
     });
 
@@ -2603,6 +2742,8 @@ function isValidState() {
             return true;
         case sources.auto:
             return !!extension_settings.sd.auto_url;
+        case sources.drawthings:
+            return !!extension_settings.sd.drawthings_url;
         case sources.vlad:
             return !!extension_settings.sd.vlad_url;
         case sources.novel:
@@ -2745,6 +2886,9 @@ jQuery(async () => {
     $('#sd_auto_validate').on('click', validateAutoUrl);
     $('#sd_auto_url').on('input', onAutoUrlInput);
     $('#sd_auto_auth').on('input', onAutoAuthInput);
+    $('#sd_drawthings_validate').on('click', validateDrawthingsUrl);
+    $('#sd_drawthings_url').on('input', onDrawthingsUrlInput);
+    $('#sd_drawthings_auth').on('input', onDrawthingsAuthInput);
     $('#sd_vlad_validate').on('click', validateVladUrl);
     $('#sd_vlad_url').on('input', onVladUrlInput);
     $('#sd_vlad_auth').on('input', onVladAuthInput);
