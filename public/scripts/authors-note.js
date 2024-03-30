@@ -3,6 +3,7 @@ import {
     chat_metadata,
     eventSource,
     event_types,
+    extension_prompt_roles,
     saveSettingsDebounced,
     this_chid,
 } from '../script.js';
@@ -22,6 +23,7 @@ export const metadata_keys = {
     interval: 'note_interval',
     depth: 'note_depth',
     position: 'note_position',
+    role: 'note_role',
 };
 
 const chara_note_position = {
@@ -113,13 +115,13 @@ async function onExtensionFloatingDepthInput() {
 }
 
 async function onExtensionFloatingPositionInput(e) {
-    chat_metadata[metadata_keys.position] = e.target.value;
+    chat_metadata[metadata_keys.position] = Number(e.target.value);
     updateSettings();
     saveMetadataDebounced();
 }
 
 async function onDefaultPositionInput(e) {
-    extension_settings.note.defaultPosition = e.target.value;
+    extension_settings.note.defaultPosition = Number(e.target.value);
     saveSettingsDebounced();
 }
 
@@ -137,6 +139,16 @@ async function onDefaultDepthInput() {
 
 async function onDefaultIntervalInput() {
     extension_settings.note.defaultInterval = Number($(this).val());
+    saveSettingsDebounced();
+}
+
+function onExtensionFloatingRoleInput(e) {
+    chat_metadata[metadata_keys.role] = Number(e.target.value);
+    updateSettings();
+}
+
+function onExtensionDefaultRoleInput(e) {
+    extension_settings.note.defaultRole = Number(e.target.value);
     saveSettingsDebounced();
 }
 
@@ -217,6 +229,7 @@ function loadSettings() {
     const DEFAULT_DEPTH = 4;
     const DEFAULT_POSITION = 1;
     const DEFAULT_INTERVAL = 1;
+    const DEFAULT_ROLE = extension_prompt_roles.SYSTEM;
 
     if (extension_settings.note.defaultPosition === undefined) {
         extension_settings.note.defaultPosition = DEFAULT_POSITION;
@@ -230,14 +243,20 @@ function loadSettings() {
         extension_settings.note.defaultInterval = DEFAULT_INTERVAL;
     }
 
+    if (extension_settings.note.defaultRole === undefined) {
+        extension_settings.note.defaultRole = DEFAULT_ROLE;
+    }
+
     chat_metadata[metadata_keys.prompt] = chat_metadata[metadata_keys.prompt] ?? extension_settings.note.default ?? '';
     chat_metadata[metadata_keys.interval] = chat_metadata[metadata_keys.interval] ?? extension_settings.note.defaultInterval ?? DEFAULT_INTERVAL;
     chat_metadata[metadata_keys.position] = chat_metadata[metadata_keys.position] ?? extension_settings.note.defaultPosition ?? DEFAULT_POSITION;
     chat_metadata[metadata_keys.depth] = chat_metadata[metadata_keys.depth] ?? extension_settings.note.defaultDepth ?? DEFAULT_DEPTH;
+    chat_metadata[metadata_keys.role] = chat_metadata[metadata_keys.role] ?? extension_settings.note.defaultRole ?? DEFAULT_ROLE;
     $('#extension_floating_prompt').val(chat_metadata[metadata_keys.prompt]);
     $('#extension_floating_interval').val(chat_metadata[metadata_keys.interval]);
     $('#extension_floating_allow_wi_scan').prop('checked', extension_settings.note.allowWIScan ?? false);
     $('#extension_floating_depth').val(chat_metadata[metadata_keys.depth]);
+    $('#extension_floating_role').val(chat_metadata[metadata_keys.role]);
     $(`input[name="extension_floating_position"][value="${chat_metadata[metadata_keys.position]}"]`).prop('checked', true);
 
     if (extension_settings.note.chara && getContext().characterId) {
@@ -255,6 +274,7 @@ function loadSettings() {
     $('#extension_floating_default').val(extension_settings.note.default);
     $('#extension_default_depth').val(extension_settings.note.defaultDepth);
     $('#extension_default_interval').val(extension_settings.note.defaultInterval);
+    $('#extension_default_role').val(extension_settings.note.defaultRole);
     $(`input[name="extension_default_position"][value="${extension_settings.note.defaultPosition}"]`).prop('checked', true);
 }
 
@@ -274,6 +294,10 @@ export function setFloatingPrompt() {
     ------
     lastMessageNumber = ${lastMessageNumber}
     metadata_keys.interval = ${chat_metadata[metadata_keys.interval]}
+    metadata_keys.position = ${chat_metadata[metadata_keys.position]}
+    metadata_keys.depth = ${chat_metadata[metadata_keys.depth]}
+    metadata_keys.role = ${chat_metadata[metadata_keys.role]}
+    ------
     `);
 
     // interval 1 should be inserted no matter what
@@ -313,7 +337,14 @@ export function setFloatingPrompt() {
             }
         }
     }
-    context.setExtensionPrompt(MODULE_NAME, prompt, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan);
+    context.setExtensionPrompt(
+        MODULE_NAME,
+        prompt,
+        chat_metadata[metadata_keys.position],
+        chat_metadata[metadata_keys.depth],
+        extension_settings.note.allowWIScan,
+        chat_metadata[metadata_keys.role],
+    );
     $('#extension_floating_counter').text(shouldAddPrompt ? '0' : messagesTillInsertion);
 }
 
@@ -410,6 +441,8 @@ export function initAuthorsNote() {
     $('#extension_default_depth').on('input', onDefaultDepthInput);
     $('#extension_default_interval').on('input', onDefaultIntervalInput);
     $('#extension_floating_allow_wi_scan').on('input', onAllowWIScanCheckboxChanged);
+    $('#extension_floating_role').on('input', onExtensionFloatingRoleInput);
+    $('#extension_default_role').on('input', onExtensionDefaultRoleInput);
     $('input[name="extension_floating_position"]').on('change', onExtensionFloatingPositionInput);
     $('input[name="extension_default_position"]').on('change', onDefaultPositionInput);
     $('input[name="extension_floating_char_position"]').on('change', onExtensionFloatingCharPositionInput);

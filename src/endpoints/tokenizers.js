@@ -4,7 +4,7 @@ const express = require('express');
 const { SentencePieceProcessor } = require('@agnai/sentencepiece-js');
 const tiktoken = require('@dqbd/tiktoken');
 const { Tokenizer } = require('@agnai/web-tokenizers');
-const { convertClaudePrompt, convertGooglePrompt } = require('./prompt-converters');
+const { convertClaudePrompt, convertGooglePrompt } = require('../prompt-converters');
 const { readSecret, SECRET_KEYS } = require('./secrets');
 const { TEXTGEN_TYPES } = require('../constants');
 const { jsonParser } = require('../express-common');
@@ -250,7 +250,7 @@ async function loadClaudeTokenizer(modelPath) {
 
 function countClaudeTokens(tokenizer, messages) {
     // Should be fine if we use the old conversion method instead of the messages API one i think?
-    const convertedPrompt = convertClaudePrompt(messages, false, false, false);
+    const convertedPrompt = convertClaudePrompt(messages, false, '', false, false, '', false);
 
     // Fallback to strlen estimation
     if (!tokenizer) {
@@ -398,7 +398,7 @@ router.post('/google/count', jsonParser, async function (req, res) {
             accept: 'application/json',
             'content-type': 'application/json',
         },
-        body: JSON.stringify({ contents: convertGooglePrompt(req.body) }),
+        body: JSON.stringify({ contents: convertGooglePrompt(req.body, String(req.query.model)) }),
     };
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${req.query.model}:countTokens?key=${readSecret(SECRET_KEYS.MAKERSUITE)}`, options);

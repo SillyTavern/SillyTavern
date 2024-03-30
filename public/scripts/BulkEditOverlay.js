@@ -15,7 +15,7 @@ import {
 import { favsToHotswap } from './RossAscends-mods.js';
 import { hideLoader, showLoader } from './loader.js';
 import { convertCharacterToPersona } from './personas.js';
-import { createTagInput, getTagKeyForCharacter, tag_map } from './tags.js';
+import { createTagInput, getTagKeyForEntity, tag_map } from './tags.js';
 
 // Utility object for popup messages.
 const popupMessage = {
@@ -48,16 +48,24 @@ class CharacterContextMenu {
      * Duplicate one or more characters
      *
      * @param characterId
-     * @returns {Promise<Response>}
+     * @returns {Promise<any>}
      */
     static duplicate = async (characterId) => {
         const character = CharacterContextMenu.#getCharacter(characterId);
+        const body = { avatar_url: character.avatar };
 
-        return fetch('/api/characters/duplicate', {
+        const result = await fetch('/api/characters/duplicate', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ avatar_url: character.avatar }),
+            body: JSON.stringify(body),
         });
+
+        if (!result.ok) {
+            throw new Error('Character not duplicated');
+        }
+
+        const data = await result.json();
+        await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
     };
 
     /**
@@ -123,8 +131,8 @@ class CharacterContextMenu {
             cache: 'no-cache',
         }).then(response => {
             if (response.ok) {
+                eventSource.emit(event_types.CHARACTER_DELETED, { id: characterId, character: character });
                 return deleteCharacter(character.name, character.avatar, false).then(() => {
-                    eventSource.emit('characterDeleted', { id: characterId, character: characters[characterId] });
                     if (deleteChats) getPastCharacterChats(characterId).then(pastChats => {
                         for (const chat of pastChats) {
                             const name = chat.file_name.replace('.jsonl', '');
@@ -243,7 +251,7 @@ class BulkTagPopupHandler {
      */
     static resetTags(characterIds) {
         characterIds.forEach((characterId) => {
-            const key = getTagKeyForCharacter(characterId);
+            const key = getTagKeyForEntity(characterId);
             if (key) tag_map[key] = [];
         });
 

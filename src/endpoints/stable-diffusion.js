@@ -638,7 +638,80 @@ together.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
+const drawthings = express.Router();
+
+drawthings.post('/ping', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/';
+
+        const result = await fetch(url, {
+            method: 'HEAD',
+        });
+
+        if (!result.ok) {
+            throw new Error('SD DrawThings API returned an error.');
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+drawthings.post('/get-model', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/';
+
+        const result = await fetch(url, {
+            method: 'GET',
+        });
+        const data = await result.json();
+
+        return response.send(data['model']);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+drawthings.post('/generate', jsonParser, async (request, response) => {
+    try {
+        console.log('SD DrawThings API request:', request.body);
+
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/txt2img';
+
+        const body = {...request.body};
+        delete body.url;
+
+        const result = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+            timeout: 0,
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            throw new Error('SD DrawThings API returned an error.', { cause: text });
+        }
+
+        const data = await result.json();
+        return response.send(data);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.use('/comfy', comfy);
 router.use('/together', together);
+router.use('/drawthings', drawthings);
 
 module.exports = { router };

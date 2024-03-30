@@ -33,7 +33,7 @@ async function doTokenCounter() {
             <div id="tokenized_chunks_display" class="wide100p">—</div>
             <hr>
             <div>Token IDs:</div>
-            <textarea id="token_counter_ids" class="wide100p textarea_compact" disabled rows="1">—</textarea>
+            <textarea id="token_counter_ids" class="wide100p textarea_compact" readonly rows="1">—</textarea>
         </div>
     </div>`;
 
@@ -101,7 +101,9 @@ function drawChunks(chunks, ids) {
         }
 
         const color = pastelRainbow[i % pastelRainbow.length];
-        const chunkHtml = $(`<code style="background-color: ${color};">${chunk}</code>`);
+        const chunkHtml = $('<code></code>');
+        chunkHtml.css('background-color', color);
+        chunkHtml.text(chunk);
         chunkHtml.attr('title', ids[i]);
         $('#tokenized_chunks_display').append(chunkHtml);
     }

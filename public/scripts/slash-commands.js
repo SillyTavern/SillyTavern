@@ -11,6 +11,7 @@ import {
     default_avatar,
     eventSource,
     event_types,
+    extension_prompt_roles,
     extension_prompt_types,
     extractMessageBias,
     generateQuietPrompt,
@@ -21,9 +22,12 @@ import {
     name1,
     reloadCurrentChat,
     removeMacros,
+    retriggerFirstMessageOnEmptyChat,
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
+    setActiveCharacter,
+    setActiveGroup,
     setCharacterId,
     setCharacterName,
     setExtensionPrompt,
@@ -50,6 +54,11 @@ export {
 };
 
 class SlashCommandParser {
+    static COMMENT_KEYWORDS = ['#', '/'];
+    static RESERVED_KEYWORDS = [
+        ...this.COMMENT_KEYWORDS,
+    ];
+
     constructor() {
         this.commands = {};
         this.helpStrings = {};
@@ -57,6 +66,11 @@ class SlashCommandParser {
 
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
         const fnObj = { callback, helpString, interruptsGeneration, purgeFromMessage };
+
+        if ([command, ...aliases].some(x => SlashCommandParser.RESERVED_KEYWORDS.includes(x))) {
+            console.error('ERROR: Reserved slash command keyword used!');
+            return;
+        }
 
         if ([command, ...aliases].some(x => Object.hasOwn(this.commands, x))) {
             console.trace('WARN: Duplicate slash command registered!');
@@ -190,10 +204,10 @@ parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace"
 parser.addCommand('sync', syncCallback, [], ' – syncs the user persona in user-attributed messages in the current chat', true, true);
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed', false, true);
-parser.addCommand('sendas', sendMessageAs, [], ' – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <tt>/sendas name="Chloe" Hello, guys!</tt>', true, true);
-parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
+parser.addCommand('sendas', sendMessageAs, [], '<span class="monospace">[name=CharName compact=true/false (text)] – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <tt>/sendas name="Chloe" Hello, guys!</tt>. If "compact" is set to true, the message is sent using a compact layout.', true, true);
+parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">[compact=true/false (text)]</span> – sends message as a system narrator. If "compact" is set to true, the message is sent using a compact layout.', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
-parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
+parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">[compact=true/false (text)]</span> – adds a note/comment message not part of the chat. If "compact" is set to true, the message is sent using a compact layout.', false, true);
 parser.addCommand('single', setStoryModeCallback, ['story'], ' – sets the message style to single document mode without names or avatars visible', true, true);
 parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the message style to bubble chat mode', true, true);
 parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
@@ -202,7 +216,7 @@ parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace
 parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
 parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</span> – asks a specified character card a prompt', true, true);
 parser.addCommand('delname', deleteMessagesByNameCallback, ['cancel'], '<span class="monospace">(name)</span> – deletes all messages attributed to a specified name', true, true);
-parser.addCommand('send', sendUserMessageCallback, [], '<span class="monospace">(text)</span> – adds a user message to the chat log without triggering a generation', true, true);
+parser.addCommand('send', sendUserMessageCallback, [], '<span class="monospace">[compact=true/false (text)]</span> – adds a user message to the chat log without triggering a generation. If "compact" is set to true, the message is sent using a compact layout.', true, true);
 parser.addCommand('trigger', triggerGenerationCallback, [], ' <span class="monospace">await=true/false</span> – triggers a message generation. If in group, can trigger a message for the specified group member index or name. If <code>await=true</code> named argument passed, the command will await for the triggered generation before continuing.', true, true);
 parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index or range)</span> – hides a chat message from the prompt', true, true);
 parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index or range)</span> – unhides a message from the prompt', true, true);
@@ -216,8 +230,8 @@ parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message in
 parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
 parser.addCommand('echo', echoCallback, [], '<span class="monospace">(title=string severity=info/warning/error/success [text])</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
 //parser.addCommand('#', (_, value) => '', [], ' – a comment, does nothing, e.g. <tt>/# the next three commands switch variables a and b</tt>', true, true);
-parser.addCommand('gen', generateCallback, [], '<span class="monospace">(lock=on/off name="System" [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating and allowing to configure the in-prompt name for instruct mode (default = "System").', true, true);
-parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>', true, true);
+parser.addCommand('gen', generateCallback, [], '<span class="monospace">(lock=on/off name="System" [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating and allowing to configure the in-prompt name for instruct mode (default = "System"). "as" argument controls the role of the output prompt: system (default) or char.', true, true);
+parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(lock=on/off instruct=on/off stop=[] as=system/char [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>. "as" argument controls the role of the output prompt: system (default) or char.', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
 parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] threshold=0.4 (text to search) – performs a fuzzy match of each items of list within the text to search. If any item matches then its name is returned. If no item list matches the text to search then no value is returned. The optional threshold (default is 0.4) allows some control over the matching. A low value (min 0.0) means the match is very strict. At 1.0 (max) the match is very loose and probably matches anything. The returned value passes to the next command through the pipe.', true, true); parser.addCommand('pass', (_, arg) => arg, ['return'], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
@@ -231,7 +245,7 @@ parser.addCommand('buttons', buttonsCallback, [], '<span class="monospace">label
 parser.addCommand('trimtokens', trimTokensCallback, [], '<span class="monospace">limit=number (direction=start/end [text])</span> – trims the start or end of text to the specified number of tokens.', true, true);
 parser.addCommand('trimstart', trimStartCallback, [], '<span class="monospace">(text)</span> – trims the text to the start of the first full sentence.', true, true);
 parser.addCommand('trimend', trimEndCallback, [], '<span class="monospace">(text)</span> – trims the text to the end of the last full sentence.', true, true);
-parser.addCommand('inject', injectCallback, [], '<span class="monospace">id=injectId (position=before/after/chat depth=number [text])</span> – injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4).', true, true);
+parser.addCommand('inject', injectCallback, [], '<span class="monospace">id=injectId (position=before/after/chat depth=number scan=true/false role=system/user/assistant [text])</span> – injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false).', true, true);
 parser.addCommand('listinjects', listInjectsCallback, [], ' – lists all script injections for the current chat.', true, true);
 parser.addCommand('flushinjects', flushInjectsCallback, [], ' – removes all script injections for the current chat.', true, true);
 parser.addCommand('tokens', (_, text) => getTokenCount(text), [], '<span class="monospace">(text)</span> – counts the number of tokens in the text.', true, true);
@@ -249,6 +263,11 @@ function injectCallback(args, value) {
         'after': extension_prompt_types.IN_PROMPT,
         'chat': extension_prompt_types.IN_CHAT,
     };
+    const roles = {
+        'system': extension_prompt_roles.SYSTEM,
+        'user': extension_prompt_roles.USER,
+        'assistant': extension_prompt_roles.ASSISTANT,
+    };
 
     const id = resolveVariable(args?.id);
 
@@ -264,6 +283,9 @@ function injectCallback(args, value) {
     const position = positions[positionValue] ?? positions[defaultPosition];
     const depthValue = Number(args?.depth) ?? defaultDepth;
     const depth = isNaN(depthValue) ? defaultDepth : depthValue;
+    const roleValue = typeof args?.role === 'string' ? args.role.toLowerCase().trim() : Number(args?.role ?? extension_prompt_roles.SYSTEM);
+    const role = roles[roleValue] ?? roles[extension_prompt_roles.SYSTEM];
+    const scan = isTrueBoolean(args?.scan);
     value = value || '';
 
     const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
@@ -276,9 +298,11 @@ function injectCallback(args, value) {
         value,
         position,
         depth,
+        scan,
+        role,
     };
 
-    setExtensionPrompt(prefixedId, value, position, depth);
+    setExtensionPrompt(prefixedId, value, position, depth, scan, role);
     saveMetadataDebounced();
     return '';
 }
@@ -293,7 +317,7 @@ function listInjectsCallback() {
         .map(([id, inject]) => {
             const position = Object.entries(extension_prompt_types);
             const positionName = position.find(([_, value]) => value === inject.position)?.[0] ?? 'unknown';
-            return `* **${id}**: <code>${inject.value}</code> (${positionName}, depth: ${inject.depth})`;
+            return `* **${id}**: <code>${inject.value}</code> (${positionName}, depth: ${inject.depth}, scan: ${inject.scan ?? false}, role: ${inject.role ?? extension_prompt_roles.SYSTEM})`;
         })
         .join('\n');
 
@@ -311,7 +335,7 @@ function flushInjectsCallback() {
 
     for (const [id, inject] of Object.entries(chat_metadata.script_injects)) {
         const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
-        setExtensionPrompt(prefixedId, '', inject.position, inject.depth);
+        setExtensionPrompt(prefixedId, '', inject.position, inject.depth, inject.scan, inject.role);
     }
 
     chat_metadata.script_injects = {};
@@ -338,7 +362,7 @@ export function processChatSlashCommands() {
     for (const [id, inject] of Object.entries(context.chatMetadata.script_injects)) {
         const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
         console.log('Adding script injection', id);
-        setExtensionPrompt(prefixedId, inject.value, inject.position, inject.depth);
+        setExtensionPrompt(prefixedId, inject.value, inject.position, inject.depth, inject.scan, inject.role);
     }
 }
 
@@ -635,6 +659,8 @@ async function generateRawCallback(args, value) {
     // Prevent generate recursion
     $('#send_textarea').val('').trigger('input');
     const lock = isTrueBoolean(args?.lock);
+    const as = args?.as || 'system';
+    const quietToLoud = as === 'char';
 
     try {
         if (lock) {
@@ -642,7 +668,7 @@ async function generateRawCallback(args, value) {
         }
 
         setEphemeralStopStrings(resolveVariable(args?.stop));
-        const result = await generateRaw(value, '', isFalseBoolean(args?.instruct));
+        const result = await generateRaw(value, '', isFalseBoolean(args?.instruct), quietToLoud);
         return result;
     } finally {
         if (lock) {
@@ -661,6 +687,8 @@ async function generateCallback(args, value) {
     // Prevent generate recursion
     $('#send_textarea').val('').trigger('input');
     const lock = isTrueBoolean(args?.lock);
+    const as = args?.as || 'system';
+    const quietToLoud = as === 'char';
 
     try {
         if (lock) {
@@ -669,7 +697,7 @@ async function generateCallback(args, value) {
 
         setEphemeralStopStrings(resolveVariable(args?.stop));
         const name = args?.name;
-        const result = await generateQuietPrompt(value, false, false, '', name);
+        const result = await generateQuietPrompt(value, quietToLoud, false, '', name);
         return result;
     } finally {
         if (lock) {
@@ -1152,9 +1180,10 @@ async function sendUserMessageCallback(args, text) {
     }
 
     text = text.trim();
+    const compact = isTrueBoolean(args?.compact);
     const bias = extractMessageBias(text);
     const insertAt = Number(resolveVariable(args?.at));
-    await sendMessageAsUser(text, bias, insertAt);
+    await sendMessageAsUser(text, bias, insertAt, compact);
     return '';
 }
 
@@ -1227,11 +1256,15 @@ async function goToCharacterCallback(_, name) {
 
     if (characterIndex !== -1) {
         await openChat(new String(characterIndex));
+        setActiveCharacter(characters[characterIndex]?.avatar);
+        setActiveGroup(null);
         return characters[characterIndex]?.name;
     } else {
         const group = groups.find(it => it.name.toLowerCase() == name.toLowerCase());
         if (group) {
             await openGroupById(group.id);
+            setActiveCharacter(null);
+            setActiveGroup(group.id);
             return group.name;
         } else {
             console.warn(`No matches found for name "${name}"`);
@@ -1313,12 +1346,14 @@ function setNameCallback(_, name) {
     for (let persona of Object.values(power_user.personas)) {
         if (persona.toLowerCase() === name.toLowerCase()) {
             autoSelectPersona(name);
+            retriggerFirstMessageOnEmptyChat();
             return;
         }
     }
 
     // Otherwise, set just the name
     setUserName(name); //this prevented quickReply usage
+    retriggerFirstMessageOnEmptyChat();
 }
 
 async function setNarratorName(_, text) {
@@ -1361,6 +1396,7 @@ export async function sendMessageAs(args, text) {
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
     const isSystem = bias && !removeMacros(mesText).length;
+    const compact = isTrueBoolean(args?.compact);
 
     const character = characters.find(x => x.name === name);
     let force_avatar, original_avatar;
@@ -1385,6 +1421,7 @@ export async function sendMessageAs(args, text) {
         extra: {
             bias: bias.trim().length ? bias : null,
             gen_id: Date.now(),
+            isSmallSys: compact,
         },
     };
 
@@ -1414,6 +1451,7 @@ export async function sendNarratorMessage(args, text) {
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(text);
     const isSystem = bias && !removeMacros(text).length;
+    const compact = isTrueBoolean(args?.compact);
 
     const message = {
         name: name,
@@ -1426,6 +1464,7 @@ export async function sendNarratorMessage(args, text) {
             type: system_message_types.NARRATOR,
             bias: bias.trim().length ? bias : null,
             gen_id: Date.now(),
+            isSmallSys: compact,
         },
     };
 
@@ -1490,6 +1529,7 @@ async function sendCommentMessage(args, text) {
         return;
     }
 
+    const compact = isTrueBoolean(args?.compact);
     const message = {
         name: COMMENT_NAME_DEFAULT,
         is_user: false,
@@ -1500,6 +1540,7 @@ async function sendCommentMessage(args, text) {
         extra: {
             type: system_message_types.COMMENT,
             gen_id: Date.now(),
+            isSmallSys: compact,
         },
     };
 
@@ -1721,6 +1762,11 @@ async function executeSlashCommands(text, unescape = false) {
         const result = parser.parse(trimmedLine);
 
         if (!result) {
+            continue;
+        }
+
+        // Skip comment commands. They don't run macros or interrupt pipes.
+        if (SlashCommandParser.COMMENT_KEYWORDS.includes(result.command)) {
             continue;
         }
 

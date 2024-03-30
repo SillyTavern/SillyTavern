@@ -996,7 +996,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
     };
 
     // Send the data URL to your backend using fetch
-    const response = await fetch('/uploadimage', {
+    const response = await fetch('/api/images/upload', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: {
@@ -1048,14 +1048,50 @@ export function loadFileToDocument(url, type) {
 }
 
 /**
+ * Ensure that we can import war crime image formats like WEBP and AVIF.
+ * @param {File} file Input file
+ * @returns {Promise<File>} A promise that resolves to the supported file.
+ */
+export async function ensureImageFormatSupported(file) {
+    const supportedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/bmp',
+        'image/tiff',
+        'image/gif',
+        'image/apng',
+    ];
+
+    if (supportedTypes.includes(file.type) || !file.type.startsWith('image/')) {
+        return file;
+    }
+
+    return await convertImageFile(file, 'image/png');
+}
+
+/**
+ * Converts an image file to a given format.
+ * @param {File} inputFile File to convert
+ * @param {string} type Target file type
+ * @returns {Promise<File>} A promise that resolves to the converted file.
+ */
+export async function convertImageFile(inputFile, type = 'image/png') {
+    const base64 = await getBase64Async(inputFile);
+    const thumbnail = await createThumbnail(base64, null, null, type);
+    const blob = await fetch(thumbnail).then(res => res.blob());
+    const outputFile = new File([blob], inputFile.name, { type });
+    return outputFile;
+}
+
+/**
  * Creates a thumbnail from a data URL.
  * @param {string} dataUrl The data URL encoded data of the image.
- * @param {number} maxWidth The maximum width of the thumbnail.
- * @param {number} maxHeight The maximum height of the thumbnail.
+ * @param {number|null} maxWidth The maximum width of the thumbnail.
+ * @param {number|null} maxHeight The maximum height of the thumbnail.
  * @param {string} [type='image/jpeg'] The type of the thumbnail.
  * @returns {Promise<string>} A promise that resolves to the thumbnail data URL.
  */
-export function createThumbnail(dataUrl, maxWidth, maxHeight, type = 'image/jpeg') {
+export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type = 'image/jpeg') {
     // Someone might pass in a base64 encoded string without the data URL prefix
     if (!dataUrl.includes('data:')) {
         dataUrl = `data:image/jpeg;base64,${dataUrl}`;
@@ -1072,6 +1108,16 @@ export function createThumbnail(dataUrl, maxWidth, maxHeight, type = 'image/jpeg
             const aspectRatio = img.width / img.height;
             let thumbnailWidth = maxWidth;
             let thumbnailHeight = maxHeight;
+
+            if (maxWidth === null) {
+                thumbnailWidth = img.width;
+                maxWidth = img.width;
+            }
+
+            if (maxHeight === null) {
+                thumbnailHeight = img.height;
+                maxHeight = img.height;
+            }
 
             if (img.width > img.height) {
                 thumbnailHeight = maxWidth / aspectRatio;

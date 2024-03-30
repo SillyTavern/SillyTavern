@@ -16,7 +16,6 @@ import {
     this_chid,
     user_avatar,
 } from '../script.js';
-import { getContext } from './extensions.js';
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCount } from './tokenizers.js';
 import { debounce, delay, download, parseJsonFile } from './utils.js';
@@ -47,7 +46,7 @@ async function uploadUserAvatar(url, name) {
 
     return jQuery.ajax({
         type: 'POST',
-        url: '/uploaduseravatar',
+        url: '/api/avatars/upload',
         data: formData,
         beforeSend: () => { },
         cache: false,
@@ -296,12 +295,6 @@ export function selectCurrentPersona() {
         }
 
         setPersonaDescription();
-
-        // force firstMes {{user}} update on persona switch
-        const context = getContext();
-        if (context.characterId >= 0 && !context.groupId && context.chat.length === 1) {
-            $('#firstmessage_textarea').trigger('input');
-        }
     }
 }
 
@@ -362,7 +355,7 @@ async function deleteUserAvatar(e) {
         return;
     }
 
-    const request = await fetch('/deleteuseravatar', {
+    const request = await fetch('/api/avatars/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({

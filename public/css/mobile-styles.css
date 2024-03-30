@@ -98,6 +98,11 @@
         border: 1px solid var(--SmartThemeBorderColor);
     }
 
+    .drawer-content .floating_panel_maximize,
+    .drawer-content .inline-drawer-maximize {
+        display: none;
+    }
+
     #select_chat_popup {
         align-items: start;
         height: min-content;
@@ -201,7 +206,8 @@
     #left-nav-panel,
     #floatingPrompt,
     #cfgConfig,
-    #logprobsViewer {
+    #logprobsViewer,
+    #movingDivs > div {
         height: calc(100vh - 45px);
         height: calc(100svh - 45px);
         min-width: 100% !important;
@@ -219,7 +225,8 @@
 
     #floatingPrompt,
     #cfgConfig,
-    #logprobsViewer {
+    #logprobsViewer,
+    #movingDivs > div {
         height: min-content;
     }
 
