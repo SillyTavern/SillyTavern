@@ -6,7 +6,6 @@ import {
     menu_type,
     getCharacters,
     entitiesFilter,
-    printCharacters,
     printCharactersDebounced,
     buildAvatarList,
     eventSource,
@@ -55,12 +54,12 @@ export const tag_filter_types = {
 };
 
 const ACTIONABLE_TAGS = {
-    FAV: { id: 1, sort_order: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
-    GROUP: { id: 0, sort_order: 2, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
-    FOLDER: { id: 4, sort_order: 3, name: 'Always show folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
-    VIEW: { id: 2, sort_order: 4, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
-    HINT: { id: 3, sort_order: 5, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
-    UNFILTER: { id: 5, sort_order: 6, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
+    FAV: { id: "1", sort_order: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
+    GROUP: { id: "0", sort_order: 2, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
+    FOLDER: { id: "4", sort_order: 3, name: 'Always show folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
+    VIEW: { id: "2", sort_order: 4, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
+    HINT: { id: "3", sort_order: 5, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
+    UNFILTER: { id: "5", sort_order: 6, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
 };
 
 const InListActionable = {
@@ -82,8 +81,31 @@ const TAG_FOLDER_TYPES = {
 };
 const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
 
+/**
+ * @typedef {object} Tag - Object representing a tag
+ * @property {string} id - The id of the tag (As a kind of has string. This is used whenever the tag is referenced or linked, as the name might change)
+ * @property {string} name - The name of the tag
+ * @property {string} [folder_type] - The bogus folder type of this tag (based on `TAG_FOLDER_TYPES`)
+ * @property {string} [filter_state] - The saved state of the filter chosen of this tag (based on `FILTER_STATES`)
+ * @property {number} [sort_order] - A custom integer representing the sort order if tags are sorted
+ * @property {string} [color] - The background color of the tag
+ * @property {string} [color2] - The foreground color of the tag
+ * @property {number} [create_date] - A number representing the date when this tag was created
+ *
+ * @property {string} [class] - An optional css class added to the control representing this tag when printed. Used for custom tags in the filters.
+ * @property {string} [icon] - An optional css class of an icon representing this tag when printed. This will replace the tag name with the icon. Used for custom tags in the filters.
+ */
 
+/**
+ * An list of all tags that are available
+ * @type {Tag[]}
+ */
 let tags = [];
+
+/**
+ * A map representing the key of an entity (character avatar, group id, etc) with a corresponding array of tags this entity has assigned. The array might not exist if no tags were assigned yet.
+ * @type {Object.<string, string[]?>}
+ */
 let tag_map = {};
 
 /**
@@ -136,6 +158,15 @@ function filterByTagState(entities, { globalDisplayFilters = false, subForEntity
     return entities;
 }
 
+/**
+ * Filter a a list of entities based on a given tag, returning all entities that represent "sub entities"
+ *
+ * @param {Tag} tag - The to filter the entities for
+ * @param {object[]} entities - The list of possible entities (tag, group, folder) that should get filtered
+ * @param {object} param2 - optional parameteres
+ * @param {boolean} [param2.filterHidden] - Whether hidden entities should be filtered out too
+ * @returns {object[]} The filtered list of entities that apply to the given tag
+ */
 function filterTagSubEntities(tag, entities, { filterHidden = true } = {}) {
     const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
 
@@ -160,7 +191,9 @@ function filterTagSubEntities(tag, entities, { filterHidden = true } = {}) {
 
 /**
  * Indicates whether a given tag is defined as a folder. Meaning it's neither undefined nor 'NONE'.
- * @returns {boolean} If it's a tag folder
+ *
+ * @param {Tag} tag - The tag to check
+ * @returns {boolean} Whether it's a tag folder
  */
 function isBogusFolder(tag) {
     return tag?.folder_type !== undefined && tag.folder_type !== TAG_FOLDER_DEFAULT_TYPE;
@@ -168,6 +201,7 @@ function isBogusFolder(tag) {
 
 /**
  * Indicates whether a user is currently in a bogus folder.
+ *
  * @returns {boolean} If currently viewing a folder
  */
 function isBogusFolderOpen() {
@@ -205,21 +239,22 @@ function chooseBogusFolder(source, tagId, remove = false) {
 
 /**
  * Builds the tag block for the specified item.
- * @param {Object} item The tag item
+ *
+ * @param {Tag} tag The tag item
  * @param {*} entities The list ob sub items for this tag
  * @param {*} hidden A count of how many sub items are hidden
  * @returns The html for the tag block
  */
-function getTagBlock(item, entities, hidden = 0) {
+function getTagBlock(tag, entities, hidden = 0) {
     let count = entities.length;
 
-    const tagFolder = TAG_FOLDER_TYPES[item.folder_type];
+    const tagFolder = TAG_FOLDER_TYPES[tag.folder_type];
 
     const template = $('#bogus_folder_template .bogus_folder_select').clone();
     template.addClass(tagFolder.class);
-    template.attr({ 'tagid': item.id, 'id': `BogusFolder${item.id}` });
-    template.find('.avatar').css({ 'background-color': item.color, 'color': item.color2 }).attr('title', `[Folder] ${item.name}`);
-    template.find('.ch_name').text(item.name).attr('title', `[Folder] ${item.name}`);
+    template.attr({ 'tagid': tag.id, 'id': `BogusFolder${tag.id}` });
+    template.find('.avatar').css({ 'background-color': tag.color, 'color': tag.color2 }).attr('title', `[Folder] ${tag.name}`);
+    template.find('.ch_name').text(tag.name).attr('title', `[Folder] ${tag.name}`);
     template.find('.bogus_folder_hidden_counter').text(hidden > 0 ? `${hidden} hidden` : '');
     template.find('.bogus_folder_counter').text(`${count} ${count != 1 ? 'characters' : 'character'}`);
     template.find('.bogus_folder_icon').addClass(tagFolder.fa_icon);
@@ -275,6 +310,13 @@ function createTagMapFromList(listElement, key) {
     saveSettingsDebounced();
 }
 
+/**
+ * Gets a list of all tags for a given entity key.
+ * If you have an entity, you can get it's key easily via `getTagKeyForEntity(entity)`.
+ *
+ * @param {string} key - The key for which to get tags via the tag map
+ * @returns {Tag[]} A list of tags
+ */
 function getTagsList(key) {
     if (!Array.isArray(tag_map[key])) {
         tag_map[key] = [];
@@ -299,6 +341,9 @@ function getInlineListSelector() {
     return null;
 }
 
+/**
+ * Gets the current tag key based on the currently selected character or group
+ */
 function getTagKey() {
     if (selected_group && menu_type === 'group_edit') {
         return selected_group;
@@ -442,6 +487,12 @@ function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
     return false;
 }
 
+/**
+ * Get a list of existing tags matching a list of provided new tag names
+ *
+ * @param {string[]} new_tags - A list of strings representing tag names
+ * @returns List of existing tags
+ */
 function getExistingTags(new_tags) {
     let existing_tags = [];
     for (let tag of new_tags) {
@@ -495,11 +546,18 @@ async function importTags(imported_char) {
     return false;
 }
 
+/**
+ * Creates a new tag with default properties and a randomly generated id
+ *
+ * @param {string} tagName - name of the tag
+ * @returns {Tag}
+ */
 function createNewTag(tagName) {
     const tag = {
         id: uuidv4(),
         name: tagName,
         folder_type: TAG_FOLDER_DEFAULT_TYPE,
+        filter_state: DEFAULT_FILTER_STATE,
         sort_order: tags.length,
         color: '',
         color2: '',
@@ -520,8 +578,8 @@ function createNewTag(tagName) {
 
 /**
  * @typedef {object} PrintTagListOptions - Optional parameters for printing the tag list.
- * @property {Array<object>|function(): Array<object>} [tags=undefined] - Optional override of tags that should be printed. Those will not be sorted. If no supplied, tags for the relevant character are printed. Can also be a function that returns the tags.
- * @property {object} [addTag=undefined] - Optionally provide a tag that should be manually added to this print. Either to the overriden tag list or the found tags based on the entity/key. Will respect the tag exists check.
+ * @property {Tag[]|function(): Tag[]} [tags=undefined] - Optional override of tags that should be printed. Those will not be sorted. If no supplied, tags for the relevant character are printed. Can also be a function that returns the tags.
+ * @property {Tag} [addTag=undefined] - Optionally provide a tag that should be manually added to this print. Either to the overriden tag list or the found tags based on the entity/key. Will respect the tag exists check.
  * @property {object|number|string} [forEntityOrKey=undefined] - Optional override for the chosen entity, otherwise the currently selected is chosen. Can be an entity with id property (character, group, tag), or directly an id or tag key.
  * @property {boolean|string} [empty=true] - Whether the list should be initially empty. If a string string is provided, 'always' will always empty the list, otherwise it'll evaluate to a boolean.
  * @property {function(object): function} [tagActionSelector=undefined] - An optional override for the action property that can be assigned to each tag via tagOptions.
@@ -568,10 +626,11 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
 }
 
 /**
- * Appends a tag to the list element.
- * @param {JQuery<HTMLElement>} listElement List element.
- * @param {object} tag Tag object to append.
- * @param {TagOptions} [options={}] - Options for tag behavior.
+ * Appends a tag to the list element
+ *
+ * @param {JQuery<HTMLElement>} listElement - List element
+ * @param {Tag} tag - Tag object to append
+ * @param {TagOptions} [options={}] - Options for tag behavior
  * @returns {void}
  */
 function appendTagToList(listElement, tag, { removable = false, selectable = false, action = undefined, isGeneralList = false, skipExistsCheck = false } = {}) {
@@ -602,7 +661,7 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
     }
 
     if (selectable && isGeneralList) {
-        toggleTagThreeState(tagElement, { stateOverride: tag.filterState ?? DEFAULT_FILTER_STATE });
+        toggleTagThreeState(tagElement, { stateOverride: tag.filter_state ?? DEFAULT_FILTER_STATE });
     }
 
     if (selectable) {
@@ -628,7 +687,7 @@ function onTagFilterClick(listElement) {
     let state = toggleTagThreeState($(this));
 
     if (existingTag) {
-        existingTag.filterState = state;
+        existingTag.filter_state = state;
         saveSettingsDebounced();
     }
 
@@ -636,6 +695,15 @@ function onTagFilterClick(listElement) {
     runTagFilters(listElement);
 }
 
+/**
+ * Toggle the filter state of a given tag element
+ *
+ * @param {JQuery<HTMLElement>} element - The jquery element representing the tag for which the state should be toggled
+ * @param {object} param1 - Optional parameters
+ * @param {string} [param1.stateOverride] - Optional state override to which the state should be toggled to. If not set, the state will move to the next one in the chain.
+ * @param {boolean} [param1.simulateClick] - Optionally specify that the state should not just be set on the html element, but actually achieved via triggering the "click" on it, which follows up with the general click handlers and reprinting
+ * @returns {string} The string representing the new state
+ */
 function toggleTagThreeState(element, { stateOverride = undefined, simulateClick = false } = {}) {
     const states = Object.keys(FILTER_STATES);
 
@@ -900,10 +968,23 @@ function makeTagListDraggable(tagContainer) {
     });
 }
 
+/**
+ * Sorts the given tags, returning a shallow copy of it
+ *
+ * @param {Tag[]} tags - The tags
+ * @returns {Tag[]} The sorted tags
+ */
 function sortTags(tags) {
     return tags.slice().sort(compareTagsForSort);
 }
 
+/**
+ * Compares two given tags and returns the compare result
+ *
+ * @param {Tag} a - First tag
+ * @param {Tag} b - Second tag
+ * @returns The compare result
+ */
 function compareTagsForSort(a, b) {
     if (a.sort_order !== undefined && b.sort_order !== undefined) {
         return a.sort_order - b.sort_order;

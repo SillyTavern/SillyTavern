@@ -1324,7 +1324,7 @@ async function printCharacters(fullRefresh = false) {
         showNavigator: true,
         callback: function (data) {
             $(listId).empty();
-            if (isBogusFolderOpen()) {
+            if (power_user.bogus_folders && isBogusFolderOpen()) {
                 $(listId).append(getBackBlock());
             }
             if (!data.length) {
@@ -1368,18 +1368,59 @@ async function printCharacters(fullRefresh = false) {
     favsToHotswap();
 }
 
+/** @typedef {object} Character - A character */
+/** @typedef {object} Group - A group */
+
+/**
+ * @typedef {object} Entity - Object representing a display entity
+ * @property {Character|Group|import('./scripts/tags.js').Tag|*} item - The item
+ * @property {string|number} id - The id
+ * @property {string} type - The type of this entity (character, group, tag)
+ * @property {Entity[]} [entities] - An optional list of entities relevant for this item
+ * @property {number} [hidden] - An optional number representing how many hidden entities this entity contains
+ */
+
+/**
+ * Converts the given character to its entity representation
+ *
+ * @param {Character} character - The character
+ * @param {string|number} id - The id of this character
+ * @returns {Entity} The entity for this character
+ */
 export function characterToEntity(character, id) {
     return { item: character, id, type: 'character' };
 }
 
+/**
+ * Converts the given group to its entity representation
+ *
+ * @param {Group} group - The group
+ * @returns {Entity} The entity for this group
+ */
 export function groupToEntity(group) {
     return { item: group, id: group.id, type: 'group' };
 }
 
+/**
+ * Converts the given tag to its entity representation
+ *
+ * @param {import('./scripts/tags.js').Tag} tag - The tag
+ * @returns {Entity} The entity for this tag
+ */
 export function tagToEntity(tag) {
     return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
 }
 
+/**
+ * Builds the full list of all entities available
+ *
+ * They will be correctly marked and filtered.
+ *
+ * @param {object} param0 - Optional parameters
+ * @param {boolean} [param0.doFilter] - Whether this entity list should already be filtered based on the global filters
+ * @param {boolean} [param0.doSort] - Whether the entity list should be sorted when returned
+ * @returns {Entity[]} All entities
+ */
 export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
     let entities = [
         ...characters.map((item, index) => characterToEntity(item, index)),
