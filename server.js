@@ -123,7 +123,7 @@ app.use(CORS);
 
 if (listen && getConfigValue('basicAuthMode', false)) app.use(basicAuthMiddleware);
 
-app.use(whitelistMiddleware);
+app.use(whitelistMiddleware(listen));
 
 // CSRF Protection //
 if (!cliArguments.disableCsrf) {
