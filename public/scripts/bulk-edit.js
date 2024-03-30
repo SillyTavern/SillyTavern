@@ -30,7 +30,7 @@ const toggleBulkEditMode = (isBulkEdit) => {
     }
 };
 
-(new BulkEditOverlay()).addStateChangeCallback((state) => {
+characterGroupOverlay.addStateChangeCallback((state) => {
     if (state === BulkEditOverlayState.select) enableBulkEdit();
     if (state === BulkEditOverlayState.browse) disableBulkEdit();
 });
@@ -52,7 +52,7 @@ function onSelectAllButtonClick() {
     let atLeastOneSelected = false;
     for (const character of characters) {
         const checked = $(character).find('.bulk_select_checkbox:checked').length > 0;
-        if (!checked) {
+        if (!checked && character instanceof HTMLElement) {
             characterGroupOverlay.toggleSingleCharacter(character);
             atLeastOneSelected = true;
         }
@@ -62,7 +62,7 @@ function onSelectAllButtonClick() {
         // If none was selected, trigger click on all to deselect all of them
         for(const character of characters) {
             const checked = $(character).find('.bulk_select_checkbox:checked') ?? false;
-            if (checked) {
+            if (checked && character instanceof HTMLElement) {
                 characterGroupOverlay.toggleSingleCharacter(character);
             }
         }

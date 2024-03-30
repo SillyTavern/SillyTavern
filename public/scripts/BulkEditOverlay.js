@@ -1,6 +1,7 @@
 'use strict';
 
 import {
+    characterGroupOverlay,
     callPopup,
     characters,
     deleteCharacter,
@@ -9,9 +10,9 @@ import {
     getCharacters,
     getPastCharacterChats,
     getRequestHeaders,
-    printCharacters,
     buildAvatarList,
     characterToEntity,
+    printCharactersDebounced,
 } from '../script.js';
 
 import { favsToHotswap } from './RossAscends-mods.js';
@@ -31,7 +32,7 @@ class CharacterContextMenu {
      * @param {Array<number>} selectedCharacters
      */
     static tag = (selectedCharacters) => {
-        BulkTagPopupHandler.show(selectedCharacters);
+        characterGroupOverlay.bulkTagPopupHandler.show(selectedCharacters);
     };
 
     /**
@@ -187,17 +188,35 @@ class CharacterContextMenu {
  */
 class BulkTagPopupHandler {
     /**
+     * The characters for this popup
+     * @type {number[]}
+     */
+    characterIds;
+
+    /**
+     * A storage of the current mutual tags, as calculated by getMutualTags()
+     * @type {object[]}
+     */
+    currentMutualTags;
+
+    /**
+     * Sets up the bulk popup menu handler for the given overlay.
+     *
+     * Characters can be passed in with the show() call.
+     */
+    constructor() { }
+
+    /**
      * Gets the HTML as a string that is going to be the popup for the bulk tag edit
      *
-     * @param {Array<number>} characterIds - The characters that are shown inside the popup
      * @returns String containing the html for the popup
      */
-    static #getHtml = (characterIds) => {
-        const characterData = JSON.stringify({ characterIds: characterIds });
+    #getHtml = () => {
+        const characterData = JSON.stringify({ characterIds: this.characterIds });
         return `<div id="bulk_tag_shadow_popup">
             <div id="bulk_tag_popup">
                 <div id="bulk_tag_popup_holder">
-                    <h3 class="marginBot5">Modify tags of ${characterIds.length} characters</h3>
+                    <h3 class="marginBot5">Modify tags of ${this.characterIds.length} characters</h3>
                     <small class="bulk_tags_desc m-b-1">Add or remove the mutual tags of all selected characters.</small>
                     <div id="bulk_tags_avatars_block" class="avatars_inline avatars_inline_small tags tags_inline"></div>
                     <br>
@@ -227,93 +246,91 @@ class BulkTagPopupHandler {
     /**
      * Append and show the tag control
      *
-     * @param {Array<number>} characterIds - The characters assigned to this control
+     * @param {number[]} characterIds - The characters that are shown inside the popup
      */
-    static show(characterIds) {
-        if (characterIds.length == 0) {
+    show(characterIds) {
+        // shallow copy character ids persistently into this tooltip
+        this.characterIds = characterIds.slice();
+
+        if (this.characterIds.length == 0) {
             console.log('No characters selected for bulk edit tags.');
             return;
         }
 
-        document.body.insertAdjacentHTML('beforeend', this.#getHtml(characterIds));
+        document.body.insertAdjacentHTML('beforeend', this.#getHtml());
 
-        const entities = characterIds.map(id => characterToEntity(characters[id], id)).filter(entity => entity.item !== undefined);
+        const entities = this.characterIds.map(id => characterToEntity(characters[id], id)).filter(entity => entity.item !== undefined);
         buildAvatarList($('#bulk_tags_avatars_block'), entities);
 
         // Print the tag list with all mutuable tags, marking them as removable. That is the initial fill
-        printTagList($('#bulkTagList'), { tags: () => this.getMutualTags(characterIds), tagOptions: { removable: true } });
+        printTagList($('#bulkTagList'), { tags: () => this.getMutualTags(), tagOptions: { removable: true } });
 
         // Tag input with resolvable list for the mutual tags to get redrawn, so that newly added tags get sorted correctly
-        createTagInput('#bulkTagInput', '#bulkTagList', { tags: () => this.getMutualTags(characterIds), tagOptions: { removable: true }});
+        createTagInput('#bulkTagInput', '#bulkTagList', { tags: () => this.getMutualTags(), tagOptions: { removable: true }});
 
-        document.querySelector('#bulk_tag_popup_reset').addEventListener('click', this.resetTags.bind(this, characterIds));
-        document.querySelector('#bulk_tag_popup_remove_mutual').addEventListener('click', this.removeMutual.bind(this, characterIds));
+        document.querySelector('#bulk_tag_popup_reset').addEventListener('click', this.resetTags.bind(this));
+        document.querySelector('#bulk_tag_popup_remove_mutual').addEventListener('click', this.removeMutual.bind(this));
         document.querySelector('#bulk_tag_popup_cancel').addEventListener('click', this.hide.bind(this));
     }
 
     /**
      * Builds a list of all tags that the provided characters have in common.
      *
-     * @param {Array<number>} characterIds - The characters to find mutual tags for
      * @returns {Array<object>} A list of mutual tags
      */
-    static getMutualTags(characterIds) {
-        if (characterIds.length == 0) {
+    getMutualTags() {
+        if (this.characterIds.length == 0) {
             return [];
         }
 
-        if (characterIds.length === 1) {
+        if (this.characterIds.length === 1) {
             // Just use tags of the single character
-            return getTagsList(getTagKeyForEntity(characterIds[0]));
+            return getTagsList(getTagKeyForEntity(this.characterIds[0]));
         }
 
         // Find mutual tags for multiple characters
-        const allTags = characterIds.map(cid => getTagsList(getTagKeyForEntity(cid)));
+        const allTags = this.characterIds.map(cid => getTagsList(getTagKeyForEntity(cid)));
         const mutualTags = allTags.reduce((mutual, characterTags) =>
             mutual.filter(tag => characterTags.some(cTag => cTag.id === tag.id))
         );
 
-        this.mutualTags = mutualTags.sort(compareTagsForSort);
-        return this.mutualTags;
+        this.currentMutualTags = mutualTags.sort(compareTagsForSort);
+        return this.currentMutualTags;
     }
 
     /**
      * Hide and remove the tag control
      */
-    static hide() {
+    hide() {
         let popupElement = document.querySelector('#bulk_tag_shadow_popup');
         if (popupElement) {
             document.body.removeChild(popupElement);
         }
 
-        printCharacters(true);
+        // No need to redraw here, all tags actions were redrawn when they happened
     }
 
     /**
      * Empty the tag map for the given characters
-     *
-     * @param {Array<number>} characterIds
      */
-    static resetTags(characterIds) {
-        for (const characterId of characterIds) {
+    resetTags() {
+        for (const characterId of this.characterIds) {
             const key = getTagKeyForEntity(characterId);
             if (key) tag_map[key] = [];
         }
 
         $('#bulkTagList').empty();
 
-        printCharacters(true);
+        printCharactersDebounced();
     }
 
     /**
      * Remove the mutual tags for all given characters
-     *
-     * @param {Array<number>} characterIds
      */
-    static removeMutual(characterIds) {
-        const mutualTags = this.getMutualTags(characterIds);
+    removeMutual() {
+        const mutualTags = this.getMutualTags();
 
-        for (const characterId of characterIds) {
+        for (const characterId of this.characterIds) {
             for(const tag of mutualTags) {
                 removeTagFromMap(tag.id, characterId);
             }
@@ -321,7 +338,7 @@ class BulkTagPopupHandler {
 
         $('#bulkTagList').empty();
 
-        printCharacters(true);
+        printCharactersDebounced();
     }
 }
 
@@ -364,6 +381,7 @@ class BulkEditOverlay {
     #longPress = false;
     #stateChangeCallbacks = [];
     #selectedCharacters = [];
+    #bulkTagPopupHandler = new BulkTagPopupHandler();
 
     /**
      * @typedef {object} LastSelected - An object noting the last selected character and its state.
@@ -427,6 +445,15 @@ class BulkEditOverlay {
      */
     get selectedCharacters() {
         return this.#selectedCharacters;
+    }
+
+    /**
+     * The instance of the bulk tag popup handler that handles tagging of all selected characters
+     *
+     * @returns {BulkTagPopupHandler}
+     */
+    get bulkTagPopupHandler() {
+        return this.#bulkTagPopupHandler;
     }
 
     constructor() {

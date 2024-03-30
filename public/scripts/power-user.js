@@ -10,7 +10,7 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
-    printCharacters,
+    printCharactersDebounced,
     setCharacterId,
     setEditedMessageId,
     renderTemplate,
@@ -1288,7 +1288,7 @@ async function applyTheme(name) {
             key: 'bogus_folders',
             action: async () => {
                 $('#bogus_folders').prop('checked', power_user.bogus_folders);
-                await printCharacters(true);
+                printCharactersDebounced();
             },
         },
         {
@@ -3045,7 +3045,7 @@ $(document).ready(() => {
 
     $('#show_card_avatar_urls').on('input', function () {
         power_user.show_card_avatar_urls = !!$(this).prop('checked');
-        printCharacters();
+        printCharactersDebounced();
         saveSettingsDebounced();
     });
 
@@ -3068,7 +3068,7 @@ $(document).ready(() => {
         power_user.sort_field = $(this).find(':selected').data('field');
         power_user.sort_order = $(this).find(':selected').data('order');
         power_user.sort_rule = $(this).find(':selected').data('rule');
-        printCharacters();
+        printCharactersDebounced();
         saveSettingsDebounced();
     });
 
@@ -3365,15 +3365,15 @@ $(document).ready(() => {
     $('#bogus_folders').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.bogus_folders = value;
+        printCharactersDebounced();
         saveSettingsDebounced();
-        printCharacters(true);
     });
 
     $('#aux_field').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.aux_field = String(value);
+        printCharactersDebounced();
         saveSettingsDebounced();
-        printCharacters(false);
     });
 
     $('#restore_user_input').on('input', function () {

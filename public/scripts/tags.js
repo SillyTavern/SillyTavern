@@ -7,6 +7,7 @@ import {
     getCharacters,
     entitiesFilter,
     printCharacters,
+    printCharactersDebounced,
     buildAvatarList,
     eventSource,
     event_types,
@@ -47,12 +48,6 @@ const GROUP_FILTER_SELECTOR = '#rm_group_chats_block .rm_tag_filter';
 function getFilterHelper(listSelector) {
     return $(listSelector).is(GROUP_FILTER_SELECTOR) ? groupCandidatesFilter : entitiesFilter;
 }
-
-const redrawCharsAndFiltersDebounced = debounce(() => {
-    printCharacters(false);
-    printTagFilters(tag_filter_types.character);
-    printTagFilters(tag_filter_types.group_member);
-}, 100);
 
 export const tag_filter_types = {
     character: 0,
@@ -406,10 +401,11 @@ function findTag(request, resolve, listSelector) {
  * @param {*} event - The event that fired on autocomplete select
  * @param {*} ui - An Object with label and value properties for the selected option
  * @param {*} listSelector - The selector of the list to print/add to
- * @param {PrintTagListOptions} [tagListOptions] - Optional parameters for printing the tag list. Can be set to be consistent with the expected behavior of tags in the list that was defined before.
+ * @param {object} param1 - Optional parameters for this method call
+ * @param {PrintTagListOptions} [param1.tagListOptions] - Optional parameters for printing the tag list. Can be set to be consistent with the expected behavior of tags in the list that was defined before.
  * @returns {boolean} <c>false</c>, to keep the input clear
  */
-function selectTag(event, ui, listSelector, tagListOptions = {}) {
+function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
     let tagName = ui.item.value;
     let tag = tags.find(t => t.name === tagName);
 
@@ -431,6 +427,7 @@ function selectTag(event, ui, listSelector, tagListOptions = {}) {
         addTagToMap(tag.id);
     }
 
+    printCharactersDebounced();
     saveSettingsDebounced();
 
     // We should manually add the selected tag to the print tag function, so we cover places where the tag list did not automatically include it
@@ -442,9 +439,6 @@ function selectTag(event, ui, listSelector, tagListOptions = {}) {
     if (inlineSelector) {
         printTagList($(inlineSelector), tagListOptions);
     }
-
-    printTagFilters(tag_filter_types.character);
-    printTagFilters(tag_filter_types.group_member);
 
     // need to return false to keep the input clear
     return false;
@@ -493,10 +487,11 @@ async function importTags(imported_char) {
             console.debug('added tag to map', tag, imported_char.name);
         }
     }
+
     saveSettingsDebounced();
+
+    // Await the character list, which will automatically reprint it and all tag filters
     await getCharacters();
-    printTagFilters(tag_filter_types.character);
-    printTagFilters(tag_filter_types.group_member);
 
     // need to return false to keep the input clear
     return false;
@@ -767,8 +762,7 @@ function onTagRemoveClick(event) {
 
     $(`${getInlineListSelector()} .tag[id="${tagId}"]`).remove();
 
-    printTagFilters(tag_filter_types.character);
-    printTagFilters(tag_filter_types.group_member);
+    printCharactersDebounced();
     saveSettingsDebounced();
 
 
@@ -818,7 +812,7 @@ export function createTagInput(inputSelector, listSelector, tagListOptions = {})
         // @ts-ignore
         .autocomplete({
             source: (i, o) => findTag(i, o, listSelector),
-            select: (e, u) => selectTag(e, u, listSelector, tagListOptions),
+            select: (e, u) => selectTag(e, u, listSelector, { tagListOptions: tagListOptions }),
             minLength: 0,
         })
         .focus(onTagInputFocus); // <== show tag list on click
@@ -900,10 +894,9 @@ function makeTagListDraggable(tagContainer) {
             }
         });
 
-        saveSettingsDebounced();
-
         // If the order of tags in display has changed, we need to redraw some UI elements. Do it debounced so it doesn't block and you can drag multiple tags.
-        redrawCharsAndFiltersDebounced();
+        printCharactersDebounced();
+        saveSettingsDebounced();
     };
 
     // @ts-ignore
@@ -1003,8 +996,9 @@ async function onTagRestoreFileSelect(e) {
     }
 
     $('#tag_view_restore_input').val('');
+    printCharactersDebounced();
     saveSettingsDebounced();
-    printCharacters(true);
+
     onViewTagsListClick();
 }
 
@@ -1029,7 +1023,8 @@ function onTagsBackupClick() {
 function onTagCreateClick() {
     const tag = createNewTag('New Tag');
     appendViewTagToList($('#tag_view_list .tag_view_list_tags'), tag, []);
-    printCharacters(false);
+
+    printCharactersDebounced();
     saveSettingsDebounced();
 }
 
@@ -1098,7 +1093,7 @@ function onTagAsFolderClick() {
     updateDrawTagFolder(element, tag);
 
     // If folder display has changed, we have to redraw the character list, otherwise this folders state would not change
-    printCharacters(true);
+    printCharactersDebounced();
     saveSettingsDebounced();
 
 }
@@ -1133,7 +1128,8 @@ function onTagDeleteClick() {
     tags.splice(index, 1);
     $(`.tag[id="${id}"]`).remove();
     $(`.tag_view_item[id="${id}"]`).remove();
-    printCharacters(false);
+
+    printCharactersDebounced();
     saveSettingsDebounced();
 }
 
