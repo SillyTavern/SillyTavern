@@ -317,7 +317,7 @@ function getSdRequestBody() {
         case sources.auto:
             return { url: extension_settings.sd.auto_url, auth: extension_settings.sd.auto_auth };
         case sources.drawthings:
-            return { url: extension_settings.sd.drawthings_url };
+            return { url: extension_settings.sd.drawthings_url, auth: extension_settings.sd.drawthings_auth };
         default:
             throw new Error('Invalid SD source.');
     }
