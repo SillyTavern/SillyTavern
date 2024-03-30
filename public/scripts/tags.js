@@ -53,6 +53,10 @@ export const tag_filter_types = {
     group_member: 1,
 };
 
+/**
+ * @type {{ FAV: Tag, GROUP: Tag, FOLDER: Tag, VIEW: Tag, HINT: Tag, UNFILTER: Tag }}
+ * A collection of global actional tags for the filter panel
+ * */
 const ACTIONABLE_TAGS = {
     FAV: { id: '1', sort_order: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
     GROUP: { id: '0', sort_order: 2, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
@@ -62,9 +66,11 @@ const ACTIONABLE_TAGS = {
     UNFILTER: { id: '5', sort_order: 6, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
 };
 
+/** @type {{[key: string]: Tag}} An optional list of actionables that can be utilized by extensions */
 const InListActionable = {
 };
 
+/** @type {Tag[]} A list of default tags */
 const DEFAULT_TAGS = [
     { id: uuidv4(), name: 'Plain Text', create_date: Date.now() },
     { id: uuidv4(), name: 'OpenAI', create_date: Date.now() },
@@ -74,6 +80,20 @@ const DEFAULT_TAGS = [
     { id: uuidv4(), name: 'AliChat', create_date: Date.now() },
 ];
 
+/**
+ * @typedef FolderType Bogus folder type
+ * @property {string} icon - The icon as a string representation / character
+ * @property {string} class - The class to apply to the folder type element
+ * @property {string} [fa_icon] - Optional font-awesome icon class representing the folder type element
+ * @property {string} [tooltip] - Optional tooltip for the folder type element
+ * @property {string} [color] - Optional color for the folder type element
+ * @property {string} [size] - A string representation of the size that the folder type element should be
+ */
+
+/**
+ * @type {{ OPEN: FolderType, CLOSED: FolderType, NONE: FolderType, [key: string]: FolderType }}
+ * The list of all possible tag folder types
+ */
 const TAG_FOLDER_TYPES = {
     OPEN: { icon: '✔', class: 'folder_open', fa_icon: 'fa-folder-open', tooltip: 'Open Folder (Show all characters even if not selected)', color: 'green', size: '1' },
     CLOSED: { icon: '👁', class: 'folder_closed', fa_icon: 'fa-eye-slash', tooltip: 'Closed Folder (Hide all characters unless selected)', color: 'lightgoldenrodyellow', size: '0.7' },
@@ -92,6 +112,7 @@ const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
  * @property {string} [color2] - The foreground color of the tag
  * @property {number} [create_date] - A number representing the date when this tag was created
  *
+ * @property {function} [action] - An optional function that gets executed when this tag is an actionable tag and is clicked on.
  * @property {string} [class] - An optional css class added to the control representing this tag when printed. Used for custom tags in the filters.
  * @property {string} [icon] - An optional css class of an icon representing this tag when printed. This will replace the tag name with the icon. Used for custom tags in the filters.
  */
@@ -234,7 +255,7 @@ function chooseBogusFolder(source, tagId, remove = false) {
     const FILTER_SELECTOR = ($(source).closest('#rm_characters_block') ?? $(source).closest('#rm_group_chats_block')).find('.rm_tag_filter');
     const tagElement = $(FILTER_SELECTOR).find(`.tag[id=${tagId}]`);
 
-    toggleTagThreeState(tagElement, { stateOverride: DEFAULT_FILTER_STATE, simulateClick: true });
+    toggleTagThreeState(tagElement, { stateOverride: !remove ? FILTER_STATES.SELECTED : DEFAULT_FILTER_STATE, simulateClick: true });
 }
 
 /**
@@ -271,6 +292,7 @@ function getTagBlock(tag, entities, hidden = 0) {
  */
 function filterByFav(filterHelper) {
     const state = toggleTagThreeState($(this));
+    ACTIONABLE_TAGS.FAV.filter_state = state;
     filterHelper.setFilterData(FILTER_TYPES.FAV, state);
 }
 
@@ -280,6 +302,7 @@ function filterByFav(filterHelper) {
  */
 function filterByGroups(filterHelper) {
     const state = toggleTagThreeState($(this));
+    ACTIONABLE_TAGS.GROUP.filter_state = state;
     filterHelper.setFilterData(FILTER_TYPES.GROUP, state);
 }
 
@@ -289,6 +312,7 @@ function filterByGroups(filterHelper) {
  */
 function filterByFolder(filterHelper) {
     const state = toggleTagThreeState($(this));
+    ACTIONABLE_TAGS.FOLDER.filter_state = state;
     filterHelper.setFilterData(FILTER_TYPES.FOLDER, state);
 }
 
@@ -660,7 +684,8 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
         tagElement.find('.tag_name').text('').attr('title', tag.name).addClass(tag.icon);
     }
 
-    if (selectable && isGeneralList) {
+    // If this is a tag for a general list and its either selectable or actionable, lets mark its current state
+    if ((selectable || action) && isGeneralList) {
         toggleTagThreeState(tagElement, { stateOverride: tag.filter_state ?? DEFAULT_FILTER_STATE });
     }
 
@@ -700,7 +725,7 @@ function onTagFilterClick(listElement) {
  *
  * @param {JQuery<HTMLElement>} element - The jquery element representing the tag for which the state should be toggled
  * @param {object} param1 - Optional parameters
- * @param {string} [param1.stateOverride] - Optional state override to which the state should be toggled to. If not set, the state will move to the next one in the chain.
+ * @param {import('./filters.js').FilterState|string} [param1.stateOverride] - Optional state override to which the state should be toggled to. If not set, the state will move to the next one in the chain.
  * @param {boolean} [param1.simulateClick] - Optionally specify that the state should not just be set on the html element, but actually achieved via triggering the "click" on it, which follows up with the general click handlers and reprinting
  * @returns {string} The string representing the new state
  */
@@ -713,7 +738,7 @@ function toggleTagThreeState(element, { stateOverride = undefined, simulateClick
         return index !== -1 ? index : states.indexOf(fallback);
     }
 
-    const overrideKey = states.includes(stateOverride) ? stateOverride : Object.keys(FILTER_STATES).find(key => FILTER_STATES[key] === stateOverride);
+    const overrideKey = typeof stateOverride == 'string' && states.includes(stateOverride) ? stateOverride : Object.keys(FILTER_STATES).find(key => FILTER_STATES[key] === stateOverride);
 
     const currentStateIndex = getStateIndex(element.attr('data-toggle-state'), DEFAULT_FILTER_STATE);
     const targetStateIndex = overrideKey !== undefined ? getStateIndex(overrideKey, DEFAULT_FILTER_STATE) : (currentStateIndex + 1) % states.length;
