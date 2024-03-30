@@ -30,6 +30,7 @@ const fetch = require('node-fetch').default;
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
+util.inspect.defaultOptions.depth = null;
 
 // local library imports
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
@@ -55,15 +56,29 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
 // Set default DNS resolution order to IPv4 first
 dns.setDefaultResultOrder('ipv4first');
 
+const DEFAULT_PORT = 8000;
+const DEFAULT_AUTORUN = false;
+const DEFAULT_LISTEN = false;
+const DEFAULT_CORS_PROXY = false;
+
 const cliArguments = yargs(hideBin(process.argv))
-    .option('autorun', {
+    .usage('Usage: <your-start-script> <command> [options]')
+    .option('port', {
+        type: 'number',
+        default: null,
+        describe: `Sets the port under which SillyTavern will run.\nIf not provided falls back to yaml config 'port'.\n[config default: ${DEFAULT_PORT}]`,
+    }).option('autorun', {
         type: 'boolean',
-        default: false,
-        describe: 'Automatically launch SillyTavern in the browser.',
+        default: null,
+        describe: `Automatically launch SillyTavern in the browser.\nAutorun is automatically disabled if --ssl is set to true.\nIf not provided falls back to yaml config 'autorun'.\n[config default: ${DEFAULT_AUTORUN}]`,
+    }).option('listen', {
+        type: 'boolean',
+        default: null,
+        describe: `SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If false, will limit it only to internal localhost (127.0.0.1).\nIf not provided falls back to yaml config 'listen'.\n[config default: ${DEFAULT_LISTEN}]`,
     }).option('corsProxy', {
         type: 'boolean',
-        default: false,
-        describe: 'Enables CORS proxy',
+        default: null,
+        describe: `Enables CORS proxy\nIf not provided falls back to yaml config 'enableCorsProxy'.\n[config default: ${DEFAULT_CORS_PROXY}]`,
     }).option('disableCsrf', {
         type: 'boolean',
         default: false,
@@ -91,10 +106,10 @@ const app = express();
 app.use(compression());
 app.use(responseTime());
 
-const server_port = process.env.SILLY_TAVERN_PORT || getConfigValue('port', 8000);
-
-const autorun = (getConfigValue('autorun', false) || cliArguments.autorun) && !cliArguments.ssl;
-const listen = getConfigValue('listen', false);
+const server_port = cliArguments.port ?? process.env.SILLY_TAVERN_PORT ?? getConfigValue('port', DEFAULT_PORT);
+const autorun = (cliArguments.autorun ?? getConfigValue('autorun', DEFAULT_AUTORUN)) && !cliArguments.ssl;
+const listen = cliArguments.listen ?? getConfigValue('listen', DEFAULT_LISTEN);
+const enableCorsProxy = cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', DEFAULT_CORS_PROXY)
 
 const { DIRECTORIES, UPLOADS_PATH } = require('./src/constants');
 
@@ -144,7 +159,7 @@ if (!cliArguments.disableCsrf) {
     });
 }
 
-if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
+if (enableCorsProxy) {
     const bodyParser = require('body-parser');
     app.use(bodyParser.json({
         limit: '200mb',

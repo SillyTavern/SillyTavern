@@ -33,7 +33,7 @@ async function doTokenCounter() {
             <div id="tokenized_chunks_display" class="wide100p">—</div>
             <hr>
             <div>Token IDs:</div>
-            <textarea id="token_counter_ids" class="wide100p textarea_compact" disabled rows="1">—</textarea>
+            <textarea id="token_counter_ids" class="wide100p textarea_compact" readonly rows="1">—</textarea>
         </div>
     </div>`;
 

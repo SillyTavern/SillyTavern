@@ -355,5 +355,161 @@
     {
         "filename": "presets/openai/Default.json",
         "type": "openai_preset"
+    },
+    {
+        "filename": "presets/context/Adventure.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Alpaca-Roleplay.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Alpaca-Single-Turn.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Alpaca.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/ChatML.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Default.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/DreamGen Role-Play V1.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Libra-32B.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Lightning 1.1.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Llama 2 Chat.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Minimalist.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Mistral.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/NovelAI.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/OldDefault.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Pygmalion.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Story.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Synthia.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/simple-proxy-for-tavern.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/Adventure.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Alpaca-Roleplay.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Alpaca-Single-Turn.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Alpaca.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/ChatML.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/DreamGen Role-Play V1.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Koala.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Libra-32B.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Lightning 1.1.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Llama 2 Chat.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Metharme.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Mistral.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/OpenOrca-OpenChat.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Pygmalion.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Story.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Synthia.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Vicuna 1.0.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Vicuna 1.1.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/WizardLM-13B.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/WizardLM.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/simple-proxy-for-tavern.json",
+        "type": "instruct"
     }
 ]

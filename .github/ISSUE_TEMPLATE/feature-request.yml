@@ -1,7 +1,7 @@
 name: Feature Request ✨
 description: Suggest an idea for future development of this project
 title: '[FEATURE_REQUEST] <title>'
-labels: ['enhancement']
+labels: ['🦄 Feature Request']
 
 body:
 
