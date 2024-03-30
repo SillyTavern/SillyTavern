@@ -369,6 +369,10 @@
         "type": "context"
     },
     {
+        "filename": "presets/context/Alpaca.json",
+        "type": "context"
+    },
+    {
         "filename": "presets/context/ChatML.json",
         "type": "context"
     },
@@ -386,6 +390,10 @@
     },
     {
         "filename": "presets/context/Lightning 1.1.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Llama 2 Chat.json",
         "type": "context"
     },
     {
@@ -410,6 +418,10 @@
     },
     {
         "filename": "presets/context/Story.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Synthia.json",
         "type": "context"
     },
     {
