@@ -2911,16 +2911,23 @@ class StreamingProcessor {
  * @param {string} api API to use. Main API is used if not specified.
  * @param {boolean} instructOverride true to override instruct mode, false to use the default value
  * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
+ * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
  * @returns {Promise<string>} Generated message
  */
-export async function generateRaw(prompt, api, instructOverride, quietToLoud) {
+export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt) {
     if (!api) {
         api = main_api;
     }
 
     const abortController = new AbortController();
-    const isInstruct = power_user.instruct.enabled && main_api !== 'openai' && main_api !== 'novel' && !instructOverride;
+    const isInstruct = power_user.instruct.enabled && api !== 'openai' && api !== 'novel' && !instructOverride;
     const isQuiet = true;
+
+    if (systemPrompt) {
+        systemPrompt = substituteParams(systemPrompt);
+        systemPrompt = isInstruct ? formatInstructModeSystemPrompt(systemPrompt) : systemPrompt;
+        prompt = api === 'openai' ? prompt : `${systemPrompt}\n${prompt}`;
+    }
 
     prompt = substituteParams(prompt);
     prompt = api == 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
@@ -2948,8 +2955,12 @@ export async function generateRaw(prompt, api, instructOverride, quietToLoud) {
         case 'textgenerationwebui':
             generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null, 'quiet');
             break;
-        case 'openai':
+        case 'openai': {
             generateData = [{ role: 'user', content: prompt.trim() }];
+            if (systemPrompt) {
+                generateData.unshift({ role: 'system', content: systemPrompt.trim() });
+            }
+        } break;
     }
 
     let data = {};
