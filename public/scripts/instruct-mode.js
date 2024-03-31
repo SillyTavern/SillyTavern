@@ -365,8 +365,10 @@ export function formatInstructModeSystemPrompt(systemPrompt) {
  * @returns {string[]} Formatted example messages string.
  */
 export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
+    const blockHeading = power_user.context.example_separator ? power_user.context.example_separator + '\n' : '';
+
     if (power_user.instruct.skip_examples) {
-        return mesExamplesArray.map(x => x.replace(/<START>\n/i, ''));
+        return mesExamplesArray.map(x => x.replace(/<START>\n/i, blockHeading));
     }
 
     const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
@@ -387,28 +389,32 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const parsedExamples = [];
+    const formattedExamples = [];
 
     for (const item of mesExamplesArray) {
         const cleanedItem = item.replace(/<START>/i, '{Example Dialogue:}').replace(/\r/gm, '');
         const blockExamples = parseExampleIntoIndividual(cleanedItem);
-        parsedExamples.push(...blockExamples);
+
+        if (blockExamples.length === 0) {
+            continue;
+        }
+
+        if (blockHeading) {
+            formattedExamples.push(power_user.blockHeading);
+        }
+
+        for (const example of blockExamples) {
+            const prefix = example.name == 'example_user' ? inputPrefix : outputPrefix;
+            const suffix = example.name == 'example_user' ? inputSuffix : outputSuffix;
+            const name = example.name == 'example_user' ? name1 : name2;
+            const messageContent = includeNames ? `${name}: ${example.content}` : example.content;
+            const formattedMessage = [prefix, messageContent + suffix].filter(x => x).join(separator);
+            formattedExamples.push(formattedMessage);
+        }
     }
 
-    // Not something we can parse, return as is
-    if (!Array.isArray(parsedExamples) || parsedExamples.length === 0) {
-        return mesExamplesArray;
-    }
-
-    const formattedExamples = [];
-
-    for (const example of parsedExamples) {
-        const prefix = example.name == 'example_user' ? inputPrefix : outputPrefix;
-        const suffix = example.name == 'example_user' ? inputSuffix : outputSuffix;
-        const name = example.name == 'example_user' ? name1 : name2;
-        const messageContent = includeNames ? `${name}: ${example.content}` : example.content;
-        const formattedMessage = [prefix, messageContent + suffix].filter(x => x).join(separator);
-        formattedExamples.push(formattedMessage);
+    if (formattedExamples.length === 0) {
+        return mesExamplesArray.map(x => x.replace(/<START>\n/i, blockHeading));
     }
 
     return formattedExamples;
