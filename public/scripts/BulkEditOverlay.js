@@ -853,6 +853,7 @@ class BulkEditOverlay {
      */
     handleContextMenuTag = () => {
         CharacterContextMenu.tag(this.selectedCharacters);
+        this.browseState();
     };
 
     addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
