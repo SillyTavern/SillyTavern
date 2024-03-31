@@ -15,7 +15,7 @@ body:
         - 'No'
         - 'Yes'
     validations:
-      required: false
+      required: true
 
   # Field 2 - Is it bug-related
   - type: textarea
@@ -71,12 +71,12 @@ body:
   - type: dropdown
     id: canImplement
     attributes:
-      label: Is this something you would be keen to implement?
+      label: Are you willing to test this on staging/unstable branch if this is implemented?
       description: Are you raising this ticket in order to get an issue number for your PR?
       options:
         - 'No'
         - 'Maybe'
-        - 'Yes!'
+        - 'Yes'
     validations:
       required: false
 
