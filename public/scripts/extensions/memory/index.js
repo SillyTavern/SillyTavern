@@ -1,5 +1,5 @@
 import { getStringHash, debounce, waitUntilCondition, extractAllWords } from '../../utils.js';
-import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules } from '../../extensions.js';
+import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from '../../extensions.js';
 import { animation_duration, eventSource, event_types, extension_prompt_roles, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { is_group_generating, selected_group } from '../../group-chats.js';
 import { registerSlashCommand } from '../../slash-commands.js';
@@ -98,8 +98,8 @@ function onSummarySourceChange(event) {
 }
 
 function switchSourceControls(value) {
-    $('#memory_settings [data-source]').each((_, element) => {
-        const source = $(element).data('source');
+    $('#memory_settings [data-summary-source]').each((_, element) => {
+        const source = $(element).data('summary-source');
         $(element).toggle(source === value);
     });
 }
@@ -581,91 +581,7 @@ function setupListeners() {
 
 jQuery(function () {
     function addExtensionControls() {
-        const settingsHtml = `
-        <div id="memory_settings">
-            <div class="inline-drawer">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <div class="flex-container alignitemscenter margin0"><b>Summarize</b><i id="summaryExtensionPopoutButton" class="fa-solid fa-window-restore menu_button margin0"></i></div>
-                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                </div>
-                <div class="inline-drawer-content">
-                    <div id="summaryExtensionDrawerContents">
-                        <label for="summary_source">Summarize with:</label>
-                        <select id="summary_source">
-                            <option value="main">Main API</option>
-                            <option value="extras">Extras API</option>
-                        </select><br>
-
-                        <div class="flex-container justifyspacebetween alignitemscenter">
-                            <span class="flex1">Current summary:</span>
-                            <div id="memory_restore" class="menu_button flex1 margin0"><span>Restore Previous</span></div>
-                        </div>
-
-                        <textarea id="memory_contents" class="text_pole textarea_compact" rows="6" placeholder="Summary will be generated here..."></textarea>
-                        <div class="memory_contents_controls">
-                            <div id="memory_force_summarize" data-source="main" class="menu_button menu_button_icon" title="Trigger a summary update right now." data-i18n="Trigger a summary update right now.">
-                                <i class="fa-solid fa-database"></i>
-                                <span>Summarize now</span>
-                            </div>
-                            <label for="memory_frozen" title="Disable automatic summary updates. While paused, the summary remains as-is. You can still force an update by pressing the Summarize now button (which is only available with the Main API)." data-i18n="[title]Disable automatic summary updates. While paused, the summary remains as-is. You can still force an update by pressing the Summarize now button (which is only available with the Main API)."><input id="memory_frozen" type="checkbox" />Pause</label>
-                            <label for="memory_skipWIAN" title="Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN." data-i18n="[title]Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN."><input id="memory_skipWIAN" type="checkbox" />No WI/AN</label>
-                        </div>
-                        <div class="memory_contents_controls">
-                            <div id="summarySettingsBlockToggle" class="menu_button menu_button_icon" title="Edit summarization prompt, insertion position, etc.">
-                                <i class="fa-solid fa-cog"></i>
-                                <span>Summary Settings</span>
-                            </div>
-                        </div>
-                        <div id="summarySettingsBlock" style="display:none;">
-                            <div class="memory_template">
-                                <label for="memory_template">Insertion Template</label>
-                                <textarea id="memory_template" class="text_pole textarea_compact" rows="2" placeholder="{{summary}} will resolve to the current summary contents."></textarea>
-                            </div>
-                            <label for="memory_position">Injection Position</label>
-                            <div class="radio_group">
-                                <label>
-                                    <input type="radio" name="memory_position" value="2" />
-                                    Before Main Prompt / Story String
-                                </label>
-                                <label>
-                                    <input type="radio" name="memory_position" value="0" />
-                                    After Main Prompt / Story String
-                                </label>
-                                <label class="flex-container alignItemsCenter" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
-                                    <input type="radio" name="memory_position" value="1" />
-                                    In-chat @ Depth <input id="memory_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
-                                    as
-                                    <select id="memory_role" class="text_pole widthNatural">
-                                        <option value="0">System</option>
-                                        <option value="1">User</option>
-                                        <option value="2">Assistant</option>
-                                    </select>
-                                </label>
-                            </div>
-                            <div data-source="main" class="memory_contents_controls">
-                            </div>
-                            <div data-source="main">
-                                <label for="memory_prompt" class="title_restorable">
-                                    Summary Prompt
-
-                                </label>
-                                <textarea id="memory_prompt" class="text_pole textarea_compact" rows="6" placeholder="This prompt will be sent to AI to request the summary generation. {{words}} will resolve to the 'Number of words' parameter."></textarea>
-                                <label for="memory_prompt_words">Summary length (<span id="memory_prompt_words_value"></span> words)</label>
-                                <input id="memory_prompt_words" type="range" value="${defaultSettings.promptWords}" min="${defaultSettings.promptMinWords}" max="${defaultSettings.promptMaxWords}" step="${defaultSettings.promptWordsStep}" />
-                                <label for="memory_prompt_interval">Update every <span id="memory_prompt_interval_value"></span> messages</label>
-                                <small>0 = disable</small>
-                                <input id="memory_prompt_interval" type="range" value="${defaultSettings.promptInterval}" min="${defaultSettings.promptMinInterval}" max="${defaultSettings.promptMaxInterval}" step="${defaultSettings.promptIntervalStep}" />
-                                <label for="memory_prompt_words_force">Update every <span id="memory_prompt_words_force_value"></span> words</label>
-                                <small>0 = disable</small>
-                                <input id="memory_prompt_words_force" type="range" value="${defaultSettings.promptForceWords}" min="${defaultSettings.promptMinForceWords}" max="${defaultSettings.promptMaxForceWords}" step="${defaultSettings.promptForceWordsStep}" />
-                                <small>If both sliders are non-zero, then both will trigger summary updates a their respective intervals.</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
+        const settingsHtml = renderExtensionTemplate('memory', 'settings', { defaultSettings });
         $('#extensions_settings2').append(settingsHtml);
         setupListeners();
         $('#summaryExtensionPopoutButton').off('click').on('click', function (e) {
