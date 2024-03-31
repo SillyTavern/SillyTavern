@@ -2180,6 +2180,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         clone.append(text.slice(textarea.selectionStart + 1));
         document.body.append(clone);
         clone.scrollTop = textarea.scrollTop;
+        clone.scrollLeft = textarea.scrollLeft;
         const locatorRect = locator.getBoundingClientRect();
         const location = {
             left: locatorRect.left,
