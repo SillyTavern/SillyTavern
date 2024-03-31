@@ -400,7 +400,7 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
         }
 
         if (blockHeading) {
-            formattedExamples.push(power_user.blockHeading);
+            formattedExamples.push(blockHeading);
         }
 
         for (const example of blockExamples) {
