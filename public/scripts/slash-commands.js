@@ -2052,6 +2052,9 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
                 case 'fuzzy': {
                     const matched = name.replace(fuzzyRegex, (_, ...parts)=>{
                         parts.splice(-2, 2);
+                        if (parts.length == 2) {
+                            return parts.join('');
+                        }
                         return parts.map((it, idx)=>{
                             if (it === null || it.length == 0) return '';
                             if (idx % 2 == 1) {
