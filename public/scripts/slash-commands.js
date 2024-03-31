@@ -2123,22 +2123,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         }
         selectedItem = result[0];
         if (isFloating) {
-            const location = getCursorPosition();
-            if (location.y <= window.innerHeight / 2) {
-                dom.style.top = `${location.bottom}px`;
-                dom.style.bottom = 'auto';
-                dom.style.left = `${location.left}px`;
-                dom.style.right = 'auto';
-                dom.style.maxWidth = `calc(99vw - ${location.left}px)`;
-                dom.style.maxHeight = `calc(99vh - ${location.bottom}px)`;
-            } else {
-                dom.style.top = 'auto';
-                dom.style.bottom = `calc(100vh - ${location.top}px)`;
-                dom.style.left = `${location.left}px`;
-                dom.style.right = 'auto';
-                dom.style.maxWidth = `calc(99vw - ${location.left}px)`;
-                dom.style.maxHeight = `calc(99vh - ${location.top}px)`;
-            }
+            updatePosition();
         } else {
             const rect = textarea.getBoundingClientRect();
             dom.style.setProperty('--bottom', `${window.innerHeight - rect.top}px`);
@@ -2148,6 +2133,24 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         }
         document.body.append(dom);
         isActive = true;
+    };
+    const updatePosition = () => {
+        const location = getCursorPosition();
+        if (location.y <= window.innerHeight / 2) {
+            dom.style.top = `${location.bottom}px`;
+            dom.style.bottom = 'auto';
+            dom.style.left = `${location.left}px`;
+            dom.style.right = 'auto';
+            dom.style.maxWidth = `calc(99vw - ${location.left}px)`;
+            dom.style.maxHeight = `calc(99vh - ${location.bottom}px)`;
+        } else {
+            dom.style.top = 'auto';
+            dom.style.bottom = `calc(100vh - ${location.top}px)`;
+            dom.style.left = `${location.left}px`;
+            dom.style.right = 'auto';
+            dom.style.maxWidth = `calc(99vw - ${location.left}px)`;
+            dom.style.maxHeight = `calc(99vh - ${location.top}px)`;
+        }
     };
     const getCursorPosition = () => {
         const inputRect = textarea.getBoundingClientRect();
@@ -2278,6 +2281,9 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         showAutoCompleteDebounced();
     });
     textarea.addEventListener('blur', ()=>hide());
+    if (isFloating) {
+        textarea.addEventListener('scroll', debounce(updatePosition, 100));
+    }
 }
 
 jQuery(function () {
