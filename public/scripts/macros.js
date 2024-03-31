@@ -1,5 +1,5 @@
-import { chat, main_api, getMaxContextSize } from '../script.js';
-import { timestampToMoment, isDigitsOnly } from './utils.js';
+import { chat, main_api, getMaxContextSize, getCurrentChatId } from '../script.js';
+import { timestampToMoment, isDigitsOnly, getStringHash } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
 import { replaceVariableMacros } from './variables.js';
@@ -211,6 +211,29 @@ function randomReplace(input, emptyListPlaceholder = '') {
     return input;
 }
 
+function pickReplace(input, rawContent, emptyListPlaceholder = '') {
+    const pickPattern = /{{pick\s?::\s?([^}]+)}}/gi;
+    const chatIdHash = getStringHash(getCurrentChatId());
+    const rawContentHash = getStringHash(rawContent);
+
+    return input.replace(pickPattern, (match, listString, offset) => {
+        const list = listString.includes('::')
+            ? listString.split('::').filter(item => item.length > 0)
+            : listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
+
+        if (list.length === 0) {
+            return emptyListPlaceholder;
+        }
+
+        const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}`;
+        const finalSeed = getStringHash(combinedSeedString);
+        const rng = new Math.seedrandom(finalSeed);
+
+        const randomIndex = Math.floor(rng() * list.length);
+        return list[randomIndex].trim();
+    });
+}
+
 function diceRollReplace(input, invalidRollPlaceholder = '') {
     const rollPattern = /{{roll[ : ]([^}]+)}}/gi;
 
@@ -244,6 +267,8 @@ export function evaluateMacros(content, env) {
     if (!content) {
         return '';
     }
+
+    const rawContent = content;
 
     // Legacy non-macro substitutions
     content = content.replace(/<USER>/gi, typeof env.user === 'function' ? env.user() : env.user);
@@ -300,5 +325,6 @@ export function evaluateMacros(content, env) {
     });
     content = bannedWordsReplace(content);
     content = randomReplace(content);
+    content = pickReplace(content, rawContent);
     return content;
 }
