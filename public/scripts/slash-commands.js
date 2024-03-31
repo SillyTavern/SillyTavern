@@ -2091,6 +2091,9 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
 
         // add notice if no match found
         if (result.length == 0) {
+            if (!isInput) {
+                return hide();
+            }
             result.push({
                 name: '',
                 label: `No matching commands for "/${slashCommand}"`,
