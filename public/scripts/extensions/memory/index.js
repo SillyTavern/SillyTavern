@@ -1,11 +1,25 @@
-import { getStringHash, debounce, waitUntilCondition, extractAllWords } from '../../utils.js';
+import { getStringHash, debounce, waitUntilCondition, extractAllWords, delay } from '../../utils.js';
 import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from '../../extensions.js';
-import { animation_duration, eventSource, event_types, extension_prompt_roles, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import {
+    activateSendButtons,
+    deactivateSendButtons,
+    animation_duration,
+    eventSource,
+    event_types,
+    extension_prompt_roles,
+    extension_prompt_types,
+    generateQuietPrompt,
+    is_send_press,
+    saveSettingsDebounced,
+    substituteParams,
+    generateRaw,
+    getMaxContextSize,
+} from '../../../script.js';
 import { is_group_generating, selected_group } from '../../group-chats.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
-import { getTextTokens, tokenizers } from '../../tokenizers.js';
+import { getTextTokens, getTokenCount, tokenizers } from '../../tokenizers.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -39,7 +53,13 @@ const summary_sources = {
     'main': 'main',
 };
 
-const defaultPrompt = '[Pause your roleplay. Summarize the most important facts and events that have happened in the chat so far. If a summary already exists in your memory, use that as a base and expand with new facts. Limit the summary to {{words}} words or less. Your response should include nothing but the summary.]';
+const prompt_builders = {
+    DEFAULT: 0,
+    RAW_BLOCKING: 1,
+    RAW_NON_BLOCKING: 2,
+};
+
+const defaultPrompt = '[Pause your roleplay. Summarize the most important facts and events in the story so far. If a summary already exists in your memory, use that as a base and expand with new facts. Limit the summary to {{words}} words or less. Your response should include nothing but the summary.]';
 const defaultTemplate = '[Summary: {{summary}}]';
 
 const defaultSettings = {
@@ -57,12 +77,21 @@ const defaultSettings = {
     promptWordsStep: 25,
     promptInterval: 10,
     promptMinInterval: 0,
-    promptMaxInterval: 100,
+    promptMaxInterval: 250,
     promptIntervalStep: 1,
     promptForceWords: 0,
     promptForceWordsStep: 100,
     promptMinForceWords: 0,
     promptMaxForceWords: 10000,
+    overrideResponseLength: 0,
+    overrideResponseLengthMin: 0,
+    overrideResponseLengthMax: 4096,
+    overrideResponseLengthStep: 16,
+    maxMessagesPerRequest: 0,
+    maxMessagesPerRequestMin: 0,
+    maxMessagesPerRequestMax: 250,
+    maxMessagesPerRequestStep: 1,
+    prompt_builder: prompt_builders.RAW_BLOCKING,
 };
 
 function loadSettings() {
@@ -87,7 +116,48 @@ function loadSettings() {
     $('#memory_role').val(extension_settings.memory.role).trigger('input');
     $(`input[name="memory_position"][value="${extension_settings.memory.position}"]`).prop('checked', true).trigger('input');
     $('#memory_prompt_words_force').val(extension_settings.memory.promptForceWords).trigger('input');
+    $(`input[name="memory_prompt_builder"][value="${extension_settings.memory.prompt_builder}"]`).prop('checked', true).trigger('input');
+    $('#memory_override_response_length').val(extension_settings.memory.overrideResponseLength).trigger('input');
+    $('#memory_max_messages_per_request').val(extension_settings.memory.maxMessagesPerRequest).trigger('input');
     switchSourceControls(extension_settings.memory.source);
+}
+
+async function onPromptIntervalAutoClick() {
+    const context = getContext();
+    const maxPromptLength = getMaxContextSize(extension_settings.memory.overrideResponseLength);
+    const chat = context.chat;
+    const allMessages = chat.filter(m => !m.is_system && m.mes).map(m => m.mes);
+    const messagesWordCount = allMessages.map(m => extractAllWords(m)).flat().length;
+    const messagesTokenCount = getTokenCount(allMessages.join('\n'));
+    const tokensPerWord = messagesTokenCount / messagesWordCount;
+    const averageMessageTokenCount = messagesTokenCount / allMessages.length;
+    const targetSummaryTokens = Math.round(extension_settings.memory.promptWords * tokensPerWord);
+    const promptTokens = getTokenCount(extension_settings.memory.prompt);
+    const promptAllowance = maxPromptLength - promptTokens - targetSummaryTokens;
+    const maxMessagesPerSummary = extension_settings.memory.maxMessagesPerRequest || 0;
+    const averageMessagesPerPrompt = Math.floor(promptAllowance / averageMessageTokenCount);
+    const unfitMessages = maxMessagesPerSummary > 0 ? averageMessagesPerPrompt - maxMessagesPerSummary : 0;
+    const adjustedAverageMessagesPerPrompt = Math.max(1, averageMessagesPerPrompt - (unfitMessages > 0 ? Math.ceil(unfitMessages / 2) : 0));
+
+    console.table({
+        maxPromptLength,
+        promptAllowance,
+        targetSummaryTokens,
+        promptTokens,
+        messagesWordCount,
+        messagesTokenCount,
+        tokensPerWord,
+        averageMessageTokenCount,
+        averageMessagesPerPrompt,
+        adjustedAverageMessagesPerPrompt,
+        maxMessagesPerSummary,
+        unfitMessages,
+    });
+
+    const ROUNDING = 5;
+    extension_settings.memory.promptInterval = Math.max(1, Math.floor(adjustedAverageMessagesPerPrompt / ROUNDING) * ROUNDING);
+
+    $('#memory_prompt_interval').val(extension_settings.memory.promptInterval).trigger('input');
 }
 
 function onSummarySourceChange(event) {
@@ -128,6 +198,10 @@ function onMemoryPromptIntervalInput() {
     extension_settings.memory.promptInterval = Number(value);
     $('#memory_prompt_interval_value').text(extension_settings.memory.promptInterval);
     saveSettingsDebounced();
+}
+
+function onMemoryPromptRestoreClick() {
+    $('#memory_prompt').val(defaultPrompt).trigger('input');
 }
 
 function onMemoryPromptInput() {
@@ -171,6 +245,20 @@ function onMemoryPromptWordsForceInput() {
     saveSettingsDebounced();
 }
 
+function onOverrideResponseLengthInput() {
+    const value = $(this).val();
+    extension_settings.memory.overrideResponseLength = Number(value);
+    $('#memory_override_response_length_value').text(extension_settings.memory.overrideResponseLength);
+    saveSettingsDebounced();
+}
+
+function onMaxMessagesPerRequestInput() {
+    const value = $(this).val();
+    extension_settings.memory.maxMessagesPerRequest = Number(value);
+    $('#memory_max_messages_per_request_value').text(extension_settings.memory.maxMessagesPerRequest);
+    saveSettingsDebounced();
+}
+
 function saveLastValues() {
     const context = getContext();
     lastGroupId = context.groupId;
@@ -194,6 +282,22 @@ function getLatestMemoryFromChat(chat) {
     }
 
     return '';
+}
+
+function getIndexOfLatestChatSummary(chat) {
+    if (!Array.isArray(chat) || !chat.length) {
+        return -1;
+    }
+
+    const reversedChat = chat.slice().reverse();
+    reversedChat.shift();
+    for (let mes of reversedChat) {
+        if (mes.extra && mes.extra.memory) {
+            return chat.indexOf(mes);
+        }
+    }
+
+    return -1;
 }
 
 async function onChatEvent() {
@@ -359,8 +463,41 @@ async function summarizeChatMain(context, force, skipWIAN) {
         console.debug('Summarization prompt is empty. Skipping summarization.');
         return;
     }
+
     console.log('sending summary prompt');
-    const summary = await generateQuietPrompt(prompt, false, skipWIAN);
+    let summary = '';
+    let index = null;
+
+    if (prompt_builders.DEFAULT === extension_settings.memory.prompt_builder) {
+        summary = await generateQuietPrompt(prompt, false, skipWIAN, '', '', extension_settings.memory.overrideResponseLength);
+    }
+
+    if ([prompt_builders.RAW_BLOCKING, prompt_builders.RAW_NON_BLOCKING].includes(extension_settings.memory.prompt_builder)) {
+        const lock = extension_settings.memory.prompt_builder === prompt_builders.RAW_BLOCKING;
+        try {
+            if (lock) {
+                deactivateSendButtons();
+            }
+
+            const { rawPrompt, lastUsedIndex } = await getRawSummaryPrompt(context, prompt);
+
+            if (lastUsedIndex === null || lastUsedIndex === -1) {
+                if (force) {
+                    toastr.info('To try again, remove the latest summary.', 'No messages found to summarize');
+                }
+
+                return null;
+            }
+
+            summary = await generateRaw(rawPrompt, '', false, false, prompt, extension_settings.memory.overrideResponseLength);
+            index = lastUsedIndex;
+        } finally {
+            if (lock) {
+                activateSendButtons();
+            }
+        }
+    }
+
     const newContext = getContext();
 
     // something changed during summarization request
@@ -371,8 +508,81 @@ async function summarizeChatMain(context, force, skipWIAN) {
         return;
     }
 
-    setMemoryContext(summary, true);
+    setMemoryContext(summary, true, index);
     return summary;
+}
+
+/**
+ * Get the raw summarization prompt from the chat context.
+ * @param {object} context ST context
+ * @param {string} prompt Summarization system prompt
+ * @returns {Promise<{rawPrompt: string, lastUsedIndex: number}>} Raw summarization prompt
+ */
+async function getRawSummaryPrompt(context, prompt) {
+    /**
+     * Get the memory string from the chat buffer.
+     * @param {boolean} includeSystem Include prompt into the memory string
+     * @returns {string} Memory string
+     */
+    function getMemoryString(includeSystem) {
+        const delimiter = '\n\n';
+        const stringBuilder = [];
+        const bufferString = chatBuffer.slice().join(delimiter);
+
+        if (includeSystem) {
+            stringBuilder.push(prompt);
+        }
+
+        if (latestSummary) {
+            stringBuilder.push(latestSummary);
+        }
+
+        stringBuilder.push(bufferString);
+
+        return stringBuilder.join(delimiter).trim();
+    }
+
+    const chat = context.chat.slice();
+    const latestSummary = getLatestMemoryFromChat(chat);
+    const latestSummaryIndex = getIndexOfLatestChatSummary(chat);
+    chat.pop(); // We always exclude the last message from the buffer
+    const chatBuffer = [];
+    const PADDING = 64;
+    const PROMPT_SIZE = getMaxContextSize(extension_settings.memory.overrideResponseLength);
+    let latestUsedMessage = null;
+
+    for (let index = latestSummaryIndex + 1; index < chat.length; index++) {
+        const message = chat[index];
+
+        if (!message) {
+            break;
+        }
+
+        if (message.is_system || !message.mes) {
+            continue;
+        }
+
+        const entry = `${message.name}:\n${message.mes}`;
+        chatBuffer.push(entry);
+
+        const tokens = getTokenCount(getMemoryString(true), PADDING);
+        await delay(1);
+
+        if (tokens > PROMPT_SIZE) {
+            chatBuffer.pop();
+            break;
+        }
+
+        latestUsedMessage = message;
+
+        if (extension_settings.memory.maxMessagesPerRequest > 0 && chatBuffer.length >= extension_settings.memory.maxMessagesPerRequest) {
+            break;
+        }
+    }
+
+    const lastUsedIndex = context.chat.indexOf(latestUsedMessage);
+    const rawPrompt = getMemoryString(false);
+    return { rawPrompt, lastUsedIndex };
 }
 
 async function summarizeChatExtras(context) {
@@ -482,12 +692,24 @@ function onMemoryContentInput() {
     setMemoryContext(value, true);
 }
 
+function onMemoryPromptBuilderInput(e) {
+    const value = Number(e.target.value);
+    extension_settings.memory.prompt_builder = value;
+    saveSettingsDebounced();
+}
+
 function reinsertMemory() {
-    const existingValue = $('#memory_contents').val();
+    const existingValue = String($('#memory_contents').val());
     setMemoryContext(existingValue, false);
 }
 
-function setMemoryContext(value, saveToMessage) {
+/**
+ * Set the summary value to the context and save it to the chat message extra.
+ * @param {string} value Value of a summary
+ * @param {boolean} saveToMessage Should the summary be saved to the chat message extra
+ * @param {number|null} index Index of the chat message to save the summary to. If null, the pre-last message is used.
+ */
+function setMemoryContext(value, saveToMessage, index = null) {
     const context = getContext();
     context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth, false, extension_settings.memory.role);
     $('#memory_contents').val(value);
@@ -497,7 +719,7 @@ function setMemoryContext(value, saveToMessage) {
     console.debug('Role: ' + extension_settings.memory.role);
 
     if (saveToMessage && context.chat.length) {
-        const idx = context.chat.length - 2;
+        const idx = index ?? context.chat.length - 2;
         const mes = context.chat[idx < 0 ? 0 : idx];
 
         if (!mes.extra) {
@@ -573,6 +795,13 @@ function setupListeners() {
     $('#memory_role').off('click').on('input', onMemoryRoleInput);
     $('input[name="memory_position"]').off('click').on('change', onMemoryPositionChange);
     $('#memory_prompt_words_force').off('click').on('input', onMemoryPromptWordsForceInput);
+    $('#memory_prompt_builder_default').off('click').on('input', onMemoryPromptBuilderInput);
+    $('#memory_prompt_builder_raw_blocking').off('click').on('input', onMemoryPromptBuilderInput);
+    $('#memory_prompt_builder_raw_non_blocking').off('click').on('input', onMemoryPromptBuilderInput);
+    $('#memory_prompt_restore').off('click').on('click', onMemoryPromptRestoreClick);
+    $('#memory_prompt_interval_auto').off('click').on('click', onPromptIntervalAutoClick);
+    $('#memory_override_response_length').off('click').on('input', onOverrideResponseLengthInput);
+    $('#memory_max_messages_per_request').off('click').on('input', onMaxMessagesPerRequestInput);
     $('#summarySettingsBlockToggle').off('click').on('click', function () {
         console.log('saw settings button click');
         $('#summarySettingsBlock').slideToggle(200, 'swing'); //toggleClass("hidden");
