@@ -122,6 +122,41 @@ function loadSettings() {
     switchSourceControls(extension_settings.memory.source);
 }
 
+async function onPromptForceWordsAutoClick() {
+    const context = getContext();
+    const maxPromptLength = getMaxContextSize(extension_settings.memory.overrideResponseLength);
+    const chat = context.chat;
+    const allMessages = chat.filter(m => !m.is_system && m.mes).map(m => m.mes);
+    const messagesWordCount = allMessages.map(m => extractAllWords(m)).flat().length;
+    const averageMessageWordCount = messagesWordCount / allMessages.length;
+    const tokensPerWord = getTokenCount(allMessages.join('\n')) / messagesWordCount;
+    const wordsPerToken = 1 / tokensPerWord;
+    const maxPromptLengthWords = Math.round(maxPromptLength * wordsPerToken);
+    // How many words should pass so that messages will start be dropped out of context;
+    const wordsPerPrompt = Math.floor(maxPromptLength / tokensPerWord);
+    // How many words will be needed to fit the allowance buffer
+    const summaryPromptWords = extractAllWords(extension_settings.memory.prompt).length;
+    const promptAllowanceWords = maxPromptLengthWords - extension_settings.memory.promptWords - summaryPromptWords;
+    const maxMessagesPerSummary = extension_settings.memory.maxMessagesPerRequest || 0;
+    const additionalWords = maxMessagesPerSummary > 0 ? Math.floor(averageMessageWordCount * maxMessagesPerSummary) : Math.max(0, promptAllowanceWords);
+    const targetSummaryWords = Math.round((wordsPerPrompt / 2) + additionalWords);
+
+    console.table({
+        maxPromptLength,
+        maxPromptLengthWords,
+        promptAllowanceWords,
+        targetSummaryWords,
+        wordsPerPrompt,
+        wordsPerToken,
+        tokensPerWord,
+        messagesWordCount,
+    });
+
+    const ROUNDING = 100;
+    extension_settings.memory.promptForceWords = Math.max(1, Math.floor(targetSummaryWords / ROUNDING) * ROUNDING);
+    $('#memory_prompt_words_force').val(extension_settings.memory.promptForceWords).trigger('input');
+}
+
 async function onPromptIntervalAutoClick() {
     const context = getContext();
     const maxPromptLength = getMaxContextSize(extension_settings.memory.overrideResponseLength);
@@ -800,6 +835,7 @@ function setupListeners() {
     $('#memory_prompt_builder_raw_non_blocking').off('click').on('input', onMemoryPromptBuilderInput);
     $('#memory_prompt_restore').off('click').on('click', onMemoryPromptRestoreClick);
     $('#memory_prompt_interval_auto').off('click').on('click', onPromptIntervalAutoClick);
+    $('#memory_prompt_words_auto').off('click').on('click', onPromptForceWordsAutoClick);
     $('#memory_override_response_length').off('click').on('input', onOverrideResponseLengthInput);
     $('#memory_max_messages_per_request').off('click').on('input', onMaxMessagesPerRequestInput);
     $('#summarySettingsBlockToggle').off('click').on('click', function () {

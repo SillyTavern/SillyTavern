@@ -91,9 +91,14 @@
                             </div>
                         </label>
                         <input id="memory_prompt_interval" type="range" value="{{defaultSettings.promptInterval}}" min="{{defaultSettings.promptMinInterval}}" max="{{defaultSettings.promptMaxInterval}}" step="{{defaultSettings.promptIntervalStep}}" />
-                        <label for="memory_prompt_words_force">
-                            Update every <span id="memory_prompt_words_force_value"></span> words
-                            <small class="memory_disabled_hint">0 = disable</small>
+                        <label for="memory_prompt_words_force" class="title_restorable">
+                            <span>
+                                Update every <span id="memory_prompt_words_force_value"></span> words
+                                <small class="memory_disabled_hint">0 = disable</small>
+                            </span>
+                            <div id="memory_prompt_words_auto" title="Try to automatically adjust the interval based on the chat metrics." class="right_menu_button">
+                                <div class="fa-solid fa-wand-magic-sparkles"></div>
+                            </div>
                         </label>
                         <input id="memory_prompt_words_force" type="range" value="{{defaultSettings.promptForceWords}}" min="{{defaultSettings.promptMinForceWords}}" max="{{defaultSettings.promptMaxForceWords}}" step="{{defaultSettings.promptForceWordsStep}}" />
                         <small>If both sliders are non-zero, then both will trigger summary updates at their respective intervals.</small>
