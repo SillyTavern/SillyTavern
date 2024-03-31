@@ -37,6 +37,7 @@
 
     --fullred: rgba(255, 0, 0, 1);
     --crimson70a: rgba(100, 0, 0, 0.7);
+    --crimson-hover: rgba(150, 50, 50, 0.5);
     --okGreen70a: rgba(0, 100, 0, 0.7);
     --cobalt30a: rgba(100, 100, 255, 0.3);
     --greyCAIbg: rgb(36, 36, 37);
@@ -2080,6 +2081,7 @@ grammarly-extension {
     display: flex;
     flex-direction: column;
     overflow-y: hidden;
+    overflow-x: hidden;
 }
 
 .rm_stat_block {
@@ -2098,6 +2100,14 @@ grammarly-extension {
     aspect-ratio: 1 / 1;
     width: unset !important;
     min-width: var(--sheldWidth);
+}
+
+.horizontal_scrolling_dialogue_popup {
+    overflow-x: unset !important;
+}
+
+.vertical_scrolling_dialogue_popup {
+    overflow-y: unset !important;
 }
 
 #bulk_tag_popup_holder,
@@ -2122,9 +2132,20 @@ grammarly-extension {
 }
 
 #bulk_tag_popup_reset,
+#bulk_tag_popup_remove_mutual,
 #dialogue_popup_ok {
     background-color: var(--crimson70a);
     cursor: pointer;
+}
+
+#bulk_tag_popup_reset:hover,
+#bulk_tag_popup_remove_mutual:hover,
+#dialogue_popup_ok:hover {
+    background-color: var(--crimson-hover);
+}
+
+#bulk_tags_avatars_block {
+    max-height: 70vh;
 }
 
 #dialogue_popup_input {
@@ -3123,7 +3144,7 @@ body.big-avatars .missing-avatar {
     }
 }
 
-span.warning {
+.warning {
     color: var(--warning);
     font-weight: bolder;
 }
@@ -3866,6 +3887,7 @@ body:not(.movingUI) .drawer-content.maximized {
 .paginationjs-size-changer select {
     width: unset;
     margin: 0;
+    font-size: calc(var(--mainFontSize) * 0.85);
 }
 
 .paginationjs-pages ul li a {
@@ -3895,10 +3917,10 @@ body:not(.movingUI) .drawer-content.maximized {
 }
 
 .paginationjs-nav {
-    padding: 5px;
+    padding: 2px;
     font-size: calc(var(--mainFontSize) * .8);
     font-weight: bold;
-    width: max-content;
+    width: auto;
 }
 
 .onboarding {

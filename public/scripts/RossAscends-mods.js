@@ -27,7 +27,7 @@ import {
 
 import { LoadLocal, SaveLocal, LoadLocalBool } from './f-localStorage.js';
 import { selected_group, is_group_generating, openGroupById } from './group-chats.js';
-import { getTagKeyForEntity } from './tags.js';
+import { getTagKeyForEntity, applyTagsOnCharacterSelect } from './tags.js';
 import {
     SECRET_KEYS,
     secret_state,
@@ -252,6 +252,10 @@ async function RA_autoloadchat() {
             const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) === active_character);
             if (active_character_id !== null) {
                 await selectCharacterById(String(active_character_id));
+
+                // Do a little tomfoolery to spoof the tag selector
+                const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`)
+                applyTagsOnCharacterSelect.call(selectedCharElement);
             }
         }
 

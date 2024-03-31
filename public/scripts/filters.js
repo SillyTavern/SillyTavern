@@ -2,8 +2,8 @@ import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchPersonas, fuzzySea
 import { tag_map } from './tags.js';
 
 /**
- * The filter types.
- * @type {Object.<string, string>}
+ * The filter types
+ * @type {{ SEARCH: string, TAG: string, FOLDER: string, FAV: string, GROUP: string, WORLD_INFO_SEARCH: string, PERSONA_SEARCH: string, [key: string]: string }}
  */
 export const FILTER_TYPES = {
     SEARCH: 'search',
@@ -16,25 +16,34 @@ export const FILTER_TYPES = {
 };
 
 /**
- * The filter states.
- * @type {Object.<string, Object>}
+ * @typedef FilterState One of the filter states
+ * @property {string} key - The key of the state
+ * @property {string} class - The css class for this state
+ */
+
+/**
+ * The filter states
+ * @type {{ SELECTED: FilterState, EXCLUDED: FilterState, UNDEFINED: FilterState, [key: string]: FilterState }}
  */
 export const FILTER_STATES = {
     SELECTED: { key: 'SELECTED', class: 'selected' },
     EXCLUDED: { key: 'EXCLUDED', class: 'excluded' },
     UNDEFINED: { key: 'UNDEFINED', class: 'undefined' },
 };
+/** @type {string} the default filter state of `FILTER_STATES` */
+export const DEFAULT_FILTER_STATE = FILTER_STATES.UNDEFINED.key;
 
 /**
  * Robust check if one state equals the other. It does not care whether it's the state key or the state value object.
- * @param {Object} a First state
- * @param {Object} b Second state
+ * @param {FilterState|string} a First state
+ * @param {FilterState|string} b Second state
+ * @returns {boolean}
  */
 export function isFilterState(a, b) {
     const states = Object.keys(FILTER_STATES);
 
-    const aKey = states.includes(a) ? a : states.find(key => FILTER_STATES[key] === a);
-    const bKey = states.includes(b) ? b : states.find(key => FILTER_STATES[key] === b);
+    const aKey = typeof a == 'string' && states.includes(a) ? a : states.find(key => FILTER_STATES[key] === a);
+    const bKey = typeof b == 'string' && states.includes(b) ? b : states.find(key => FILTER_STATES[key] === b);
 
     return aKey === bKey;
 }
@@ -203,7 +212,7 @@ export class FilterHelper {
         return this.filterDataByState(data, state, isFolder);
     }
 
-    filterDataByState(data, state, filterFunc, { includeFolders } = {}) {
+    filterDataByState(data, state, filterFunc, { includeFolders = false } = {}) {
         if (isFilterState(state, FILTER_STATES.SELECTED)) {
             return data.filter(entity => filterFunc(entity) || (includeFolders && entity.type == 'tag'));
         }

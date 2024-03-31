@@ -280,7 +280,9 @@ export {
     default_ch_mes,
     extension_prompt_types,
     mesForShowdownParse,
+    characterGroupOverlay,
     printCharacters,
+    printCharactersDebounced,
     isOdd,
     countOccurrences,
 };
@@ -496,6 +498,14 @@ export let abortStatusCheck = new AbortController();
 const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), durationSaveEdit);
+
+/**
+ * Prints the character list in a debounced fashion without blocking, with a delay of 100 milliseconds.
+ * Use this function instead of a direct `printCharacters()` whenever the reprinting of the character list is not the primary focus.
+ *
+ * The printing will also always reprint all filter options of the global list, to keep them up to date.
+ */
+const printCharactersDebounced = debounce(() => { printCharacters(false); }, 100);
 
 /**
  * @enum {string} System message types
@@ -837,7 +847,7 @@ export let active_character = '';
 /** The tag of the active group. (Coincidentally also the id) */
 export let active_group = '';
 
-export const entitiesFilter = new FilterHelper(debounce(printCharacters, 100));
+export const entitiesFilter = new FilterHelper(printCharactersDebounced);
 export const personasFilter = new FilterHelper(debounce(getUserAvatars, 100));
 
 export function getRequestHeaders() {
@@ -1276,18 +1286,30 @@ function getCharacterBlock(item, id) {
     return template;
 }
 
+/**
+ * Prints the global character list, optionally doing a full refresh of the list
+ * Use this function whenever the reprinting of the character list is the primary focus, otherwise using `printCharactersDebounced` is preferred for a cleaner, non-blocking experience.
+ *
+ * The printing will also always reprint all filter options of the global list, to keep them up to date.
+ *
+ * @param {boolean} fullRefresh - If true, the list is fully refreshed and the navigation is being reset
+ */
 async function printCharacters(fullRefresh = false) {
-    if (fullRefresh) {
-        saveCharactersPage = 0;
-        printTagFilters(tag_filter_types.character);
-        printTagFilters(tag_filter_types.group_member);
-
-        await delay(1);
-    }
-
     const storageKey = 'Characters_PerPage';
     const listId = '#rm_print_characters_block';
     const entities = getEntitiesList({ doFilter: true });
+
+    let currentScrollTop = $(listId).scrollTop();
+
+    if (fullRefresh) {
+        saveCharactersPage = 0;
+        currentScrollTop = 0;
+        await delay(1);
+    }
+
+    // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
+    printTagFilters(tag_filter_types.character);
+    printTagFilters(tag_filter_types.group_member);
 
     $('#rm_print_characters_pagination').pagination({
         dataSource: entities,
@@ -1304,7 +1326,7 @@ async function printCharacters(fullRefresh = false) {
         showNavigator: true,
         callback: function (data) {
             $(listId).empty();
-            if (isBogusFolderOpen()) {
+            if (power_user.bogus_folders && isBogusFolderOpen()) {
                 $(listId).append(getBackBlock());
             }
             if (!data.length) {
@@ -1341,26 +1363,67 @@ async function printCharacters(fullRefresh = false) {
             saveCharactersPage = e;
         },
         afterRender: function () {
-            $(listId).scrollTop(0);
+            $(listId).scrollTop(currentScrollTop);
         },
     });
 
     favsToHotswap();
 }
 
+/** @typedef {object} Character - A character */
+/** @typedef {object} Group - A group */
+
+/**
+ * @typedef {object} Entity - Object representing a display entity
+ * @property {Character|Group|import('./scripts/tags.js').Tag|*} item - The item
+ * @property {string|number} id - The id
+ * @property {string} type - The type of this entity (character, group, tag)
+ * @property {Entity[]} [entities] - An optional list of entities relevant for this item
+ * @property {number} [hidden] - An optional number representing how many hidden entities this entity contains
+ */
+
+/**
+ * Converts the given character to its entity representation
+ *
+ * @param {Character} character - The character
+ * @param {string|number} id - The id of this character
+ * @returns {Entity} The entity for this character
+ */
+export function characterToEntity(character, id) {
+    return { item: character, id, type: 'character' };
+}
+
+/**
+ * Converts the given group to its entity representation
+ *
+ * @param {Group} group - The group
+ * @returns {Entity} The entity for this group
+ */
+export function groupToEntity(group) {
+    return { item: group, id: group.id, type: 'group' };
+}
+
+/**
+ * Converts the given tag to its entity representation
+ *
+ * @param {import('./scripts/tags.js').Tag} tag - The tag
+ * @returns {Entity} The entity for this tag
+ */
+export function tagToEntity(tag) {
+    return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
+}
+
+/**
+ * Builds the full list of all entities available
+ *
+ * They will be correctly marked and filtered.
+ *
+ * @param {object} param0 - Optional parameters
+ * @param {boolean} [param0.doFilter] - Whether this entity list should already be filtered based on the global filters
+ * @param {boolean} [param0.doSort] - Whether the entity list should be sorted when returned
+ * @returns {Entity[]} All entities
+ */
 export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
-    function characterToEntity(character, id) {
-        return { item: character, id, type: 'character' };
-    }
-
-    function groupToEntity(group) {
-        return { item: group, id: group.id, type: 'group' };
-    }
-
-    function tagToEntity(tag) {
-        return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
-    }
-
     let entities = [
         ...characters.map((item, index) => characterToEntity(item, index)),
         ...groups.map(item => groupToEntity(item)),
@@ -5442,7 +5505,7 @@ function buildAvatarList(block, entities, { templateId = 'inline_avatar_template
         avatarTemplate.attr('data-type', entity.type);
         avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
         avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entity.item.name);
-        avatarTemplate.attr('title', `[Character] ${entity.item.name}`);
+        avatarTemplate.attr('title', `[Character] ${entity.item.name}\nFile: ${entity.item.avatar}`);
         if (highlightFavs) {
             avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
             avatarTemplate.find('.ch_fav').val(entity.item.fav);
@@ -6900,18 +6963,19 @@ function onScenarioOverrideRemoveClick() {
  * @param {string} type
  * @param {string} inputValue - Value to set the input to.
  * @param {PopupOptions} options - Options for the popup.
- * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean }} PopupOptions - Options for the popup.
+ * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean }} PopupOptions - Options for the popup.
  * @returns
  */
-function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } = {}) {
+function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
     dialogueCloseStop = true;
     if (type) {
         popup_type = type;
     }
 
     $('#dialogue_popup').toggleClass('wide_dialogue_popup', !!wide);
-
     $('#dialogue_popup').toggleClass('large_dialogue_popup', !!large);
+    $('#dialogue_popup').toggleClass('horizontal_scrolling_dialogue_popup', !!allowHorizontalScrolling);
+    $('#dialogue_popup').toggleClass('vertical_scrolling_dialogue_popup', !!allowVerticalScrolling);
 
     $('#dialogue_popup_cancel').css('display', 'inline-block');
     switch (popup_type) {
