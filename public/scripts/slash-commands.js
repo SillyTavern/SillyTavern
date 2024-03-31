@@ -1981,6 +1981,8 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         isActive = false;
     };
     const show = (isInput = false, isForced = false) => {
+        //TODO check if isInput and isForced are both required
+        isForced = isForced || isInput;
         text = textarea.value;
         // only show with textarea in focus
         if (document.activeElement != textarea) return hide();
