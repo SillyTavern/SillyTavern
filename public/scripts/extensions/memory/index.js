@@ -137,14 +137,17 @@ async function onPromptForceWordsAutoClick() {
     // How many words will be needed to fit the allowance buffer
     const summaryPromptWords = extractAllWords(extension_settings.memory.prompt).length;
     const promptAllowanceWords = maxPromptLengthWords - extension_settings.memory.promptWords - summaryPromptWords;
+    const averageMessagesPerPrompt = Math.floor(promptAllowanceWords / averageMessageWordCount);
     const maxMessagesPerSummary = extension_settings.memory.maxMessagesPerRequest || 0;
-    const additionalWords = maxMessagesPerSummary > 0 ? Math.floor(averageMessageWordCount * maxMessagesPerSummary) : Math.max(0, promptAllowanceWords);
-    const targetSummaryWords = Math.round((wordsPerPrompt / 2) + additionalWords);
+    const targetMessagesInPrompt = maxMessagesPerSummary > 0 ? maxMessagesPerSummary : Math.max(0, averageMessagesPerPrompt);
+    const targetSummaryWords = (targetMessagesInPrompt * averageMessageWordCount) + (promptAllowanceWords / 4);
 
     console.table({
         maxPromptLength,
         maxPromptLengthWords,
         promptAllowanceWords,
+        averageMessagesPerPrompt,
+        targetMessagesInPrompt,
         targetSummaryWords,
         wordsPerPrompt,
         wordsPerToken,
@@ -171,8 +174,8 @@ async function onPromptIntervalAutoClick() {
     const promptAllowance = maxPromptLength - promptTokens - targetSummaryTokens;
     const maxMessagesPerSummary = extension_settings.memory.maxMessagesPerRequest || 0;
     const averageMessagesPerPrompt = Math.floor(promptAllowance / averageMessageTokenCount);
-    const unfitMessages = maxMessagesPerSummary > 0 ? averageMessagesPerPrompt - maxMessagesPerSummary : 0;
-    const adjustedAverageMessagesPerPrompt = Math.max(1, averageMessagesPerPrompt - (unfitMessages > 0 ? Math.ceil(unfitMessages / 2) : 0));
+    const targetMessagesInPrompt = maxMessagesPerSummary > 0 ? maxMessagesPerSummary : Math.max(0, averageMessagesPerPrompt);
+    const adjustedAverageMessagesPerPrompt = targetMessagesInPrompt + (averageMessagesPerPrompt - targetMessagesInPrompt) / 4;
 
     console.table({
         maxPromptLength,
@@ -184,9 +187,9 @@ async function onPromptIntervalAutoClick() {
         tokensPerWord,
         averageMessageTokenCount,
         averageMessagesPerPrompt,
+        targetMessagesInPrompt,
         adjustedAverageMessagesPerPrompt,
         maxMessagesPerSummary,
-        unfitMessages,
     });
 
     const ROUNDING = 5;
