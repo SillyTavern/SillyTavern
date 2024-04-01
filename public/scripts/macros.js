@@ -185,25 +185,14 @@ function getTimeSinceLastMessage() {
 }
 
 function randomReplace(input, emptyListPlaceholder = '') {
-    const randomPatternNew = /{{random\s?::\s?([^}]+)}}/gi;
-    const randomPatternOld = /{{random\s?:\s?([^}]+)}}/gi;
+    const randomPattern = /{{random\s?::?([^}]+)}}/gi;
 
-    input = input.replace(randomPatternNew, (match, listString) => {
-        //split on double colons instead of commas to allow for commas inside random items
+    input = input.replace(randomPattern, (match, listString) => {
+        // Split on either double colons or comma. If comma is the separator, we are also trimming all items.
         const list = listString.includes('::')
-            ? listString.split('::').filter(item => item.length > 0)
-            : listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
+            ? listString.split('::')
+            : listString.split(',').map(item => item.trim());
 
-        if (list.length === 0) {
-            return emptyListPlaceholder;
-        }
-        const rng = new Math.seedrandom('added entropy.', { entropy: true });
-        const randomIndex = Math.floor(rng() * list.length);
-        //trim() at the end to allow for empty random values
-        return list[randomIndex].trim();
-    });
-    input = input.replace(randomPatternOld, (match, listString) => {
-        const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
         if (list.length === 0) {
             return emptyListPlaceholder;
         }
@@ -215,25 +204,27 @@ function randomReplace(input, emptyListPlaceholder = '') {
 }
 
 function pickReplace(input, rawContent, emptyListPlaceholder = '') {
-    const pickPattern = /{{pick\s?::\s?([^}]+)}}/gi;
+    const pickPattern = /{{pick\s?::?([^}]+)}}/gi;
     const chatIdHash = getStringHash(getCurrentChatId());
     const rawContentHash = getStringHash(rawContent);
 
     return input.replace(pickPattern, (match, listString, offset) => {
+        // Split on either double colons or comma. If comma is the separator, we are also trimming all items.
         const list = listString.includes('::')
-            ? listString.split('::').filter(item => item.length > 0)
-            : listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
+            ? listString.split('::')
+            : listString.split(',').map(item => item.trim());
 
         if (list.length === 0) {
             return emptyListPlaceholder;
         }
 
+        // We build a hash seed based on: unique chat file, raw content, and the placement inside this content
+        // This allows us to get unique but repeatable picks in nearly all cases
         const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}`;
         const finalSeed = getStringHash(combinedSeedString);
         const rng = new Math.seedrandom(finalSeed);
-
         const randomIndex = Math.floor(rng() * list.length);
-        return list[randomIndex].trim();
+        return list[randomIndex];
     });
 }
 
