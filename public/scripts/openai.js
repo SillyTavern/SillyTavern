@@ -2249,8 +2249,12 @@ export class ChatCompletion {
                 continue;
             }
 
-            if (!excludeList.includes(message.identifier) && message.role === 'system' && !message.name) {
-                if (lastMessage && lastMessage.role === 'system') {
+            const shouldSquash = (message) => {
+                return !excludeList.includes(message.identifier) && message.role === 'system' && !message.name;
+            }
+
+            if (shouldSquash(message)) {
+                if (lastMessage && shouldSquash(lastMessage)) {
                     lastMessage.content += '\n' + message.content;
                     lastMessage.tokens = tokenHandler.count({ role: lastMessage.role, content: lastMessage.content });
                 }
