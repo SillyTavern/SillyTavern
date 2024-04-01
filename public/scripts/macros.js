@@ -190,7 +190,10 @@ function randomReplace(input, emptyListPlaceholder = '') {
 
     input = input.replace(randomPatternNew, (match, listString) => {
         //split on double colons instead of commas to allow for commas inside random items
-        const list = listString.split('::').filter(item => item.length > 0);
+        const list = listString.includes('::')
+            ? listString.split('::').filter(item => item.length > 0)
+            : listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
+
         if (list.length === 0) {
             return emptyListPlaceholder;
         }
