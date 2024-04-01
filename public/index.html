@@ -458,7 +458,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -471,7 +471,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -484,7 +484,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -510,20 +510,20 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,ai21,makersuite">
+                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,ai21,makersuite,cohere">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="top_k_openai" name="volume" min="0" max="200" step="1">
+                                            <input type="range" id="top_k_openai" name="volume" min="0" max="500" step="1">
                                         </div>
                                         <div class="range-block-counter">
                                             <input type="number" min="0" max="200" step="1" data-for="top_k_openai" id="top_k_counter_openai">
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom">
+                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -759,7 +759,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,mistralai,custom">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,mistralai,custom,cohere">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -2259,15 +2259,20 @@
                             Chat Completion Source
                         </h4>
                         <select id="chat_completion_source">
-                            <option value="openai">OpenAI</option>
-                            <option value="windowai">Window AI</option>
-                            <option value="openrouter">OpenRouter</option>
-                            <option value="claude">Claude</option>
-                            <option value="scale">Scale</option>
-                            <option value="ai21">AI21</option>
-                            <option value="makersuite">Google MakerSuite</option>
-                            <option value="mistralai">MistralAI</option>
-                            <option value="custom">Custom (OpenAI-compatible)</option>
+                            <optgroup>
+                                <option value="openai">OpenAI</option>
+                                <option value="custom">Custom (OpenAI-compatible)</option>
+                            </optgroup>
+                            <optgroup>
+                                <option value="ai21">AI21</option>
+                                <option value="claude">Claude</option>
+                                <option value="cohere">Cohere</option>
+                                <option value="makersuite">Google MakerSuite</option>
+                                <option value="mistralai">MistralAI</option>
+                                <option value="openrouter">OpenRouter</option>
+                                <option value="scale">Scale</option>
+                                <option value="windowai">Window AI</option>
+                            </optgroup>
                         </select>
                         <div data-newbie-hidden class="inline-drawer wide100p" data-source="openai,claude,mistralai">
                             <div class="inline-drawer-toggle inline-drawer-header">
@@ -2655,6 +2660,30 @@
                                         <option value="mistral-small-2402">mistral-small-2402</option>
                                         <option value="mistral-medium-2312">mistral-medium-2312</option>
                                         <option value="mistral-large-2402">mistral-large-2402</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </form>
+                        <form id="cohere_form" data-source="cohere" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4 data-i18n="Cohere API Key">Cohere API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_cohere" name="api_key_cohere" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_cohere"></div>
+                            </div>
+                            <div data-for="api_key_cohere" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <div>
+                                <h4 data-i18n="Cohere Model">Cohere Model</h4>
+                                <select id="model_cohere_select">
+                                    <optgroup label="Stable">
+                                        <option value="command-light">command-light</option>
+                                        <option value="command">command</option>
+                                        <option value="command-r">command-r</option>
+                                    </optgroup>
+                                    <optgroup label="Nightly">
+                                        <option value="command-light-nightly">command-light-nightly</option>
+                                        <option value="command-nightly">command-nightly</option>
                                     </optgroup>
                                 </select>
                             </div>

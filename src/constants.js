@@ -162,6 +162,7 @@ const CHAT_COMPLETION_SOURCES = {
     MAKERSUITE: 'makersuite',
     MISTRALAI: 'mistralai',
     CUSTOM: 'custom',
+    COHERE: 'cohere',
 };
 
 const UPLOADS_PATH = './uploads';

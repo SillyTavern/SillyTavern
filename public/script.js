@@ -4836,7 +4836,7 @@ function extractMessageFromData(data) {
         case 'novel':
             return data.output;
         case 'openai':
-            return data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? '';
+            return data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.text ?? '';
         default:
             return '';
     }
@@ -8186,6 +8186,11 @@ const CONNECT_API_MAP = {
         selected: 'openai',
         button: '#api_button_openai',
         source: chat_completion_sources.CUSTOM,
+    },
+    'cohere': {
+        selected: 'cohere',
+        button: '#api_button_openai',
+        source: chat_completion_sources.COHERE,
     },
     'infermaticai': {
         selected: 'textgenerationwebui',
