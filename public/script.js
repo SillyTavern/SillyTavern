@@ -4836,7 +4836,7 @@ function extractMessageFromData(data) {
         case 'novel':
             return data.output;
         case 'openai':
-            return data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? '';
+            return data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.text ?? '';
         default:
             return '';
     }
@@ -8187,6 +8187,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.CUSTOM,
     },
+    'cohere': {
+        selected: 'cohere',
+        button: '#api_button_openai',
+        source: chat_completion_sources.COHERE,
+    },
     'infermaticai': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -8587,7 +8592,7 @@ jQuery(async function () {
         $('#groupCurrentMemberListToggle .inline-drawer-icon').trigger('click');
     }, 200);
 
-    $('#chat').on('mousewheel touchstart', () => {
+    $('#chat').on('wheel touchstart', () => {
         scrollLock = true;
     });
 

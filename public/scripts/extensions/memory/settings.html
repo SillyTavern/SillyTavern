@@ -17,7 +17,9 @@
 
                 <div class="flex-container justifyspacebetween alignitemscenter">
                     <span class="flex1">Current summary:</span>
-                    <div id="memory_restore" class="menu_button flex1 margin0"><span>Restore Previous</span></div>
+                    <div id="memory_restore" class="menu_button flex1 margin0">
+                        <span>Restore Previous</span>
+                    </div>
                 </div>
 
                 <textarea id="memory_contents" class="text_pole textarea_compact" rows="6" placeholder="Summary will be generated here..."></textarea>
@@ -27,7 +29,10 @@
                         <span>Summarize now</span>
                     </div>
                     <label for="memory_frozen" title="Disable automatic summary updates. While paused, the summary remains as-is. You can still force an update by pressing the Summarize now button (which is only available with the Main API)." data-i18n="[title]Disable automatic summary updates. While paused, the summary remains as-is. You can still force an update by pressing the Summarize now button (which is only available with the Main API)."><input id="memory_frozen" type="checkbox" />Pause</label>
-                    <label for="memory_skipWIAN" title="Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN." data-i18n="[title]Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN."><input id="memory_skipWIAN" type="checkbox" />No WI/AN</label>
+                    <label data-summary-source="main" for="memory_skipWIAN" title="Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN." data-i18n="[title]Omit World Info and Author's Note from text to be summarized. Only has an effect when using the Main API. The Extras API always omits WI/AN.">
+                        <input id="memory_skipWIAN" type="checkbox" />
+                        <span>No WI/AN</span>
+                    </label>
                 </div>
                 <div class="memory_contents_controls">
                     <div id="summarySettingsBlockToggle" class="menu_button menu_button_icon" title="Edit summarization prompt, insertion position, etc.">
@@ -86,9 +91,14 @@
                             </div>
                         </label>
                         <input id="memory_prompt_interval" type="range" value="{{defaultSettings.promptInterval}}" min="{{defaultSettings.promptMinInterval}}" max="{{defaultSettings.promptMaxInterval}}" step="{{defaultSettings.promptIntervalStep}}" />
-                        <label for="memory_prompt_words_force">
-                            Update every <span id="memory_prompt_words_force_value"></span> words
-                            <small class="memory_disabled_hint">0 = disable</small>
+                        <label for="memory_prompt_words_force" class="title_restorable">
+                            <span>
+                                Update every <span id="memory_prompt_words_force_value"></span> words
+                                <small class="memory_disabled_hint">0 = disable</small>
+                            </span>
+                            <div id="memory_prompt_words_auto" title="Try to automatically adjust the interval based on the chat metrics." class="right_menu_button">
+                                <div class="fa-solid fa-wand-magic-sparkles"></div>
+                            </div>
                         </label>
                         <input id="memory_prompt_words_force" type="range" value="{{defaultSettings.promptForceWords}}" min="{{defaultSettings.promptMinForceWords}}" max="{{defaultSettings.promptMaxForceWords}}" step="{{defaultSettings.promptForceWordsStep}}" />
                         <small>If both sliders are non-zero, then both will trigger summary updates at their respective intervals.</small>
