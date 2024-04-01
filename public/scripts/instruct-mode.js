@@ -332,6 +332,10 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
         prefix = prefix.replace(/{{name}}/gi, name || 'System');
     }
 
+    if (!suffix && power_user.instruct.wrap) {
+        suffix = '\n';
+    }
+
     const separator = power_user.instruct.wrap ? '\n' : '';
     const textArray = includeNames ? [prefix, `${name}: ${mes}` + suffix] : [prefix, mes + suffix];
     const text = textArray.filter(x => x).join(separator);
@@ -386,6 +390,14 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
 
         inputPrefix = inputPrefix.replace(/{{name}}/gi, name1);
         outputPrefix = outputPrefix.replace(/{{name}}/gi, name2);
+
+        if (!inputSuffix && power_user.instruct.wrap) {
+            inputSuffix = '\n';
+        }
+
+        if (!outputSuffix && power_user.instruct.wrap) {
+            outputSuffix = '\n';
+        }
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
