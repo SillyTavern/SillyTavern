@@ -122,15 +122,24 @@ async function* parseStreamData(json) {
     // MakerSuite
     else if (Array.isArray(json.candidates)) {
         for (let i = 0; i < json.candidates.length; i++) {
-            if (typeof json.candidates[i].content === 'string' && json.candidates[i].content.length > 0) {
-                for (let j = 0; j < json.candidates[i].content.length; j++) {
-                    const str = json.candidates[i].content[j];
-                    const candidatesClone = structuredClone(json.candidates[i]);
-                    candidatesClone[i].content = str;
-                    yield {
-                        data: { ...json, candidates: candidatesClone },
-                        chunk: str,
-                    };
+            const isNotPrimary = json.candidates?.[0]?.index > 0;
+            if (isNotPrimary || json.candidates.length === 0) {
+                return null;
+            }
+            if (typeof json.candidates[0].content === 'object' && Array.isArray(json.candidates[i].content.parts)) {
+                for (let j = 0; j < json.candidates[i].content.parts.length; j++) {
+                    if (typeof json.candidates[i].content.parts[j].text === 'string') {
+                        for (let k = 0; k < json.candidates[i].content.parts[j].text.length; k++) {
+                            const str = json.candidates[i].content.parts[j].text[k];
+                            const candidateClone = structuredClone(json.candidates[0]);
+                            candidateClone.content.parts[j].text = str;
+                            const candidates = [candidateClone];
+                            yield {
+                                data: { ...json, candidates },
+                                chunk: str,
+                            };
+                        }
+                    }
                 }
             }
         }
