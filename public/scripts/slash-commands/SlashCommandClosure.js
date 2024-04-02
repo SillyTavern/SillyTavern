@@ -11,7 +11,7 @@ export class SlashCommandClosure {
     /**@type {Map<string,string|SlashCommandClosure>}*/ arguments = {};
     // @ts-ignore
     /**@type {Map<string,string|SlashCommandClosure>}*/ providedArguments = {};
-    /**@type {(SlashCommandExecutor|SlashCommandClosureExecutor)[]}*/ executorList = [];
+    /**@type {SlashCommandExecutor[]}*/ executorList = [];
     /**@type {String}*/ keptText;
 
     constructor(parent) {

@@ -52,6 +52,8 @@ import { textgen_types, textgenerationwebui_settings } from './textgen-settings.
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
 import { debounce, delay, escapeRegex, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
+import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
+import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 export {
     executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -523,21 +525,35 @@ function getMessagesCallback(args, value) {
 
 async function runCallback(args, name) {
     if (!name) {
-        toastr.warning('No name provided for /run command');
-        return '';
+        throw new Error('No name provided for /run command');
+    }
+
+    /**@type {SlashCommandScope} */
+    const scope = args._scope;
+    if (scope.existsVariable(name)) {
+        const closure = scope.getVariable(name);
+        if (!(closure instanceof SlashCommandClosure)) {
+            throw new Error(`"${name}" is not callable.`);
+        }
+        closure.scope.parent = scope;
+        Object.keys(closure.arguments).forEach(key=>{
+            if (Object.keys(args).includes(key)) {
+                closure.providedArguments[key] = args[key];
+            }
+        });
+        const result = await closure.execute();
+        return result.pipe;
     }
 
     if (typeof window['executeQuickReplyByName'] !== 'function') {
-        toastr.warning('Quick Reply extension is not loaded');
-        return '';
+        throw new Error('Quick Reply extension is not loaded');
     }
 
     try {
         name = name.trim();
         return await window['executeQuickReplyByName'](name, args);
     } catch (error) {
-        toastr.error(`Error running Quick Reply "${name}": ${error.message}`, 'Error');
-        return '';
+        throw new Error(`Error running Quick Reply "${name}": ${error.message}`, 'Error');
     }
 }
 

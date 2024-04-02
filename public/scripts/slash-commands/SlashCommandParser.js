@@ -233,9 +233,6 @@ export class SlashCommandParser {
             this.discardWhitespace();
         }
         while (!this.testClosureEnd()) {
-            if (this.testClosureCall()) {
-                closure.executorList.push(this.parseClosureCall());
-            }
             if (this.testCommand()) {
                 closure.executorList.push(this.parseCommand());
             } else {
@@ -244,55 +241,13 @@ export class SlashCommandParser {
             while (/\s|\|/.test(this.char)) this.take(); // discard whitespace and pipe (command separator)
         }
         this.take(2); // discard closing :}
-        this.discardWhitespace();
-        if (this.char == '(') {
-            this.take(); // discard opening (
+        if (this.char == '(' && this.ahead[0] == ')') {
+            this.take(2); // discard ()
             closure.executeNow = true;
-            this.discardWhitespace();
-            while (this.testNamedArgument()) {
-                const arg = this.parseNamedArgument();
-                if (!Object.keys(closure.arguments).includes(arg.key)) throw new SlashCommandParserError(`Invalid named argument for closure "${arg.key}" at position ${this.index - 2}`, this.text, this.index);
-                closure.providedArguments[arg.key] = arg.value;
-                this.discardWhitespace();
-            }
-            // @ts-ignore
-            if (this.char != ')') throw new SlashCommandParserError(`Missing closing ")" at position ${this.index - 2}.`, this.text, this.index);
-            this.take(); // discard closing )
         }
-        while (/\s/.test(this.char)) this.take(); // discard trailing whitespace
+        this.discardWhitespace(); // discard trailing whitespace
         this.scope = closure.scope.parent;
         return closure;
-    }
-
-    testClosureCall() {
-        return this.char == '/'
-            && this.behind.slice(-1) != '\\'
-            && !['/', '#'].includes(this.ahead[0])
-            && /^\S+\(/.test(this.ahead)
-        ;
-    }
-    testClosureCallEnd() {
-        return this.char == ')' && this.behind.slice(-1) != '\\';
-    }
-    parseClosureCall() {
-        this.take(); // discard /
-        let name = '';
-        while (!/\s|\(/.test(this.char)) name += this.take(); // take chars until opening (
-        this.take(); // discard opening (
-        const executor = new SlashCommandClosureExecutor();
-        executor.name = name;
-        this.discardWhitespace();
-        while (this.testNamedArgument()) {
-            const arg = this.parseNamedArgument();
-            executor.providedArguments[arg.key] = arg.value;
-            this.discardWhitespace();
-        }
-        if (this.testClosureCallEnd()) {
-            this.take(); // discard closing )
-            return executor;
-        } else {
-            throw new SlashCommandParserError(`Unexpected end of closure call at position ${this.index - 2}`, this.text, this.index);
-        }
     }
 
     testCommand() {
