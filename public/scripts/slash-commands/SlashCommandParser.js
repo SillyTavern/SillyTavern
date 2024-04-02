@@ -1,5 +1,6 @@
 import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
+import { SlashCommandClosureExecutor } from './SlashCommandClosureExecutor.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 import { SlashCommandParserError } from './SlashCommandParserError.js';
 // eslint-disable-next-line no-unused-vars
@@ -232,6 +233,9 @@ export class SlashCommandParser {
             this.discardWhitespace();
         }
         while (!this.testClosureEnd()) {
+            if (this.testClosureCall()) {
+                closure.executorList.push(this.parseClosureCall());
+            }
             if (this.testCommand()) {
                 closure.executorList.push(this.parseCommand());
             } else {
@@ -258,6 +262,37 @@ export class SlashCommandParser {
         while (/\s/.test(this.char)) this.take(); // discard trailing whitespace
         this.scope = closure.scope.parent;
         return closure;
+    }
+
+    testClosureCall() {
+        return this.char == '/'
+            && this.behind.slice(-1) != '\\'
+            && !['/', '#'].includes(this.ahead[0])
+            && /^\S+\(/.test(this.ahead)
+        ;
+    }
+    testClosureCallEnd() {
+        return this.char == ')' && this.behind.slice(-1) != '\\';
+    }
+    parseClosureCall() {
+        this.take(); // discard /
+        let name = '';
+        while (!/\s|\(/.test(this.char)) name += this.take(); // take chars until opening (
+        this.take(); // discard opening (
+        const executor = new SlashCommandClosureExecutor();
+        executor.name = name;
+        this.discardWhitespace();
+        while (this.testNamedArgument()) {
+            const arg = this.parseNamedArgument();
+            executor.providedArguments[arg.key] = arg.value;
+            this.discardWhitespace();
+        }
+        if (this.testClosureCallEnd()) {
+            this.take(); // discard closing )
+            return executor;
+        } else {
+            throw new SlashCommandParserError(`Unexpected end of closure call at position ${this.index - 2}`, this.text, this.index);
+        }
     }
 
     testCommand() {
