@@ -740,6 +740,10 @@ export function registerVariableCommands() {
     registerSlashCommand('len', (_, value) => lenValuesCallback(value), [], '<span class="monospace">(a)</span> – gets the length of a value and passes the result down the pipe, can use variable names, e.g. <tt>/len i</tt>', true, true);
     registerSlashCommand('rand', (args, value) => randValuesCallback(Number(args.from ?? 0), Number(args.to ?? (value.length ? value : 1)), args), [], '<span class="monospace">(from=number=0 to=number=1 round=round|ceil|floor)</span> – returns a random number between from and to, e.g. <tt>/rand</tt> or <tt>/rand 10</tt> or <tt>/rand from=5 to=10</tt>', true, true);
     registerSlashCommand('var', (args, value) => {
+        if (Array.isArray(value)) {
+            args._scope.setVariable(value[0], value[1]);
+            return value[1];
+        }
         if (value.includes(' ')) {
             const key = value.split(' ')[0];
             const val = value.split(' ').slice(1).join(' ');
@@ -749,6 +753,10 @@ export function registerVariableCommands() {
         return args._scope.getVariable(value, args.index);
     }, [], '<span class="monospace">[optional index] (variableName) (optional variable value)</span> – Get or set a variable. Example: <code>/let x foo | /var x foo bar | /var x | /echo</code>', true, true);
     registerSlashCommand('let', (args, value) => {
+        if (Array.isArray(value)) {
+            args._scope.letVariable(value[0], value[1]);
+            return value[1];
+        }
         if (value.includes(' ')) {
             const key = value.split(' ')[0];
             const val = value.split(' ').slice(1).join(' ');
