@@ -78,9 +78,6 @@ class EventSourceStream {
     }
 }
 
-const defaultDelayMs = 20;
-const punctuationDelayMs = 500;
-
 /**
  * Gets a delay based on the character.
  * @param {string} s The character.
@@ -90,6 +87,10 @@ function getDelay(s) {
     if (!s) {
         return 0;
     }
+
+    const speedFactor = Math.max(100 - power_user.smooth_streaming_speed, 1);
+    const defaultDelayMs = speedFactor * 0.4;
+    const punctuationDelayMs = defaultDelayMs * 25;
 
     if ([',', '\n'].includes(s)) {
         return punctuationDelayMs / 2;
