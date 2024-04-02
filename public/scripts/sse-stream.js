@@ -90,11 +90,11 @@ function getDelay(s) {
         return 0;
     }
 
-    if (s == ',') {
+    if ([',', '\n'].includes(s)) {
         return punctuationDelayMs / 2;
     }
 
-    if (['.', '!', '?', '\n'].includes(s)) {
+    if (['.', '!', '?'].includes(s)) {
         return punctuationDelayMs;
     }
 
