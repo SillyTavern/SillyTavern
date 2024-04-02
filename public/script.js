@@ -8248,8 +8248,7 @@ const CONNECT_API_MAP = {
 
 async function selectContextCallback(_, name) {
     if (!name) {
-        toastr.warning('Context preset name is required');
-        return '';
+        return power_user.context.preset;
     }
 
     const contextNames = context_presets.map(preset => preset.name);
@@ -8268,8 +8267,7 @@ async function selectContextCallback(_, name) {
 
 async function selectInstructCallback(_, name) {
     if (!name) {
-        toastr.warning('Instruct preset name is required');
-        return '';
+        return power_user.instruct.preset;
     }
 
     const instructNames = instruct_presets.map(preset => preset.name);
