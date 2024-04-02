@@ -3033,8 +3033,8 @@ function saveResponseLength(api, responseLength) {
         oldValue = oai_settings.openai_max_tokens;
         oai_settings.openai_max_tokens = responseLength;
     } else {
-        oldValue = max_context;
-        max_context = responseLength;
+        oldValue = amount_gen;
+        amount_gen = responseLength;
     }
     return oldValue;
 }
@@ -3049,7 +3049,7 @@ function restoreResponseLength(api, responseLength) {
     if (api === 'openai') {
         oai_settings.openai_max_tokens = responseLength;
     } else {
-        max_context = responseLength;
+        amount_gen = responseLength;
     }
 }
 
