@@ -358,10 +358,10 @@ async function ifCallback(args, command) {
     const result = evalBoolean(rule, a, b);
 
     if (result && command) {
-        if (command instanceof SlashCommandClosure) return await command.execute();
+        if (command instanceof SlashCommandClosure) return (await command.execute()).pipe;
         return await executeSubCommands(command, args._scope);
     } else if (!result && args.else && ((typeof args.else === 'string' && args.else !== '') || args.else instanceof SlashCommandClosure)) {
-        if (args.else instanceof SlashCommandClosure) return await args.else.execute(args._scope);
+        if (args.else instanceof SlashCommandClosure) return (await args.else.execute(args._scope)).pipe;
         return await executeSubCommands(args.else, args._scope);
     }
 
