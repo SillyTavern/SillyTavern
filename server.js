@@ -481,7 +481,7 @@ const setupTasks = async function () {
     console.log(version.gitBranch ? `Running '${version.gitBranch}' (${version.gitRevision}) - ${version.commitDate}` : '');
     if (version.gitBranch && !version.isLatest && ['staging', 'release'].includes(version.gitBranch)) {
         console.log('INFO: Currently not on the latest commit.');
-        console.log(`      Run 'git pull' to upate. If you have any conflicts, run 'git reset --hard' and 'git pull' to reset your branch.`)
+        console.log('      Run \'git pull\' to update. If you have any merge conflicts, run \'git reset --hard\' and \'git pull\' to reset your branch.');
     }
     console.log();
 
