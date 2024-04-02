@@ -18,12 +18,13 @@ export class SlashCommandClosure {
         this.scope = new SlashCommandScope(parent);
     }
 
-    substituteParams(text) {
+    substituteParams(text, scope = null) {
+        scope = scope ?? this.scope;
         text = substituteParams(text)
-            .replace(/{{pipe}}/g, this.scope.pipe)
-            .replace(/{{var::(\w+?)}}/g, (_, key)=>this.scope.getVariable(key))
+            .replace(/{{pipe}}/g, scope.pipe)
+            .replace(/{{var::(\w+?)}}/g, (_, key)=>scope.getVariable(key))
         ;
-        for (const { key, value } of this.scope.macroList) {
+        for (const { key, value } of scope.macroList) {
             text = text.replace(new RegExp(`{{${key}}}`), value);
         }
         return text;
@@ -89,7 +90,7 @@ export class SlashCommandClosure {
                     v = closure;
                 }
             } else {
-                v = this.substituteParams(v);
+                v = this.substituteParams(v, this.scope.parent);
             }
             // unescape value
             if (typeof v == 'string') {
