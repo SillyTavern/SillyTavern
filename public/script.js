@@ -4059,6 +4059,10 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                 streamingProcessor = null;
                 triggerAutoContinue(messageChunk, isImpersonate);
+                return Object.defineProperties(new String(getMessage), {
+                    'messageChunk': { value: messageChunk },
+                    'fromStream': { value: true },
+                });
             }
         } else {
             return await sendGenerationRequest(type, generate_data);
@@ -4069,6 +4073,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     async function onSuccess(data) {
         if (!data) return;
+
+        if (data?.fromStream) {
+            return data;
+        }
+
         let messageChunk = '';
 
         if (data.error) {
@@ -4178,6 +4187,9 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         if (type !== 'quiet') {
             triggerAutoContinue(messageChunk, isImpersonate);
         }
+
+        // Don't break the API chain that expects a single string in return
+        return Object.defineProperty(new String(getMessage), 'messageChunk', { value: messageChunk });
     }
 
     function onError(exception) {
@@ -4272,57 +4284,81 @@ export function getNextMessageId(type) {
 }
 
 /**
- *
- * @param {string} messageChunk
- * @param {boolean} isImpersonate
- * @returns {void}
+ * Determines if the message should be auto-continued.
+ * @param {string} messageChunk Current message chunk
+ * @param {boolean} isImpersonate Is the user impersonation
+ * @returns {boolean} Whether the message should be auto-continued
+ */
+export function shouldAutoContinue(messageChunk, isImpersonate) {
+    if (!power_user.auto_continue.enabled) {
+        console.debug('Auto-continue is disabled by user.');
+        return false;
+    }
+
+    if (typeof messageChunk !== 'string') {
+        console.debug('Not triggering auto-continue because message chunk is not a string');
+        return false;
+    }
+
+    if (isImpersonate) {
+        console.log('Continue for impersonation is not implemented yet');
+        return false;
+    }
+
+    if (is_send_press) {
+        console.debug('Auto-continue is disabled because a message is currently being sent.');
+        return false;
+    }
+
+    if (power_user.auto_continue.target_length <= 0) {
+        console.log('Auto-continue target length is 0, not triggering auto-continue');
+        return false;
+    }
+
+    if (main_api === 'openai' && !power_user.auto_continue.allow_chat_completions) {
+        console.log('Auto-continue for OpenAI is disabled by user.');
+        return false;
+    }
+
+    const textareaText = String($('#send_textarea').val());
+    const USABLE_LENGTH = 5;
+
+    if (textareaText.length > 0) {
+        console.log('Not triggering auto-continue because user input is not empty');
+        return false;
+    }
+
+    if (messageChunk.trim().length > USABLE_LENGTH && chat.length) {
+        const lastMessage = chat[chat.length - 1];
+        const messageLength = getTokenCount(lastMessage.mes);
+        const shouldAutoContinue = messageLength < power_user.auto_continue.target_length;
+
+        if (shouldAutoContinue) {
+            console.log(`Triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}. Message chunk: ${messageChunk}`);
+            return true;
+        } else {
+            console.log(`Not triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}`);
+            return false;
+        }
+    } else {
+        console.log('Last generated chunk was empty, not triggering auto-continue');
+        return false;
+    }
+}
+
+/**
+ * Triggers auto-continue if the message meets the criteria.
+ * @param {string} messageChunk Current message chunk
+ * @param {boolean} isImpersonate Is the user impersonation
  */
 export function triggerAutoContinue(messageChunk, isImpersonate) {
     if (selected_group) {
-        console.log('Auto-continue is disabled for group chat');
+        console.debug('Auto-continue is disabled for group chat');
         return;
     }
 
-    if (power_user.auto_continue.enabled && !is_send_press) {
-        if (power_user.auto_continue.target_length <= 0) {
-            console.log('Auto-continue target length is 0, not triggering auto-continue');
-            return;
-        }
-
-        if (main_api === 'openai' && !power_user.auto_continue.allow_chat_completions) {
-            console.log('Auto-continue for OpenAI is disabled by user.');
-            return;
-        }
-
-        if (isImpersonate) {
-            console.log('Continue for impersonation is not implemented yet');
-            return;
-        }
-
-        const textareaText = String($('#send_textarea').val());
-        const USABLE_LENGTH = 5;
-
-        if (textareaText.length > 0) {
-            console.log('Not triggering auto-continue because user input is not empty');
-            return;
-        }
-
-        if (messageChunk.trim().length > USABLE_LENGTH && chat.length) {
-            const lastMessage = chat[chat.length - 1];
-            const messageLength = getTokenCount(lastMessage.mes);
-            const shouldAutoContinue = messageLength < power_user.auto_continue.target_length;
-
-            if (shouldAutoContinue) {
-                console.log(`Triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}. Message chunk: ${messageChunk}`);
-                $('#option_continue').trigger('click');
-            } else {
-                console.log(`Not triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}`);
-                return;
-            }
-        } else {
-            console.log('Last generated chunk was empty, not triggering auto-continue');
-            return;
-        }
+    if (shouldAutoContinue(messageChunk, isImpersonate)) {
+        $('#option_continue').trigger('click');
     }
 }
 

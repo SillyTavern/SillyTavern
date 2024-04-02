@@ -69,6 +69,7 @@ import {
     loadItemizedPrompts,
     animation_duration,
     depth_prompt_role_default,
+    shouldAutoContinue,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -678,9 +679,10 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         await delay(1);
     }
 
-    const group = groups.find((x) => x.id === selected_group);
-    let typingIndicator = $('#chat .typing_indicator');
+    /** @type {any} Caution: JS war crimes ahead */
     let textResult = '';
+    let typingIndicator = $('#chat .typing_indicator');
+    const group = groups.find((x) => x.id === selected_group);
 
     if (!group || !Array.isArray(group.members) || !group.members.length) {
         sendSystemMessage(system_message_types.EMPTY, '', { isSmallSys: true });
@@ -778,8 +780,15 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             }
 
             // Wait for generation to finish
-            const generateFinished = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
-            textResult = await generateFinished;
+            textResult = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
+            let messageChunk = textResult?.messageChunk;
+
+            if (messageChunk) {
+                while (shouldAutoContinue(messageChunk, type === 'impersonate')) {
+                    textResult = await Generate('continue', { automatic_trigger: by_auto_mode, ...(params || {}) });
+                    messageChunk = textResult?.messageChunk;
+                }
+            }
         }
     } finally {
         typingIndicator.hide();
