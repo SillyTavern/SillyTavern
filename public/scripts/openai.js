@@ -818,18 +818,20 @@ function populateDialogueExamples(prompts, chatCompletion, messageExamples) {
 
             if (chatCompletion.canAfford(newExampleChat)) chatCompletion.insert(newExampleChat, 'dialogueExamples');
 
-            dialogue.forEach((prompt, promptIndex) => {
+            for (let promptIndex = 0; promptIndex < dialogue.length; promptIndex++) {
+                const prompt = dialogue[promptIndex];
                 const role = 'system';
                 const content = prompt.content || '';
                 const identifier = `dialogueExamples ${dialogueIndex}-${promptIndex}`;
 
                 const chatMessage = new Message(role, content, identifier);
                 chatMessage.setName(prompt.name);
-                if (chatCompletion.canAfford(chatMessage)) {
-                    chatCompletion.insert(chatMessage, 'dialogueExamples');
-                    examplesAdded++;
+                if (!chatCompletion.canAfford(chatMessage)) {
+                    break;
                 }
-            });
+                chatCompletion.insert(chatMessage, 'dialogueExamples');
+                examplesAdded++;
+            }
 
             if (0 === examplesAdded) {
                 chatCompletion.removeLastFrom('dialogueExamples');
