@@ -238,6 +238,7 @@ export class SmoothEventSourceStream extends EventSourceStream {
                 const event = chunk;
                 const data = event.data;
                 try {
+                    const hasFocus = document.hasFocus();
                     const json = JSON.parse(data);
 
                     if (!json) {
@@ -251,7 +252,7 @@ export class SmoothEventSourceStream extends EventSourceStream {
                             return controller.enqueue(event);
                         }
 
-                        await delay(getDelay(lastStr));
+                        hasFocus && await delay(getDelay(lastStr));
                         controller.enqueue(new MessageEvent(event.type, { data: JSON.stringify(parsed.data) }));
                         lastStr = parsed.chunk;
                     }
