@@ -416,6 +416,7 @@ export const event_types = {
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
     CHARACTER_DUPLICATED: 'character_duplicated',
+    SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
 };
 
 export const eventSource = new EventEmitter();

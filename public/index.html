@@ -3618,6 +3618,24 @@
                                         </div>
                                     </div>
                                 </div>
+                                <label class="checkbox_label flexWrap" for="smooth_streaming">
+                                    <input id="smooth_streaming" type="checkbox" />
+                                    <div class="flex-container alignItemsBaseline">
+                                        <span data-i18n="Smooth Streaming">
+                                            Smooth Streaming
+                                        </span>
+                                        <i class="fa-solid fa-flask" title="Experimental feature. May not work for all backends."></i>
+                                    </div>
+                                    <div id="smooth_streaming_speed_control" class="flexBasis100p wide100p">
+                                        <small class="flex justifyCenter" data-i18n="Speed">Speed</small>
+                                        <input type="range" id="smooth_streaming_speed" name="smooth_streaming_speed" min="0" max="100" step="10" value="50">
+                                        <div class="slider_hint">
+                                            <span data-i18n="Slow">Slow</span>
+                                            <span data-i18n=""></span>
+                                            <span data-i18n="Slow">Fast</span>
+                                        </div>
+                                    </div>
+                                </label>
                             </div>
                         </div>
                     </div>
