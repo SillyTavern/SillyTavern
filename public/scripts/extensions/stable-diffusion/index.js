@@ -1260,7 +1260,18 @@ async function loadAutoSamplers() {
 
 async function loadDrawthingsSamplers() {
     // The app developer doesn't provide an API to get these yet
-    return ["UniPC", "DPM++ 2M Karras", "Euler a", "DPM++ SDE Karras", "PLMS", "DDIM", "LCM", "Euler A Substep", "DPM++ SDE Substep", "TCD"];
+    return [
+        'UniPC',
+        'DPM++ 2M Karras',
+        'Euler a',
+        'DPM++ SDE Karras',
+        'PLMS',
+        'DDIM',
+        'LCM',
+        'Euler A Substep',
+        'DPM++ SDE Substep',
+        'TCD',
+    ];
 }
 
 async function loadVladSamplers() {
@@ -1490,11 +1501,11 @@ async function loadDrawthingsModels() {
             extension_settings.sd.model = currentModel;
         }
 
-        const data = [{value: currentModel, text: currentModel}];
+        const data = [{ value: currentModel, text: currentModel }];
 
         return data;
     } catch (error) {
-        console.log("Error loading DrawThings API models:", error);
+        console.log('Error loading DrawThings API models:', error);
         return [];
     }
 }
@@ -1817,7 +1828,10 @@ function getRawLastMessage() {
                 continue;
             }
 
-            return message.mes;
+            return {
+                mes: message.mes,
+                original_avatar: message.original_avatar,
+            };
         }
 
         toastr.warning('No usable messages found.', 'Image Generation');
@@ -1825,10 +1839,17 @@ function getRawLastMessage() {
     };
 
     const context = getContext();
-    const lastMessage = getLastUsableMessage(),
-        characterDescription = context.characters[context.characterId].description,
-        situation = context.characters[context.characterId].scenario;
-    return `((${processReply(lastMessage)})), (${processReply(situation)}:0.7), (${processReply(characterDescription)}:0.5)`;
+    const lastMessage = getLastUsableMessage();
+    const character = context.groupId
+        ? context.characters.find(c => c.avatar === lastMessage.original_avatar)
+        : context.characters[context.characterId];
+
+    if (!character) {
+        console.debug('Character not found, using raw message.');
+        return processReply(lastMessage.mes);
+    }
+
+    return `((${processReply(lastMessage.mes)})), (${processReply(character.scenario)}:0.7), (${processReply(character.description)}:0.5)`;
 }
 
 async function generatePicture(args, trigger, message, callback) {
@@ -2900,7 +2921,7 @@ jQuery(async () => {
     $('#sd_novel_anlas_guard').on('input', onNovelAnlasGuardInput);
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
     $('#sd_novel_sm').on('input', onNovelSmInput);
-    $('#sd_novel_sm_dyn').on('input', onNovelSmDynInput);;
+    $('#sd_novel_sm_dyn').on('input', onNovelSmDynInput);
     $('#sd_comfy_validate').on('click', validateComfyUrl);
     $('#sd_comfy_url').on('input', onComfyUrlInput);
     $('#sd_comfy_workflow').on('change', onComfyWorkflowChange);
