@@ -565,12 +565,13 @@ jQuery(function () {
     });
 
     $('#tabby_json_schema').on('input', function () {
-        const json_schema_string = $(this).val();
+        const json_schema_string = String($(this).val());
 
-        // Ignore errors from here
         try {
             settings.json_schema = JSON.parse(json_schema_string ?? '{}');
-        } catch {}
+        } catch {
+            // Ignore errors from here
+        }
         saveSettingsDebounced();
     });
 
@@ -770,8 +771,8 @@ function setSettingByName(setting, value, trigger) {
     }
 
     if ('json_schema' === setting) {
-        settings.json_schema = value ?? {}
-        $('#tabby_json_schema').text(JSON.stringify(settings.json_schema, null, 2))
+        settings.json_schema = value ?? {};
+        $('#tabby_json_schema').val(JSON.stringify(settings.json_schema, null, 2));
         return;
     }
 
