@@ -118,6 +118,7 @@ let power_user = {
     markdown_escape_strings: '',
     chat_truncation: 100,
     streaming_fps: 30,
+    smooth_streaming: false,
 
     ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
@@ -1544,6 +1545,8 @@ function loadPowerUserSettings(settings, data) {
     $('#streaming_fps').val(power_user.streaming_fps);
     $('#streaming_fps_counter').val(power_user.streaming_fps);
 
+    $('#smooth_streaming').prop('checked', power_user.smooth_streaming);
+
     $('#font_scale').val(power_user.font_scale);
     $('#font_scale_counter').val(power_user.font_scale);
 
@@ -2938,6 +2941,11 @@ $(document).ready(() => {
     $('#streaming_fps').on('input', function () {
         power_user.streaming_fps = Number($('#streaming_fps').val());
         $('#streaming_fps_counter').val(power_user.streaming_fps);
+        saveSettingsDebounced();
+    });
+
+    $('#smooth_streaming').on('input', function () {
+        power_user.smooth_streaming = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

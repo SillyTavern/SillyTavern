@@ -9,7 +9,7 @@ import {
 import {
     power_user,
 } from './power-user.js';
-import EventSourceStream from './sse-stream.js';
+import { getEventSourceStream } from './sse-stream.js';
 import { getSortableDelay } from './utils.js';
 
 export const kai_settings = {
@@ -174,7 +174,7 @@ export async function generateKoboldWithStreaming(generate_data, signal) {
         tryParseStreamingError(response, await response.text());
         throw new Error(`Got response status ${response.status}`);
     }
-    const eventStream = new EventSourceStream();
+    const eventStream = getEventSourceStream();
     response.body.pipeThrough(eventStream);
     const reader = eventStream.readable.getReader();
 
