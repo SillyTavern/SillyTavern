@@ -170,7 +170,20 @@ async function* parseStreamData(json) {
         if (isNotPrimary || json.choices.length === 0) {
             return null;
         }
-        if (typeof json.choices[0].delta === 'object') {
+
+        if (typeof json.choices[0].text === 'string' && json.choices[0].text.length > 0) {
+            for (let j = 0; j < json.choices[0].text.length; j++) {
+                const str = json.choices[0].text[j];
+                const choiceClone = structuredClone(json.choices[0]);
+                choiceClone.text = str;
+                const choices = [choiceClone];
+                yield {
+                    data: { ...json, choices },
+                    chunk: str,
+                };
+            }
+        }
+        else if (typeof json.choices[0].delta === 'object') {
             if (typeof json.choices[0].delta.text === 'string' && json.choices[0].delta.text.length > 0) {
                 for (let j = 0; j < json.choices[0].delta.text.length; j++) {
                     const str = json.choices[0].delta.text[j];
@@ -182,7 +195,8 @@ async function* parseStreamData(json) {
                         chunk: str,
                     };
                 }
-            } else if (typeof json.choices[0].delta.content === 'string' && json.choices[0].delta.content.length > 0) {
+            }
+            else if (typeof json.choices[0].delta.content === 'string' && json.choices[0].delta.content.length > 0) {
                 for (let j = 0; j < json.choices[0].delta.content.length; j++) {
                     const str = json.choices[0].delta.content[j];
                     const choiceClone = structuredClone(json.choices[0]);
@@ -207,18 +221,6 @@ async function* parseStreamData(json) {
                         chunk: str,
                     };
                 }
-            }
-        }
-        else if (typeof json.choices[0].text === 'string' && json.choices[0].text.length > 0) {
-            for (let j = 0; j < json.choices[0].text.length; j++) {
-                const str = json.choices[0].text[j];
-                const choiceClone = structuredClone(json.choices[0]);
-                choiceClone.text = str;
-                const choices = [choiceClone];
-                yield {
-                    data: { ...json, choices },
-                    chunk: str,
-                };
             }
         }
     }
