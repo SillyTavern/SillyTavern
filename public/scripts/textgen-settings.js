@@ -128,6 +128,7 @@ const settings = {
     guidance_scale: 1,
     negative_prompt: '',
     grammar_string: '',
+    json_schema: {},
     banned_tokens: '',
     sampler_priority: OOBA_DEFAULT_ORDER,
     samplers: LLAMACPP_DEFAULT_ORDER,
@@ -201,6 +202,7 @@ const setting_names = [
     'guidance_scale',
     'negative_prompt',
     'grammar_string',
+    'json_schema',
     'banned_tokens',
     'legacy_api',
     //'n_aphrodite',
@@ -562,6 +564,16 @@ jQuery(function () {
         },
     });
 
+    $('#tabby_json_schema').on('input', function () {
+        const json_schema_string = $(this).val();
+
+        // Ignore errors from here
+        try {
+            settings.json_schema = JSON.parse(json_schema_string ?? "{}");
+        } catch {}
+        saveSettingsDebounced();
+    });
+
     $('#textgenerationwebui_default_order').on('click', function () {
         sortOobaItemsByOrder(OOBA_DEFAULT_ORDER);
         settings.sampler_priority = OOBA_DEFAULT_ORDER;
@@ -754,6 +766,12 @@ function setSettingByName(setting, value, trigger) {
 
     if ('logit_bias' === setting) {
         settings.logit_bias = Array.isArray(value) ? value : [];
+        return;
+    }
+
+    if ('json_schema' === setting) {
+        settings.json_schema = value ?? {}
+        $('#tabby_json_schema').text(JSON.stringify(settings.json_schema, null, 2))
         return;
     }
 
@@ -1027,6 +1045,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
         'grammar_string': settings.grammar_string,
+        'json_schema': settings.type === TABBY ? settings.json_schema : undefined,
         // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
         'repeat_penalty': settings.rep_pen,
         'tfs_z': settings.tfs,
