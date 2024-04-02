@@ -105,7 +105,7 @@ export class SlashCommandClosure {
         for (const executor of this.executorList) {
             if (executor instanceof SlashCommandClosureExecutor) {
                 const closure = this.scope.getVariable(executor.name);
-                if (!closure || !(closure instanceof SlashCommandClosure)) throw new Error(`${name} is not a closure.`);
+                if (!closure || !(closure instanceof SlashCommandClosure)) throw new Error(`${executor.name} is not a closure.`);
                 closure.scope.parent = this.scope;
                 closure.providedArguments = executor.providedArguments;
                 const result = await closure.execute();
