@@ -29,6 +29,12 @@ var EventEmitter = function () {
 };
 
 EventEmitter.prototype.on = function (event, listener) {
+    // Unknown event used by external libraries?
+    if (event === undefined) {
+        console.trace('EventEmitter: Cannot listen to undefined event');
+        return;
+    }
+
     if (typeof this.events[event] !== 'object') {
         this.events[event] = [];
     }
