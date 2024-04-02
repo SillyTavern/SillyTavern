@@ -479,10 +479,7 @@ const setupTasks = async function () {
     console.log();
     console.log(`SillyTavern ${version.pkgVersion}`);
     console.log(version.gitBranch ? `Running '${version.gitBranch}' (${version.gitRevision}) - ${version.commitDate}` : '');
-    if (version.gitBranch && !['staging', 'release'].includes(version.gitBranch)) {
-        console.log('INFO: Currently running a dev branch.');
-        console.log(`      If this isn't a dev environment, consider switching via 'git switch staging' or 'git switch release'.`);
-    } else if (version.gitBranch && !version.isLatest) {
+    if (version.gitBranch && !version.isLatest && ['staging', 'release'].includes(version.gitBranch)) {
         console.log('INFO: Currently not on the latest commit.');
         console.log(`      Run 'git pull' to upate. If you have any conflicts, run 'git reset --hard' and 'git pull' to reset your branch.`)
     }

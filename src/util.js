@@ -92,9 +92,11 @@ async function getVersion() {
             gitBranch = await git.cwd(cwd).revparse(['--abbrev-ref', 'HEAD']);
             commitDate = await git.cwd(cwd).show(['-s', '--format=%ci', gitRevision]);
 
+            const trackingBranch = await git.cwd(cwd).revparse(['--abbrev-ref', '@{u}']);
+
             // Might fail, but exception is caught. Just don't run anything relevant after in this block...
             const localLatest = await git.cwd(cwd).revparse(['HEAD']);
-            const remoteLatest = await git.cwd(cwd).revparse([`origin/${gitBranch}`]);
+            const remoteLatest = await git.cwd(cwd).revparse([trackingBranch]);
             isLatest = localLatest === remoteLatest;
         }
     }
