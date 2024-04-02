@@ -210,7 +210,8 @@ function convertToV2(char) {
         creator: char.creator,
         tags: char.tags,
         depth_prompt_prompt: char.depth_prompt_prompt,
-        depth_prompt_response: char.depth_prompt_response,
+        depth_prompt_depth: char.depth_prompt_depth,
+        depth_prompt_role: char.depth_prompt_role,
     });
 
     result.chat = char.chat ?? humanizedISO8601DateTime();
@@ -331,9 +332,12 @@ function charaFormatData(data) {
 
     // Spec extension: depth prompt
     const depth_default = 4;
+    const role_default = 'system';
     const depth_value = !isNaN(Number(data.depth_prompt_depth)) ? Number(data.depth_prompt_depth) : depth_default;
+    const role_value = data.depth_prompt_role ?? role_default;
     _.set(char, 'data.extensions.depth_prompt.prompt', data.depth_prompt_prompt ?? '');
     _.set(char, 'data.extensions.depth_prompt.depth', depth_value);
+    _.set(char, 'data.extensions.depth_prompt.role', role_value);
     //_.set(char, 'data.extensions.create_date', humanizedISO8601DateTime());
     //_.set(char, 'data.extensions.avatar', 'none');
     //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());

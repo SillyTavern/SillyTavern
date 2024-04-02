@@ -34,6 +34,8 @@ const SECRET_KEYS = {
     DREAMGEN: 'api_key_dreamgen',
     NOMICAI: 'api_key_nomicai',
     KOBOLDCPP: 'api_key_koboldcpp',
+    LLAMACPP: 'api_key_llamacpp',
+    COHERE: 'api_key_cohere',
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false

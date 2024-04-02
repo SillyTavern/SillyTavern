@@ -280,7 +280,9 @@ export {
     default_ch_mes,
     extension_prompt_types,
     mesForShowdownParse,
+    characterGroupOverlay,
     printCharacters,
+    printCharactersDebounced,
     isOdd,
     countOccurrences,
 };
@@ -496,6 +498,14 @@ export let abortStatusCheck = new AbortController();
 const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), durationSaveEdit);
+
+/**
+ * Prints the character list in a debounced fashion without blocking, with a delay of 100 milliseconds.
+ * Use this function instead of a direct `printCharacters()` whenever the reprinting of the character list is not the primary focus.
+ *
+ * The printing will also always reprint all filter options of the global list, to keep them up to date.
+ */
+const printCharactersDebounced = debounce(() => { printCharacters(false); }, 100);
 
 /**
  * @enum {string} System message types
@@ -752,6 +762,7 @@ function getCurrentChatId() {
 
 const talkativeness_default = 0.5;
 export const depth_prompt_depth_default = 4;
+export const depth_prompt_role_default = 'system';
 const per_page_default = 50;
 
 var is_advanced_char_open = false;
@@ -778,6 +789,7 @@ let create_save = {
     alternate_greetings: [],
     depth_prompt_prompt: '',
     depth_prompt_depth: depth_prompt_depth_default,
+    depth_prompt_role: depth_prompt_role_default,
     extensions: {},
 };
 
@@ -835,7 +847,7 @@ export let active_character = '';
 /** The tag of the active group. (Coincidentally also the id) */
 export let active_group = '';
 
-export const entitiesFilter = new FilterHelper(debounce(printCharacters, 100));
+export const entitiesFilter = new FilterHelper(printCharactersDebounced);
 export const personasFilter = new FilterHelper(debounce(getUserAvatars, 100));
 
 export function getRequestHeaders() {
@@ -1274,18 +1286,30 @@ function getCharacterBlock(item, id) {
     return template;
 }
 
+/**
+ * Prints the global character list, optionally doing a full refresh of the list
+ * Use this function whenever the reprinting of the character list is the primary focus, otherwise using `printCharactersDebounced` is preferred for a cleaner, non-blocking experience.
+ *
+ * The printing will also always reprint all filter options of the global list, to keep them up to date.
+ *
+ * @param {boolean} fullRefresh - If true, the list is fully refreshed and the navigation is being reset
+ */
 async function printCharacters(fullRefresh = false) {
-    if (fullRefresh) {
-        saveCharactersPage = 0;
-        printTagFilters(tag_filter_types.character);
-        printTagFilters(tag_filter_types.group_member);
-
-        await delay(1);
-    }
-
     const storageKey = 'Characters_PerPage';
     const listId = '#rm_print_characters_block';
     const entities = getEntitiesList({ doFilter: true });
+
+    let currentScrollTop = $(listId).scrollTop();
+
+    if (fullRefresh) {
+        saveCharactersPage = 0;
+        currentScrollTop = 0;
+        await delay(1);
+    }
+
+    // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
+    printTagFilters(tag_filter_types.character);
+    printTagFilters(tag_filter_types.group_member);
 
     $('#rm_print_characters_pagination').pagination({
         dataSource: entities,
@@ -1302,7 +1326,7 @@ async function printCharacters(fullRefresh = false) {
         showNavigator: true,
         callback: function (data) {
             $(listId).empty();
-            if (isBogusFolderOpen()) {
+            if (power_user.bogus_folders && isBogusFolderOpen()) {
                 $(listId).append(getBackBlock());
             }
             if (!data.length) {
@@ -1339,26 +1363,67 @@ async function printCharacters(fullRefresh = false) {
             saveCharactersPage = e;
         },
         afterRender: function () {
-            $(listId).scrollTop(0);
+            $(listId).scrollTop(currentScrollTop);
         },
     });
 
     favsToHotswap();
 }
 
+/** @typedef {object} Character - A character */
+/** @typedef {object} Group - A group */
+
+/**
+ * @typedef {object} Entity - Object representing a display entity
+ * @property {Character|Group|import('./scripts/tags.js').Tag|*} item - The item
+ * @property {string|number} id - The id
+ * @property {string} type - The type of this entity (character, group, tag)
+ * @property {Entity[]} [entities] - An optional list of entities relevant for this item
+ * @property {number} [hidden] - An optional number representing how many hidden entities this entity contains
+ */
+
+/**
+ * Converts the given character to its entity representation
+ *
+ * @param {Character} character - The character
+ * @param {string|number} id - The id of this character
+ * @returns {Entity} The entity for this character
+ */
+export function characterToEntity(character, id) {
+    return { item: character, id, type: 'character' };
+}
+
+/**
+ * Converts the given group to its entity representation
+ *
+ * @param {Group} group - The group
+ * @returns {Entity} The entity for this group
+ */
+export function groupToEntity(group) {
+    return { item: group, id: group.id, type: 'group' };
+}
+
+/**
+ * Converts the given tag to its entity representation
+ *
+ * @param {import('./scripts/tags.js').Tag} tag - The tag
+ * @returns {Entity} The entity for this tag
+ */
+export function tagToEntity(tag) {
+    return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
+}
+
+/**
+ * Builds the full list of all entities available
+ *
+ * They will be correctly marked and filtered.
+ *
+ * @param {object} param0 - Optional parameters
+ * @param {boolean} [param0.doFilter] - Whether this entity list should already be filtered based on the global filters
+ * @param {boolean} [param0.doSort] - Whether the entity list should be sorted when returned
+ * @returns {Entity[]} All entities
+ */
 export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
-    function characterToEntity(character, id) {
-        return { item: character, id, type: 'character' };
-    }
-
-    function groupToEntity(group) {
-        return { item: group, id: group.id, type: 'group' };
-    }
-
-    function tagToEntity(tag) {
-        return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
-    }
-
     let entities = [
         ...characters.map((item, index) => characterToEntity(item, index)),
         ...groups.map(item => groupToEntity(item)),
@@ -2307,21 +2372,31 @@ function getStoppingStrings(isImpersonate, isContinue) {
  * @param {boolean} skipWIAN whether to skip addition of World Info and Author's Note into the prompt
  * @param {string} quietImage Image to use for the quiet prompt
  * @param {string} quietName Name to use for the quiet prompt (defaults to "System:")
+ * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @returns
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null) {
     console.log('got into genQuietPrompt');
-    /** @type {GenerateOptions} */
-    const options = {
-        quiet_prompt,
-        quietToLoud,
-        skipWIAN: skipWIAN,
-        force_name2: true,
-        quietImage: quietImage,
-        quietName: quietName,
-    };
-    const generateFinished = await Generate('quiet', options);
-    return generateFinished;
+    const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
+    let originalResponseLength = -1;
+    try {
+        /** @type {GenerateOptions} */
+        const options = {
+            quiet_prompt,
+            quietToLoud,
+            skipWIAN: skipWIAN,
+            force_name2: true,
+            quietImage: quietImage,
+            quietName: quietName,
+        };
+        originalResponseLength = responseLengthCustomized ? saveResponseLength(main_api, responseLength) : -1;
+        const generateFinished = await Generate('quiet', options);
+        return generateFinished;
+    } finally {
+        if (responseLengthCustomized) {
+            restoreResponseLength(main_api, originalResponseLength);
+        }
+    }
 }
 
 /**
@@ -2845,81 +2920,136 @@ class StreamingProcessor {
  * @param {string} prompt Prompt to generate a message from
  * @param {string} api API to use. Main API is used if not specified.
  * @param {boolean} instructOverride true to override instruct mode, false to use the default value
+ * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
+ * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
+ * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @returns {Promise<string>} Generated message
  */
-export async function generateRaw(prompt, api, instructOverride) {
+export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength) {
     if (!api) {
         api = main_api;
     }
 
     const abortController = new AbortController();
-    const isInstruct = power_user.instruct.enabled && main_api !== 'openai' && main_api !== 'novel' && !instructOverride;
+    const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
+    let originalResponseLength = -1;
+    const isInstruct = power_user.instruct.enabled && api !== 'openai' && api !== 'novel' && !instructOverride;
+    const isQuiet = true;
+
+    if (systemPrompt) {
+        systemPrompt = substituteParams(systemPrompt);
+        systemPrompt = isInstruct ? formatInstructModeSystemPrompt(systemPrompt) : systemPrompt;
+        prompt = api === 'openai' ? prompt : `${systemPrompt}\n${prompt}`;
+    }
 
     prompt = substituteParams(prompt);
     prompt = api == 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
     prompt = isInstruct ? formatInstructModeChat(name1, prompt, false, true, '', name1, name2, false) : prompt;
-    prompt = isInstruct ? (prompt + formatInstructModePrompt(name2, false, '', name1, name2)) : (prompt + '\n');
+    prompt = isInstruct ? (prompt + formatInstructModePrompt(name2, false, '', name1, name2, isQuiet, quietToLoud)) : (prompt + '\n');
 
-    let generateData = {};
+    try {
+        originalResponseLength = responseLengthCustomized ? saveResponseLength(api, responseLength) : -1;
+        let generateData = {};
 
-    switch (api) {
-        case 'kobold':
-        case 'koboldhorde':
-            if (preset_settings === 'gui') {
-                generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context, api_server };
-            } else {
-                const isHorde = api === 'koboldhorde';
-                const koboldSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
-                generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, isHorde, 'quiet');
+        switch (api) {
+            case 'kobold':
+            case 'koboldhorde':
+                if (preset_settings === 'gui') {
+                    generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context, api_server };
+                } else {
+                    const isHorde = api === 'koboldhorde';
+                    const koboldSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
+                    generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, isHorde, 'quiet');
+                }
+                break;
+            case 'novel': {
+                const novelSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
+                generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null, 'quiet');
+                break;
             }
-            break;
-        case 'novel': {
-            const novelSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-            generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null, 'quiet');
-            break;
+            case 'textgenerationwebui':
+                generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null, 'quiet');
+                break;
+            case 'openai': {
+                generateData = [{ role: 'user', content: prompt.trim() }];
+                if (systemPrompt) {
+                    generateData.unshift({ role: 'system', content: systemPrompt.trim() });
+                }
+            } break;
         }
-        case 'textgenerationwebui':
-            generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null, 'quiet');
-            break;
-        case 'openai':
-            generateData = [{ role: 'user', content: prompt.trim() }];
+
+        let data = {};
+
+        if (api == 'koboldhorde') {
+            data = await generateHorde(prompt, generateData, abortController.signal, false);
+        } else if (api == 'openai') {
+            data = await sendOpenAIRequest('quiet', generateData, abortController.signal);
+        } else {
+            const generateUrl = getGenerateUrl(api);
+            const response = await fetch(generateUrl, {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                cache: 'no-cache',
+                body: JSON.stringify(generateData),
+                signal: abortController.signal,
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw error;
+            }
+
+            data = await response.json();
+        }
+
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        const message = cleanUpMessage(extractMessageFromData(data), false, false, true);
+
+        if (!message) {
+            throw new Error('No message generated');
+        }
+
+        return message;
+    } finally {
+        if (responseLengthCustomized) {
+            restoreResponseLength(api, originalResponseLength);
+        }
     }
+}
 
-    let data = {};
-
-    if (api == 'koboldhorde') {
-        data = await generateHorde(prompt, generateData, abortController.signal, false);
-    } else if (api == 'openai') {
-        data = await sendOpenAIRequest('quiet', generateData, abortController.signal);
+/**
+ * Temporarily change the response length for the specified API.
+ * @param {string} api API to use.
+ * @param {number} responseLength Target response length.
+ * @returns {number} The original response length.
+ */
+function saveResponseLength(api, responseLength) {
+    let oldValue = -1;
+    if (api === 'openai') {
+        oldValue = oai_settings.openai_max_tokens;
+        oai_settings.openai_max_tokens = responseLength;
     } else {
-        const generateUrl = getGenerateUrl(api);
-        const response = await fetch(generateUrl, {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            cache: 'no-cache',
-            body: JSON.stringify(generateData),
-            signal: abortController.signal,
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw error;
-        }
-
-        data = await response.json();
+        oldValue = max_context;
+        max_context = responseLength;
     }
+    return oldValue;
+}
 
-    if (data.error) {
-        throw new Error(data.error);
+/**
+ * Restore the original response length for the specified API.
+ * @param {string} api API to use.
+ * @param {number} responseLength Target response length.
+ * @returns {void}
+ */
+function restoreResponseLength(api, responseLength) {
+    if (api === 'openai') {
+        oai_settings.openai_max_tokens = responseLength;
+    } else {
+        max_context = responseLength;
     }
-
-    const message = cleanUpMessage(extractMessageFromData(data), false, false, true);
-
-    if (!message) {
-        throw new Error('No message generated');
-    }
-
-    return message;
 }
 
 /**
@@ -3112,12 +3242,14 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     if (selected_group && Array.isArray(groupDepthPrompts) && groupDepthPrompts.length > 0) {
         groupDepthPrompts.forEach((value, index) => {
-            setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan);
+            const role = getExtensionPromptRoleByName(value.role);
+            setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan, role);
         });
     } else {
         const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
         const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
-        setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan);
+        const depthPromptRole = getExtensionPromptRoleByName(characters[this_chid].data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default);
+        setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan, depthPromptRole);
     }
 
     // Parse example messages
@@ -3128,10 +3260,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         mesExamples = '';
     }
     const mesExamplesRaw = mesExamples;
-    if (mesExamples && isInstruct) {
-        mesExamples = formatInstructModeExamples(mesExamples, name1, name2);
-    }
-
     /**
      * Adds a block heading to the examples string.
      * @param {string} examplesStr
@@ -3139,12 +3267,16 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
      */
     function addBlockHeading(examplesStr) {
         const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-        const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
+        const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
         return examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
     }
 
     let mesExamplesArray = addBlockHeading(mesExamples);
     let mesExamplesRawArray = addBlockHeading(mesExamplesRaw);
+
+    if (mesExamplesArray && isInstruct) {
+        mesExamplesArray = formatInstructModeExamples(mesExamplesArray, name1, name2);
+    }
 
     // First message in fresh 1-on-1 chat reacts to user/character settings changes
     if (chat.length) {
@@ -3259,6 +3391,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     let chat2 = [];
     let continue_mag = '';
+    const userMessageIndices = [];
+
     for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
         if (main_api == 'openai') {
             chat2[i] = coreChat[j].mes;
@@ -3286,6 +3420,22 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
             continue_mag = coreChat[j].mes;
         }
+
+        if (coreChat[j].is_user) {
+            userMessageIndices.push(i);
+        }
+    }
+
+    let addUserAlignment = isInstruct && power_user.instruct.user_alignment_message;
+    let userAlignmentMessage = '';
+
+    if (addUserAlignment) {
+        const alignmentMessage = {
+            name: name1,
+            mes: power_user.instruct.user_alignment_message,
+            is_user: true,
+        };
+        userAlignmentMessage = formatMessageHistoryItem(alignmentMessage, isInstruct, false);
     }
 
     // Add persona description to prompt
@@ -3344,6 +3494,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             allAnchors,
             quiet_prompt,
             cyclePrompt,
+            userAlignmentMessage,
         ].join('').replace(/\r/gm, '');
         return getTokenCount(encodeString, power_user.token_padding);
     }
@@ -3360,18 +3511,24 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     }
 
     // Collect enough messages to fill the context
-    let arrMes = [];
+    let arrMes = new Array(chat2.length);
     let tokenCount = getMessagesTokenCount();
-    for (let item of chat2) {
-        // not needed for OAI prompting
-        if (main_api == 'openai') {
-            break;
+    let lastAddedIndex = -1;
+
+    // Pre-allocate all injections first.
+    // If it doesn't fit - user shot himself in the foot
+    for (const index of injectedIndices) {
+        const item = chat2[index];
+
+        if (typeof item !== 'string') {
+            continue;
         }
 
         tokenCount += getTokenCount(item.replace(/\r/gm, ''));
         chatString = item + chatString;
         if (tokenCount < this_max_context) {
-            arrMes[arrMes.length] = item;
+            arrMes[index] = item;
+            lastAddedIndex = Math.max(lastAddedIndex, index);
         } else {
             break;
         }
@@ -3380,8 +3537,62 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         await delay(1);
     }
 
+    for (let i = 0; i < chat2.length; i++) {
+        // not needed for OAI prompting
+        if (main_api == 'openai') {
+            break;
+        }
+
+        // Skip already injected messages
+        if (arrMes[i] !== undefined) {
+            continue;
+        }
+
+        const item = chat2[i];
+
+        if (typeof item !== 'string') {
+            continue;
+        }
+
+        tokenCount += getTokenCount(item.replace(/\r/gm, ''));
+        chatString = item + chatString;
+        if (tokenCount < this_max_context) {
+            arrMes[i] = item;
+            lastAddedIndex = Math.max(lastAddedIndex, i);
+        } else {
+            break;
+        }
+
+        // Prevent UI thread lock on tokenization
+        await delay(1);
+    }
+
+    // Add user alignment message if last message is not a user message
+    const stoppedAtUser = userMessageIndices.includes(lastAddedIndex);
+    if (addUserAlignment && !stoppedAtUser) {
+        tokenCount += getTokenCount(userAlignmentMessage.replace(/\r/gm, ''));
+        chatString = userAlignmentMessage + chatString;
+        arrMes.push(userAlignmentMessage);
+        injectedIndices.push(arrMes.length - 1);
+    }
+
+    // Unsparse the array. Adjust injected indices
+    const newArrMes = [];
+    const newInjectedIndices = [];
+    for (let i = 0; i < arrMes.length; i++) {
+        if (arrMes[i] !== undefined) {
+            newArrMes.push(arrMes[i]);
+            if (injectedIndices.includes(i)) {
+                newInjectedIndices.push(newArrMes.length - 1);
+            }
+        }
+    }
+
+    arrMes = newArrMes;
+    injectedIndices = newInjectedIndices;
+
     if (main_api !== 'openai') {
-        setInContextMessages(arrMes.length, type);
+        setInContextMessages(arrMes.length - injectedIndices.length, type);
     }
 
     // Estimate how many unpinned example messages fit in the context
@@ -3424,15 +3635,19 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         console.debug('generating prompt');
         chatString = '';
         arrMes = arrMes.reverse();
-        arrMes.forEach(function (item, i, arr) {// For added anchors and others
+        arrMes.forEach(function (item, i, arr) {
             // OAI doesn't need all of this
             if (main_api === 'openai') {
                 return;
             }
 
-            // Cohee: I'm not even sure what this is for anymore
+            // Cohee: This removes a newline from the end of the last message in the context
+            // Last prompt line will add a newline if it's not a continuation
+            // In instruct mode it only removes it if wrap is enabled and it's not a quiet generation
             if (i === arrMes.length - 1 && type !== 'continue') {
-                item = item.replace(/\n?$/, '');
+                if (!isInstruct || (power_user.instruct.wrap && type !== 'quiet')) {
+                    item = item.replace(/\n?$/, '');
+                }
             }
 
             mesSend[mesSend.length] = { message: item, extensionPrompts: [] };
@@ -3471,7 +3686,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             //TODO: respect output_sequence vs last_output_sequence settings
             //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
             if (isInstruct) {
-                lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
+                lastMesString += quietAppend; // + power_user.instruct.output_sequence + '\n';
             } else {
                 lastMesString += quietAppend;
             }
@@ -3492,7 +3707,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         // Get instruct mode line
         if (isInstruct && !isContinue) {
             const name = (quiet_prompt && !quietToLoud) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
-            lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
+            const isQuiet = quiet_prompt && type == 'quiet';
+            lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, quietToLoud);
         }
 
         // Get non-instruct impersonation line
@@ -3659,7 +3875,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         };
 
         finalMesSend.forEach((item, i) => {
-            item.injected = Array.isArray(injectedIndices) && injectedIndices.includes(i);
+            item.injected = injectedIndices.includes(finalMesSend.length - i - 1);
         });
 
         let data = {
@@ -4027,10 +4243,6 @@ function doChatInject(messages, isContinue) {
         }
     }
 
-    for (let i = 0; i < injectedIndices.length; i++) {
-        injectedIndices[i] = messages.length - injectedIndices[i] - 1;
-    }
-
     messages.reverse();
     return injectedIndices;
 }
@@ -4230,10 +4442,19 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     }
 }
 
-export function getMaxContextSize() {
+/**
+ * Gets the maximum usable context size for the current API.
+ * @param {number|null} overrideResponseLength Optional override for the response length.
+ * @returns {number} Maximum usable context size.
+ */
+export function getMaxContextSize(overrideResponseLength = null) {
+    if (typeof overrideResponseLength !== 'number' || overrideResponseLength <= 0 || isNaN(overrideResponseLength)) {
+        overrideResponseLength = null;
+    }
+
     let this_max_context = 1487;
     if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui') {
-        this_max_context = (max_context - amount_gen);
+        this_max_context = (max_context - (overrideResponseLength || amount_gen));
     }
     if (main_api == 'novel') {
         this_max_context = Number(max_context);
@@ -4250,10 +4471,10 @@ export function getMaxContextSize() {
             }
         }
 
-        this_max_context = this_max_context - amount_gen;
+        this_max_context = this_max_context - (overrideResponseLength || amount_gen);
     }
     if (main_api == 'openai') {
-        this_max_context = oai_settings.openai_max_context - oai_settings.openai_max_tokens;
+        this_max_context = oai_settings.openai_max_context - (overrideResponseLength || oai_settings.openai_max_tokens);
     }
     return this_max_context;
 }
@@ -4615,7 +4836,7 @@ function extractMessageFromData(data) {
         case 'novel':
             return data.output;
         case 'openai':
-            return data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? '';
+            return data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.text ?? '';
         default:
             return '';
     }
@@ -5356,7 +5577,7 @@ function buildAvatarList(block, entities, { templateId = 'inline_avatar_template
         avatarTemplate.attr('data-type', entity.type);
         avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
         avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entity.item.name);
-        avatarTemplate.attr('title', `[Character] ${entity.item.name}`);
+        avatarTemplate.attr('title', `[Character] ${entity.item.name}\nFile: ${entity.item.avatar}`);
         if (highlightFavs) {
             avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
             avatarTemplate.find('.ch_fav').val(entity.item.fav);
@@ -6615,6 +6836,7 @@ export function select_selected_character(chid) {
     $('#scenario_pole').val(characters[chid].scenario);
     $('#depth_prompt_prompt').val(characters[chid].data?.extensions?.depth_prompt?.prompt ?? '');
     $('#depth_prompt_depth').val(characters[chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default);
+    $('#depth_prompt_role').val(characters[chid].data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default);
     $('#talkativeness_slider').val(characters[chid].talkativeness || talkativeness_default);
     $('#mes_example_textarea').val(characters[chid].mes_example);
     $('#selected_chat_pole').val(characters[chid].chat);
@@ -6685,6 +6907,7 @@ function select_rm_create() {
     $('#scenario_pole').val(create_save.scenario);
     $('#depth_prompt_prompt').val(create_save.depth_prompt_prompt);
     $('#depth_prompt_depth').val(create_save.depth_prompt_depth);
+    $('#depth_prompt_role').val(create_save.depth_prompt_role);
     $('#mes_example_textarea').val(create_save.mes_example);
     $('#character_json_data').val('');
     $('#avatar_div').css('display', 'flex');
@@ -6726,6 +6949,30 @@ export function setExtensionPrompt(key, value, position, depth, scan = false, ro
         scan: !!scan,
         role: Number(role ?? extension_prompt_roles.SYSTEM),
     };
+}
+
+/**
+ * Gets a enum value of the extension prompt role by its name.
+ * @param {string} roleName The name of the extension prompt role.
+ * @returns {number} The role id of the extension prompt.
+ */
+export function getExtensionPromptRoleByName(roleName) {
+    // If the role is already a valid number, return it
+    if (typeof roleName === 'number' && Object.values(extension_prompt_roles).includes(roleName)) {
+        return roleName;
+    }
+
+    switch (roleName) {
+        case 'system':
+            return extension_prompt_roles.SYSTEM;
+        case 'user':
+            return extension_prompt_roles.USER;
+        case 'assistant':
+            return extension_prompt_roles.ASSISTANT;
+    }
+
+    // Skill issue?
+    return extension_prompt_roles.SYSTEM;
 }
 
 /**
@@ -6788,18 +7035,19 @@ function onScenarioOverrideRemoveClick() {
  * @param {string} type
  * @param {string} inputValue - Value to set the input to.
  * @param {PopupOptions} options - Options for the popup.
- * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean }} PopupOptions - Options for the popup.
+ * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean }} PopupOptions - Options for the popup.
  * @returns
  */
-function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } = {}) {
+function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
     dialogueCloseStop = true;
     if (type) {
         popup_type = type;
     }
 
     $('#dialogue_popup').toggleClass('wide_dialogue_popup', !!wide);
-
     $('#dialogue_popup').toggleClass('large_dialogue_popup', !!large);
+    $('#dialogue_popup').toggleClass('horizontal_scrolling_dialogue_popup', !!allowHorizontalScrolling);
+    $('#dialogue_popup').toggleClass('vertical_scrolling_dialogue_popup', !!allowVerticalScrolling);
 
     $('#dialogue_popup_cancel').css('display', 'inline-block');
     switch (popup_type) {
@@ -7343,6 +7591,7 @@ async function createOrEditCharacter(e) {
                         { id: '#scenario_pole', callback: value => create_save.scenario = value },
                         { id: '#depth_prompt_prompt', callback: value => create_save.depth_prompt_prompt = value },
                         { id: '#depth_prompt_depth', callback: value => create_save.depth_prompt_depth = value, defaultValue: depth_prompt_depth_default },
+                        { id: '#depth_prompt_role', callback: value => create_save.depth_prompt_role = value, defaultValue: depth_prompt_role_default },
                         { id: '#mes_example_textarea', callback: value => create_save.mes_example = value },
                         { id: '#character_json_data', callback: () => { } },
                         { id: '#alternate_greetings_template', callback: value => create_save.alternate_greetings = value, defaultValue: [] },
@@ -7938,6 +8187,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.CUSTOM,
     },
+    'cohere': {
+        selected: 'cohere',
+        button: '#api_button_openai',
+        source: chat_completion_sources.COHERE,
+    },
     'infermaticai': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -8286,7 +8540,7 @@ function addDebugFunctions() {
     registerDebugFunction('generationTest', 'Send a generation request', 'Generates text using the currently selected API.', async () => {
         const text = prompt('Input text:', 'Hello');
         toastr.info('Working on it...');
-        const message = await generateRaw(text, null, '');
+        const message = await generateRaw(text, null, false, false);
         alert(message);
     });
 
@@ -8338,7 +8592,7 @@ jQuery(async function () {
         $('#groupCurrentMemberListToggle .inline-drawer-icon').trigger('click');
     }, 200);
 
-    $('#chat').on('mousewheel touchstart', () => {
+    $('#chat').on('wheel touchstart', () => {
         scrollLock = true;
     });
 
@@ -8712,6 +8966,7 @@ jQuery(async function () {
         '#talkativeness_slider': function () { create_save.talkativeness = Number($('#talkativeness_slider').val()); },
         '#depth_prompt_prompt': function () { create_save.depth_prompt_prompt = String($('#depth_prompt_prompt').val()); },
         '#depth_prompt_depth': function () { create_save.depth_prompt_depth = Number($('#depth_prompt_depth').val()); },
+        '#depth_prompt_role': function () { create_save.depth_prompt_role = String($('#depth_prompt_role').val()); },
     };
 
     Object.keys(elementsToUpdate).forEach(function (id) {
@@ -8877,6 +9132,7 @@ jQuery(async function () {
             { id: 'api_key_dreamgen', secret: SECRET_KEYS.DREAMGEN },
             { id: 'api_key_openrouter-tg', secret: SECRET_KEYS.OPENROUTER },
             { id: 'api_key_koboldcpp', secret: SECRET_KEYS.KOBOLDCPP },
+            { id: 'api_key_llamacpp', secret: SECRET_KEYS.LLAMACPP },
         ];
 
         for (const key of keys) {

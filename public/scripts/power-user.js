@@ -10,7 +10,7 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
-    printCharacters,
+    printCharactersDebounced,
     setCharacterId,
     setEditedMessageId,
     renderTemplate,
@@ -197,19 +197,26 @@ let power_user = {
         preset: 'Alpaca',
         system_prompt: 'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}\'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n',
         input_sequence: '### Instruction:',
+        input_suffix: '',
         output_sequence: '### Response:',
+        output_suffix: '',
+        system_sequence: '',
+        system_suffix: '',
         first_output_sequence: '',
         last_output_sequence: '',
         system_sequence_prefix: '',
         system_sequence_suffix: '',
         stop_sequence: '',
-        separator_sequence: '',
         wrap: true,
         macro: true,
         names: false,
         names_force_groups: true,
         activation_regex: '',
         bind_to_context: false,
+        user_alignment_message: '',
+        system_same_as_user: false,
+        /** @deprecated Use output_suffix instead */
+        separator_sequence: '',
     },
 
     default_context: 'Default',
@@ -1291,7 +1298,7 @@ async function applyTheme(name) {
             key: 'bogus_folders',
             action: async () => {
                 $('#bogus_folders').prop('checked', power_user.bogus_folders);
-                await printCharacters(true);
+                printCharactersDebounced();
             },
         },
         {
@@ -3049,7 +3056,7 @@ $(document).ready(() => {
 
     $('#show_card_avatar_urls').on('input', function () {
         power_user.show_card_avatar_urls = !!$(this).prop('checked');
-        printCharacters();
+        printCharactersDebounced();
         saveSettingsDebounced();
     });
 
@@ -3072,7 +3079,7 @@ $(document).ready(() => {
         power_user.sort_field = $(this).find(':selected').data('field');
         power_user.sort_order = $(this).find(':selected').data('order');
         power_user.sort_rule = $(this).find(':selected').data('rule');
-        printCharacters();
+        printCharactersDebounced();
         saveSettingsDebounced();
     });
 
@@ -3369,15 +3376,15 @@ $(document).ready(() => {
     $('#bogus_folders').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.bogus_folders = value;
+        printCharactersDebounced();
         saveSettingsDebounced();
-        printCharacters(true);
     });
 
     $('#aux_field').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.aux_field = String(value);
+        printCharactersDebounced();
         saveSettingsDebounced();
-        printCharacters(false);
     });
 
     $('#stscript_matching').on('change', function () {

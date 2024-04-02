@@ -38,7 +38,7 @@ export const textgen_types = {
     OPENROUTER: 'openrouter',
 };
 
-const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
+const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER, KOBOLDCPP } = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
     'top_k',
@@ -128,6 +128,7 @@ const settings = {
     guidance_scale: 1,
     negative_prompt: '',
     grammar_string: '',
+    json_schema: {},
     banned_tokens: '',
     sampler_priority: OOBA_DEFAULT_ORDER,
     samplers: LLAMACPP_DEFAULT_ORDER,
@@ -201,6 +202,7 @@ const setting_names = [
     'guidance_scale',
     'negative_prompt',
     'grammar_string',
+    'json_schema',
     'banned_tokens',
     'legacy_api',
     //'n_aphrodite',
@@ -562,6 +564,17 @@ jQuery(function () {
         },
     });
 
+    $('#tabby_json_schema').on('input', function () {
+        const json_schema_string = String($(this).val());
+
+        try {
+            settings.json_schema = JSON.parse(json_schema_string ?? '{}');
+        } catch {
+            // Ignore errors from here
+        }
+        saveSettingsDebounced();
+    });
+
     $('#textgenerationwebui_default_order').on('click', function () {
         sortOobaItemsByOrder(OOBA_DEFAULT_ORDER);
         settings.sampler_priority = OOBA_DEFAULT_ORDER;
@@ -754,6 +767,12 @@ function setSettingByName(setting, value, trigger) {
 
     if ('logit_bias' === setting) {
         settings.logit_bias = Array.isArray(value) ? value : [];
+        return;
+    }
+
+    if ('json_schema' === setting) {
+        settings.json_schema = value ?? {};
+        $('#tabby_json_schema').val(JSON.stringify(settings.json_schema, null, 2));
         return;
     }
 
@@ -984,11 +1003,11 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'length_penalty': settings.length_penalty,
         'early_stopping': settings.early_stopping,
         'add_bos_token': settings.add_bos_token,
-        'dynamic_temperature': settings.dynatemp,
-        'dynatemp_low': settings.dynatemp ? settings.min_temp : 1,
-        'dynatemp_high': settings.dynatemp ? settings.max_temp : 1,
-        'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : 0,
-        'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : 1,
+        'dynamic_temperature': settings.dynatemp ? true : undefined,
+        'dynatemp_low': settings.dynatemp ? settings.min_temp : undefined,
+        'dynatemp_high': settings.dynatemp ? settings.max_temp : undefined,
+        'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : undefined,
+        'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : undefined,
         'smoothing_factor': settings.smoothing_factor,
         'smoothing_curve': settings.smoothing_curve,
         'max_tokens_second': settings.max_tokens_second,
@@ -1027,6 +1046,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
         'grammar_string': settings.grammar_string,
+        'json_schema': settings.type === TABBY ? settings.json_schema : undefined,
         // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
         'repeat_penalty': settings.rep_pen,
         'tfs_z': settings.tfs,
@@ -1046,6 +1066,10 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         //'logprobs': settings.log_probs_aphrodite,
         //'prompt_logprobs': settings.prompt_log_probs_aphrodite,
     };
+
+    if (settings.type === KOBOLDCPP) {
+        params.grammar = settings.grammar_string;
+    }
 
     if (settings.type === MANCER) {
         params.n = canMultiSwipe ? settings.n : 1;
