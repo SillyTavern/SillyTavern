@@ -72,7 +72,16 @@ const saveSettingsDebounced = debounce(() => {
     Object.assign(world_info, { globalSelect: selected_world_info });
     saveSettings();
 }, 1000);
+
+/**
+ * Returns the sort result between two world entries
+ *
+ * @param {WorldInfoEntry} a - lefthand entry
+ * @param {WorldInfoEntry} b - righthand entry
+ * @returns {number} sort result
+ */
 const sortFn = (a, b) => b.order - a.order;
+
 let updateEditor = (navigation) => { navigation; };
 
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
@@ -99,7 +108,7 @@ const MAX_SCAN_DEPTH = 1000;
  * @property {number?} [depth] - An optional depth number at which this should be inserted when `position` at depth is chosen
  * @property {number?} [role] - An optional role that is specified when `position` at depth is chosen to decide he role under which this is inserted, corresponding to `extension_prompt_roles`
  *
- * @property {number?} [order] - A number specifying the order position when this entry gets sorted with others. Lower number means higher up.
+ * @property {number?} [order] - A number specifying the order position when this entry gets sorted with others. Higher number means higher up.
  * @property {number?} [displayIndex] - A number indicating the position in the list when "custom sort" is chosen. Just for display in the world info. For the actual sorting, refer to `order`.
  * @property {string?} [group] - An optional group. If multiple entries with the same group are trigger, only one entry with the same label will be activated.
  * @property {boolean} [excludeRecursion] - When activated, this entry can't be triggered through other entries
@@ -116,13 +125,13 @@ const MAX_SCAN_DEPTH = 1000;
  */
 
 /**
- * @typedef {object} WorldInfo A world info object, containing all its entries
+ * @typedef {object} WorldInfo World info object, transformed from `WorldData` to contain world name and `WorldInfEntry` as a list
  * @property {string} name - The world name
  * @property {WorldInfoEntry[]} entries - All entries
  */
 
 /**
- * @typedef {object} WorldData A world object, containing the data for all entries.
+ * @typedef {object} WorldData World data object, containing the data for all entries - as saved and retrieved via API
  * @property {{[uid: string]: WorldInfoEntry}} entries - All world info entries, grouped by their uid (as a string)
  */
 
@@ -2010,9 +2019,9 @@ async function createNewWorldInfo(worldInfoName) {
 }
 
 /**
- * Gets a list of all character lore world entries
+ * Gets a list of all character lore worlds and their entries
  *
- * @returns {Promise<WorldInfoEntry[]>} A list of all character world entries
+ * @returns {Promise<WorldInfo[]>} A list of all character worlds
  */
 async function getCharacterLore() {
     const character = characters[this_chid];
@@ -2034,53 +2043,40 @@ async function getCharacterLore() {
         worldsToSearch = new Set([...worldsToSearch, ...extraCharLore.extraBooks]);
     }
 
-    let entries = [];
+    let characterWorlds = [];
     for (const worldName of worldsToSearch) {
-        if (selected_world_info.includes(worldName)) {
-            console.debug(`Character ${name}'s world ${worldName} is already activated in global world info! Skipping...`);
-            continue;
-        }
-
-        if (chat_metadata[METADATA_KEY] === worldName) {
-            console.debug(`Character ${name}'s world ${worldName} is already activated in chat lore! Skipping...`);
-            continue;
-        }
-
         const data = await loadWorldInfoData(worldName);
-        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
-        entries = entries.concat(newEntries);
+        const world = getWorldInfoObject(worldName, data);
+        characterWorlds.push(world);
     }
 
-    console.debug(`Character ${characters[this_chid]?.name} lore (${baseWorldName}) has ${entries.length} world info entries`);
-    return entries;
+    return characterWorlds;
 }
 
 /**
- * Gets a list of all global world entries
+ * Gets a list of all global worlds and their entries
  *
- * @returns {Promise<WorldInfoEntry[]>} A list of all global world entries
+ * @returns {Promise<WorldInfo[]>} A list of all global worlds
  */
 async function getGlobalLore() {
     if (!selected_world_info) {
         return [];
     }
 
-    let entries = [];
+    let globalWorlds = [];
     for (const worldName of selected_world_info) {
         const data = await loadWorldInfoData(worldName);
-        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
-        entries = entries.concat(newEntries);
+        const world = getWorldInfoObject(worldName, data);
+        globalWorlds.push(world);
     }
 
-    console.debug(`Global world info has ${entries.length} entries`);
-
-    return entries;
+    return globalWorlds;
 }
 
 /**
- * Gets a list of all chat-specific world entries
+ * Gets a list of all chat-specific worlds and their entries
  *
- * @returns {Promise<WorldInfoEntry[]>} A list of all chat-specific world entries
+ * @returns {Promise<WorldInfo[]>} A list of all chat-specific worlds
  */
 async function getChatLore() {
     const chatWorld = chat_metadata[METADATA_KEY];
@@ -2089,55 +2085,94 @@ async function getChatLore() {
         return [];
     }
 
-    if (selected_world_info.includes(chatWorld)) {
-        console.debug(`Chat world ${chatWorld} is already activated in global world info! Skipping...`);
-        return [];
-    }
-
     const data = await loadWorldInfoData(chatWorld);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
-
-    console.debug(`Chat lore has ${entries.length} entries`);
-
-    return entries;
+    const world = getWorldInfoObject(chatWorld, data);
+    return [world];
 }
 
 /**
- * Gets a sorted list of <b>all</b> world entries, combining global, character and chat lore
+ * Gets the transformed world info object, containing the world info and entries
+ * @param {string} name - World name
+ * @param {WorldData} data - World data
+ * @returns {WorldInfo} the world
+ */
+function getWorldInfoObject(name, data) {
+    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+    return { name: name, entries: entries };
+}
+
+/**
+ * Gets a sorted list of <b>all</b> world entries, combining global, character and chat lore worlds, filtering out duplicates
  *
- * @returns {Promise<WorldInfoEntry[]>} A list of all character lore
+ * @returns {Promise<WorldInfoEntry[]>} A list of all world entries
  */
 async function getSortedEntries() {
     try {
-        const globalLore = await getGlobalLore();
-        const characterLore = await getCharacterLore();
-        const chatLore = await getChatLore();
+        // Gather all worlds first
+        let chatLore = await getChatLore();
+        let characterLore = await getCharacterLore();
+        let globalLore = await getGlobalLore();
 
+        // Filter out all duplicated worlds
+        // Generally filter order for duplicated worlds should be:
+        //   chat > character > global
+        // If "global first" strategy is chosen, we should remove global worlds from characters though, to preserve their precedence
+        const globalFirst = Number(world_info_character_strategy) == world_info_insertion_strategy.global_first;
+        characterLore = characterLore.filter(world => {
+            if (chatLore.some(chatWorld => chatWorld.name === world.name)) {
+                console.debug(`Character ${characters[this_chid]?.name}'s world ${world.name} is already activated in chat lore! Skipping...`);
+                return false;
+            }
+            if (globalFirst && globalLore.some(globalWorld => globalWorld.name === world.name)) {
+                console.debug(`Character ${characters[this_chid]?.name}'s world ${world.name} is already activated in global lore, and 'global first' strategy is chosen! Skipping...`);
+                return false;
+            }
+            return true;
+        });
+        globalLore = globalLore.filter(world => {
+            if (chatLore.some(chatWorld => chatWorld.name === world.name)) {
+                console.debug(`Global world ${world.name} is already activated in chat lore! Skipping...`);
+                return false;
+            }
+            if (!globalFirst && characterLore.some(characterWorld => characterWorld.name === world.name)) {
+                console.debug(`Global world ${world.name} is already activated in character lore! Skipping...`);
+                return false;
+            }
+            return true;
+        });
+
+        // Now flatten to just the entries
+        const chatLoreEntries = chatLore.flatMap(x => x.entries);
+        const characterLoreEntries = characterLore.flatMap(x => x.entries);
+        const globalLoreEntries = globalLore.flatMap(x => x.entries);
+
+        console.debug(`Chat lore has ${chatLoreEntries.length} entries`);
+        console.debug(`Character ${characters[this_chid]?.name}'s lore (${characters[this_chid]?.data?.extensions?.world}) has ${characterLoreEntries.length} entries`);
+        console.debug(`Global world info has ${globalLoreEntries.length} entries`);
+
+        /** @type {WorldInfoEntry[]} */
         let entries;
 
         switch (Number(world_info_character_strategy)) {
             case world_info_insertion_strategy.evenly:
-                console.debug('WI using evenly');
-                entries = [...globalLore, ...characterLore].sort(sortFn);
+                entries = sortWithInterleavingEvenly(globalLoreEntries, characterLoreEntries);
                 break;
             case world_info_insertion_strategy.character_first:
-                console.debug('WI using char first');
-                entries = [...characterLore.sort(sortFn), ...globalLore.sort(sortFn)];
+                entries = [...characterLoreEntries.sort(sortFn), ...globalLoreEntries.sort(sortFn)];
                 break;
             case world_info_insertion_strategy.global_first:
-                console.debug('WI using global first');
-                entries = [...globalLore.sort(sortFn), ...characterLore.sort(sortFn)];
+                entries = [...globalLoreEntries.sort(sortFn), ...characterLoreEntries.sort(sortFn)];
                 break;
             default:
-                console.error('Unknown WI insertion strategy: ', world_info_character_strategy, 'defaulting to evenly');
-                entries = [...globalLore, ...characterLore].sort(sortFn);
+                console.error('Sort Unknown WI insertion strategy: ', world_info_character_strategy, 'defaulting to evenly');
+                entries = sortWithInterleavingEvenly(globalLoreEntries, characterLoreEntries);
                 break;
         }
 
         // Chat lore always goes first
-        entries = [...chatLore.sort(sortFn), ...entries];
+        entries = [...chatLoreEntries.sort(sortFn), ...entries];
 
-        console.debug(`Sorted ${entries.length} world lore entries using strategy ${world_info_character_strategy}`);
+        console.debug(`Sorted ${entries.length} world lore entries using strategy ${Object.keys(world_info_insertion_strategy).filter(x => world_info_insertion_strategy[x] === world_info_character_strategy)}`);
 
         // Need to deep clone the entries to avoid modifying the cached data
         return structuredClone(entries);
@@ -2146,6 +2181,53 @@ async function getSortedEntries() {
         console.error(e);
         return [];
     }
+}
+
+/**
+ * Combines the two given world entry lists, sorts them by order, interleaving them evenly on same order level
+ *
+ * @param {WorldInfoEntry[]} firstEntries - First entries
+ * @param {WorldInfoEntry[]} secondEntries - Second entries
+ * @returns {WorldInfoEntry[]} The sorted combined entries
+ */
+function sortWithInterleavingEvenly(firstEntries, secondEntries) {
+    firstEntries.sort(sortFn);
+    secondEntries.sort(sortFn);
+
+    /** @type {WorldInfoEntry[]} */
+    let result = [];
+    let pickFromFirst = true;
+    let firstIndex = 0, secondIndex = 0;
+
+    while (firstIndex < firstEntries.length || secondIndex < secondEntries.length) {
+        // If one list is exhausted, append the rest of the other list
+        if (firstIndex == firstEntries.length) {
+            result = result.concat(secondEntries.slice(secondIndex));
+            break;
+        }
+        if (secondIndex == secondEntries.length) {
+            result = result.concat(firstEntries.slice(firstIndex));
+            break;
+        }
+
+        // Decide which list to pick from based on the sorting function, or alternate if they have the same order
+        const sort = sortFn(firstEntries[firstIndex], secondEntries[secondIndex]);
+        if (sort > 0) {
+            pickFromFirst = true;
+        } else if (sort < 0) {
+            pickFromFirst = false;
+        }
+
+        // Pick an entry from the selected list, then toggle the picker
+        if (pickFromFirst) {
+            result.push(firstEntries[firstIndex++]);
+        } else {
+            result.push(secondEntries[secondIndex++]);
+        }
+        pickFromFirst = !pickFromFirst;
+    }
+
+    return result;
 }
 
 /**
