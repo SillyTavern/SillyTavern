@@ -29,17 +29,28 @@ export {
     getWorldInfoPrompt,
 };
 
+/** @enum {number} Insertion strategies for world entries */
 const world_info_insertion_strategy = {
     evenly: 0,
     character_first: 1,
     global_first: 2,
 };
 
+/** @enum {number} Combination logic for secondary keys on world entries */
 const world_info_logic = {
     AND_ANY: 0,
     NOT_ALL: 1,
     NOT_ANY: 2,
     AND_ALL: 3,
+};
+
+/** @enum {number} Possible positions of world entries */
+const world_info_position = {
+    before: 0,
+    after: 1,
+    ANTop: 2,
+    ANBottom: 3,
+    atDepth: 4,
 };
 
 let world_info = {};
@@ -71,6 +82,49 @@ const METADATA_KEY = 'world_info';
 
 const DEFAULT_DEPTH = 4;
 const MAX_SCAN_DEPTH = 1000;
+
+/**
+ * @typedef {object} WorldInfoEntry An entry of a world info
+ * @property {number} uid - The internal id
+ * @property {string[]} key - A list of keys that trigger this entry
+ * @property {string[]} keysecondary - A list of secondary keys that can be combined with `selectiveLogic` rules as an additional positive or negative trigger filter
+ * @property {number?} [selectiveLogic] - An optional number specifying the logic to apply the secondary keys, corresponding to `world_info_logic` values
+ * @property {string} content - The text content of the entry
+ * @property {string?} [comment] - A comment ???
+ *
+ * @property {boolean} constant - A flag indicating that this entry always gets inserted, if the world is active
+ * @property {boolean} disable - A flag to fully disable an entry
+ * @property {number} probability - The probability in percent (0-100) at which this entry should be triggered
+ * @property {number} position - The position of the entry, corresponding to `world_info_position` values
+ * @property {number?} [depth] - An optional depth number at which this should be inserted when `position` at depth is chosen
+ * @property {number?} [role] - An optional role that is specified when `position` at depth is chosen to decide he role under which this is inserted, corresponding to `extension_prompt_roles`
+ *
+ * @property {number?} [order] - A number specifying the order position when this entry gets sorted with others. Lower number means higher up.
+ * @property {number?} [displayIndex] - A number indicating the position in the list when "custom sort" is chosen. Just for display in the world info. For the actual sorting, refer to `order`.
+ * @property {string?} [group] - An optional group. If multiple entries with the same group are trigger, only one entry with the same label will be activated.
+ * @property {boolean} [excludeRecursion] - When activated, this entry can't be triggered through other entries
+ * @property {boolean} [preventRecursion] - When activated, this entry will not trigger any further entries with its content
+ * @property {number?} [scanDepth] - An optional override of the default scan depth the specifies how deep will be checked for this entry to trigger
+ * @property {boolean?} [caseSensitive] - An optional flag indicating whether the keys will be matched case-insensitive
+ * @property {boolean?} [matchWholeWords] - If enabled, all keys will be matched as whole words, and not just checked if they appear in the string
+ * @property {string|string[]|number?} [automationId] - An optional automation ID used for scripting
+ * @property {{isExclude: boolean, names: string[], tags: string[]}?} [characterFilter] - An optional object defining filters on specified characters or tags
+ *
+ * @property {boolean?} [selective] - ??? [@deprecated?]
+ * @property {boolean?} [addMemo] - ??? [@deprecated?]
+ * @property {boolean?} [useProbability] - ??? [@deprecated?]
+ */
+
+/**
+ * @typedef {object} WorldInfo A world info object, containing all its entries
+ * @property {string} name - The world name
+ * @property {WorldInfoEntry[]} entries - All entries
+ */
+
+/**
+ * @typedef {object} WorldData A world object, containing the data for all entries.
+ * @property {{[uid: string]: WorldInfoEntry}} entries - All world info entries, grouped by their uid (as a string)
+ */
 
 /**
  * Represents a scanning buffer for one evaluation of World Info.
@@ -219,14 +273,6 @@ export function getWorldInfoSettings() {
         world_info_budget_cap,
     };
 }
-
-const world_info_position = {
-    before: 0,
-    after: 1,
-    ANTop: 2,
-    ANBottom: 3,
-    atDepth: 4,
-};
 
 const worldInfoCache = {};
 
@@ -564,6 +610,12 @@ async function showWorldEditor(name) {
     displayWorldEntries(name, wiData);
 }
 
+/**
+ * Loads the world info
+ *
+ * @param {string} name - World name
+ * @returns {Promise<WorldData>?} The data containing the world info entries
+ */
 async function loadWorldInfoData(name) {
     if (!name) {
         return;
@@ -622,8 +674,8 @@ function getWIElement(name) {
 }
 
 /**
- * @param {any[]} data WI entries
- * @returns {any[]} Sorted data
+ * @param {WorldInfoEntry[]} data WI entries
+ * @returns {WorldInfoEntry[]} Sorted data
  */
 function sortEntries(data) {
     const option = $('#world_info_sort_order').find(':selected');
@@ -694,6 +746,13 @@ function nullWorldInfo() {
     toastr.info('Create or import a new World Info file first.', 'World Info is not set', { timeOut: 10000, preventDuplicates: true });
 }
 
+/**
+ * Displays the given world info
+ *
+ * @param {string} name - The name of the world
+ * @param {WorldData?} data - The API data returned wrapping the world entries
+ * @param {number} navigation - Optional navigation option, corresponding to `navigation_option` values
+ */
 function displayWorldEntries(name, data, navigation = navigation_option.none) {
     updateEditor = (navigation) => displayWorldEntries(name, data, navigation);
 
@@ -965,6 +1024,14 @@ function deleteOriginalDataValue(data, uid) {
     }
 }
 
+/**
+ * Displays a world info entry
+ *
+ * @param {string} name - The world name
+ * @param {WorldData} data - The world info data
+ * @param {WorldInfoEntry} entry - The specific entry
+ * @returns
+ */
 function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
@@ -1142,7 +1209,7 @@ function getWorldEntry(name, data, entry) {
         const uid = $(this).data('uid');
         const value = $(this).val();
         resetScrollHeight(this);
-        data.entries[uid].comment = value;
+        data.entries[uid].comment = value.toString();
 
         setOriginalDataValue(data, uid, 'comment', data.entries[uid].comment);
         saveWorldInfo(name, data);
@@ -1177,7 +1244,7 @@ function getWorldEntry(name, data, entry) {
     contentInput.on('input', function (_, { skipCount } = {}) {
         const uid = $(this).data('uid');
         const value = $(this).val();
-        data.entries[uid].content = value;
+        data.entries[uid].content = value.toString();
 
         setOriginalDataValue(data, uid, 'content', data.entries[uid].content);
         saveWorldInfo(name, data);
@@ -1586,7 +1653,7 @@ function getWorldEntry(name, data, entry) {
     function updatePosOrdDisplay(uid) {
         // display position/order info left of keyword box
         let entry = data.entries[uid];
-        let posText = entry.position;
+        let posText = String(entry.position);
         switch (entry.position) {
             case 0:
                 posText = '↑CD';
@@ -1612,7 +1679,7 @@ function getWorldEntry(name, data, entry) {
 
 /**
  * Get the inclusion groups for the autocomplete.
- * @param {any} data WI data
+ * @param {WorldData} data WI data
  * @returns {(input: any, output: any) => any} Callback function for the autocomplete
  */
 function getInclusionGroupCallback(data) {
@@ -1637,7 +1704,11 @@ function getInclusionGroupCallback(data) {
         output(result);
     };
 }
-
+/**
+ * Get the automation callback
+ * @param {WorldData} data WI data
+ * @returns {(input: any, output: any) => any} Callback function for the automation id
+ */
 function getAutomationIdCallback(data) {
     return function (input, output) {
         const ids = new Set();
@@ -1687,6 +1758,12 @@ function createEntryInputAutocomplete(input, callback) {
     });
 }
 
+/**
+ * Deletes a given worl info entry
+ * @param {WorldData} data - The entry data
+ * @param {number|string} uid - The uid of the world entry
+ * @returns {Promise}
+ */
 async function deleteWorldInfoEntry(data, uid) {
     if (!data || !('entries' in data)) {
         return;
@@ -1699,7 +1776,9 @@ async function deleteWorldInfoEntry(data, uid) {
     delete data.entries[uid];
 }
 
+/** @type {WorldInfoEntry} */
 const newEntryTemplate = {
+    uid: -1,
     key: [],
     keysecondary: [],
     comment: '',
@@ -1723,6 +1802,14 @@ const newEntryTemplate = {
     role: 0,
 };
 
+/**
+ * Create a new world info entry and inserts it into the world
+ *
+ * @param {string} name - World name
+ * @param {WorldData} data - World data
+ * @param {boolean} [fromSlashCommand=false] - Whether this entry was created via a slash command
+ * @returns {WorldInfoEntry} the new entry
+ */
 function createWorldInfoEntry(name, data, fromSlashCommand = false) {
     const newUid = getFreeWorldEntryUid(data);
 
@@ -1741,6 +1828,12 @@ function createWorldInfoEntry(name, data, fromSlashCommand = false) {
     return newEntry;
 }
 
+/**
+ * Saves the world info via API. Internal function. Call `saveWorldInfo` instead.
+ *
+ * @param {string} name - World name
+ * @param {WorldData} data - World data
+ */
 async function _save(name, data) {
     await fetch('/api/worldinfo/edit', {
         method: 'POST',
@@ -1750,7 +1843,15 @@ async function _save(name, data) {
     eventSource.emit(event_types.WORLDINFO_UPDATED, name, data);
 }
 
-async function saveWorldInfo(name, data, immediately) {
+/**
+ * Saves the world info
+ *
+ * @param {string} name - World name
+ * @param {WorldData} data - World data
+ * @param {boolean} [immediately=false] - Whether the save should happen immediatly or debounced
+ * @returns {Promise}
+ */
+async function saveWorldInfo(name, data, immediately = false) {
     if (!name || !data) {
         return;
     }
@@ -1764,6 +1865,13 @@ async function saveWorldInfo(name, data, immediately) {
     saveWorldDebounced(name, data);
 }
 
+/**
+ * Renames the given world
+ *
+ * @param {string} name - World name
+ * @param {WorldData} data - World data
+ * @returns {Promise}
+ */
 async function renameWorldInfo(name, data) {
     const oldName = name;
     const newName = await callPopup('<h3>Rename World Info</h3>Enter a new name:', 'input', oldName);
@@ -1800,6 +1908,12 @@ async function renameWorldInfo(name, data) {
     }
 }
 
+/**
+ * Deletes the given world
+ *
+ * @param {string} worldInfoName - World name
+ * @returns {Promise}
+ */
 async function deleteWorldInfo(worldInfoName) {
     if (!world_names.includes(worldInfoName)) {
         return;
@@ -1831,6 +1945,12 @@ async function deleteWorldInfo(worldInfoName) {
     }
 }
 
+/**
+ * Gets the next free uid for this world
+ *
+ * @param {WorldData} data - World data
+ * @returns {number|null} The next free uid, or `null` if limit is reached
+ */
 function getFreeWorldEntryUid(data) {
     if (!data || !('entries' in data)) {
         return null;
@@ -1847,6 +1967,11 @@ function getFreeWorldEntryUid(data) {
     return null;
 }
 
+/**
+ * Gets a default world name that is still free
+ *
+ * @returns {string|undefined} World name, or `undefined` if limit is reached
+ */
 function getFreeWorldName() {
     const MAX_FREE_NAME = 100_000;
     for (let index = 1; index < MAX_FREE_NAME; index++) {
@@ -1860,6 +1985,12 @@ function getFreeWorldName() {
     return undefined;
 }
 
+/**
+ * Creates a new world info
+ *
+ * @param {string} worldInfoName - World name
+ * @returns {Promise}
+ */
 async function createNewWorldInfo(worldInfoName) {
     const worldInfoTemplate = { entries: {} };
 
@@ -1878,6 +2009,11 @@ async function createNewWorldInfo(worldInfoName) {
     }
 }
 
+/**
+ * Gets a list of all character lore world entries
+ *
+ * @returns {Promise<WorldInfoEntry[]>} A list of all character world entries
+ */
 async function getCharacterLore() {
     const character = characters[this_chid];
     const name = character?.name;
@@ -1919,6 +2055,11 @@ async function getCharacterLore() {
     return entries;
 }
 
+/**
+ * Gets a list of all global world entries
+ *
+ * @returns {Promise<WorldInfoEntry[]>} A list of all global world entries
+ */
 async function getGlobalLore() {
     if (!selected_world_info) {
         return [];
@@ -1936,6 +2077,11 @@ async function getGlobalLore() {
     return entries;
 }
 
+/**
+ * Gets a list of all chat-specific world entries
+ *
+ * @returns {Promise<WorldInfoEntry[]>} A list of all chat-specific world entries
+ */
 async function getChatLore() {
     const chatWorld = chat_metadata[METADATA_KEY];
 
@@ -1956,6 +2102,11 @@ async function getChatLore() {
     return entries;
 }
 
+/**
+ * Gets a sorted list of <b>all</b> world entries, combining global, character and chat lore
+ *
+ * @returns {Promise<WorldInfoEntry[]>} A list of all character lore
+ */
 async function getSortedEntries() {
     try {
         const globalLore = await getGlobalLore();
@@ -1999,6 +2150,7 @@ async function getSortedEntries() {
 
 /**
  * Performs a scan on the chat and returns the world info activated.
+ *
  * @param {string[]} chat The chat messages to scan.
  * @param {number} maxContext The maximum context size of the generation.
  * @typedef {{ worldInfoBefore: string, worldInfoAfter: string, WIDepthEntries: any[], allActivatedEntries: Set<any> }} WIActivated
@@ -2292,9 +2444,10 @@ async function checkWorldInfo(chat, maxContext) {
 }
 
 /**
- * Filters entries by inclusion groups.
- * @param {object[]} newEntries Entries activated on current recursion level
- * @param {Set<object>} allActivatedEntries Set of all activated entries
+ * Filters entries by inclusion groups
+ *
+ * @param {WorldInfoEntry[]} newEntries Entries activated on current recursion level
+ * @param {Set<WorldInfoEntry>} allActivatedEntries Set of all activated entries
  */
 function filterByInclusionGroups(newEntries, allActivatedEntries) {
     console.debug('-- INCLUSION GROUP CHECKS BEGIN --');
@@ -2361,6 +2514,12 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
     }
 }
 
+/**
+ * Converts the given agnai memory book to world data
+ *
+ * @param {{entries: any[]}} inputObj - Input object
+ * @returns {WorldData} The converted world data
+ */
 function convertAgnaiMemoryBook(inputObj) {
     const outputObj = { entries: {} };
 
@@ -2395,6 +2554,12 @@ function convertAgnaiMemoryBook(inputObj) {
     return outputObj;
 }
 
+/**
+ * Converts the given riso lorebook to world data
+ *
+ * @param {{data: any[]}} inputObj - Input object
+ * @returns {WorldData} The converted world data
+ */
 function convertRisuLorebook(inputObj) {
     const outputObj = { entries: {} };
 
@@ -2429,6 +2594,12 @@ function convertRisuLorebook(inputObj) {
     return outputObj;
 }
 
+/**
+ * Converts the given novel lorebook to world data
+ *
+ * @param {{entries: any[]}} inputObj - Input object
+ * @returns {WorldData} The converted world data
+ */
 function convertNovelLorebook(inputObj) {
     const outputObj = {
         entries: {},
@@ -2468,6 +2639,12 @@ function convertNovelLorebook(inputObj) {
     return outputObj;
 }
 
+/**
+ * Converts the given character book to world data
+ *
+ * @param {{entries: any[]}} characterBook - Input object
+ * @returns {WorldData} The converted world data
+ */
 function convertCharacterBook(characterBook) {
     const result = { entries: {}, originalData: characterBook };
 
