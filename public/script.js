@@ -9939,14 +9939,14 @@ jQuery(async function () {
         $('#character_import_file').click();
     });
 
-    $('#character_import_file').on('change', function (e) {
+    $('#character_import_file').on('change', async function (e) {
         $('#rm_info_avatar').html('');
         if (!e.target.files.length) {
             return;
         }
 
         for (const file of e.target.files) {
-            importCharacter(file);
+            await importCharacter(file);
         }
     });
 
