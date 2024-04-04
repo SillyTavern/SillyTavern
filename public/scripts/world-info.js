@@ -205,13 +205,6 @@ class WorldInfoBuffer {
     }
 
     /**
-     * Empties recursion buffer.
-     */
-    recurseReset() {
-        this.#recurseBuffer = [];
-    }
-
-    /**
      * Increments skew and sets startDepth to previous depth.
      */
     advanceScanPosition() {
@@ -2236,9 +2229,6 @@ async function checkWorldInfo(chat, maxContext) {
         }
 
         if (needsToScan) {
-            // If you're here from a previous loop, clear recurse buffer
-            buffer.recurseReset();
-
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
                 .filter(x => !x.preventRecursion)
@@ -2258,8 +2248,6 @@ async function checkWorldInfo(chat, maxContext) {
                 if (!over_max) {
                     needsToScan = true; // loop
                     buffer.advanceScanPosition();
-                    // No recurse was added, since `!needsToScan`, but clear previous one since it was checked already
-                    buffer.recurseReset();
                 }
             }
         }
