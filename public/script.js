@@ -752,7 +752,6 @@ function reloadMarkdownProcessor(render_formulas = false) {
 }
 
 function getCurrentChatId() {
-    console.debug(`selectedGroup:${selected_group}, this_chid:${this_chid}`);
     if (selected_group) {
         return groups.find(x => x.id == selected_group)?.chat_id;
     }
