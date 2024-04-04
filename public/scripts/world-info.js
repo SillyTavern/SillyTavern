@@ -96,6 +96,11 @@ class WorldInfoBuffer {
     #skew = 0;
 
     /**
+     * @type {number} The starting depth of the global scan depth. Incremented by "min activations" feature to not repeat scans. When > 0 it means a complete scan was done up to #startDepth already, and `advanceScanPosition` was called.
+     */
+    #startDepth = 0;
+
+    /**
      * Initialize the buffer with the given messages.
      * @param {string[]} messages Array of messages to add to the buffer
      */
@@ -137,7 +142,10 @@ class WorldInfoBuffer {
      * @returns {string} A slice of buffer until the given depth (inclusive)
      */
     get(entry) {
-        let depth = entry.scanDepth ?? (world_info_depth + this.#skew);
+        let depth = entry.scanDepth ?? this.getDepth();
+        if (depth <= this.#startDepth) {
+            return '';
+        }
 
         if (depth < 0) {
             console.error(`Invalid WI scan depth ${depth}. Must be >= 0`);
@@ -149,7 +157,7 @@ class WorldInfoBuffer {
             depth = MAX_SCAN_DEPTH;
         }
 
-        let result = this.#depthBuffer.slice(0, depth).join('\n');
+        let result = this.#depthBuffer.slice(this.#startDepth, depth).join('\n');
 
         if (this.#recurseBuffer.length > 0) {
             result += '\n' + this.#recurseBuffer.join('\n');
@@ -197,10 +205,25 @@ class WorldInfoBuffer {
     }
 
     /**
-     * Adds an increment to depth skew.
+     * Empties recursion buffer.
      */
-    addSkew() {
+    recurseReset() {
+        this.#recurseBuffer = [];
+    }
+
+    /**
+     * Increments skew and sets startDepth to previous depth.
+     */
+    advanceScanPosition() {
+        this.#startDepth = this.getDepth();
         this.#skew++;
+    }
+
+    /**
+     * @returns {number} Settings' depth + current skew.
+     */
+    getDepth() {
+        return world_info_depth + this.#skew;
     }
 }
 
@@ -2009,7 +2032,6 @@ async function checkWorldInfo(chat, maxContext) {
     const buffer = new WorldInfoBuffer(chat);
 
     // Combine the chat
-    let minActivationMsgIndex = world_info_depth; // tracks chat index to satisfy `world_info_min_activations`
 
     // Add the depth or AN if enabled
     // Put this code here since otherwise, the chat reference is modified
@@ -2214,6 +2236,9 @@ async function checkWorldInfo(chat, maxContext) {
         }
 
         if (needsToScan) {
+            // If you're here from a previous loop, clear recurse buffer
+            buffer.recurseReset();
+
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
                 .filter(x => !x.preventRecursion)
@@ -2225,15 +2250,16 @@ async function checkWorldInfo(chat, maxContext) {
         // world_info_min_activations
         if (!needsToScan && !token_budget_overflowed) {
             if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
-                let over_max = false;
-                over_max = (
+                let over_max = (
                     world_info_min_activations_depth_max > 0 &&
-                    minActivationMsgIndex > world_info_min_activations_depth_max
-                ) || (minActivationMsgIndex >= chat.length);
+                    buffer.getDepth() > world_info_min_activations_depth_max
+                ) || (buffer.getDepth() > chat.length);
+
                 if (!over_max) {
-                    needsToScan = true;
-                    minActivationMsgIndex += 1;
-                    buffer.addSkew();
+                    needsToScan = true; // loop
+                    buffer.advanceScanPosition();
+                    // No recurse was added, since `!needsToScan`, but clear previous one since it was checked already
+                    buffer.recurseReset();
                 }
             }
         }
