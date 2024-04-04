@@ -227,7 +227,7 @@ async function* parseStreamData(json) {
         }
     }
 
-    return null;
+    yield null;
 }
 
 /**
@@ -243,6 +243,12 @@ export class SmoothEventSourceStream extends EventSourceStream {
                 const data = event.data;
                 try {
                     const hasFocus = document.hasFocus();
+
+                    if (data === '[DONE]') {
+                        lastStr = '';
+                        return controller.enqueue(event);
+                    }
+
                     const json = JSON.parse(data);
 
                     if (!json) {
@@ -261,7 +267,8 @@ export class SmoothEventSourceStream extends EventSourceStream {
                         lastStr = parsed.chunk;
                         hasFocus && await eventSource.emit(event_types.SMOOTH_STREAM_TOKEN_RECEIVED, parsed.chunk);
                     }
-                } catch {
+                } catch (error) {
+                    console.error('Smooth Streaming parsing error', error);
                     controller.enqueue(event);
                 }
             },
