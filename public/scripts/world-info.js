@@ -2102,8 +2102,6 @@ async function checkWorldInfo(chat, maxContext) {
                     const substituted = substituteParams(key);
                     const textToScan = buffer.get(entry);
 
-                    console.debug(`${entry.uid}: ${substituted}`);
-
                     if (substituted && buffer.matchKeys(textToScan, substituted.trim(), entry)) {
                         console.debug(`WI UID ${entry.uid} found by primary match: ${substituted}.`);
 
@@ -2160,7 +2158,7 @@ async function checkWorldInfo(chat, maxContext) {
                             activatedNow.add(entry);
                             break primary;
                         }
-                    } else { console.debug(`No active entries for logic checks for word: ${substituted}.`); }
+                    }
                 }
             }
         }
