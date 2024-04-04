@@ -36,7 +36,13 @@ async function parseCohereStream(jsonStream, request, response) {
                 } catch (e) {
                     break;
                 }
-                if (json.event_type === 'text-generation') {
+                if (json.message) {
+                    const message = json.message || 'Unknown error';
+                    const chunk = { error: { message: message } };
+                    response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                    partialData = '';
+                    break;
+                } else if (json.event_type === 'text-generation') {
                     const text = json.text || '';
                     const chunk = { choices: [{ text }] };
                     response.write(`data: ${JSON.stringify(chunk)}\n\n`);
