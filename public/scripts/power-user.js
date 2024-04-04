@@ -204,6 +204,7 @@ let power_user = {
         output_suffix: '',
         system_sequence: '',
         system_suffix: '',
+        last_system_sequence: '',
         first_output_sequence: '',
         last_output_sequence: '',
         system_sequence_prefix: '',

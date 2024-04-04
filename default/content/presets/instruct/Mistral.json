@@ -19,5 +19,6 @@
     "system_suffix": "",
     "user_alignment_message": "Let's get started. Please respond based on the information and instructions provided above.",
     "system_same_as_user": true,
+    "last_system_sequence": "",
     "name": "Mistral"
 }

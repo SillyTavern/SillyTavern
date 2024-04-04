@@ -3034,12 +3034,12 @@
                                         </div>
                                     </div>
                                     <div class="flex-container">
-                                        <div class="flex1" title="Will be inserted at the start of the chat history if it doesn't start with a User message.">
-                                            <label for="instruct_user_alignment_message">
-                                                <small data-i18n="User Filler Message">User Filler Message</small>
+                                        <div class="flex1" title="Will be inserted as a last prompt line when using system/neutral generation.">
+                                            <label for="instruct_last_system_sequence">
+                                                <small data-i18n="System Instruction Prefix">System Instruction Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_last_system_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1" title="If a stop sequence is generated, everything past it will be removed from the output (inclusive).">
@@ -3048,6 +3048,16 @@
                                             </label>
                                             <div>
                                                 <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex1" title="Will be inserted at the start of the chat history if it doesn't start with a User message.">
+                                            <label for="instruct_user_alignment_message">
+                                                <small data-i18n="User Filler Message">User Filler Message</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>
