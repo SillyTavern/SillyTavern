@@ -765,7 +765,9 @@ function toggleTagThreeState(element, { stateOverride = undefined, simulateClick
             element.toggleClass(FILTER_STATES[state].class, state === states[targetStateIndex]);
         });
 
-        console.debug('toggle three-way filter from', states[currentStateIndex], 'to', states[targetStateIndex], 'on', element);
+        if (states[currentStateIndex] !== states[targetStateIndex]) {
+            console.debug('toggle three-way filter from', states[currentStateIndex], 'to', states[targetStateIndex], 'on', element);
+        }
     }
 
 
