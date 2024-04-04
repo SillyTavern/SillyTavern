@@ -208,7 +208,7 @@ import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_set
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 
@@ -324,9 +324,12 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
         return;
     }
 
-    if (!power_user.forbid_external_images) {
+    const isMediaAllowed = isExternalMediaAllowed();
+    if (isMediaAllowed) {
         return;
     }
+
+    let mediaBlocked = false;
 
     switch (node.tagName) {
         case 'AUDIO':
@@ -350,6 +353,7 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
                     if (isExternalUrl(url)) {
                         console.warn('External media blocked', url);
                         node.remove();
+                        mediaBlocked = true;
                         break;
                     }
                 }
@@ -357,15 +361,36 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
 
             if (src && isExternalUrl(src)) {
                 console.warn('External media blocked', src);
+                mediaBlocked = true;
                 node.remove();
             }
 
             if (data && isExternalUrl(data)) {
                 console.warn('External media blocked', data);
+                mediaBlocked = true;
                 node.remove();
             }
         }
             break;
+    }
+
+    if (mediaBlocked) {
+        const entityId = getCurrentEntityId();
+        const warningShownKey = `mediaWarningShown:${entityId}`;
+
+        if (localStorage.getItem(warningShownKey) === null) {
+            const warningToast = toastr.warning(
+                'Use the "Ext. Media" button to allow it. Click on this message to dismiss.',
+                'External media has been blocked',
+                {
+                    timeOut: 0,
+                    preventDuplicates: true,
+                    onclick: () => toastr.clear(warningToast),
+                },
+            );
+
+            localStorage.setItem(warningShownKey, 'true');
+        }
     }
 });
 
@@ -1692,7 +1717,7 @@ export async function reloadCurrentChat() {
     chat.length = 0;
 
     if (selected_group) {
-        await getGroupChat(selected_group);
+        await getGroupChat(selected_group, true);
     }
     else if (this_chid) {
         await getChat();
@@ -6899,6 +6924,12 @@ export function select_selected_character(chid) {
 
     $('#form_create').attr('actiontype', 'editcharacter');
     $('.form_create_bottom_buttons_block .chat_lorebook_button').show();
+
+    const externalMediaState = isExternalMediaAllowed();
+    $('#character_open_media_overrides').toggle(!selected_group);
+    $('#character_media_allowed_icon').toggle(externalMediaState);
+    $('#character_media_forbidden_icon').toggle(!externalMediaState);
+
     saveSettingsDebounced();
 }
 
@@ -6959,6 +6990,7 @@ function select_rm_create() {
 
     $('#form_create').attr('actiontype', 'createcharacter');
     $('.form_create_bottom_buttons_block .chat_lorebook_button').hide();
+    $('#character_open_media_overrides').hide();
 }
 
 function select_rm_characters() {

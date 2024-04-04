@@ -4268,12 +4268,21 @@
                         </div>
                         <div id="descriptionWrapper" class="flex-container flexFlowColumn flex1">
                             <hr>
-                            <div id="description_div" class="flex-container alignitemscenter">
-                                <span data-i18n="Character Description">Description</span>
-                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
-                                    <span class="fa-solid fa-circle-question note-link-span"></span>
-                                </a>
+                            <div id="description_div" class="title_restorable">
+                                <div class="flex-container alignitemscenter">
+                                    <span data-i18n="Character Description">Description</span>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </div>
+                                <div id="character_open_media_overrides" class="menu_button menu_button_icon open_media_overrides" title="Click to allow/forbid the use of external media for this character." data-i18n="[title]Click to allow/forbid the use of external media for this character.">
+                                    <i id="character_media_allowed_icon" class="fa-solid fa-fw fa-link"></i>
+                                    <i id="character_media_forbidden_icon" class="fa-solid fa-fw fa-link-slash"></i>
+                                    <span data-i18n="Ext. Media">
+                                        Ext. Media
+                                    </span>
+                                </div>
                             </div>
                             <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." name="description" placeholder=""></textarea>
                             <div class="extension_token_counter">
@@ -4373,6 +4382,10 @@
                                         <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-scroll" title="Set a group chat scenario" data-i18n="[title]Set a group chat scenario"></div>
                                         <div id="group_favorite_button" class="heightFitContent margin0 menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
                                         <input id="rm_group_fav" type="hidden" />
+                                        <div id="group_open_media_overrides" class="heightFitContent margin0 menu_button menu_button_icon open_media_overrides" title="Click to allow/forbid the use of external media for this group." data-i18n="[title]Click to allow/forbid the use of external media for this group.">
+                                            <i id="group_media_allowed_icon" class="fa-solid fa-fw fa-link"></i>
+                                            <i id="group_media_forbidden_icon" class="fa-solid fa-fw fa-link-slash"></i>
+                                        </div>
                                         <div id="rm_group_submit" class="heightFitContent margin0 menu_button fa-solid fa-check" title="Create" data-i18n="[title]Create"></div>
                                         <div id="rm_group_restore_avatar" class="heightFitContent margin0 menu_button fa-solid fa-images" title="Restore collage avatar" data-i18n="[title]Restore collage avatar"></div>
                                         <div id="rm_group_delete" class="heightFitContent margin0 menu_button fa-solid fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
@@ -5378,6 +5391,32 @@
                 <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
             </div>
             <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="16"></textarea>
+        </div>
+    </div>
+    <div id="forbid_media_override_template" class="template_element">
+        <div class="forbid_media_override flex-container flexFlowColumn">
+            <h4 data-i18n="Forbid Media Override explanation" class="margin0">
+                Ability of the current character/group to use external media in chats.
+            </h4>
+            <small data-i18n="Forbid Media Override subtitle" class="marginBot5">
+                Media: images, videos, audio. External: not hosted on the local server.
+            </small>
+            <label class="checkbox_label" for="forbid_media_override_global">
+                <input type="radio" id="forbid_media_override_global" name="forbid_media_override" />
+                <span>
+                    <span data-i18n="Use global setting">Use global setting</span>
+                    <b class="forbid_media_global_state_forbidden">(forbidden)</b>
+                    <b class="forbid_media_global_state_allowed">(allowed)</b>
+                </span>
+            </label>
+            <label class="checkbox_label" for="forbid_media_override_forbidden">
+                <input type="radio" id="forbid_media_override_forbidden" name="forbid_media_override" />
+                <span data-i18n="Always forbidden">Always forbidden</span>
+            </label>
+            <label class="checkbox_label" for="forbid_media_override_allowed">
+                <input type="radio" id="forbid_media_override_allowed" name="forbid_media_override" />
+                <span data-i18n="Always allowed">Always allowed</span>
+            </label>
         </div>
     </div>
     <!-- chat and input bar -->
