@@ -2006,7 +2006,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
     };
     const show = (isInput = false, isForced = false) => {
         //TODO check if isInput and isForced are both required
-        isForced = isForced || isInput;
+        // isForced = isForced || isInput;
         text = textarea.value;
         // only show with textarea in focus
         if (document.activeElement != textarea) return hide();
@@ -2016,7 +2016,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         executor = parser.getCommandAt(text, textarea.selectionStart);
         let slashCommand = executor?.name?.toLowerCase() ?? '';
         isReplacable = isInput && (!executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length + 1);
-        if (isForced && textarea.selectionStart > executor.start - 2 && textarea.selectionStart <= executor.start - 2 + executor.name.length + 1) {
+        if ((isForced || isInput) && textarea.selectionStart > executor.start - 2 && textarea.selectionStart <= executor.start - 2 + executor.name.length + 1) {
             slashCommand = slashCommand.slice(0, textarea.selectionStart - (executor.start - 2) - 1);
             executor.name = slashCommand;
             executor.end = executor.start + slashCommand.length;
