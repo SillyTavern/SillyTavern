@@ -43,6 +43,9 @@ export {
 
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
 const GROUP_FILTER_SELECTOR = '#rm_group_chats_block .rm_tag_filter';
+const TAG_TEMPLATE = $('#tag_template .tag');
+const FOLDER_TEMPLATE = $('#bogus_folder_template .bogus_folder_select');
+const VIEW_TAG_TEMPLATE = $('#tag_view_template .tag_view_item');
 
 function getFilterHelper(listSelector) {
     return $(listSelector).is(GROUP_FILTER_SELECTOR) ? groupCandidatesFilter : entitiesFilter;
@@ -271,7 +274,7 @@ function getTagBlock(tag, entities, hidden = 0) {
 
     const tagFolder = TAG_FOLDER_TYPES[tag.folder_type];
 
-    const template = $('#bogus_folder_template .bogus_folder_select').clone();
+    const template = FOLDER_TEMPLATE.clone();
     template.addClass(tagFolder.class);
     template.attr({ 'tagid': tag.id, 'id': `BogusFolder${tag.id}` });
     template.find('.avatar').css({ 'background-color': tag.color, 'color': tag.color2 }).attr('title', `[Folder] ${tag.name}`);
@@ -665,7 +668,7 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
         return;
     }
 
-    let tagElement = $('#tag_template .tag').clone();
+    let tagElement = TAG_TEMPLATE.clone();
     tagElement.attr('id', tag.id);
 
     //tagElement.css('color', 'var(--SmartThemeBodyColor)');
@@ -1131,7 +1134,7 @@ function onTagCreateClick() {
 
 function appendViewTagToList(list, tag, everything) {
     const count = everything.filter(x => x == tag.id).length;
-    const template = $('#tag_view_template .tag_view_item').clone();
+    const template = VIEW_TAG_TEMPLATE.clone();
     template.attr('id', tag.id);
     template.find('.tag_view_counter_value').text(count);
     template.find('.tag_view_name').text(tag.name);
@@ -1148,16 +1151,18 @@ function appendViewTagToList(list, tag, everything) {
         template.find('.tag_as_folder').hide();
     }
 
-    template.find('.tagColorPickerHolder').html(
-        `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`,
-    );
-    template.find('.tagColorPicker2Holder').html(
-        `<toolcool-color-picker id="${colorPicker2Id}" color="${tag.color2}" class="tag-color2"></toolcool-color-picker>`,
-    );
+    const primaryColorPicker = $('<toolcool-color-picker></toolcool-color-picker>')
+        .addClass('tag-color')
+        .attr({ id: colorPickerId, color: tag.color });
+
+    const secondaryColorPicker = $('<toolcool-color-picker></toolcool-color-picker>')
+        .addClass('tag-color2')
+        .attr({ id: colorPicker2Id, color: tag.color2 });
+
+    template.find('.tagColorPickerHolder').append(primaryColorPicker);
+    template.find('.tagColorPicker2Holder').append(secondaryColorPicker);
 
     template.find('.tag_as_folder').attr('id', tagAsFolderId);
-    template.find('.tag-color').attr('id', colorPickerId);
-    template.find('.tag-color2').attr('id', colorPicker2Id);
 
     list.append(template);
 
