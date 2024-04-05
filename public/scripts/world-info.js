@@ -1218,6 +1218,8 @@ function getWorldEntry(name, data, entry) {
         if (counter.data('first-run')) {
             counter.data('first-run', false);
             countTokensDebounced(counter, contentInput.val());
+            initScrollHeight(keyInput);
+            initScrollHeight(keySecondaryInput);
         }
     });
 
