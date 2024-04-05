@@ -2524,7 +2524,7 @@ async function generateComfyImage(prompt, negativePrompt) {
     }
     let workflow = (await workflowResponse.json()).replace('"%prompt%"', JSON.stringify(prompt));
     workflow = workflow.replace('"%negative_prompt%"', JSON.stringify(negativePrompt));
-    workflow = workflow.replace('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
+    workflow = workflow.replaceAll('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
     placeholders.forEach(ph => {
         workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
     });
