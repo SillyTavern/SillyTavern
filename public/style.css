@@ -1062,6 +1062,39 @@ select {
     order: 3;
 }
 
+.slashCommandAutoComplete.defaultDark {
+    --ac-color-border: rgb(69 69 69);
+    --ac-color-background: rgb(32 32 32);
+    --ac-color-text: rgb(204 204 204);
+    --ac-color-matched-background: transparent;
+    --ac-color-matched-text: rgb(108 171 251);
+    --ac-color-selected-background: rgb(32 57 92);
+    --ac-color-selected-text: rgb(255 255 255);
+    --ac-color-hovered-background: rgb(43 45 46);
+    --ac-color-hovered-text: rgb(204 204 204);
+}
+.slashCommandAutoComplete.defaultLight {
+    --ac-color-border: rgb(200 200 200);
+    --ac-color-background: rgb(248 248 248);
+    --ac-color-text: rgb(59 59 59);
+    --ac-color-matched-background: transparent;
+    --ac-color-matched-text: rgb(61 104 188);
+    --ac-color-selected-background: rgb(232 232 232);
+    --ac-color-selected-text: rgb(0 0 0);
+    --ac-color-hovered-background: rgb(242 242 242);
+    --ac-color-hovered-text: rgb(59 59 59);
+}
+.slashCommandAutoComplete.defaultThemed {
+    --ac-color-border: var(--SmartThemeBorderColor);
+    --ac-color-background: var(--SmartThemeChatTintColor);
+    --ac-color-text: var(--SmartThemeEmColor);
+    --ac-color-matched-background: transparent;
+    --ac-color-matched-text: var(--SmartThemeQuoteColor);
+    --ac-color-selected-background: color-mix(in srgb, rgb(128 128 128) 75%, var(--SmartThemeChatTintColor));
+    --ac-color-selected-text: var(--SmartThemeBodyColor);
+    --ac-color-hovered-background: color-mix(in srgb, rgb(128 128 128) 30%, var(--SmartThemeChatTintColor));
+    --ac-color-hovered-text: var(--SmartThemeEmColor);
+}
 .slashCommandAutoComplete {
     --ac-color-border: rgb(69, 69, 69);
     --ac-color-background: rgb(32, 32, 32);
@@ -1088,6 +1121,7 @@ select {
     > .item {
         cursor: pointer;
         padding: 3px;
+        text-shadow: none;
         &:hover {
             background-color: var(--ac-color-hovered-background);
             color: var(--ac-color-hovered-text);

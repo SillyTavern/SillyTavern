@@ -1995,6 +1995,7 @@ function setSlashCommandAutocomplete(textarea) {
 export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
     const dom = document.createElement('ul'); {
         dom.classList.add('slashCommandAutoComplete');
+        dom.classList.add('defaultThemed');
     }
     let isReplacable = false;
     let result = [];
