@@ -12,7 +12,7 @@ import {
 import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
 
 import { power_user, registerDebugFunction } from './power-user.js';
-import EventSourceStream from './sse-stream.js';
+import { getEventSourceStream } from './sse-stream.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer } from './textgen-models.js';
 import { SENTENCEPIECE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
@@ -821,7 +821,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
         throw new Error(`Got response status ${response.status}`);
     }
 
-    const eventStream = new EventSourceStream();
+    const eventStream = getEventSourceStream();
     response.body.pipeThrough(eventStream);
     const reader = eventStream.readable.getReader();
 

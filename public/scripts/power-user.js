@@ -118,6 +118,8 @@ let power_user = {
     markdown_escape_strings: '',
     chat_truncation: 100,
     streaming_fps: 30,
+    smooth_streaming: false,
+    smooth_streaming_speed: 50,
 
     ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
@@ -202,6 +204,7 @@ let power_user = {
         output_suffix: '',
         system_sequence: '',
         system_suffix: '',
+        last_system_sequence: '',
         first_output_sequence: '',
         last_output_sequence: '',
         system_sequence_prefix: '',
@@ -255,6 +258,8 @@ let power_user = {
     auto_connect: false,
     auto_load_chat: false,
     forbid_external_images: false,
+    external_media_allowed_overrides: [],
+    external_media_forbidden_overrides: [],
 };
 
 let themes = [];
@@ -1548,6 +1553,9 @@ function loadPowerUserSettings(settings, data) {
     $('#streaming_fps').val(power_user.streaming_fps);
     $('#streaming_fps_counter').val(power_user.streaming_fps);
 
+    $('#smooth_streaming').prop('checked', power_user.smooth_streaming);
+    $('#smooth_streaming_speed').val(power_user.smooth_streaming_speed);
+
     $('#font_scale').val(power_user.font_scale);
     $('#font_scale_counter').val(power_user.font_scale);
 
@@ -2759,22 +2767,35 @@ export function getCustomStoppingStrings(limit = undefined) {
 }
 
 $(document).ready(() => {
+    const adjustAutocompleteDebounced = debounce(() => {
+        $('.ui-autocomplete-input').each(function () {
+            const isOpen = $(this).autocomplete('widget')[0].style.display !== 'none';
+            if (isOpen) {
+                $(this).autocomplete('search');
+            }
+        });
+    });
 
-    $(window).on('resize', async () => {
-        if (isMobile()) {
-            return;
-        }
-
-        //console.log('Window resized!');
+    const reportZoomLevelDebounced = debounce(() => {
         const zoomLevel = Number(window.devicePixelRatio).toFixed(2);
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
         console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}`);
+    });
+
+    $(window).on('resize', async () => {
+        adjustAutocompleteDebounced();
+        setHotswapsDebounced();
+
+        if (isMobile()) {
+            return;
+        }
+
+        reportZoomLevelDebounced();
+
         if (Object.keys(power_user.movingUIState).length > 0) {
             resetMovablePanels('resize');
         }
-        // Adjust layout and styling here
-        setHotswapsDebounced();
     });
 
     // Settings that go to settings.json
@@ -2942,6 +2963,16 @@ $(document).ready(() => {
     $('#streaming_fps').on('input', function () {
         power_user.streaming_fps = Number($('#streaming_fps').val());
         $('#streaming_fps_counter').val(power_user.streaming_fps);
+        saveSettingsDebounced();
+    });
+
+    $('#smooth_streaming').on('input', function () {
+        power_user.smooth_streaming = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#smooth_streaming_speed').on('input', function () {
+        power_user.smooth_streaming_speed = Number($('#smooth_streaming_speed').val());
         saveSettingsDebounced();
     });
 

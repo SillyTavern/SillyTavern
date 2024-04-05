@@ -19,5 +19,6 @@
     "system_suffix": "",
     "user_alignment_message": "",
     "system_same_as_user": false,
+    "last_system_sequence": "",
     "name": "Alpaca-Single-Turn"
 }

@@ -208,7 +208,7 @@ import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_set
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 
@@ -324,9 +324,12 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
         return;
     }
 
-    if (!power_user.forbid_external_images) {
+    const isMediaAllowed = isExternalMediaAllowed();
+    if (isMediaAllowed) {
         return;
     }
+
+    let mediaBlocked = false;
 
     switch (node.tagName) {
         case 'AUDIO':
@@ -350,6 +353,7 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
                     if (isExternalUrl(url)) {
                         console.warn('External media blocked', url);
                         node.remove();
+                        mediaBlocked = true;
                         break;
                     }
                 }
@@ -357,15 +361,36 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
 
             if (src && isExternalUrl(src)) {
                 console.warn('External media blocked', src);
+                mediaBlocked = true;
                 node.remove();
             }
 
             if (data && isExternalUrl(data)) {
                 console.warn('External media blocked', data);
+                mediaBlocked = true;
                 node.remove();
             }
         }
             break;
+    }
+
+    if (mediaBlocked) {
+        const entityId = getCurrentEntityId();
+        const warningShownKey = `mediaWarningShown:${entityId}`;
+
+        if (localStorage.getItem(warningShownKey) === null) {
+            const warningToast = toastr.warning(
+                'Use the "Ext. Media" button to allow it. Click on this message to dismiss.',
+                'External media has been blocked',
+                {
+                    timeOut: 0,
+                    preventDuplicates: true,
+                    onclick: () => toastr.clear(warningToast),
+                },
+            );
+
+            localStorage.setItem(warningShownKey, 'true');
+        }
     }
 });
 
@@ -416,6 +441,7 @@ export const event_types = {
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
     CHARACTER_DUPLICATED: 'character_duplicated',
+    SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
 };
 
 export const eventSource = new EventEmitter();
@@ -751,7 +777,6 @@ function reloadMarkdownProcessor(render_formulas = false) {
 }
 
 function getCurrentChatId() {
-    console.debug(`selectedGroup:${selected_group}, this_chid:${this_chid}`);
     if (selected_group) {
         return groups.find(x => x.id == selected_group)?.chat_id;
     }
@@ -1692,7 +1717,7 @@ export async function reloadCurrentChat() {
     chat.length = 0;
 
     if (selected_group) {
-        await getGroupChat(selected_group);
+        await getGroupChat(selected_group, true);
     }
     else if (this_chid) {
         await getChat();
@@ -3032,8 +3057,8 @@ function saveResponseLength(api, responseLength) {
         oldValue = oai_settings.openai_max_tokens;
         oai_settings.openai_max_tokens = responseLength;
     } else {
-        oldValue = max_context;
-        max_context = responseLength;
+        oldValue = amount_gen;
+        amount_gen = responseLength;
     }
     return oldValue;
 }
@@ -3048,7 +3073,7 @@ function restoreResponseLength(api, responseLength) {
     if (api === 'openai') {
         oai_settings.openai_max_tokens = responseLength;
     } else {
-        max_context = responseLength;
+        amount_gen = responseLength;
     }
 }
 
@@ -4058,6 +4083,10 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                 streamingProcessor = null;
                 triggerAutoContinue(messageChunk, isImpersonate);
+                return Object.defineProperties(new String(getMessage), {
+                    'messageChunk': { value: messageChunk },
+                    'fromStream': { value: true },
+                });
             }
         } else {
             return await sendGenerationRequest(type, generate_data);
@@ -4068,6 +4097,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     async function onSuccess(data) {
         if (!data) return;
+
+        if (data?.fromStream) {
+            return data;
+        }
+
         let messageChunk = '';
 
         if (data.error) {
@@ -4177,6 +4211,9 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         if (type !== 'quiet') {
             triggerAutoContinue(messageChunk, isImpersonate);
         }
+
+        // Don't break the API chain that expects a single string in return
+        return Object.defineProperty(new String(getMessage), 'messageChunk', { value: messageChunk });
     }
 
     function onError(exception) {
@@ -4271,57 +4308,81 @@ export function getNextMessageId(type) {
 }
 
 /**
- *
- * @param {string} messageChunk
- * @param {boolean} isImpersonate
- * @returns {void}
+ * Determines if the message should be auto-continued.
+ * @param {string} messageChunk Current message chunk
+ * @param {boolean} isImpersonate Is the user impersonation
+ * @returns {boolean} Whether the message should be auto-continued
+ */
+export function shouldAutoContinue(messageChunk, isImpersonate) {
+    if (!power_user.auto_continue.enabled) {
+        console.debug('Auto-continue is disabled by user.');
+        return false;
+    }
+
+    if (typeof messageChunk !== 'string') {
+        console.debug('Not triggering auto-continue because message chunk is not a string');
+        return false;
+    }
+
+    if (isImpersonate) {
+        console.log('Continue for impersonation is not implemented yet');
+        return false;
+    }
+
+    if (is_send_press) {
+        console.debug('Auto-continue is disabled because a message is currently being sent.');
+        return false;
+    }
+
+    if (power_user.auto_continue.target_length <= 0) {
+        console.log('Auto-continue target length is 0, not triggering auto-continue');
+        return false;
+    }
+
+    if (main_api === 'openai' && !power_user.auto_continue.allow_chat_completions) {
+        console.log('Auto-continue for OpenAI is disabled by user.');
+        return false;
+    }
+
+    const textareaText = String($('#send_textarea').val());
+    const USABLE_LENGTH = 5;
+
+    if (textareaText.length > 0) {
+        console.log('Not triggering auto-continue because user input is not empty');
+        return false;
+    }
+
+    if (messageChunk.trim().length > USABLE_LENGTH && chat.length) {
+        const lastMessage = chat[chat.length - 1];
+        const messageLength = getTokenCount(lastMessage.mes);
+        const shouldAutoContinue = messageLength < power_user.auto_continue.target_length;
+
+        if (shouldAutoContinue) {
+            console.log(`Triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}. Message chunk: ${messageChunk}`);
+            return true;
+        } else {
+            console.log(`Not triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}`);
+            return false;
+        }
+    } else {
+        console.log('Last generated chunk was empty, not triggering auto-continue');
+        return false;
+    }
+}
+
+/**
+ * Triggers auto-continue if the message meets the criteria.
+ * @param {string} messageChunk Current message chunk
+ * @param {boolean} isImpersonate Is the user impersonation
  */
 export function triggerAutoContinue(messageChunk, isImpersonate) {
     if (selected_group) {
-        console.log('Auto-continue is disabled for group chat');
+        console.debug('Auto-continue is disabled for group chat');
         return;
     }
 
-    if (power_user.auto_continue.enabled && !is_send_press) {
-        if (power_user.auto_continue.target_length <= 0) {
-            console.log('Auto-continue target length is 0, not triggering auto-continue');
-            return;
-        }
-
-        if (main_api === 'openai' && !power_user.auto_continue.allow_chat_completions) {
-            console.log('Auto-continue for OpenAI is disabled by user.');
-            return;
-        }
-
-        if (isImpersonate) {
-            console.log('Continue for impersonation is not implemented yet');
-            return;
-        }
-
-        const textareaText = String($('#send_textarea').val());
-        const USABLE_LENGTH = 5;
-
-        if (textareaText.length > 0) {
-            console.log('Not triggering auto-continue because user input is not empty');
-            return;
-        }
-
-        if (messageChunk.trim().length > USABLE_LENGTH && chat.length) {
-            const lastMessage = chat[chat.length - 1];
-            const messageLength = getTokenCount(lastMessage.mes);
-            const shouldAutoContinue = messageLength < power_user.auto_continue.target_length;
-
-            if (shouldAutoContinue) {
-                console.log(`Triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}. Message chunk: ${messageChunk}`);
-                $('#option_continue').trigger('click');
-            } else {
-                console.log(`Not triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}`);
-                return;
-            }
-        } else {
-            console.log('Last generated chunk was empty, not triggering auto-continue');
-            return;
-        }
+    if (shouldAutoContinue(messageChunk, isImpersonate)) {
+        $('#option_continue').trigger('click');
     }
 }
 
@@ -6863,6 +6924,12 @@ export function select_selected_character(chid) {
 
     $('#form_create').attr('actiontype', 'editcharacter');
     $('.form_create_bottom_buttons_block .chat_lorebook_button').show();
+
+    const externalMediaState = isExternalMediaAllowed();
+    $('#character_open_media_overrides').toggle(!selected_group);
+    $('#character_media_allowed_icon').toggle(externalMediaState);
+    $('#character_media_forbidden_icon').toggle(!externalMediaState);
+
     saveSettingsDebounced();
 }
 
@@ -6923,6 +6990,7 @@ function select_rm_create() {
 
     $('#form_create').attr('actiontype', 'createcharacter');
     $('.form_create_bottom_buttons_block .chat_lorebook_button').hide();
+    $('#character_open_media_overrides').hide();
 }
 
 function select_rm_characters() {
@@ -8211,8 +8279,7 @@ const CONNECT_API_MAP = {
 
 async function selectContextCallback(_, name) {
     if (!name) {
-        toastr.warning('Context preset name is required');
-        return '';
+        return power_user.context.preset;
     }
 
     const contextNames = context_presets.map(preset => preset.name);
@@ -8231,8 +8298,7 @@ async function selectContextCallback(_, name) {
 
 async function selectInstructCallback(_, name) {
     if (!name) {
-        toastr.warning('Instruct preset name is required');
-        return '';
+        return power_user.instruct.preset;
     }
 
     const instructNames = instruct_presets.map(preset => preset.name);
@@ -8581,10 +8647,10 @@ jQuery(async function () {
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
     registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
     registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
-    registerSlashCommand('instruct', selectInstructCallback, [], '<span class="monospace">(name)</span> – selects instruct mode preset by name', true, true);
+    registerSlashCommand('instruct', selectInstructCallback, [], '<span class="monospace">(name)</span> – selects instruct mode preset by name. Gets the current instruct if no name is provided', true, true);
     registerSlashCommand('instruct-on', enableInstructCallback, [], '– enables instruct mode', true, true);
     registerSlashCommand('instruct-off', disableInstructCallback, [], '– disables instruct mode', true, true);
-    registerSlashCommand('context', selectContextCallback, [], '<span class="monospace">(name)</span> – selects context template by name', true, true);
+    registerSlashCommand('context', selectContextCallback, [], '<span class="monospace">(name)</span> – selects context template by name. Gets the current template if no name is provided', true, true);
     registerSlashCommand('chat-manager', () => $('#option_select_chat').trigger('click'), ['chat-history', 'manage-chats'], '– opens the chat manager for the current character/group', true, true);
 
     setTimeout(function () {
@@ -9873,14 +9939,14 @@ jQuery(async function () {
         $('#character_import_file').click();
     });
 
-    $('#character_import_file').on('change', function (e) {
+    $('#character_import_file').on('change', async function (e) {
         $('#rm_info_avatar').html('');
         if (!e.target.files.length) {
             return;
         }
 
         for (const file of e.target.files) {
-            importCharacter(file);
+            await importCharacter(file);
         }
     });
 

@@ -475,7 +475,15 @@ const autorunUrl = new URL(
 const setupTasks = async function () {
     const version = await getVersion();
 
-    console.log(`SillyTavern ${version.pkgVersion}` + (version.gitBranch ? ` '${version.gitBranch}' (${version.gitRevision})` : ''));
+    // Print formatted header
+    console.log();
+    console.log(`SillyTavern ${version.pkgVersion}`);
+    console.log(version.gitBranch ? `Running '${version.gitBranch}' (${version.gitRevision}) - ${version.commitDate}` : '');
+    if (version.gitBranch && !version.isLatest && ['staging', 'release'].includes(version.gitBranch)) {
+        console.log('INFO: Currently not on the latest commit.');
+        console.log('      Run \'git pull\' to update. If you have any merge conflicts, run \'git reset --hard\' and \'git pull\' to reset your branch.');
+    }
+    console.log();
 
     // TODO: do endpoint init functions depend on certain directories existing or not existing? They should be callable
     // in any order for encapsulation reasons, but right now it's unknown if that would break anything.

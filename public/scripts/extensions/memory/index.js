@@ -91,7 +91,7 @@ const defaultSettings = {
     maxMessagesPerRequestMin: 0,
     maxMessagesPerRequestMax: 250,
     maxMessagesPerRequestStep: 1,
-    prompt_builder: prompt_builders.RAW_BLOCKING,
+    prompt_builder: prompt_builders.DEFAULT,
 };
 
 function loadSettings() {

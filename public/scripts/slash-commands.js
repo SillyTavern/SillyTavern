@@ -254,7 +254,7 @@ parser.addCommand('inject', injectCallback, [], '<span class="monospace">id=inje
 parser.addCommand('listinjects', listInjectsCallback, [], ' – lists all script injections for the current chat.', true, true);
 parser.addCommand('flushinjects', flushInjectsCallback, [], ' – removes all script injections for the current chat.', true, true);
 parser.addCommand('tokens', (_, text) => getTokenCount(text), [], '<span class="monospace">(text)</span> – counts the number of tokens in the text.', true, true);
-parser.addCommand('model', modelCallback, [], '<span class="monospace">(model name)</span> – sets the model for the current API.', true, true);
+parser.addCommand('model', modelCallback, [], '<span class="monospace">(model name)</span> – sets the model for the current API. Gets the current model name if no argument is provided.', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
@@ -1653,16 +1653,10 @@ function setBackgroundCallback(_, bg) {
 /**
  * Sets a model for the current API.
  * @param {object} _ Unused
- * @param {string} model Model name
- * @returns {void}
+ * @param {string} model New model name
+ * @returns {string} New or existing model name
  */
 function modelCallback(_, model) {
-    if (!model) {
-        return;
-    }
-
-    console.log('Set model to ' + model);
-
     const modelSelectMap = [
         { id: 'model_togetherai_select', api: 'textgenerationwebui', type: textgen_types.TOGETHERAI },
         { id: 'openrouter_model', api: 'textgenerationwebui', type: textgen_types.OPENROUTER },
@@ -1700,22 +1694,30 @@ function modelCallback(_, model) {
 
     if (!modelSelectItem) {
         toastr.info('Setting a model for your API is not supported or not implemented yet.');
-        return;
+        return '';
     }
 
     const modelSelectControl = document.getElementById(modelSelectItem);
 
     if (!(modelSelectControl instanceof HTMLSelectElement)) {
         toastr.error(`Model select control not found: ${main_api}[${apiSubType}]`);
-        return;
+        return '';
     }
 
     const options = Array.from(modelSelectControl.options);
 
     if (!options.length) {
         toastr.warning('No model options found. Check your API settings.');
-        return;
+        return '';
     }
+
+    model = String(model || '').trim();
+
+    if (!model) {
+        return modelSelectControl.value;
+    }
+
+    console.log('Set model to ' + model);
 
     let newSelectedOption = null;
 
@@ -1737,8 +1739,10 @@ function modelCallback(_, model) {
         modelSelectControl.value = newSelectedOption.value;
         $(modelSelectControl).trigger('change');
         toastr.success(`Model set to "${newSelectedOption.text}"`);
+        return newSelectedOption.value;
     } else {
         toastr.warning(`No model found with name "${model}"`);
+        return '';
     }
 }
 

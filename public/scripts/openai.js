@@ -45,7 +45,7 @@ import {
 import { getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
-import EventSourceStream from './sse-stream.js';
+import { getEventSourceStream } from './sse-stream.js';
 import {
     delay,
     download,
@@ -1772,7 +1772,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         throw new Error(`Got response status ${response.status}`);
     }
     if (stream) {
-        const eventStream = new EventSourceStream();
+        const eventStream = getEventSourceStream();
         response.body.pipeThrough(eventStream);
         const reader = eventStream.readable.getReader();
         return async function* streamData() {
@@ -3661,7 +3661,7 @@ async function onModelChange() {
         else if (['command-light-nightly', 'command-nightly'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_8k);
         }
-        else if (['command-r'].includes(oai_settings.cohere_model)) {
+        else if (['command-r', 'command-r-plus'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_128k);
         }
         else {

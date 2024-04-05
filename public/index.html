@@ -1953,10 +1953,6 @@
                             <div data-for="api_key_novel" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                 For privacy reasons, your API key will be hidden after you reload the page.
                             </div>
-                            <div class="flex-container">
-                                <div id="api_button_novel" class="api_button menu_button" type="submit" data-i18n="Connect">Connect</div>
-                                <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
-                            </div>
                             <h4><span data-i18n="Novel AI Model">Novel AI Model</span>
                                 <a href="https://docs.sillytavern.app/usage/api-connections/novelai/#models" class="notes-link" target="_blank">
                                     <span class="fa-solid fa-circle-question note-link-span"></span>
@@ -1966,6 +1962,10 @@
                                 <option value="clio-v1">Clio</option>
                                 <option value="kayra-v1">Kayra</option>
                             </select>
+                            <div class="flex-container">
+                                <div id="api_button_novel" class="api_button menu_button" type="submit" data-i18n="Connect">Connect</div>
+                                <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
+                            </div>
                         </form>
                         <div class="online_status">
                             <div class="online_status_indicator"></div>
@@ -2489,6 +2489,20 @@
                             </div>
                         </form>
                         <form id="openrouter_form" data-source="openrouter" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
+                            <div>
+                                <small data-i18n="Click Authorize below or get the key from">
+                                    Click "Authorize" below or get the key from </small> <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.
+                                <br>
+                                <a href="https://openrouter.ai/account" target="_blank" data-i18n="View Remaining Credits">View Remaining Credits</a>
+                            </div>
+                            <div class="flex-container">
+                                <input id="api_key_openrouter" name="api_key_openrouter" class="text_pole flex1 api_key_openrouter" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openrouter"></div>
+                            </div>
+                            <div data-for="api_key_openrouter" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
                             <div>
                                 <h4 data-i18n="OpenRouter Model">OpenRouter Model</h4>
                                 <select id="model_openrouter_select">
@@ -2551,20 +2565,6 @@
                                         advanced formatting settings (except instruct System Prompt). If disabled, the prompt will be formatted by OpenRouter.
                                     </span>
                                 </div>
-                            </div>
-                            <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
-                            <div>
-                                <small data-i18n="Click Authorize below or get the key from">
-                                    Click "Authorize" below or get the key from </small> <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.
-                                <br>
-                                <a href="https://openrouter.ai/account" target="_blank" data-i18n="View Remaining Credits">View Remaining Credits</a>
-                            </div>
-                            <div class="flex-container">
-                                <input id="api_key_openrouter" name="api_key_openrouter" class="text_pole flex1 api_key_openrouter" maxlength="500" value="" type="text" autocomplete="off">
-                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openrouter"></div>
-                            </div>
-                            <div data-for="api_key_openrouter" class="neutral_warning">
-                                For privacy reasons, your API key will be hidden after you reload the page.
                             </div>
                         </form>
                         <form id="scale_form" data-source="scale" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -2691,6 +2691,7 @@
                                         <option value="command-light">command-light</option>
                                         <option value="command">command</option>
                                         <option value="command-r">command-r</option>
+                                        <option value="command-r-plus">command-r-plus</option>
                                     </optgroup>
                                     <optgroup label="Nightly">
                                         <option value="command-light-nightly">command-light-nightly</option>
@@ -3033,12 +3034,12 @@
                                         </div>
                                     </div>
                                     <div class="flex-container">
-                                        <div class="flex1" title="Will be inserted at the start of the chat history if it doesn't start with a User message.">
-                                            <label for="instruct_user_alignment_message">
-                                                <small data-i18n="User Filler Message">User Filler Message</small>
+                                        <div class="flex1" title="Will be inserted as a last prompt line when using system/neutral generation.">
+                                            <label for="instruct_last_system_sequence">
+                                                <small data-i18n="System Instruction Prefix">System Instruction Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_last_system_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1" title="If a stop sequence is generated, everything past it will be removed from the output (inclusive).">
@@ -3047,6 +3048,16 @@
                                             </label>
                                             <div>
                                                 <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex1" title="Will be inserted at the start of the chat history if it doesn't start with a User message.">
+                                            <label for="instruct_user_alignment_message">
+                                                <small data-i18n="User Filler Message">User Filler Message</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_user_alignment_message" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -3618,6 +3629,24 @@
                                         </div>
                                     </div>
                                 </div>
+                                <label class="checkbox_label flexWrap" for="smooth_streaming">
+                                    <input id="smooth_streaming" type="checkbox" />
+                                    <div class="flex-container alignItemsBaseline">
+                                        <span data-i18n="Smooth Streaming">
+                                            Smooth Streaming
+                                        </span>
+                                        <i class="fa-solid fa-flask" title="Experimental feature. May not work for all backends."></i>
+                                    </div>
+                                    <div id="smooth_streaming_speed_control" class="flexBasis100p wide100p">
+                                        <small class="flex justifyCenter" data-i18n="Speed">Speed</small>
+                                        <input type="range" id="smooth_streaming_speed" name="smooth_streaming_speed" min="0" max="100" step="10" value="50">
+                                        <div class="slider_hint">
+                                            <span data-i18n="Slow">Slow</span>
+                                            <span data-i18n=""></span>
+                                            <span data-i18n="Slow">Fast</span>
+                                        </div>
+                                    </div>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -4247,12 +4276,21 @@
                         </div>
                         <div id="descriptionWrapper" class="flex-container flexFlowColumn flex1">
                             <hr>
-                            <div id="description_div" class="flex-container alignitemscenter">
-                                <span data-i18n="Character Description">Description</span>
-                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
-                                    <span class="fa-solid fa-circle-question note-link-span"></span>
-                                </a>
+                            <div id="description_div" class="title_restorable">
+                                <div class="flex-container alignitemscenter">
+                                    <span data-i18n="Character Description">Description</span>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </div>
+                                <div id="character_open_media_overrides" class="menu_button menu_button_icon open_media_overrides" title="Click to allow/forbid the use of external media for this character." data-i18n="[title]Click to allow/forbid the use of external media for this character.">
+                                    <i id="character_media_allowed_icon" class="fa-solid fa-fw fa-link"></i>
+                                    <i id="character_media_forbidden_icon" class="fa-solid fa-fw fa-link-slash"></i>
+                                    <span data-i18n="Ext. Media">
+                                        Ext. Media
+                                    </span>
+                                </div>
                             </div>
                             <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." name="description" placeholder=""></textarea>
                             <div class="extension_token_counter">
@@ -4352,6 +4390,10 @@
                                         <div id="rm_group_scenario" class="heightFitContent margin0 menu_button fa-solid fa-scroll" title="Set a group chat scenario" data-i18n="[title]Set a group chat scenario"></div>
                                         <div id="group_favorite_button" class="heightFitContent margin0 menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
                                         <input id="rm_group_fav" type="hidden" />
+                                        <div id="group_open_media_overrides" class="heightFitContent margin0 menu_button menu_button_icon open_media_overrides" title="Click to allow/forbid the use of external media for this group." data-i18n="[title]Click to allow/forbid the use of external media for this group.">
+                                            <i id="group_media_allowed_icon" class="fa-solid fa-fw fa-link"></i>
+                                            <i id="group_media_forbidden_icon" class="fa-solid fa-fw fa-link-slash"></i>
+                                        </div>
                                         <div id="rm_group_submit" class="heightFitContent margin0 menu_button fa-solid fa-check" title="Create" data-i18n="[title]Create"></div>
                                         <div id="rm_group_restore_avatar" class="heightFitContent margin0 menu_button fa-solid fa-images" title="Restore collage avatar" data-i18n="[title]Restore collage avatar"></div>
                                         <div id="rm_group_delete" class="heightFitContent margin0 menu_button fa-solid fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
@@ -4804,7 +4846,7 @@
                             <div class="flex-container alignitemscenter wide100p">
                                 <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
                                     <div class="flex-container flex1">
-                                        <textarea class="text_pole autoSetHeight" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                        <textarea class="text_pole" rows="1" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                     </div>
                                     <!-- <span class="world_entry_form_position_value"></span> -->
                                     <select data-i18n="[title]WI Entry Status:🔵 Constant🟢 Normal❌ Disabled" title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="text_pole widthNatural margin0">
@@ -5357,6 +5399,32 @@
                 <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
             </div>
             <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="16"></textarea>
+        </div>
+    </div>
+    <div id="forbid_media_override_template" class="template_element">
+        <div class="forbid_media_override flex-container flexFlowColumn">
+            <h4 data-i18n="Forbid Media Override explanation" class="margin0">
+                Ability of the current character/group to use external media in chats.
+            </h4>
+            <small data-i18n="Forbid Media Override subtitle" class="marginBot5">
+                Media: images, videos, audio. External: not hosted on the local server.
+            </small>
+            <label class="checkbox_label" for="forbid_media_override_global">
+                <input type="radio" id="forbid_media_override_global" name="forbid_media_override" />
+                <span>
+                    <span data-i18n="Use global setting">Use global setting</span>
+                    <b class="forbid_media_global_state_forbidden">(forbidden)</b>
+                    <b class="forbid_media_global_state_allowed">(allowed)</b>
+                </span>
+            </label>
+            <label class="checkbox_label" for="forbid_media_override_forbidden">
+                <input type="radio" id="forbid_media_override_forbidden" name="forbid_media_override" />
+                <span data-i18n="Always forbidden">Always forbidden</span>
+            </label>
+            <label class="checkbox_label" for="forbid_media_override_allowed">
+                <input type="radio" id="forbid_media_override_allowed" name="forbid_media_override" />
+                <span data-i18n="Always allowed">Always allowed</span>
+            </label>
         </div>
     </div>
     <!-- chat and input bar -->
