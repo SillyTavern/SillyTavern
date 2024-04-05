@@ -2104,7 +2104,7 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         else {
             const helpStrings = Object
                 .keys(parser.commands) // Get all slash commands
-                .filter(it => executor.name == '' || isReplacable || isForced ? matchers[matchType](it) : it.toLowerCase() == slashCommand) // Filter by the input
+                .filter(it => executor.name == '' || isReplacable ? matchers[matchType](it) : it.toLowerCase() == slashCommand) // Filter by the input
                 // .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
             ;
             result = helpStrings
@@ -2144,7 +2144,14 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
                     li.classList.add('selected');
                 }
                 li.innerHTML = item.label;
-                li.addEventListener('click', ()=>{
+                li.addEventListener('pointerdown', ()=>{
+                    mouseup = new Promise(resolve=>{
+                        const resolver = ()=>{
+                            window.removeEventListener('mouseup', resolver);
+                            resolve();
+                        };
+                        window.addEventListener('mouseup', resolver);
+                    });
                     selectedItem = item;
                     select();
                 });
@@ -2225,10 +2232,12 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
         clone.remove();
         return location;
     };
-    const select = () => {
+    let mouseup = Promise.resolve();
+    const select = async() => {
         if (isReplacable) {
-            textarea.focus();
             textarea.value = `${text.slice(0, executor.start - 2)}${selectedItem.value}${text.slice(executor.start - 2 + executor.name.length + 1)}`;
+            await mouseup;
+            textarea.focus();
             textarea.selectionStart = executor.start - 2 + selectedItem.value.length;
             textarea.selectionEnd = textarea.selectionStart;
             show();
