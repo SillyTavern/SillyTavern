@@ -1775,5 +1775,5 @@ async function fetchImagesNoCache() {
     registerSlashCommand('spriteoverride', setSpriteSetCommand, ['costume'], '<span class="monospace">(optional folder)</span> – sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.', true, true);
     registerSlashCommand('lastsprite', (_, value) => lastExpression[value.trim()] ?? '', [], '<span class="monospace">(charName)</span> – Returns the last set sprite / expression for the named character.', true, true);
     registerSlashCommand('th', toggleTalkingHeadCommand, ['talkinghead'], '– Character Expressions: toggles <i>Image Type - talkinghead (extras)</i> on/off.', true, true);
-    registerSlashCommand('classify', classifyCommand, [], '<span class="monospace">(text)</span> – classifies the text and returns a label.', true, true);
+    registerSlashCommand('classify', classifyCommand, [], '<span class="monospace">(text)</span> – performs an emotion classification of the given text and returns a label.', true, true);
 })();
