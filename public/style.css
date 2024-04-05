@@ -1086,7 +1086,7 @@ select {
 }
 .slashCommandAutoComplete.defaultThemed {
     --ac-color-border: var(--SmartThemeBorderColor);
-    --ac-color-background: var(--SmartThemeChatTintColor);
+    --ac-color-background: var(--SmartThemeBlurTintColor);
     --ac-color-text: var(--SmartThemeEmColor);
     --ac-color-matched-background: transparent;
     --ac-color-matched-text: var(--SmartThemeQuoteColor);
@@ -1107,6 +1107,7 @@ select {
     --ac-color-hovered-text: rgb(204 204 204);
     --bottom: 50vh;
     background: var(--ac-color-background);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
     border: 1px solid var(--ac-color-border);
     border-radius: 3px;
     color: var(--ac-color-text);
