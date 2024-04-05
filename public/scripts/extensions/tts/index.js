@@ -578,7 +578,7 @@ async function processTtsQueue() {
             toastr.error(`Specified voice for ${char} was not found. Check the TTS extension settings.`);
             throw `Unable to attain voiceId for ${char}`;
         }
-        tts(text, voiceId, char);
+        await tts(text, voiceId, char);
     } catch (error) {
         toastr.error(error.toString());
         console.error(error);
