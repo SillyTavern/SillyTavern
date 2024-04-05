@@ -1062,29 +1062,42 @@ select {
 }
 
 .slashCommandAutoComplete {
+    --ac-color-border: rgb(69, 69, 69);
+    --ac-color-background: rgb(32, 32, 32);
+    --ac-color-text: rgb(204 204 204);
+    --ac-color-matched-background: transparent;
+    --ac-color-matched-text: rgb(108, 171, 251);
+    --ac-color-selected-background: rgb(32, 57, 92);
+    --ac-color-selected-text: rgb(255, 255, 255);
+    --ac-color-hovered-background: rgb(43 45 46);
+    --ac-color-hovered-text: rgb(204 204 204);
     --bottom: 50vh;
-    background: black;
-    border: 1px solid white;
-    color: rgb(204 204 204);
+    background: var(--ac-color-background);
+    border: 1px solid var(--ac-color-border);
+    border-radius: 3px;
+    color: var(--ac-color-text);
     max-height: calc(95vh - var(--bottom));
     list-style: none;
     margin: 0px;
     overflow: auto;
     padding: 0px;
-    position: fixed;
+    position: absolute;
     z-index: 10000;
 
     > .item {
         cursor: pointer;
+        padding: 3px;
         &:hover {
-            background-color: rgb(43 45 46);
+            background-color: var(--ac-color-hovered-background);
+            color: var(--ac-color-hovered-text);
         }
         &.selected {
-            background-color: #20395C;
-            color: white;
+            background-color: var(--ac-color-selected-background);
+            color: var(--ac-color-selected-text);
         }
         .matched {
-            color: #6CABFB;
+            background-color: var(--ac-color-matched-background);
+            color: var(--ac-color-matched-text);
             font-weight: bold;
         }
     }
