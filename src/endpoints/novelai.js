@@ -290,7 +290,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
 
         try {
             console.debug('Upscaling image...');
-            const upscaleUrl = `${IMAGE_NOVELAI}/ai/upscale`;
+            const upscaleUrl = `${API_NOVELAI}/ai/upscale`;
             const upscaleResult = await fetch(upscaleUrl, {
                 method: 'POST',
                 headers: {
