@@ -465,6 +465,7 @@ async function processAudioJobQueue() {
         playAudioData(currentAudioJob);
         talkingAnimation(true);
     } catch (error) {
+        toastr.error(error.toString());
         console.error(error);
         audioQueueProcessorReady = true;
     }
@@ -579,6 +580,7 @@ async function processTtsQueue() {
         }
         tts(text, voiceId, char);
     } catch (error) {
+        toastr.error(error.toString());
         console.error(error);
         currentTtsJob = null;
     }
@@ -648,6 +650,7 @@ function onRefreshClick() {
         initVoiceMap();
         updateVoiceMap();
     }).catch(error => {
+        toastr.error(error.toString());
         console.error(error);
         setTtsStatus(error, false);
     });
