@@ -765,7 +765,7 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
         tagElement.attr('title', tag.title);
     }
     if (tag.icon) {
-        tagElement.find('.tag_name').text('').attr('title', `${tag.name} ${tag.title}`.trim()).addClass(tag.icon);
+        tagElement.find('.tag_name').text('').attr('title', `${tag.name} ${tag.title || ''}`.trim()).addClass(tag.icon);
         tagElement.addClass('actionable');
     }
 
