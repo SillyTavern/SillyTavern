@@ -3,7 +3,7 @@ const fs = require('fs');
 const express = require('express');
 const { default: simpleGit } = require('simple-git');
 const sanitize = require('sanitize-filename');
-const { DIRECTORIES } = require('../constants');
+const { PUBLIC_DIRECTORIES } = require('../constants');
 const { jsonParser } = require('../express-common');
 
 /**
@@ -67,12 +67,12 @@ router.post('/install', jsonParser, async (request, response) => {
         const git = simpleGit();
 
         // make sure the third-party directory exists
-        if (!fs.existsSync(path.join(DIRECTORIES.extensions, 'third-party'))) {
-            fs.mkdirSync(path.join(DIRECTORIES.extensions, 'third-party'));
+        if (!fs.existsSync(path.join(request.user.directories.extensions))) {
+            fs.mkdirSync(path.join(request.user.directories.extensions));
         }
 
         const url = request.body.url;
-        const extensionPath = path.join(DIRECTORIES.extensions, 'third-party', path.basename(url, '.git'));
+        const extensionPath = path.join(request.user.directories.extensions, path.basename(url, '.git'));
 
         if (fs.existsSync(extensionPath)) {
             return response.status(409).send(`Directory already exists at ${extensionPath}`);
@@ -111,7 +111,7 @@ router.post('/update', jsonParser, async (request, response) => {
 
     try {
         const extensionName = request.body.extensionName;
-        const extensionPath = path.join(DIRECTORIES.extensions, 'third-party', extensionName);
+        const extensionPath = path.join(request.user.directories.extensions, extensionName);
 
         if (!fs.existsSync(extensionPath)) {
             return response.status(404).send(`Directory does not exist at ${extensionPath}`);
@@ -156,7 +156,7 @@ router.post('/version', jsonParser, async (request, response) => {
 
     try {
         const extensionName = request.body.extensionName;
-        const extensionPath = path.join(DIRECTORIES.extensions, 'third-party', extensionName);
+        const extensionPath = path.join(request.user.directories.extensions, extensionName);
 
         if (!fs.existsSync(extensionPath)) {
             return response.status(404).send(`Directory does not exist at ${extensionPath}`);
@@ -195,7 +195,7 @@ router.post('/delete', jsonParser, async (request, response) => {
     const extensionName = sanitize(request.body.extensionName);
 
     try {
-        const extensionPath = path.join(DIRECTORIES.extensions, 'third-party', extensionName);
+        const extensionPath = path.join(request.user.directories.extensions, extensionName);
 
         if (!fs.existsSync(extensionPath)) {
             return response.status(404).send(`Directory does not exist at ${extensionPath}`);
@@ -216,22 +216,22 @@ router.post('/delete', jsonParser, async (request, response) => {
  * Discover the extension folders
  * If the folder is called third-party, search for subfolders instead
  */
-router.get('/discover', jsonParser, function (_, response) {
+router.get('/discover', jsonParser, function (request, response) {
     // get all folders in the extensions folder, except third-party
     const extensions = fs
-        .readdirSync(DIRECTORIES.extensions)
-        .filter(f => fs.statSync(path.join(DIRECTORIES.extensions, f)).isDirectory())
+        .readdirSync(PUBLIC_DIRECTORIES.extensions)
+        .filter(f => fs.statSync(path.join(PUBLIC_DIRECTORIES.extensions, f)).isDirectory())
         .filter(f => f !== 'third-party');
 
     // get all folders in the third-party folder, if it exists
 
-    if (!fs.existsSync(path.join(DIRECTORIES.extensions, 'third-party'))) {
+    if (!fs.existsSync(path.join(request.user.directories.extensions))) {
         return response.send(extensions);
     }
 
     const thirdPartyExtensions = fs
-        .readdirSync(path.join(DIRECTORIES.extensions, 'third-party'))
-        .filter(f => fs.statSync(path.join(DIRECTORIES.extensions, 'third-party', f)).isDirectory());
+        .readdirSync(path.join(request.user.directories.extensions))
+        .filter(f => fs.statSync(path.join(request.user.directories.extensions, f)).isDirectory());
 
     // add the third-party extensions to the extensions array
     extensions.push(...thirdPartyExtensions.map(f => `third-party/${f}`));

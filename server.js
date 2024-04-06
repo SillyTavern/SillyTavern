@@ -212,7 +212,8 @@ if (enableCorsProxy) {
 }
 
 app.use(express.static(process.cwd() + '/public', {}));
-app.use(userDataMiddleware(app));
+app.use(userDataMiddleware());
+app.use('/', require('./src/users').router);
 
 app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
 app.get('/', function (request, response) {

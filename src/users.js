@@ -1,7 +1,7 @@
-const fsPromises = require('fs').promises;
 const path = require('path');
 const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER } = require('./constants');
 const { getConfigValue } = require('./util');
+const express = require('express');
 
 const DATA_ROOT = getConfigValue('dataRoot', './data');
 
@@ -42,6 +42,7 @@ const DATA_ROOT = getConfigValue('dataRoot', './data');
  * @property {string} assets - The directory where the assets are stored
  * @property {string} comfyWorkflows - The directory where the ComfyUI workflows are stored
  * @property {string} files - The directory where the uploaded files are stored
+ * @property {string} vectors - The directory where the vectors are stored
  */
 
 /**
@@ -94,43 +95,9 @@ function getUserDirectories(handle) {
 
 /**
  * Middleware to add user data to the request object.
- * @param {import('express').Application} app - The express app
  * @returns {import('express').RequestHandler}
  */
-function userDataMiddleware(app) {
-    app.use('/backgrounds/:path', async (req, res) => {
-        try {
-            const filePath = path.join(process.cwd(), req.user.directories.backgrounds, decodeURIComponent(req.params.path));
-            const data = await fsPromises.readFile(filePath);
-            return res.send(data);
-        }
-        catch {
-            return res.sendStatus(404);
-        }
-    });
-
-    app.use('/characters/:path', async (req, res) => {
-        try {
-            const filePath = path.join(process.cwd(), req.user.directories.characters, decodeURIComponent(req.params.path));
-            const data = await fsPromises.readFile(filePath);
-            return res.send(data);
-        }
-        catch {
-            return res.sendStatus(404);
-        }
-    });
-
-    app.use('/User Avatars/:path', async (req, res) => {
-        try {
-            const filePath = path.join(process.cwd(), req.user.directories.avatars, decodeURIComponent(req.params.path));
-            const data = await fsPromises.readFile(filePath);
-            return res.send(data);
-        }
-        catch {
-            return res.sendStatus(404);
-        }
-    });
-
+function userDataMiddleware() {
     /**
      * Middleware to add user data to the request object.
      * @param {import('express').Request} req Request object
@@ -139,11 +106,43 @@ function userDataMiddleware(app) {
      */
     return async (req, res, next) => {
         const directories = await getCurrentUserDirectories(req);
-        req.user.profile = DEFAULT_USER;
-        req.user.directories = directories;
+        req.user = {
+            profile: DEFAULT_USER,
+            directories: directories,
+        };
         next();
     };
 }
+
+/**
+ * Creates a route handler for serving files from a specific directory.
+ * @param {(req: import('express').Request) => string} directoryFn A function that returns the directory path to serve files from
+ * @returns {import('express').RequestHandler}
+ */
+function createRouteHandler(directoryFn) {
+    return async (req, res) => {
+        try {
+            const directory = directoryFn(req);
+            const filePath = decodeURIComponent(req.params[0]);
+            return res.sendFile(filePath, { root: directory });
+        } catch (error) {
+            console.error(error);
+            return res.sendStatus(404);
+        }
+    };
+}
+
+/**
+ * Express router for serving files from the user's directories.
+ */
+const router = express.Router();
+router.use('/backgrounds/*', createRouteHandler(req => req.user.directories.backgrounds));
+router.use('/characters/*', createRouteHandler(req => req.user.directories.characters));
+router.use('/User Avatars/*', createRouteHandler(req => req.user.directories.avatars));
+router.use('/assets/*', createRouteHandler(req => req.user.directories.assets));
+router.use('/user/images/*', createRouteHandler(req => req.user.directories.userImages));
+router.use('/user/files/*', createRouteHandler(req => req.user.directories.files));
+router.use('/scripts/extensions/third-party/*', createRouteHandler(req => req.user.directories.extensions));
 
 module.exports = {
     initUserStorage,
@@ -152,4 +151,5 @@ module.exports = {
     getAllUserHandles,
     getUserDirectories,
     userDataMiddleware,
+    router,
 };

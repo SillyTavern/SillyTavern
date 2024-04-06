@@ -4,11 +4,11 @@ const express = require('express');
 const sanitize = require('sanitize-filename');
 const fetch = require('node-fetch').default;
 const { finished } = require('stream/promises');
-const { DIRECTORIES, UNSAFE_EXTENSIONS } = require('../constants');
+const { UNSAFE_EXTENSIONS } = require('../constants');
 const { jsonParser } = require('../express-common');
 const { clientRelativePath } = require('../util');
 
-const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character'];
+const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d', 'vrm', 'character', 'temp'];
 
 /**
  * Validates the input filename for the asset.
@@ -48,7 +48,12 @@ function validateAssetFileName(inputFilename) {
     return { error: false };
 }
 
-// Recursive function to get files
+/**
+ * Recursive function to get files
+ * @param {string} dir - The directory to search for files
+ * @param {string[]} files - The array of files to return
+ * @returns {string[]} - The array of files
+ */
 function getFiles(dir, files = []) {
     // Get an array of all files and directories in the passed directory using fs.readdirSync
     const fileList = fs.readdirSync(dir, { withFileTypes: true });
@@ -77,13 +82,23 @@ const router = express.Router();
  *
  * @returns {void}
  */
-router.post('/get', jsonParser, async (_, response) => {
-    const folderPath = path.join(DIRECTORIES.assets);
+router.post('/get', jsonParser, async (request, response) => {
+    const folderPath = path.join(request.user.directories.assets);
     let output = {};
-    //console.info("Checking files into",folderPath);
 
     try {
         if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+
+            for (const category of VALID_CATEGORIES) {
+                const assetCategoryPath = path.join(folderPath, category);
+                if (fs.existsSync(assetCategoryPath) && !fs.statSync(assetCategoryPath).isDirectory()) {
+                    fs.unlinkSync(assetCategoryPath);
+                }
+                if (!fs.existsSync(assetCategoryPath)) {
+                    fs.mkdirSync(assetCategoryPath);
+                }
+            }
+
             const folders = fs.readdirSync(folderPath, { withFileTypes: true })
                 .filter(file => file.isDirectory());
 
@@ -100,7 +115,7 @@ router.post('/get', jsonParser, async (_, response) => {
                     for (let file of files) {
                         if (file.includes('model') && file.endsWith('.json')) {
                             //console.debug("Asset live2d model found:",file)
-                            output[folder].push(clientRelativePath(file));
+                            output[folder].push(clientRelativePath(request.user.directories.root, file));
                         }
                     }
                     continue;
@@ -116,7 +131,7 @@ router.post('/get', jsonParser, async (_, response) => {
                     for (let file of files) {
                         if (!file.endsWith('.placeholder')) {
                             //console.debug("Asset VRM model found:",file)
-                            output['vrm']['model'].push(clientRelativePath(file));
+                            output['vrm']['model'].push(clientRelativePath(request.user.directories.root, file));
                         }
                     }
 
@@ -127,7 +142,7 @@ router.post('/get', jsonParser, async (_, response) => {
                     for (let file of files) {
                         if (!file.endsWith('.placeholder')) {
                             //console.debug("Asset VRM animation found:",file)
-                            output['vrm']['animation'].push(clientRelativePath(file));
+                            output['vrm']['animation'].push(clientRelativePath(request.user.directories.root, file));
                         }
                     }
                     continue;
@@ -170,7 +185,7 @@ router.post('/download', jsonParser, async (request, response) => {
             category = i;
 
     if (category === null) {
-        console.debug('Bad request: unsuported asset category.');
+        console.debug('Bad request: unsupported asset category.');
         return response.sendStatus(400);
     }
 
@@ -179,8 +194,8 @@ router.post('/download', jsonParser, async (request, response) => {
     if (validation.error)
         return response.status(400).send(validation.message);
 
-    const temp_path = path.join(DIRECTORIES.assets, 'temp', request.body.filename);
-    const file_path = path.join(DIRECTORIES.assets, category, request.body.filename);
+    const temp_path = path.join(request.user.directories.assets, 'temp', request.body.filename);
+    const file_path = path.join(request.user.directories.assets, category, request.body.filename);
     console.debug('Request received to download', url, 'to', file_path);
 
     try {
@@ -197,6 +212,7 @@ router.post('/download', jsonParser, async (request, response) => {
             });
         }
         const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
+        // @ts-ignore
         await finished(res.body.pipe(fileStream));
 
         if (category === 'character') {
@@ -235,7 +251,7 @@ router.post('/delete', jsonParser, async (request, response) => {
             category = i;
 
     if (category === null) {
-        console.debug('Bad request: unsuported asset category.');
+        console.debug('Bad request: unsupported asset category.');
         return response.sendStatus(400);
     }
 
@@ -244,7 +260,7 @@ router.post('/delete', jsonParser, async (request, response) => {
     if (validation.error)
         return response.status(400).send(validation.message);
 
-    const file_path = path.join(DIRECTORIES.assets, category, request.body.filename);
+    const file_path = path.join(request.user.directories.assets, category, request.body.filename);
     console.debug('Request received to delete', category, file_path);
 
     try {
@@ -290,11 +306,11 @@ router.post('/character', jsonParser, async (request, response) => {
             category = i;
 
     if (category === null) {
-        console.debug('Bad request: unsuported asset category.');
+        console.debug('Bad request: unsupported asset category.');
         return response.sendStatus(400);
     }
 
-    const folderPath = path.join(DIRECTORIES.characters, name, category);
+    const folderPath = path.join(request.user.directories.characters, name, category);
 
     let output = [];
     try {

@@ -73,8 +73,12 @@ async function backupSettings() {
             const userDirectories = getUserDirectories(handle);
             const backupFile = path.join(PUBLIC_DIRECTORIES.backups, `settings_${handle}_${generateTimestamp()}.json`);
             const sourceFile = path.join(userDirectories.root, SETTINGS_FILE);
-            fs.copyFileSync(sourceFile, backupFile);
 
+            if (!fs.existsSync(sourceFile)) {
+                continue;
+            }
+
+            fs.copyFileSync(sourceFile, backupFile);
             removeOldBackups(`settings_${handle}`);
         }
     } catch (err) {

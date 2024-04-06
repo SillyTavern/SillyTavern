@@ -2,6 +2,7 @@ const PUBLIC_DIRECTORIES = {
     images: 'public/img/',
     backups: 'backups/',
     sounds: 'public/sounds',
+    extensions: 'public/scripts/extensions',
 };
 
 /**
@@ -29,13 +30,14 @@ const USER_DIRECTORY_TEMPLATE = Object.freeze({
     textGen_Settings: 'TextGen Settings',
     themes: 'themes',
     movingUI: 'movingUI',
-    extensions: 'scripts/extensions',
+    extensions: 'extensions',
     instruct: 'instruct',
     context: 'context',
     quickreplies: 'QuickReplies',
     assets: 'assets',
     comfyWorkflows: 'user/workflows',
     files: 'user/files',
+    vectors: 'vectors',
 });
 
 const DEFAULT_USER = Object.freeze({

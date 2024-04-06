@@ -4,7 +4,6 @@ const express = require('express');
 const router = express.Router();
 const { validateAssetFileName } = require('./assets');
 const { jsonParser } = require('../express-common');
-const { DIRECTORIES } = require('../constants');
 const { clientRelativePath } = require('../util');
 
 router.post('/upload', jsonParser, async (request, response) => {
@@ -22,9 +21,9 @@ router.post('/upload', jsonParser, async (request, response) => {
         if (validation.error)
             return response.status(400).send(validation.message);
 
-        const pathToUpload = path.join(DIRECTORIES.files, request.body.name);
+        const pathToUpload = path.join(request.user.directories.files, request.body.name);
         writeFileSyncAtomic(pathToUpload, request.body.data, 'base64');
-        const url = clientRelativePath(pathToUpload);
+        const url = clientRelativePath(request.user.directories.root, pathToUpload);
         return response.send({ path: url });
     } catch (error) {
         console.log(error);

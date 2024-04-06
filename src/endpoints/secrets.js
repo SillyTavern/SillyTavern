@@ -5,7 +5,7 @@ const { getConfigValue } = require('../util');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser } = require('../express-common');
 
-const SECRETS_FILE = path.join(process.cwd(), './secrets.json');
+const SECRETS_FILE = 'secrets.json';
 const SECRET_KEYS = {
     HORDE: 'api_key_horde',
     MANCER: 'api_key_mancer',
@@ -48,57 +48,74 @@ const EXPORTABLE_KEYS = [
 
 /**
  * Writes a secret to the secrets file
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @param {string} key Secret key
  * @param {string} value Secret value
  */
-function writeSecret(key, value) {
-    if (!fs.existsSync(SECRETS_FILE)) {
+function writeSecret(directories, key, value) {
+    const filePath = path.join(directories.root, SECRETS_FILE);
+
+    if (!fs.existsSync(filePath)) {
         const emptyFile = JSON.stringify({});
-        writeFileAtomicSync(SECRETS_FILE, emptyFile, 'utf-8');
+        writeFileAtomicSync(filePath, emptyFile, 'utf-8');
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
+    const fileContents = fs.readFileSync(filePath, 'utf-8');
     const secrets = JSON.parse(fileContents);
     secrets[key] = value;
-    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets, null, 4), 'utf-8');
+    writeFileAtomicSync(filePath, JSON.stringify(secrets, null, 4), 'utf-8');
 }
 
-function deleteSecret(key) {
-    if (!fs.existsSync(SECRETS_FILE)) {
+/**
+ * Deletes a secret from the secrets file
+ * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {string} key Secret key
+ * @returns
+ */
+function deleteSecret(directories, key) {
+    const filePath = path.join(directories.root, SECRETS_FILE);
+
+    if (!fs.existsSync(filePath)) {
         return;
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
+    const fileContents = fs.readFileSync(filePath, 'utf-8');
     const secrets = JSON.parse(fileContents);
     delete secrets[key];
-    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets, null, 4), 'utf-8');
+    writeFileAtomicSync(filePath, JSON.stringify(secrets, null, 4), 'utf-8');
 }
 
 /**
  * Reads a secret from the secrets file
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @param {string} key Secret key
  * @returns {string} Secret value
  */
-function readSecret(key) {
-    if (!fs.existsSync(SECRETS_FILE)) {
+function readSecret(directories, key) {
+    const filePath = path.join(directories.root, SECRETS_FILE);
+
+    if (!fs.existsSync(filePath)) {
         return '';
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
+    const fileContents = fs.readFileSync(filePath, 'utf-8');
     const secrets = JSON.parse(fileContents);
     return secrets[key];
 }
 
 /**
  * Reads the secret state from the secrets file
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {object} Secret state
  */
-function readSecretState() {
-    if (!fs.existsSync(SECRETS_FILE)) {
+function readSecretState(directories) {
+    const filePath = path.join(directories.root, SECRETS_FILE);
+
+    if (!fs.existsSync(filePath)) {
         return {};
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf8');
+    const fileContents = fs.readFileSync(filePath, 'utf8');
     const secrets = JSON.parse(fileContents);
     const state = {};
 
@@ -111,15 +128,18 @@ function readSecretState() {
 
 /**
  * Reads all secrets from the secrets file
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {Record<string, string> | undefined} Secrets
  */
-function getAllSecrets() {
-    if (!fs.existsSync(SECRETS_FILE)) {
+function getAllSecrets(directories) {
+    const filePath = path.join(directories.root, SECRETS_FILE);
+
+    if (!fs.existsSync(filePath)) {
         console.log('Secrets file does not exist');
         return undefined;
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf8');
+    const fileContents = fs.readFileSync(filePath, 'utf8');
     const secrets = JSON.parse(fileContents);
     return secrets;
 }
@@ -130,13 +150,13 @@ router.post('/write', jsonParser, (request, response) => {
     const key = request.body.key;
     const value = request.body.value;
 
-    writeSecret(key, value);
+    writeSecret(request.user.directories, key, value);
     return response.send('ok');
 });
 
-router.post('/read', jsonParser, (_, response) => {
+router.post('/read', jsonParser, (request, response) => {
     try {
-        const state = readSecretState();
+        const state = readSecretState(request.user.directories);
         return response.send(state);
     } catch (error) {
         console.error(error);
@@ -144,7 +164,7 @@ router.post('/read', jsonParser, (_, response) => {
     }
 });
 
-router.post('/view', jsonParser, async (_, response) => {
+router.post('/view', jsonParser, async (request, response) => {
     const allowKeysExposure = getConfigValue('allowKeysExposure', false);
 
     if (!allowKeysExposure) {
@@ -153,7 +173,7 @@ router.post('/view', jsonParser, async (_, response) => {
     }
 
     try {
-        const secrets = getAllSecrets();
+        const secrets = getAllSecrets(request.user.directories);
 
         if (!secrets) {
             return response.sendStatus(404);
@@ -176,7 +196,7 @@ router.post('/find', jsonParser, (request, response) => {
     }
 
     try {
-        const secret = readSecret(key);
+        const secret = readSecret(request.user.directories, key);
 
         if (!secret) {
             response.sendStatus(404);
@@ -192,6 +212,7 @@ router.post('/find', jsonParser, (request, response) => {
 module.exports = {
     writeSecret,
     readSecret,
+    deleteSecret,
     readSecretState,
     getAllSecrets,
     SECRET_KEYS,
