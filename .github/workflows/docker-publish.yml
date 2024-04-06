@@ -9,6 +9,10 @@ on:
   schedule:
     # Build the staging image everyday at 00:00 UTC
     - cron: "0 0 * * *"
+  push:
+    # Temporary workaround
+    branches:
+      - release
 
 env:
   # This should allow creation of docker images even in forked repositories
