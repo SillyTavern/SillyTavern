@@ -419,10 +419,13 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
         }
 
         for (const example of blockExamples) {
+            // If force group/persona names is set, we should override the include names for the user placeholder
+            const includeThisName = includeNames || (power_user.instruct.names_force_groups && example.name == 'example_user');
+
             const prefix = example.name == 'example_user' ? inputPrefix : outputPrefix;
             const suffix = example.name == 'example_user' ? inputSuffix : outputSuffix;
             const name = example.name == 'example_user' ? name1 : name2;
-            const messageContent = includeNames ? `${name}: ${example.content}` : example.content;
+            const messageContent = includeThisName ? `${name}: ${example.content}` : example.content;
             const formattedMessage = [prefix, messageContent + suffix].filter(x => x).join(separator);
             formattedExamples.push(formattedMessage);
         }
