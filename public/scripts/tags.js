@@ -649,15 +649,16 @@ function createNewTag(tagName) {
 /**
  * Prints the list of tags
  *
- * @param {JQuery<HTMLElement>} element - The container element where the tags are to be printed.
+ * @param {JQuery<HTMLElement>|string} element - The container element where the tags are to be printed. (Optionally can also be a string selector for the element, which will then be resolved)
  * @param {PrintTagListOptions} [options] - Optional parameters for printing the tag list.
  */
 function printTagList(element, { tags = undefined, addTag = undefined, forEntityOrKey = undefined, empty = true, tagActionSelector = undefined, tagOptions = {} } = {}) {
+    const $element = (typeof element === "string") ? $(element) : element;
     const key = forEntityOrKey !== undefined ? getTagKeyForEntity(forEntityOrKey) : getTagKey();
     let printableTags = tags ? (typeof tags === 'function' ? tags() : tags) : getTagsList(key);
 
     if (empty === 'always' || (empty && (printableTags?.length > 0 || key))) {
-        $(element).empty();
+        $element.empty();
     }
 
     if (addTag && (tagOptions.skipExistsCheck || !printableTags.some(x => x.id === addTag.id))) {
@@ -670,7 +671,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
     const customAction = typeof tagActionSelector === 'function' ? tagActionSelector : null;
 
     // Well, lets check if the tag list was expanded. Based on either a css class, or when any expand was clicked yet, then we search whether this element id matches
-    const expanded = element.hasClass('tags-expanded') || (expanded_tags_cache.length && expanded_tags_cache.indexOf(key ?? getTagKeyForEntityElement(element)) >= 0);
+    const expanded = $element.hasClass('tags-expanded') || (expanded_tags_cache.length && expanded_tags_cache.indexOf(key ?? getTagKeyForEntityElement(element)) >= 0);
 
     // We prepare some stuff. No matter which list we have, there is a maximum value of tags we are going to display
     const TAGS_LIMIT = 50;
@@ -692,7 +693,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
 
         // Check if we should print this tag
         if (totalPrinted++ < MAX_TAGS || filterActive(tag)) {
-            appendTagToList(element, tag, tagOptions);
+            appendTagToList($element, tag, tagOptions);
         } else {
             hiddenTags++;
         }
@@ -705,21 +706,25 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
 
         // Add click event
         const showHiddenTags = (event) => {
-            const elementKey = key ?? getTagKeyForEntityElement(element);
+            const elementKey = key ?? getTagKeyForEntityElement($element);
             console.log(`Hidden tags shown for element ${elementKey}`);
 
             // Mark the current char/group as expanded if we were in any. This will be kept in memory until reload
-            element.addClass('tags-expanded');
+            $element.addClass('tags-expanded');
             expanded_tags_cache.push(elementKey);
 
             // Do not bubble further, we are just expanding
             event.stopPropagation();
-            printTagList(element, { tags: tags, addTag: addTag, forEntityOrKey: forEntityOrKey, empty: empty, tagActionSelector: tagActionSelector, tagOptions: tagOptions });
+            printTagList($element, { tags: tags, addTag: addTag, forEntityOrKey: forEntityOrKey, empty: empty, tagActionSelector: tagActionSelector, tagOptions: tagOptions });
         };
 
+        // Print the placeholder object with its styling and action to show the remaining tags
         /** @type {Tag} */
         const placeholderTag = { id: id, name: "...", title: `${hiddenTags} tags not displayed.\n\nClick to expand remaining tags.`, color: 'transparent', action: showHiddenTags, class: 'placeholder-expander' };
-        appendTagToList(element, placeholderTag, tagOptions);
+        // It should never be marked as a removable tag, because it's just an expander action
+        /** @type {TagOptions} */
+        const placeholderTagOptions = { ...tagOptions, removable: false };
+        appendTagToList($element, placeholderTag, placeholderTagOptions);
     }
 }
 
