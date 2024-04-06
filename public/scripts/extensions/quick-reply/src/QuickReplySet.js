@@ -1,5 +1,6 @@
 import { getRequestHeaders, substituteParams } from '../../../../script.js';
 import { executeSlashCommands } from '../../../slash-commands.js';
+import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { debounceAsync, warn } from '../index.js';
 import { QuickReply } from './QuickReply.js';
 
@@ -102,8 +103,9 @@ export class QuickReplySet {
     /**
      * @param {QuickReply} qr
      * @param {String} [message] - optional altered message to be used
+     * @param {SlashCommandScope} [scope] - optional scope to be used when running the command
      */
-    async execute(qr, message = null, isAutoExecute = false) {
+    async execute(qr, message = null, isAutoExecute = false, scope = null) {
         /**@type {HTMLTextAreaElement}*/
         const ta = document.querySelector('#send_textarea');
         const finalMessage = message ?? qr.message;
@@ -119,7 +121,7 @@ export class QuickReplySet {
         }
 
         if (input[0] == '/' && !this.disableSend) {
-            const result = await executeSlashCommands(input);
+            const result = await executeSlashCommands(input, true, scope);
             return typeof result === 'object' ? result?.pipe : '';
         }
 

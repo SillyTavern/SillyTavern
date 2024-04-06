@@ -1,5 +1,6 @@
 import { callPopup } from '../../../../script.js';
 import { setSlashCommandAutoComplete } from '../../../slash-commands.js';
+import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { getSortableDelay } from '../../../utils.js';
 import { log, warn } from '../index.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
@@ -493,10 +494,11 @@ export class QuickReply {
 
     async execute(args = {}) {
         if (this.message?.length > 0 && this.onExecute) {
-            const message = this.message.replace(/\{\{arg::([^}]+)\}\}/g, (_, key) => {
-                return args[key] ?? '';
-            });
-            return await this.onExecute(this, message, args.isAutoExecute ?? false);
+            const scope = new SlashCommandScope();
+            for (const key of Object.keys(args)) {
+                scope.setMacro(`arg::${key}`, args[key]);
+            }
+            return await this.onExecute(this, this.message, args.isAutoExecute ?? false, scope);
         }
     }
 
