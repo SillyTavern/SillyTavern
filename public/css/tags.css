@@ -73,6 +73,11 @@
     background: none;
 }
 
+.tag.placeholder-expander {
+    cursor: alias;
+    border: 0;
+}
+
 .tagListHint {
     align-self: center;
     display: flex;

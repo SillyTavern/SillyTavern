@@ -118,6 +118,7 @@ const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
  * @property {function} [action] - An optional function that gets executed when this tag is an actionable tag and is clicked on.
  * @property {string} [class] - An optional css class added to the control representing this tag when printed. Used for custom tags in the filters.
  * @property {string} [icon] - An optional css class of an icon representing this tag when printed. This will replace the tag name with the icon. Used for custom tags in the filters.
+ * @property {string} [title] - An optional title for the tooltip of this tag. If there is no tooltip specified, and "icon" is chosen, the tooltip will be the "name" property.
  */
 
 /**
@@ -128,9 +129,16 @@ let tags = [];
 
 /**
  * A map representing the key of an entity (character avatar, group id, etc) with a corresponding array of tags this entity has assigned. The array might not exist if no tags were assigned yet.
- * @type {Object.<string, string[]?>}
+ * @type {{[identifier: string]: string[]?}}
  */
 let tag_map = {};
+
+/**
+ * A cache of all cut-off tag lists that got expanded until the last reload. They will be printed expanded again.
+ * It contains the key of the entity.
+ * @type {string[]} ids
+ */
+let expanded_tags_cache = [];
 
 /**
  * Applies the basic filter for the current state of the tags and their selection on an entity list.
@@ -388,7 +396,7 @@ function getTagKey() {
  * Robust method to find a valid tag key for any entity.
  *
  * @param {object|number|string} entityOrKey An entity with id property (character, group, tag), or directly an id or tag key.
- * @returns {string} The tag key that can be found.
+ * @returns {string|undefined} The tag key that can be found.
  */
 export function getTagKeyForEntity(entityOrKey) {
     let x = entityOrKey;
@@ -416,6 +424,33 @@ export function getTagKeyForEntity(entityOrKey) {
     }
 
     // If none of the above, we cannot find a valid tag key
+    return undefined;
+}
+
+/**
+ * Checks for a tag key based on an entity for a given element.
+ * It checks the given element and upwards parents for a set character id (chid) or group id (grid), and if there is any, returns its unique entity key.
+ *
+ * @param {JQuery<HTMLElement>|string} element - The element to search the entity id on
+ * @returns {string|undefined} The tag key that can be found.
+ */
+export function getTagKeyForEntityElement(element) {
+    if (typeof element === 'string') {
+        element = $(element);
+    }
+    // Start with the given element and traverse up the DOM tree
+    while (element.length && element.parent().length) {
+        const grid = element.attr('grid');
+        const chid = element.attr('chid');
+        if (grid || chid) {
+            const id = grid || chid;
+            return getTagKeyForEntity(id);
+        }
+
+        // Move up to the parent element
+        element = element.parent();
+    }
+
     return undefined;
 }
 
@@ -617,15 +652,16 @@ function createNewTag(tagName) {
 /**
  * Prints the list of tags
  *
- * @param {JQuery<HTMLElement>} element - The container element where the tags are to be printed.
+ * @param {JQuery<HTMLElement>|string} element - The container element where the tags are to be printed. (Optionally can also be a string selector for the element, which will then be resolved)
  * @param {PrintTagListOptions} [options] - Optional parameters for printing the tag list.
  */
 function printTagList(element, { tags = undefined, addTag = undefined, forEntityOrKey = undefined, empty = true, tagActionSelector = undefined, tagOptions = {} } = {}) {
+    const $element = (typeof element === 'string') ? $(element) : element;
     const key = forEntityOrKey !== undefined ? getTagKeyForEntity(forEntityOrKey) : getTagKey();
     let printableTags = tags ? (typeof tags === 'function' ? tags() : tags) : getTagsList(key);
 
     if (empty === 'always' || (empty && (printableTags?.length > 0 || key))) {
-        $(element).empty();
+        $element.empty();
     }
 
     if (addTag && (tagOptions.skipExistsCheck || !printableTags.some(x => x.id === addTag.id))) {
@@ -636,6 +672,16 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
     printableTags = printableTags.sort(compareTagsForSort);
 
     const customAction = typeof tagActionSelector === 'function' ? tagActionSelector : null;
+
+    // Well, lets check if the tag list was expanded. Based on either a css class, or when any expand was clicked yet, then we search whether this element id matches
+    const expanded = $element.hasClass('tags-expanded') || (expanded_tags_cache.length && expanded_tags_cache.indexOf(key ?? getTagKeyForEntityElement(element)) >= 0);
+
+    // We prepare some stuff. No matter which list we have, there is a maximum value of tags we are going to display
+    const TAGS_LIMIT = 50;
+    const MAX_TAGS = !expanded ? TAGS_LIMIT : Number.MAX_SAFE_INTEGER;
+    let totalPrinted = 0;
+    let hiddenTags = 0;
+    const filterActive = (/** @type {Tag} */ tag) => tag.filter_state && !isFilterState(tag.filter_state, FILTER_STATES.UNDEFINED);
 
     for (const tag of printableTags) {
         // If we have a custom action selector, we override that tag options for each tag
@@ -648,7 +694,40 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
             }
         }
 
-        appendTagToList(element, tag, tagOptions);
+        // Check if we should print this tag
+        if (totalPrinted++ < MAX_TAGS || filterActive(tag)) {
+            appendTagToList($element, tag, tagOptions);
+        } else {
+            hiddenTags++;
+        }
+    }
+
+    // After the loop, check if we need to add the placeholder.
+    // The placehold if clicked expands the tags and remembers either via class or cache array which was expanded, so it'll stay expanded until the next reload.
+    if (hiddenTags > 0) {
+        const id = 'placeholder_' + uuidv4();
+
+        // Add click event
+        const showHiddenTags = (event) => {
+            const elementKey = key ?? getTagKeyForEntityElement($element);
+            console.log(`Hidden tags shown for element ${elementKey}`);
+
+            // Mark the current char/group as expanded if we were in any. This will be kept in memory until reload
+            $element.addClass('tags-expanded');
+            expanded_tags_cache.push(elementKey);
+
+            // Do not bubble further, we are just expanding
+            event.stopPropagation();
+            printTagList($element, { tags: tags, addTag: addTag, forEntityOrKey: forEntityOrKey, empty: empty, tagActionSelector: tagActionSelector, tagOptions: tagOptions });
+        };
+
+        // Print the placeholder object with its styling and action to show the remaining tags
+        /** @type {Tag} */
+        const placeholderTag = { id: id, name: '...', title: `${hiddenTags} tags not displayed.\n\nClick to expand remaining tags.`, color: 'transparent', action: showHiddenTags, class: 'placeholder-expander' };
+        // It should never be marked as a removable tag, because it's just an expander action
+        /** @type {TagOptions} */
+        const placeholderTagOptions = { ...tagOptions, removable: false };
+        appendTagToList($element, placeholderTag, placeholderTagOptions);
     }
 }
 
@@ -682,13 +761,19 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
     if (tag.class) {
         tagElement.addClass(tag.class);
     }
-
+    if (tag.title) {
+        tagElement.attr('title', tag.title);
+    }
     if (tag.icon) {
-        tagElement.find('.tag_name').text('').attr('title', tag.name).addClass(tag.icon);
+        tagElement.find('.tag_name').text('').attr('title', `${tag.name} ${tag.title}`.trim()).addClass(tag.icon);
+        tagElement.addClass('actionable');
     }
 
+    // We could have multiple ways of actions passed in. The manual arguments have precendence in front of a specified tag action
+    const clickableAction = action ?? tag.action;
+
     // If this is a tag for a general list and its either selectable or actionable, lets mark its current state
-    if ((selectable || action) && isGeneralList) {
+    if ((selectable || clickableAction) && isGeneralList) {
         toggleTagThreeState(tagElement, { stateOverride: tag.filter_state ?? DEFAULT_FILTER_STATE });
     }
 
@@ -696,14 +781,11 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
         tagElement.on('click', () => onTagFilterClick.bind(tagElement)(listElement));
     }
 
-    if (action) {
+    if (clickableAction) {
         const filter = getFilterHelper($(listElement));
-        tagElement.on('click', () => action.bind(tagElement)(filter));
-        tagElement.addClass('actionable');
+        tagElement.on('click', (e) => clickableAction.bind(tagElement)(e, filter));
+        tagElement.addClass('clickable-action');
     }
-    /*if (action && tag.id === 2) {
-        tagElement.addClass('innerActionable hidden');
-    }*/
 
     $(listElement).append(tagElement);
 }
