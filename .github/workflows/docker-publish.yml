@@ -12,7 +12,7 @@ on:
 
 env:
   # This should allow creation of docker images even in forked repositories
-  IMAGE_NAME: ${{ github.repository }}
+  REPO: ${{ github.repository }}
   REGISTRY: ghcr.io
 
 jobs:
@@ -20,6 +20,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      ## Workaround for GitHub repo names containing uppercase characters
+      - name: set lowercase repo name
+        run: |
+          echo "IMAGE_NAME=${REPO,,}" >>${GITHUB_ENV}
+
       # Using the following workaround because currently GitHub Actions 
       # does not support logical AND/OR operations on triggers
       # It's currently not possible to have `branches` under the `schedule` trigger
