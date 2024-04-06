@@ -708,7 +708,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
         const id = 'placeholder_' + uuidv4();
 
         // Add click event
-        const showHiddenTags = (event) => {
+        const showHiddenTags = (_, event) => {
             const elementKey = key ?? getTagKeyForEntityElement($element);
             console.log(`Hidden tags shown for element ${elementKey}`);
 
@@ -783,7 +783,7 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
 
     if (clickableAction) {
         const filter = getFilterHelper($(listElement));
-        tagElement.on('click', (e) => clickableAction.bind(tagElement)(filter));
+        tagElement.on('click', (e) => clickableAction.bind(tagElement)(filter, e));
         tagElement.addClass('clickable-action');
     }
 
