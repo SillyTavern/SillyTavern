@@ -54,6 +54,7 @@ import { debounce, delay, escapeRegex, isFalseBoolean, isTrueBoolean, stringToRa
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
+import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
 export {
     executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -1749,12 +1750,13 @@ function modelCallback(_, model) {
 /**
  * Executes slash commands in the provided text
  * @param {string} text Slash command text
- * @param {boolean} unescape Whether to unescape the batch separator
- * @returns {Promise<{interrupt: boolean, newText: string, pipe: string} | boolean>}
+ * @param {boolean} handleParserErrors Whether to handle parser errors (show toast on error) or throw
+ * @param {SlashCommandScope} scope The scope to be used when executing the commands.
+ * @returns {Promise<SlashCommandClosureResult>}
  */
-async function executeSlashCommands(text, unescape = false, handleParserErrors = true, scope = null) {
+async function executeSlashCommands(text, handleParserErrors = true, scope = null) {
     if (!text) {
-        return false;
+        return null;
     }
 
     let closure;
@@ -1781,218 +1783,14 @@ async function executeSlashCommands(text, unescape = false, handleParserErrors =
     }
 
     return await closure.execute();
-
-    // Unescape the pipe character and macro braces
-    if (unescape) {
-        text = text.replace(/\\\|/g, '|');
-        text = text.replace(/\\\{/g, '{');
-        text = text.replace(/\\\}/g, '}');
-    }
-
-    // Hack to allow multi-line slash commands
-    // All slash command messages should begin with a slash
-    const placeholder = '\u200B'; // Use a zero-width space as a placeholder
-    const chars = text.split('');
-    for (let i = 1; i < chars.length; i++) {
-        if (chars[i] === '|' && chars[i - 1] !== '\\') {
-            chars[i] = placeholder;
-        }
-    }
-    const lines = chars.join('').split(placeholder).map(line => line.trim());
-    const linesToRemove = [];
-
-    let interrupt = false;
-    let pipeResult = '';
-
-    for (let index = 0; index < lines.length; index++) {
-        const trimmedLine = lines[index].trim();
-
-        if (!trimmedLine.startsWith('/')) {
-            continue;
-        }
-
-        const result = parser.parse(trimmedLine);
-
-        if (!result) {
-            continue;
-        }
-
-        // Skip comment commands. They don't run macros or interrupt pipes.
-        if (SlashCommandParser.COMMENT_KEYWORDS.includes(result.command)) {
-            continue;
-        }
-
-        if (result.value && typeof result.value === 'string') {
-            result.value = substituteParams(result.value.trim());
-        }
-
-        console.debug('Slash command executing:', result);
-        let unnamedArg = result.value || pipeResult;
-
-        if (typeof result.args === 'object') {
-            for (let [key, value] of Object.entries(result.args)) {
-                if (typeof value === 'string') {
-                    value = substituteParams(value.trim());
-
-                    if (/{{pipe}}/i.test(value)) {
-                        value = value.replace(/{{pipe}}/i, pipeResult ?? '');
-                    }
-
-                    result.args[key] = value;
-                }
-            }
-        }
-
-        if (typeof unnamedArg === 'string') {
-            if (/{{pipe}}/i.test(unnamedArg)) {
-                unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult ?? '');
-            }
-
-            unnamedArg = unnamedArg
-                ?.replace(/\\\|/g, '|')
-                ?.replace(/\\\{/g, '{')
-                ?.replace(/\\\}/g, '}');
-        }
-
-        for (const [key, value] of Object.entries(result.args)) {
-            if (typeof value === 'string') {
-                result.args[key] = value
-                    .replace(/\\\|/g, '|')
-                    .replace(/\\\{/g, '{')
-                    .replace(/\\\}/g, '}');
-            }
-        }
-
-        pipeResult = await result.command.callback(result.args, unnamedArg);
-
-        if (result.command.interruptsGeneration) {
-            interrupt = true;
-        }
-
-        if (result.command.purgeFromMessage) {
-            linesToRemove.push(lines[index]);
-        }
-    }
-
-    const newText = lines.filter(x => linesToRemove.indexOf(x) === -1).join('\n');
-
-    return { interrupt, newText, pipe: pipeResult };
 }
 
-function setSlashCommandAutocomplete(textarea) {
-    /**@type {Number}*/
-    let width;
-    /**@type {HTMLTextAreaElement}*/
-    let element;
-    /**@type {String}*/
-    let text;
-    /**@type {SlashCommandExecutor}*/
-    let executor;
-    /**@type {Boolean}*/
-    let isReplacable;
-    textarea[0].addEventListener('keyup', ()=>isReplacable ? null : textarea.autocomplete('search'));
-    textarea.autocomplete({
-        source: (input, output) => {
-            // Only show for slash commands
-            if (!input.term.startsWith('/')) {
-                output([]);
-                return;
-            }
-
-            element = textarea[0];
-            text = input.term;
-            executor = parser.getCommandAt(text, element.selectionStart);
-            const slashCommand = executor?.name?.toLowerCase() ?? '';
-            isReplacable = !executor ? true : element.selectionStart + 1 == executor.start + executor.name.length;
-
-            window.parser = parser;
-            const helpStrings = Object
-                .keys(parser.commands) // Get all slash commands
-                .filter(x => x.startsWith(slashCommand)) // Filter by the input
-                .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
-            ;
-            const result = helpStrings
-                .filter((it,idx)=>helpStrings.indexOf(it) == idx) // remove duplicates
-                .map(x => ({ label: parser.commands[x].helpStringFormatted, value: `/${x} ` })) // Map to the help string
-            ;
-
-            // add notice if no match found
-            if (result.length == 0) {
-                result.push({ label:`No matching commands for "/${slashCommand}"`, value:'' });
-            }
-            console.log(result);
-
-            // determine textarea width *once* before generating output
-            width = element.getBoundingClientRect().width;
-            output(result); // Return the results
-        },
-        select: (e, u) => {
-            e.preventDefault();
-            // only update value if no space after command name
-            if (isReplacable) {
-                element.value = `${text.slice(0, executor.start - 2)}${u.item.value}${text.slice(executor.start + executor.name.length)}`;
-                element.selectionStart = executor.start + u.item.value.length - 2;
-                element.selectionEnd = element.selectionStart;
-            } else {
-                console.log('[AUTOCOMPLETE]', '[SELECT]', { e, u });
-            }
-        },
-        focus: (e, u) => {
-            e.preventDefault();
-            // only update value if no space after command name
-            if (isReplacable) {
-                element.value = `${text.slice(0, executor.start - 2)}${u.item.value}${text.slice(executor.start + executor.name.length)}`;
-                element.selectionStart = executor.start + u.item.value.length - 2;
-                element.selectionEnd = element.selectionStart;
-            } else {
-                switch (e.key) {
-                    case 'ArrowUp': {
-                        const line = text.slice(0, element.selectionStart).replace(/[^\n]/g, '').length;
-                        if (line == 0) {
-                            element.selectionStart = 0;
-                        } else {
-                            const lines = text.slice(0, element.selectionStart).split('\n');
-                            console.log(lines.slice(-2)[0]);
-                            element.selectionStart -= Math.max(lines.slice(-1)[0].length + 1, lines.slice(-2)[0].length + 1);
-                        }
-                        element.selectionEnd = element.selectionStart;
-                        break;
-                    }
-                    case 'ArrowDown': {
-                        const line = text.slice(0, element.selectionStart).replace(/[^\n]/g, '').length;
-                        const lines = text.split('\n');
-                        if (line + 1 == lines.length) {
-                            element.selectionStart = text.length;
-                        } else {
-                            element.selectionStart += lines[line].length + 1;
-                        }
-                        element.selectionEnd = element.selectionStart;
-                        break;
-                    }
-                }
-            }
-        },
-        minLength: 1,
-        position: { my: 'left bottom', at: 'left top', collision: 'none' },
-    });
-
-    textarea.autocomplete('instance')._renderItem = function (ul, item) {
-        const li = document.createElement('li'); {
-            li.style.width = `${width}px`;
-            const div = document.createElement('div'); {
-                div.innerHTML = item.label;
-                li.append(div);
-            }
-            ul.append(li);
-        }
-        return $(li);
-    };
-}
 /**
  *
- * @param {HTMLTextAreaElement} textarea
+ * @param {HTMLTextAreaElement} textarea The textarea to receive autocomplete
+ * @param {Boolean} isFloating Whether to show the auto complete as a floating window (e.g., large QR editor)
  */
-export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
+export function setSlashCommandAutoComplete(textarea, isFloating = false) {
     const dom = document.createElement('ul'); {
         dom.classList.add('slashCommandAutoComplete');
         dom.classList.add('defaultThemed');
@@ -2004,7 +1802,6 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
     let text;
     let executor;
     let clone;
-    let hasFocus = false;
     const hide = () => {
         dom?.remove();
         isActive = false;
@@ -2337,5 +2134,5 @@ export function setNewSlashCommandAutoComplete(textarea, isFloating = false) {
 jQuery(function () {
     const textarea = $('#send_textarea');
     // setSlashCommandAutocomplete(textarea);
-    setNewSlashCommandAutoComplete(document.querySelector('#send_textarea'));
+    setSlashCommandAutoComplete(document.querySelector('#send_textarea'));
 });
