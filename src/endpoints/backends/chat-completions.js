@@ -1,11 +1,11 @@
 const express = require('express');
 const fetch = require('node-fetch').default;
-const { Readable } = require('stream');
+const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
-const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt } = require('../prompt-converters');
+const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages } = require('../../prompt-converters');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
 const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
@@ -13,6 +13,67 @@ const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sente
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
 const API_MISTRAL = 'https://api.mistral.ai/v1';
+const API_COHERE = 'https://api.cohere.ai/v1';
+
+/**
+ * Ollama strikes back. Special boy #2's steaming routine.
+ * Wrap this abomination into proper SSE stream, again.
+ * @param {import('node-fetch').Response} jsonStream JSON stream
+ * @param {import('express').Request} request Express request
+ * @param {import('express').Response} response Express response
+ * @returns {Promise<any>} Nothing valuable
+ */
+async function parseCohereStream(jsonStream, request, response) {
+    try {
+        let partialData = '';
+        jsonStream.body.on('data', (data) => {
+            const chunk = data.toString();
+            partialData += chunk;
+            while (true) {
+                let json;
+                try {
+                    json = JSON.parse(partialData);
+                } catch (e) {
+                    break;
+                }
+                if (json.message) {
+                    const message = json.message || 'Unknown error';
+                    const chunk = { error: { message: message } };
+                    response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                    partialData = '';
+                    break;
+                } else if (json.event_type === 'text-generation') {
+                    const text = json.text || '';
+                    const chunk = { choices: [{ text }] };
+                    response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+                    partialData = '';
+                } else {
+                    partialData = '';
+                    break;
+                }
+            }
+        });
+
+        request.socket.on('close', function () {
+            if (jsonStream.body instanceof Readable) jsonStream.body.destroy();
+            response.end();
+        });
+
+        jsonStream.body.on('end', () => {
+            console.log('Streaming request finished');
+            response.write('data: [DONE]\n\n');
+            response.end();
+        });
+    } catch (error) {
+        console.log('Error forwarding streaming response:', error);
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        } else {
+            return response.end();
+        }
+    }
+}
+
 /**
  * Sends a request to Claude API.
  * @param {express.Request} request Express request
@@ -461,6 +522,85 @@ async function sendMistralAIRequest(request, response) {
     }
 }
 
+async function sendCohereRequest(request, response) {
+    const apiKey = readSecret(SECRET_KEYS.COHERE);
+    const controller = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+
+    if (!apiKey) {
+        console.log('Cohere API key is missing.');
+        return response.status(400).send({ error: true });
+    }
+
+    try {
+        const convertedHistory = convertCohereMessages(request.body.messages);
+
+        // https://docs.cohere.com/reference/chat
+        const requestBody = {
+            stream: Boolean(request.body.stream),
+            model: request.body.model,
+            message: convertedHistory.userPrompt,
+            preamble: convertedHistory.systemPrompt,
+            chat_history: convertedHistory.chatHistory,
+            temperature: request.body.temperature,
+            max_tokens: request.body.max_tokens,
+            k: request.body.top_k,
+            p: request.body.top_p,
+            seed: request.body.seed,
+            stop_sequences: request.body.stop,
+            frequency_penalty: request.body.frequency_penalty,
+            presence_penalty: request.body.presence_penalty,
+            prompt_truncation: 'AUTO_PRESERVE_ORDER',
+            connectors: [], // TODO
+            documents: [],
+            tools: [],
+            tool_results: [],
+            search_queries_only: false,
+        };
+
+        console.log('Cohere request:', requestBody);
+
+        const config = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey,
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+            timeout: 0,
+        };
+
+        const apiUrl = API_COHERE + '/chat';
+
+        if (request.body.stream) {
+            const stream = await fetch(apiUrl, config);
+            parseCohereStream(stream, request, response);
+        } else {
+            const generateResponse = await fetch(apiUrl, config);
+            if (!generateResponse.ok) {
+                console.log(`Cohere API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+                // a 401 unauthorized response breaks the frontend auth, so return a 500 instead. prob a better way of dealing with this.
+                // 401s are already handled by the streaming processor and dont pop up an error toast, that should probably be fixed too.
+                return response.status(generateResponse.status === 401 ? 500 : generateResponse.status).send({ error: true });
+            }
+            const generateResponseJson = await generateResponse.json();
+            console.log('Cohere response:', generateResponseJson);
+            return response.send(generateResponseJson);
+        }
+    } catch (error) {
+        console.log('Error communicating with Cohere API: ', error);
+        if (!response.headersSent) {
+            response.send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
 const router = express.Router();
 
 router.post('/status', jsonParser, async function (request, response_getstatus_openai) {
@@ -488,6 +628,10 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         api_key_openai = readSecret(SECRET_KEYS.CUSTOM);
         headers = {};
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE) {
+        api_url = API_COHERE;
+        api_key_openai = readSecret(SECRET_KEYS.COHERE);
+        headers = {};
     } else {
         console.log('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
@@ -510,6 +654,10 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         if (response.ok) {
             const data = await response.json();
             response_getstatus_openai.send(data);
+
+            if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE && Array.isArray(data?.models)) {
+                data.data = data.models.map(model => ({ id: model.name, ...model }));
+            }
 
             if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER && Array.isArray(data?.data)) {
                 let models = [];
@@ -636,6 +784,7 @@ router.post('/generate', jsonParser, function (request, response) {
         case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
     }
 
     let apiUrl;

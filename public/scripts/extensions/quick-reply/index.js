@@ -104,7 +104,7 @@ const loadSets = async () => {
                     qr.executeOnAi = slot.autoExecute_botMessage ?? false;
                     qr.executeOnChatChange = slot.autoExecute_chatLoad ?? false;
                     qr.executeOnGroupMemberDraft = slot.autoExecute_groupMemberDraft ?? false;
-                    qr.automationId = slot.automationId ?? false;
+                    qr.automationId = slot.automationId ?? '';
                     qr.contextList = (slot.contextMenu ?? []).map(it=>({
                         set: it.preset,
                         isChained: it.chain,

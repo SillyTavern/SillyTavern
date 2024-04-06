@@ -207,8 +207,23 @@ export class QuickReply {
             title.addEventListener('input', () => {
                 this.updateTitle(title.value);
             });
+            /**@type {HTMLInputElement}*/
+            const wrap = dom.querySelector('#qr--modal-wrap');
+            wrap.checked = JSON.parse(localStorage.getItem('qr--wrap'));
+            wrap.addEventListener('click', () => {
+                localStorage.setItem('qr--wrap', JSON.stringify(wrap.checked));
+                updateWrap();
+            });
+            const updateWrap = () => {
+                if (wrap.checked) {
+                    message.style.whiteSpace = 'pre-wrap';
+                } else {
+                    message.style.whiteSpace = 'pre';
+                }
+            };
             /**@type {HTMLTextAreaElement}*/
             const message = dom.querySelector('#qr--modal-message');
+            updateWrap();
             message.value = this.message;
             message.addEventListener('input', () => {
                 this.updateMessage(message.value);

@@ -29,6 +29,12 @@ var EventEmitter = function () {
 };
 
 EventEmitter.prototype.on = function (event, listener) {
+    // Unknown event used by external libraries?
+    if (event === undefined) {
+        console.trace('EventEmitter: Cannot listen to undefined event');
+        return;
+    }
+
     if (typeof this.events[event] !== 'object') {
         this.events[event] = [];
     }
@@ -49,7 +55,11 @@ EventEmitter.prototype.removeListener = function (event, listener) {
 };
 
 EventEmitter.prototype.emit = async function (event) {
-    console.debug('Event emitted: ' + event);
+    if (localStorage.getItem('eventTracing') === 'true') {
+        console.trace('Event emitted: ' + event);
+    } else {
+        console.debug('Event emitted: ' + event);
+    }
 
     var i, listeners, length, args = [].slice.call(arguments, 1);
 
@@ -70,7 +80,11 @@ EventEmitter.prototype.emit = async function (event) {
 };
 
 EventEmitter.prototype.emitAndWait = function (event) {
-    console.debug('Event emitted: ' + event);
+    if (localStorage.getItem('eventTracing') === 'true') {
+        console.trace('Event emitted: ' + event);
+    } else {
+        console.debug('Event emitted: ' + event);
+    }
 
     var i, listeners, length, args = [].slice.call(arguments, 1);
 

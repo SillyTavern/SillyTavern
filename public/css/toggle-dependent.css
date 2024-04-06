@@ -1,3 +1,9 @@
+:root {
+    --big-avatar-height-factor: 1.8;
+    --big-avatar-width-factor: 1.2;
+    --big-avatar-border-factor: 5;
+}
+
 body.tts .mes[is_system="true"] .mes_narrate {
     display: none;
 }
@@ -18,10 +24,8 @@ body.no-modelIcons .icon-svg {
 }
 
 body.square-avatars .avatar,
-body.square-avatars .avatar img,
-body.square-avatars .hotswapAvatar,
-body.square-avatars .hotswapAvatar img {
-    border-radius: 2px !important;
+body.square-avatars .avatar img {
+    border-radius: var(--avatar-base-border-radius) !important;
 }
 
 /*char list grid mode*/
@@ -37,6 +41,7 @@ body.charListGrid #rm_print_characters_block {
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select,
 body.charListGrid #rm_print_characters_block .character_select,
+body.charListGrid #rm_print_characters_block .group_select,
 #user_avatar_block.gridView .avatar-container {
     width: 30%;
     align-items: flex-start;
@@ -46,10 +51,20 @@ body.charListGrid #rm_print_characters_block .character_select,
     max-width: 100px;
 }
 
+/* Save a bit of space here */
+body.charListGrid #rm_print_characters_block .character_name_block {
+    gap: 0;
+    margin-bottom: 0;
+}
+
 body.charListGrid #rm_print_characters_block .bogus_folder_select .ch_name,
+body.charListGrid #rm_print_characters_block .bogus_folder_select .bogus_folder_counter,
 body.charListGrid #rm_print_characters_block .character_select .ch_name,
 body.charListGrid #rm_print_characters_block .group_select .ch_name,
-#user_avatar_block.gridView .avatar-container .ch_name {
+body.charListGrid #rm_print_characters_block .group_select .group_select_counter,
+#user_avatar_block.gridView .avatar-container .ch_name,
+#user_avatar_block.gridView .avatar-container .bogus_folder_counter,
+#user_avatar_block.gridView .avatar-container .group_select_counter {
     width: 100%;
     max-width: 100px;
     text-align: center;
@@ -58,6 +73,7 @@ body.charListGrid #rm_print_characters_block .group_select .ch_name,
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select .character_name_block,
 body.charListGrid #rm_print_characters_block .character_select .character_name_block,
+body.charListGrid #rm_print_characters_block .group_select .group_name_block,
 #user_avatar_block.gridView .avatar-container .character_name_block {
     width: 100%;
     flex-direction: column;
@@ -70,7 +86,9 @@ body.charListGrid #rm_print_characters_block .character_select .character_name_b
 
 body.charListGrid #rm_print_characters_block .bogus_folder_select .character_select_container,
 body.charListGrid #rm_print_characters_block .character_select .character_select_container,
-#user_avatar_block.gridView .avatar-container .character_select_container {
+body.charListGrid #rm_print_characters_block .group_select .group_select_container,
+#user_avatar_block.gridView .avatar-container .character_select_container,
+#user_avatar_block.gridView .avatar-container .group_select_container {
     width: 100%;
     justify-content: center;
     max-width: 100px;
@@ -89,29 +107,38 @@ body.charListGrid #rm_print_characters_block .group_select .group_name_block {
     width: 100%;
 }
 
-body.charListGrid #rm_print_characters_block .bogus_folder_counter_block,
 body.charListGrid #rm_print_characters_block .ch_description,
 body.charListGrid #rm_print_characters_block .tags_inline,
-body.charListGrid #rm_print_characters_block .character_version,
+body.charListGrid #rm_print_characters_block .group_select_block_list,
 body.charListGrid #rm_print_characters_block .ch_avatar_url,
-#user_avatar_block.gridView .avatar-container .ch_description {
+body.charListGrid #rm_print_characters_block .character_version,
+body.charListGrid #rm_print_characters_block .character_name_block_sub_line,
+#user_avatar_block.gridView .avatar-container .ch_description,
+body.charListGrid #rm_print_characters_block .bogus_folder_select_back .bogus_folder_back_placeholder {
     display: none;
+}
+
+body.charListGrid #rm_print_characters_block .bogus_folder_select_back .avatar {
+    display: flex !important;
+}
+
+/* Hack for keeping the spacing */
+body.charListGrid #rm_print_characters_block .ch_add_placeholder {
+    display: flex !important;
+    opacity: 0;
 }
 
 /*big avatars mode page-wide changes*/
 
 body.big-avatars .character_select .avatar,
+body.big-avatars .group_select .avatar,
 body.big-avatars .bogus_folder_select .avatar {
     flex: unset;
 }
 
-body:not(.big-avatars) .avatar {
-    border-radius: 50%;
-}
-
 body.big-avatars .avatar {
-    width: 60px;
-    height: 90px;
+    width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor));
+    height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor));
     /* width: unset; */
     border-style: none;
     display: flex;
@@ -120,33 +147,36 @@ body.big-avatars .avatar {
     align-items: center;
     /* align-self: unset; */
     overflow: visible;
-    border-radius: 10px;
-    flex: 1
+    border-radius: calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor));
 }
 
 body.big-avatars #user_avatar_block .avatar,
 body.big-avatars #user_avatar_block .avatar_upload {
-    height: 90px;
-    width: 60px;
-    border-radius: 10px;
+    width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor));
+    height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor));
+    border-radius: calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor));
 }
 
 body.big-avatars #user_avatar_block .avatar img {
-    height: 90px;
-    width: 60px;
+    width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor));
+    height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor));
 }
 
 body.big-avatars .avatar img {
-    width: 60px;
-    height: 90px;
+    width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor));
+    height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor));
     object-fit: cover;
     object-position: center;
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 10px;
+    border-radius: calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor));
+}
+
+body.big-avatars .bogus_folder_select_back .bogus_folder_back_placeholder {
+    width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor));
 }
 
 body:not(.big-avatars) .avatar_collage {
-    min-width: 50px;
+    min-width: var(--avatar-base-width);
     aspect-ratio: 1 / 1;
 }
 
@@ -155,8 +185,8 @@ body:not(.big-avatars) .avatar_collage img {
 }
 
 body.big-avatars .avatar_collage {
-    min-width: 60px;
-    max-width: 60px;
+    min-width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor));
+    max-width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor));
     aspect-ratio: 2 / 3;
 }
 
@@ -169,42 +199,65 @@ body.big-avatars .avatar-container .ch_description {
     text-overflow: unset;
 }
 
+body.big-avatars .avatars_inline_small .avatar,
+body.big-avatars .avatars_inline_small .avatar img {
+    width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor) * var(--inline-avatar-small-factor));
+    height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) * var(--inline-avatar-small-factor));
+}
+
+body.big-avatars .avatars_inline {
+    max-height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) + 2 * var(--avatar-base-border-radius));
+}
+
+body.big-avatars .avatars_inline.avatars_inline_small {
+    height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor) * var(--inline-avatar-small-factor) + 2 * var(--avatar-base-border-radius));
+}
+
+body:not(.big-avatars) .avatars_inline_small .avatar_collage {
+    min-width: calc(var(--avatar-base-width) * var(--inline-avatar-small-factor));
+}
+
+body.big-avatars .avatars_inline_small .avatar_collage {
+    min-width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor) * var(--inline-avatar-small-factor));
+    max-width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor) * var(--inline-avatar-small-factor));
+}
+
 /* border radius for big avatars collages */
 
 body.big-avatars .collage_2 .img_1 {
-    border-radius: 10px 0 0 10px !important;
+    border-radius: calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) 0 0 calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) !important;
 }
 
 body.big-avatars .collage_2 .img_2 {
-    border-radius: 0 10px 10px 0 !important;
+    border-radius: 0 calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) 0 !important;
 }
 
 body.big-avatars .collage_3 .img_1 {
-    border-radius: 10px 0 0 0 !important;
+    border-radius: calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) 0 0 0 !important;
 }
 
 body.big-avatars .collage_3 .img_2 {
-    border-radius: 0 10px 0 0 !important;
+    border-radius: 0 calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) 0 0 !important;
 }
 
 body.big-avatars .collage_3 .img_3 {
-    border-radius: 0 0 10px 10px !important;
+    border-radius: 0 0 calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) !important;
 }
 
 body.big-avatars .collage_4 .img_1 {
-    border-radius: 10px 0 0 0 !important;
+    border-radius: calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) 0 0 0 !important;
 }
 
 body.big-avatars .collage_4 .img_2 {
-    border-radius: 0 10px 0 0 !important;
+    border-radius: 0 calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) 0 0 !important;
 }
 
 body.big-avatars .collage_4 .img_3 {
-    border-radius: 0 0 0 10px !important;
+    border-radius: 0 0 0 calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) !important;
 }
 
 body.big-avatars .collage_4 .img_4 {
-    border-radius: 0 0 10px 0 !important;
+    border-radius: 0 0 calc(var(--avatar-base-border-radius) * var(--big-avatar-border-factor)) 0 !important;
 }
 
 
@@ -384,5 +437,13 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
 }
 
 #openai_image_inlining:checked~#image_inlining_hint {
+    display: block;
+}
+
+#smooth_streaming:not(:checked)~#smooth_streaming_speed_control {
+    display: none;
+}
+
+#smooth_streaming:checked~#smooth_streaming_speed_control {
     display: block;
 }

@@ -12,7 +12,7 @@ import {
 import { BIAS_CACHE, createNewLogitBiasEntry, displayLogitBias, getLogitBiasListResult } from './logit-bias.js';
 
 import { power_user, registerDebugFunction } from './power-user.js';
-import EventSourceStream from './sse-stream.js';
+import { getEventSourceStream } from './sse-stream.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer } from './textgen-models.js';
 import { SENTENCEPIECE_TOKENIZERS, TEXTGEN_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
@@ -38,7 +38,7 @@ export const textgen_types = {
     OPENROUTER: 'openrouter',
 };
 
-const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
+const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER, KOBOLDCPP } = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
     'top_k',
@@ -112,6 +112,7 @@ const settings = {
     max_temp: 2.0,
     dynatemp_exponent: 1.0,
     smoothing_factor: 0.0,
+    smoothing_curve: 1.0,
     max_tokens_second: 0,
     seed: -1,
     preset: 'Default',
@@ -127,6 +128,7 @@ const settings = {
     guidance_scale: 1,
     negative_prompt: '',
     grammar_string: '',
+    json_schema: {},
     banned_tokens: '',
     sampler_priority: OOBA_DEFAULT_ORDER,
     samplers: LLAMACPP_DEFAULT_ORDER,
@@ -182,6 +184,7 @@ const setting_names = [
     'max_temp',
     'dynatemp_exponent',
     'smoothing_factor',
+    'smoothing_curve',
     'max_tokens_second',
     'encoder_rep_pen',
     'freq_pen',
@@ -199,6 +202,7 @@ const setting_names = [
     'guidance_scale',
     'negative_prompt',
     'grammar_string',
+    'json_schema',
     'banned_tokens',
     'legacy_api',
     //'n_aphrodite',
@@ -237,27 +241,20 @@ export function validateTextGenUrl() {
 }
 
 export function getTextGenServer() {
-    if (settings.type === MANCER) {
-        return MANCER_SERVER;
+    switch (settings.type) {
+        case MANCER:
+            return MANCER_SERVER;
+        case TOGETHERAI:
+            return TOGETHERAI_SERVER;
+        case INFERMATICAI:
+            return INFERMATICAI_SERVER;
+        case DREAMGEN:
+            return DREAMGEN_SERVER;
+        case OPENROUTER:
+            return OPENROUTER_SERVER;
+        default:
+            return settings.server_urls[settings.type] ?? '';
     }
-
-    if (settings.type === TOGETHERAI) {
-        return TOGETHERAI_SERVER;
-    }
-
-    if (settings.type === INFERMATICAI) {
-        return INFERMATICAI_SERVER;
-    }
-
-    if (settings.type === DREAMGEN) {
-        return DREAMGEN_SERVER;
-    }
-
-    if (settings.type === OPENROUTER) {
-        return OPENROUTER_SERVER;
-    }
-
-    return settings.server_urls[settings.type] ?? '';
 }
 
 async function selectPreset(name) {
@@ -280,8 +277,8 @@ async function selectPreset(name) {
 
 function formatTextGenURL(value) {
     try {
-        // Mancer/Together/InfermaticAI doesn't need any formatting (it's hardcoded)
-        if (settings.type === MANCER || settings.type === TOGETHERAI || settings.type === INFERMATICAI || settings.type === DREAMGEN || settings.type === OPENROUTER) {
+        const noFormatTypes = [MANCER, TOGETHERAI, INFERMATICAI, DREAMGEN, OPENROUTER];
+        if (noFormatTypes.includes(settings.type)) {
             return value;
         }
 
@@ -567,6 +564,17 @@ jQuery(function () {
         },
     });
 
+    $('#tabby_json_schema').on('input', function () {
+        const json_schema_string = String($(this).val());
+
+        try {
+            settings.json_schema = JSON.parse(json_schema_string ?? '{}');
+        } catch {
+            // Ignore errors from here
+        }
+        saveSettingsDebounced();
+    });
+
     $('#textgenerationwebui_default_order').on('click', function () {
         sortOobaItemsByOrder(OOBA_DEFAULT_ORDER);
         settings.sampler_priority = OOBA_DEFAULT_ORDER;
@@ -658,6 +666,7 @@ jQuery(function () {
             'typical_p_textgenerationwebui': 1, // Added entry
             'guidance_scale_textgenerationwebui': 1,
             'smoothing_factor_textgenerationwebui': 0,
+            'smoothing_curve_textgenerationwebui': 1,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
@@ -761,6 +770,12 @@ function setSettingByName(setting, value, trigger) {
         return;
     }
 
+    if ('json_schema' === setting) {
+        settings.json_schema = value ?? {};
+        $('#tabby_json_schema').val(JSON.stringify(settings.json_schema, null, 2));
+        return;
+    }
+
     const isCheckbox = $(`#${setting}_textgenerationwebui`).attr('type') == 'checkbox';
     const isText = $(`#${setting}_textgenerationwebui`).attr('type') == 'text' || $(`#${setting}_textgenerationwebui`).is('textarea');
     if (isCheckbox) {
@@ -806,7 +821,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
         throw new Error(`Got response status ${response.status}`);
     }
 
-    const eventStream = new EventSourceStream();
+    const eventStream = getEventSourceStream();
     response.body.pipeThrough(eventStream);
     const reader = eventStream.readable.getReader();
 
@@ -854,6 +869,7 @@ export function parseTextgenLogprobs(token, logprobs) {
     switch (settings.type) {
         case TABBY:
         case APHRODITE:
+        case MANCER:
         case OOBA: {
             /** @type {Record<string, number>[]} */
             const topLogprobs = logprobs.top_logprobs;
@@ -868,7 +884,7 @@ export function parseTextgenLogprobs(token, logprobs) {
             if (!logprobs?.length) {
                 return null;
             }
-            const candidates = logprobs[0].probs.map(x => [ x.tok_str, x.prob ]);
+            const candidates = logprobs[0].probs.map(x => [x.tok_str, x.prob]);
             return { token, topLogprobs: candidates };
         }
         default:
@@ -931,41 +947,32 @@ function toIntArray(string) {
 }
 
 function getModel() {
-    if (settings.type === OOBA && settings.custom_model) {
-        return settings.custom_model;
-    }
-
-    if (settings.type === MANCER) {
-        return settings.mancer_model;
-    }
-
-    if (settings.type === TOGETHERAI) {
-        return settings.togetherai_model;
-    }
-
-    if (settings.type === INFERMATICAI) {
-        return settings.infermaticai_model;
-    }
-
-    if (settings.type === DREAMGEN) {
-        return settings.dreamgen_model;
-    }
-
-    if (settings.type === OPENROUTER) {
-        return settings.openrouter_model;
-    }
-
-    if (settings.type === APHRODITE) {
-        return settings.aphrodite_model;
-    }
-
-    if (settings.type === OLLAMA) {
-        if (!settings.ollama_model) {
-            toastr.error('No Ollama model selected.', 'Text Completion API');
-            throw new Error('No Ollama model selected');
-        }
-
-        return settings.ollama_model;
+    switch (settings.type) {
+        case OOBA:
+            if (settings.custom_model) {
+                return settings.custom_model;
+            }
+            break;
+        case MANCER:
+            return settings.mancer_model;
+        case TOGETHERAI:
+            return settings.togetherai_model;
+        case INFERMATICAI:
+            return settings.infermaticai_model;
+        case DREAMGEN:
+            return settings.dreamgen_model;
+        case OPENROUTER:
+            return settings.openrouter_model;
+        case APHRODITE:
+            return settings.aphrodite_model;
+        case OLLAMA:
+            if (!settings.ollama_model) {
+                toastr.error('No Ollama model selected.', 'Text Completion API');
+                throw new Error('No Ollama model selected');
+            }
+            return settings.ollama_model;
+        default:
+            return undefined;
     }
 
     return undefined;
@@ -996,12 +1003,13 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'length_penalty': settings.length_penalty,
         'early_stopping': settings.early_stopping,
         'add_bos_token': settings.add_bos_token,
-        'dynamic_temperature': settings.dynatemp,
-        'dynatemp_low': settings.dynatemp ? settings.min_temp : 1,
-        'dynatemp_high': settings.dynatemp ? settings.max_temp : 1,
-        'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : 0,
-        'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : 1,
+        'dynamic_temperature': settings.dynatemp ? true : undefined,
+        'dynatemp_low': settings.dynatemp ? settings.min_temp : undefined,
+        'dynatemp_high': settings.dynatemp ? settings.max_temp : undefined,
+        'dynatemp_range': settings.dynatemp ? (settings.max_temp - settings.min_temp) / 2 : undefined,
+        'dynatemp_exponent': settings.dynatemp ? settings.dynatemp_exponent : undefined,
         'smoothing_factor': settings.smoothing_factor,
+        'smoothing_curve': settings.smoothing_curve,
         'max_tokens_second': settings.max_tokens_second,
         'sampler_priority': settings.type === OOBA ? settings.sampler_priority : undefined,
         'samplers': settings.type === LLAMACPP ? settings.samplers : undefined,
@@ -1012,12 +1020,12 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'skip_special_tokens': settings.skip_special_tokens,
         'top_a': settings.top_a,
         'tfs': settings.tfs,
-        'epsilon_cutoff': settings.type === OOBA ? settings.epsilon_cutoff : undefined,
-        'eta_cutoff': settings.type === OOBA ? settings.eta_cutoff : undefined,
+        'epsilon_cutoff': [OOBA, MANCER].includes(settings.type) ? settings.epsilon_cutoff : undefined,
+        'eta_cutoff': [OOBA, MANCER].includes(settings.type) ? settings.eta_cutoff : undefined,
         'mirostat_mode': settings.mirostat_mode,
         'mirostat_tau': settings.mirostat_tau,
         'mirostat_eta': settings.mirostat_eta,
-        'custom_token_bans': settings.type === textgen_types.APHRODITE ?
+        'custom_token_bans': [APHRODITE, MANCER].includes(settings.type) ?
             toIntArray(getCustomTokenBans()) :
             getCustomTokenBans(),
         'api_type': settings.type,
@@ -1038,6 +1046,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
         'grammar_string': settings.grammar_string,
+        'json_schema': settings.type === TABBY ? settings.json_schema : undefined,
         // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
         'repeat_penalty': settings.rep_pen,
         'tfs_z': settings.tfs,
@@ -1057,6 +1066,21 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         //'logprobs': settings.log_probs_aphrodite,
         //'prompt_logprobs': settings.prompt_log_probs_aphrodite,
     };
+
+    if (settings.type === KOBOLDCPP) {
+        params.grammar = settings.grammar_string;
+    }
+
+    if (settings.type === MANCER) {
+        params.n = canMultiSwipe ? settings.n : 1;
+        params.epsilon_cutoff /= 1000;
+        params.eta_cutoff /= 1000;
+        params.dynatemp_mode = params.dynamic_temperature ? 1 : 0;
+        params.dynatemp_min = params.dynatemp_low;
+        params.dynatemp_max = params.dynatemp_high;
+        delete params.dynatemp_low, params.dynatemp_high;
+    }
+
     if (settings.type === APHRODITE) {
         params = Object.assign(params, aphroditeParams);
     } else {

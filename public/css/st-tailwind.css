@@ -332,6 +332,10 @@
     margin-right: 5px;
 }
 
+.flex0 {
+    flex: 0;
+}
+
 .flex1 {
     flex: 1;
 }
@@ -452,6 +456,7 @@
 input:disabled,
 textarea:disabled {
     cursor: not-allowed;
+    filter: brightness(0.5);
 }
 
 .debug-red {
@@ -518,6 +523,10 @@ textarea:disabled {
 
 .opacity50p {
     opacity: 0.5
+}
+
+.grayscale {
+    filter: grayscale(100%);
 }
 
 .opacity1 {

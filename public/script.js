@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -81,6 +81,7 @@ import {
     switchSimpleMode,
     flushEphemeralStoppingStrings,
     context_presets,
+    resetMovableStyles,
 } from './scripts/power-user.js';
 
 import {
@@ -149,6 +150,7 @@ import {
     humanFileSize,
     Stopwatch,
     isValidUrl,
+    ensureImageFormatSupported,
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
@@ -156,14 +158,21 @@ import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, proce
 import {
     tag_map,
     tags,
+    filterByTagState,
+    isBogusFolder,
+    isBogusFolderOpen,
+    chooseBogusFolder,
+    getTagBlock,
     loadTagsSettings,
     printTagFilters,
-    getTagsList,
-    appendTagToList,
+    getTagKeyForEntity,
+    printTagList,
     createTagMapFromList,
     renameTagKey,
     importTags,
     tag_filter_types,
+    compareTagsForSort,
+    initTags,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -199,7 +208,7 @@ import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_set
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 
@@ -243,6 +252,7 @@ export {
     scrollChatToBottom,
     isStreamingEnabled,
     getThumbnailUrl,
+    buildAvatarList,
     getStoppingStrings,
     reloadMarkdownProcessor,
     getCurrentChatId,
@@ -270,7 +280,9 @@ export {
     default_ch_mes,
     extension_prompt_types,
     mesForShowdownParse,
+    characterGroupOverlay,
     printCharacters,
+    printCharactersDebounced,
     isOdd,
     countOccurrences,
 };
@@ -312,9 +324,12 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
         return;
     }
 
-    if (!power_user.forbid_external_images) {
+    const isMediaAllowed = isExternalMediaAllowed();
+    if (isMediaAllowed) {
         return;
     }
+
+    let mediaBlocked = false;
 
     switch (node.tagName) {
         case 'AUDIO':
@@ -338,6 +353,7 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
                     if (isExternalUrl(url)) {
                         console.warn('External media blocked', url);
                         node.remove();
+                        mediaBlocked = true;
                         break;
                     }
                 }
@@ -345,15 +361,36 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
 
             if (src && isExternalUrl(src)) {
                 console.warn('External media blocked', src);
+                mediaBlocked = true;
                 node.remove();
             }
 
             if (data && isExternalUrl(data)) {
                 console.warn('External media blocked', data);
+                mediaBlocked = true;
                 node.remove();
             }
         }
             break;
+    }
+
+    if (mediaBlocked) {
+        const entityId = getCurrentEntityId();
+        const warningShownKey = `mediaWarningShown:${entityId}`;
+
+        if (localStorage.getItem(warningShownKey) === null) {
+            const warningToast = toastr.warning(
+                'Use the "Ext. Media" button to allow it. Click on this message to dismiss.',
+                'External media has been blocked',
+                {
+                    timeOut: 0,
+                    preventDuplicates: true,
+                    onclick: () => toastr.clear(warningToast),
+                },
+            );
+
+            localStorage.setItem(warningShownKey, 'true');
+        }
     }
 });
 
@@ -401,6 +438,10 @@ export const event_types = {
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
+    // TODO: Naming convention is inconsistent with other events
+    CHARACTER_DELETED: 'characterDeleted',
+    CHARACTER_DUPLICATED: 'character_duplicated',
+    SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
 };
 
 export const eventSource = new EventEmitter();
@@ -484,6 +525,17 @@ const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), durationSaveEdit);
 
+/**
+ * Prints the character list in a debounced fashion without blocking, with a delay of 100 milliseconds.
+ * Use this function instead of a direct `printCharacters()` whenever the reprinting of the character list is not the primary focus.
+ *
+ * The printing will also always reprint all filter options of the global list, to keep them up to date.
+ */
+const printCharactersDebounced = debounce(() => { printCharacters(false); }, 100);
+
+/**
+ * @enum {string} System message types
+ */
 const system_message_types = {
     HELP: 'help',
     WELCOME: 'welcome',
@@ -500,10 +552,22 @@ const system_message_types = {
     MACROS: 'macros',
 };
 
+/**
+ * @enum {number} Extension prompt types
+ */
 const extension_prompt_types = {
     IN_PROMPT: 0,
     IN_CHAT: 1,
     BEFORE_PROMPT: 2,
+};
+
+/**
+ * @enum {number} Extension prompt roles
+ */
+export const extension_prompt_roles = {
+    SYSTEM: 0,
+    USER: 1,
+    ASSISTANT: 2,
 };
 
 export const MAX_INJECTION_DEPTH = 1000;
@@ -713,7 +777,6 @@ function reloadMarkdownProcessor(render_formulas = false) {
 }
 
 function getCurrentChatId() {
-    console.debug(`selectedGroup:${selected_group}, this_chid:${this_chid}`);
     if (selected_group) {
         return groups.find(x => x.id == selected_group)?.chat_id;
     }
@@ -724,6 +787,7 @@ function getCurrentChatId() {
 
 const talkativeness_default = 0.5;
 export const depth_prompt_depth_default = 4;
+export const depth_prompt_role_default = 'system';
 const per_page_default = 50;
 
 var is_advanced_char_open = false;
@@ -750,6 +814,7 @@ let create_save = {
     alternate_greetings: [],
     depth_prompt_prompt: '',
     depth_prompt_depth: depth_prompt_depth_default,
+    depth_prompt_role: depth_prompt_role_default,
     extensions: {},
 };
 
@@ -802,9 +867,12 @@ let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
+/** The tag of the active character. (NOT the id) */
 export let active_character = '';
+/** The tag of the active group. (Coincidentally also the id) */
 export let active_group = '';
-export const entitiesFilter = new FilterHelper(debounce(printCharacters, 100));
+
+export const entitiesFilter = new FilterHelper(printCharactersDebounced);
 export const personasFilter = new FilterHelper(debounce(getUserAvatars, 100));
 
 export function getRequestHeaders() {
@@ -829,12 +897,13 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
+    await getClientVersion();
+    await readSecretState();
+    await getSettings();
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     initLocales();
-    await readSecretState();
-    await getClientVersion();
-    await getSettings();
+    initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
     await getBackgrounds();
@@ -876,12 +945,12 @@ export function setAnimationDuration(ms = null) {
     animation_duration = ms ?? ANIMATION_DURATION_DEFAULT;
 }
 
-export function setActiveCharacter(character) {
-    active_character = character;
+export function setActiveCharacter(entityOrKey) {
+    active_character = getTagKeyForEntity(entityOrKey);
 }
 
-export function setActiveGroup(group) {
-    active_group = group;
+export function setActiveGroup(entityOrKey) {
+    active_group = getTagKeyForEntity(entityOrKey);
 }
 
 /**
@@ -1167,23 +1236,6 @@ export async function selectCharacterById(id) {
     }
 }
 
-function getTagBlock(item, entities) {
-    let count = 0;
-
-    for (const entity of entities) {
-        if (entitiesFilter.isElementTagged(entity, item.id)) {
-            count++;
-        }
-    }
-
-    const template = $('#bogus_folder_template .bogus_folder_select').clone();
-    template.attr({ 'tagid': item.id, 'id': `BogusFolder${item.id}` });
-    template.find('.avatar').css({ 'background-color': item.color, 'color': item.color2 });
-    template.find('.ch_name').text(item.name);
-    template.find('.bogus_folder_counter').text(count);
-    return template;
-}
-
 function getBackBlock() {
     const template = $('#bogus_folder_back_template .bogus_folder_select').clone();
     return template;
@@ -1194,12 +1246,26 @@ function getEmptyBlock() {
     const texts = ['Here be dragons', 'Otterly empty', 'Kiwibunga', 'Pump-a-Rum', 'Croak it'];
     const roll = new Date().getMinutes() % icons.length;
     const emptyBlock = `
-    <div class="empty_block">
+    <div class="text_block empty_block">
         <i class="fa-solid ${icons[roll]} fa-4x"></i>
         <h1>${texts[roll]}</h1>
         <p>There are no items to display.</p>
     </div>`;
     return $(emptyBlock);
+}
+
+/**
+ * @param {number} hidden Number of hidden characters
+ */
+function getHiddenBlock(hidden) {
+    const hiddenBlock = `
+    <div class="text_block hidden_block">
+        <small>
+            <p>${hidden} ${hidden > 1 ? 'characters' : 'character'} hidden.</p>
+            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Characters and groups hidden by filters or closed folders" title="Characters and groups hidden by filters or closed folders"></div>
+        </small>
+    </div>`;
+    return $(hiddenBlock);
 }
 
 function getCharacterBlock(item, id) {
@@ -1210,9 +1276,9 @@ function getCharacterBlock(item, id) {
     // Populate the template
     const template = $('#character_template .character_select').clone();
     template.attr({ 'chid': id, 'id': `CharID${id}` });
-    template.find('img').attr('src', this_avatar);
-    template.find('.avatar').attr('title', item.avatar);
-    template.find('.ch_name').text(item.name);
+    template.find('img').attr('src', this_avatar).attr('alt', item.name);
+    template.find('.avatar').attr('title', `[Character] ${item.name}\nFile: ${item.avatar}`);
+    template.find('.ch_name').text(item.name).attr('title', `[Character] ${item.name}`);
     if (power_user.show_card_avatar_urls) {
         template.find('.ch_avatar_url').text(item.avatar);
     }
@@ -1238,31 +1304,37 @@ function getCharacterBlock(item, id) {
     }
 
     // Display inline tags
-    const tags = getTagsList(item.avatar);
     const tagsElement = template.find('.tags');
-    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+    printTagList(tagsElement, { forEntityOrKey: id });
 
     // Add to the list
     return template;
 }
 
+/**
+ * Prints the global character list, optionally doing a full refresh of the list
+ * Use this function whenever the reprinting of the character list is the primary focus, otherwise using `printCharactersDebounced` is preferred for a cleaner, non-blocking experience.
+ *
+ * The printing will also always reprint all filter options of the global list, to keep them up to date.
+ *
+ * @param {boolean} fullRefresh - If true, the list is fully refreshed and the navigation is being reset
+ */
 async function printCharacters(fullRefresh = false) {
-    if (fullRefresh) {
-        saveCharactersPage = 0;
-        printTagFilters(tag_filter_types.character);
-        printTagFilters(tag_filter_types.group_member);
-
-        // Return to main list
-        if (isBogusFolderOpen()) {
-            entitiesFilter.setFilterData(FILTER_TYPES.TAG, { excluded: [], selected: [] });
-        }
-
-        await delay(1);
-    }
-
     const storageKey = 'Characters_PerPage';
     const listId = '#rm_print_characters_block';
     const entities = getEntitiesList({ doFilter: true });
+
+    let currentScrollTop = $(listId).scrollTop();
+
+    if (fullRefresh) {
+        saveCharactersPage = 0;
+        currentScrollTop = 0;
+        await delay(1);
+    }
+
+    // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
+    printTagFilters(tag_filter_types.character);
+    printTagFilters(tag_filter_types.group_member);
 
     $('#rm_print_characters_pagination').pagination({
         dataSource: entities,
@@ -1279,25 +1351,34 @@ async function printCharacters(fullRefresh = false) {
         showNavigator: true,
         callback: function (data) {
             $(listId).empty();
-            if (isBogusFolderOpen()) {
+            if (power_user.bogus_folders && isBogusFolderOpen()) {
                 $(listId).append(getBackBlock());
             }
             if (!data.length) {
                 $(listId).append(getEmptyBlock());
             }
+            let displayCount = 0;
             for (const i of data) {
                 switch (i.type) {
                     case 'character':
                         $(listId).append(getCharacterBlock(i.item, i.id));
+                        displayCount++;
                         break;
                     case 'group':
                         $(listId).append(getGroupBlock(i.item));
+                        displayCount++;
                         break;
                     case 'tag':
-                        $(listId).append(getTagBlock(i.item, entities));
+                        $(listId).append(getTagBlock(i.item, i.entities, i.hidden));
                         break;
                 }
             }
+
+            const hidden = (characters.length + groups.length) - displayCount;
+            if (hidden > 0) {
+                $(listId).append(getHiddenBlock(hidden));
+            }
+
             eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
         },
         afterSizeSelectorChange: function (e) {
@@ -1307,61 +1388,111 @@ async function printCharacters(fullRefresh = false) {
             saveCharactersPage = e;
         },
         afterRender: function () {
-            $(listId).scrollTop(0);
+            $(listId).scrollTop(currentScrollTop);
         },
     });
 
     favsToHotswap();
 }
 
+/** @typedef {object} Character - A character */
+/** @typedef {object} Group - A group */
+
 /**
- * Indicates whether a user is currently in a bogus folder.
- * @returns {boolean} If currently viewing a folder
+ * @typedef {object} Entity - Object representing a display entity
+ * @property {Character|Group|import('./scripts/tags.js').Tag|*} item - The item
+ * @property {string|number} id - The id
+ * @property {string} type - The type of this entity (character, group, tag)
+ * @property {Entity[]} [entities] - An optional list of entities relevant for this item
+ * @property {number} [hidden] - An optional number representing how many hidden entities this entity contains
  */
-function isBogusFolderOpen() {
-    return !!entitiesFilter.getFilterData(FILTER_TYPES.TAG)?.bogus;
+
+/**
+ * Converts the given character to its entity representation
+ *
+ * @param {Character} character - The character
+ * @param {string|number} id - The id of this character
+ * @returns {Entity} The entity for this character
+ */
+export function characterToEntity(character, id) {
+    return { item: character, id, type: 'character' };
 }
 
-export function getEntitiesList({ doFilter } = {}) {
-    function characterToEntity(character, id) {
-        return { item: character, id, type: 'character' };
-    }
+/**
+ * Converts the given group to its entity representation
+ *
+ * @param {Group} group - The group
+ * @returns {Entity} The entity for this group
+ */
+export function groupToEntity(group) {
+    return { item: group, id: group.id, type: 'group' };
+}
 
-    function groupToEntity(group) {
-        return { item: group, id: group.id, type: 'group' };
-    }
+/**
+ * Converts the given tag to its entity representation
+ *
+ * @param {import('./scripts/tags.js').Tag} tag - The tag
+ * @returns {Entity} The entity for this tag
+ */
+export function tagToEntity(tag) {
+    return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
+}
 
-    function tagToEntity(tag) {
-        return { item: structuredClone(tag), id: tag.id, type: 'tag' };
-    }
-
+/**
+ * Builds the full list of all entities available
+ *
+ * They will be correctly marked and filtered.
+ *
+ * @param {object} param0 - Optional parameters
+ * @param {boolean} [param0.doFilter] - Whether this entity list should already be filtered based on the global filters
+ * @param {boolean} [param0.doSort] - Whether the entity list should be sorted when returned
+ * @returns {Entity[]} All entities
+ */
+export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
     let entities = [
         ...characters.map((item, index) => characterToEntity(item, index)),
         ...groups.map(item => groupToEntity(item)),
-        ...(power_user.bogus_folders ? tags.map(item => tagToEntity(item)) : []),
+        ...(power_user.bogus_folders ? tags.filter(isBogusFolder).sort(compareTagsForSort).map(item => tagToEntity(item)) : []),
     ];
 
+    // We need to do multiple filter runs in a specific order, otherwise different settings might override each other
+    // and screw up tags and search filter, sub lists or similar.
+    // The specific filters are written inside the "filterByTagState" method and its different parameters.
+    // Generally what we do is the following:
+    //   1. First swipe over the list to remove the most obvious things
+    //   2. Build sub entity lists for all folders, filtering them similarly to the second swipe
+    //   3. We do the last run, where global filters are applied, and the search filters last
+
+    // First run filters, that will hide what should never be displayed
     if (doFilter) {
+        entities = filterByTagState(entities);
+    }
+
+    // Run over all entities between first and second filter to save some states
+    for (const entity of entities) {
+        // For folders, we remember the sub entities so they can be displayed later, even if they might be filtered
+        // Those sub entities should be filtered and have the search filters applied too
+        if (entity.type === 'tag') {
+            let subEntities = filterByTagState(entities, { subForEntity: entity, filterHidden: false });
+            const subCount = subEntities.length;
+            subEntities = filterByTagState(entities, { subForEntity: entity });
+            if (doFilter) {
+                subEntities = entitiesFilter.applyFilters(subEntities);
+            }
+            entity.entities = subEntities;
+            entity.hidden = subCount - subEntities.length;
+        }
+    }
+
+    // Second run filters, hiding whatever should be filtered later
+    if (doFilter) {
+        entities = filterByTagState(entities, { globalDisplayFilters: true });
         entities = entitiesFilter.applyFilters(entities);
     }
 
-    if (isBogusFolderOpen()) {
-        // Get tags of entities within the bogus folder
-        const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
-        entities = entities.filter(x => x.type !== 'tag');
-        const otherTags = tags.filter(x => !filterData.selected.includes(x.id));
-        const bogusTags = [];
-        for (const entity of entities) {
-            for (const tag of otherTags) {
-                if (!bogusTags.includes(tag) && entitiesFilter.isElementTagged(entity, tag.id)) {
-                    bogusTags.push(tag);
-                }
-            }
-        }
-        entities.push(...bogusTags.map(item => tagToEntity(item)));
+    if (doSort) {
+        sortEntitiesList(entities);
     }
-
-    sortEntitiesList(entities);
     return entities;
 }
 
@@ -1586,7 +1717,7 @@ export async function reloadCurrentChat() {
     chat.length = 0;
 
     if (selected_group) {
-        await getGroupChat(selected_group);
+        await getGroupChat(selected_group, true);
     }
     else if (this_chid) {
         await getChat();
@@ -1817,6 +1948,7 @@ function insertSVGIcon(mes, extra) {
 
 function getMessageFromTemplate({
     mesId,
+    swipeId,
     characterName,
     isUser,
     avatarImg,
@@ -1834,6 +1966,7 @@ function getMessageFromTemplate({
     const mes = messageTemplate.clone();
     mes.attr({
         'mesid': mesId,
+        'swipeid': swipeId,
         'ch_name': characterName,
         'is_user': isUser,
         'is_system': !!isSystem,
@@ -1980,6 +2113,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
 
     let params = {
         mesId: forceId ?? chat.length - 1,
+        swipeId: mes.swipe_id ?? 0,
         characterName: mes.name,
         isUser: mes.is_user,
         avatarImg: avatarImg,
@@ -1990,7 +2124,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
         forceAvatar: mes.force_avatar,
         timestamp: timestamp,
         extra: mes.extra,
-        tokenCount: mes.extra?.token_count,
+        tokenCount: mes.extra?.token_count ?? 0,
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count),
     };
 
@@ -2263,21 +2397,31 @@ function getStoppingStrings(isImpersonate, isContinue) {
  * @param {boolean} skipWIAN whether to skip addition of World Info and Author's Note into the prompt
  * @param {string} quietImage Image to use for the quiet prompt
  * @param {string} quietName Name to use for the quiet prompt (defaults to "System:")
+ * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @returns
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null) {
     console.log('got into genQuietPrompt');
-    /** @type {GenerateOptions} */
-    const options = {
-        quiet_prompt,
-        quietToLoud,
-        skipWIAN: skipWIAN,
-        force_name2: true,
-        quietImage: quietImage,
-        quietName: quietName,
-    };
-    const generateFinished = await Generate('quiet', options);
-    return generateFinished;
+    const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
+    let originalResponseLength = -1;
+    try {
+        /** @type {GenerateOptions} */
+        const options = {
+            quiet_prompt,
+            quietToLoud,
+            skipWIAN: skipWIAN,
+            force_name2: true,
+            quietImage: quietImage,
+            quietName: quietName,
+        };
+        originalResponseLength = responseLengthCustomized ? saveResponseLength(main_api, responseLength) : -1;
+        const generateFinished = await Generate('quiet', options);
+        return generateFinished;
+    } finally {
+        if (responseLengthCustomized) {
+            restoreResponseLength(main_api, originalResponseLength);
+        }
+    }
 }
 
 /**
@@ -2416,7 +2560,7 @@ function addPersonaDescriptionExtensionPrompt() {
             ? `${power_user.persona_description}\n${originalAN}`
             : `${originalAN}\n${power_user.persona_description}`;
 
-        setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan);
+        setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 }
 
@@ -2439,17 +2583,29 @@ function getExtensionPromptByName(moduleName) {
     }
 }
 
-function getExtensionPrompt(position = 0, depth = undefined, separator = '\n') {
+/**
+ * Returns the extension prompt for the given position, depth, and role.
+ * If multiple prompts are found, they are joined with a separator.
+ * @param {number} [position] Position of the prompt
+ * @param {number} [depth] Depth of the prompt
+ * @param {string} [separator] Separator for joining multiple prompts
+ * @param {number} [role] Role of the prompt
+ * @param {boolean} [wrap] Wrap start and end with a separator
+ * @returns {string} Extension prompt
+ */
+function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n', role = undefined, wrap = true) {
     let extension_prompt = Object.keys(extension_prompts)
         .sort()
         .map((x) => extension_prompts[x])
-        .filter(x => x.position == position && x.value && (depth === undefined || x.depth == depth))
+        .filter(x => x.position == position && x.value)
+        .filter(x => depth === undefined || x.depth === undefined || x.depth === depth)
+        .filter(x => role === undefined || x.role === undefined || x.role === role)
         .map(x => x.value.trim())
         .join(separator);
-    if (extension_prompt.length && !extension_prompt.startsWith(separator)) {
+    if (wrap && extension_prompt.length && !extension_prompt.startsWith(separator)) {
         extension_prompt = separator + extension_prompt;
     }
-    if (extension_prompt.length && !extension_prompt.endsWith(separator)) {
+    if (wrap && extension_prompt.length && !extension_prompt.endsWith(separator)) {
         extension_prompt = extension_prompt + separator;
     }
     if (extension_prompt.length) {
@@ -2677,9 +2833,7 @@ class StreamingProcessor {
         const continueMsg = this.type === 'continue' ? this.messageAlreadyGenerated : undefined;
         saveLogprobsForActiveMessage(this.messageLogprobs.filter(Boolean), continueMsg);
         await saveChatConditional();
-        activateSendButtons();
-        showSwipeButtons();
-        setGenerationProgress(0);
+        unblockGeneration();
         generatedPromptCache = '';
 
         //console.log("Generated text size:", text.length, text)
@@ -2722,11 +2876,8 @@ class StreamingProcessor {
         this.isStopped = true;
 
         this.hideMessageButtons(this.messageId);
-        $('#send_textarea').removeAttr('disabled');
-        is_send_press = false;
-        activateSendButtons();
-        setGenerationProgress(0);
-        showSwipeButtons();
+        generatedPromptCache = '';
+        unblockGeneration();
     }
 
     setFirstSwipe(messageId) {
@@ -2794,81 +2945,136 @@ class StreamingProcessor {
  * @param {string} prompt Prompt to generate a message from
  * @param {string} api API to use. Main API is used if not specified.
  * @param {boolean} instructOverride true to override instruct mode, false to use the default value
+ * @param {boolean} quietToLoud true to generate a message in system mode, false to generate a message in character mode
+ * @param {string} [systemPrompt] System prompt to use. Only Instruct mode or OpenAI.
+ * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @returns {Promise<string>} Generated message
  */
-export async function generateRaw(prompt, api, instructOverride) {
+export async function generateRaw(prompt, api, instructOverride, quietToLoud, systemPrompt, responseLength) {
     if (!api) {
         api = main_api;
     }
 
     const abortController = new AbortController();
-    const isInstruct = power_user.instruct.enabled && main_api !== 'openai' && main_api !== 'novel' && !instructOverride;
+    const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
+    let originalResponseLength = -1;
+    const isInstruct = power_user.instruct.enabled && api !== 'openai' && api !== 'novel' && !instructOverride;
+    const isQuiet = true;
+
+    if (systemPrompt) {
+        systemPrompt = substituteParams(systemPrompt);
+        systemPrompt = isInstruct ? formatInstructModeSystemPrompt(systemPrompt) : systemPrompt;
+        prompt = api === 'openai' ? prompt : `${systemPrompt}\n${prompt}`;
+    }
 
     prompt = substituteParams(prompt);
     prompt = api == 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
     prompt = isInstruct ? formatInstructModeChat(name1, prompt, false, true, '', name1, name2, false) : prompt;
-    prompt = isInstruct ? (prompt + formatInstructModePrompt(name2, false, '', name1, name2)) : (prompt + '\n');
+    prompt = isInstruct ? (prompt + formatInstructModePrompt(name2, false, '', name1, name2, isQuiet, quietToLoud)) : (prompt + '\n');
 
-    let generateData = {};
+    try {
+        originalResponseLength = responseLengthCustomized ? saveResponseLength(api, responseLength) : -1;
+        let generateData = {};
 
-    switch (api) {
-        case 'kobold':
-        case 'koboldhorde':
-            if (preset_settings === 'gui') {
-                generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context, api_server };
-            } else {
-                const isHorde = api === 'koboldhorde';
-                const koboldSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
-                generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, isHorde, 'quiet');
+        switch (api) {
+            case 'kobold':
+            case 'koboldhorde':
+                if (preset_settings === 'gui') {
+                    generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context, api_server };
+                } else {
+                    const isHorde = api === 'koboldhorde';
+                    const koboldSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
+                    generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, isHorde, 'quiet');
+                }
+                break;
+            case 'novel': {
+                const novelSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
+                generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null, 'quiet');
+                break;
             }
-            break;
-        case 'novel': {
-            const novelSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-            generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null, 'quiet');
-            break;
+            case 'textgenerationwebui':
+                generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null, 'quiet');
+                break;
+            case 'openai': {
+                generateData = [{ role: 'user', content: prompt.trim() }];
+                if (systemPrompt) {
+                    generateData.unshift({ role: 'system', content: systemPrompt.trim() });
+                }
+            } break;
         }
-        case 'textgenerationwebui':
-            generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null, 'quiet');
-            break;
-        case 'openai':
-            generateData = [{ role: 'user', content: prompt.trim() }];
+
+        let data = {};
+
+        if (api == 'koboldhorde') {
+            data = await generateHorde(prompt, generateData, abortController.signal, false);
+        } else if (api == 'openai') {
+            data = await sendOpenAIRequest('quiet', generateData, abortController.signal);
+        } else {
+            const generateUrl = getGenerateUrl(api);
+            const response = await fetch(generateUrl, {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                cache: 'no-cache',
+                body: JSON.stringify(generateData),
+                signal: abortController.signal,
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw error;
+            }
+
+            data = await response.json();
+        }
+
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        const message = cleanUpMessage(extractMessageFromData(data), false, false, true);
+
+        if (!message) {
+            throw new Error('No message generated');
+        }
+
+        return message;
+    } finally {
+        if (responseLengthCustomized) {
+            restoreResponseLength(api, originalResponseLength);
+        }
     }
+}
 
-    let data = {};
-
-    if (api == 'koboldhorde') {
-        data = await generateHorde(prompt, generateData, abortController.signal, false);
-    } else if (api == 'openai') {
-        data = await sendOpenAIRequest('quiet', generateData, abortController.signal);
+/**
+ * Temporarily change the response length for the specified API.
+ * @param {string} api API to use.
+ * @param {number} responseLength Target response length.
+ * @returns {number} The original response length.
+ */
+function saveResponseLength(api, responseLength) {
+    let oldValue = -1;
+    if (api === 'openai') {
+        oldValue = oai_settings.openai_max_tokens;
+        oai_settings.openai_max_tokens = responseLength;
     } else {
-        const generateUrl = getGenerateUrl(api);
-        const response = await fetch(generateUrl, {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            cache: 'no-cache',
-            body: JSON.stringify(generateData),
-            signal: abortController.signal,
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw error;
-        }
-
-        data = await response.json();
+        oldValue = amount_gen;
+        amount_gen = responseLength;
     }
+    return oldValue;
+}
 
-    if (data.error) {
-        throw new Error(data.error);
+/**
+ * Restore the original response length for the specified API.
+ * @param {string} api API to use.
+ * @param {number} responseLength Target response length.
+ * @returns {void}
+ */
+function restoreResponseLength(api, responseLength) {
+    if (api === 'openai') {
+        oai_settings.openai_max_tokens = responseLength;
+    } else {
+        amount_gen = responseLength;
     }
-
-    const message = cleanUpMessage(extractMessageFromData(data), false, false, true);
-
-    if (!message) {
-        throw new Error('No message generated');
-    }
-
-    return message;
 }
 
 /**
@@ -3061,12 +3267,14 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     if (selected_group && Array.isArray(groupDepthPrompts) && groupDepthPrompts.length > 0) {
         groupDepthPrompts.forEach((value, index) => {
-            setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan);
+            const role = getExtensionPromptRoleByName(value.role);
+            setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth, extension_settings.note.allowWIScan, role);
         });
     } else {
         const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
         const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
-        setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan);
+        const depthPromptRole = getExtensionPromptRoleByName(characters[this_chid].data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default);
+        setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan, depthPromptRole);
     }
 
     // Parse example messages
@@ -3077,10 +3285,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         mesExamples = '';
     }
     const mesExamplesRaw = mesExamples;
-    if (mesExamples && isInstruct) {
-        mesExamples = formatInstructModeExamples(mesExamples, name1, name2);
-    }
-
     /**
      * Adds a block heading to the examples string.
      * @param {string} examplesStr
@@ -3088,12 +3292,16 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
      */
     function addBlockHeading(examplesStr) {
         const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-        const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
+        const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
         return examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
     }
 
     let mesExamplesArray = addBlockHeading(mesExamples);
     let mesExamplesRawArray = addBlockHeading(mesExamplesRaw);
+
+    if (mesExamplesArray && isInstruct) {
+        mesExamplesArray = formatInstructModeExamples(mesExamplesArray, name1, name2);
+    }
 
     // First message in fresh 1-on-1 chat reacts to user/character settings changes
     if (chat.length) {
@@ -3137,6 +3345,21 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         console.debug('Skipping extension interceptors for dry run');
     }
 
+    // Adjust token limit for Horde
+    let adjustedParams;
+    if (main_api == 'koboldhorde' && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
+        try {
+            adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
+        }
+        catch {
+            unblockGeneration();
+            return Promise.resolve();
+        }
+        if (horde_settings.auto_adjust_context_length) {
+            this_max_context = (adjustedParams.maxContextLength - adjustedParams.maxLength);
+        }
+    }
+
     console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
     // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
@@ -3149,6 +3372,33 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     }
 
     //////////////////////////////////
+    // Extension added strings
+    // Set non-WI AN
+    setFloatingPrompt();
+    // Add WI to prompt (and also inject WI to AN value via hijack)
+
+    const chatForWI = coreChat.map(x => `${x.name}: ${x.mes}`).reverse();
+    let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun);
+
+    if (skipWIAN !== true) {
+        console.log('skipWIAN not active, adding WIAN');
+        // Add all depth WI entries to prompt
+        flushWIDepthInjections();
+        if (Array.isArray(worldInfoDepth)) {
+            worldInfoDepth.forEach((e) => {
+                const joinedEntries = e.entries.join('\n');
+                setExtensionPrompt(`customDepthWI-${e.depth}-${e.role}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth, false, e.role);
+            });
+        }
+    } else {
+        console.log('skipping WIAN');
+    }
+
+    // Inject all Depth prompts. Chat Completion does it separately
+    let injectedIndices = [];
+    if (main_api !== 'openai') {
+        injectedIndices = doChatInject(coreChat, isContinue);
+    }
 
     // Insert character jailbreak as the last user message (if exists, allowed, preferred, and not using Chat Completion)
     if (power_user.context.allow_jailbreak && power_user.prefer_character_jailbreak && main_api !== 'openai' && jailbreak) {
@@ -3166,11 +3416,16 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     let chat2 = [];
     let continue_mag = '';
+    const userMessageIndices = [];
+
     for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
-        // For OpenAI it's only used in WI
-        if (main_api == 'openai' && (!world_info || world_info.length === 0)) {
-            console.debug('No WI, skipping chat2 for OAI');
-            break;
+        if (main_api == 'openai') {
+            chat2[i] = coreChat[j].mes;
+            if (i === 0 && isContinue) {
+                chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
+                continue_mag = coreChat[j].mes;
+            }
+            continue;
         }
 
         chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, false);
@@ -3190,42 +3445,22 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
             continue_mag = coreChat[j].mes;
         }
-    }
 
-    // Adjust token limit for Horde
-    let adjustedParams;
-    if (main_api == 'koboldhorde' && (horde_settings.auto_adjust_context_length || horde_settings.auto_adjust_response_length)) {
-        try {
-            adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
-        }
-        catch {
-            unblockGeneration();
-            return Promise.resolve();
-        }
-        if (horde_settings.auto_adjust_context_length) {
-            this_max_context = (adjustedParams.maxContextLength - adjustedParams.maxLength);
+        if (coreChat[j].is_user) {
+            userMessageIndices.push(i);
         }
     }
 
-    // Extension added strings
-    // Set non-WI AN
-    setFloatingPrompt();
-    // Add WI to prompt (and also inject WI to AN value via hijack)
+    let addUserAlignment = isInstruct && power_user.instruct.user_alignment_message;
+    let userAlignmentMessage = '';
 
-    let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chat2, this_max_context, dryRun);
-
-    if (skipWIAN !== true) {
-        console.log('skipWIAN not active, adding WIAN');
-        // Add all depth WI entries to prompt
-        flushWIDepthInjections();
-        if (Array.isArray(worldInfoDepth)) {
-            worldInfoDepth.forEach((e) => {
-                const joinedEntries = e.entries.join('\n');
-                setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth);
-            });
-        }
-    } else {
-        console.log('skipping WIAN');
+    if (addUserAlignment) {
+        const alignmentMessage = {
+            name: name1,
+            mes: power_user.instruct.user_alignment_message,
+            is_user: true,
+        };
+        userAlignmentMessage = formatMessageHistoryItem(alignmentMessage, isInstruct, false);
     }
 
     // Add persona description to prompt
@@ -3234,7 +3469,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     let allAnchors = getAllExtensionPrompts();
     const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
     const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
-    let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
     const storyStringParams = {
         description: description,
@@ -3285,6 +3519,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             allAnchors,
             quiet_prompt,
             cyclePrompt,
+            userAlignmentMessage,
         ].join('').replace(/\r/gm, '');
         return getTokenCount(encodeString, power_user.token_padding);
     }
@@ -3301,18 +3536,24 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     }
 
     // Collect enough messages to fill the context
-    let arrMes = [];
+    let arrMes = new Array(chat2.length);
     let tokenCount = getMessagesTokenCount();
-    for (let item of chat2) {
-        // not needed for OAI prompting
-        if (main_api == 'openai') {
-            break;
+    let lastAddedIndex = -1;
+
+    // Pre-allocate all injections first.
+    // If it doesn't fit - user shot himself in the foot
+    for (const index of injectedIndices) {
+        const item = chat2[index];
+
+        if (typeof item !== 'string') {
+            continue;
         }
 
         tokenCount += getTokenCount(item.replace(/\r/gm, ''));
         chatString = item + chatString;
         if (tokenCount < this_max_context) {
-            arrMes[arrMes.length] = item;
+            arrMes[index] = item;
+            lastAddedIndex = Math.max(lastAddedIndex, index);
         } else {
             break;
         }
@@ -3321,8 +3562,62 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         await delay(1);
     }
 
+    for (let i = 0; i < chat2.length; i++) {
+        // not needed for OAI prompting
+        if (main_api == 'openai') {
+            break;
+        }
+
+        // Skip already injected messages
+        if (arrMes[i] !== undefined) {
+            continue;
+        }
+
+        const item = chat2[i];
+
+        if (typeof item !== 'string') {
+            continue;
+        }
+
+        tokenCount += getTokenCount(item.replace(/\r/gm, ''));
+        chatString = item + chatString;
+        if (tokenCount < this_max_context) {
+            arrMes[i] = item;
+            lastAddedIndex = Math.max(lastAddedIndex, i);
+        } else {
+            break;
+        }
+
+        // Prevent UI thread lock on tokenization
+        await delay(1);
+    }
+
+    // Add user alignment message if last message is not a user message
+    const stoppedAtUser = userMessageIndices.includes(lastAddedIndex);
+    if (addUserAlignment && !stoppedAtUser) {
+        tokenCount += getTokenCount(userAlignmentMessage.replace(/\r/gm, ''));
+        chatString = userAlignmentMessage + chatString;
+        arrMes.push(userAlignmentMessage);
+        injectedIndices.push(arrMes.length - 1);
+    }
+
+    // Unsparse the array. Adjust injected indices
+    const newArrMes = [];
+    const newInjectedIndices = [];
+    for (let i = 0; i < arrMes.length; i++) {
+        if (arrMes[i] !== undefined) {
+            newArrMes.push(arrMes[i]);
+            if (injectedIndices.includes(i)) {
+                newInjectedIndices.push(newArrMes.length - 1);
+            }
+        }
+    }
+
+    arrMes = newArrMes;
+    injectedIndices = newInjectedIndices;
+
     if (main_api !== 'openai') {
-        setInContextMessages(arrMes.length, type);
+        setInContextMessages(arrMes.length - injectedIndices.length, type);
     }
 
     // Estimate how many unpinned example messages fit in the context
@@ -3348,8 +3643,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         // Coping mechanism for OAI spacing
         const isForceInstruct = isOpenRouterWithInstruct();
         if (main_api === 'openai' && !isForceInstruct && !cyclePrompt.endsWith(' ')) {
-            cyclePrompt += ' ';
-            continue_mag += ' ';
+            cyclePrompt += oai_settings.continue_postfix;
+            continue_mag += oai_settings.continue_postfix;
         }
         message_already_generated = continue_mag;
     }
@@ -3365,15 +3660,19 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         console.debug('generating prompt');
         chatString = '';
         arrMes = arrMes.reverse();
-        arrMes.forEach(function (item, i, arr) {// For added anchors and others
+        arrMes.forEach(function (item, i, arr) {
             // OAI doesn't need all of this
             if (main_api === 'openai') {
                 return;
             }
 
-            // Cohee: I'm not even sure what this is for anymore
+            // Cohee: This removes a newline from the end of the last message in the context
+            // Last prompt line will add a newline if it's not a continuation
+            // In instruct mode it only removes it if wrap is enabled and it's not a quiet generation
             if (i === arrMes.length - 1 && type !== 'continue') {
-                item = item.replace(/\n?$/, '');
+                if (!isInstruct || (power_user.instruct.wrap && type !== 'quiet')) {
+                    item = item.replace(/\n?$/, '');
+                }
             }
 
             mesSend[mesSend.length] = { message: item, extensionPrompts: [] };
@@ -3412,7 +3711,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             //TODO: respect output_sequence vs last_output_sequence settings
             //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
             if (isInstruct) {
-                lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
+                lastMesString += quietAppend; // + power_user.instruct.output_sequence + '\n';
             } else {
                 lastMesString += quietAppend;
             }
@@ -3433,7 +3732,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         // Get instruct mode line
         if (isInstruct && !isContinue) {
             const name = (quiet_prompt && !quietToLoud) ? (quietName ?? 'System') : (isImpersonate ? name1 : name2);
-            lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
+            const isQuiet = quiet_prompt && type == 'quiet';
+            lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2, isQuiet, quietToLoud);
         }
 
         // Get non-instruct impersonation line
@@ -3473,7 +3773,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         }
 
         // Add a space if prompt cache doesn't start with one
-        if (!/^\s/.test(promptCache) && !isInstruct && !isContinue) {
+        if (!/^\s/.test(promptCache) && !isInstruct) {
             promptCache = ' ' + promptCache;
         }
 
@@ -3537,40 +3837,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         // Deep clone
         let finalMesSend = structuredClone(mesSend);
 
-        // TODO: Rewrite getExtensionPrompt to not require multiple for loops
-        // Set all extension prompts where insertion depth > mesSend length
-        if (finalMesSend.length) {
-            for (let upperDepth = MAX_INJECTION_DEPTH; upperDepth >= finalMesSend.length; upperDepth--) {
-                const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
-                if (upperAnchor && upperAnchor.length) {
-                    finalMesSend[0].extensionPrompts.push(upperAnchor);
-                }
-            }
-        }
-
-        finalMesSend.forEach((mesItem, index) => {
-            if (index === 0) {
-                return;
-            }
-
-            const anchorDepth = Math.abs(index - finalMesSend.length);
-            // NOTE: Depth injected here!
-            const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
-
-            if (anchorDepth >= 0 && extensionAnchor && extensionAnchor.length) {
-                mesItem.extensionPrompts.push(extensionAnchor);
-            }
-        });
-
-        // TODO: Move zero-depth anchor append to work like CFG and bias appends
-        if (zeroDepthAnchor?.length && !isContinue) {
-            console.debug(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)));
-            finalMesSend[finalMesSend.length - 1].message +=
-                /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
-                    ? zeroDepthAnchor
-                    : `${zeroDepthAnchor}`;
-        }
-
         let cfgPrompt = {};
         if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
             cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
@@ -3632,6 +3898,10 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
             return combinedPrompt;
         };
+
+        finalMesSend.forEach((item, i) => {
+            item.injected = injectedIndices.includes(finalMesSend.length - i - 1);
+        });
 
         let data = {
             api: main_api,
@@ -3813,6 +4083,10 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                 streamingProcessor = null;
                 triggerAutoContinue(messageChunk, isImpersonate);
+                return Object.defineProperties(new String(getMessage), {
+                    'messageChunk': { value: messageChunk },
+                    'fromStream': { value: true },
+                });
             }
         } else {
             return await sendGenerationRequest(type, generate_data);
@@ -3823,6 +4097,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     async function onSuccess(data) {
         if (!data) return;
+
+        if (data?.fromStream) {
+            return data;
+        }
+
         let messageChunk = '';
 
         if (data.error) {
@@ -3932,6 +4211,9 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         if (type !== 'quiet') {
             triggerAutoContinue(messageChunk, isImpersonate);
         }
+
+        // Don't break the API chain that expects a single string in return
+        return Object.defineProperty(new String(getMessage), 'messageChunk', { value: messageChunk });
     }
 
     function onError(exception) {
@@ -3939,11 +4221,67 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
         }
 
+        generatedPromptCache = '';
+
         unblockGeneration();
         console.log(exception);
         streamingProcessor = null;
         throw exception;
     }
+}
+
+/**
+ * Injects extension prompts into chat messages.
+ * @param {object[]} messages Array of chat messages
+ * @param {boolean} isContinue Whether the generation is a continuation. If true, the extension prompts of depth 0 are injected at position 1.
+ * @returns {number[]} Array of indices where the extension prompts were injected
+ */
+function doChatInject(messages, isContinue) {
+    const injectedIndices = [];
+    let totalInsertedMessages = 0;
+    messages.reverse();
+
+    for (let i = 0; i <= MAX_INJECTION_DEPTH; i++) {
+        // Order of priority (most important go lower)
+        const roles = [extension_prompt_roles.SYSTEM, extension_prompt_roles.USER, extension_prompt_roles.ASSISTANT];
+        const names = {
+            [extension_prompt_roles.SYSTEM]: '',
+            [extension_prompt_roles.USER]: name1,
+            [extension_prompt_roles.ASSISTANT]: name2,
+        };
+        const roleMessages = [];
+        const separator = '\n';
+        const wrap = false;
+
+        for (const role of roles) {
+            const extensionPrompt = String(getExtensionPrompt(extension_prompt_types.IN_CHAT, i, separator, role, wrap)).trimStart();
+            const isNarrator = role === extension_prompt_roles.SYSTEM;
+            const isUser = role === extension_prompt_roles.USER;
+            const name = names[role];
+
+            if (extensionPrompt) {
+                roleMessages.push({
+                    name: name,
+                    is_user: isUser,
+                    mes: extensionPrompt,
+                    extra: {
+                        type: isNarrator ? system_message_types.NARRATOR : null,
+                    },
+                });
+            }
+        }
+
+        if (roleMessages.length) {
+            const depth = isContinue && i === 0 ? 1 : i;
+            const injectIdx = depth + totalInsertedMessages;
+            messages.splice(injectIdx, 0, ...roleMessages);
+            totalInsertedMessages += roleMessages.length;
+            injectedIndices.push(...Array.from({ length: roleMessages.length }, (_, i) => injectIdx + i));
+        }
+    }
+
+    messages.reverse();
+    return injectedIndices;
 }
 
 function flushWIDepthInjections() {
@@ -3970,57 +4308,81 @@ export function getNextMessageId(type) {
 }
 
 /**
- *
- * @param {string} messageChunk
- * @param {boolean} isImpersonate
- * @returns {void}
+ * Determines if the message should be auto-continued.
+ * @param {string} messageChunk Current message chunk
+ * @param {boolean} isImpersonate Is the user impersonation
+ * @returns {boolean} Whether the message should be auto-continued
+ */
+export function shouldAutoContinue(messageChunk, isImpersonate) {
+    if (!power_user.auto_continue.enabled) {
+        console.debug('Auto-continue is disabled by user.');
+        return false;
+    }
+
+    if (typeof messageChunk !== 'string') {
+        console.debug('Not triggering auto-continue because message chunk is not a string');
+        return false;
+    }
+
+    if (isImpersonate) {
+        console.log('Continue for impersonation is not implemented yet');
+        return false;
+    }
+
+    if (is_send_press) {
+        console.debug('Auto-continue is disabled because a message is currently being sent.');
+        return false;
+    }
+
+    if (power_user.auto_continue.target_length <= 0) {
+        console.log('Auto-continue target length is 0, not triggering auto-continue');
+        return false;
+    }
+
+    if (main_api === 'openai' && !power_user.auto_continue.allow_chat_completions) {
+        console.log('Auto-continue for OpenAI is disabled by user.');
+        return false;
+    }
+
+    const textareaText = String($('#send_textarea').val());
+    const USABLE_LENGTH = 5;
+
+    if (textareaText.length > 0) {
+        console.log('Not triggering auto-continue because user input is not empty');
+        return false;
+    }
+
+    if (messageChunk.trim().length > USABLE_LENGTH && chat.length) {
+        const lastMessage = chat[chat.length - 1];
+        const messageLength = getTokenCount(lastMessage.mes);
+        const shouldAutoContinue = messageLength < power_user.auto_continue.target_length;
+
+        if (shouldAutoContinue) {
+            console.log(`Triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}. Message chunk: ${messageChunk}`);
+            return true;
+        } else {
+            console.log(`Not triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}`);
+            return false;
+        }
+    } else {
+        console.log('Last generated chunk was empty, not triggering auto-continue');
+        return false;
+    }
+}
+
+/**
+ * Triggers auto-continue if the message meets the criteria.
+ * @param {string} messageChunk Current message chunk
+ * @param {boolean} isImpersonate Is the user impersonation
  */
 export function triggerAutoContinue(messageChunk, isImpersonate) {
     if (selected_group) {
-        console.log('Auto-continue is disabled for group chat');
+        console.debug('Auto-continue is disabled for group chat');
         return;
     }
 
-    if (power_user.auto_continue.enabled && !is_send_press) {
-        if (power_user.auto_continue.target_length <= 0) {
-            console.log('Auto-continue target length is 0, not triggering auto-continue');
-            return;
-        }
-
-        if (main_api === 'openai' && !power_user.auto_continue.allow_chat_completions) {
-            console.log('Auto-continue for OpenAI is disabled by user.');
-            return;
-        }
-
-        if (isImpersonate) {
-            console.log('Continue for impersonation is not implemented yet');
-            return;
-        }
-
-        const textareaText = String($('#send_textarea').val());
-        const USABLE_LENGTH = 5;
-
-        if (textareaText.length > 0) {
-            console.log('Not triggering auto-continue because user input is not empty');
-            return;
-        }
-
-        if (messageChunk.trim().length > USABLE_LENGTH && chat.length) {
-            const lastMessage = chat[chat.length - 1];
-            const messageLength = getTokenCount(lastMessage.mes);
-            const shouldAutoContinue = messageLength < power_user.auto_continue.target_length;
-
-            if (shouldAutoContinue) {
-                console.log(`Triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}. Message chunk: ${messageChunk}`);
-                $('#option_continue').trigger('click');
-            } else {
-                console.log(`Not triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}`);
-                return;
-            }
-        } else {
-            console.log('Last generated chunk was empty, not triggering auto-continue');
-            return;
-        }
+    if (shouldAutoContinue(messageChunk, isImpersonate)) {
+        $('#option_continue').trigger('click');
     }
 }
 
@@ -4092,9 +4454,10 @@ export function removeMacros(str) {
  * @param {string} messageText Message text.
  * @param {string} messageBias Message bias.
  * @param {number} [insertAt] Optional index to insert the message at.
+ * @params {boolean} [compact] Send as a compact display message.
  * @returns {Promise<void>} A promise that resolves when the message is inserted.
  */
-export async function sendMessageAsUser(messageText, messageBias, insertAt = null) {
+export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false) {
     messageText = getRegexedString(messageText, regex_placement.USER_INPUT);
 
     const message = {
@@ -4103,7 +4466,9 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
         is_system: false,
         send_date: getMessageTimeStamp(),
         mes: substituteParams(messageText),
-        extra: {},
+        extra: {
+            isSmallSys: compact,
+        },
     };
 
     if (power_user.message_token_count_enabled) {
@@ -4138,10 +4503,19 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     }
 }
 
-export function getMaxContextSize() {
+/**
+ * Gets the maximum usable context size for the current API.
+ * @param {number|null} overrideResponseLength Optional override for the response length.
+ * @returns {number} Maximum usable context size.
+ */
+export function getMaxContextSize(overrideResponseLength = null) {
+    if (typeof overrideResponseLength !== 'number' || overrideResponseLength <= 0 || isNaN(overrideResponseLength)) {
+        overrideResponseLength = null;
+    }
+
     let this_max_context = 1487;
     if (main_api == 'kobold' || main_api == 'koboldhorde' || main_api == 'textgenerationwebui') {
-        this_max_context = (max_context - amount_gen);
+        this_max_context = (max_context - (overrideResponseLength || amount_gen));
     }
     if (main_api == 'novel') {
         this_max_context = Number(max_context);
@@ -4158,10 +4532,10 @@ export function getMaxContextSize() {
             }
         }
 
-        this_max_context = this_max_context - amount_gen;
+        this_max_context = this_max_context - (overrideResponseLength || amount_gen);
     }
     if (main_api == 'openai') {
-        this_max_context = oai_settings.openai_max_context - oai_settings.openai_max_tokens;
+        this_max_context = oai_settings.openai_max_context - (overrideResponseLength || oai_settings.openai_max_tokens);
     }
     return this_max_context;
 }
@@ -4206,25 +4580,6 @@ function addChatsSeparator(mesSendString) {
     }
 }
 
-// There's a TODO related to zero-depth anchors; not removing this function until that's resolved
-// eslint-disable-next-line no-unused-vars
-function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPrompt) {
-    const trimBothEnds = !force_name2;
-    let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
-
-    if (trimBothEnds && !finalPrompt.endsWith('\n')) {
-        finalPrompt += '\n';
-    }
-
-    finalPrompt += trimmedPrompt;
-
-    if (force_name2) {
-        finalPrompt += ' ';
-    }
-
-    return finalPrompt;
-}
-
 async function DupeChar() {
     if (!this_chid) {
         toastr.warning('You must first select a character to duplicate!');
@@ -4250,6 +4605,8 @@ async function DupeChar() {
     });
     if (response.ok) {
         toastr.success('Character Duplicated');
+        const data = await response.json();
+        await eventSource.emit(event_types.CHARACTER_DUPLICATED, { oldAvatar: body.avatar_url, newAvatar: data.path });
         getCharacters();
     }
 }
@@ -4508,6 +4865,7 @@ function parseAndSaveLogprobs(data, continueFrom) {
                     logprobs = data?.completion_probabilities?.map(x => parseTextgenLogprobs(x.content, [x])) || null;
                 } break;
                 case textgen_types.APHRODITE:
+                case textgen_types.MANCER:
                 case textgen_types.TABBY: {
                     logprobs = parseTabbyLogprobs(data) || null;
                 } break;
@@ -4539,7 +4897,7 @@ function extractMessageFromData(data) {
         case 'novel':
             return data.output;
         case 'openai':
-            return data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? '';
+            return data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? data?.text ?? '';
         default:
             return '';
     }
@@ -4562,7 +4920,7 @@ function extractMultiSwipes(data, type) {
         return swipes;
     }
 
-    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && textgen_settings.type === textgen_types.APHRODITE)) {
+    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && [MANCER, APHRODITE].includes(textgen_settings.type))) {
         if (!Array.isArray(data.choices)) {
             return swipes;
         }
@@ -4727,7 +5085,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
         type = 'normal';
     }
 
-    if (chat.length && typeof chat[chat.length - 1]['extra'] !== 'object') {
+    if (chat.length && (!chat[chat.length - 1]['extra'] || typeof chat[chat.length - 1]['extra'] !== 'object')) {
         chat[chat.length - 1]['extra'] = {};
     }
 
@@ -4876,7 +5234,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
 
 function saveImageToMessage(img, mes) {
     if (mes && img.image) {
-        if (typeof mes.extra !== 'object') {
+        if (!mes.extra || typeof mes.extra !== 'object') {
             mes.extra = {};
         }
         mes.extra.image = img.image;
@@ -5261,6 +5619,51 @@ function getThumbnailUrl(type, file) {
     return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
 }
 
+function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, selectable = false, highlightFavs = true } = {}) {
+    if (empty) {
+        block.empty();
+    }
+
+    for (const entity of entities) {
+        const id = entity.id;
+
+        // Populate the template
+        const avatarTemplate = $(`#${templateId} .avatar`).clone();
+
+        let this_avatar = default_avatar;
+        if (entity.item.avatar !== undefined && entity.item.avatar != 'none') {
+            this_avatar = getThumbnailUrl('avatar', entity.item.avatar);
+        }
+
+        avatarTemplate.attr('data-type', entity.type);
+        avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
+        avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entity.item.name);
+        avatarTemplate.attr('title', `[Character] ${entity.item.name}\nFile: ${entity.item.avatar}`);
+        if (highlightFavs) {
+            avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
+            avatarTemplate.find('.ch_fav').val(entity.item.fav);
+        }
+
+        // If this is a group, we need to hack slightly. We still want to keep most of the css classes and layout, but use a group avatar instead.
+        if (entity.type === 'group') {
+            const grpTemplate = getGroupAvatar(entity.item);
+
+            avatarTemplate.addClass(grpTemplate.attr('class'));
+            avatarTemplate.empty();
+            avatarTemplate.append(grpTemplate.children());
+            avatarTemplate.attr('title', `[Group] ${entity.item.name}`);
+        }
+
+        if (selectable) {
+            avatarTemplate.addClass('selectable');
+            avatarTemplate.toggleClass('character_select', entity.type === 'character');
+            avatarTemplate.toggleClass('group_select', entity.type === 'group');
+        }
+
+        block.append(avatarTemplate);
+    }
+}
+
 async function getChat() {
     //console.log('/api/chats/get -- entered for -- ' + characters[this_chid].name);
     try {
@@ -5287,9 +5690,12 @@ async function getChat() {
         await getChatResult();
         eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
 
+        // Focus on the textarea if not already focused on a visible text input
         setTimeout(function () {
-            $('#send_textarea').click();
-            $('#send_textarea').focus();
+            if ($(document.activeElement).is('input:visible, textarea:visible')) {
+                return;
+            }
+            $('#send_textarea').trigger('click').trigger('focus');
         }, 200);
     } catch (error) {
         await getChatResult();
@@ -5482,7 +5888,7 @@ function changeMainAPI() {
  * @returns {Promise<string[]>} List of avatar file names
  */
 export async function getUserAvatars(doRender = true, openPageAt = '') {
-    const response = await fetch('/getuseravatars', {
+    const response = await fetch('/api/avatars/get', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -5554,7 +5960,7 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
 
 function highlightSelectedAvatar() {
     $('#user_avatar_block .avatar-container').removeClass('selected');
-    $(`#user_avatar_block .avatar-container[imgfile='${user_avatar}']`).addClass('selected');
+    $(`#user_avatar_block .avatar-container[imgfile="${user_avatar}"]`).addClass('selected');
 }
 
 /**
@@ -5619,6 +6025,12 @@ export function setUserAvatar(imgfile) {
     $('.zoomed_avatar[forchar]').remove();
 }
 
+export function retriggerFirstMessageOnEmptyChat() {
+    if (this_chid >= 0 && !selected_group && chat.length === 1) {
+        $('#firstmessage_textarea').trigger('input');
+    }
+}
+
 async function uploadUserAvatar(e) {
     const file = e.target.files[0];
 
@@ -5629,7 +6041,7 @@ async function uploadUserAvatar(e) {
 
     const formData = new FormData($('#form_upload_avatar').get(0));
     const dataUrl = await getBase64Async(file);
-    let url = '/uploaduseravatar';
+    let url = '/api/avatars/upload';
 
     if (!power_user.never_resize_avatars) {
         $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
@@ -5641,6 +6053,12 @@ async function uploadUserAvatar(e) {
         if (crop_data !== undefined) {
             url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
         }
+    }
+
+    const rawFile = formData.get('avatar');
+    if (rawFile instanceof File) {
+        const convertedFile = await ensureImageFormatSupported(rawFile);
+        formData.set('avatar', convertedFile);
     }
 
     jQuery.ajax({
@@ -5701,6 +6119,16 @@ async function doOnboarding(avatarId) {
     }
 }
 
+function reloadLoop() {
+    const MAX_RELOADS = 5;
+    let reloads = Number(sessionStorage.getItem('reloads') || 0);
+    if (reloads < MAX_RELOADS) {
+        reloads++;
+        sessionStorage.setItem('reloads', String(reloads));
+        window.location.reload();
+    }
+}
+
 //***************SETTINGS****************//
 ///////////////////////////////////////////
 async function getSettings() {
@@ -5712,7 +6140,8 @@ async function getSettings() {
     });
 
     if (!response.ok) {
-        toastr.error('Settings could not be loaded. Try reloading the page.');
+        reloadLoop();
+        toastr.error('Settings could not be loaded after multiple attempts. Please try again later.');
         throw new Error('Error getting settings');
     }
 
@@ -6468,6 +6897,7 @@ export function select_selected_character(chid) {
     $('#scenario_pole').val(characters[chid].scenario);
     $('#depth_prompt_prompt').val(characters[chid].data?.extensions?.depth_prompt?.prompt ?? '');
     $('#depth_prompt_depth').val(characters[chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default);
+    $('#depth_prompt_role').val(characters[chid].data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default);
     $('#talkativeness_slider').val(characters[chid].talkativeness || talkativeness_default);
     $('#mes_example_textarea').val(characters[chid].mes_example);
     $('#selected_chat_pole').val(characters[chid].chat);
@@ -6494,6 +6924,12 @@ export function select_selected_character(chid) {
 
     $('#form_create').attr('actiontype', 'editcharacter');
     $('.form_create_bottom_buttons_block .chat_lorebook_button').show();
+
+    const externalMediaState = isExternalMediaAllowed();
+    $('#character_open_media_overrides').toggle(!selected_group);
+    $('#character_media_allowed_icon').toggle(externalMediaState);
+    $('#character_media_forbidden_icon').toggle(!externalMediaState);
+
     saveSettingsDebounced();
 }
 
@@ -6538,6 +6974,7 @@ function select_rm_create() {
     $('#scenario_pole').val(create_save.scenario);
     $('#depth_prompt_prompt').val(create_save.depth_prompt_prompt);
     $('#depth_prompt_depth').val(create_save.depth_prompt_depth);
+    $('#depth_prompt_role').val(create_save.depth_prompt_role);
     $('#mes_example_textarea').val(create_save.mes_example);
     $('#character_json_data').val('');
     $('#avatar_div').css('display', 'flex');
@@ -6553,6 +6990,7 @@ function select_rm_create() {
 
     $('#form_create').attr('actiontype', 'createcharacter');
     $('.form_create_bottom_buttons_block .chat_lorebook_button').hide();
+    $('#character_open_media_overrides').hide();
 }
 
 function select_rm_characters() {
@@ -6568,10 +7006,41 @@ function select_rm_characters() {
  * @param {string} value Prompt injection value.
  * @param {number} position Insertion position. 0 is after story string, 1 is in-chat with custom depth.
  * @param {number} depth Insertion depth. 0 represets the last message in context. Expected values up to MAX_INJECTION_DEPTH.
+ * @param {number} role Extension prompt role. Defaults to SYSTEM.
  * @param {boolean} scan Should the prompt be included in the world info scan.
  */
-export function setExtensionPrompt(key, value, position, depth, scan = false) {
-    extension_prompts[key] = { value: String(value), position: Number(position), depth: Number(depth), scan: !!scan };
+export function setExtensionPrompt(key, value, position, depth, scan = false, role = extension_prompt_roles.SYSTEM) {
+    extension_prompts[key] = {
+        value: String(value),
+        position: Number(position),
+        depth: Number(depth),
+        scan: !!scan,
+        role: Number(role ?? extension_prompt_roles.SYSTEM),
+    };
+}
+
+/**
+ * Gets a enum value of the extension prompt role by its name.
+ * @param {string} roleName The name of the extension prompt role.
+ * @returns {number} The role id of the extension prompt.
+ */
+export function getExtensionPromptRoleByName(roleName) {
+    // If the role is already a valid number, return it
+    if (typeof roleName === 'number' && Object.values(extension_prompt_roles).includes(roleName)) {
+        return roleName;
+    }
+
+    switch (roleName) {
+        case 'system':
+            return extension_prompt_roles.SYSTEM;
+        case 'user':
+            return extension_prompt_roles.USER;
+        case 'assistant':
+            return extension_prompt_roles.ASSISTANT;
+    }
+
+    // Skill issue?
+    return extension_prompt_roles.SYSTEM;
 }
 
 /**
@@ -6634,18 +7103,19 @@ function onScenarioOverrideRemoveClick() {
  * @param {string} type
  * @param {string} inputValue - Value to set the input to.
  * @param {PopupOptions} options - Options for the popup.
- * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean }} PopupOptions - Options for the popup.
+ * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean }} PopupOptions - Options for the popup.
  * @returns
  */
-function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } = {}) {
+function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
     dialogueCloseStop = true;
     if (type) {
         popup_type = type;
     }
 
     $('#dialogue_popup').toggleClass('wide_dialogue_popup', !!wide);
-
     $('#dialogue_popup').toggleClass('large_dialogue_popup', !!large);
+    $('#dialogue_popup').toggleClass('horizontal_scrolling_dialogue_popup', !!allowHorizontalScrolling);
+    $('#dialogue_popup').toggleClass('vertical_scrolling_dialogue_popup', !!allowVerticalScrolling);
 
     $('#dialogue_popup_cancel').css('display', 'inline-block');
     switch (popup_type) {
@@ -7131,8 +7601,15 @@ function addAlternateGreeting(template, greeting, index, getArray) {
 
 async function createOrEditCharacter(e) {
     $('#rm_info_avatar').html('');
-    var formData = new FormData($('#form_create').get(0));
+    const formData = new FormData($('#form_create').get(0));
     formData.set('fav', fav_ch_checked);
+
+    const rawFile = formData.get('avatar');
+    if (rawFile instanceof File) {
+        const convertedFile = await ensureImageFormatSupported(rawFile);
+        formData.set('avatar', convertedFile);
+    }
+
     if ($('#form_create').attr('actiontype') == 'createcharacter') {
         if ($('#character_name_pole').val().length > 0) {
             if (is_group_generating || is_send_press) {
@@ -7182,6 +7659,7 @@ async function createOrEditCharacter(e) {
                         { id: '#scenario_pole', callback: value => create_save.scenario = value },
                         { id: '#depth_prompt_prompt', callback: value => create_save.depth_prompt_prompt = value },
                         { id: '#depth_prompt_depth', callback: value => create_save.depth_prompt_depth = value, defaultValue: depth_prompt_depth_default },
+                        { id: '#depth_prompt_role', callback: value => create_save.depth_prompt_role = value, defaultValue: depth_prompt_role_default },
                         { id: '#mes_example_textarea', callback: value => create_save.mes_example = value },
                         { id: '#character_json_data', callback: () => { } },
                         { id: '#alternate_greetings_template', callback: value => create_save.alternate_greetings = value, defaultValue: [] },
@@ -7322,6 +7800,7 @@ window['SillyTavern'].getContext = function () {
         saveReply,
         registerSlashCommand: registerSlashCommand,
         executeSlashCommands: executeSlashCommands,
+        timestampToMoment: timestampToMoment,
         /**
          * @deprecated Handlebars for extensions are no longer supported.
          */
@@ -7335,6 +7814,11 @@ window['SillyTavern'].getContext = function () {
         getTokenizerModel: getTokenizerModel,
         generateQuietPrompt: generateQuietPrompt,
         writeExtensionField: writeExtensionField,
+        getThumbnailUrl: getThumbnailUrl,
+        selectCharacterById: selectCharacterById,
+        messageFormatting: messageFormatting,
+        shouldSendOnEnter: shouldSendOnEnter,
+        isMobile: isMobile,
         tags: tags,
         tagMap: tag_map,
         menuType: menu_type,
@@ -7771,6 +8255,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.CUSTOM,
     },
+    'cohere': {
+        selected: 'cohere',
+        button: '#api_button_openai',
+        source: chat_completion_sources.COHERE,
+    },
     'infermaticai': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -7790,8 +8279,7 @@ const CONNECT_API_MAP = {
 
 async function selectContextCallback(_, name) {
     if (!name) {
-        toastr.warning('Context preset name is required');
-        return '';
+        return power_user.context.preset;
     }
 
     const contextNames = context_presets.map(preset => preset.name);
@@ -7810,8 +8298,7 @@ async function selectContextCallback(_, name) {
 
 async function selectInstructCallback(_, name) {
     if (!name) {
-        toastr.warning('Instruct preset name is required');
-        return '';
+        return power_user.instruct.preset;
     }
 
     const instructNames = instruct_presets.map(preset => preset.name);
@@ -8119,7 +8606,7 @@ function addDebugFunctions() {
     registerDebugFunction('generationTest', 'Send a generation request', 'Generates text using the currently selected API.', async () => {
         const text = prompt('Input text:', 'Hello');
         toastr.info('Working on it...');
-        const message = await generateRaw(text, null, '');
+        const message = await generateRaw(text, null, false, false);
         alert(message);
     });
 
@@ -8129,6 +8616,11 @@ function addDebugFunctions() {
         if (getCurrentChatId()) {
             await reloadCurrentChat();
         }
+    });
+
+    registerDebugFunction('toggleEventTracing', 'Toggle event tracing', 'Useful to see what triggered a certain event.', () => {
+        localStorage.setItem('eventTracing', localStorage.getItem('eventTracing') === 'true' ? 'false' : 'true');
+        toastr.info('Event tracing is now ' + (localStorage.getItem('eventTracing') === 'true' ? 'enabled' : 'disabled'));
     });
 }
 
@@ -8155,10 +8647,10 @@ jQuery(async function () {
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
     registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
     registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
-    registerSlashCommand('instruct', selectInstructCallback, [], '<span class="monospace">(name)</span> – selects instruct mode preset by name', true, true);
+    registerSlashCommand('instruct', selectInstructCallback, [], '<span class="monospace">(name)</span> – selects instruct mode preset by name. Gets the current instruct if no name is provided', true, true);
     registerSlashCommand('instruct-on', enableInstructCallback, [], '– enables instruct mode', true, true);
     registerSlashCommand('instruct-off', disableInstructCallback, [], '– disables instruct mode', true, true);
-    registerSlashCommand('context', selectContextCallback, [], '<span class="monospace">(name)</span> – selects context template by name', true, true);
+    registerSlashCommand('context', selectContextCallback, [], '<span class="monospace">(name)</span> – selects context template by name. Gets the current template if no name is provided', true, true);
     registerSlashCommand('chat-manager', () => $('#option_select_chat').trigger('click'), ['chat-history', 'manage-chats'], '– opens the chat manager for the current character/group', true, true);
 
     setTimeout(function () {
@@ -8166,7 +8658,7 @@ jQuery(async function () {
         $('#groupCurrentMemberListToggle .inline-drawer-icon').trigger('click');
     }, 200);
 
-    $('#chat').on('mousewheel touchstart', () => {
+    $('#chat').on('wheel touchstart', () => {
         scrollLock = true;
     });
 
@@ -8266,25 +8758,8 @@ jQuery(async function () {
 
     $(document).on('click', '.bogus_folder_select', function () {
         const tagId = $(this).attr('tagid');
-        console.log('Bogus folder clicked', tagId);
-
-        const filterData = structuredClone(entitiesFilter.getFilterData(FILTER_TYPES.TAG));
-
-        if (!Array.isArray(filterData.selected)) {
-            filterData.selected = [];
-            filterData.excluded = [];
-            filterData.bogus = false;
-        }
-
-        if (tagId === 'back') {
-            filterData.selected.pop();
-            filterData.bogus = filterData.selected.length > 0;
-        } else {
-            filterData.selected.push(tagId);
-            filterData.bogus = true;
-        }
-
-        entitiesFilter.setFilterData(FILTER_TYPES.TAG, filterData);
+        console.debug('Bogus folder clicked', tagId);
+        chooseBogusFolder($(this), tagId);
     });
 
     $(document).on('input', '.edit_textarea', function () {
@@ -8323,7 +8798,13 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('click', '#user_avatar_block .avatar-container', setUserAvatar);
+    $(document).on('click', '#user_avatar_block .avatar-container', function () {
+        const imgfile = $(this).attr('imgfile');
+        setUserAvatar(imgfile);
+
+        // force firstMes {{user}} update on persona switch
+        retriggerFirstMessageOnEmptyChat();
+    });
     $(document).on('click', '#user_avatar_block .avatar_upload', function () {
         $('#avatar_upload_overwrite').val('');
         $('#avatar_upload_file').trigger('click');
@@ -8353,8 +8834,7 @@ jQuery(async function () {
     $('#advanced_div').click(function () {
         if (!is_advanced_char_open) {
             is_advanced_char_open = true;
-            $('#character_popup').css('display', 'flex');
-            $('#character_popup').css('opacity', 0.0);
+            $('#character_popup').css({ 'display': 'flex', 'opacity': 0.0 }).addClass('open');
             $('#character_popup').transition({
                 opacity: 1.0,
                 duration: animation_duration,
@@ -8362,7 +8842,7 @@ jQuery(async function () {
             });
         } else {
             is_advanced_char_open = false;
-            $('#character_popup').css('display', 'none');
+            $('#character_popup').css('display', 'none').removeClass('open');
         }
     });
 
@@ -8425,8 +8905,8 @@ jQuery(async function () {
         }
         if (popup_type == 'del_ch') {
             const deleteChats = !!$('#del_char_checkbox').prop('checked');
+            eventSource.emit(event_types.CHARACTER_DELETED, { id: this_chid, character: characters[this_chid] });
             await handleDeleteCharacter(popup_type, this_chid, deleteChats);
-            eventSource.emit('characterDeleted', { id: this_chid, character: characters[this_chid] });
         }
         if (popup_type == 'alternate_greeting' && menu_type !== 'create') {
             createOrEditCharacter();
@@ -8448,11 +8928,15 @@ jQuery(async function () {
             await clearChat();
             chat.length = 0;
 
-            chat_file_for_del = getCurrentChatDetails().sessionName
-            const isDelChatCheckbox = document.getElementById('del_chat_checkbox').checked
+            chat_file_for_del = getCurrentChatDetails()?.sessionName;
+            const isDelChatCheckbox = document.getElementById('del_chat_checkbox')?.checked;
+
+            // Make it easier to find in backups
+            if (isDelChatCheckbox) {
+                await saveChatConditional();
+            }
 
             if (selected_group) {
-                //Fix it; When you're creating a new group chat (but not when initially converting from the existing regular chat), the first greeting message doesn't automatically get translated.
                 await createNewGroupChat(selected_group);
                 if (isDelChatCheckbox) await deleteGroupChat(selected_group, chat_file_for_del);
             }
@@ -8515,14 +8999,13 @@ jQuery(async function () {
     $('#form_create').submit(createOrEditCharacter);
 
     $('#delete_button').on('click', function () {
-        popup_type = 'del_ch';
         callPopup(`
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
                 <label for="del_char_checkbox" class="checkbox_label justifyCenter">
                     <input type="checkbox" id="del_char_checkbox" />
-                    <span>Also delete the chat files</span>
-                </label><br></b>`,
+                    <small>Also delete the chat files</small>
+                </label><br></b>`, 'del_ch', '',
         );
     });
 
@@ -8549,6 +9032,7 @@ jQuery(async function () {
         '#talkativeness_slider': function () { create_save.talkativeness = Number($('#talkativeness_slider').val()); },
         '#depth_prompt_prompt': function () { create_save.depth_prompt_prompt = String($('#depth_prompt_prompt').val()); },
         '#depth_prompt_depth': function () { create_save.depth_prompt_depth = Number($('#depth_prompt_depth').val()); },
+        '#depth_prompt_role': function () { create_save.depth_prompt_role = String($('#depth_prompt_role').val()); },
     };
 
     Object.keys(elementsToUpdate).forEach(function (id) {
@@ -8714,6 +9198,7 @@ jQuery(async function () {
             { id: 'api_key_dreamgen', secret: SECRET_KEYS.DREAMGEN },
             { id: 'api_key_openrouter-tg', secret: SECRET_KEYS.OPENROUTER },
             { id: 'api_key_koboldcpp', secret: SECRET_KEYS.KOBOLDCPP },
+            { id: 'api_key_llamacpp', secret: SECRET_KEYS.LLAMACPP },
         ];
 
         for (const key of keys) {
@@ -8830,7 +9315,7 @@ jQuery(async function () {
                     <label for="del_chat_checkbox" class="checkbox_label justifyCenter"
                     title="If necessary, you can later restore this chat file from the /backups folder">
                         <input type="checkbox" id="del_chat_checkbox" />
-                        <span>Also delete the current chat file</span>
+                        <small>Also delete the current chat file</small>
                     </label><br>
                 `, 'new_chat', '');
             }
@@ -9427,6 +9912,7 @@ jQuery(async function () {
         const userName = String($('#your_name').val()).trim();
         setUserName(userName);
         await updatePersonaNameIfExists(user_avatar, userName);
+        retriggerFirstMessageOnEmptyChat();
     });
 
     $('#sync_name_button').on('click', async function () {
@@ -9453,14 +9939,14 @@ jQuery(async function () {
         $('#character_import_file').click();
     });
 
-    $('#character_import_file').on('change', function (e) {
+    $('#character_import_file').on('change', async function (e) {
         $('#rm_info_avatar').html('');
         if (!e.target.files.length) {
             return;
         }
 
         for (const file of e.target.files) {
-            importCharacter(file);
+            await importCharacter(file);
         }
     });
 
@@ -9720,6 +10206,15 @@ jQuery(async function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function () {
             resetScrollHeight($(this));
         });
+    });
+
+    $(document).on('click', '.inline-drawer-maximize', function () {
+        const icon = $(this).find('.inline-drawer-icon, .floating_panel_maximize');
+        icon.toggleClass('fa-window-maximize fa-window-restore');
+        const drawerContent = $(this).closest('.drawer-content');
+        drawerContent.toggleClass('maximized');
+        const drawerId = drawerContent.attr('id');
+        resetMovableStyles(drawerId);
     });
 
     $(document).on('click', '.mes .avatar', function () {

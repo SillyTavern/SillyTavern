@@ -22,6 +22,8 @@ export const SECRET_KEYS = {
     OOBA: 'api_key_ooba',
     NOMICAI: 'api_key_nomicai',
     KOBOLDCPP: 'api_key_koboldcpp',
+    LLAMACPP: 'api_key_llamacpp',
+    COHERE: 'api_key_cohere',
 };
 
 const INPUT_MAP = {
@@ -45,6 +47,8 @@ const INPUT_MAP = {
     [SECRET_KEYS.DREAMGEN]: '#api_key_dreamgen',
     [SECRET_KEYS.NOMICAI]: '#api_key_nomicai',
     [SECRET_KEYS.KOBOLDCPP]: '#api_key_koboldcpp',
+    [SECRET_KEYS.LLAMACPP]: '#api_key_llamacpp',
+    [SECRET_KEYS.COHERE]: '#api_key_cohere',
 };
 
 async function clearSecret() {

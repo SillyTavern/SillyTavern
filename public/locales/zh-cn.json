@@ -914,6 +914,4 @@
     "Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.": "通过其API为Google模型使用适当的标记器。处理速度较慢，但提供更准确的Token计数。",
     "Load koboldcpp order": "加载koboldcpp顺序",
     "Use Google Tokenizer": "使用Google标记器"
-    
-    
 }

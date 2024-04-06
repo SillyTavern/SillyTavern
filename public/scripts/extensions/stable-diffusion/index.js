@@ -47,6 +47,7 @@ const sources = {
     openai: 'openai',
     comfy: 'comfy',
     togetherai: 'togetherai',
+    drawthings: 'drawthings',
 };
 
 const generationMode = {
@@ -217,6 +218,9 @@ const defaultSettings = {
     vlad_url: 'http://localhost:7860',
     vlad_auth: '',
 
+    drawthings_url: 'http://localhost:7860',
+    drawthings_auth: '',
+
     hr_upscaler: 'Latent',
     hr_scale: 2.0,
     hr_scale_min: 1.0,
@@ -237,6 +241,8 @@ const defaultSettings = {
     novel_upscale_ratio_step: 0.1,
     novel_upscale_ratio: 1.0,
     novel_anlas_guard: false,
+    novel_sm: false,
+    novel_sm_dyn: false,
 
     // OpenAI settings
     openai_style: 'vivid',
@@ -312,6 +318,8 @@ function getSdRequestBody() {
             return { url: extension_settings.sd.vlad_url, auth: extension_settings.sd.vlad_auth };
         case sources.auto:
             return { url: extension_settings.sd.auto_url, auth: extension_settings.sd.auto_auth };
+        case sources.drawthings:
+            return { url: extension_settings.sd.drawthings_url, auth: extension_settings.sd.drawthings_auth };
         default:
             throw new Error('Invalid SD source.');
     }
@@ -372,6 +380,9 @@ async function loadSettings() {
     $('#sd_hr_second_pass_steps').val(extension_settings.sd.hr_second_pass_steps).trigger('input');
     $('#sd_novel_upscale_ratio').val(extension_settings.sd.novel_upscale_ratio).trigger('input');
     $('#sd_novel_anlas_guard').prop('checked', extension_settings.sd.novel_anlas_guard);
+    $('#sd_novel_sm').prop('checked', extension_settings.sd.novel_sm);
+    $('#sd_novel_sm_dyn').prop('checked', extension_settings.sd.novel_sm_dyn);
+    $('#sd_novel_sm_dyn').prop('disabled', !extension_settings.sd.novel_sm);
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
     $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
@@ -385,6 +396,8 @@ async function loadSettings() {
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
     $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
+    $('#sd_drawthings_url').val(extension_settings.sd.drawthings_url);
+    $('#sd_drawthings_auth').val(extension_settings.sd.drawthings_auth);
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
@@ -799,6 +812,22 @@ function onNovelAnlasGuardInput() {
     saveSettingsDebounced();
 }
 
+function onNovelSmInput() {
+    extension_settings.sd.novel_sm = !!$('#sd_novel_sm').prop('checked');
+    saveSettingsDebounced();
+
+    if (!extension_settings.sd.novel_sm) {
+        $('#sd_novel_sm_dyn').prop('checked', false).prop('disabled', true).trigger('input');
+    } else {
+        $('#sd_novel_sm_dyn').prop('disabled', false);
+    }
+}
+
+function onNovelSmDynInput() {
+    extension_settings.sd.novel_sm_dyn = !!$('#sd_novel_sm_dyn').prop('checked');
+    saveSettingsDebounced();
+}
+
 function onHordeNsfwInput() {
     extension_settings.sd.horde_nsfw = !!$(this).prop('checked');
     saveSettingsDebounced();
@@ -841,6 +870,16 @@ function onVladUrlInput() {
 
 function onVladAuthInput() {
     extension_settings.sd.vlad_auth = $('#sd_vlad_auth').val();
+    saveSettingsDebounced();
+}
+
+function onDrawthingsUrlInput() {
+    extension_settings.sd.drawthings_url = $('#sd_drawthings_url').val();
+    saveSettingsDebounced();
+}
+
+function onDrawthingsAuthInput() {
+    extension_settings.sd.drawthings_auth = $('#sd_drawthings_auth').val();
     saveSettingsDebounced();
 }
 
@@ -907,6 +946,29 @@ async function validateAutoUrl() {
         toastr.success('SD WebUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD WebUI API: ${error.message}`);
+    }
+}
+
+async function validateDrawthingsUrl() {
+    try {
+        if (!extension_settings.sd.drawthings_url) {
+            throw new Error('URL is not set.');
+        }
+
+        const result = await fetch('/api/sd/drawthings/ping', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD Drawthings returned an error.');
+        }
+
+        await loadSettingOptions();
+        toastr.success('SD Drawthings API connected.');
+    } catch (error) {
+        toastr.error(`Could not validate SD Drawthings API: ${error.message}`);
     }
 }
 
@@ -990,6 +1052,27 @@ async function getAutoRemoteModel() {
         }
 
         const data = await result.text();
+        return data;
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+}
+
+async function getDrawthingsRemoteModel() {
+    try {
+        const result = await fetch('/api/sd/drawthings/get-model', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD DrawThings API returned an error.');
+        }
+
+        const data = await result.text();
+
         return data;
     } catch (error) {
         console.error(error);
@@ -1087,6 +1170,9 @@ async function loadSamplers() {
         case sources.auto:
             samplers = await loadAutoSamplers();
             break;
+        case sources.drawthings:
+            samplers = await loadDrawthingsSamplers();
+            break;
         case sources.novel:
             samplers = await loadNovelSamplers();
             break;
@@ -1172,6 +1258,22 @@ async function loadAutoSamplers() {
     }
 }
 
+async function loadDrawthingsSamplers() {
+    // The app developer doesn't provide an API to get these yet
+    return [
+        'UniPC',
+        'DPM++ 2M Karras',
+        'Euler a',
+        'DPM++ SDE Karras',
+        'PLMS',
+        'DDIM',
+        'LCM',
+        'Euler A Substep',
+        'DPM++ SDE Substep',
+        'TCD',
+    ];
+}
+
 async function loadVladSamplers() {
     if (!extension_settings.sd.vlad_url) {
         return [];
@@ -1247,6 +1349,9 @@ async function loadModels() {
             break;
         case sources.auto:
             models = await loadAutoModels();
+            break;
+        case sources.drawthings:
+            models = await loadDrawthingsModels();
             break;
         case sources.novel:
             models = await loadNovelModels();
@@ -1384,6 +1489,27 @@ async function loadAutoModels() {
     }
 }
 
+async function loadDrawthingsModels() {
+    if (!extension_settings.sd.drawthings_url) {
+        return [];
+    }
+
+    try {
+        const currentModel = await getDrawthingsRemoteModel();
+
+        if (currentModel) {
+            extension_settings.sd.model = currentModel;
+        }
+
+        const data = [{ value: currentModel, text: currentModel }];
+
+        return data;
+    } catch (error) {
+        console.log('Error loading DrawThings API models:', error);
+        return [];
+    }
+}
+
 async function loadOpenAiModels() {
     return [
         { value: 'dall-e-3', text: 'DALL-E 3' },
@@ -1506,6 +1632,9 @@ async function loadSchedulers() {
         case sources.vlad:
             schedulers = ['N/A'];
             break;
+        case sources.drawthings:
+            schedulers = ['N/A'];
+            break;
         case sources.openai:
             schedulers = ['N/A'];
             break;
@@ -1566,6 +1695,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.vlad:
+            vaes = ['N/A'];
+            break;
+        case sources.drawthings:
             vaes = ['N/A'];
             break;
         case sources.openai:
@@ -1676,7 +1808,7 @@ function processReply(str) {
     str = str.replaceAll('“', '');
     str = str.replaceAll('.', ',');
     str = str.replaceAll('\n', ', ');
-    str = str.replace(/[^a-zA-Z0-9,:()']+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
+    str = str.replace(/[^a-zA-Z0-9,:()\-']+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
 
@@ -1696,7 +1828,10 @@ function getRawLastMessage() {
                 continue;
             }
 
-            return message.mes;
+            return {
+                mes: message.mes,
+                original_avatar: message.original_avatar,
+            };
         }
 
         toastr.warning('No usable messages found.', 'Image Generation');
@@ -1704,10 +1839,17 @@ function getRawLastMessage() {
     };
 
     const context = getContext();
-    const lastMessage = getLastUsableMessage(),
-        characterDescription = context.characters[context.characterId].description,
-        situation = context.characters[context.characterId].scenario;
-    return `((${processReply(lastMessage)})), (${processReply(situation)}:0.7), (${processReply(characterDescription)}:0.5)`;
+    const lastMessage = getLastUsableMessage();
+    const character = context.groupId
+        ? context.characters.find(c => c.avatar === lastMessage.original_avatar)
+        : context.characters[context.characterId];
+
+    if (!character) {
+        console.debug('Character not found, using raw message.');
+        return processReply(lastMessage.mes);
+    }
+
+    return `((${processReply(lastMessage.mes)})), (${processReply(character.scenario)}:0.7), (${processReply(character.description)}:0.5)`;
 }
 
 async function generatePicture(args, trigger, message, callback) {
@@ -1975,6 +2117,9 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
             case sources.vlad:
                 result = await generateAutoImage(prefixedPrompt, negativePrompt);
                 break;
+            case sources.drawthings:
+                result = await generateDrawthingsImage(prefixedPrompt, negativePrompt);
+                break;
             case sources.auto:
                 result = await generateAutoImage(prefixedPrompt, negativePrompt);
                 break;
@@ -2158,6 +2303,42 @@ async function generateAutoImage(prompt, negativePrompt) {
 }
 
 /**
+ * Generates an image in Drawthings API using the provided prompt and configuration settings.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} negativePrompt - The instruction used to restrict the image generation.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateDrawthingsImage(prompt, negativePrompt) {
+    const result = await fetch('/api/sd/drawthings/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            ...getSdRequestBody(),
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            sampler_name: extension_settings.sd.sampler,
+            steps: extension_settings.sd.steps,
+            cfg_scale: extension_settings.sd.scale,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+            restore_faces: !!extension_settings.sd.restore_faces,
+            enable_hr: !!extension_settings.sd.enable_hr,
+            denoising_strength: extension_settings.sd.denoising_strength,
+            // TODO: advanced API parameters: hr, upscaler
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'png', data: data.images[0] };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
  * Generates an image in NovelAI API using the provided prompt and configuration settings.
  *
  * @param {string} prompt - The main instruction used to guide the image generation.
@@ -2165,7 +2346,7 @@ async function generateAutoImage(prompt, negativePrompt) {
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateNovelImage(prompt, negativePrompt) {
-    const { steps, width, height } = getNovelParams();
+    const { steps, width, height, sm, sm_dyn } = getNovelParams();
 
     const result = await fetch('/api/novelai/generate-image', {
         method: 'POST',
@@ -2180,6 +2361,8 @@ async function generateNovelImage(prompt, negativePrompt) {
             height: height,
             negative_prompt: negativePrompt,
             upscale_ratio: extension_settings.sd.novel_upscale_ratio,
+            sm: sm,
+            sm_dyn: sm_dyn,
         }),
     });
 
@@ -2194,16 +2377,23 @@ async function generateNovelImage(prompt, negativePrompt) {
 
 /**
  * Adjusts extension parameters for NovelAI. Applies Anlas guard if needed.
- * @returns {{steps: number, width: number, height: number}} - A tuple of parameters for NovelAI API.
+ * @returns {{steps: number, width: number, height: number, sm: boolean, sm_dyn: boolean}} - A tuple of parameters for NovelAI API.
  */
 function getNovelParams() {
     let steps = extension_settings.sd.steps;
     let width = extension_settings.sd.width;
     let height = extension_settings.sd.height;
+    let sm = extension_settings.sd.novel_sm;
+    let sm_dyn = extension_settings.sd.novel_sm_dyn;
+
+    if (extension_settings.sd.sampler === 'ddim') {
+        sm = false;
+        sm_dyn = false;
+    }
 
     // Don't apply Anlas guard if it's disabled.
     if (!extension_settings.sd.novel_anlas_guard) {
-        return { steps, width, height };
+        return { steps, width, height, sm, sm_dyn };
     }
 
     const MAX_STEPS = 28;
@@ -2244,7 +2434,7 @@ function getNovelParams() {
         steps = MAX_STEPS;
     }
 
-    return { steps, width, height };
+    return { steps, width, height, sm, sm_dyn };
 }
 
 async function generateOpenAiImage(prompt) {
@@ -2334,7 +2524,7 @@ async function generateComfyImage(prompt, negativePrompt) {
     }
     let workflow = (await workflowResponse.json()).replace('"%prompt%"', JSON.stringify(prompt));
     workflow = workflow.replace('"%negative_prompt%"', JSON.stringify(negativePrompt));
-    workflow = workflow.replace('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
+    workflow = workflow.replaceAll('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
     placeholders.forEach(ph => {
         workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
     });
@@ -2573,6 +2763,8 @@ function isValidState() {
             return true;
         case sources.auto:
             return !!extension_settings.sd.auto_url;
+        case sources.drawthings:
+            return !!extension_settings.sd.drawthings_url;
         case sources.vlad:
             return !!extension_settings.sd.vlad_url;
         case sources.novel:
@@ -2715,6 +2907,9 @@ jQuery(async () => {
     $('#sd_auto_validate').on('click', validateAutoUrl);
     $('#sd_auto_url').on('input', onAutoUrlInput);
     $('#sd_auto_auth').on('input', onAutoAuthInput);
+    $('#sd_drawthings_validate').on('click', validateDrawthingsUrl);
+    $('#sd_drawthings_url').on('input', onDrawthingsUrlInput);
+    $('#sd_drawthings_auth').on('input', onDrawthingsAuthInput);
     $('#sd_vlad_validate').on('click', validateVladUrl);
     $('#sd_vlad_url').on('input', onVladUrlInput);
     $('#sd_vlad_auth').on('input', onVladAuthInput);
@@ -2725,6 +2920,8 @@ jQuery(async () => {
     $('#sd_novel_upscale_ratio').on('input', onNovelUpscaleRatioInput);
     $('#sd_novel_anlas_guard').on('input', onNovelAnlasGuardInput);
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
+    $('#sd_novel_sm').on('input', onNovelSmInput);
+    $('#sd_novel_sm_dyn').on('input', onNovelSmDynInput);
     $('#sd_comfy_validate').on('click', validateComfyUrl);
     $('#sd_comfy_url').on('input', onComfyUrlInput);
     $('#sd_comfy_workflow').on('change', onComfyWorkflowChange);

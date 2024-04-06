@@ -162,6 +162,7 @@ const CHAT_COMPLETION_SOURCES = {
     MAKERSUITE: 'makersuite',
     MISTRALAI: 'mistralai',
     CUSTOM: 'custom',
+    COHERE: 'cohere',
 };
 
 const UPLOADS_PATH = './uploads';
@@ -207,7 +208,7 @@ const DREAMGEN_KEYS = [
     'presence_penalty',
     'stop',
     'stream',
-    'minimum_message_content_tokens'
+    'minimum_message_content_tokens',
 ];
 
 // https://docs.together.ai/reference/completions

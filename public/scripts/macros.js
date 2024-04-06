@@ -1,8 +1,11 @@
-import { chat, main_api, getMaxContextSize } from '../script.js';
-import { timestampToMoment, isDigitsOnly } from './utils.js';
+import { chat, main_api, getMaxContextSize, getCurrentChatId } from '../script.js';
+import { timestampToMoment, isDigitsOnly, getStringHash } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
 import { replaceVariableMacros } from './variables.js';
+
+// Register any macro that you want to leave in the compiled story string
+Handlebars.registerHelper('trim', () => '{{trim}}');
 
 /**
  * Returns the ID of the last message in the chat.
@@ -41,6 +44,42 @@ function getLastMessage() {
 
     if (!isNaN(index) && index >= 0) {
         return chat[index].mes;
+    }
+
+    return '';
+}
+
+/**
+ * Returns the last message from the user.
+ * @returns {string} The last message from the user.
+ */
+function getLastUserMessage() {
+    if (!Array.isArray(chat) || chat.length === 0) {
+        return '';
+    }
+
+    for (let i = chat.length - 1; i >= 0; i--) {
+        if (chat[i].is_user && !chat[i].is_system) {
+            return chat[i].mes;
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Returns the last message from the bot.
+ * @returns {string} The last message from the bot.
+ */
+function getLastCharMessage() {
+    if (!Array.isArray(chat) || chat.length === 0) {
+        return '';
+    }
+
+    for (let i = chat.length - 1; i >= 0; i--) {
+        if (!chat[i].is_user && !chat[i].is_system) {
+            return chat[i].mes;
+        }
     }
 
     return '';
@@ -146,34 +185,47 @@ function getTimeSinceLastMessage() {
 }
 
 function randomReplace(input, emptyListPlaceholder = '') {
-    const randomPatternNew = /{{random\s?::\s?([^}]+)}}/gi;
-    const randomPatternOld = /{{random\s?:\s?([^}]+)}}/gi;
+    const randomPattern = /{{random\s?::?([^}]+)}}/gi;
 
-    if (randomPatternNew.test(input)) {
-        return input.replace(randomPatternNew, (match, listString) => {
-            //split on double colons instead of commas to allow for commas inside random items
-            const list = listString.split('::').filter(item => item.length > 0);
-            if (list.length === 0) {
-                return emptyListPlaceholder;
-            }
-            var rng = new Math.seedrandom('added entropy.', { entropy: true });
-            const randomIndex = Math.floor(rng() * list.length);
-            //trim() at the end to allow for empty random values
-            return list[randomIndex].trim();
-        });
-    } else if (randomPatternOld.test(input)) {
-        return input.replace(randomPatternOld, (match, listString) => {
-            const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
-            if (list.length === 0) {
-                return emptyListPlaceholder;
-            }
-            var rng = new Math.seedrandom('added entropy.', { entropy: true });
-            const randomIndex = Math.floor(rng() * list.length);
-            return list[randomIndex];
-        });
-    } else {
-        return input;
-    }
+    input = input.replace(randomPattern, (match, listString) => {
+        // Split on either double colons or comma. If comma is the separator, we are also trimming all items.
+        const list = listString.includes('::')
+            ? listString.split('::')
+            : listString.split(',').map(item => item.trim());
+
+        if (list.length === 0) {
+            return emptyListPlaceholder;
+        }
+        const rng = new Math.seedrandom('added entropy.', { entropy: true });
+        const randomIndex = Math.floor(rng() * list.length);
+        return list[randomIndex];
+    });
+    return input;
+}
+
+function pickReplace(input, rawContent, emptyListPlaceholder = '') {
+    const pickPattern = /{{pick\s?::?([^}]+)}}/gi;
+    const chatIdHash = getStringHash(getCurrentChatId());
+    const rawContentHash = getStringHash(rawContent);
+
+    return input.replace(pickPattern, (match, listString, offset) => {
+        // Split on either double colons or comma. If comma is the separator, we are also trimming all items.
+        const list = listString.includes('::')
+            ? listString.split('::')
+            : listString.split(',').map(item => item.trim());
+
+        if (list.length === 0) {
+            return emptyListPlaceholder;
+        }
+
+        // We build a hash seed based on: unique chat file, raw content, and the placement inside this content
+        // This allows us to get unique but repeatable picks in nearly all cases
+        const combinedSeedString = `${chatIdHash}-${rawContentHash}-${offset}`;
+        const finalSeed = getStringHash(combinedSeedString);
+        const rng = new Math.seedrandom(finalSeed);
+        const randomIndex = Math.floor(rng() * list.length);
+        return list[randomIndex];
+    });
 }
 
 function diceRollReplace(input, invalidRollPlaceholder = '') {
@@ -210,6 +262,8 @@ export function evaluateMacros(content, env) {
         return '';
     }
 
+    const rawContent = content;
+
     // Legacy non-macro substitutions
     content = content.replace(/<USER>/gi, typeof env.user === 'function' ? env.user() : env.user);
     content = content.replace(/<BOT>/gi, typeof env.char === 'function' ? env.char() : env.char);
@@ -225,6 +279,7 @@ export function evaluateMacros(content, env) {
     content = replaceInstructMacros(content);
     content = replaceVariableMacros(content);
     content = content.replace(/{{newline}}/gi, '\n');
+    content = content.replace(/\n*{{trim}}\n*/gi, '');
     content = content.replace(/{{input}}/gi, () => String($('#send_textarea').val()));
 
     // Substitute passed-in variables
@@ -238,6 +293,8 @@ export function evaluateMacros(content, env) {
     content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
     content = content.replace(/{{lastMessage}}/gi, () => getLastMessage());
     content = content.replace(/{{lastMessageId}}/gi, () => getLastMessageId());
+    content = content.replace(/{{lastUserMessage}}/gi, () => getLastUserMessage());
+    content = content.replace(/{{lastCharMessage}}/gi, () => getLastCharMessage());
     content = content.replace(/{{firstIncludedMessageId}}/gi, () => getFirstIncludedMessageId());
     content = content.replace(/{{lastSwipeId}}/gi, () => getLastSwipeId());
     content = content.replace(/{{currentSwipeId}}/gi, () => getCurrentSwipeId());
@@ -262,5 +319,6 @@ export function evaluateMacros(content, env) {
     });
     content = bannedWordsReplace(content);
     content = randomReplace(content);
+    content = pickReplace(content, rawContent);
     return content;
 }
