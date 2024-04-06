@@ -32,8 +32,14 @@ jobs:
       # Using the following workaround because currently GitHub Actions 
       # does not support logical AND/OR operations on triggers
       # It's currently not possible to have `branches` under the `schedule` trigger
-      - name: Checkout the release branch
+      - name: Checkout the release branch (on release)
         if: ${{ github.event_name == 'release' }}
+        uses: actions/checkout@v3
+        with:
+          ref: "release"
+
+      - name: Checkout the release branch (on push)
+        if: ${{ github.event_name == 'push' }}
         uses: actions/checkout@v3
         with:
           ref: "release"
