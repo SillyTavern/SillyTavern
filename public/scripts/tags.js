@@ -783,7 +783,7 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
 
     if (clickableAction) {
         const filter = getFilterHelper($(listElement));
-        tagElement.on('click', (e) => clickableAction.bind(tagElement)(e, filter));
+        tagElement.on('click', (e) => clickableAction.bind(tagElement)(filter));
         tagElement.addClass('clickable-action');
     }
 
