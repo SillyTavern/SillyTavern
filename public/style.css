@@ -456,7 +456,7 @@ body.reduced-motion #bg_custom {
 }
 
 #bg1 {
-    background-image: url('backgrounds/__transparent.png');
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
     z-index: -3;
 }
 

@@ -489,8 +489,8 @@ const setupTasks = async function () {
     // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
     await settingsEndpoint.init();
     ensurePublicDirectoriesExist();
-    await ensureThumbnailCache();
     contentManager.checkForNewContent();
+    await ensureThumbnailCache();
     cleanUploads();
 
     await loadTokenizers();
