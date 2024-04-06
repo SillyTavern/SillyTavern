@@ -163,6 +163,10 @@ function getTargetByType(type) {
             return DIRECTORIES.instruct;
         case 'context':
             return DIRECTORIES.context;
+        case 'moving_ui':
+            return DIRECTORIES.movingUI;
+        case 'quick_replies':
+            return DIRECTORIES.quickreplies;
         default:
             return null;
     }

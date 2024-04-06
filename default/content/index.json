@@ -610,5 +610,17 @@
     {
         "filename": "presets/instruct/simple-proxy-for-tavern.json",
         "type": "instruct"
+    },
+    {
+        "filename": "presets/moving-ui/Default.json",
+        "type": "moving_ui"
+    },
+    {
+        "filename": "presets/moving-ui/Black Magic Time.json",
+        "type": "moving_ui"
+    },
+    {
+        "filename": "presets/quick-replies/Default.json",
+        "type": "quick_replies"
     }
 ]
