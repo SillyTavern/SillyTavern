@@ -21,7 +21,7 @@ jobs:
 
     steps:
       ## Workaround for GitHub repo names containing uppercase characters
-      - name: set lowercase repo name
+      - name: Set lowercase repo name
         run: |
           echo "IMAGE_NAME=${REPO,,}" >>${GITHUB_ENV}
 
