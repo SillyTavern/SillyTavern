@@ -486,15 +486,22 @@ function removeTagFromMap(tagId, characterId = null) {
     }
 }
 
+/**
+ * Gets a list of tags to be displayed in the tag input autocomplete.
+ * @param {{term: string}} request AutoComplete request object
+ * @param {(tags: Tag[]) => void} resolve AutoComplete resolve function
+ * @param {string} listSelector The selector of the list to print/add to
+ */
 function findTag(request, resolve, listSelector) {
     const skipIds = [...($(listSelector).find('.tag').map((_, el) => $(el).attr('id')))];
-    const haystack = tags.filter(t => !skipIds.includes(t.id)).map(t => t.name).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    const haystack = tags.filter(t => !skipIds.includes(t.id)).sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
     const needle = request.term.toLowerCase();
-    const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
-    const result = haystack.filter(x => x.toLowerCase().includes(needle));
+    const hasExactMatch = haystack.findIndex(x => x.name.toLowerCase() == needle) !== -1;
+    const result = haystack.filter(x => x.name.toLowerCase().includes(needle));
 
+    // Add a candidate for a new tag if the search term is not empty and no exact match was found
     if (request.term && !hasExactMatch) {
-        result.unshift(request.term);
+        result.unshift({ id: undefined, name: request.term });
     }
 
     resolve(result);
@@ -504,15 +511,15 @@ function findTag(request, resolve, listSelector) {
  * Select a tag and add it to the list. This function is (mostly) used as an event handler for the tag selector control.
  *
  * @param {*} event - The event that fired on autocomplete select
- * @param {*} ui - An Object with label and value properties for the selected option
- * @param {*} listSelector - The selector of the list to print/add to
+ * @param {{item: Tag }} ui - An Object with label and value properties for the selected option
+ * @param {string} listSelector - The selector of the list to print/add to
  * @param {object} param1 - Optional parameters for this method call
  * @param {PrintTagListOptions} [param1.tagListOptions] - Optional parameters for printing the tag list. Can be set to be consistent with the expected behavior of tags in the list that was defined before.
  * @returns {boolean} <c>false</c>, to keep the input clear
  */
 function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
-    let tagName = ui.item.value;
-    let tag = tags.find(t => t.name === tagName);
+    let tagName = ui.item.name;
+    let tag = tags.find(x => x.id === ui.item.id);
 
     // create new tag if it doesn't exist
     if (!tag) {
@@ -989,6 +996,12 @@ export function createTagInput(inputSelector, listSelector, tagListOptions = {})
             minLength: 0,
         })
         .focus(onTagInputFocus); // <== show tag list on click
+
+    // @ts-ignore
+    $(inputSelector).autocomplete('instance')._renderItem = function (ul, item) {
+        const content = $('<div></div>').text(item.name);
+        return $('<li>').append(content).appendTo(ul);
+    };
 }
 
 function onViewTagsListClick() {
