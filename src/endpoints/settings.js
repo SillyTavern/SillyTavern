@@ -2,13 +2,13 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const { DIRECTORIES } = require('../constants');
+const { PUBLIC_DIRECTORIES } = require('../constants');
 const { getConfigValue, generateTimestamp, removeOldBackups } = require('../util');
 const { jsonParser } = require('../express-common');
-const { migrateSecrets } = require('./secrets');
+const { getAllUserHandles, getUserDirectories } = require('../users');
 
+const SETTINGS_FILE = 'settings.json';
 const enableExtensions = getConfigValue('enableExtensions', true);
-const SETTINGS_FILE = './public/settings.json';
 
 function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
     const files = fs
@@ -61,16 +61,22 @@ function readPresetsFromDirectory(directoryPath, options = {}) {
     return { fileContents, fileNames };
 }
 
-function backupSettings() {
+async function backupSettings() {
     try {
-        if (!fs.existsSync(DIRECTORIES.backups)) {
-            fs.mkdirSync(DIRECTORIES.backups);
+        if (!fs.existsSync(PUBLIC_DIRECTORIES.backups)) {
+            fs.mkdirSync(PUBLIC_DIRECTORIES.backups);
         }
 
-        const backupFile = path.join(DIRECTORIES.backups, `settings_${generateTimestamp()}.json`);
-        fs.copyFileSync(SETTINGS_FILE, backupFile);
+        const userHandles = await getAllUserHandles();
 
-        removeOldBackups('settings_');
+        for (const handle of userHandles) {
+            const userDirectories = getUserDirectories(handle);
+            const backupFile = path.join(PUBLIC_DIRECTORIES.backups, `settings_${handle}_${generateTimestamp()}.json`);
+            const sourceFile = path.join(userDirectories.root, SETTINGS_FILE);
+            fs.copyFileSync(sourceFile, backupFile);
+
+            removeOldBackups(`settings_${handle}`);
+        }
     } catch (err) {
         console.log('Could not backup settings file', err);
     }
@@ -80,7 +86,8 @@ const router = express.Router();
 
 router.post('/save', jsonParser, function (request, response) {
     try {
-        writeFileAtomicSync('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8');
+        const pathToSettings = path.join(request.user.directories.root, SETTINGS_FILE);
+        writeFileAtomicSync(pathToSettings, JSON.stringify(request.body, null, 4), 'utf8');
         response.send({ result: 'ok' });
     } catch (err) {
         console.log(err);
@@ -92,48 +99,49 @@ router.post('/save', jsonParser, function (request, response) {
 router.post('/get', jsonParser, (request, response) => {
     let settings;
     try {
-        settings = fs.readFileSync('public/settings.json', 'utf8');
+        const pathToSettings = path.join(request.user.directories.root, SETTINGS_FILE);
+        settings = fs.readFileSync(pathToSettings, 'utf8');
     } catch (e) {
         return response.sendStatus(500);
     }
 
     // NovelAI Settings
     const { fileContents: novelai_settings, fileNames: novelai_setting_names }
-        = readPresetsFromDirectory(DIRECTORIES.novelAI_Settings, {
-            sortFunction: sortByName(DIRECTORIES.novelAI_Settings),
+        = readPresetsFromDirectory(request.user.directories.novelAI_Settings, {
+            sortFunction: sortByName(request.user.directories.novelAI_Settings),
             removeFileExtension: true,
         });
 
     // OpenAI Settings
     const { fileContents: openai_settings, fileNames: openai_setting_names }
-        = readPresetsFromDirectory(DIRECTORIES.openAI_Settings, {
-            sortFunction: sortByName(DIRECTORIES.openAI_Settings), removeFileExtension: true,
+        = readPresetsFromDirectory(request.user.directories.openAI_Settings, {
+            sortFunction: sortByName(request.user.directories.openAI_Settings), removeFileExtension: true,
         });
 
     // TextGenerationWebUI Settings
     const { fileContents: textgenerationwebui_presets, fileNames: textgenerationwebui_preset_names }
-        = readPresetsFromDirectory(DIRECTORIES.textGen_Settings, {
-            sortFunction: sortByName(DIRECTORIES.textGen_Settings), removeFileExtension: true,
+        = readPresetsFromDirectory(request.user.directories.textGen_Settings, {
+            sortFunction: sortByName(request.user.directories.textGen_Settings), removeFileExtension: true,
         });
 
     //Kobold
     const { fileContents: koboldai_settings, fileNames: koboldai_setting_names }
-        = readPresetsFromDirectory(DIRECTORIES.koboldAI_Settings, {
-            sortFunction: sortByName(DIRECTORIES.koboldAI_Settings), removeFileExtension: true,
+        = readPresetsFromDirectory(request.user.directories.koboldAI_Settings, {
+            sortFunction: sortByName(request.user.directories.koboldAI_Settings), removeFileExtension: true,
         });
 
     const worldFiles = fs
-        .readdirSync(DIRECTORIES.worlds)
+        .readdirSync(request.user.directories.worlds)
         .filter(file => path.extname(file).toLowerCase() === '.json')
         .sort((a, b) => a.localeCompare(b));
     const world_names = worldFiles.map(item => path.parse(item).name);
 
-    const themes = readAndParseFromDirectory(DIRECTORIES.themes);
-    const movingUIPresets = readAndParseFromDirectory(DIRECTORIES.movingUI);
-    const quickReplyPresets = readAndParseFromDirectory(DIRECTORIES.quickreplies);
+    const themes = readAndParseFromDirectory(request.user.directories.themes);
+    const movingUIPresets = readAndParseFromDirectory(request.user.directories.movingUI);
+    const quickReplyPresets = readAndParseFromDirectory(request.user.directories.quickreplies);
 
-    const instruct = readAndParseFromDirectory(DIRECTORIES.instruct);
-    const context = readAndParseFromDirectory(DIRECTORIES.context);
+    const instruct = readAndParseFromDirectory(request.user.directories.instruct);
+    const context = readAndParseFromDirectory(request.user.directories.context);
 
     response.send({
         settings,
@@ -155,10 +163,11 @@ router.post('/get', jsonParser, (request, response) => {
     });
 });
 
-// Sync for now, but should probably be migrated to async file APIs
+/**
+ * Initializes the settings endpoint
+ */
 async function init() {
-    backupSettings();
-    migrateSecrets(SETTINGS_FILE);
+    await backupSettings();
 }
 
 module.exports = { router, init };

@@ -110,64 +110,6 @@ function readSecretState() {
 }
 
 /**
- * Migrates secrets from settings.json to secrets.json
- * @param {string} settingsFile Path to settings.json
- * @returns {void}
- */
-function migrateSecrets(settingsFile) {
-    const palmKey = readSecret('api_key_palm');
-    if (palmKey) {
-        console.log('Migrating Palm key...');
-        writeSecret(SECRET_KEYS.MAKERSUITE, palmKey);
-        deleteSecret('api_key_palm');
-    }
-
-    if (!fs.existsSync(settingsFile)) {
-        console.log('Settings file does not exist');
-        return;
-    }
-
-    try {
-        let modified = false;
-        const fileContents = fs.readFileSync(settingsFile, 'utf8');
-        const settings = JSON.parse(fileContents);
-        const oaiKey = settings?.api_key_openai;
-        const hordeKey = settings?.horde_settings?.api_key;
-        const novelKey = settings?.api_key_novel;
-
-        if (typeof oaiKey === 'string') {
-            console.log('Migrating OpenAI key...');
-            writeSecret(SECRET_KEYS.OPENAI, oaiKey);
-            delete settings.api_key_openai;
-            modified = true;
-        }
-
-        if (typeof hordeKey === 'string') {
-            console.log('Migrating Horde key...');
-            writeSecret(SECRET_KEYS.HORDE, hordeKey);
-            delete settings.horde_settings.api_key;
-            modified = true;
-        }
-
-        if (typeof novelKey === 'string') {
-            console.log('Migrating Novel key...');
-            writeSecret(SECRET_KEYS.NOVEL, novelKey);
-            delete settings.api_key_novel;
-            modified = true;
-        }
-
-        if (modified) {
-            console.log('Writing updated settings.json...');
-            const settingsContent = JSON.stringify(settings, null, 4);
-            writeFileAtomicSync(settingsFile, settingsContent, 'utf-8');
-        }
-    }
-    catch (error) {
-        console.error('Could not migrate secrets file. Proceed with caution.');
-    }
-}
-
-/**
  * Reads all secrets from the secrets file
  * @returns {Record<string, string> | undefined} Secrets
  */
@@ -251,7 +193,6 @@ module.exports = {
     writeSecret,
     readSecret,
     readSecretState,
-    migrateSecrets,
     getAllSecrets,
     SECRET_KEYS,
     router,

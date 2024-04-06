@@ -33,6 +33,7 @@ util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
 
 // local library imports
+const { initUserStorage, userDataMiddleware, getUserDirectories, getAllUserHandles } = require('./src/users');
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
 const contentManager = require('./src/endpoints/content-manager');
@@ -112,7 +113,7 @@ const listen = cliArguments.listen ?? getConfigValue('listen', DEFAULT_LISTEN);
 const enableCorsProxy = cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', DEFAULT_CORS_PROXY);
 const basicAuthMode = getConfigValue('basicAuthMode', false);
 
-const { DIRECTORIES, UPLOADS_PATH } = require('./src/constants');
+const { UPLOADS_PATH, PUBLIC_DIRECTORIES } = require('./src/constants');
 
 // CORS Settings //
 const CORS = cors({
@@ -211,29 +212,8 @@ if (enableCorsProxy) {
 }
 
 app.use(express.static(process.cwd() + '/public', {}));
+app.use(userDataMiddleware(app));
 
-app.use('/backgrounds', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), DIRECTORIES.backgrounds, req.url.replace(/%20/g, ' ')));
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            res.status(404).send('File not found');
-            return;
-        }
-        //res.contentType('image/jpeg');
-        res.send(data);
-    });
-});
-
-app.use('/characters', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), DIRECTORIES.characters, req.url.replace(/%20/g, ' ')));
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            res.status(404).send('File not found');
-            return;
-        }
-        res.send(data);
-    });
-});
 app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
 app.get('/', function (request, response) {
     response.sendFile(process.cwd() + '/public/index.html');
@@ -487,6 +467,7 @@ const setupTasks = async function () {
 
     // TODO: do endpoint init functions depend on certain directories existing or not existing? They should be callable
     // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
+    await initUserStorage();
     await settingsEndpoint.init();
     ensurePublicDirectoriesExist();
     contentManager.checkForNewContent();
@@ -579,10 +560,20 @@ if (cliArguments.ssl) {
     );
 }
 
-function ensurePublicDirectoriesExist() {
-    for (const dir of Object.values(DIRECTORIES)) {
+async function ensurePublicDirectoriesExist() {
+    for (const dir of Object.values(PUBLIC_DIRECTORIES)) {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
+        }
+    }
+
+    const userHandles = await getAllUserHandles();
+    for (const handle of userHandles) {
+        const userDirectories = getUserDirectories(handle);
+        for (const dir of Object.values(userDirectories)) {
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
         }
     }
 }

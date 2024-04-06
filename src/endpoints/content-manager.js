@@ -6,17 +6,16 @@ const sanitize = require('sanitize-filename');
 const { getConfigValue } = require('../util');
 const { jsonParser } = require('../express-common');
 const contentDirectory = path.join(process.cwd(), 'default/content');
-const contentLogPath = path.join(contentDirectory, 'content.log');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
-const { DIRECTORIES } = require('../constants');
-const presetFolders = [DIRECTORIES.koboldAI_Settings, DIRECTORIES.openAI_Settings, DIRECTORIES.novelAI_Settings, DIRECTORIES.textGen_Settings];
+const { getAllUserHandles, getUserDirectories } = require('../users');
 const characterCardParser = require('../character-card-parser.js');
 
 /**
  * Gets the default presets from the content directory.
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {object[]} Array of default presets
  */
-function getDefaultPresets() {
+function getDefaultPresets(directories) {
     try {
         const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
         const contentIndex = JSON.parse(contentIndexText);
@@ -26,7 +25,7 @@ function getDefaultPresets() {
         for (const contentItem of contentIndex) {
             if (contentItem.type.endsWith('_preset') || contentItem.type === 'instruct' || contentItem.type === 'context') {
                 contentItem.name = path.parse(contentItem.filename).name;
-                contentItem.folder = getTargetByType(contentItem.type);
+                contentItem.folder = getTargetByType(contentItem.type, directories);
                 presets.push(contentItem);
             }
         }
@@ -59,120 +58,117 @@ function getDefaultPresetFile(filename) {
     }
 }
 
-function migratePresets() {
-    for (const presetFolder of presetFolders) {
-        const presetPath = path.join(process.cwd(), presetFolder);
-        const presetFiles = fs.readdirSync(presetPath);
-
-        for (const presetFile of presetFiles) {
-            const presetFilePath = path.join(presetPath, presetFile);
-            const newFileName = presetFile.replace('.settings', '.json');
-            const newFilePath = path.join(presetPath, newFileName);
-            const backupFileName = presetFolder.replace('/', '_') + '_' + presetFile;
-            const backupFilePath = path.join(DIRECTORIES.backups, backupFileName);
-
-            if (presetFilePath.endsWith('.settings')) {
-                if (!fs.existsSync(newFilePath)) {
-                    fs.cpSync(presetFilePath, backupFilePath);
-                    fs.cpSync(presetFilePath, newFilePath);
-                    console.log(`Migrated ${presetFilePath} to ${newFilePath}`);
-                }
-            }
-        }
-    }
-}
-
-function checkForNewContent() {
+async function checkForNewContent() {
     try {
-        migratePresets();
-
         if (getConfigValue('skipContentCheck', false)) {
             return;
         }
 
-        const contentLog = getContentLog();
         const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
         const contentIndex = JSON.parse(contentIndexText);
+        const userHandles = await getAllUserHandles();
 
-        for (const contentItem of contentIndex) {
-            // If the content item is already in the log, skip it
-            if (contentLog.includes(contentItem.filename)) {
-                continue;
+        for (const userHandle of userHandles) {
+            const directories = getUserDirectories(userHandle);
+
+            if (!fs.existsSync(directories.root)) {
+                fs.mkdirSync(directories.root, { recursive: true });
             }
 
-            contentLog.push(contentItem.filename);
-            const contentPath = path.join(contentDirectory, contentItem.filename);
+            const contentLogPath = path.join(directories.root, 'content.log');
+            const contentLog = getContentLog(contentLogPath);
 
-            if (!fs.existsSync(contentPath)) {
-                console.log(`Content file ${contentItem.filename} is missing`);
-                continue;
+            for (const contentItem of contentIndex) {
+                // If the content item is already in the log, skip it
+                if (contentLog.includes(contentItem.filename)) {
+                    continue;
+                }
+
+                contentLog.push(contentItem.filename);
+                const contentPath = path.join(contentDirectory, contentItem.filename);
+
+                if (!fs.existsSync(contentPath)) {
+                    console.log(`Content file ${contentItem.filename} is missing`);
+                    continue;
+                }
+
+                const contentTarget = getTargetByType(contentItem.type, directories);
+
+                if (!contentTarget) {
+                    console.log(`Content file ${contentItem.filename} has unknown type ${contentItem.type}`);
+                    continue;
+                }
+
+                const basePath = path.parse(contentItem.filename).base;
+                const targetPath = path.join(process.cwd(), contentTarget, basePath);
+
+                if (fs.existsSync(targetPath)) {
+                    console.log(`Content file ${contentItem.filename} already exists in ${contentTarget}`);
+                    continue;
+                }
+
+                fs.cpSync(contentPath, targetPath, { recursive: true, force: false });
+                console.log(`Content file ${contentItem.filename} copied to ${contentTarget}`);
             }
 
-            const contentTarget = getTargetByType(contentItem.type);
-
-            if (!contentTarget) {
-                console.log(`Content file ${contentItem.filename} has unknown type ${contentItem.type}`);
-                continue;
-            }
-
-            const basePath = path.parse(contentItem.filename).base;
-            const targetPath = path.join(process.cwd(), contentTarget, basePath);
-
-            if (fs.existsSync(targetPath)) {
-                console.log(`Content file ${contentItem.filename} already exists in ${contentTarget}`);
-                continue;
-            }
-
-            fs.cpSync(contentPath, targetPath, { recursive: true, force: false });
-            console.log(`Content file ${contentItem.filename} copied to ${contentTarget}`);
+            fs.writeFileSync(contentLogPath, contentLog.join('\n'));
         }
-
-        fs.writeFileSync(contentLogPath, contentLog.join('\n'));
     } catch (err) {
         console.log('Content check failed', err);
     }
 }
 
-function getTargetByType(type) {
+/**
+ * Gets the target directory for the specified asset type.
+ * @param {string} type Asset type
+ * @param {import('../users').UserDirectoryList} directories User directories
+ * @returns {string | null} Target directory
+ */
+function getTargetByType(type, directories) {
     switch (type) {
+        case 'settings':
+            return directories.root;
         case 'character':
-            return DIRECTORIES.characters;
+            return directories.characters;
         case 'sprites':
-            return DIRECTORIES.characters;
+            return directories.characters;
         case 'background':
-            return DIRECTORIES.backgrounds;
+            return directories.backgrounds;
         case 'world':
-            return DIRECTORIES.worlds;
-        case 'sound':
-            return DIRECTORIES.sounds;
+            return directories.worlds;
         case 'avatar':
-            return DIRECTORIES.avatars;
+            return directories.avatars;
         case 'theme':
-            return DIRECTORIES.themes;
+            return directories.themes;
         case 'workflow':
-            return DIRECTORIES.comfyWorkflows;
+            return directories.comfyWorkflows;
         case 'kobold_preset':
-            return DIRECTORIES.koboldAI_Settings;
+            return directories.koboldAI_Settings;
         case 'openai_preset':
-            return DIRECTORIES.openAI_Settings;
+            return directories.openAI_Settings;
         case 'novel_preset':
-            return DIRECTORIES.novelAI_Settings;
+            return directories.novelAI_Settings;
         case 'textgen_preset':
-            return DIRECTORIES.textGen_Settings;
+            return directories.textGen_Settings;
         case 'instruct':
-            return DIRECTORIES.instruct;
+            return directories.instruct;
         case 'context':
-            return DIRECTORIES.context;
+            return directories.context;
         case 'moving_ui':
-            return DIRECTORIES.movingUI;
+            return directories.movingUI;
         case 'quick_replies':
-            return DIRECTORIES.quickreplies;
+            return directories.quickreplies;
         default:
             return null;
     }
 }
 
-function getContentLog() {
+/**
+ * Gets the content log from the content log file.
+ * @param {string} contentLogPath Path to the content log file
+ * @returns {string[]} Array of content log lines
+ */
+function getContentLog(contentLogPath) {
     if (!fs.existsSync(contentLogPath)) {
         return [];
     }

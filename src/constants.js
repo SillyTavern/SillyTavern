@@ -1,33 +1,50 @@
-const DIRECTORIES = {
-    worlds: 'public/worlds/',
-    user: 'public/user',
-    avatars: 'public/User Avatars',
+const PUBLIC_DIRECTORIES = {
     images: 'public/img/',
-    userImages: 'public/user/images/',
-    groups: 'public/groups/',
-    groupChats: 'public/group chats',
-    chats: 'public/chats/',
-    characters: 'public/characters/',
-    backgrounds: 'public/backgrounds',
-    novelAI_Settings: 'public/NovelAI Settings',
-    koboldAI_Settings: 'public/KoboldAI Settings',
-    openAI_Settings: 'public/OpenAI Settings',
-    textGen_Settings: 'public/TextGen Settings',
-    thumbnails: 'thumbnails/',
-    thumbnailsBg: 'thumbnails/bg/',
-    thumbnailsAvatar: 'thumbnails/avatar/',
-    themes: 'public/themes',
-    movingUI: 'public/movingUI',
-    extensions: 'public/scripts/extensions',
-    instruct: 'public/instruct',
-    context: 'public/context',
     backups: 'backups/',
-    quickreplies: 'public/QuickReplies',
-    assets: 'public/assets',
-    comfyWorkflows: 'public/user/workflows',
-    files: 'public/user/files',
     sounds: 'public/sounds',
 };
+
+/**
+ * @type {import('./users').UserDirectoryList}
+ * @readonly
+ * @enum {string}
+ */
+const USER_DIRECTORY_TEMPLATE = Object.freeze({
+    root: '',
+    thumbnails: 'thumbnails',
+    thumbnailsBg: 'thumbnails/bg',
+    thumbnailsAvatar: 'thumbnails/avatar',
+    worlds: 'worlds',
+    user: 'user',
+    avatars: 'User Avatars',
+    userImages: 'user/images',
+    groups: 'groups',
+    groupChats: 'group chats',
+    chats: 'chats',
+    characters: 'characters',
+    backgrounds: 'backgrounds',
+    novelAI_Settings: 'NovelAI Settings',
+    koboldAI_Settings: 'KoboldAI Settings',
+    openAI_Settings: 'OpenAI Settings',
+    textGen_Settings: 'TextGen Settings',
+    themes: 'themes',
+    movingUI: 'movingUI',
+    extensions: 'scripts/extensions',
+    instruct: 'instruct',
+    context: 'context',
+    quickreplies: 'QuickReplies',
+    assets: 'assets',
+    comfyWorkflows: 'user/workflows',
+    files: 'user/files',
+});
+
+const DEFAULT_USER = Object.freeze({
+    uuid: '00000000-0000-0000-0000-000000000000',
+    handle: 'user0',
+    name: 'User',
+    created: 0,
+    password: '',
+});
 
 const UNSAFE_EXTENSIONS = [
     '.php',
@@ -270,7 +287,9 @@ const OPENROUTER_KEYS = [
 ];
 
 module.exports = {
-    DIRECTORIES,
+    DEFAULT_USER,
+    PUBLIC_DIRECTORIES,
+    USER_DIRECTORY_TEMPLATE,
     UNSAFE_EXTENSIONS,
     UPLOADS_PATH,
     GEMINI_SAFETY,

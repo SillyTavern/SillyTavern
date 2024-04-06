@@ -4,24 +4,25 @@ const express = require('express');
 const sanitize = require('sanitize-filename');
 const jimp = require('jimp');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const { DIRECTORIES } = require('../constants');
+const { getAllUserHandles, getUserDirectories } = require('../users');
 const { getConfigValue } = require('../util');
 const { jsonParser } = require('../express-common');
 
 /**
  * Gets a path to thumbnail folder based on the type.
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @param {'bg' | 'avatar'} type Thumbnail type
  * @returns {string} Path to the thumbnails folder
  */
-function getThumbnailFolder(type) {
+function getThumbnailFolder(directories, type) {
     let thumbnailFolder;
 
     switch (type) {
         case 'bg':
-            thumbnailFolder = DIRECTORIES.thumbnailsBg;
+            thumbnailFolder = directories.thumbnailsBg;
             break;
         case 'avatar':
-            thumbnailFolder = DIRECTORIES.thumbnailsAvatar;
+            thumbnailFolder = directories.thumbnailsAvatar;
             break;
     }
 
@@ -30,18 +31,19 @@ function getThumbnailFolder(type) {
 
 /**
  * Gets a path to the original images folder based on the type.
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @param {'bg' | 'avatar'} type Thumbnail type
  * @returns {string} Path to the original images folder
  */
-function getOriginalFolder(type) {
+function getOriginalFolder(directories, type) {
     let originalFolder;
 
     switch (type) {
         case 'bg':
-            originalFolder = DIRECTORIES.backgrounds;
+            originalFolder = directories.backgrounds;
             break;
         case 'avatar':
-            originalFolder = DIRECTORIES.characters;
+            originalFolder = directories.characters;
             break;
     }
 
@@ -50,11 +52,12 @@ function getOriginalFolder(type) {
 
 /**
  * Removes the generated thumbnail from the disk.
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @param {'bg' | 'avatar'} type Type of the thumbnail
  * @param {string} file Name of the file
  */
-function invalidateThumbnail(type, file) {
-    const folder = getThumbnailFolder(type);
+function invalidateThumbnail(directories, type, file) {
+    const folder = getThumbnailFolder(directories, type);
     if (folder === undefined) throw new Error('Invalid thumbnail type');
 
     const pathToThumbnail = path.join(folder, file);
@@ -66,13 +69,14 @@ function invalidateThumbnail(type, file) {
 
 /**
  * Generates a thumbnail for the given file.
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @param {'bg' | 'avatar'} type Type of the thumbnail
  * @param {string} file Name of the file
  * @returns
  */
-async function generateThumbnail(type, file) {
-    let thumbnailFolder = getThumbnailFolder(type);
-    let originalFolder = getOriginalFolder(type);
+async function generateThumbnail(directories, type, file) {
+    let thumbnailFolder = getThumbnailFolder(directories, type);
+    let originalFolder = getOriginalFolder(directories, type);
     if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type');
 
     const pathToCachedFile = path.join(thumbnailFolder, file);
@@ -133,24 +137,28 @@ async function generateThumbnail(type, file) {
  * @returns {Promise<void>} Promise that resolves when the cache is validated
  */
 async function ensureThumbnailCache() {
-    const cacheFiles = fs.readdirSync(DIRECTORIES.thumbnailsBg);
+    const userHandles = await getAllUserHandles();
+    for (const handle of userHandles) {
+        const directories = getUserDirectories(handle);
+        const cacheFiles = fs.readdirSync(directories.thumbnailsBg);
 
-    // files exist, all ok
-    if (cacheFiles.length) {
-        return;
+        // files exist, all ok
+        if (cacheFiles.length) {
+            return;
+        }
+
+        console.log('Generating thumbnails cache. Please wait...');
+
+        const bgFiles = fs.readdirSync(directories.backgrounds);
+        const tasks = [];
+
+        for (const file of bgFiles) {
+            tasks.push(generateThumbnail(directories, 'bg', file));
+        }
+
+        await Promise.all(tasks);
+        console.log(`Done! Generated: ${bgFiles.length} preview images`);
     }
-
-    console.log('Generating thumbnails cache. Please wait...');
-
-    const bgFiles = fs.readdirSync(DIRECTORIES.backgrounds);
-    const tasks = [];
-
-    for (const file of bgFiles) {
-        tasks.push(generateThumbnail('bg', file));
-    }
-
-    await Promise.all(tasks);
-    console.log(`Done! Generated: ${bgFiles.length} preview images`);
 }
 
 const router = express.Router();
@@ -176,13 +184,13 @@ router.get('/', jsonParser, async function (request, response) {
     }
 
     if (getConfigValue('disableThumbnails', false) == true) {
-        let folder = getOriginalFolder(type);
+        let folder = getOriginalFolder(request.user.directories, type);
         if (folder === undefined) return response.sendStatus(400);
         const pathToOriginalFile = path.join(folder, file);
         return response.sendFile(pathToOriginalFile, { root: process.cwd() });
     }
 
-    const pathToCachedFile = await generateThumbnail(type, file);
+    const pathToCachedFile = await generateThumbnail(request.user.directories, type, file);
 
     if (!pathToCachedFile) {
         return response.sendStatus(404);

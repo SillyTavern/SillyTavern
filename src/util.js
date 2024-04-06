@@ -8,7 +8,7 @@ const yaml = require('yaml');
 const { default: simpleGit } = require('simple-git');
 const { Readable } = require('stream');
 
-const { DIRECTORIES } = require('./constants');
+const { PUBLIC_DIRECTORIES } = require('./constants');
 
 /**
  * Returns the config object from the config.yaml file.
@@ -355,9 +355,9 @@ function generateTimestamp() {
 function removeOldBackups(prefix) {
     const MAX_BACKUPS = 25;
 
-    let files = fs.readdirSync(DIRECTORIES.backups).filter(f => f.startsWith(prefix));
+    let files = fs.readdirSync(PUBLIC_DIRECTORIES.backups).filter(f => f.startsWith(prefix));
     if (files.length > MAX_BACKUPS) {
-        files = files.map(f => path.join(DIRECTORIES.backups, f));
+        files = files.map(f => path.join(PUBLIC_DIRECTORIES.backups, f));
         files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
 
         fs.rmSync(files[0]);

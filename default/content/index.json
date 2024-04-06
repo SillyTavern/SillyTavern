@@ -1,5 +1,9 @@
 [
     {
+        "filename": "settings.json",
+        "type": "settings"
+    },
+    {
         "filename": "themes/Dark Lite.json",
         "type": "theme"
     },

@@ -1,4 +1,6 @@
 # -- NETWORK CONFIGURATION --
+# Root directory for user data storage
+dataRoot: ./data
 # Listen for incoming connections
 listen: false
 # Server port
