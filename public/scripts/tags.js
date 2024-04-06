@@ -431,10 +431,13 @@ export function getTagKeyForEntity(entityOrKey) {
  * Checks for a tag key based on an entity for a given element.
  * It checks the given element and upwards parents for a set character id (chid) or group id (grid), and if there is any, returns its unique entity key.
  *
- * @param {JQuery<HTMLElement>} element - The element to search the entity id on
+ * @param {JQuery<HTMLElement>|string} element - The element to search the entity id on
  * @returns {string|undefined} The tag key that can be found.
  */
 export function getTagKeyForEntityElement(element) {
+    if (typeof element === 'string') {
+        element = $(element);
+    }
     // Start with the given element and traverse up the DOM tree
     while (element.length && element.parent().length) {
         const grid = element.attr('grid');
@@ -653,7 +656,7 @@ function createNewTag(tagName) {
  * @param {PrintTagListOptions} [options] - Optional parameters for printing the tag list.
  */
 function printTagList(element, { tags = undefined, addTag = undefined, forEntityOrKey = undefined, empty = true, tagActionSelector = undefined, tagOptions = {} } = {}) {
-    const $element = (typeof element === "string") ? $(element) : element;
+    const $element = (typeof element === 'string') ? $(element) : element;
     const key = forEntityOrKey !== undefined ? getTagKeyForEntity(forEntityOrKey) : getTagKey();
     let printableTags = tags ? (typeof tags === 'function' ? tags() : tags) : getTagsList(key);
 
@@ -675,7 +678,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
 
     // We prepare some stuff. No matter which list we have, there is a maximum value of tags we are going to display
     const TAGS_LIMIT = 50;
-    const MAX_TAGS = !expanded ? TAGS_LIMIT : Number.MAX_VALUE;
+    const MAX_TAGS = !expanded ? TAGS_LIMIT : Number.MAX_SAFE_INTEGER;
     let totalPrinted = 0;
     let hiddenTags = 0;
     const filterActive = (/** @type {Tag} */ tag) => tag.filter_state && !isFilterState(tag.filter_state, FILTER_STATES.UNDEFINED);
@@ -702,7 +705,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
     // After the loop, check if we need to add the placeholder.
     // The placehold if clicked expands the tags and remembers either via class or cache array which was expanded, so it'll stay expanded until the next reload.
     if (hiddenTags > 0) {
-        const id = "placeholder_" + uuidv4();
+        const id = 'placeholder_' + uuidv4();
 
         // Add click event
         const showHiddenTags = (event) => {
@@ -720,7 +723,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
 
         // Print the placeholder object with its styling and action to show the remaining tags
         /** @type {Tag} */
-        const placeholderTag = { id: id, name: "...", title: `${hiddenTags} tags not displayed.\n\nClick to expand remaining tags.`, color: 'transparent', action: showHiddenTags, class: 'placeholder-expander' };
+        const placeholderTag = { id: id, name: '...', title: `${hiddenTags} tags not displayed.\n\nClick to expand remaining tags.`, color: 'transparent', action: showHiddenTags, class: 'placeholder-expander' };
         // It should never be marked as a removable tag, because it's just an expander action
         /** @type {TagOptions} */
         const placeholderTagOptions = { ...tagOptions, removable: false };
