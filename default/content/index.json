@@ -1,5 +1,13 @@
 [
     {
+        "filename": "themes/Dark Lite.json",
+        "type": "theme"
+    },
+    {
+        "filename": "themes/Cappuccino.json",
+        "type": "theme"
+    },
+    {
         "filename": "default_Seraphina.png",
         "type": "character"
     },
