@@ -7,37 +7,13 @@ const { getConfigValue } = require('../util');
 const { jsonParser } = require('../express-common');
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
-const { getAllUserHandles, getUserDirectories } = require('../users');
 const characterCardParser = require('../character-card-parser.js');
-const { PUBLIC_DIRECTORIES } = require('../constants');
 
 /**
  * @typedef {Object} ContentItem
  * @property {string} filename
  * @property {string} type
  */
-
-/**
- * Ensures that the content directories exist.
- * @returns {Promise<void>}
- */
-async function ensurePublicDirectoriesExist() {
-    for (const dir of Object.values(PUBLIC_DIRECTORIES)) {
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-    }
-
-    const userHandles = await getAllUserHandles();
-    for (const handle of userHandles) {
-        const userDirectories = getUserDirectories(handle);
-        for (const dir of Object.values(userDirectories)) {
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-            }
-        }
-    }
-}
 
 /**
  * Gets the default presets from the content directory.
@@ -90,11 +66,9 @@ function getDefaultPresetFile(filename) {
 /**
  * Seeds content for a user.
  * @param {ContentItem[]} contentIndex Content index
- * @param {string} userHandle User handle
+ * @param {import('../users').UserDirectoryList} directories User directories
  */
-async function seedContentForUser(contentIndex, userHandle) {
-    const directories = getUserDirectories(userHandle);
-
+async function seedContentForUser(contentIndex, directories) {
     if (!fs.existsSync(directories.root)) {
         fs.mkdirSync(directories.root, { recursive: true });
     }
@@ -140,10 +114,10 @@ async function seedContentForUser(contentIndex, userHandle) {
 
 /**
  * Checks for new content and seeds it for all users.
- * @param {string} [userHandle] User to check the content for (optional)
+ * @param {import('../users').UserDirectoryList[]} directoriesList List of user directories
  * @returns {Promise<void>}
  */
-async function checkForNewContent(userHandle) {
+async function checkForNewContent(directoriesList) {
     try {
         if (getConfigValue('skipContentCheck', false)) {
             return;
@@ -151,15 +125,9 @@ async function checkForNewContent(userHandle) {
 
         const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
         const contentIndex = JSON.parse(contentIndexText);
-        const userHandles = await getAllUserHandles();
 
-        if (userHandle && userHandles.includes(userHandle)) {
-            await seedContentForUser(contentIndex, userHandle);
-            return;
-        }
-
-        for (const userHandle of userHandles) {
-            await seedContentForUser(contentIndex, userHandle);
+        for (const directories of directoriesList) {
+            await seedContentForUser(contentIndex, directories);
         }
     } catch (err) {
         console.log('Content check failed', err);
@@ -509,7 +477,6 @@ router.post('/importUUID', jsonParser, async (request, response) => {
 });
 
 module.exports = {
-    ensurePublicDirectoriesExist,
     checkForNewContent,
     getDefaultPresets,
     getDefaultPresetFile,

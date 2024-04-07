@@ -10,7 +10,7 @@ const { getConfigValue, color, delay, setConfigValue, Cache } = require('./util'
 const express = require('express');
 const { readSecret, writeSecret } = require('./endpoints/secrets');
 const { jsonParser } = require('./express-common');
-const contentManager = require('./endpoints/content-manager');
+const { checkForNewContent } = require('./endpoints/content-manager');
 
 const DATA_ROOT = getConfigValue('dataRoot', './data');
 const MFA_CACHE = new Cache(5 * 60 * 1000);
@@ -72,6 +72,29 @@ const STORAGE_KEYS = {
  * @property {string} files - The directory where the uploaded files are stored
  * @property {string} vectors - The directory where the vectors are stored
  */
+
+/**
+ * Ensures that the content directories exist.
+ * @returns {Promise<import('./users').UserDirectoryList[]>} - The list of user directories
+ */
+async function ensurePublicDirectoriesExist() {
+    for (const dir of Object.values(PUBLIC_DIRECTORIES)) {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+    }
+
+    const userHandles = await getAllUserHandles();
+    const directoriesList = userHandles.map(handle => getUserDirectories(handle));
+    for (const userDirectories of directoriesList) {
+        for (const dir of Object.values(userDirectories)) {
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+        }
+    }
+    return directoriesList;
+}
 
 /**
  * Perform migration from the old user data format to the new one.
@@ -607,8 +630,8 @@ endpoints.post('/create', requireAdminMiddleware, jsonParser, async (request, re
 
     // Create user directories
     console.log('Creating data directories for', newUser.handle);
-    await contentManager.ensurePublicDirectoriesExist();
-    await contentManager.checkForNewContent(newUser.handle);
+    const directories = await ensurePublicDirectoriesExist();
+    await checkForNewContent(directories);
     return response.json({ handle: newUser.handle });
 });
 
@@ -616,6 +639,7 @@ router.use('/api/users', endpoints);
 
 module.exports = {
     initUserStorage,
+    ensurePublicDirectoriesExist,
     getCurrentUserDirectories,
     getCurrentUserHandle,
     getAllUserHandles,

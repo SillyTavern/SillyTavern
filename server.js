@@ -20,6 +20,7 @@ const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const responseTime = require('response-time');
+const helmet = require('helmet').default;
 
 // net related library imports
 const net = require('net');
@@ -34,6 +35,7 @@ util.inspect.defaultOptions.depth = 4;
 // local library imports
 const {
     initUserStorage,
+    ensurePublicDirectoriesExist,
     userDataMiddleware,
     migrateUserData,
     getCsrfSecret,
@@ -109,6 +111,9 @@ const serverDirectory = __dirname;
 process.chdir(serverDirectory);
 
 const app = express();
+app.use(helmet({
+    contentSecurityPolicy: false,
+}));
 app.use(compression());
 app.use(responseTime());
 
@@ -474,9 +479,9 @@ const setupTasks = async function () {
     // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
     await initUserStorage();
     await settingsEndpoint.init();
-    await contentManager.ensurePublicDirectoriesExist();
+    const directories = await ensurePublicDirectoriesExist();
     await migrateUserData();
-    contentManager.checkForNewContent();
+    await contentManager.checkForNewContent(directories);
     await ensureThumbnailCache();
     cleanUploads();
 
