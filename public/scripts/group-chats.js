@@ -378,10 +378,10 @@ export function getGroupCharacterCards(groupId, characterId) {
         mesExamplesArray.push(baseChatReplace(character.mes_example.trim(), name1, character.name));
     }
 
-    const description = descriptions.join('\n');
-    const personality = personalities.join('\n');
-    const scenario = scenarioOverride?.trim() || scenarios.join('\n');
-    const mesExamples = mesExamplesArray.join('\n');
+    const description = descriptions.filter(x => x.length).join('\n');
+    const personality = personalities.filter(x => x.length).join('\n');
+    const scenario = scenarioOverride?.trim() || scenarios.filter(x => x.length).join('\n');
+    const mesExamples = mesExamplesArray.filter(x => x.length).join('\n');
 
     return { description, personality, scenario, mesExamples };
 }
