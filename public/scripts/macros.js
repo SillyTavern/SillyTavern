@@ -189,10 +189,10 @@ function pickReplace(input, rawContent, emptyListPlaceholder = '') {
     const pickPattern = /{{pick\s?::?([^}]+)}}/gi;
 
     // We need to have a consistent chat hash, otherwise we'll lose rolls on chat file rename or branch switches
+    // No need to save metadata here - branching and renaming will implicitly do the save for us, and until then loading it like this is consistent
     const chatIdHash = chat_metadata['chat_id_hash'];
     if (!chatIdHash) {
-        chat_metadata['chat_id_hash'] = getStringHash(getCurrentChatId());
-        saveMetadataDebounced();
+        chat_metadata['chat_id_hash'] = getStringHash(chat_metadata['main_chat'] ?? getCurrentChatId());
     }
     const rawContentHash = getStringHash(rawContent);
 
