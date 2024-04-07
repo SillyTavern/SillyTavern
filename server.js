@@ -35,8 +35,6 @@ util.inspect.defaultOptions.depth = 4;
 const {
     initUserStorage,
     userDataMiddleware,
-    getUserDirectories,
-    getAllUserHandles,
     migrateUserData,
     getCsrfSecret,
     getCookieSecret,
@@ -120,7 +118,7 @@ const listen = cliArguments.listen ?? getConfigValue('listen', DEFAULT_LISTEN);
 const enableCorsProxy = cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', DEFAULT_CORS_PROXY);
 const basicAuthMode = getConfigValue('basicAuthMode', false);
 
-const { UPLOADS_PATH, PUBLIC_DIRECTORIES } = require('./src/constants');
+const { UPLOADS_PATH } = require('./src/constants');
 
 // CORS Settings //
 const CORS = cors({
@@ -476,7 +474,7 @@ const setupTasks = async function () {
     // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
     await initUserStorage();
     await settingsEndpoint.init();
-    ensurePublicDirectoriesExist();
+    await contentManager.ensurePublicDirectoriesExist();
     await migrateUserData();
     contentManager.checkForNewContent();
     await ensureThumbnailCache();
@@ -566,22 +564,4 @@ if (cliArguments.ssl) {
         tavernUrl.hostname,
         setupTasks,
     );
-}
-
-async function ensurePublicDirectoriesExist() {
-    for (const dir of Object.values(PUBLIC_DIRECTORIES)) {
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-    }
-
-    const userHandles = await getAllUserHandles();
-    for (const handle of userHandles) {
-        const userDirectories = getUserDirectories(handle);
-        for (const dir of Object.values(userDirectories)) {
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-            }
-        }
-    }
 }

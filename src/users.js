@@ -2,12 +2,18 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const storage = require('node-persist');
-const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES } = require('./constants');
-const { getConfigValue, color, delay, setConfigValue } = require('./util');
+const uuid = require('uuid');
+const mime = require('mime-types');
+const slugify = require('slugify').default;
+const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, DEFAULT_AVATAR } = require('./constants');
+const { getConfigValue, color, delay, setConfigValue, Cache } = require('./util');
 const express = require('express');
 const { readSecret, writeSecret } = require('./endpoints/secrets');
+const { jsonParser } = require('./express-common');
+const contentManager = require('./endpoints/content-manager');
 
 const DATA_ROOT = getConfigValue('dataRoot', './data');
+const MFA_CACHE = new Cache(5 * 60 * 1000);
 
 const STORAGE_KEYS = {
     users: 'users',
@@ -22,8 +28,18 @@ const STORAGE_KEYS = {
  * @property {string} name - The user's name. Displayed in the UI
  * @property {number} created - The timestamp when the user was created
  * @property {string} password - SHA256 hash of the user's password
+ * @property {string} salt - Salt used for hashing the password
  * @property {boolean} enabled - Whether the user is enabled
  * @property {boolean} admin - Whether the user is an admin (can manage other users)
+ */
+
+/**
+ * @typedef {Object} UserViewModel
+ * @property {string} handle - The user's short handle. Used for directories and other references
+ * @property {string} name - The user's name. Displayed in the UI
+ * @property {string} avatar - The user's avatar image
+ * @property {boolean} admin - Whether the user is an admin (can manage other users)
+ * @property {boolean} password - Whether the user is password protected
  */
 
 /**
@@ -284,6 +300,10 @@ function getCookieSecret() {
     return secret;
 }
 
+function getPasswordSalt() {
+    return crypto.randomBytes(16).toString('base64');
+}
+
 /**
  * Get the CSRF secret from the storage.
  * @param {import('express').Request} [request] HTTP request object
@@ -314,11 +334,12 @@ async function getCurrentUserHandle(_req) {
 }
 
 /**
- * Gets a list of all user handles. Currently hard coded to return the default user's handle.
+ * Gets a list of all user handles.
  * @returns {Promise<string[]>} - The list of user handles
  */
 async function getAllUserHandles() {
-    return [DEFAULT_USER.handle];
+    const users = await storage.getItem(STORAGE_KEYS.users);
+    return users.map(user => user.handle);
 }
 
 /**
@@ -384,6 +405,26 @@ function createRouteHandler(directoryFn) {
 }
 
 /**
+ * Verifies that the current user is an admin.
+ * @param {import('express').Request} request Request object
+ * @param {import('express').Response} response Response object
+ * @param {import('express').NextFunction} next Next function
+ * @returns {any}
+ */
+function requireAdminMiddleware(request, response, next) {
+    if (!request.user) {
+        return response.sendStatus(401);
+    }
+
+    if (request.user.profile.admin) {
+        return next();
+    }
+
+    console.warn('Unauthorized access to admin endpoint:', request.originalUrl);
+    return response.sendStatus(403);
+}
+
+/**
  * Express router for serving files from the user's directories.
  */
 const router = express.Router();
@@ -394,6 +435,184 @@ router.use('/assets/*', createRouteHandler(req => req.user.directories.assets));
 router.use('/user/images/*', createRouteHandler(req => req.user.directories.userImages));
 router.use('/user/files/*', createRouteHandler(req => req.user.directories.files));
 router.use('/scripts/extensions/third-party/*', createRouteHandler(req => req.user.directories.extensions));
+
+const endpoints = express.Router();
+
+/**
+ * Hashes a password using SHA256.
+ * @param {string} password Password to hash
+ * @param {string} salt Salt to use for hashing
+ * @returns {string} Hashed password
+ */
+function getPasswordHash(password, salt) {
+    return crypto.createHash('sha256').update(password + salt).digest('hex');
+}
+
+endpoints.get('/list', async (_request, response) => {
+    /** @type {User[]} */
+    const users = await storage.getItem(STORAGE_KEYS.users);
+    const viewModels = users.filter(x => x.enabled).map(user => ({
+        handle: user.handle,
+        name: user.name,
+        avatar: DEFAULT_AVATAR,
+        admin: user.admin,
+        password: !!user.password,
+    }));
+
+    // Load avatars for each user
+    for (const user of viewModels) {
+        try {
+            const directory = getUserDirectories(user.handle);
+            const pathToSettings = path.join(directory.root, 'settings.json');
+            const settings = fs.existsSync(pathToSettings) ? JSON.parse(fs.readFileSync(pathToSettings, 'utf8')) : {};
+            const avatarFile = settings?.power_user?.default_persona || settings?.user_avatar;
+            if (!avatarFile) {
+                continue;
+            }
+            const avatarPath = path.join(directory.avatars, avatarFile);
+            if (!fs.existsSync(avatarPath)) {
+                continue;
+            }
+            const mimeType = mime.lookup(avatarPath);
+            const base64Content = fs.readFileSync(avatarPath, 'base64');
+            user.avatar = `data:${mimeType};base64,${base64Content}`;
+        } catch {
+            // Ignore errors
+        }
+    }
+
+    return response.json(viewModels);
+});
+
+endpoints.post('/recover-step1', jsonParser, async (request, response) => {
+    if (!request.body.handle) {
+        console.log('Recover step 1 failed: Missing required fields');
+        return response.status(400).json({ error: 'Missing required fields' });
+    }
+
+    /** @type {User[]} */
+    const users = await storage.getItem(STORAGE_KEYS.users);
+    const user = users.find(user => user.handle === request.body.handle);
+
+    if (!user) {
+        console.log('Recover step 1 failed: User not found');
+        return response.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.enabled) {
+        console.log('Recover step 1 failed: User is disabled');
+        return response.status(403).json({ error: 'User is disabled' });
+    }
+
+    const mfaCode = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    console.log(color.blue(`${user.name} YOUR PASSWORD RECOVERY CODE IS: `) +  color.magenta(mfaCode));
+    MFA_CACHE.set(user.handle, mfaCode);
+    return response.sendStatus(204);
+});
+
+endpoints.post('/recover-step2', jsonParser, async (request, response) => {
+    if (!request.body.handle || !request.body.code || !request.body.password) {
+        console.log('Recover step 2 failed: Missing required fields');
+        return response.status(400).json({ error: 'Missing required fields' });
+    }
+
+    /** @type {User[]} */
+    const users = await storage.getItem(STORAGE_KEYS.users);
+    const user = users.find(user => user.handle === request.body.handle);
+
+    if (!user) {
+        console.log('Recover step 2 failed: User not found');
+        return response.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.enabled) {
+        console.log('Recover step 2 failed: User is disabled');
+        return response.status(403).json({ error: 'User is disabled' });
+    }
+
+    const mfaCode = MFA_CACHE.get(user.handle);
+
+    if (request.body.code !== mfaCode) {
+        console.log('Recover step 2 failed: Incorrect code');
+        return response.status(401).json({ error: 'Incorrect code' });
+    }
+
+    const salt = getPasswordSalt();
+    user.password = getPasswordHash(request.body.password, salt);
+    user.salt = salt;
+    await storage.setItem(STORAGE_KEYS.users, users);
+    return response.sendStatus(204);
+});
+
+endpoints.post('/login', jsonParser, async (request, response) => {
+    if (!request.body.handle || !request.body.password) {
+        console.log('Login failed: Missing required fields');
+        return response.status(400).json({ error: 'Missing required fields' });
+    }
+
+    /** @type {User[]} */
+    const users = await storage.getItem(STORAGE_KEYS.users);
+    const user = users.find(user => user.handle === request.body.handle);
+
+    if (!user) {
+        console.log('Login failed: User not found');
+        return response.status(401).json({ error: 'User not found' });
+    }
+
+    if (!user.enabled) {
+        console.log('Login failed: User is disabled');
+        return response.status(403).json({ error: 'User is disabled' });
+    }
+
+    if (user.password !== getPasswordHash(request.body.password, user.salt)) {
+        console.log('Login failed: Incorrect password');
+        return response.status(401).json({ error: 'Incorrect password' });
+    }
+
+    console.log('Login successful:', user.handle);
+    return response.json({ handle: user.handle });
+});
+
+endpoints.post('/create', requireAdminMiddleware, jsonParser, async (request, response) => {
+    if (!request.body.handle || !request.body.name) {
+        console.log('Create user failed: Missing required fields');
+        return response.status(400).json({ error: 'Missing required fields' });
+    }
+
+    /** @type {User[]} */
+    const users = await storage.getItem(STORAGE_KEYS.users);
+    const handle = slugify(request.body.handle, { lower: true, trim: true });
+
+    if (users.some(user => user.handle === request.body.handle)) {
+        console.log('Create user failed: User with that handle already exists');
+        return response.status(409).json({ error: 'User already exists' });
+    }
+
+    const salt = getPasswordSalt();
+    const password = request.body.password ? getPasswordHash(request.body.password, salt) : '';
+
+    const newUser = {
+        uuid: uuid.v4(),
+        handle: handle,
+        name: request.body.name || 'Anonymous',
+        created: Date.now(),
+        password: password,
+        salt: salt,
+        admin: !!request.body.admin,
+        enabled: !!request.body.enabled,
+    };
+
+    users.push(newUser);
+    await storage.setItem(STORAGE_KEYS.users, users);
+
+    // Create user directories
+    console.log('Creating data directories for', newUser.handle);
+    await contentManager.ensurePublicDirectoriesExist();
+    await contentManager.checkForNewContent(newUser.handle);
+    return response.json({ handle: newUser.handle });
+});
+
+router.use('/api/users', endpoints);
 
 module.exports = {
     initUserStorage,
