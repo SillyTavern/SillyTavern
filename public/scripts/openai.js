@@ -1765,7 +1765,8 @@ async function sendOpenAIRequest(type, messages, signal) {
 }
 
 function getStreamingReply(data) {
-    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE ||
+        oai_settings.chat_completion_source == chat_completion_sources.BEDROCK) {
         return data?.delta?.text || '';
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';

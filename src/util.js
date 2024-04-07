@@ -405,11 +405,25 @@ function forwardFetchResponse(from, to) {
  * @param {Express.Response} to The Express response to pipe to.
  */
 async function forwardBedrockStreamResponse(from, to) {
+    to.header('Content-Type', 'text/event-stream');
+    to.header('Cache-Control', 'no-cache');
+    to.header('Connection', 'keep-alive');
+    to.flushHeaders(); // flush the headers to establish SSE with client
+
+    const readable = new Readable({
+        read() {}
+    });
+
+    readable.pipe(to);
+
     for await (const event of from.body) {
+        let respCode = from.$metadata.httpStatusCode;
+
         if (event.chunk && event.chunk.bytes) {
-            const chunk = JSON.parse(Buffer.from(event.chunk.bytes).toString("utf-8"));
+            const chunk = Buffer.from(event.chunk.bytes).toString("utf-8");
+            const chunk_json = JSON.parse(chunk);
             // chunks.push(chunk.completion); // change this line
-            to.write(chunk);
+            readable.push(`event: ${chunk_json.type}\ndata: ${chunk}\n\n`);
         } else if (
             event.internalServerException ||
             event.modelStreamErrorException ||
@@ -421,8 +435,16 @@ async function forwardBedrockStreamResponse(from, to) {
         }
     }
 
+    to.socket.on('close', function () {
+        readable.destroy(); // Close the remote stream
+        to.end(); // End the Express response
+    });
+
+    readable.push('data: [DONE]')
+    readable.push(null);
     to.end();
 }
+
 /* Makes an HTTP/2 request to the specified endpoint.
  *
  * @deprecated Use `node-fetch` if possible.

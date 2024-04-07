@@ -510,13 +510,10 @@ async function sendBedrockRequest(request, response) {
 
         console.log('Claude request:', JSON.stringify(bedrockClaudeRequestBody));
         if (request.body.stream) {
-            console.error('Streaming mode for Bedrock Claude is WIP.')
-            return response.sendStatus(500);
-            // const respBedrockStream = await invokeModelWithStreaming('us-east-1', bedrockClaudeRequestBody);
+            const respBedrockStream = await invokeModelWithStreaming('us-east-1', bedrockClaudeRequestBody);
 
-            // await forwardBedrockStreamResponse(respBedrockStream, response);
             // Pipe remote SSE stream to Express response
-            // forwardFetchResponse(generateResponse, response);
+            forwardBedrockStreamResponse(respBedrockStream, response);
         } else {
             // if (!generateResponse.ok) {
             //     console.log(color.red(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText}\n${await generateResponse.text()}\n${divider}`));
