@@ -136,7 +136,7 @@ app.use(CORS);
 if (listen && basicAuthMode) app.use(basicAuthMiddleware);
 
 app.use(whitelistMiddleware(listen));
-app.use(userDataMiddleware());
+app.use(userDataMiddleware(app));
 
 // CSRF Protection //
 if (!cliArguments.disableCsrf) {
@@ -227,6 +227,10 @@ app.use('/', require('./src/users').router);
 app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
 app.get('/', function (request, response) {
     response.sendFile(process.cwd() + '/public/index.html');
+});
+// Host login page
+app.get('/login', (_request, response) => {
+    return response.sendFile('login.html', { root: path.join(process.cwd(), 'public') });
 });
 app.get('/version', async function (_, response) {
     const data = await getVersion();

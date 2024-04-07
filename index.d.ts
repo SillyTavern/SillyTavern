@@ -10,3 +10,10 @@ declare global {
         }
     }
 }
+
+declare module 'express-session' {
+    export interface SessionData {
+      handle: string;
+      // other properties...
+    }
+  }
