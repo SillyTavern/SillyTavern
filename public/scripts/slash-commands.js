@@ -2081,6 +2081,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                     }
                     return;
                 }
+                case 'Enter':
                 case 'Tab': {
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey) return;
                     evt.preventDefault();
