@@ -11,7 +11,7 @@ const MODULE_NAME = 'expressions';
 const UPDATE_INTERVAL = 2000;
 const STREAMING_UPDATE_INTERVAL = 6000;
 const TALKINGCHECK_UPDATE_INTERVAL = 500;
-const FALLBACK_EXPRESSION = 'joy';
+const DEFAULT_FALLBACK_EXPRESSION = 'joy';
 const DEFAULT_EXPRESSIONS = [
     'talkinghead',
     'admiration',
@@ -56,6 +56,14 @@ export let lastExpression = {};
 
 function isTalkingHeadEnabled() {
     return extension_settings.expressions.talkinghead && !extension_settings.expressions.local;
+}
+
+/**
+ * Returns the fallback expression if explicitly chosen, otherwise the default one
+ * @returns {string} expression name
+ */
+function getFallbackExpression() {
+    return extension_settings.expressions.fallback_expression ?? DEFAULT_FALLBACK_EXPRESSION;
 }
 
 /**
@@ -157,7 +165,8 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
 
         const sprites = spriteCache[spriteFolderName];
         const expressionImage = container.find(`.expression-holder[data-avatar="${avatar}"]`);
-        const defaultSpritePath = sprites.find(x => x.label === FALLBACK_EXPRESSION)?.path;
+        const defaultExpression = getFallbackExpression();
+        const defaultSpritePath = sprites.find(x => x.label === defaultExpression)?.path;
         const noSprites = sprites.length === 0;
 
         if (expressionImage.length > 0) {
@@ -568,7 +577,7 @@ function handleImageChange() {
         // This preserves the same expression Talkinghead had at the moment it was switched off.
         const charName = getContext().name2;
         const last = lastExpression[charName];
-        const targetExpression = last ? last : FALLBACK_EXPRESSION;
+        const targetExpression = last ? last : getFallbackExpression();
         setExpression(charName, targetExpression, true);
     }
 }
@@ -691,8 +700,8 @@ async function moduleWorker() {
         const force = !!context.groupId;
 
         // Character won't be angry on you for swiping
-        if (currentLastMessage.mes == '...' && expressionsList.includes(FALLBACK_EXPRESSION)) {
-            expression = FALLBACK_EXPRESSION;
+        if (currentLastMessage.mes == '...' && expressionsList.includes(getFallbackExpression())) {
+            expression = getFallbackExpression();
         }
 
         await sendExpressionCall(spriteFolderName, expression, force, vnMode);
@@ -965,7 +974,7 @@ function sampleClassifyText(text) {
 async function getExpressionLabel(text) {
     // Return if text is undefined, saving a costly fetch request
     if ((!modules.includes('classify') && !extension_settings.expressions.local) || !text) {
-        return FALLBACK_EXPRESSION;
+        return getFallbackExpression();
     }
 
     text = sampleClassifyText(text);
@@ -1004,7 +1013,7 @@ async function getExpressionLabel(text) {
         }
     } catch (error) {
         console.log(error);
-        return FALLBACK_EXPRESSION;
+        return getFallbackExpression();
     }
 }
 
@@ -1108,6 +1117,11 @@ async function getSpritesList(name) {
     }
 }
 
+async function renderAdditionalExpressionSettings() {
+    renderCustomExpressions();
+    await renderFallbackExpressionPicker();
+}
+
 function renderCustomExpressions() {
     if (!Array.isArray(extension_settings.expressions.custom)) {
         extension_settings.expressions.custom = [];
@@ -1125,6 +1139,23 @@ function renderCustomExpressions() {
 
     if (customExpressions.length === 0) {
         $('#expression_custom').append('<option value="" disabled selected>[ No custom expressions ]</option>');
+    }
+}
+
+async function renderFallbackExpressionPicker() {
+    const expressions = await getExpressionsList();
+
+    const defaultPicker = $('#expression_fallback');
+    defaultPicker.empty();
+
+    const fallbackExpression = getFallbackExpression();
+
+    for (const expression of expressions) {
+        const option = document.createElement('option');
+        option.value = expression;
+        option.text = expression;
+        option.selected = expression == fallbackExpression;
+        defaultPicker.append(option);
     }
 }
 
@@ -1365,7 +1396,7 @@ async function onClickExpressionAddCustom() {
 
     // Add custom expression into settings
     extension_settings.expressions.custom.push(expressionName);
-    renderCustomExpressions();
+    await renderAdditionalExpressionSettings();
     saveSettingsDebounced();
 
     // Force refresh sprites list
@@ -1392,13 +1423,21 @@ async function onClickExpressionRemoveCustom() {
     // Remove custom expression from settings
     const index = extension_settings.expressions.custom.indexOf(selectedExpression);
     extension_settings.expressions.custom.splice(index, 1);
-    renderCustomExpressions();
+    await renderAdditionalExpressionSettings();
     saveSettingsDebounced();
 
     // Force refresh sprites list
     expressionsList = null;
     spriteCache = {};
     moduleWorker();
+}
+
+function onExpressionFallbackChanged() {
+    const expression = this.value;
+    if (expression) {
+        extension_settings.expressions.fallback_expression = expression;
+        saveSettingsDebounced();
+    }
 }
 
 async function handleFileUpload(url, formData) {
@@ -1648,7 +1687,7 @@ async function fetchImagesNoCache() {
     return await Promise.allSettled(promises);
 }
 
-(function () {
+(async function () {
     function addExpressionImage() {
         const html = `
         <div id="expression-wrapper">
@@ -1668,7 +1707,7 @@ async function fetchImagesNoCache() {
         element.hide();
         $('body').append(element);
     }
-    function addSettings() {
+    async function addSettings() {
         $('#extensions_settings').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
         $('#expression_override_button').on('click', onClickExpressionOverrideButton);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
@@ -1696,10 +1735,11 @@ async function fetchImagesNoCache() {
             }
         });
 
-        renderCustomExpressions();
+        await renderAdditionalExpressionSettings();
 
         $('#expression_custom_add').on('click', onClickExpressionAddCustom);
         $('#expression_custom_remove').on('click', onClickExpressionRemoveCustom);
+        $('#expression_fallback').on('change', onExpressionFallbackChanged)
     }
 
     // Pause Talkinghead to save resources when the ST tab is not visible or the window is minimized.
@@ -1732,7 +1772,7 @@ async function fetchImagesNoCache() {
 
     addExpressionImage();
     addVisualNovelMode();
-    addSettings();
+    await addSettings();
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     const updateFunction = wrapper.update.bind(wrapper);
     setInterval(updateFunction, UPDATE_INTERVAL);
