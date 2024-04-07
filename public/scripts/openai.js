@@ -217,6 +217,8 @@ const default_settings = {
     claude_model: 'claude-2.1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
+    bedrock_model: 'anthropic.claude-2.0',
+    bedrock_region: 'us-east-1',
     mistralai_model: 'mistral-medium-latest',
     custom_model: '',
     custom_url: '',
@@ -284,9 +286,9 @@ const oai_settings = {
     claude_model: 'claude-2.1',
     google_model: 'gemini-pro',
     ai21_model: 'j2-ultra',
-    bedrock_model: 'anthropic.claude-instant-v1',
-    bedrock_region: 'us-west-2',
-    mistralai_model: 'mistral-medium-latest',
+    bedrock_model: 'anthropic.claude-2.0',
+    bedrock_region: 'us-east-1',
+    mistralai_model: 'mistral-medium-latest-latest',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1636,26 +1638,13 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['logprobs'] = 5;
     }
 
-    if (isClaude) {
+    if (isClaude || isBedrock) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
         // Don't add a prefill on quiet gens (summarization)
         if (!isQuiet) {
-            generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
-        }
-    }
-
-    if (isBedrock) {
-        generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['exclude_assistant'] = oai_settings.exclude_assistant;
-        generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
-        generate_data['claude_exclude_prefixes'] = oai_settings.claude_exclude_prefixes;
-        generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
-        generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
-        // Don't add a prefill on quiet gens (summarization)
-        if (!isQuiet && !oai_settings.exclude_assistant) {
             generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
         }
     }
@@ -2549,6 +2538,8 @@ function loadOpenAISettings(data, settings) {
     oai_settings.ai21_model = settings.ai21_model ?? default_settings.ai21_model;
     oai_settings.mistralai_model = settings.mistralai_model ?? default_settings.mistralai_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
+    oai_settings.bedrock_model = settings.bedrock_model ?? default_settings.bedrock_model;
+    oai_settings.bedrock_region = settings.bedrock_region ?? default_settings.bedrock_region;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
     oai_settings.custom_exclude_body = settings.custom_exclude_body ?? default_settings.custom_exclude_body;
@@ -2589,6 +2580,10 @@ function loadOpenAISettings(data, settings) {
     $('#claude_human_sysprompt_textarea').val(oai_settings.human_sysprompt_message);
     $('#openai_image_inlining').prop('checked', oai_settings.image_inlining);
     $('#openai_bypass_status_check').prop('checked', oai_settings.bypass_status_check);
+
+    $('#aws_region_select').val(oai_settings.bedrock_region);
+    $('#model_bedrock_select').val(oai_settings.bedrock_model);
+    $(`#model_openai_select option[value="${oai_settings.bedrock_model}"`).attr('selected', true);
 
     $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
@@ -3742,11 +3737,13 @@ async function onConnectButtonClick(e) {
         const access_key_aws = String($('#access_key_aws').val()).trim();
         const secret_key_aws = String($('#secret_key_aws').val()).trim();
 
-        await writeSecret(SECRET_KEYS.BEDROCK, [access_key_aws, secret_key_aws]);
+        if (access_key_aws.length > 0 && secret_key_aws.length > 0) {
+            await writeSecret(SECRET_KEYS.BEDROCK, [access_key_aws, secret_key_aws]);
 
-        if (!secret_state[SECRET_KEYS.BEDROCK]) {
-            console.log('No secret key saved for Amazon Bedrock');
-            return;
+            if (!secret_state[SECRET_KEYS.BEDROCK]) {
+                console.log('No secret key saved for Amazon Bedrock');
+                return;
+            }
         }
     }
     startStatusLoading();

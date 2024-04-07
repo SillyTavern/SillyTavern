@@ -16,7 +16,6 @@ import {
     this_chid,
     user_avatar,
 } from '../script.js';
-import { getContext } from './extensions.js';
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCount } from './tokenizers.js';
 import { debounce, delay, download, parseJsonFile } from './utils.js';
@@ -296,12 +295,6 @@ export function selectCurrentPersona() {
         }
 
         setPersonaDescription();
-
-        // force firstMes {{user}} update on persona switch
-        const context = getContext();
-        if (context.characterId >= 0 && !context.groupId && context.chat.length === 1) {
-            $('#firstmessage_textarea').trigger('input');
-        }
     }
 }
 

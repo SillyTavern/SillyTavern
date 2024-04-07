@@ -42,6 +42,13 @@
     width: 25px;
     height: 25px;
     margin-left: 5px;
+    opacity: 0.5;
+    transition: all 250ms;
+}
+
+.logprobs_panel_control_button:hover {
+    opacity: 1;
+    cursor: pointer;
 }
 
 #logprobs_generation_output {

@@ -32,6 +32,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.NOVEL]: '#api_key_novel',
     [SECRET_KEYS.CLAUDE]: '#api_key_claude',
     [SECRET_KEYS.OPENROUTER]: '.api_key_openrouter',
+    [SECRET_KEYS.OPENROUTER]: '.api_key_openrouter',
     [SECRET_KEYS.SCALE]: '#api_key_scale',
     [SECRET_KEYS.AI21]: '#api_key_ai21',
     [SECRET_KEYS.SCALE_COOKIE]: '#scale_cookie',
@@ -47,6 +48,10 @@ const INPUT_MAP = {
     [SECRET_KEYS.DREAMGEN]: '#api_key_dreamgen',
     [SECRET_KEYS.NOMICAI]: '#api_key_nomicai',
     [SECRET_KEYS.KOBOLDCPP]: '#api_key_koboldcpp',
+    [SECRET_KEYS.INFERMATICAI]: '#api_key_infermaticai',
+    [SECRET_KEYS.DREAMGEN]: '#api_key_dreamgen',
+    [SECRET_KEYS.NOMICAI]: '#api_key_nomicai',
+    [SECRET_KEYS.KOBOLDCPP]: '#api_key_koboldcpp',
 };
 
 async function clearSecret() {
@@ -54,7 +59,7 @@ async function clearSecret() {
     await writeSecret(key, '');
     secret_state[key] = false;
     updateSecretDisplay();
-    $(INPUT_MAP[key]).val('').trigger('input');
+    $(INPUT_MAP[key]).val('').trigger('input').trigger('input');
     if (key == SECRET_KEYS.BEDROCK) {
         $('#access_key_aws').val('').trigger('input');
         $('#secret_key_aws').val('').trigger('input');

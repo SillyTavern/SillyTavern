@@ -604,7 +604,7 @@ async function showExtensionsDetails() {
             ${htmlDefault}
             ${htmlExternal}
         `;
-        popupPromise = callPopup(`<div class="extensions_info">${html}</div>`, 'text');
+        popupPromise = callPopup(`<div class="extensions_info">${html}</div>`, 'text', '', { okButton: 'Close', wide: true, large: true });
     } catch (error) {
         toastr.error('Error loading extensions. See browser console for details.');
         console.error(error);
