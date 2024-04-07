@@ -1,10 +1,19 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
+const storage = require('node-persist');
 const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES } = require('./constants');
-const { getConfigValue, color, delay } = require('./util');
+const { getConfigValue, color, delay, setConfigValue } = require('./util');
 const express = require('express');
+const { readSecret, writeSecret } = require('./endpoints/secrets');
 
 const DATA_ROOT = getConfigValue('dataRoot', './data');
+
+const STORAGE_KEYS = {
+    users: 'users',
+    csrfSecret: 'csrfSecret',
+    cookieSecret: 'cookieSecret',
+};
 
 /**
  * @typedef {Object} User
@@ -13,6 +22,8 @@ const DATA_ROOT = getConfigValue('dataRoot', './data');
  * @property {string} name - The user's name. Displayed in the UI
  * @property {number} created - The timestamp when the user was created
  * @property {string} password - SHA256 hash of the user's password
+ * @property {boolean} enabled - Whether the user is enabled
+ * @property {boolean} admin - Whether the user is an admin (can manage other users)
  */
 
 /**
@@ -246,7 +257,51 @@ async function migrateUserData() {
  * @returns {Promise<void>}
  */
 async function initUserStorage() {
-    return Promise.resolve();
+    await storage.init({
+        dir: path.join(DATA_ROOT, '_storage'),
+    });
+
+    const users = await storage.getItem('users');
+
+    if (!users) {
+        await storage.setItem('users', [DEFAULT_USER]);
+    }
+}
+
+/**
+ * Get the cookie secret from the config. If it doesn't exist, generate a new one.
+ * @returns {string} The cookie secret
+ */
+function getCookieSecret() {
+    let secret = getConfigValue(STORAGE_KEYS.cookieSecret);
+
+    if (!secret) {
+        console.warn(color.yellow('Cookie secret is missing from config.yaml. Generating a new one...'));
+        secret = crypto.randomBytes(64).toString('base64');
+        setConfigValue(STORAGE_KEYS.cookieSecret, secret);
+    }
+
+    return secret;
+}
+
+/**
+ * Get the CSRF secret from the storage.
+ * @param {import('express').Request} [request] HTTP request object
+ * @returns {string} The CSRF secret
+ */
+function getCsrfSecret(request) {
+    if (!request || !request.user) {
+        throw new Error('Request object is required to get the CSRF secret.');
+    }
+
+    let csrfSecret = readSecret(request.user.directories, STORAGE_KEYS.csrfSecret);
+
+    if (!csrfSecret) {
+        csrfSecret = crypto.randomBytes(64).toString('base64');
+        writeSecret(request.user.directories, STORAGE_KEYS.csrfSecret, csrfSecret);
+    }
+
+    return csrfSecret;
 }
 
 /**
@@ -348,5 +403,7 @@ module.exports = {
     getUserDirectories,
     userDataMiddleware,
     migrateUserData,
+    getCsrfSecret,
+    getCookieSecret,
     router,
 };

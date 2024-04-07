@@ -40,12 +40,18 @@ const USER_DIRECTORY_TEMPLATE = Object.freeze({
     vectors: 'vectors',
 });
 
+/**
+ * @type {import('./users').User}
+ * @readonly
+ */
 const DEFAULT_USER = Object.freeze({
     uuid: '00000000-0000-0000-0000-000000000000',
     handle: 'user0',
     name: 'User',
     created: 0,
     password: '',
+    admin: true,
+    enabled: true,
 });
 
 const UNSAFE_EXTENSIONS = [

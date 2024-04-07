@@ -18,6 +18,8 @@ basicAuthUser:
   password: "password"
 # Enables CORS proxy middleware
 enableCorsProxy: false
+# Used to sign session cookies. Will be auto-generated if not set
+cookieSecret: ''
 # Disable security checks - NOT RECOMMENDED
 securityOverride: false
 # -- ADVANCED CONFIGURATION --

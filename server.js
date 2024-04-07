@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 // native node modules
-const crypto = require('crypto');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
@@ -39,6 +38,8 @@ const {
     getUserDirectories,
     getAllUserHandles,
     migrateUserData,
+    getCsrfSecret,
+    getCookieSecret,
 } = require('./src/users');
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
@@ -132,14 +133,14 @@ app.use(CORS);
 if (listen && basicAuthMode) app.use(basicAuthMiddleware);
 
 app.use(whitelistMiddleware(listen));
+app.use(userDataMiddleware());
 
 // CSRF Protection //
 if (!cliArguments.disableCsrf) {
-    const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
-    const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
+    const COOKIES_SECRET = getCookieSecret();
 
     const { generateToken, doubleCsrfProtection } = doubleCsrf({
-        getSecret: () => CSRF_SECRET,
+        getSecret: getCsrfSecret,
         cookieName: 'X-CSRF-Token',
         cookieOptions: {
             httpOnly: true,
@@ -218,7 +219,6 @@ if (enableCorsProxy) {
 }
 
 app.use(express.static(process.cwd() + '/public', {}));
-app.use(userDataMiddleware());
 app.use('/', require('./src/users').router);
 
 app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
