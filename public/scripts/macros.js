@@ -1,8 +1,9 @@
-import { chat, main_api, getMaxContextSize, getCurrentChatId } from '../script.js';
+import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId } from '../script.js';
 import { timestampToMoment, isDigitsOnly, getStringHash } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
 import { replaceVariableMacros } from './variables.js';
+import { saveMetadataDebounced } from './extensions.js';
 
 // Register any macro that you want to leave in the compiled story string
 Handlebars.registerHelper('trim', () => '{{trim}}');
@@ -186,7 +187,13 @@ function randomReplace(input, emptyListPlaceholder = '') {
 
 function pickReplace(input, rawContent, emptyListPlaceholder = '') {
     const pickPattern = /{{pick\s?::?([^}]+)}}/gi;
-    const chatIdHash = getStringHash(getCurrentChatId());
+
+    // We need to have a consistent chat hash, otherwise we'll lose rolls on chat file rename or branch switches
+    const chatIdHash = chat_metadata['chat_id_hash'];
+    if (!chatIdHash) {
+        chat_metadata['chat_id_hash'] = getStringHash(getCurrentChatId());
+        saveMetadataDebounced();
+    }
     const rawContentHash = getStringHash(rawContent);
 
     return input.replace(pickPattern, (match, listString, offset) => {
