@@ -19,6 +19,7 @@ const { getConfigValue, color, delay, setConfigValue, Cache } = require('./util'
 const { readSecret, writeSecret } = require('./endpoints/secrets');
 const { checkForNewContent } = require('./endpoints/content-manager');
 
+const KEY_PREFIX = 'user:';
 const DATA_ROOT = getConfigValue('dataRoot', './data');
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 const MFA_CACHE = new Cache(5 * 60 * 1000);
@@ -29,7 +30,6 @@ const MFA_CACHE = new Cache(5 * 60 * 1000);
 const DIRECTORIES_CACHE = new Map();
 
 const STORAGE_KEYS = {
-    users: 'users',
     csrfSecret: 'csrfSecret',
     cookieSecret: 'cookieSecret',
 };
@@ -305,6 +305,15 @@ async function migrateUserData() {
 }
 
 /**
+ * Converts a user handle to a storage key.
+ * @param {string} handle User handle
+ * @returns {string} The key for the user storage
+ */
+function toKey(handle) {
+    return `${KEY_PREFIX}${handle}`;
+}
+
+/**
  * Initializes the user storage. Currently a no-op.
  * @returns {Promise<void>}
  */
@@ -314,10 +323,11 @@ async function initUserStorage() {
         ttl: true,
     });
 
-    const users = await storage.getItem('users');
+    const keys = await getAllUserHandles();
 
-    if (!users) {
-        await storage.setItem('users', [DEFAULT_USER]);
+    // If there are no users, create the default user
+    if (keys.length === 0) {
+        await storage.setItem(toKey(DEFAULT_USER.handle), DEFAULT_USER);
     }
 }
 
@@ -390,10 +400,10 @@ function getCsrfSecret(request) {
  * @returns {Promise<string[]>} - The list of user handles
  */
 async function getAllUserHandles() {
-    const users = await storage.getItem(STORAGE_KEYS.users);
-    return users.map(user => user.handle);
+    const keys = await storage.keys(x=> x.key.startsWith(KEY_PREFIX));
+    const handles = keys.map(x => x.replace(KEY_PREFIX, ''));
+    return handles;
 }
-
 
 /**
  * Gets the directories listing for the provided user.
@@ -414,6 +424,34 @@ function getUserDirectories(handle) {
     }
     DIRECTORIES_CACHE.set(handle, directories);
     return directories;
+}
+
+/**
+ * Gets the avatar URL for the provided user.
+ * @param {string} handle User handle
+ * @returns {string} User avatar URL
+ */
+function getUserAvatar(handle) {
+    try {
+        const directory = getUserDirectories(handle);
+        const pathToSettings = path.join(directory.root, 'settings.json');
+        const settings = fs.existsSync(pathToSettings) ? JSON.parse(fs.readFileSync(pathToSettings, 'utf8')) : {};
+        const avatarFile = settings?.power_user?.default_persona || settings?.user_avatar;
+        if (!avatarFile) {
+            return DEFAULT_AVATAR;
+        }
+        const avatarPath = path.join(directory.avatars, avatarFile);
+        if (!fs.existsSync(avatarPath)) {
+            return DEFAULT_AVATAR;
+        }
+        const mimeType = mime.lookup(avatarPath);
+        const base64Content = fs.readFileSync(avatarPath, 'base64');
+        return `data:${mimeType};base64,${base64Content}`;
+    }
+    catch {
+        // Ignore errors
+        return DEFAULT_AVATAR;
+    }
 }
 
 /**
@@ -452,24 +490,34 @@ function userDataMiddleware(app) {
             };
             return next();
         }
+
+        if (!req.session) {
+            console.error('Session not available');
+            return res.sendStatus(500);
+        }
+
         // If user accounts are enabled, get the user from the session
-        /**
-         * @type {User[]}
-         */
-        const users = await storage.getItem(STORAGE_KEYS.users);
         let handle = req.session?.handle;
 
         // If we have the only user and it's not password protected, use it
-        if (!handle && users.length === 1 && !users[0].password) {
-            handle = users[0].handle;
-            req.session.handle = handle;
+        if (!handle) {
+            const handles = await getAllUserHandles();
+            if (handles.length === 1) {
+                /** @type {User} */
+                const user = await storage.getItem(toKey(handles[0]));
+                if (!user.password) {
+                    handle = user.handle;
+                    req.session.handle = handle;
+                }
+            }
         }
 
         if (!handle) {
             return res.redirect('/login');
         }
 
-        const user = users.find(user => user.handle === handle);
+        /** @type {User} */
+        const user = await storage.getItem(toKey(handle));
 
         if (!user) {
             console.error('User not found:', handle);
@@ -544,38 +592,33 @@ const endpoints = express.Router();
 
 endpoints.get('/list', async (_request, response) => {
     /** @type {User[]} */
-    const users = await storage.getItem(STORAGE_KEYS.users);
+    const users = await storage.values();
     const viewModels = users.filter(x => x.enabled).map(user => ({
         handle: user.handle,
         name: user.name,
-        avatar: DEFAULT_AVATAR,
+        avatar: getUserAvatar(user.handle),
         admin: user.admin,
         password: !!user.password,
     }));
 
-    // Load avatars for each user
-    for (const user of viewModels) {
-        try {
-            const directory = getUserDirectories(user.handle);
-            const pathToSettings = path.join(directory.root, 'settings.json');
-            const settings = fs.existsSync(pathToSettings) ? JSON.parse(fs.readFileSync(pathToSettings, 'utf8')) : {};
-            const avatarFile = settings?.power_user?.default_persona || settings?.user_avatar;
-            if (!avatarFile) {
-                continue;
-            }
-            const avatarPath = path.join(directory.avatars, avatarFile);
-            if (!fs.existsSync(avatarPath)) {
-                continue;
-            }
-            const mimeType = mime.lookup(avatarPath);
-            const base64Content = fs.readFileSync(avatarPath, 'base64');
-            user.avatar = `data:${mimeType};base64,${base64Content}`;
-        } catch {
-            // Ignore errors
-        }
+    return response.json(viewModels);
+});
+
+endpoints.get('/me', async (request, response) => {
+    if (!request.user) {
+        return response.sendStatus(401);
     }
 
-    return response.json(viewModels);
+    const user = request.user.profile;
+    const viewModel = {
+        handle: user.handle,
+        name: user.name,
+        avatar: getUserAvatar(user.handle),
+        admin: user.admin,
+        password: !!user.password,
+    };
+
+    return response.json(viewModel);
 });
 
 endpoints.post('/recover-step1', jsonParser, async (request, response) => {
@@ -584,9 +627,8 @@ endpoints.post('/recover-step1', jsonParser, async (request, response) => {
         return response.status(400).json({ error: 'Missing required fields' });
     }
 
-    /** @type {User[]} */
-    const users = await storage.getItem(STORAGE_KEYS.users);
-    const user = users.find(user => user.handle === request.body.handle);
+    /** @type {User} */
+    const user = await storage.getItem(toKey(request.body.handle));
 
     if (!user) {
         console.log('Recover step 1 failed: User not found');
@@ -610,9 +652,8 @@ endpoints.post('/recover-step2', jsonParser, async (request, response) => {
         return response.status(400).json({ error: 'Missing required fields' });
     }
 
-    /** @type {User[]} */
-    const users = await storage.getItem(STORAGE_KEYS.users);
-    const user = users.find(user => user.handle === request.body.handle);
+    /** @type {User} */
+    const user = await storage.getItem(toKey(request.body.handle));
 
     if (!user) {
         console.log('Recover step 2 failed: User not found');
@@ -634,7 +675,7 @@ endpoints.post('/recover-step2', jsonParser, async (request, response) => {
     const salt = getPasswordSalt();
     user.password = getPasswordHash(request.body.password, salt);
     user.salt = salt;
-    await storage.setItem(STORAGE_KEYS.users, users);
+    await storage.setItem(toKey(user.handle), user);
     return response.sendStatus(204);
 });
 
@@ -644,9 +685,8 @@ endpoints.post('/login', jsonParser, async (request, response) => {
         return response.status(400).json({ error: 'Missing required fields' });
     }
 
-    /** @type {User[]} */
-    const users = await storage.getItem(STORAGE_KEYS.users);
-    const user = users.find(user => user.handle === request.body.handle);
+    /** @type {User} */
+    const user = await storage.getItem(toKey(request.body.handle));
 
     if (!user) {
         console.log('Login failed: User not found');
@@ -663,9 +703,98 @@ endpoints.post('/login', jsonParser, async (request, response) => {
         return response.status(401).json({ error: 'Incorrect password' });
     }
 
+    if (!request.session) {
+        console.error('Login failed: Session not available');
+        return response.status(500).json({ error: 'Session not available' });
+    }
+
+    // Regenerate session to prevent session fixation attacks
+    await new Promise(resolve => request.session?.regenerate(resolve));
+
+
     request.session.handle = user.handle;
     console.log('Login successful:', user.handle, request.session);
     return response.json({ handle: user.handle });
+});
+
+endpoints.post('/logout', async (request, response) => {
+    request.session?.destroy(() => {
+        return response.sendStatus(204);
+    });
+});
+
+endpoints.post('/disable', requireAdminMiddleware, jsonParser, async (request, response) => {
+    if (!request.body.handle) {
+        console.log('Disable user failed: Missing required fields');
+        return response.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (request.body.handle === request.user.profile.handle) {
+        console.log('Disable user failed: Cannot disable yourself');
+        return response.status(400).json({ error: 'Cannot disable yourself' });
+    }
+
+    /** @type {User} */
+    const user = await storage.getItem(toKey(request.body.handle));
+
+    if (!user) {
+        console.log('Disable user failed: User not found');
+        return response.status(404).json({ error: 'User not found' });
+    }
+
+    user.enabled = false;
+    await storage.setItem(toKey(request.body.handle), user);
+    return response.sendStatus(204);
+});
+
+endpoints.post('/enable', requireAdminMiddleware, jsonParser, async (request, response) => {
+    if (!request.body.handle) {
+        console.log('Enable user failed: Missing required fields');
+        return response.status(400).json({ error: 'Missing required fields' });
+    }
+
+    /** @type {User} */
+    const user = await storage.getItem(toKey(request.body.handle));
+
+    if (!user) {
+        console.log('Enable user failed: User not found');
+        return response.status(404).json({ error: 'User not found' });
+    }
+
+    user.enabled = true;
+    await storage.setItem(toKey(request.body.handle), user);
+    return response.sendStatus(204);
+});
+
+endpoints.post('/change-password', jsonParser, async (request, response) => {
+    if (!request.body.handle || !request.body.oldPassword || !request.body.newPassword) {
+        console.log('Change password failed: Missing required fields');
+        return response.status(400).json({ error: 'Missing required fields' });
+    }
+
+    /** @type {User} */
+    const user = await storage.getItem(toKey(request.body.handle));
+
+    if (!user) {
+        console.log('Change password failed: User not found');
+        return response.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.enabled) {
+        console.log('Change password failed: User is disabled');
+        return response.status(403).json({ error: 'User is disabled' });
+    }
+
+    if (user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
+        console.log('Change password failed: Incorrect password');
+        return response.status(401).json({ error: 'Incorrect password' });
+    }
+
+    const salt = getPasswordSalt();
+    user.password = getPasswordHash(request.body.newPassword, salt);
+    user.salt = salt;
+    await storage.setItem(toKey(request.body.handle), user);
+    return response.sendStatus(204);
 });
 
 endpoints.post('/create', requireAdminMiddleware, jsonParser, async (request, response) => {
@@ -674,11 +803,10 @@ endpoints.post('/create', requireAdminMiddleware, jsonParser, async (request, re
         return response.status(400).json({ error: 'Missing required fields' });
     }
 
-    /** @type {User[]} */
-    const users = await storage.getItem(STORAGE_KEYS.users);
+    const handles = await getAllUserHandles();
     const handle = slugify(request.body.handle, { lower: true, trim: true });
 
-    if (users.some(user => user.handle === request.body.handle)) {
+    if (handles.some(x => x === handle)) {
         console.log('Create user failed: User with that handle already exists');
         return response.status(409).json({ error: 'User already exists' });
     }
@@ -694,11 +822,10 @@ endpoints.post('/create', requireAdminMiddleware, jsonParser, async (request, re
         password: password,
         salt: salt,
         admin: !!request.body.admin,
-        enabled: !!request.body.enabled,
+        enabled: true,
     };
 
-    users.push(newUser);
-    await storage.setItem(STORAGE_KEYS.users, users);
+    await storage.setItem(toKey(handle), newUser);
 
     // Create user directories
     console.log('Creating data directories for', newUser.handle);
