@@ -21,7 +21,7 @@ basicAuthUser:
 # Enables CORS proxy middleware
 enableCorsProxy: false
 # Enable multi-user mode
-enableUserAccounts: true
+enableUserAccounts: false
 # Used to sign session cookies. Will be auto-generated if not set
 cookieSecret: ''
 # Disable security checks - NOT RECOMMENDED

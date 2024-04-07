@@ -604,7 +604,7 @@ const publicEndpoints = express.Router();
 
 publicEndpoints.get('/list', async (_request, response) => {
     /** @type {User[]} */
-    const users = await storage.values();
+    const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
     const viewModels = users
         .filter(x => x.enabled)
         .sort((x, y) => x.created - y.created)
@@ -612,7 +612,6 @@ publicEndpoints.get('/list', async (_request, response) => {
             handle: user.handle,
             name: user.name,
             avatar: getUserAvatar(user.handle),
-            admin: user.admin,
             password: !!user.password,
         }));
 
@@ -672,7 +671,7 @@ publicEndpoints.post('/recover-step1', jsonParser, async (request, response) => 
         return response.status(403).json({ error: 'User is disabled' });
     }
 
-    const mfaCode = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    const mfaCode = String(crypto.randomInt(1000, 9999));
     console.log();
     console.log(color.blue(`${user.name}, your password recovery code is: `) + color.magenta(mfaCode));
     console.log();
@@ -706,20 +705,30 @@ publicEndpoints.post('/recover-step2', jsonParser, async (request, response) => 
         return response.status(401).json({ error: 'Incorrect code' });
     }
 
-    const newPassword = request.body.newPassword || '';
-    const salt = getPasswordSalt();
-    user.password = getPasswordHash(newPassword, salt);
-    user.salt = salt;
-    await storage.setItem(toKey(user.handle), user);
+    if (request.body.newPassword) {
+        const salt = getPasswordSalt();
+        user.password = getPasswordHash(request.body.newPassword, salt);
+        user.salt = salt;
+        await storage.setItem(toKey(user.handle), user);
+    } else {
+        user.password = '';
+        user.salt = '';
+        await storage.setItem(toKey(user.handle), user);
+    }
+
     return response.sendStatus(204);
 });
 
 const authenticatedEndpoints = express.Router();
 
 authenticatedEndpoints.post('/logout', async (request, response) => {
-    request.session?.destroy(() => {
-        return response.sendStatus(204);
-    });
+    if (!request.session) {
+        console.error('Session not available');
+        return response.sendStatus(500);
+    }
+
+    request.session.handle = null;
+    return response.sendStatus(204);
 });
 
 authenticatedEndpoints.get('/me', async (request, response) => {
@@ -771,6 +780,25 @@ authenticatedEndpoints.post('/change-password', jsonParser, async (request, resp
 });
 
 const adminEndpoints = express.Router();
+
+adminEndpoints.post('/get', requireAdminMiddleware, jsonParser, async (request, response) => {
+    /** @type {User[]} */
+    const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
+
+    const viewModels = users
+        .sort((x, y) => x.created - y.created)
+        .map(user => ({
+            handle: user.handle,
+            name: user.name,
+            avatar: getUserAvatar(user.handle),
+            admin: user.admin,
+            enabled: user.enabled,
+            created: user.created,
+            password: !!user.password,
+        }));
+
+    return response.json(viewModels);
+});
 
 adminEndpoints.post('/disable', requireAdminMiddleware, jsonParser, async (request, response) => {
     if (!request.body.handle) {

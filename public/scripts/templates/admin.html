@@ -1,0 +1,77 @@
+<div class="adminTabs wide100p">
+    <nav class="adminNav flex-container alignItemsCenter justifyCenter">
+        <button type="button" class="manageUsersButton menu_button menu_button_icon" data-target-tab="usersList">
+            <h4>Manage Users</h4>
+        </button>
+        <button type="button" class="newUserButton menu_button menu_button_icon" data-target-tab="registerNewUserBlock">
+            <h4>New User</h4>
+        </button>
+    </nav>
+    <div class="userAccountTemplate template_element">
+        <div class="flex-container userAccount alignItemsCenter flexGap10">
+            <div>
+                <div class="avatar">
+                    <img src="img/ai4.png" alt="avatar">
+                </div>
+            </div>
+            <div class="flex1 flex-container flexFlowColumn flexNoGap justifyLeft">
+                <div class="flex-container flexGap10 alignItemsCenter">
+                    <i class="hasPassword fa-solid fa-lock"></i>
+                    <i class="noPassword fa-solid fa-lock-open"></i>
+                    <h3 class="userName margin0"></h3>
+                    <small class="userHandle">@userhandle</small>
+                </div>
+                <div class="flex-container flexFlowColumn flexNoGap">
+                    <span>
+                        <span>Role:</span>
+                        <span class="userRole"></span>
+                    </span>
+                    <span>
+                        <span>Status:</span>
+                        <span class="userStatus">Status</span>
+                    </span>
+                    <span>
+                        <span>Created:</span>
+                        <span class="userCreated">Date</span>
+                    </span>
+                </div>
+            </div>
+            <div class="flex-container">
+                <div class="userEditButton menu_button">Edit</div>
+                <div class="userDisableButton menu_button">Disable</div>
+                <div class="userEnableButton menu_button">Enable</div>
+            </div>
+        </div>
+    </div>
+    <div class="navTab usersList flex-container flexFlowColumn">
+    </div>
+    <div class="navTab registerNewUserBlock" style="display: none;">
+        <form class="flex-container flexFlowColumn flexGap10 userCreateForm" action="javascript:void(0);">
+            <h3>
+                Register New SillyTavern User
+            </h3>
+            <div class="flex-container flexNoGap">
+                <span>User Handle:</span>
+                <input name="handle" class="text_pole" placeholder="Lowercase letters, numbers, and dashes only." type="text" pattern="[a-z0-9-]+">
+            </div>
+            <div class="flex-container flexNoGap">
+                <span>Display Name:</span>
+                <input name="_name" class="text_pole" type="text" placeholder="Anonymous">
+            </div>
+            <div class="flex-container flexNoGap">
+                <span>Password:</span>
+                <input name="password" class="text_pole" type="password" placeholder="[ No password ]">
+            </div>
+            <div class="flex-container flexNoGap">
+                <span>Confirm Password:</span>
+                <input name="confirm" class="text_pole" type="password" placeholder="[ No password ]">
+            </div>
+            <span>
+                This will create a new subfolder in the /data/ directory with the user's handle as the folder name.
+            </span>
+            <div class="flex-container justifyCenter">
+                <button type="submit" class="menu_button newUserRegisterFinalizeButton">Create</div>
+            </div>
+        </form>
+    </div>
+</div>

@@ -8,7 +8,8 @@ const { jsonParser } = require('../express-common');
 const { getAllUserHandles, getUserDirectories } = require('../users');
 
 const SETTINGS_FILE = 'settings.json';
-const enableExtensions = getConfigValue('enableExtensions', true);
+const ENABLE_EXTENSIONS = getConfigValue('enableExtensions', true);
+const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 
 function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
     const files = fs
@@ -163,7 +164,8 @@ router.post('/get', jsonParser, (request, response) => {
         quickReplyPresets,
         instruct,
         context,
-        enable_extensions: enableExtensions,
+        enable_extensions: ENABLE_EXTENSIONS,
+        enable_accounts: ENABLE_ACCOUNTS,
     });
 });
 

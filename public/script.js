@@ -211,6 +211,7 @@ import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermati
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
+import { currentUser, setUserControls } from './scripts/user.js';
 
 //exporting functions and vars for mods
 export {
@@ -6097,7 +6098,7 @@ async function doOnboarding(avatarId) {
     template.find('input[name="enable_simple_mode"]').on('input', function () {
         simpleUiMode = $(this).is(':checked');
     });
-    var userName = await callPopup(template, 'input', name1);
+    let userName = await callPopup(template, 'input', currentUser?.name || name1);
 
     if (userName) {
         userName = userName.replace('\n', ' ');
@@ -6150,6 +6151,8 @@ async function getSettings() {
             name1 = settings.username;
             $('#your_name').val(name1);
         }
+
+        await setUserControls(data.enable_accounts);
 
         // Allow subscribers to mutate settings
         eventSource.emit(event_types.SETTINGS_LOADED_BEFORE, settings);
