@@ -9,6 +9,7 @@
         "command-exists": "^1.2.9",
         "compression": "^1",
         "cookie-parser": "^1.4.6",
+        "cookie-session": "^2.1.0",
         "cors": "^2.8.5",
         "csrf-csrf": "^2.2.3",
         "express": "^4.19.2",

@@ -1,19 +1,32 @@
+// Native Node Modules
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const os = require('os');
+
+// Express and other dependencies
 const storage = require('node-persist');
+const express = require('express');
+const cookieSession = require('cookie-session');
 const uuid = require('uuid');
 const mime = require('mime-types');
 const slugify = require('slugify').default;
+
+// Local imports
+const { jsonParser } = require('./express-common');
 const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, DEFAULT_AVATAR } = require('./constants');
 const { getConfigValue, color, delay, setConfigValue, Cache } = require('./util');
-const express = require('express');
 const { readSecret, writeSecret } = require('./endpoints/secrets');
-const { jsonParser } = require('./express-common');
 const { checkForNewContent } = require('./endpoints/content-manager');
 
 const DATA_ROOT = getConfigValue('dataRoot', './data');
+const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 const MFA_CACHE = new Cache(5 * 60 * 1000);
+/**
+ * Cache for user directories.
+ * @type {Map<string, UserDirectoryList>}
+ */
+const DIRECTORIES_CACHE = new Map();
 
 const STORAGE_KEYS = {
     users: 'users',
@@ -298,6 +311,7 @@ async function migrateUserData() {
 async function initUserStorage() {
     await storage.init({
         dir: path.join(DATA_ROOT, '_storage'),
+        ttl: true,
     });
 
     const users = await storage.getItem('users');
@@ -323,8 +337,32 @@ function getCookieSecret() {
     return secret;
 }
 
+/**
+ * Generates a random password salt.
+ * @returns {string} The password salt
+ */
 function getPasswordSalt() {
     return crypto.randomBytes(16).toString('base64');
+}
+
+/**
+ * Get the session name for the current server.
+ * @returns {string} The session name
+ */
+function getCookieSessionName() {
+    // Get server hostname and hash it to generate a session suffix
+    const suffix = crypto.createHash('sha256').update(os.hostname()).digest('hex').slice(0, 8);
+    return `session-${suffix}`;
+}
+
+/**
+ * Hashes a password using SHA256.
+ * @param {string} password Password to hash
+ * @param {string} salt Salt to use for hashing
+ * @returns {string} Hashed password
+ */
+function getPasswordHash(password, salt) {
+    return crypto.createHash('sha256').update(password + salt).digest('hex');
 }
 
 /**
@@ -348,15 +386,6 @@ function getCsrfSecret(request) {
 }
 
 /**
- * Gets a user for the current request. Hard coded to return the default user.
- * @param {import('express').Request} _req - The request object. Currently unused.
- * @returns {Promise<string>} - The user's handle
- */
-async function getCurrentUserHandle(_req) {
-    return DEFAULT_USER.handle;
-}
-
-/**
  * Gets a list of all user handles.
  * @returns {Promise<string[]>} - The list of user handles
  */
@@ -365,15 +394,6 @@ async function getAllUserHandles() {
     return users.map(user => user.handle);
 }
 
-/**
- * Gets the directories listing for the provided user.
- * @param {import('express').Request} req - The request object
- * @returns {Promise<UserDirectoryList>} - The user's directories like {worlds: 'data/user0/worlds/', ...
- */
-async function getCurrentUserDirectories(req) {
-    const handle = await getCurrentUserHandle(req);
-    return getUserDirectories(handle);
-}
 
 /**
  * Gets the directories listing for the provided user.
@@ -381,18 +401,35 @@ async function getCurrentUserDirectories(req) {
  * @returns {UserDirectoryList} User directories
  */
 function getUserDirectories(handle) {
+    if (DIRECTORIES_CACHE.has(handle)) {
+        const cache = DIRECTORIES_CACHE.get(handle);
+        if (cache) {
+            return cache;
+        }
+    }
+
     const directories = structuredClone(USER_DIRECTORY_TEMPLATE);
     for (const key in directories) {
         directories[key] = path.join(DATA_ROOT, handle, USER_DIRECTORY_TEMPLATE[key]);
     }
+    DIRECTORIES_CACHE.set(handle, directories);
     return directories;
 }
 
 /**
  * Middleware to add user data to the request object.
+ * @param {import('express').Express} app Express app
  * @returns {import('express').RequestHandler}
  */
-function userDataMiddleware() {
+function userDataMiddleware(app) {
+    app.use(cookieSession({
+        name: getCookieSessionName(),
+        sameSite: 'strict',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        secret: getCookieSecret(),
+    }));
+
     /**
      * Middleware to add user data to the request object.
      * @param {import('express').Request} req Request object
@@ -400,12 +437,56 @@ function userDataMiddleware() {
      * @param {import('express').NextFunction} next Next function
      */
     return async (req, res, next) => {
-        const directories = await getCurrentUserDirectories(req);
+        // Skip for login page
+        if (req.path === '/login') {
+            return next();
+        }
+
+        // If user accounts are disabled, use the default user
+        if (!ENABLE_ACCOUNTS) {
+            const handle = DEFAULT_USER.handle;
+            const directories = getUserDirectories(handle);
+            req.user = {
+                profile: DEFAULT_USER,
+                directories: directories,
+            };
+            return next();
+        }
+        // If user accounts are enabled, get the user from the session
+        /**
+         * @type {User[]}
+         */
+        const users = await storage.getItem(STORAGE_KEYS.users);
+        let handle = req.session?.handle;
+
+        // If we have the only user and it's not password protected, use it
+        if (!handle && users.length === 1 && !users[0].password) {
+            handle = users[0].handle;
+            req.session.handle = handle;
+        }
+
+        if (!handle) {
+            return res.redirect('/login');
+        }
+
+        const user = users.find(user => user.handle === handle);
+
+        if (!user) {
+            console.error('User not found:', handle);
+            return res.redirect('/login');
+        }
+
+        if (!user.enabled) {
+            console.error('User is disabled:', handle);
+            return res.redirect('/login');
+        }
+
+        const directories = getUserDirectories(handle);
         req.user = {
-            profile: DEFAULT_USER,
+            profile: user,
             directories: directories,
         };
-        next();
+        return next();
     };
 }
 
@@ -460,16 +541,6 @@ router.use('/user/files/*', createRouteHandler(req => req.user.directories.files
 router.use('/scripts/extensions/third-party/*', createRouteHandler(req => req.user.directories.extensions));
 
 const endpoints = express.Router();
-
-/**
- * Hashes a password using SHA256.
- * @param {string} password Password to hash
- * @param {string} salt Salt to use for hashing
- * @returns {string} Hashed password
- */
-function getPasswordHash(password, salt) {
-    return crypto.createHash('sha256').update(password + salt).digest('hex');
-}
 
 endpoints.get('/list', async (_request, response) => {
     /** @type {User[]} */
@@ -528,7 +599,7 @@ endpoints.post('/recover-step1', jsonParser, async (request, response) => {
     }
 
     const mfaCode = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-    console.log(color.blue(`${user.name} YOUR PASSWORD RECOVERY CODE IS: `) +  color.magenta(mfaCode));
+    console.log(color.blue(`${user.name} YOUR PASSWORD RECOVERY CODE IS: `) + color.magenta(mfaCode));
     MFA_CACHE.set(user.handle, mfaCode);
     return response.sendStatus(204);
 });
@@ -587,12 +658,13 @@ endpoints.post('/login', jsonParser, async (request, response) => {
         return response.status(403).json({ error: 'User is disabled' });
     }
 
-    if (user.password !== getPasswordHash(request.body.password, user.salt)) {
+    if (user.password && user.password !== getPasswordHash(request.body.password, user.salt)) {
         console.log('Login failed: Incorrect password');
         return response.status(401).json({ error: 'Incorrect password' });
     }
 
-    console.log('Login successful:', user.handle);
+    request.session.handle = user.handle;
+    console.log('Login successful:', user.handle, request.session);
     return response.json({ handle: user.handle });
 });
 
@@ -640,8 +712,6 @@ router.use('/api/users', endpoints);
 module.exports = {
     initUserStorage,
     ensurePublicDirectoriesExist,
-    getCurrentUserDirectories,
-    getCurrentUserHandle,
     getAllUserHandles,
     getUserDirectories,
     userDataMiddleware,
