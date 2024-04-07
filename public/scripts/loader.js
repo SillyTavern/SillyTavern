@@ -1,7 +1,5 @@
 const ELEMENT_ID = 'loader';
 
-import { populateUserList } from './userManagement.js'
-
 export function showLoader() {
     const container = $('<div></div>').attr('id', ELEMENT_ID);
     const loader = $('<div></div>').attr('id', 'load-spinner').addClass('fa-solid fa-gear fa-spin fa-3x');
@@ -10,7 +8,6 @@ export function showLoader() {
 }
 
 export async function hideLoader() {
-
     //Sets up a 2-step animation. Spinner blurs/fades out, and then the loader shadow does the same.
     $('#load-spinner').on('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', function () {
         //uncomment this as part of user selection enabling
@@ -35,8 +32,4 @@ export async function hideLoader() {
 
     //uncomment to make user selection live
     //await populateUserList()
-
-
 }
-
-

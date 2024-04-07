@@ -18,6 +18,7 @@ const doubleCsrf = require('csrf-csrf').doubleCsrf;
 const express = require('express');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const multer = require('multer');
 const responseTime = require('response-time');
 const helmet = require('helmet').default;
@@ -33,14 +34,7 @@ util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
 
 // local library imports
-const {
-    initUserStorage,
-    ensurePublicDirectoriesExist,
-    userDataMiddleware,
-    migrateUserData,
-    getCsrfSecret,
-    getCookieSecret,
-} = require('./src/users');
+const userModule = require('./src/users');
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
 const contentManager = require('./src/endpoints/content-manager');
@@ -122,6 +116,7 @@ const autorun = (cliArguments.autorun ?? getConfigValue('autorun', DEFAULT_AUTOR
 const listen = cliArguments.listen ?? getConfigValue('listen', DEFAULT_LISTEN);
 const enableCorsProxy = cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', DEFAULT_CORS_PROXY);
 const basicAuthMode = getConfigValue('basicAuthMode', false);
+const enableAccounts = getConfigValue('enableUserAccounts', false);
 
 const { UPLOADS_PATH } = require('./src/constants');
 
@@ -136,40 +131,6 @@ app.use(CORS);
 if (listen && basicAuthMode) app.use(basicAuthMiddleware);
 
 app.use(whitelistMiddleware(listen));
-app.use(userDataMiddleware(app));
-
-// CSRF Protection //
-if (!cliArguments.disableCsrf) {
-    const COOKIES_SECRET = getCookieSecret();
-
-    const { generateToken, doubleCsrfProtection } = doubleCsrf({
-        getSecret: getCsrfSecret,
-        cookieName: 'X-CSRF-Token',
-        cookieOptions: {
-            httpOnly: true,
-            sameSite: 'strict',
-            secure: false,
-        },
-        size: 64,
-        getTokenFromRequest: (req) => req.headers['x-csrf-token'],
-    });
-
-    app.get('/csrf-token', (req, res) => {
-        res.json({
-            'token': generateToken(res, req),
-        });
-    });
-
-    app.use(cookieParser(COOKIES_SECRET));
-    app.use(doubleCsrfProtection);
-} else {
-    console.warn('\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n');
-    app.get('/csrf-token', (req, res) => {
-        res.json({
-            'token': 'disabled',
-        });
-    });
-}
 
 if (enableCorsProxy) {
     const bodyParser = require('body-parser');
@@ -221,17 +182,85 @@ if (enableCorsProxy) {
     });
 }
 
-app.use(express.static(process.cwd() + '/public', {}));
-app.use('/', require('./src/users').router);
+app.use(cookieSession({
+    name: userModule.getCookieSessionName(),
+    sameSite: 'strict',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    secret: userModule.getCookieSecret(),
+}));
 
-app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
-app.get('/', function (request, response) {
-    response.sendFile(process.cwd() + '/public/index.html');
+app.use(userModule.setUserDataMiddleware);
+
+// Static files
+// Host index page
+app.get('/', (request, response) => {
+    if (userModule.shouldRedirectToLogin(request)) {
+        return response.redirect('/login');
+    }
+
+    return response.sendFile('index.html', { root: path.join(process.cwd(), 'public') });
 });
 // Host login page
-app.get('/login', (_request, response) => {
+app.get('/login', async (request, response) => {
+    if (!enableAccounts) {
+        console.log('User accounts are disabled. Redirecting to index page.');
+        return response.redirect('/');
+    }
+
+    const autoLogin = await userModule.tryAutoLogin(request);
+
+    if (autoLogin) {
+        return response.redirect('/');
+    }
+
     return response.sendFile('login.html', { root: path.join(process.cwd(), 'public') });
 });
+app.use(express.static(process.cwd() + '/public', {}));
+
+app.use('/api/users', userModule.publicEndpoints);
+
+app.use(userModule.requireLoginMiddleware);
+
+// CSRF Protection //
+if (!cliArguments.disableCsrf) {
+    const COOKIES_SECRET = userModule.getCookieSecret();
+
+    const { generateToken, doubleCsrfProtection } = doubleCsrf({
+        getSecret: userModule.getCsrfSecret,
+        cookieName: 'X-CSRF-Token',
+        cookieOptions: {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: false,
+        },
+        size: 64,
+        getTokenFromRequest: (req) => req.headers['x-csrf-token'],
+    });
+
+    app.get('/csrf-token', (req, res) => {
+        res.json({
+            'token': generateToken(res, req),
+        });
+    });
+
+    app.use(cookieParser(COOKIES_SECRET));
+    app.use(doubleCsrfProtection);
+} else {
+    console.warn('\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n');
+    app.get('/csrf-token', (req, res) => {
+        res.json({
+            'token': 'disabled',
+        });
+    });
+}
+
+// User management
+app.use('/', userModule.router);
+app.use('/api/users', userModule.authenticatedEndpoints);
+app.use('/api/users', userModule.adminEndpoints);
+
+app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
 app.get('/version', async function (_, response) {
     const data = await getVersion();
     response.send(data);
@@ -481,10 +510,10 @@ const setupTasks = async function () {
 
     // TODO: do endpoint init functions depend on certain directories existing or not existing? They should be callable
     // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
-    await initUserStorage();
+    await userModule.initUserStorage();
     await settingsEndpoint.init();
-    const directories = await ensurePublicDirectoriesExist();
-    await migrateUserData();
+    const directories = await userModule.ensurePublicDirectoriesExist();
+    await userModule.migrateUserData();
     await contentManager.checkForNewContent(directories);
     await ensureThumbnailCache();
     cleanUploads();

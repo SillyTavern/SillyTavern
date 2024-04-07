@@ -7,7 +7,6 @@ const os = require('os');
 // Express and other dependencies
 const storage = require('node-persist');
 const express = require('express');
-const cookieSession = require('cookie-session');
 const uuid = require('uuid');
 const mime = require('mime-types');
 const slugify = require('slugify').default;
@@ -400,7 +399,7 @@ function getCsrfSecret(request) {
  * @returns {Promise<string[]>} - The list of user handles
  */
 async function getAllUserHandles() {
-    const keys = await storage.keys(x=> x.key.startsWith(KEY_PREFIX));
+    const keys = await storage.keys(x => x.key.startsWith(KEY_PREFIX));
     const handles = keys.map(x => x.replace(KEY_PREFIX, ''));
     return handles;
 }
@@ -455,87 +454,100 @@ function getUserAvatar(handle) {
 }
 
 /**
- * Middleware to add user data to the request object.
- * @param {import('express').Express} app Express app
- * @returns {import('express').RequestHandler}
+ * Checks if the user should be redirected to the login page.
+ * @param {import('express').Request} request Request object
+ * @returns {boolean} Whether the user should be redirected to the login page
  */
-function userDataMiddleware(app) {
-    app.use(cookieSession({
-        name: getCookieSessionName(),
-        sameSite: 'strict',
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        secret: getCookieSecret(),
-    }));
+function shouldRedirectToLogin(request) {
+    return ENABLE_ACCOUNTS && !request.user;
+}
 
-    /**
-     * Middleware to add user data to the request object.
-     * @param {import('express').Request} req Request object
-     * @param {import('express').Response} res Response object
-     * @param {import('express').NextFunction} next Next function
-     */
-    return async (req, res, next) => {
-        // Skip for login page
-        if (req.path === '/login') {
-            return next();
+/**
+ * Tries auto-login if there is only one user and it's not password protected.
+ * @param {import('express').Request} request Request object
+ * @returns {Promise<boolean>} Whether auto-login was performed
+ */
+async function tryAutoLogin(request) {
+    if (!ENABLE_ACCOUNTS || request.user || !request.session) {
+        return false;
+    }
+
+    const userHandles = await getAllUserHandles();
+    if (userHandles.length === 1) {
+        const user = await storage.getItem(toKey(userHandles[0]));
+        if (!user.password) {
+            request.session.handle = userHandles[0];
+            return true;
         }
+    }
 
-        // If user accounts are disabled, use the default user
-        if (!ENABLE_ACCOUNTS) {
-            const handle = DEFAULT_USER.handle;
-            const directories = getUserDirectories(handle);
-            req.user = {
-                profile: DEFAULT_USER,
-                directories: directories,
-            };
-            return next();
-        }
+    return false;
+}
 
-        if (!req.session) {
-            console.error('Session not available');
-            return res.sendStatus(500);
-        }
-
-        // If user accounts are enabled, get the user from the session
-        let handle = req.session?.handle;
-
-        // If we have the only user and it's not password protected, use it
-        if (!handle) {
-            const handles = await getAllUserHandles();
-            if (handles.length === 1) {
-                /** @type {User} */
-                const user = await storage.getItem(toKey(handles[0]));
-                if (!user.password) {
-                    handle = user.handle;
-                    req.session.handle = handle;
-                }
-            }
-        }
-
-        if (!handle) {
-            return res.redirect('/login');
-        }
-
-        /** @type {User} */
-        const user = await storage.getItem(toKey(handle));
-
-        if (!user) {
-            console.error('User not found:', handle);
-            return res.redirect('/login');
-        }
-
-        if (!user.enabled) {
-            console.error('User is disabled:', handle);
-            return res.redirect('/login');
-        }
-
+/**
+ * Middleware to add user data to the request object.
+ * @param {import('express').Request} request Request object
+ * @param {import('express').Response} response Response object
+ * @param {import('express').NextFunction} next Next function
+ */
+async function setUserDataMiddleware(request, response, next) {
+    // If user accounts are disabled, use the default user
+    if (!ENABLE_ACCOUNTS) {
+        const handle = DEFAULT_USER.handle;
         const directories = getUserDirectories(handle);
-        req.user = {
-            profile: user,
+        request.user = {
+            profile: DEFAULT_USER,
             directories: directories,
         };
         return next();
+    }
+
+    if (!request.session) {
+        console.error('Session not available');
+        return response.sendStatus(500);
+    }
+
+    // If user accounts are enabled, get the user from the session
+    let handle = request.session?.handle;
+
+    // If we have the only user and it's not password protected, use it
+    if (!handle) {
+        return next();
+    }
+
+    /** @type {User} */
+    const user = await storage.getItem(toKey(handle));
+
+    if (!user) {
+        console.error('User not found:', handle);
+        return next();
+    }
+
+    if (!user.enabled) {
+        console.error('User is disabled:', handle);
+        return next();
+    }
+
+    const directories = getUserDirectories(handle);
+    request.user = {
+        profile: user,
+        directories: directories,
     };
+    return next();
+}
+
+/**
+ * Middleware to add user data to the request object.
+ * @param {import('express').Request} request Request object
+ * @param {import('express').Response} response Response object
+ * @param {import('express').NextFunction} next Next function
+ */
+function requireLoginMiddleware(request, response, next) {
+    if (!request.user) {
+        return response.sendStatus(401);
+    }
+
+    return next();
 }
 
 /**
@@ -588,40 +600,60 @@ router.use('/user/images/*', createRouteHandler(req => req.user.directories.user
 router.use('/user/files/*', createRouteHandler(req => req.user.directories.files));
 router.use('/scripts/extensions/third-party/*', createRouteHandler(req => req.user.directories.extensions));
 
-const endpoints = express.Router();
+const publicEndpoints = express.Router();
 
-endpoints.get('/list', async (_request, response) => {
+publicEndpoints.get('/list', async (_request, response) => {
     /** @type {User[]} */
     const users = await storage.values();
-    const viewModels = users.filter(x => x.enabled).map(user => ({
-        handle: user.handle,
-        name: user.name,
-        avatar: getUserAvatar(user.handle),
-        admin: user.admin,
-        password: !!user.password,
-    }));
+    const viewModels = users
+        .filter(x => x.enabled)
+        .sort((x, y) => x.created - y.created)
+        .map(user => ({
+            handle: user.handle,
+            name: user.name,
+            avatar: getUserAvatar(user.handle),
+            admin: user.admin,
+            password: !!user.password,
+        }));
 
     return response.json(viewModels);
 });
 
-endpoints.get('/me', async (request, response) => {
-    if (!request.user) {
-        return response.sendStatus(401);
+publicEndpoints.post('/login', jsonParser, async (request, response) => {
+    if (!request.body.handle) {
+        console.log('Login failed: Missing required fields');
+        return response.status(400).json({ error: 'Missing required fields' });
     }
 
-    const user = request.user.profile;
-    const viewModel = {
-        handle: user.handle,
-        name: user.name,
-        avatar: getUserAvatar(user.handle),
-        admin: user.admin,
-        password: !!user.password,
-    };
+    /** @type {User} */
+    const user = await storage.getItem(toKey(request.body.handle));
 
-    return response.json(viewModel);
+    if (!user) {
+        console.log('Login failed: User not found');
+        return response.status(401).json({ error: 'User not found' });
+    }
+
+    if (!user.enabled) {
+        console.log('Login failed: User is disabled');
+        return response.status(403).json({ error: 'User is disabled' });
+    }
+
+    if (user.password && user.password !== getPasswordHash(request.body.password, user.salt)) {
+        console.log('Login failed: Incorrect password');
+        return response.status(401).json({ error: 'Incorrect password' });
+    }
+
+    if (!request.session) {
+        console.error('Session not available');
+        return response.sendStatus(500);
+    }
+
+    request.session.handle = user.handle;
+    console.log('Login successful:', user.handle, request.session);
+    return response.json({ handle: user.handle });
 });
 
-endpoints.post('/recover-step1', jsonParser, async (request, response) => {
+publicEndpoints.post('/recover-step1', jsonParser, async (request, response) => {
     if (!request.body.handle) {
         console.log('Recover step 1 failed: Missing required fields');
         return response.status(400).json({ error: 'Missing required fields' });
@@ -641,13 +673,15 @@ endpoints.post('/recover-step1', jsonParser, async (request, response) => {
     }
 
     const mfaCode = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-    console.log(color.blue(`${user.name} YOUR PASSWORD RECOVERY CODE IS: `) + color.magenta(mfaCode));
+    console.log();
+    console.log(color.blue(`${user.name}, your password recovery code is: `) + color.magenta(mfaCode));
+    console.log();
     MFA_CACHE.set(user.handle, mfaCode);
     return response.sendStatus(204);
 });
 
-endpoints.post('/recover-step2', jsonParser, async (request, response) => {
-    if (!request.body.handle || !request.body.code || !request.body.password) {
+publicEndpoints.post('/recover-step2', jsonParser, async (request, response) => {
+    if (!request.body.handle || !request.body.code) {
         console.log('Recover step 2 failed: Missing required fields');
         return response.status(400).json({ error: 'Missing required fields' });
     }
@@ -672,101 +706,40 @@ endpoints.post('/recover-step2', jsonParser, async (request, response) => {
         return response.status(401).json({ error: 'Incorrect code' });
     }
 
+    const newPassword = request.body.newPassword || '';
     const salt = getPasswordSalt();
-    user.password = getPasswordHash(request.body.password, salt);
+    user.password = getPasswordHash(newPassword, salt);
     user.salt = salt;
     await storage.setItem(toKey(user.handle), user);
     return response.sendStatus(204);
 });
 
-endpoints.post('/login', jsonParser, async (request, response) => {
-    if (!request.body.handle || !request.body.password) {
-        console.log('Login failed: Missing required fields');
-        return response.status(400).json({ error: 'Missing required fields' });
-    }
+const authenticatedEndpoints = express.Router();
 
-    /** @type {User} */
-    const user = await storage.getItem(toKey(request.body.handle));
-
-    if (!user) {
-        console.log('Login failed: User not found');
-        return response.status(401).json({ error: 'User not found' });
-    }
-
-    if (!user.enabled) {
-        console.log('Login failed: User is disabled');
-        return response.status(403).json({ error: 'User is disabled' });
-    }
-
-    if (user.password && user.password !== getPasswordHash(request.body.password, user.salt)) {
-        console.log('Login failed: Incorrect password');
-        return response.status(401).json({ error: 'Incorrect password' });
-    }
-
-    if (!request.session) {
-        console.error('Login failed: Session not available');
-        return response.status(500).json({ error: 'Session not available' });
-    }
-
-    // Regenerate session to prevent session fixation attacks
-    await new Promise(resolve => request.session?.regenerate(resolve));
-
-
-    request.session.handle = user.handle;
-    console.log('Login successful:', user.handle, request.session);
-    return response.json({ handle: user.handle });
-});
-
-endpoints.post('/logout', async (request, response) => {
+authenticatedEndpoints.post('/logout', async (request, response) => {
     request.session?.destroy(() => {
         return response.sendStatus(204);
     });
 });
 
-endpoints.post('/disable', requireAdminMiddleware, jsonParser, async (request, response) => {
-    if (!request.body.handle) {
-        console.log('Disable user failed: Missing required fields');
-        return response.status(400).json({ error: 'Missing required fields' });
+authenticatedEndpoints.get('/me', async (request, response) => {
+    if (!request.user) {
+        return response.sendStatus(401);
     }
 
-    if (request.body.handle === request.user.profile.handle) {
-        console.log('Disable user failed: Cannot disable yourself');
-        return response.status(400).json({ error: 'Cannot disable yourself' });
-    }
+    const user = request.user.profile;
+    const viewModel = {
+        handle: user.handle,
+        name: user.name,
+        avatar: getUserAvatar(user.handle),
+        admin: user.admin,
+        password: !!user.password,
+    };
 
-    /** @type {User} */
-    const user = await storage.getItem(toKey(request.body.handle));
-
-    if (!user) {
-        console.log('Disable user failed: User not found');
-        return response.status(404).json({ error: 'User not found' });
-    }
-
-    user.enabled = false;
-    await storage.setItem(toKey(request.body.handle), user);
-    return response.sendStatus(204);
+    return response.json(viewModel);
 });
 
-endpoints.post('/enable', requireAdminMiddleware, jsonParser, async (request, response) => {
-    if (!request.body.handle) {
-        console.log('Enable user failed: Missing required fields');
-        return response.status(400).json({ error: 'Missing required fields' });
-    }
-
-    /** @type {User} */
-    const user = await storage.getItem(toKey(request.body.handle));
-
-    if (!user) {
-        console.log('Enable user failed: User not found');
-        return response.status(404).json({ error: 'User not found' });
-    }
-
-    user.enabled = true;
-    await storage.setItem(toKey(request.body.handle), user);
-    return response.sendStatus(204);
-});
-
-endpoints.post('/change-password', jsonParser, async (request, response) => {
+authenticatedEndpoints.post('/change-password', jsonParser, async (request, response) => {
     if (!request.body.handle || !request.body.oldPassword || !request.body.newPassword) {
         console.log('Change password failed: Missing required fields');
         return response.status(400).json({ error: 'Missing required fields' });
@@ -797,7 +770,52 @@ endpoints.post('/change-password', jsonParser, async (request, response) => {
     return response.sendStatus(204);
 });
 
-endpoints.post('/create', requireAdminMiddleware, jsonParser, async (request, response) => {
+const adminEndpoints = express.Router();
+
+adminEndpoints.post('/disable', requireAdminMiddleware, jsonParser, async (request, response) => {
+    if (!request.body.handle) {
+        console.log('Disable user failed: Missing required fields');
+        return response.status(400).json({ error: 'Missing required fields' });
+    }
+
+    if (request.body.handle === request.user.profile.handle) {
+        console.log('Disable user failed: Cannot disable yourself');
+        return response.status(400).json({ error: 'Cannot disable yourself' });
+    }
+
+    /** @type {User} */
+    const user = await storage.getItem(toKey(request.body.handle));
+
+    if (!user) {
+        console.log('Disable user failed: User not found');
+        return response.status(404).json({ error: 'User not found' });
+    }
+
+    user.enabled = false;
+    await storage.setItem(toKey(request.body.handle), user);
+    return response.sendStatus(204);
+});
+
+adminEndpoints.post('/enable', requireAdminMiddleware, jsonParser, async (request, response) => {
+    if (!request.body.handle) {
+        console.log('Enable user failed: Missing required fields');
+        return response.status(400).json({ error: 'Missing required fields' });
+    }
+
+    /** @type {User} */
+    const user = await storage.getItem(toKey(request.body.handle));
+
+    if (!user) {
+        console.log('Enable user failed: User not found');
+        return response.status(404).json({ error: 'User not found' });
+    }
+
+    user.enabled = true;
+    await storage.setItem(toKey(request.body.handle), user);
+    return response.sendStatus(204);
+});
+
+adminEndpoints.post('/create', requireAdminMiddleware, jsonParser, async (request, response) => {
     if (!request.body.handle || !request.body.name) {
         console.log('Create user failed: Missing required fields');
         return response.status(400).json({ error: 'Missing required fields' });
@@ -834,16 +852,21 @@ endpoints.post('/create', requireAdminMiddleware, jsonParser, async (request, re
     return response.json({ handle: newUser.handle });
 });
 
-router.use('/api/users', endpoints);
-
 module.exports = {
     initUserStorage,
     ensurePublicDirectoriesExist,
     getAllUserHandles,
     getUserDirectories,
-    userDataMiddleware,
+    setUserDataMiddleware,
+    requireLoginMiddleware,
     migrateUserData,
     getCsrfSecret,
     getCookieSecret,
+    getCookieSessionName,
     router,
+    publicEndpoints,
+    authenticatedEndpoints,
+    adminEndpoints,
+    shouldRedirectToLogin,
+    tryAutoLogin,
 };

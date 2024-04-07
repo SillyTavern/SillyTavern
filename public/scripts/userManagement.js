@@ -1,10 +1,3 @@
-async function getUserList() {
-    const response = await fetch('/api/users/list');
-    const userListObj = await response.json(); // Assuming the response is in JSON format
-    console.log(userListObj)
-    return userListObj;
-}
-
 async function registerNewUser() {
     let handle = String($("#newUserHandle").val());
     let name = String($("#newUserName").val());
@@ -111,17 +104,6 @@ export async function populateUserList() {
     `
 
     const userSelectHTML = `
-    <div id="userSelectBlock" class="flex-container flexFlowColumn alignItemsCenter">
-        <h3>Select User</h3>
-        <small>This is merely a test. <br> Click a user, and then click Login to proceed.</small>
-        <div id="userListBlock">
-            <div id="userList" class="flex-container justifyCenter"></div>
-            <div id="passwordEntryBlock" style="display:none;" class="flex-container flexFlowColumn alignItemsCenter">
-                <h4 id="passwordHeaderText"></h4>
-                <input id="userPassword" class="text_pole" type="password">
-                <div id="loginButton" class='menu_button'>Login</div>
-            </div>
-        </div>
 
         <div id="registerNewUserBlock" style="display:none;">
            ${newUserRegisterationHTML}
