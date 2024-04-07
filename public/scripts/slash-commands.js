@@ -1818,7 +1818,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
         executor = parser.getCommandAt(text, textarea.selectionStart);
         let slashCommand = executor?.name?.toLowerCase() ?? '';
         isReplacable = isInput && (!executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length + 1);
-        if ((isForced || isInput) && textarea.selectionStart > executor.start - 2 && textarea.selectionStart <= executor.start - 2 + executor.name.length + 1) {
+        if ((isForced || isInput) && executor && textarea.selectionStart > executor.start - 2 && textarea.selectionStart <= executor.start - 2 + executor.name.length + 1) {
             slashCommand = slashCommand.slice(0, textarea.selectionStart - (executor.start - 2) - 1);
             executor.name = slashCommand;
             executor.end = executor.start + slashCommand.length;
