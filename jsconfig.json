@@ -13,6 +13,7 @@
     "exclude": [
         "node_modules",
         "**/node_modules/*",
-        "public/lib"
+        "public/lib",
+        "backups/*",
     ]
 }

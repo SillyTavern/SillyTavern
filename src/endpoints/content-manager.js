@@ -7,8 +7,13 @@ const { getConfigValue } = require('../util');
 const { jsonParser } = require('../express-common');
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
-const { getAllUserHandles, getUserDirectories } = require('../users');
 const characterCardParser = require('../character-card-parser.js');
+
+/**
+ * @typedef {Object} ContentItem
+ * @property {string} filename
+ * @property {string} type
+ */
 
 /**
  * Gets the default presets from the content directory.
@@ -58,7 +63,61 @@ function getDefaultPresetFile(filename) {
     }
 }
 
-async function checkForNewContent() {
+/**
+ * Seeds content for a user.
+ * @param {ContentItem[]} contentIndex Content index
+ * @param {import('../users').UserDirectoryList} directories User directories
+ */
+async function seedContentForUser(contentIndex, directories) {
+    if (!fs.existsSync(directories.root)) {
+        fs.mkdirSync(directories.root, { recursive: true });
+    }
+
+    const contentLogPath = path.join(directories.root, 'content.log');
+    const contentLog = getContentLog(contentLogPath);
+
+    for (const contentItem of contentIndex) {
+        // If the content item is already in the log, skip it
+        if (contentLog.includes(contentItem.filename)) {
+            continue;
+        }
+
+        contentLog.push(contentItem.filename);
+        const contentPath = path.join(contentDirectory, contentItem.filename);
+
+        if (!fs.existsSync(contentPath)) {
+            console.log(`Content file ${contentItem.filename} is missing`);
+            continue;
+        }
+
+        const contentTarget = getTargetByType(contentItem.type, directories);
+
+        if (!contentTarget) {
+            console.log(`Content file ${contentItem.filename} has unknown type ${contentItem.type}`);
+            continue;
+        }
+
+        const basePath = path.parse(contentItem.filename).base;
+        const targetPath = path.join(process.cwd(), contentTarget, basePath);
+
+        if (fs.existsSync(targetPath)) {
+            console.log(`Content file ${contentItem.filename} already exists in ${contentTarget}`);
+            continue;
+        }
+
+        fs.cpSync(contentPath, targetPath, { recursive: true, force: false });
+        console.log(`Content file ${contentItem.filename} copied to ${contentTarget}`);
+    }
+
+    fs.writeFileSync(contentLogPath, contentLog.join('\n'));
+}
+
+/**
+ * Checks for new content and seeds it for all users.
+ * @param {import('../users').UserDirectoryList[]} directoriesList List of user directories
+ * @returns {Promise<void>}
+ */
+async function checkForNewContent(directoriesList) {
     try {
         if (getConfigValue('skipContentCheck', false)) {
             return;
@@ -66,52 +125,9 @@ async function checkForNewContent() {
 
         const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
         const contentIndex = JSON.parse(contentIndexText);
-        const userHandles = await getAllUserHandles();
 
-        for (const userHandle of userHandles) {
-            const directories = getUserDirectories(userHandle);
-
-            if (!fs.existsSync(directories.root)) {
-                fs.mkdirSync(directories.root, { recursive: true });
-            }
-
-            const contentLogPath = path.join(directories.root, 'content.log');
-            const contentLog = getContentLog(contentLogPath);
-
-            for (const contentItem of contentIndex) {
-                // If the content item is already in the log, skip it
-                if (contentLog.includes(contentItem.filename)) {
-                    continue;
-                }
-
-                contentLog.push(contentItem.filename);
-                const contentPath = path.join(contentDirectory, contentItem.filename);
-
-                if (!fs.existsSync(contentPath)) {
-                    console.log(`Content file ${contentItem.filename} is missing`);
-                    continue;
-                }
-
-                const contentTarget = getTargetByType(contentItem.type, directories);
-
-                if (!contentTarget) {
-                    console.log(`Content file ${contentItem.filename} has unknown type ${contentItem.type}`);
-                    continue;
-                }
-
-                const basePath = path.parse(contentItem.filename).base;
-                const targetPath = path.join(process.cwd(), contentTarget, basePath);
-
-                if (fs.existsSync(targetPath)) {
-                    console.log(`Content file ${contentItem.filename} already exists in ${contentTarget}`);
-                    continue;
-                }
-
-                fs.cpSync(contentPath, targetPath, { recursive: true, force: false });
-                console.log(`Content file ${contentItem.filename} copied to ${contentTarget}`);
-            }
-
-            fs.writeFileSync(contentLogPath, contentLog.join('\n'));
+        for (const directories of directoriesList) {
+            await seedContentForUser(contentIndex, directories);
         }
     } catch (err) {
         console.log('Content check failed', err);

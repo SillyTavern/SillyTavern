@@ -15,38 +15,19 @@ const { PUBLIC_DIRECTORIES } = require('./constants');
  * @returns {object} Config object
  */
 function getConfig() {
-    function getNewConfig() {
-        try {
-            const config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
-            return config;
-        } catch (error) {
-            console.warn('Failed to read config.yaml');
-            return {};
-        }
+    if (!fs.existsSync('./config.yaml')) {
+        console.error(color.red('No config file found. Please create a config.yaml file. The default config file can be found in the /default folder.'));
+        console.error(color.red('The program will now exit.'));
+        process.exit(1);
     }
 
-    function getLegacyConfig() {
-        try {
-            console.log(color.yellow('WARNING: config.conf is deprecated. Please run "npm run postinstall" to convert to config.yaml'));
-            const config = require(path.join(process.cwd(), './config.conf'));
-            return config;
-        } catch (error) {
-            console.warn('Failed to read config.conf');
-            return {};
-        }
+    try {
+        const config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
+        return config;
+    } catch (error) {
+        console.warn('Failed to read config.yaml');
+        return {};
     }
-
-    if (fs.existsSync('./config.yaml')) {
-        return getNewConfig();
-    }
-
-    if (fs.existsSync('./config.conf')) {
-        return getLegacyConfig();
-    }
-
-    console.error(color.red('No config file found. Please create a config.yaml file. The default config file can be found in the /default folder.'));
-    console.error(color.red('The program will now exit.'));
-    process.exit(1);
 }
 
 /**
@@ -58,6 +39,17 @@ function getConfig() {
 function getConfigValue(key, defaultValue = null) {
     const config = getConfig();
     return _.get(config, key, defaultValue);
+}
+
+/**
+ * Sets a value for the given key in the config object and writes it to the config.yaml file.
+ * @param {string} key Key to set
+ * @param {any} value Value to set
+ */
+function setConfigValue(key, value) {
+    const config = getConfig();
+    _.set(config, key, value);
+    fs.writeFileSync('./config.yaml', yaml.stringify(config));
 }
 
 /**
@@ -600,6 +592,7 @@ class Cache {
 module.exports = {
     getConfig,
     getConfigValue,
+    setConfigValue,
     getVersion,
     getBasicAuthHeader,
     extractFileFromZipBuffer,

@@ -5,6 +5,8 @@ const PUBLIC_DIRECTORIES = {
     extensions: 'public/scripts/extensions',
 };
 
+const DEFAULT_AVATAR = '/img/ai4.png';
+
 /**
  * @type {import('./users').UserDirectoryList}
  * @readonly
@@ -40,12 +42,19 @@ const USER_DIRECTORY_TEMPLATE = Object.freeze({
     vectors: 'vectors',
 });
 
+/**
+ * @type {import('./users').User}
+ * @readonly
+ */
 const DEFAULT_USER = Object.freeze({
     uuid: '00000000-0000-0000-0000-000000000000',
     handle: 'user0',
     name: 'User',
     created: 0,
     password: '',
+    admin: true,
+    enabled: true,
+    salt: '',
 });
 
 const UNSAFE_EXTENSIONS = [
@@ -290,6 +299,7 @@ const OPENROUTER_KEYS = [
 
 module.exports = {
     DEFAULT_USER,
+    DEFAULT_AVATAR,
     PUBLIC_DIRECTORIES,
     USER_DIRECTORY_TEMPLATE,
     UNSAFE_EXTENSIONS,
