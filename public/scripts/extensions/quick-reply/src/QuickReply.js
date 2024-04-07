@@ -221,9 +221,20 @@ export class QuickReply {
                     message.style.whiteSpace = 'pre';
                 }
             };
+            /**@type {HTMLInputElement}*/
+            const tabSize = dom.querySelector('#qr--modal-tabSize');
+            tabSize.value = JSON.parse(localStorage.getItem('qr--tabSize') ?? '4');
+            const updateTabSize = () => {
+                message.style.tabSize = tabSize.value;
+            };
+            tabSize.addEventListener('change', () => {
+                localStorage.setItem('qr--tabSize', JSON.stringify(Number(tabSize.value)));
+                updateTabSize();
+            });
             /**@type {HTMLTextAreaElement}*/
             const message = dom.querySelector('#qr--modal-message');
             updateWrap();
+            updateTabSize();
             message.value = this.message;
             message.addEventListener('input', () => {
                 this.updateMessage(message.value);
