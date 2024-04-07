@@ -1808,16 +1808,20 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
     };
     const show = (isInput = false, isForced = false) => {
         //TODO check if isInput and isForced are both required
-        // isForced = isForced || isInput;
         text = textarea.value;
         // only show with textarea in focus
         if (document.activeElement != textarea) return hide();
         // only show for slash commands
         if (text[0] != '/') return hide();
 
+        // request parser to get command executor (potentially "incomplete", i.e. not an actual existing command) for
+        // cursor position
         executor = parser.getCommandAt(text, textarea.selectionStart);
         let slashCommand = executor?.name?.toLowerCase() ?? '';
+        // do autocomplete if triggered by a user input and we either don't have an executor or the cursor is at the end
+        // of the name part of the command
         isReplacable = isInput && (!executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length + 1);
+        // if forced (ctrl+space) or user input and cursor is in the middle of the name part (not at the end)
         if ((isForced || isInput) && executor && textarea.selectionStart > executor.start - 2 && textarea.selectionStart <= executor.start - 2 + executor.name.length + 1) {
             slashCommand = slashCommand.slice(0, textarea.selectionStart - (executor.start - 2) - 1);
             executor.name = slashCommand;
@@ -1902,7 +1906,6 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
             const helpStrings = Object
                 .keys(parser.commands) // Get all slash commands
                 .filter(it => executor.name == '' || isReplacable ? matchers[matchType](it) : it.toLowerCase() == slashCommand) // Filter by the input
-                // .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
             ;
             result = helpStrings
                 .filter((it,idx)=>[idx, -1].includes(helpStrings.indexOf(parser.commands[it].name.toLowerCase()))) // remove duplicates
@@ -1912,16 +1915,17 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                     value: `/${it}`,
                     score: matchType == 'fuzzy' ? fuzzyScore(it) : null,
                     li: null,
-                })) // Map to the help string
-                .toSorted(matchType == 'fuzzy' ? fuzzyScoreCompare : (a, b) => a.name.localeCompare(b.name))
+                })) // Map to the help string and score
+                .toSorted(matchType == 'fuzzy' ? fuzzyScoreCompare : (a, b) => a.name.localeCompare(b.name)) // sort by score (if fuzzy) or name
             ;
         }
 
-        // add notice if no match found
         if (result.length == 0) {
+            // no result and no input? hide autocomplete
             if (!isInput) {
                 return hide();
             }
+            // otherwise add "no match" notice
             result.push({
                 name: '',
                 label: `No matching commands for "/${slashCommand}"`,
@@ -1930,9 +1934,11 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                 li: null,
             });
         } else if (result.length == 1 && result[0].value == `/${executor.name}`) {
+            // only one result that is exactly the current value? just show hint, no autocomplete
             isReplacable = false;
         }
 
+        // render autocomplete list
         dom.innerHTML = '';
         for (const item of result) {
             const li = document.createElement('li'); {
@@ -1941,13 +1947,15 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                     li.classList.add('selected');
                 }
                 li.innerHTML = item.label;
+                // gotta listen to pointerdown (happens before textarea-blur)
                 li.addEventListener('pointerdown', ()=>{
-                    mouseup = new Promise(resolve=>{
+                    // gotta catch pointerup to restore focus to textarea (blurs after pointerdown)
+                    pointerup = new Promise(resolve=>{
                         const resolver = ()=>{
-                            window.removeEventListener('mouseup', resolver);
+                            window.removeEventListener('pointerup', resolver);
                             resolve();
                         };
-                        window.addEventListener('mouseup', resolver);
+                        window.addEventListener('pointerup', resolver);
                     });
                     selectedItem = item;
                     select();
@@ -1978,6 +1986,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
         if (location.bottom < rect.top || location.top > rect.bottom || location.left < rect.left || location.left > rect.right) return hide();
         const left = Math.max(rect.left, location.left);
         if (location.top <= window.innerHeight / 2) {
+            // if cursor is in lower half of window, show list above line
             dom.style.top = `${location.bottom}px`;
             dom.style.bottom = 'auto';
             dom.style.left = `${left}px`;
@@ -1985,6 +1994,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
             dom.style.maxWidth = `calc(99vw - ${left}px)`;
             dom.style.maxHeight = `calc(${location.bottom}px - 1vh)`;
         } else {
+            // if cursor is in upper half of window, show list below line
             dom.style.top = 'auto';
             dom.style.bottom = `calc(100vh - ${location.top}px)`;
             dom.style.left = `${left}px`;
@@ -1993,6 +2003,10 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
             dom.style.maxHeight = `calc(${location.top}px - 1vh)`;
         }
     };
+    /**
+     * Creates a temporary invisible clone of the textarea to determine cursor coordinates.
+     * @returns {{left:Number, top:Number, bottom:Number}} cursor coordinates
+     */
     const getCursorPosition = () => {
         const inputRect = textarea.getBoundingClientRect();
         clone?.remove();
@@ -2005,15 +2019,11 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
         clone.style.left = `${inputRect.left}px`;
         clone.style.top = `${inputRect.top}px`;
         clone.style.position = 'fixed';
-        // clone.style.whiteSpace = 'pre-wrap';
-        clone.style.zIndex = '10000';
         clone.style.visibility = 'hidden';
-        // clone.style.opacity = 0.5;
         const text = textarea.value;
         const before = text.slice(0, textarea.selectionStart);
         clone.textContent = before;
         const locator = document.createElement('span');
-        // locator.textContent = '.';
         locator.textContent = text[textarea.selectionStart];
         clone.append(locator);
         clone.append(text.slice(textarea.selectionStart + 1));
@@ -2023,17 +2033,17 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
         const locatorRect = locator.getBoundingClientRect();
         const location = {
             left: locatorRect.left,
-            top: locatorRect.top,// - textarea.scrollTop,
-            bottom: locatorRect.bottom,// - textarea.scrollTop,
+            top: locatorRect.top,
+            bottom: locatorRect.bottom,
         };
         clone.remove();
         return location;
     };
-    let mouseup = Promise.resolve();
+    let pointerup = Promise.resolve();
     const select = async() => {
         if (isReplacable) {
             textarea.value = `${text.slice(0, executor.start - 2)}${selectedItem.value}${text.slice(executor.start - 2 + executor.name.length + 1)}`;
-            await mouseup;
+            await pointerup;
             textarea.focus();
             textarea.selectionStart = executor.start - 2 + selectedItem.value.length;
             textarea.selectionEnd = textarea.selectionStart;
@@ -2044,10 +2054,11 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
     textarea.addEventListener('input', ()=>showAutoCompleteDebounced(true));
     textarea.addEventListener('click', ()=>showAutoCompleteDebounced());
     textarea.addEventListener('keydown', (evt)=>{
-        // autocomplete is shown and cursor at end of current command name
+        // autocomplete is shown and cursor at end of current command name (or inside name and typed or forced)
         if (isActive && isReplacable) {
             switch (evt.key) {
                 case 'ArrowUp': {
+                    // select previous item
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey) return;
                     evt.preventDefault();
                     evt.stopPropagation();
@@ -2066,6 +2077,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                     return;
                 }
                 case 'ArrowDown': {
+                    // select next item
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey) return;
                     evt.preventDefault();
                     evt.stopPropagation();
@@ -2083,6 +2095,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                 }
                 case 'Enter':
                 case 'Tab': {
+                    // pick the selected item to autocomplete
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey) return;
                     evt.preventDefault();
                     evt.stopImmediatePropagation();
@@ -2095,6 +2108,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
         if (isActive) {
             switch (evt.key) {
                 case 'Escape': {
+                    // close autocomplete
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey) return;
                     evt.preventDefault();
                     evt.stopPropagation();
@@ -2102,6 +2116,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                     return;
                 }
                 case 'Enter': {
+                    // hide autocomplete on enter (send, execute, ...)
                     if (!evt.shiftKey) {
                         hide();
                         return;
@@ -2114,6 +2129,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
         switch (evt.key) {
             case ' ': {
                 if (evt.ctrlKey) {
+                    // ctrl-space to force show autocomplete
                     showAutoCompleteDebounced(true, true);
                     return;
                 }
@@ -2121,6 +2137,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
             }
         }
         if (['Control', 'Shift', 'Alt'].includes(evt.key)) {
+            // ignore keydown on modifier keys
             return;
         }
         showAutoCompleteDebounced();
@@ -2131,9 +2148,4 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
     }
     window.addEventListener('resize', debounce(updatePosition, 100));
 }
-
-jQuery(function () {
-    const textarea = $('#send_textarea');
-    // setSlashCommandAutocomplete(textarea);
-    setSlashCommandAutoComplete(document.querySelector('#send_textarea'));
-});
+setSlashCommandAutoComplete(document.querySelector('#send_textarea'));
