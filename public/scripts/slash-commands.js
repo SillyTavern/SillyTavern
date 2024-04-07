@@ -1909,13 +1909,26 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
             ;
             result = helpStrings
                 .filter((it,idx)=>[idx, -1].includes(helpStrings.indexOf(parser.commands[it].name.toLowerCase()))) // remove duplicates
-                .map(it => ({
-                    name: it,
-                    label: `${buildHelpStringName(it)}${parser.commands[it].helpStringFormattedWithoutName}`,
-                    value: `/${it}`,
-                    score: matchType == 'fuzzy' ? fuzzyScore(it) : null,
-                    li: null,
-                })) // Map to the help string and score
+                .map(name => {
+                    const cmd = parser.commands[name];
+                    let aliases = '';
+                    if (cmd.aliases?.length > 0) {
+                        aliases = ' (alias: ';
+                        aliases += [cmd.name, ...cmd.aliases]
+                            .filter(it=>it != name)
+                            .map(it=>`<span class="monospace">/${it}</span>`)
+                            .join(', ')
+                        ;
+                        aliases += ')';
+                    }
+                    return {
+                        name: name,
+                        label: `${buildHelpStringName(name)}${cmd.helpString}${aliases}`,
+                        value: `/${name}`,
+                        score: matchType == 'fuzzy' ? fuzzyScore(name) : null,
+                        li: null,
+                    };
+                }) // Map to the help string and score
                 .toSorted(matchType == 'fuzzy' ? fuzzyScoreCompare : (a, b) => a.name.localeCompare(b.name)) // sort by score (if fuzzy) or name
             ;
         }
