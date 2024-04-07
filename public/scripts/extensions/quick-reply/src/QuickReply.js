@@ -209,7 +209,7 @@ export class QuickReply {
             });
             /**@type {HTMLInputElement}*/
             const wrap = dom.querySelector('#qr--modal-wrap');
-            wrap.checked = JSON.parse(localStorage.getItem('qr--wrap'));
+            wrap.checked = JSON.parse(localStorage.getItem('qr--wrap') ?? 'false');
             wrap.addEventListener('click', () => {
                 localStorage.setItem('qr--wrap', JSON.stringify(wrap.checked));
                 updateWrap();
