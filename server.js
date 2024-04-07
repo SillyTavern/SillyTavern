@@ -33,7 +33,13 @@ util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
 
 // local library imports
-const { initUserStorage, userDataMiddleware, getUserDirectories, getAllUserHandles } = require('./src/users');
+const {
+    initUserStorage,
+    userDataMiddleware,
+    getUserDirectories,
+    getAllUserHandles,
+    migrateUserData,
+} = require('./src/users');
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
 const contentManager = require('./src/endpoints/content-manager');
@@ -471,6 +477,7 @@ const setupTasks = async function () {
     await initUserStorage();
     await settingsEndpoint.init();
     ensurePublicDirectoriesExist();
+    await migrateUserData();
     contentManager.checkForNewContent();
     await ensureThumbnailCache();
     cleanUploads();
