@@ -1119,9 +1119,7 @@ async function onGroupGenerationModeInput(e) {
         _thisGroup.generation_mode = Number(e.target.value);
         await editGroup(openGroupId, false, false);
 
-        const isJoin = [group_generation_mode.APPEND, group_generation_mode.APPEND_DISABLED].includes(_thisGroup.generation_mode);
-        $('#rm_group_generation_mode_join_prefix').parent().toggle(isJoin);
-        $('#rm_group_generation_mode_join_suffix').parent().toggle(isJoin);
+        toggleHiddenControls(_thisGroup);
     }
 }
 
@@ -1308,6 +1306,12 @@ async function onHideMutedSpritesClick(value) {
     }
 }
 
+function toggleHiddenControls(group, generationMode = null) {
+    const isJoin = [group_generation_mode.APPEND, group_generation_mode.APPEND_DISABLED].includes(generationMode ?? group?.generation_mode);
+    $('#rm_group_generation_mode_join_prefix').parent().toggle(isJoin);
+    $('#rm_group_generation_mode_join_suffix').parent().toggle(isJoin);
+}
+
 function select_group_chats(groupId, skipAnimation) {
     openGroupId = groupId;
     newGroupMembers = [];
@@ -1343,8 +1347,9 @@ function select_group_chats(groupId, skipAnimation) {
     $('#rm_group_hidemutedsprites').prop('checked', group && group.hideMutedSprites);
     $('#rm_group_automode_delay').val(group?.auto_mode_delay ?? DEFAULT_AUTO_MODE_DELAY);
 
-    $('#rm_group_generation_mode_join_prefix').val(group?.generation_mode_join_prefix).attr('setting', 'generation_mode_join_prefix');
-    $('#rm_group_generation_mode_join_suffix').val(group?.generation_mode_join_suffix).attr('setting', 'generation_mode_join_suffix');
+    $('#rm_group_generation_mode_join_prefix').val(group?.generation_mode_join_prefix ?? '').attr('setting', 'generation_mode_join_prefix');
+    $('#rm_group_generation_mode_join_suffix').val(group?.generation_mode_join_suffix ?? '').attr('setting', 'generation_mode_join_suffix');
+    toggleHiddenControls(group, generationMode);
 
     // bottom buttons
     if (openGroupId) {
@@ -1378,6 +1383,11 @@ function select_group_chats(groupId, skipAnimation) {
     else {
         $('#rm_group_automode_label').hide();
     }
+
+    // Toggle textbox sizes, as input events have not fired here
+    $('#rm_group_chats_block .autoSetHeight').each(element => {
+        resetScrollHeight(element);
+    });
 
     eventSource.emit('groupSelected', { detail: { id: openGroupId, group: group } });
 }
