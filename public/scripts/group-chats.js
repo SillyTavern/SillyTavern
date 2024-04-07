@@ -9,9 +9,10 @@ import {
     saveBase64AsFile,
     PAGINATION_TEMPLATE,
     getBase64Async,
+    resetScrollHeight,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
-import { loadMovingUIState, sortEntitiesList } from './power-user.js';
+import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
 
 import {
     chat,
@@ -351,6 +352,30 @@ export function getGroupCharacterCards(groupId, characterId) {
         return null;
     }
 
+    /** Runs the macro engine on a text, with custom <FIELDNAME> replace @param {string} value @param {string} characterName @param {string} fieldName @returns {string} */
+    function customBaseChatReplace(value, fieldName, characterName) {
+        // We should do the custom field name replacement first, and then run it through the normal macro engine with provided names
+        value = value.replace(/<FIELDNAME>/gi, fieldName);
+        return baseChatReplace(value.trim(), name1, characterName);
+    }
+
+    /** Prepares text with prefix/suffix for a character field @param {string} value @param {string} characterName @param {string} fieldName @returns {string} */
+    function replaceAndPrepareForJoin(value, characterName, fieldName) {
+        value = value.trim();
+        if (!value) {
+            return '';
+        }
+
+        // Prepare and replace prefixes
+        const prefix = customBaseChatReplace(group.generation_mode_join_prefix, fieldName, characterName);
+        const suffix = customBaseChatReplace(group.generation_mode_join_suffix, fieldName, characterName);
+        const separator = power_user.instruct.wrap ? '\n' : '';
+        // Also run the macro replacement on the actual content
+        value = customBaseChatReplace(value, fieldName, characterName);
+
+        return `${prefix}${separator}${value}${separator}${suffix}`;
+    }
+
     const scenarioOverride = chat_metadata['scenario'];
 
     let descriptions = [];
@@ -372,10 +397,10 @@ export function getGroupCharacterCards(groupId, characterId) {
             continue;
         }
 
-        descriptions.push(baseChatReplace(character.description.trim(), name1, character.name));
-        personalities.push(baseChatReplace(character.personality.trim(), name1, character.name));
-        scenarios.push(baseChatReplace(character.scenario.trim(), name1, character.name));
-        mesExamplesArray.push(baseChatReplace(character.mes_example.trim(), name1, character.name));
+        descriptions.push(replaceAndPrepareForJoin(character.description, character.name, 'Description'));
+        personalities.push(replaceAndPrepareForJoin(character.personality, character.name, 'Personality'));
+        scenarios.push(replaceAndPrepareForJoin(character.scenario, character.name, 'Scenario'));
+        mesExamplesArray.push(replaceAndPrepareForJoin(character.mes_example, character.name, 'Example Messages'));
     }
 
     const description = descriptions.filter(x => x.length).join('\n');
@@ -1093,6 +1118,10 @@ async function onGroupGenerationModeInput(e) {
         let _thisGroup = groups.find((x) => x.id == openGroupId);
         _thisGroup.generation_mode = Number(e.target.value);
         await editGroup(openGroupId, false, false);
+
+        const isJoin = [group_generation_mode.APPEND, group_generation_mode.APPEND_DISABLED].includes(_thisGroup.generation_mode);
+        $('#rm_group_generation_mode_join_prefix').parent().toggle(isJoin);
+        $('#rm_group_generation_mode_join_suffix').parent().toggle(isJoin);
     }
 }
 
@@ -1102,6 +1131,15 @@ async function onGroupAutoModeDelayInput(e) {
         _thisGroup.auto_mode_delay = Number(e.target.value);
         await editGroup(openGroupId, false, false);
         setAutoModeWorker();
+    }
+}
+
+async function onGroupGenerationModeTemplateInput(e) {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        const prop = $(e.target).attr('setting');
+        _thisGroup[prop] = String(e.target.value);
+        await editGroup(openGroupId, false, false);
     }
 }
 
@@ -1304,6 +1342,9 @@ function select_group_chats(groupId, skipAnimation) {
     $('#rm_group_allow_self_responses').prop('checked', group && group.allow_self_responses);
     $('#rm_group_hidemutedsprites').prop('checked', group && group.hideMutedSprites);
     $('#rm_group_automode_delay').val(group?.auto_mode_delay ?? DEFAULT_AUTO_MODE_DELAY);
+
+    $('#rm_group_generation_mode_join_prefix').val(group?.generation_mode_join_prefix).attr('setting', 'generation_mode_join_prefix');
+    $('#rm_group_generation_mode_join_suffix').val(group?.generation_mode_join_suffix).attr('setting', 'generation_mode_join_suffix');
 
     // bottom buttons
     if (openGroupId) {
@@ -1796,6 +1837,10 @@ function doCurMemberListPopout() {
 }
 
 jQuery(() => {
+    $(document).on('input', '#rm_group_chats_block .autoSetHeight', function () {
+        resetScrollHeight($(this));
+    });
+
     $(document).on('click', '.group_select', function () {
         const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');
         openGroupById(groupId);
@@ -1823,6 +1868,8 @@ jQuery(() => {
     $('#rm_group_activation_strategy').on('change', onGroupActivationStrategyInput);
     $('#rm_group_generation_mode').on('change', onGroupGenerationModeInput);
     $('#rm_group_automode_delay').on('input', onGroupAutoModeDelayInput);
+    $('#rm_group_generation_mode_join_prefix').on('input', onGroupGenerationModeTemplateInput);
+    $('#rm_group_generation_mode_join_suffix').on('input', onGroupGenerationModeTemplateInput);
     $('#group_avatar_button').on('input', uploadGroupAvatar);
     $('#rm_group_restore_avatar').on('click', restoreGroupAvatar);
     $(document).on('click', '.group_member .right_menu_button', onGroupActionClick);
