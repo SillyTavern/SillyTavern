@@ -1423,6 +1423,10 @@ async function onClickExpressionRemoveCustom() {
     // Remove custom expression from settings
     const index = extension_settings.expressions.custom.indexOf(selectedExpression);
     extension_settings.expressions.custom.splice(index, 1);
+    if (selectedExpression == getFallbackExpression()) {
+        toastr.warning(`Deleted custom expression '${selectedExpression}' that was also selected as the fallback expression.\nFallback expression has been reset to '${DEFAULT_FALLBACK_EXPRESSION}'.`);
+        extension_settings.expressions.fallback_expression = DEFAULT_FALLBACK_EXPRESSION;
+    }
     await renderAdditionalExpressionSettings();
     saveSettingsDebounced();
 
