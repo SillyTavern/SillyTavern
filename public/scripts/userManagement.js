@@ -30,6 +30,7 @@ async function registerNewUser() {
         handle: handle,
         name: name || 'Anonymous',
         password: password,
+        enabled: true
     };
 
     try {
@@ -57,6 +58,38 @@ async function registerNewUser() {
     }
 }
 
+async function loginUser() {
+    const password = $("#userPassword").val();
+    const handle = $('.userSelect.selected').data('foruser');
+    const userInfo = {
+        handle: handle,
+        password: password,
+    };
+
+    try {
+        const response = await $.ajax({
+            url: '/api/users/login',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(userInfo),
+        });
+
+        console.log(response);
+        if (response.handle) {
+            console.log('successfully logged in');
+            alert(`logged in as ${handle}!`);
+            $('#loader').animate({ opacity: 0 }, 300, function () {
+                // Insert user handle/password verification code here
+                // .finally:
+                $('#loader').remove();
+            });
+        }
+    } catch (error) {
+        console.error('Error logging in:', error);
+        alert(error.responseText);
+    }
+}
+
 export async function populateUserList() {
     const userList = await getUserList();
 
@@ -66,6 +99,7 @@ export async function populateUserList() {
         <div class="flex-container flexFlowColumn">
             Register New SillyTavern User
             <div class="flex-container">Username: <input id="newUserHandle" class="text_pole"></div>
+            <div class="flex-container">Display Name: <input id="newUserName" class="text_pole"></div>
             <div class="flex-container">Password: <input id="newUserPassword" class="text_pole" type="password"></div>
             <div class="flex-container">Password confirm: <input id="newUserPasswordConfirm" class="text_pole" type="password"></div>
             This will create a new subfolder in the /data/ directory.
@@ -141,12 +175,5 @@ export async function populateUserList() {
         $("#registerNewUserBlock").hide()
     })
 
-    $("#loginButton").off('click').on('click', function () {
-        $('#loader')
-            .animate({ opacity: 0 }, 300, function () {
-                // Insert user handle/password verification code here
-                //.finally:
-                $('#loader').remove();
-            });
-    });
+    $("#loginButton").off('click').on('click', loginUser)
 }
