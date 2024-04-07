@@ -6,6 +6,7 @@ const { readAllChunks, extractFileFromZipBuffer, forwardFetchResponse } = requir
 const { jsonParser } = require('../express-common');
 
 const API_NOVELAI = 'https://api.novelai.net';
+const IMAGE_NOVELAI = 'https://image.novelai.net';
 
 // Ban bracket generation, plus defaults
 const badWordsList = [
@@ -238,7 +239,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
 
     try {
         console.log('NAI Diffusion request:', request.body);
-        const generateUrl = `${API_NOVELAI}/ai/generate-image`;
+        const generateUrl = `${IMAGE_NOVELAI}/ai/generate-image`;
         const generateResult = await fetch(generateUrl, {
             method: 'POST',
             headers: {

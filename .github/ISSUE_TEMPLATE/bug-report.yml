@@ -69,16 +69,16 @@ body:
       required: false
 
   - type: checkboxes
-    id: idiot-check
+    id: user-check
     attributes:
       label: Please tick the boxes
-      description: Before submitting, please ensure that
+      description: Before submitting, please ensure that you have completed the following checklist
       options:
-        - label: You have explained the issue clearly, and included all relevant info
+        - label: I have explained the issue clearly, and I included all relevant info
           required: true
-        - label: You've checked that this [issue hasn't already been raised](https://github.com/SillyTavern/SillyTavern/issues?q=is%3Aissue)
+        - label: I have checked that this [issue hasn't already been raised](https://github.com/SillyTavern/SillyTavern/issues?q=is%3Aissue)
           required: true
-        - label: You've checked the [docs](https://docs.sillytavern.app/) ![important](https://img.shields.io/badge/Important!-F6094E)
+        - label: I have checked the [docs](https://docs.sillytavern.app/) ![important](https://img.shields.io/badge/Important!-F6094E)
           required: true
 
   - type: markdown
