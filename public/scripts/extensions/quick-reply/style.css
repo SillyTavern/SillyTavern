@@ -269,6 +269,20 @@
   display: flex;
   flex-direction: column;
 }
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+  color: var(--grey70);
+  font-size: smaller;
+  align-items: baseline;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings > .checkbox_label {
+  white-space: nowrap;
+}
+#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings > .checkbox_label > input {
+  font-size: inherit;
+}
 #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-message {
   flex: 1 1 auto;
 }
