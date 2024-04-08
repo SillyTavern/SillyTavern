@@ -518,13 +518,15 @@ function selectMatchingContextTemplate(name) {
 /**
  * Replaces instruct mode macros in the given input string.
  * @param {string} input Input string.
+ * @param {Object<string, *>} env - Map of macro names to the values they'll be substituted with. If the param
  * @returns {string} String with macros replaced.
  */
-export function replaceInstructMacros(input) {
+export function replaceInstructMacros(input, env) {
     if (!input) {
         return '';
     }
     const instructMacros = {
+        'systemPrompt': (power_user.prefer_character_prompt && env.charPrompt ? env.charPrompt : power_user.instruct.system_prompt),
         'instructSystem|instructSystemPrompt': power_user.instruct.system_prompt,
         'instructSystemPromptPrefix': power_user.instruct.system_sequence_prefix,
         'instructSystemPromptSuffix': power_user.instruct.system_sequence_suffix,

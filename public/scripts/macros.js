@@ -257,7 +257,7 @@ export function evaluateMacros(content, env) {
     }
 
     content = diceRollReplace(content);
-    content = replaceInstructMacros(content);
+    content = replaceInstructMacros(content, env);
     content = replaceVariableMacros(content);
     content = content.replace(/{{newline}}/gi, '\n');
     content = content.replace(/\n*{{trim}}\n*/gi, '');
