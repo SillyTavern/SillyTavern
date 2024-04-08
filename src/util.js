@@ -456,63 +456,6 @@ async function forwardBedrockStreamResponse(from, to) {
     to.end();
 }
 
-/* Makes an HTTP/2 request to the specified endpoint.
- *
- * @deprecated Use `node-fetch` if possible.
- * @param {string} endpoint URL to make the request to
- * @param {string} method HTTP method to use
- * @param {string} body Request body
- * @param {object} headers Request headers
- * @returns {Promise<string>} Response body
- */
-function makeHttp2Request(endpoint, method, body, headers) {
-    return new Promise((resolve, reject) => {
-        try {
-            const http2 = require('http2');
-            const url = new URL(endpoint);
-            const client = http2.connect(url.origin);
-
-            const req = client.request({
-                ':method': method,
-                ':path': url.pathname,
-                ...headers,
-            });
-            req.setEncoding('utf8');
-
-            req.on('response', (headers) => {
-                const status = Number(headers[':status']);
-
-                if (status < 200 || status >= 300) {
-                    reject(new Error(`Request failed with status ${status}`));
-                }
-
-                let data = '';
-
-                req.on('data', (chunk) => {
-                    data += chunk;
-                });
-
-                req.on('end', () => {
-                    console.log(data);
-                    resolve(data);
-                });
-            });
-
-            req.on('error', (err) => {
-                reject(err);
-            });
-
-            if (body) {
-                req.write(body);
-            }
-
-            req.end();
-        } catch (e) {
-            reject(e);
-        }
-    });
-}
-
 /**
  * Makes an HTTP/2 request to the specified endpoint.
  *
