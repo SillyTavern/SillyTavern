@@ -9,7 +9,7 @@ const getClient = (function() {
     let aksk = '';
     return function(region_name) {
         const secrets = readSecret(SECRET_KEYS.BEDROCK);
-        const _aksk = secrets[0] + secrets[1];
+        const _aksk = secrets[0] + secrets[1] || '';
         const refresh = _aksk != aksk;
 
         if(! client[region_name] || refresh) {
@@ -37,7 +37,7 @@ const getRuntimeClient = (function() {
     let aksk = '';
     return function(region_name) {
         const secrets = readSecret(SECRET_KEYS.BEDROCK);
-        const _aksk = secrets[0] + secrets[1];
+        const _aksk = secrets[0] + secrets[1] || '';
         const refresh = _aksk != aksk;
 
         if(! client[region_name] || refresh) {

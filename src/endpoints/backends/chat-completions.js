@@ -568,9 +568,11 @@ async function sendBedrockRequest(request, response) {
             modelId: request.body.model, // required
         };
 
+        const bedrock_region = request.body.bedrock_region || 'us-east-1';
+
         console.log('Claude request:', JSON.stringify(bedrockClaudeRequestBody));
         if (request.body.stream) {
-            const respBedrockStream = await invokeModelWithStreaming('us-east-1', bedrockClaudeRequestBody);
+            const respBedrockStream = await invokeModelWithStreaming(bedrock_region, bedrockClaudeRequestBody);
 
             // Pipe remote SSE stream to Express response
             forwardBedrockStreamResponse(respBedrockStream, response);
@@ -579,7 +581,7 @@ async function sendBedrockRequest(request, response) {
             //     console.log(color.red(`Claude API returned error: ${generateResponse.status} ${generateResponse.statusText}\n${await generateResponse.text()}\n${divider}`));
             //     return response.status(generateResponse.status).send({ error: true });
             // }
-            const resp = await invokeModel('us-east-1', bedrockClaudeRequestBody);
+            const resp = await invokeModel(bedrock_region, bedrockClaudeRequestBody);
             const statusCode = resp['$metadata']['httpStatusCode'];
             const body = resp.body.transformToString();
 

@@ -1711,6 +1711,10 @@ async function sendOpenAIRequest(type, messages, signal) {
         if (!isQuiet) {
             generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
         }
+
+        if (isBedrock) {
+            generate_data['bedrock_region'] = oai_settings.bedrock_region;
+        }
     }
 
     if (isOpenRouter) {
