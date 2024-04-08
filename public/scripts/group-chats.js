@@ -10,6 +10,7 @@ import {
     PAGINATION_TEMPLATE,
     getBase64Async,
     resetScrollHeight,
+    initScrollHeight,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -1310,6 +1311,8 @@ function toggleHiddenControls(group, generationMode = null) {
     const isJoin = [group_generation_mode.APPEND, group_generation_mode.APPEND_DISABLED].includes(generationMode ?? group?.generation_mode);
     $('#rm_group_generation_mode_join_prefix').parent().toggle(isJoin);
     $('#rm_group_generation_mode_join_suffix').parent().toggle(isJoin);
+    initScrollHeight($('#rm_group_generation_mode_join_prefix'));
+    initScrollHeight($('#rm_group_generation_mode_join_suffix'));
 }
 
 function select_group_chats(groupId, skipAnimation) {
