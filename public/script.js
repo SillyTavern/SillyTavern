@@ -821,7 +821,7 @@ let create_save = {
 //animation right menu
 export const ANIMATION_DURATION_DEFAULT = 125;
 export let animation_duration = ANIMATION_DURATION_DEFAULT;
-let animation_easing = 'ease-in-out';
+export let animation_easing = 'ease-in-out';
 let popup_type = '';
 let chat_file_for_del = '';
 let online_status = 'no_connection';
