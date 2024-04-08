@@ -103,7 +103,8 @@ function downloadAssetsList(url) {
                     if (assetType == 'extension') {
                         assetTypeMenu.append(`
                         <div class="assets-list-git">
-                            To download extensions from this page, you need to have <a href="https://git-scm.com/downloads" target="_blank">Git</a> installed.
+                            To download extensions from this page, you need to have <a href="https://git-scm.com/downloads" target="_blank">Git</a> installed.<br>
+                            Click the <i class="fa-solid fa-sm fa-arrow-up-right-from-square"></i> icon to visit the Extension's repo for tips on how to use it.
                         </div>`);
                     }
 
@@ -187,7 +188,7 @@ function downloadAssetsList(url) {
                             .append(`<div class="flex-container flexFlowColumn flexNoGap">
                                         <span class="asset-name flex-container alignitemscenter">
                                             <b>${displayName}</b>
-                                            <a class="asset_preview" href="${url}" target="_blank" title="Preview in browser">
+                                            <a class="asset_preview" href="${url}" target="_blank" title="Extension repo/guide: ${url}">
                                                 <i class="fa-solid fa-sm ${previewIcon}"></i>
                                             </a>
                                         </span>
