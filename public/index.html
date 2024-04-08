@@ -4368,23 +4368,43 @@
                                     </div>
                                     <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="flex-container paddingLeftRight5 flex2">
                                         <div class="flex1 flexGap5">
-                                            <div class="flex-container flexnowrap width100p whitespacenowrap">
+                                            <label for="rm_group_activation_strategy" class="flexnowrap width100p whitespacenowrap">
                                                 <span data-i18n="Group reply strategy">Group reply strategy</span>
-                                            </div>
+                                            </label>
                                             <select id="rm_group_activation_strategy">
                                                 <option value="0" data-i18n="Natural order">Natural order</option>
                                                 <option value="1" data-i18n="List order">List order</option>
                                             </select>
                                         </div>
                                         <div class="flex1 flexGap5">
-                                            <div class="flex-container flexnowrap width100p whitespacenowrap">
+                                            <label for="rm_group_generation_mode" class="flexnowrap width100p whitespacenowrap">
                                                 <span data-i18n="Group generation handling mode">Group generation handling mode</span>
-                                            </div>
+                                            </label>
                                             <select id="rm_group_generation_mode">
                                                 <option value="0" data-i18n="Swap character cards">Swap character cards</option>
                                                 <option value="1" data-i18n="Join character cards (exclude muted)">Join character cards (exclude muted)</option>
                                                 <option value="2" data-i18n="Join character cards (include muted)">Join character cards (include muted)</option>
                                             </select>
+                                        </div>
+                                        <div class="flex1 flexGap5" title="Inserted before each part of the joined fields.">
+                                            <label for="rm_group_generation_mode_join_prefix" class="flexnowrap width100p whitespacenowrap">
+                                                <span data-i18n="Join Prefix">Join Prefix</span>
+                                                <div class="fa-solid fa-circle-info opacity50p"
+                                                    data-i18n="[title]When 'Join character cards' is selected, all respective fields of the characters are being joined together.&#13;This means that in the story string for example all character descriptions will be joined to one big text.&#13;If you want those fields to be separated, you can define a prefix or suffix here.&#13;&#13;This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)"
+                                                    title="When 'Join character cards' is selected, all respective fields of the characters are being joined together.&#13;This means that in the story string for example all character descriptions will be joined to one big text.&#13;If you want those fields to be separated, you can define a prefix or suffix here.&#13;&#13;This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)">
+                                                </div>
+                                            </label>
+                                            <textarea id="rm_group_generation_mode_join_prefix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
+                                        </div>
+                                        <div class="flex1 flexGap5" title="Inserted after each part of the joined fields.">
+                                            <label for="rm_group_generation_mode_join_suffix" class="flexnowrap width100p whitespacenowrap">
+                                                <span data-i18n="Join Suffix">Join Suffix</span>
+                                                <div class="fa-solid fa-circle-info opacity50p"
+                                                    data-i18n="[title]When 'Join character cards' is selected, all respective fields of the characters are being joined together.&#13;This means that in the story string for example all character descriptions will be joined to one big text.&#13;If you want those fields to be separated, you can define a prefix or suffix here.&#13;&#13;This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)"
+                                                    title="When 'Join character cards' is selected, all respective fields of the characters are being joined together.&#13;This means that in the story string for example all character descriptions will be joined to one big text.&#13;If you want those fields to be separated, you can define a prefix or suffix here.&#13;&#13;This value supports normal macros and will also replace {{char}} with the relevant char's name and &lt;FIELDNAME&gt; with the name of the part (e.g.: description, personality, scenario, etc.)">
+                                                </div>
+                                            </label>
+                                            <textarea id="rm_group_generation_mode_join_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                         </div>
                                     </div>
                                     <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">

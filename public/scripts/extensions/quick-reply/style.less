@@ -293,6 +293,20 @@
 					flex: 1 1 auto;
 					display: flex;
 					flex-direction: column;
+					> .qr--modal-editorSettings {
+						display: flex;
+						flex-direction: row;
+						gap: 1em;
+						color: var(--grey70);
+						font-size: smaller;
+						align-items: baseline;
+						> .checkbox_label {
+							white-space: nowrap;
+							> input {
+								font-size: inherit;
+							}
+						}
+					}
 					> #qr--modal-message {
 						flex: 1 1 auto;
 					}
