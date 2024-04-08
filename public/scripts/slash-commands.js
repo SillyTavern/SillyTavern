@@ -2095,7 +2095,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                     evt.preventDefault();
                     evt.stopPropagation();
                     const idx = result.indexOf(selectedItem);
-                    const  newIdx = (idx + 1) % result.length;
+                    const newIdx = (idx + 1) % result.length;
                     selectedItem.li.classList.remove('selected');
                     selectedItem = result[newIdx];
                     selectedItem.li.classList.add('selected');
