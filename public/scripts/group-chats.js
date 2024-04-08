@@ -68,9 +68,12 @@ import {
     depth_prompt_depth_default,
     loadItemizedPrompts,
     animation_duration,
+    depth_prompt_role_default,
+    shouldAutoContinue,
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
+import { isExternalMediaAllowed } from './chats.js';
 
 export {
     selected_group,
@@ -174,7 +177,7 @@ async function loadGroupChat(chatId) {
     return [];
 }
 
-export async function getGroupChat(groupId) {
+export async function getGroupChat(groupId, reload = false) {
     const group = groups.find((x) => x.id === groupId);
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
@@ -189,6 +192,8 @@ export async function getGroupChat(groupId) {
         await printMessages();
     } else {
         sendSystemMessage(system_message_types.GROUP, '', { isSmallSys: true });
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
         if (group && Array.isArray(group.members)) {
             for (let member of group.members) {
                 const character = characters.find(x => x.avatar === member || x.name === member);
@@ -199,7 +204,9 @@ export async function getGroupChat(groupId) {
 
                 const mes = await getFirstCharacterMessage(character);
                 chat.push(mes);
+                await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                 addOneMessage(mes);
+                await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
             }
         }
         await saveGroupChat(groupId, false);
@@ -208,6 +215,10 @@ export async function getGroupChat(groupId) {
     if (group) {
         let metadata = group.chat_metadata ?? {};
         updateChatMetadata(metadata, true);
+    }
+
+    if (reload) {
+        select_group_chats(groupId, true);
     }
 
     await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
@@ -280,7 +291,7 @@ export function findGroupMemberId(arg) {
  * Gets depth prompts for group members.
  * @param {string} groupId Group ID
  * @param {number} characterId Current Character ID
- * @returns {{depth: number, text: string}[]} Array of depth prompts
+ * @returns {{depth: number, text: string, role: string}[]} Array of depth prompts
  */
 export function getGroupDepthPrompts(groupId, characterId) {
     if (!groupId) {
@@ -316,9 +327,10 @@ export function getGroupDepthPrompts(groupId, characterId) {
 
         const depthPromptText = baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim(), name1, character.name) || '';
         const depthPromptDepth = character.data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
+        const depthPromptRole = character.data?.extensions?.depth_prompt?.role ?? depth_prompt_role_default;
 
         if (depthPromptText) {
-            depthPrompts.push({ text: depthPromptText, depth: depthPromptDepth });
+            depthPrompts.push({ text: depthPromptText, depth: depthPromptDepth, role: depthPromptRole });
         }
     }
 
@@ -672,9 +684,10 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         await delay(1);
     }
 
-    const group = groups.find((x) => x.id === selected_group);
-    let typingIndicator = $('#chat .typing_indicator');
+    /** @type {any} Caution: JS war crimes ahead */
     let textResult = '';
+    let typingIndicator = $('#chat .typing_indicator');
+    const group = groups.find((x) => x.id === selected_group);
 
     if (!group || !Array.isArray(group.members) || !group.members.length) {
         sendSystemMessage(system_message_types.EMPTY, '', { isSmallSys: true });
@@ -772,8 +785,15 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             }
 
             // Wait for generation to finish
-            const generateFinished = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
-            textResult = await generateFinished;
+            textResult = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
+            let messageChunk = textResult?.messageChunk;
+
+            if (messageChunk) {
+                while (shouldAutoContinue(messageChunk, type === 'impersonate')) {
+                    textResult = await Generate('continue', { automatic_trigger: by_auto_mode, ...(params || {}) });
+                    messageChunk = textResult?.messageChunk;
+                }
+            }
         }
     } finally {
         typingIndicator.hide();
@@ -1291,6 +1311,10 @@ function select_group_chats(groupId, skipAnimation) {
         $('#rm_group_delete').show();
         $('#rm_group_scenario').show();
         $('#group-metadata-controls .chat_lorebook_button').removeClass('disabled').prop('disabled', false);
+        $('#group_open_media_overrides').show();
+        const isMediaAllowed = isExternalMediaAllowed();
+        $('#group_media_allowed_icon').toggle(isMediaAllowed);
+        $('#group_media_forbidden_icon').toggle(!isMediaAllowed);
     } else {
         $('#rm_group_submit').show();
         if ($('#groupAddMemberListToggle .inline-drawer-content').css('display') !== 'block') {
@@ -1299,6 +1323,7 @@ function select_group_chats(groupId, skipAnimation) {
         $('#rm_group_delete').hide();
         $('#rm_group_scenario').hide();
         $('#group-metadata-controls .chat_lorebook_button').addClass('disabled').prop('disabled', true);
+        $('#group_open_media_overrides').hide();
     }
 
     updateFavButtonState(group?.fav ?? false);

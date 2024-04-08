@@ -60,6 +60,14 @@ function getTabbyHeaders() {
     }) : {};
 }
 
+function getLlamaCppHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.LLAMACPP);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
 function getOobaHeaders() {
     const apiKey = readSecret(SECRET_KEYS.OOBA);
 
@@ -93,40 +101,21 @@ function getOverrideHeaders(urlHost) {
  * @param {string|null} server API server for new request
  */
 function setAdditionalHeaders(request, args, server) {
-    let headers;
+    const headerGetters = {
+        [TEXTGEN_TYPES.MANCER]: getMancerHeaders,
+        [TEXTGEN_TYPES.APHRODITE]: getAphroditeHeaders,
+        [TEXTGEN_TYPES.TABBY]: getTabbyHeaders,
+        [TEXTGEN_TYPES.TOGETHERAI]: getTogetherAIHeaders,
+        [TEXTGEN_TYPES.OOBA]: getOobaHeaders,
+        [TEXTGEN_TYPES.INFERMATICAI]: getInfermaticAIHeaders,
+        [TEXTGEN_TYPES.DREAMGEN]: getDreamGenHeaders,
+        [TEXTGEN_TYPES.OPENROUTER]: getOpenRouterHeaders,
+        [TEXTGEN_TYPES.KOBOLDCPP]: getKoboldCppHeaders,
+        [TEXTGEN_TYPES.LLAMACPP]: getLlamaCppHeaders,
+    };
 
-    switch (request.body.api_type) {
-        case TEXTGEN_TYPES.MANCER:
-            headers = getMancerHeaders();
-            break;
-        case TEXTGEN_TYPES.APHRODITE:
-            headers = getAphroditeHeaders();
-            break;
-        case TEXTGEN_TYPES.TABBY:
-            headers = getTabbyHeaders();
-            break;
-        case TEXTGEN_TYPES.TOGETHERAI:
-            headers = getTogetherAIHeaders();
-            break;
-        case TEXTGEN_TYPES.OOBA:
-            headers = getOobaHeaders();
-            break;
-        case TEXTGEN_TYPES.INFERMATICAI:
-            headers = getInfermaticAIHeaders();
-            break;
-        case TEXTGEN_TYPES.DREAMGEN:
-            headers = getDreamGenHeaders();
-            break;
-        case TEXTGEN_TYPES.OPENROUTER:
-            headers = getOpenRouterHeaders();
-            break;
-        case TEXTGEN_TYPES.KOBOLDCPP:
-            headers = getKoboldCppHeaders();
-            break;
-        default:
-            headers = {};
-            break;
-    }
+    const getHeaders = headerGetters[request.body.api_type];
+    const headers = getHeaders ? getHeaders() : {};
 
     if (typeof server === 'string' && server.length > 0) {
         try {

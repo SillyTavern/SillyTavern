@@ -37,6 +37,7 @@
 
     --fullred: rgba(255, 0, 0, 1);
     --crimson70a: rgba(100, 0, 0, 0.7);
+    --crimson-hover: rgba(150, 50, 50, 0.5);
     --okGreen70a: rgba(0, 100, 0, 0.7);
     --cobalt30a: rgba(100, 100, 255, 0.3);
     --greyCAIbg: rgb(36, 36, 37);
@@ -139,6 +140,7 @@ body {
 
 ::-webkit-scrollbar {
     width: 10px;
+    height: 10px;
     scrollbar-gutter: stable;
 }
 
@@ -146,7 +148,7 @@ body {
     overflow-y: auto !important;
 }
 
-::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb:vertical {
     background-color: var(--grey7070a);
     box-shadow: inset 0 0 0 1px var(--black50a);
     border-radius: 10px;
@@ -154,6 +156,15 @@ body {
     border: 2px solid transparent;
     border-top: 20px solid transparent;
     min-height: 40px;
+}
+::-webkit-scrollbar-thumb:horizontal {
+    background-color: var(--grey7070a);
+    box-shadow: inset 0 0 0 1px var(--black50a);
+    border-radius: 10px;
+    background-clip: content-box;
+    border: 2px solid transparent;
+    border-left: 20px solid transparent;
+    min-width: 40px;
 }
 
 table.responsiveTable {
@@ -372,6 +383,15 @@ small {
     text-align: center;
 }
 
+.mes.smallSysMes .mes_text p:last-child {
+    margin: 0;
+}
+
+.mes.smallSysMes .swipe_right,
+.mes.smallSysMes .swipe_left {
+    display: none !important;
+}
+
 .mes.smallSysMes .mes_text {
     padding: 0 !important;
     text-align: center;
@@ -460,7 +480,7 @@ body.reduced-motion #bg_custom {
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    z-index: 3000;
+    z-index: 3005;
 }
 
 #sheld {
@@ -518,6 +538,8 @@ body.reduced-motion #bg_custom {
     top: 5px;
     margin-right: 5px;
     z-index: 2000;
+    min-width: 55px;
+    justify-content: flex-end;
 }
 
 .panelControlBar .drag-grabber {
@@ -620,7 +642,8 @@ body.reduced-motion #bg_custom {
     padding-right: 2px;
 }
 
-#send_form>#nonQRFormItems>div>div:not(.mes_stop) {
+#rightSendForm>div:not(.mes_stop),
+#leftSendForm>div {
     width: var(--bottomFormBlockSize);
     height: var(--bottomFormBlockSize);
     margin: 0;
@@ -635,7 +658,8 @@ body.reduced-motion #bg_custom {
     transition: all 300ms;
 }
 
-#send_form>#nonQRFormItems>div>div:hover {
+#rightSendForm>div:hover,
+#leftSendForm>div:hover {
     opacity: 1;
     filter: brightness(1.2);
 }
@@ -1364,13 +1388,21 @@ input[type="file"] {
     display: none;
     flex-direction: column;
     box-shadow: 0 0 10px var(--black70a);
-    z-index: 3000;
+    z-index: 4000;
     left: 0;
     top: 0;
     margin: 0;
     right: unset;
     width: calc(((100svw - var(--sheldWidth)) / 2) - 1px);
 
+}
+
+#movingDivs>div {
+    z-index: 4000;
+}
+
+#left-nav-panel {
+    z-index: 3000;
 }
 
 .floating_prompt_radio_group,
@@ -1386,7 +1418,7 @@ input[type="file"] {
 }
 
 .extension_token_counter {
-    font-size: calc(var(--mainFontSize) * 0.9);
+    font-size: calc(var(--mainFontSize) * 0.875);
     width: 100%;
     text-align: right;
     margin-bottom: 5px;
@@ -2050,6 +2082,7 @@ grammarly-extension {
     display: flex;
     flex-direction: column;
     overflow-y: hidden;
+    overflow-x: hidden;
 }
 
 .rm_stat_block {
@@ -2068,6 +2101,14 @@ grammarly-extension {
     aspect-ratio: 1 / 1;
     width: unset !important;
     min-width: var(--sheldWidth);
+}
+
+.horizontal_scrolling_dialogue_popup {
+    overflow-x: unset !important;
+}
+
+.vertical_scrolling_dialogue_popup {
+    overflow-y: unset !important;
 }
 
 #bulk_tag_popup_holder,
@@ -2092,9 +2133,20 @@ grammarly-extension {
 }
 
 #bulk_tag_popup_reset,
+#bulk_tag_popup_remove_mutual,
 #dialogue_popup_ok {
     background-color: var(--crimson70a);
     cursor: pointer;
+}
+
+#bulk_tag_popup_reset:hover,
+#bulk_tag_popup_remove_mutual:hover,
+#dialogue_popup_ok:hover {
+    background-color: var(--crimson-hover);
+}
+
+#bulk_tags_avatars_block {
+    max-height: 70vh;
 }
 
 #dialogue_popup_input {
@@ -2728,7 +2780,7 @@ input[type="range"]::-webkit-slider-thumb {
     max-height: calc(100vh - 84px);
     max-height: calc(100svh - 84px);
     position: absolute;
-    z-index: 3000;
+    z-index: 4001;
     margin-left: auto;
     margin-right: auto;
     left: 0;
@@ -2806,7 +2858,7 @@ h5 {
     width: 100%;
     height: 100vh;
     height: 100svh;
-    z-index: 3001;
+    z-index: 4100;
     top: 0;
     background-color: var(--black70a);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
@@ -3093,7 +3145,7 @@ body.big-avatars .missing-avatar {
     }
 }
 
-span.warning {
+.warning {
     color: var(--warning);
     font-weight: bolder;
 }
@@ -3332,6 +3384,10 @@ a {
     transition: all 250ms;
 }
 
+#ui_language_select {
+    width: 10em;
+}
+
 #extensions_settings .inline-drawer-toggle.inline-drawer-header:hover,
 #extensions_settings2 .inline-drawer-toggle.inline-drawer-header:hover {
     filter: brightness(150%);
@@ -3355,10 +3411,16 @@ a {
     margin: 0 auto;
     height: var(--topBarBlockSize);
     justify-content: center;
-    z-index: 3000;
+    z-index: 3005;
     position: relative;
     width: var(--sheldWidth);
 
+}
+
+body:has(.drawer-content.maximized) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)),
+body:has(.drawer-content.open) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)),
+body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDrawer:not(.fillLeft):not(.fillRight)) {
+    z-index: 4005;
 }
 
 .drawer {
@@ -3459,7 +3521,11 @@ a {
     /* z-index: 1000 !important; */
 }
 
-.drawer-content.maximized {
+body.movingUI .inline-drawer-maximize {
+    display: none;
+}
+
+body:not(.movingUI) .drawer-content.maximized {
     width: var(--sheldWidth) !important;
     top: var(--topBarBlockSize) !important;
     margin: 0 auto !important;
@@ -3822,6 +3888,7 @@ a {
 .paginationjs-size-changer select {
     width: unset;
     margin: 0;
+    font-size: calc(var(--mainFontSize) * 0.85);
 }
 
 .paginationjs-pages ul li a {
@@ -3851,10 +3918,10 @@ a {
 }
 
 .paginationjs-nav {
-    padding: 5px;
+    padding: 2px;
     font-size: calc(var(--mainFontSize) * .8);
     font-weight: bold;
-    width: max-content;
+    width: auto;
 }
 
 .onboarding {

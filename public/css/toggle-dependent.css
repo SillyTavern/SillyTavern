@@ -439,3 +439,11 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
 #openai_image_inlining:checked~#image_inlining_hint {
     display: block;
 }
+
+#smooth_streaming:not(:checked)~#smooth_streaming_speed_control {
+    display: none;
+}
+
+#smooth_streaming:checked~#smooth_streaming_speed_control {
+    display: block;
+}

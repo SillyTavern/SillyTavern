@@ -8,6 +8,7 @@ import {
     Generate,
     getGeneratingApi,
     is_send_press,
+    isStreamingEnabled,
 } from '../script.js';
 import { debounce, delay, getStringHash } from './utils.js';
 import { decodeTextTokens, getTokenizerBestMatch } from './tokenizers.js';
@@ -64,11 +65,15 @@ function renderAlternativeTokensView() {
     renderTopLogprobs();
 
     const { messageLogprobs, continueFrom } = getActiveMessageLogprobData() || {};
-    if (!messageLogprobs?.length) {
+    const usingSmoothStreaming = isStreamingEnabled() && power_user.smooth_streaming;
+    if (!messageLogprobs?.length || usingSmoothStreaming) {
         const emptyState = $('<div></div>');
+        const noTokensMsg = usingSmoothStreaming
+            ? 'Token probabilities are not available when using Smooth Streaming.'
+            : 'No token probabilities available for the current message.';
         const msg = power_user.request_token_probabilities
-            ? 'No token probabilities available for the current message.'
-            : `<span>Enable <b>Request token probabilities</b> in the User Settings menu to use this feature.</span>`;
+            ? noTokensMsg
+            : '<span>Enable <b>Request token probabilities</b> in the User Settings menu to use this feature.</span>';
         emptyState.html(msg);
         emptyState.addClass('logprobs_empty_state');
         view.append(emptyState);
@@ -139,7 +144,7 @@ function renderTopLogprobs() {
     const candidates = topLogprobs
         .sort(([, logA], [, logB]) => logB - logA)
         .map(([text, log]) => {
-            if (log < 0) {
+            if (log <= 0) {
                 const probability = Math.exp(log);
                 sum += probability;
                 return [text, probability, log];

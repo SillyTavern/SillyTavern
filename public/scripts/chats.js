@@ -5,6 +5,7 @@ import {
     addCopyToCodeBlocks,
     appendMediaToMessage,
     callPopup,
+    characters,
     chat,
     eventSource,
     event_types,
@@ -12,9 +13,14 @@ import {
     getRequestHeaders,
     hideSwipeButtons,
     name2,
+    reloadCurrentChat,
     saveChatDebounced,
+    saveSettingsDebounced,
     showSwipeButtons,
+    this_chid,
 } from '../script.js';
+import { selected_group } from './group-chats.js';
+import { power_user } from './power-user.js';
 import {
     extractTextFromHTML,
     extractTextFromMarkdown,
@@ -416,6 +422,56 @@ export function decodeStyleTags(text) {
     });
 }
 
+async function openExternalMediaOverridesDialog() {
+    const entityId = getCurrentEntityId();
+
+    if (!entityId) {
+        toastr.info('No character or group selected');
+        return;
+    }
+
+    const template = $('#forbid_media_override_template > .forbid_media_override').clone();
+    template.find('.forbid_media_global_state_forbidden').toggle(power_user.forbid_external_images);
+    template.find('.forbid_media_global_state_allowed').toggle(!power_user.forbid_external_images);
+
+    if (power_user.external_media_allowed_overrides.includes(entityId)) {
+        template.find('#forbid_media_override_allowed').prop('checked', true);
+    }
+    else if (power_user.external_media_forbidden_overrides.includes(entityId)) {
+        template.find('#forbid_media_override_forbidden').prop('checked', true);
+    }
+    else {
+        template.find('#forbid_media_override_global').prop('checked', true);
+    }
+
+    callPopup(template, 'text', '', { wide: false, large: false });
+}
+
+export function getCurrentEntityId() {
+    if (selected_group) {
+        return String(selected_group);
+    }
+
+    return characters[this_chid]?.avatar ?? null;
+}
+
+export function isExternalMediaAllowed() {
+    const entityId = getCurrentEntityId();
+    if (!entityId) {
+        return !power_user.forbid_external_images;
+    }
+
+    if (power_user.external_media_allowed_overrides.includes(entityId)) {
+        return true;
+    }
+
+    if (power_user.external_media_forbidden_overrides.includes(entityId)) {
+        return false;
+    }
+
+    return !power_user.forbid_external_images;
+}
+
 jQuery(function () {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');
@@ -509,6 +565,32 @@ jQuery(function () {
     $(document).on('click', 'body.documentstyle .mes .mes_text', function () {
         if ($('.edit_textarea').length) return;
         $(this).closest('.mes').find('.mes_edit').trigger('click');
+    });
+
+    $(document).on('click', '.open_media_overrides', openExternalMediaOverridesDialog);
+    $(document).on('input', '#forbid_media_override_allowed', function () {
+        const entityId = getCurrentEntityId();
+        if (!entityId) return;
+        power_user.external_media_allowed_overrides.push(entityId);
+        power_user.external_media_forbidden_overrides = power_user.external_media_forbidden_overrides.filter((v) => v !== entityId);
+        saveSettingsDebounced();
+        reloadCurrentChat();
+    });
+    $(document).on('input', '#forbid_media_override_forbidden', function () {
+        const entityId = getCurrentEntityId();
+        if (!entityId) return;
+        power_user.external_media_forbidden_overrides.push(entityId);
+        power_user.external_media_allowed_overrides = power_user.external_media_allowed_overrides.filter((v) => v !== entityId);
+        saveSettingsDebounced();
+        reloadCurrentChat();
+    });
+    $(document).on('input', '#forbid_media_override_global', function () {
+        const entityId = getCurrentEntityId();
+        if (!entityId) return;
+        power_user.external_media_allowed_overrides = power_user.external_media_allowed_overrides.filter((v) => v !== entityId);
+        power_user.external_media_forbidden_overrides = power_user.external_media_forbidden_overrides.filter((v) => v !== entityId);
+        saveSettingsDebounced();
+        reloadCurrentChat();
     });
 
     $('#file_form_input').on('change', onFileAttach);

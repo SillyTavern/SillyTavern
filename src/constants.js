@@ -163,6 +163,7 @@ const CHAT_COMPLETION_SOURCES = {
     MISTRALAI: 'mistralai',
     CUSTOM: 'custom',
     BEDROCK: 'bedrock',
+    COHERE: 'cohere',
 };
 
 const UPLOADS_PATH = './uploads';

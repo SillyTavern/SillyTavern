@@ -73,19 +73,31 @@ function getBasicAuthHeader(auth) {
 /**
  * Returns the version of the running instance. Get the version from the package.json file and the git revision.
  * Also returns the agent string for the Horde API.
- * @returns {Promise<{agent: string, pkgVersion: string, gitRevision: string | null, gitBranch: string | null}>} Version info object
+ * @returns {Promise<{agent: string, pkgVersion: string, gitRevision: string | null, gitBranch: string | null, commitDate: string | null, isLatest: boolean}>} Version info object
  */
 async function getVersion() {
     let pkgVersion = 'UNKNOWN';
     let gitRevision = null;
     let gitBranch = null;
+    let commitDate = null;
+    let isLatest = true;
+
     try {
         const pkgJson = require(path.join(process.cwd(), './package.json'));
         pkgVersion = pkgJson.version;
         if (!process['pkg'] && commandExistsSync('git')) {
             const git = simpleGit();
-            gitRevision = await git.cwd(process.cwd()).revparse(['--short', 'HEAD']);
-            gitBranch = await git.cwd(process.cwd()).revparse(['--abbrev-ref', 'HEAD']);
+            const cwd = process.cwd();
+            gitRevision = await git.cwd(cwd).revparse(['--short', 'HEAD']);
+            gitBranch = await git.cwd(cwd).revparse(['--abbrev-ref', 'HEAD']);
+            commitDate = await git.cwd(cwd).show(['-s', '--format=%ci', gitRevision]);
+
+            const trackingBranch = await git.cwd(cwd).revparse(['--abbrev-ref', '@{u}']);
+
+            // Might fail, but exception is caught. Just don't run anything relevant after in this block...
+            const localLatest = await git.cwd(cwd).revparse(['HEAD']);
+            const remoteLatest = await git.cwd(cwd).revparse([trackingBranch]);
+            isLatest = localLatest === remoteLatest;
         }
     }
     catch {
@@ -93,7 +105,7 @@ async function getVersion() {
     }
 
     const agent = `SillyTavern:${pkgVersion}:Cohee#1207`;
-    return { agent, pkgVersion, gitRevision, gitBranch };
+    return { agent, pkgVersion, gitRevision, gitBranch, commitDate: commitDate?.trim() ?? null, isLatest };
 }
 
 /**

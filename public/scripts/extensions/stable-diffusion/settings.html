@@ -36,6 +36,7 @@
                 <option value="horde">Stable Horde</option>
                 <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
                 <option value="vlad">SD.Next (vladmandic)</option>
+                <option value="drawthings">DrawThings HTTP API</option>
                 <option value="novel">NovelAI Diffusion</option>
                 <option value="openai">OpenAI (DALL-E)</option>
                 <option value="comfy">ComfyUI</option>
@@ -55,6 +56,21 @@
                 <label for="sd_auto_auth">Authentication (optional)</label>
                 <input id="sd_auto_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
                 <i><b>Important:</b> run SD Web UI with the <tt>--api</tt> flag! The server must be accessible from the SillyTavern host machine.</i>
+            </div>
+            <div data-sd-source="drawthings">
+                <label for="sd_drawthings_url">DrawThings API URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_drawthings_url" type="text" class="text_pole" placeholder="Example: {{drawthings_url}}" value="{{drawthings_url}}" />
+                    <div id="sd_drawthings_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <label for="sd_drawthings_auth">Authentication (optional)</label>
+                <input id="sd_drawthings_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
+                <i><b>Important:</b> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine.</i>
             </div>
             <div data-sd-source="vlad">
                 <label for="sd_vlad_url">SD.Next API URL</label>
@@ -85,15 +101,9 @@
                         Sanitize prompts (recommended)
                     </span>
                 </label>
-                <label for="sd_horde_karras" class="checkbox_label">
-                    <input id="sd_horde_karras" type="checkbox" />
-                    <span data-i18n="Karras (not all samplers supported)">
-                        Karras (not all samplers supported)
-                    </span>
-                </label>
             </div>
             <div data-sd-source="novel">
-                <div class="flex-container">
+                <div class="flex-container flexFlowColumn">
                     <label for="sd_novel_anlas_guard" class="checkbox_label flex1" title="Automatically adjust generation parameters to ensure free image generations.">
                         <input id="sd_novel_anlas_guard" type="checkbox" />
                         <span data-i18n="Avoid spending Anlas">
@@ -160,6 +170,26 @@
             <select id="sd_model"></select>
             <label for="sd_sampler">Sampling method</label>
             <select id="sd_sampler"></select>
+            <label data-sd-source="horde" for="sd_horde_karras" class="checkbox_label">
+                <input id="sd_horde_karras" type="checkbox" />
+                <span data-i18n="Karras (not all samplers supported)">
+                    Karras (not all samplers supported)
+                </span>
+            </label>
+            <div data-sd-source="novel" class="flex-container">
+                <label class="flex1 checkbox_label" title="SMEA versions of samplers are modified to perform better at high resolution.">
+                    <input id="sd_novel_sm" type="checkbox" />
+                    <span data-i18n="SMEA">
+                        SMEA
+                    </span>
+                </label>
+                <label class="flex1 checkbox_label" title="DYN variants of SMEA samplers often lead to more varied output, but may fail at very high resolutions.">
+                    <input id="sd_novel_sm_dyn" type="checkbox" />
+                    <span data-i18n="DYN">
+                        DYN
+                    </span>
+                </label>
+            </div>
             <label for="sd_resolution">Resolution</label>
             <select id="sd_resolution"><!-- Populated in JS --></select>
             <div data-sd-source="comfy">

@@ -354,15 +354,15 @@ jQuery(function () {
                         <div class="flex1 flex-container flexFlowColumn flexNoGap">
                             <label for="caption_multimodal_api">API</label>
                             <select id="caption_multimodal_api" class="flex1 text_pole">
-                                <option value="llamacpp">llama.cpp</option>
-                                <option value="ooba">Text Generation WebUI (oobabooga)</option>
+                                <option value="anthropic">Anthropic</option>
+                                <option value="custom">Custom (OpenAI-compatible)</option>
+                                <option value="google">Google MakerSuite</option>
                                 <option value="koboldcpp">KoboldCpp</option>
+                                <option value="llamacpp">llama.cpp</option>
                                 <option value="ollama">Ollama</option>
                                 <option value="openai">OpenAI</option>
-                                <option value="anthropic">Anthropic</option>
                                 <option value="openrouter">OpenRouter</option>
-                                <option value="google">Google MakerSuite</option>
-                                <option value="custom">Custom (OpenAI-compatible)</option>
+                                <option value="ooba">Text Generation WebUI (oobabooga)</option>
                             </select>
                         </div>
                         <div class="flex1 flex-container flexFlowColumn flexNoGap">
@@ -375,6 +375,14 @@ jQuery(function () {
                                 <option data-type="google" value="gemini-pro-vision">gemini-pro-vision</option>
                                 <option data-type="openrouter" value="openai/gpt-4-vision-preview">openai/gpt-4-vision-preview</option>
                                 <option data-type="openrouter" value="haotian-liu/llava-13b">haotian-liu/llava-13b</option>
+                                <option data-type="openrouter" value="anthropic/claude-3-haiku">anthropic/claude-3-haiku</option>
+                                <option data-type="openrouter" value="anthropic/claude-3-sonnet">anthropic/claude-3-sonnet</option>
+                                <option data-type="openrouter" value="anthropic/claude-3-opus">anthropic/claude-3-opus</option>
+                                <option data-type="openrouter" value="anthropic/claude-3-haiku:beta">anthropic/claude-3-haiku:beta</option>
+                                <option data-type="openrouter" value="anthropic/claude-3-sonnet:beta">anthropic/claude-3-sonnet:beta</option>
+                                <option data-type="openrouter" value="anthropic/claude-3-opus:beta">anthropic/claude-3-opus:beta</option>
+                                <option data-type="openrouter" value="nousresearch/nous-hermes-2-vision-7b">nousresearch/nous-hermes-2-vision-7b</option>
+                                <option data-type="openrouter" value="google/gemini-pro-vision">google/gemini-pro-vision</option>
                                 <option data-type="ollama" value="ollama_current">[Currently selected]</option>
                                 <option data-type="ollama" value="bakllava:latest">bakllava:latest</option>
                                 <option data-type="ollama" value="llava:latest">llava:latest</option>

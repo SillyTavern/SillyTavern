@@ -1,45 +1,95 @@
 # This workflow will publish a docker image for every full release to the GitHub package repository
 
-name: Create Docker Image on Release
+name: Create Docker Image (Release and Staging)
 
 on:
   release:
     # Allow pre-releases
     types: [published]
+  schedule:
+    # Build the staging image everyday at 00:00 UTC
+    - cron: "0 0 * * *"
+  push:
+    # Temporary workaround
+    branches:
+      - release
 
 env:
   # This should allow creation of docker images even in forked repositories
-  # Image name may not contain uppercase characters, so we can not use the repository name
-  # Creates a string like: ghcr.io/SillyTavern/sillytavern
-  image_name: ghcr.io/sillytavern/sillytavern
+  REPO: ${{ github.repository }}
+  REGISTRY: ghcr.io
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      # Build docker image using dockerfile and tag it with branch name
-      # Assumes branch name is the version number
-      - name: Build the Docker image
+      # Workaround for GitHub repo names containing uppercase characters
+      - name: Set lowercase repo name
         run: |
-          docker build . --file Dockerfile --tag $image_name:${{ github.ref_name }}
+          echo "IMAGE_NAME=${REPO,,}" >> ${GITHUB_ENV}
+
+      # Using the following workaround because currently GitHub Actions 
+      # does not support logical AND/OR operations on triggers
+      # It's currently not possible to have `branches` under the `schedule` trigger
+      - name: Checkout the release branch (on release)
+        if: ${{ github.event_name == 'release' || github.event_name == 'push' }}
+        uses: actions/checkout@v4.1.2
+        with:
+          ref: "release"
+
+      - name: Checkout the staging branch
+        if: ${{ github.event_name == 'schedule' }}
+        uses: actions/checkout@v4.1.2
+        with:
+          ref: "staging"
+
+      # Get current branch name
+      # This is also part of the workaround for Actions not allowing logical
+      # AND/OR operators on triggers
+      # Otherwise the action triggered by schedule always has ref_name = release
+      - name: Get the current branch name
+        run: |
+          echo "BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)" >> ${GITHUB_ENV}
+
+      # Setting up QEMU for multi-arch image build
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract metadata (tags, labels) for the image
+        uses: docker/metadata-action@v5.5.1
+        id: metadata
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: ${{ env.BRANCH_NAME }}
 
       # Login into package repository as the person who created the release
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Assumes release is the latest and marks image as such
-      - name: Docker Tag and Push
+      # Build docker image using dockerfile for amd64 and arm64
+      # Tag it with branch name
+      # Assumes branch name is the version number
+      - name: Build and push
+        uses: docker/build-push-action@v5.3.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+
+      # If the workflow is triggered by a release, marks and push the image as such
+      - name: Docker tag latest and push
+        if: ${{ github.event_name == 'release' }}
         run: |
-          docker tag $image_name:${{ github.ref_name }} $image_name:latest
-          docker push $image_name:${{ github.ref_name }}
-          docker push $image_name:latest
+          docker tag $IMAGE_NAME:${{ github.ref_name }} $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:latest

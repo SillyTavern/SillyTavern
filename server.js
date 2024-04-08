@@ -10,8 +10,6 @@ const util = require('util');
 
 // cli/fs related library imports
 const open = require('open');
-const sanitize = require('sanitize-filename');
-const writeFileAtomicSync = require('write-file-atomic').sync;
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 
@@ -29,26 +27,19 @@ const net = require('net');
 const dns = require('dns');
 const fetch = require('node-fetch').default;
 
-// image processing related library imports
-const jimp = require('jimp');
-
 // Unrestrict console logs display limit
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
+util.inspect.defaultOptions.depth = 4;
 
 // local library imports
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
-const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
 const {
     getVersion,
     getConfigValue,
     color,
-    tryParse,
-    clientRelativePath,
-    removeFileExtension,
-    getImages,
     forwardFetchResponse,
 } = require('./src/util');
 const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
@@ -65,15 +56,29 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
 // Set default DNS resolution order to IPv4 first
 dns.setDefaultResultOrder('ipv4first');
 
+const DEFAULT_PORT = 8000;
+const DEFAULT_AUTORUN = false;
+const DEFAULT_LISTEN = false;
+const DEFAULT_CORS_PROXY = false;
+
 const cliArguments = yargs(hideBin(process.argv))
-    .option('autorun', {
+    .usage('Usage: <your-start-script> <command> [options]')
+    .option('port', {
+        type: 'number',
+        default: null,
+        describe: `Sets the port under which SillyTavern will run.\nIf not provided falls back to yaml config 'port'.\n[config default: ${DEFAULT_PORT}]`,
+    }).option('autorun', {
         type: 'boolean',
-        default: false,
-        describe: 'Automatically launch SillyTavern in the browser.',
+        default: null,
+        describe: `Automatically launch SillyTavern in the browser.\nAutorun is automatically disabled if --ssl is set to true.\nIf not provided falls back to yaml config 'autorun'.\n[config default: ${DEFAULT_AUTORUN}]`,
+    }).option('listen', {
+        type: 'boolean',
+        default: null,
+        describe: `SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If false, will limit it only to internal localhost (127.0.0.1).\nIf not provided falls back to yaml config 'listen'.\n[config default: ${DEFAULT_LISTEN}]`,
     }).option('corsProxy', {
         type: 'boolean',
-        default: false,
-        describe: 'Enables CORS proxy',
+        default: null,
+        describe: `Enables CORS proxy\nIf not provided falls back to yaml config 'enableCorsProxy'.\n[config default: ${DEFAULT_CORS_PROXY}]`,
     }).option('disableCsrf', {
         type: 'boolean',
         default: false,
@@ -101,12 +106,13 @@ const app = express();
 app.use(compression());
 app.use(responseTime());
 
-const server_port = process.env.SILLY_TAVERN_PORT || getConfigValue('port', 8000);
+const server_port = cliArguments.port ?? process.env.SILLY_TAVERN_PORT ?? getConfigValue('port', DEFAULT_PORT);
+const autorun = (cliArguments.autorun ?? getConfigValue('autorun', DEFAULT_AUTORUN)) && !cliArguments.ssl;
+const listen = cliArguments.listen ?? getConfigValue('listen', DEFAULT_LISTEN);
+const enableCorsProxy = cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', DEFAULT_CORS_PROXY);
+const basicAuthMode = getConfigValue('basicAuthMode', false);
 
-const autorun = (getConfigValue('autorun', false) || cliArguments.autorun) && !cliArguments.ssl;
-const listen = getConfigValue('listen', false);
-
-const { DIRECTORIES, UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('./src/constants');
+const { DIRECTORIES, UPLOADS_PATH } = require('./src/constants');
 
 // CORS Settings //
 const CORS = cors({
@@ -116,9 +122,9 @@ const CORS = cors({
 
 app.use(CORS);
 
-if (listen && getConfigValue('basicAuthMode', false)) app.use(basicAuthMiddleware);
+if (listen && basicAuthMode) app.use(basicAuthMiddleware);
 
-app.use(whitelistMiddleware);
+app.use(whitelistMiddleware(listen));
 
 // CSRF Protection //
 if (!cliArguments.disableCsrf) {
@@ -154,7 +160,7 @@ if (!cliArguments.disableCsrf) {
     });
 }
 
-if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
+if (enableCorsProxy) {
     const bodyParser = require('body-parser');
     app.use(bodyParser.json({
         limit: '200mb',
@@ -207,7 +213,7 @@ if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
 app.use(express.static(process.cwd() + '/public', {}));
 
 app.use('/backgrounds', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), 'public/backgrounds', req.url.replace(/%20/g, ' ')));
+    const filePath = decodeURIComponent(path.join(process.cwd(), DIRECTORIES.backgrounds, req.url.replace(/%20/g, ' ')));
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.status(404).send('File not found');
@@ -236,185 +242,6 @@ app.get('/version', async function (_, response) {
     const data = await getVersion();
     response.send(data);
 });
-
-app.post('/getuseravatars', jsonParser, function (request, response) {
-    var images = getImages('public/User Avatars');
-    response.send(JSON.stringify(images));
-
-});
-
-app.post('/deleteuseravatar', jsonParser, function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-
-    if (request.body.avatar !== sanitize(request.body.avatar)) {
-        console.error('Malicious avatar name prevented');
-        return response.sendStatus(403);
-    }
-
-    const fileName = path.join(DIRECTORIES.avatars, sanitize(request.body.avatar));
-
-    if (fs.existsSync(fileName)) {
-        fs.rmSync(fileName);
-        return response.send({ result: 'ok' });
-    }
-
-    return response.sendStatus(404);
-});
-
-app.post('/savetheme', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.themes, sanitize(request.body.name) + '.json');
-    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
-
-    return response.sendStatus(200);
-});
-
-app.post('/savemovingui', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.movingUI, sanitize(request.body.name) + '.json');
-    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
-
-    return response.sendStatus(200);
-});
-
-app.post('/savequickreply', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.quickreplies, sanitize(request.body.name) + '.json');
-    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
-
-    return response.sendStatus(200);
-});
-
-app.post('/deletequickreply', jsonParser, (request, response) => {
-    if (!request.body || !request.body.name) {
-        return response.sendStatus(400);
-    }
-
-    const filename = path.join(DIRECTORIES.quickreplies, sanitize(request.body.name) + '.json');
-    if (fs.existsSync(filename)) {
-        fs.unlinkSync(filename);
-    }
-
-    return response.sendStatus(200);
-});
-
-
-app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
-    if (!request.file) return response.sendStatus(400);
-
-    try {
-        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
-        const crop = tryParse(request.query.crop);
-        let rawImg = await jimp.read(pathToUpload);
-
-        if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
-            rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
-        }
-
-        const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
-
-        const filename = request.body.overwrite_name || `${Date.now()}.png`;
-        const pathToNewFile = path.join(DIRECTORIES.avatars, filename);
-        writeFileAtomicSync(pathToNewFile, image);
-        fs.rmSync(pathToUpload);
-        return response.send({ path: filename });
-    } catch (err) {
-        return response.status(400).send('Is not a valid image');
-    }
-});
-
-
-/**
- * Ensure the directory for the provided file path exists.
- * If not, it will recursively create the directory.
- *
- * @param {string} filePath - The full path of the file for which the directory should be ensured.
- */
-function ensureDirectoryExistence(filePath) {
-    const dirname = path.dirname(filePath);
-    if (fs.existsSync(dirname)) {
-        return true;
-    }
-    ensureDirectoryExistence(dirname);
-    fs.mkdirSync(dirname);
-}
-
-/**
- * Endpoint to handle image uploads.
- * The image should be provided in the request body in base64 format.
- * Optionally, a character name can be provided to save the image in a sub-folder.
- *
- * @route POST /uploadimage
- * @param {Object} request.body - The request payload.
- * @param {string} request.body.image - The base64 encoded image data.
- * @param {string} [request.body.ch_name] - Optional character name to determine the sub-directory.
- * @returns {Object} response - The response object containing the path where the image was saved.
- */
-app.post('/uploadimage', jsonParser, async (request, response) => {
-    // Check for image data
-    if (!request.body || !request.body.image) {
-        return response.status(400).send({ error: 'No image data provided' });
-    }
-
-    try {
-        // Extracting the base64 data and the image format
-        const splitParts = request.body.image.split(',');
-        const format = splitParts[0].split(';')[0].split('/')[1];
-        const base64Data = splitParts[1];
-        const validFormat = ['png', 'jpg', 'webp', 'jpeg', 'gif'].includes(format);
-        if (!validFormat) {
-            return response.status(400).send({ error: 'Invalid image format' });
-        }
-
-        // Constructing filename and path
-        let filename;
-        if (request.body.filename) {
-            filename = `${removeFileExtension(request.body.filename)}.${format}`;
-        } else {
-            filename = `${Date.now()}.${format}`;
-        }
-
-        // if character is defined, save to a sub folder for that character
-        let pathToNewFile = path.join(DIRECTORIES.userImages, sanitize(filename));
-        if (request.body.ch_name) {
-            pathToNewFile = path.join(DIRECTORIES.userImages, sanitize(request.body.ch_name), sanitize(filename));
-        }
-
-        ensureDirectoryExistence(pathToNewFile);
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-        await fs.promises.writeFile(pathToNewFile, imageBuffer);
-        response.send({ path: clientRelativePath(pathToNewFile) });
-    } catch (error) {
-        console.log(error);
-        response.status(500).send({ error: 'Failed to save the image' });
-    }
-});
-
-app.post('/listimgfiles/:folder', (req, res) => {
-    const directoryPath = path.join(process.cwd(), 'public/user/images/', sanitize(req.params.folder));
-
-    if (!fs.existsSync(directoryPath)) {
-        fs.mkdirSync(directoryPath, { recursive: true });
-    }
-
-    try {
-        const images = getImages(directoryPath);
-        return res.send(images);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send({ error: 'Unable to retrieve files' });
-    }
-});
-
 
 function cleanUploads() {
     try {
@@ -498,6 +325,40 @@ redirect('/getbackgrounds', '/api/backgrounds/all');
 redirect('/delbackground', '/api/backgrounds/delete');
 redirect('/renamebackground', '/api/backgrounds/rename');
 redirect('/downloadbackground', '/api/backgrounds/upload'); // yes, the downloadbackground endpoint actually uploads one
+
+// Redirect deprecated theme API endpoints
+redirect('/savetheme', '/api/themes/save');
+
+// Redirect deprecated avatar API endpoints
+redirect('/getuseravatars', '/api/avatars/get');
+redirect('/deleteuseravatar', '/api/avatars/delete');
+redirect('/uploaduseravatar', '/api/avatars/upload');
+
+// Redirect deprecated quick reply endpoints
+redirect('/deletequickreply', '/api/quick-replies/delete');
+redirect('/savequickreply', '/api/quick-replies/save');
+
+// Redirect deprecated image endpoints
+redirect('/uploadimage', '/api/images/upload');
+redirect('/listimgfiles/:folder', '/api/images/list/:folder');
+
+// Redirect deprecated moving UI endpoints
+redirect('/savemovingui', '/api/moving-ui/save');
+
+// Moving UI
+app.use('/api/moving-ui', require('./src/endpoints/moving-ui').router);
+
+// Image management
+app.use('/api/images', require('./src/endpoints/images').router);
+
+// Quick reply management
+app.use('/api/quick-replies', require('./src/endpoints/quick-replies').router);
+
+// Avatar management
+app.use('/api/avatars', require('./src/endpoints/avatars').router);
+
+// Theme management
+app.use('/api/themes', require('./src/endpoints/themes').router);
 
 // OpenAI API
 app.use('/api/openai', require('./src/endpoints/openai').router);
@@ -614,7 +475,15 @@ const autorunUrl = new URL(
 const setupTasks = async function () {
     const version = await getVersion();
 
-    console.log(`SillyTavern ${version.pkgVersion}` + (version.gitBranch ? ` '${version.gitBranch}' (${version.gitRevision})` : ''));
+    // Print formatted header
+    console.log();
+    console.log(`SillyTavern ${version.pkgVersion}`);
+    console.log(version.gitBranch ? `Running '${version.gitBranch}' (${version.gitRevision}) - ${version.commitDate}` : '');
+    if (version.gitBranch && !version.isLatest && ['staging', 'release'].includes(version.gitBranch)) {
+        console.log('INFO: Currently not on the latest commit.');
+        console.log('      Run \'git pull\' to update. If you have any merge conflicts, run \'git reset --hard\' and \'git pull\' to reset your branch.');
+    }
+    console.log();
 
     // TODO: do endpoint init functions depend on certain directories existing or not existing? They should be callable
     // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
@@ -655,6 +524,14 @@ const setupTasks = async function () {
     if (listen) {
         console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
+
+    if (basicAuthMode) {
+        const basicAuthUser = getConfigValue('basicAuthUser', {});
+        if (!basicAuthUser?.username || !basicAuthUser?.password) {
+            console.warn(color.yellow('Basic Authentication is enabled, but username or password is not set or empty!'));
+        }
+    }
+
 };
 
 /**
@@ -669,11 +546,11 @@ async function loadPlugins() {
         return cleanupPlugins;
     } catch {
         console.log('Plugin loading failed.');
-        return () => {};
+        return () => { };
     }
 }
 
-if (listen && !getConfigValue('whitelistMode', true) && !getConfigValue('basicAuthMode', false)) {
+if (listen && !getConfigValue('whitelistMode', true) && !basicAuthMode) {
     if (getConfigValue('securityOverride', false)) {
         console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
     }

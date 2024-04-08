@@ -155,17 +155,23 @@
             "system_prompt": "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
             "input_sequence": "### Instruction:",
             "output_sequence": "### Response:",
-            "first_output_sequence": "",
             "last_output_sequence": "",
-            "system_sequence_prefix": "",
-            "system_sequence_suffix": "",
+            "system_sequence": "### Input:",
             "stop_sequence": "",
-            "separator_sequence": "",
             "wrap": true,
             "macro": true,
             "names": false,
             "names_force_groups": true,
-            "activation_regex": ""
+            "activation_regex": "",
+            "system_sequence_prefix": "",
+            "system_sequence_suffix": "",
+            "first_output_sequence": "",
+            "skip_examples": false,
+            "output_suffix": "\n\n",
+            "input_suffix": "\n\n",
+            "system_suffix": "\n\n",
+            "user_alignment_message": "",
+            "system_same_as_user": false
         },
         "default_context": "Default",
         "context": {
@@ -456,7 +462,6 @@
         "openai_max_context": 4095,
         "openai_max_tokens": 300,
         "wrap_in_quotes": false,
-        "names_in_completion": false,
         "prompts": [
             {
                 "name": "Main Prompt",

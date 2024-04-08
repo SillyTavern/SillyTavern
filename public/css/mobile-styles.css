@@ -98,6 +98,11 @@
         border: 1px solid var(--SmartThemeBorderColor);
     }
 
+    .drawer-content .floating_panel_maximize,
+    .drawer-content .inline-drawer-maximize {
+        display: none;
+    }
+
     #select_chat_popup {
         align-items: start;
         height: min-content;
