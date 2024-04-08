@@ -187,7 +187,7 @@ export class SlashCommandClosure {
                     ;
                 }
 
-                this.scope.pipe = await executor.command.callback(args, value);
+                this.scope.pipe = await executor.command.callback(args, value ?? '');
             }
         }
         /**@type {SlashCommandClosureResult} */
