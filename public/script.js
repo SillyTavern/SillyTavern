@@ -10175,6 +10175,7 @@ jQuery(async function () {
             '#character_cross',
             '#avatar-and-name-block',
             '#shadow_popup',
+            '.shadow_popup',
             '#world_popup',
             '.ui-widget',
             '.text_pole',
