@@ -308,6 +308,55 @@ async function changePassword(handle, callback) {
     }
 }
 
+async function deleteUser(handle, callback) {
+    try {
+        if (handle === currentUser.handle) {
+            toastr.error('Cannot delete yourself', 'Failed to delete user');
+            throw new Error('Cannot delete yourself');
+        }
+
+        let purge = false;
+        let confirmHandle = '';
+
+        const template = $(renderTemplate('deleteUser'));
+        template.find('#deleteUserName').text(handle);
+        template.find('input[name="deleteUserData"]').on('input', function () {
+            purge = $(this).is(':checked');
+        });
+        template.find('input[name="deleteUserHandle"]').on('input', function () {
+            confirmHandle = String($(this).val());
+        });
+
+        const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Delete', cancelButton: 'Cancel', wide: false, large: false });
+
+        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+            throw new Error('Delete user cancelled');
+        }
+
+        if (handle !== confirmHandle) {
+            toastr.error('Handles do not match', 'Failed to delete user');
+            throw new Error('Handles do not match');
+        }
+
+        const response = await fetch('/api/users/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ handle, purge }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to delete user');
+            throw new Error('Failed to delete user');
+        }
+
+        toastr.success('User deleted successfully', 'User Deleted');
+        callback();
+    } catch (error) {
+        console.error('Error deleting user:', error);
+    }
+}
+
 async function openAdminPanel() {
     async function renderUsers() {
         const users = await getUsers();
@@ -327,6 +376,7 @@ async function openAdminPanel() {
             userBlock.find('.userPromoteButton').toggle(!user.admin).on('click', () => promoteUser(user.handle, renderUsers));
             userBlock.find('.userDemoteButton').toggle(user.admin).on('click', () => demoteUser(user.handle, renderUsers));
             userBlock.find('.userChangePasswordButton').on('click', () => changePassword(user.handle, renderUsers));
+            userBlock.find('.userDelete').on('click', () => deleteUser(user.handle, renderUsers));
             userBlock.find('.userBackupButton').on('click', function () {
                 $(this).addClass('disabled').off('click');
                 backupUserData(user.handle, renderUsers);
