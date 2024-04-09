@@ -254,7 +254,7 @@ export class QuickReply {
             });
             setSlashCommandAutoComplete(message, true);
             //TODO move tab support for textarea into its own helper(?) and use for both this and .editor_maximize
-            message.addEventListener('keydown', (evt) => {
+            message.addEventListener('keydown', async(evt) => {
                 if (evt.key == 'Tab' && !evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
                     evt.preventDefault();
                     const start = message.selectionStart;
@@ -286,7 +286,15 @@ export class QuickReply {
                     evt.stopPropagation();
                     evt.preventDefault();
                     if (executeShortcut.checked) {
-                        this.executeFromEditor();
+                        const selectionStart = message.selectionStart;
+                        const selectionEnd = message.selectionEnd;
+                        message.blur();
+                        await this.executeFromEditor();
+                        if (document.activeElement != message) {
+                            message.focus();
+                            message.selectionStart = selectionStart;
+                            message.selectionEnd = selectionEnd;
+                        }
                     }
                 }
             });
