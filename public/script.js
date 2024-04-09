@@ -4574,7 +4574,7 @@ function addChatsPreamble(mesSendString) {
 
 function addChatsSeparator(mesSendString) {
     if (power_user.context.chat_start) {
-        return substituteParams(power_user.context.chat_start) + '\n' + mesSendString;
+        return substituteParams(power_user.context.chat_start + '\n') + mesSendString;
     }
 
     else {
