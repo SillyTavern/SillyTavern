@@ -117,6 +117,57 @@ async function disableUser(handle, callback) {
 }
 
 /**
+ * Promote a user to admin.
+ * @param {string} handle User handle
+ * @param {function} callback Success callback
+ * @returns {Promise<void>}
+ */
+async function promoteUser(handle, callback) {
+    try {
+        const response = await fetch('/api/users/promote', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ handle }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to promote user');
+            throw new Error('Failed to promote user');
+        }
+
+        callback();
+    } catch (error) {
+        console.error('Error promoting user:', error);
+    }
+}
+
+/**
+ * Demote a user from admin.
+ * @param {string} handle User handle
+ * @param {function} callback Success callback
+ */
+async function demoteUser(handle, callback) {
+    try {
+        const response = await fetch('/api/users/demote', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ handle }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to demote user');
+            throw new Error('Failed to demote user');
+        }
+
+        callback();
+    } catch (error) {
+        console.error('Error demoting user:', error);
+    }
+}
+
+/**
  * Create a new user.
  * @param {HTMLFormElement} form Form element
  */
@@ -168,6 +219,43 @@ async function createUser(form, callback) {
     }
 }
 
+/**
+ * Backup a user's data.
+ * @param {string} handle Handle of the user to backup
+ * @param {function} callback Success callback
+ * @returns {Promise<void>}
+ */
+async function backupUserData(handle, callback) {
+    try {
+        toastr.info('Please wait for the download to start.', 'Backup Requested');
+        const response = await fetch('/api/users/backup', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ handle }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to backup user data');
+            throw new Error('Failed to backup user data');
+        }
+
+        const blob = await response.blob();
+        const header = response.headers.get('Content-Disposition');
+        const parts = header.split(';');
+        const filename = parts[1].split('=')[1].replaceAll('"', '');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        callback();
+    } catch (error) {
+        console.error('Error backing up user data:', error);
+    }
+}
+
 async function openAdminPanel() {
     async function renderUsers() {
         const users = await getUsers();
@@ -184,6 +272,12 @@ async function openAdminPanel() {
             userBlock.find('.userCreated').text(new Date(user.created).toLocaleString());
             userBlock.find('.userEnableButton').toggle(!user.enabled).on('click', () => enableUser(user.handle, renderUsers));
             userBlock.find('.userDisableButton').toggle(user.enabled).on('click', () => disableUser(user.handle, renderUsers));
+            userBlock.find('.userPromoteButton').toggle(!user.admin).on('click', () => promoteUser(user.handle, renderUsers));
+            userBlock.find('.userDemoteButton').toggle(user.admin).on('click', () => demoteUser(user.handle, renderUsers));
+            userBlock.find('.userBackupButton').on('click', function () {
+                $(this).addClass('disabled').off('click');
+                backupUserData(user.handle, renderUsers);
+            });
             template.find('.usersList').append(userBlock);
         }
     }

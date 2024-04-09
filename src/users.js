@@ -8,9 +8,10 @@ const os = require('os');
 const storage = require('node-persist');
 const express = require('express');
 const mime = require('mime-types');
+const archiver = require('archiver');
 
 const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, DEFAULT_AVATAR } = require('./constants');
-const { getConfigValue, color, delay, setConfigValue } = require('./util');
+const { getConfigValue, color, delay, setConfigValue, generateTimestamp } = require('./util');
 const { readSecret, writeSecret } = require('./endpoints/secrets');
 
 const KEY_PREFIX = 'user:';
@@ -585,6 +586,42 @@ function requireAdminMiddleware(request, response, next) {
 }
 
 /**
+ * Creates an archive of the user's data root directory.
+ * @param {string} handle User handle
+ * @param {import('express').Response} response Express response object to write to
+ * @returns {Promise<void>} Promise that resolves when the archive is created
+ */
+async function createBackupArchive(handle, response) {
+    const directories = getUserDirectories(handle);
+
+    console.log('Backup requested for', handle);
+    const archive = archiver('zip');
+
+    archive.on('error', function (err) {
+        response.status(500).send({ error: err.message });
+    });
+
+    // On stream closed we can end the request
+    archive.on('end', function () {
+        console.log('Archive wrote %d bytes', archive.pointer());
+        response.end(); // End the Express response
+    });
+
+    const timestamp = generateTimestamp();
+
+    // Set the archive name
+    response.attachment(`${handle}-${timestamp}.zip`);
+
+    // This is the streaming magic
+    // @ts-ignore
+    archive.pipe(response);
+
+    // Append files from a sub-directory, putting its contents at the root of archive
+    archive.directory(directories.root, false);
+    archive.finalize();
+}
+
+/**
  * Express router for serving files from the user's directories.
  */
 const router = express.Router();
@@ -614,6 +651,7 @@ module.exports = {
     getCookieSessionName,
     getUserAvatar,
     shouldRedirectToLogin,
+    createBackupArchive,
     tryAutoLogin,
     router,
 };

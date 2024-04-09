@@ -37,9 +37,24 @@
                 </div>
             </div>
             <div class="flex-container">
-                <div class="userEditButton menu_button">Edit</div>
-                <div class="userDisableButton menu_button">Disable</div>
-                <div class="userEnableButton menu_button">Enable</div>
+                <div class="userEditButton menu_button disabled">
+                    <i class="fa-fw fa-solid fa-pencil"></i>
+                </div>
+                <div class="userEnableButton menu_button" title="Enable user account.">
+                    <i class="fa-fw fa-solid fa-check"></i>
+                </div>
+                <div class="userDisableButton menu_button" title="Disable user account.">
+                    <i class="fa-fw fa-solid fa-ban"></i>
+                </div>
+                <div class="userPromoteButton menu_button" title="Promote user to admin.">
+                    <i class="fa-fw fa-solid fa-arrow-up"></i>
+                </div>
+                <div class="userDemoteButton menu_button" title="Demote user to regular user.">
+                    <i class="fa-fw fa-solid fa-arrow-down"></i>
+                </div>
+                <div class="userBackupButton menu_button menu_button_icon" title="Download a backup of user data.">
+                    <i class="fa-fw fa-solid fa-download"></i>
+                </div>
             </div>
         </div>
     </div>
@@ -56,15 +71,15 @@
             </div>
             <div class="flex-container flexNoGap">
                 <span>Display Name:</span>
-                <input name="_name" class="text_pole" type="text" placeholder="Anonymous">
+                <input name="_name" class="text_pole" type="text" placeholder="Anonymous" autocomplete="username">
             </div>
             <div class="flex-container flexNoGap">
                 <span>Password:</span>
-                <input name="password" class="text_pole" type="password" placeholder="[ No password ]">
+                <input name="password" class="text_pole" type="password" placeholder="[ No password ]" autocomplete="new-password">
             </div>
             <div class="flex-container flexNoGap">
                 <span>Confirm Password:</span>
-                <input name="confirm" class="text_pole" type="password" placeholder="[ No password ]">
+                <input name="confirm" class="text_pole" type="password" placeholder="[ No password ]" autocomplete="new-password">
             </div>
             <span>
                 This will create a new subfolder in the /data/ directory with the user's handle as the folder name.

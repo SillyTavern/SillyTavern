@@ -1,7 +1,7 @@
 const storage = require('node-persist');
 const express = require('express');
 const { jsonParser } = require('../express-common');
-const { getUserAvatar, toKey, getPasswordHash, getPasswordSalt } = require('../users');
+const { getUserAvatar, toKey, getPasswordHash, getPasswordSalt, createBackupArchive } = require('../users');
 
 const router = express.Router();
 
@@ -44,9 +44,14 @@ router.get('/me', async (request, response) => {
 
 router.post('/change-password', jsonParser, async (request, response) => {
     try {
-        if (!request.body.handle || !request.body.oldPassword || !request.body.newPassword) {
+        if (!request.body.handle) {
             console.log('Change password failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (request.body.handle !== request.user.profile.handle && !request.user.profile.admin) {
+            console.log('Change password failed: Unauthorized');
+            return response.status(403).json({ error: 'Unauthorized' });
         }
 
         /** @type {import('../users').User} */
@@ -62,7 +67,8 @@ router.post('/change-password', jsonParser, async (request, response) => {
             return response.status(403).json({ error: 'User is disabled' });
         }
 
-        if (user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
+        const isAdminChange = request.user.profile.admin && request.body.handle !== request.user.profile.handle;
+        if (!isAdminChange && user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
             console.log('Change password failed: Incorrect password');
             return response.status(401).json({ error: 'Incorrect password' });
         }
@@ -74,6 +80,27 @@ router.post('/change-password', jsonParser, async (request, response) => {
         return response.sendStatus(204);
     } catch (error) {
         console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/backup', jsonParser, async (request, response) => {
+    try {
+        const handle = request.body.handle;
+
+        if (!handle) {
+            console.log('Backup failed: Missing required fields');
+            return response.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (handle !== request.user.profile.handle && !request.user.profile.admin) {
+            console.log('Backup failed: Unauthorized');
+            return response.status(403).json({ error: 'Unauthorized' });
+        }
+
+        await createBackupArchive(handle, response);
+    } catch (error) {
+        console.error('Backup failed', error);
         return response.sendStatus(500);
     }
 });
