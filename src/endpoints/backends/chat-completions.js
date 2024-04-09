@@ -848,6 +848,10 @@ router.post('/generate', jsonParser, function (request, response) {
 
         mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
+
+        if (request.body.model.includes('claude')) {
+            bodyParams['messages'] = convertClaudeMessages(request.body.messages, undefined, false, undefined, request.body.char_name, request.body.user_name).messages;
+        }
     } else {
         console.log('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
