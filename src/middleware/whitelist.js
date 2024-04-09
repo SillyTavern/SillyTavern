@@ -1,8 +1,8 @@
 const path = require('path');
 const fs = require('fs');
-const ipaddr = require('ipaddr.js');
 const ipMatching = require('ip-matching');
 
+const { getIpFromRequest } = require('../express-common');
 const { color, getConfigValue } = require('../util');
 
 const whitelistPath = path.join(process.cwd(), './whitelist.txt');
@@ -17,20 +17,6 @@ if (fs.existsSync(whitelistPath)) {
     } catch (e) {
         // Ignore errors that may occur when reading the whitelist (e.g. permissions)
     }
-}
-
-function getIpFromRequest(req) {
-    let clientIp = req.connection.remoteAddress;
-    let ip = ipaddr.parse(clientIp);
-    // Check if the IP address is IPv4-mapped IPv6 address
-    if (ip.kind() === 'ipv6' && ip instanceof ipaddr.IPv6 && ip.isIPv4MappedAddress()) {
-        const ipv4 = ip.toIPv4Address().toString();
-        clientIp = ipv4;
-    } else {
-        clientIp = ip;
-        clientIp = clientIp.toString();
-    }
-    return clientIp;
 }
 
 /**

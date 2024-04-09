@@ -29,6 +29,7 @@
         "png-chunk-text": "^1.0.0",
         "png-chunks-encode": "^1.0.0",
         "png-chunks-extract": "^1.0.0",
+        "rate-limiter-flexible": "^5.0.0",
         "response-time": "^2.3.2",
         "sanitize-filename": "^1.6.3",
         "sillytavern-transformers": "^2.14.6",
@@ -81,6 +82,7 @@
     },
     "main": "server.js",
     "devDependencies": {
+        "@types/jquery": "^3.5.29",
         "eslint": "^8.55.0",
         "jquery": "^3.6.4"
     }

@@ -462,6 +462,7 @@ router.post('/update', jsonParser, function (request, response) {
 
 module.exports = {
     router,
+    recreateStats,
     init,
     onExit,
 };

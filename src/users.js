@@ -7,21 +7,17 @@ const os = require('os');
 // Express and other dependencies
 const storage = require('node-persist');
 const express = require('express');
-const uuid = require('uuid');
 const mime = require('mime-types');
-const slugify = require('slugify').default;
 
-// Local imports
-const { jsonParser } = require('./express-common');
 const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, DEFAULT_AVATAR } = require('./constants');
-const { getConfigValue, color, delay, setConfigValue, Cache } = require('./util');
+const { getConfigValue, color, delay, setConfigValue } = require('./util');
 const { readSecret, writeSecret } = require('./endpoints/secrets');
-const { checkForNewContent } = require('./endpoints/content-manager');
 
 const KEY_PREFIX = 'user:';
 const DATA_ROOT = getConfigValue('dataRoot', './data');
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
-const MFA_CACHE = new Cache(5 * 60 * 1000);
+const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
+
 /**
  * Cache for user directories.
  * @type {Map<string, UserDirectoryList>}
@@ -381,7 +377,7 @@ function getPasswordHash(password, salt) {
  */
 function getCsrfSecret(request) {
     if (!request || !request.user) {
-        throw new Error('Request object is required to get the CSRF secret.');
+        return ANON_CSRF_SECRET;
     }
 
     let csrfSecret = readSecret(request.user.directories, STORAGE_KEYS.csrfSecret);
@@ -600,301 +596,24 @@ router.use('/user/images/*', createRouteHandler(req => req.user.directories.user
 router.use('/user/files/*', createRouteHandler(req => req.user.directories.files));
 router.use('/scripts/extensions/third-party/*', createRouteHandler(req => req.user.directories.extensions));
 
-const publicEndpoints = express.Router();
-
-publicEndpoints.get('/list', async (_request, response) => {
-    /** @type {User[]} */
-    const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
-    const viewModels = users
-        .filter(x => x.enabled)
-        .sort((x, y) => x.created - y.created)
-        .map(user => ({
-            handle: user.handle,
-            name: user.name,
-            avatar: getUserAvatar(user.handle),
-            password: !!user.password,
-        }));
-
-    return response.json(viewModels);
-});
-
-publicEndpoints.post('/login', jsonParser, async (request, response) => {
-    if (!request.body.handle) {
-        console.log('Login failed: Missing required fields');
-        return response.status(400).json({ error: 'Missing required fields' });
-    }
-
-    /** @type {User} */
-    const user = await storage.getItem(toKey(request.body.handle));
-
-    if (!user) {
-        console.log('Login failed: User not found');
-        return response.status(401).json({ error: 'User not found' });
-    }
-
-    if (!user.enabled) {
-        console.log('Login failed: User is disabled');
-        return response.status(403).json({ error: 'User is disabled' });
-    }
-
-    if (user.password && user.password !== getPasswordHash(request.body.password, user.salt)) {
-        console.log('Login failed: Incorrect password');
-        return response.status(401).json({ error: 'Incorrect password' });
-    }
-
-    if (!request.session) {
-        console.error('Session not available');
-        return response.sendStatus(500);
-    }
-
-    request.session.handle = user.handle;
-    console.log('Login successful:', user.handle, request.session);
-    return response.json({ handle: user.handle });
-});
-
-publicEndpoints.post('/recover-step1', jsonParser, async (request, response) => {
-    if (!request.body.handle) {
-        console.log('Recover step 1 failed: Missing required fields');
-        return response.status(400).json({ error: 'Missing required fields' });
-    }
-
-    /** @type {User} */
-    const user = await storage.getItem(toKey(request.body.handle));
-
-    if (!user) {
-        console.log('Recover step 1 failed: User not found');
-        return response.status(404).json({ error: 'User not found' });
-    }
-
-    if (!user.enabled) {
-        console.log('Recover step 1 failed: User is disabled');
-        return response.status(403).json({ error: 'User is disabled' });
-    }
-
-    const mfaCode = String(crypto.randomInt(1000, 9999));
-    console.log();
-    console.log(color.blue(`${user.name}, your password recovery code is: `) + color.magenta(mfaCode));
-    console.log();
-    MFA_CACHE.set(user.handle, mfaCode);
-    return response.sendStatus(204);
-});
-
-publicEndpoints.post('/recover-step2', jsonParser, async (request, response) => {
-    if (!request.body.handle || !request.body.code) {
-        console.log('Recover step 2 failed: Missing required fields');
-        return response.status(400).json({ error: 'Missing required fields' });
-    }
-
-    /** @type {User} */
-    const user = await storage.getItem(toKey(request.body.handle));
-
-    if (!user) {
-        console.log('Recover step 2 failed: User not found');
-        return response.status(404).json({ error: 'User not found' });
-    }
-
-    if (!user.enabled) {
-        console.log('Recover step 2 failed: User is disabled');
-        return response.status(403).json({ error: 'User is disabled' });
-    }
-
-    const mfaCode = MFA_CACHE.get(user.handle);
-
-    if (request.body.code !== mfaCode) {
-        console.log('Recover step 2 failed: Incorrect code');
-        return response.status(401).json({ error: 'Incorrect code' });
-    }
-
-    if (request.body.newPassword) {
-        const salt = getPasswordSalt();
-        user.password = getPasswordHash(request.body.newPassword, salt);
-        user.salt = salt;
-        await storage.setItem(toKey(user.handle), user);
-    } else {
-        user.password = '';
-        user.salt = '';
-        await storage.setItem(toKey(user.handle), user);
-    }
-
-    return response.sendStatus(204);
-});
-
-const authenticatedEndpoints = express.Router();
-
-authenticatedEndpoints.post('/logout', async (request, response) => {
-    if (!request.session) {
-        console.error('Session not available');
-        return response.sendStatus(500);
-    }
-
-    request.session.handle = null;
-    return response.sendStatus(204);
-});
-
-authenticatedEndpoints.get('/me', async (request, response) => {
-    if (!request.user) {
-        return response.sendStatus(401);
-    }
-
-    const user = request.user.profile;
-    const viewModel = {
-        handle: user.handle,
-        name: user.name,
-        avatar: getUserAvatar(user.handle),
-        admin: user.admin,
-        password: !!user.password,
-    };
-
-    return response.json(viewModel);
-});
-
-authenticatedEndpoints.post('/change-password', jsonParser, async (request, response) => {
-    if (!request.body.handle || !request.body.oldPassword || !request.body.newPassword) {
-        console.log('Change password failed: Missing required fields');
-        return response.status(400).json({ error: 'Missing required fields' });
-    }
-
-    /** @type {User} */
-    const user = await storage.getItem(toKey(request.body.handle));
-
-    if (!user) {
-        console.log('Change password failed: User not found');
-        return response.status(404).json({ error: 'User not found' });
-    }
-
-    if (!user.enabled) {
-        console.log('Change password failed: User is disabled');
-        return response.status(403).json({ error: 'User is disabled' });
-    }
-
-    if (user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
-        console.log('Change password failed: Incorrect password');
-        return response.status(401).json({ error: 'Incorrect password' });
-    }
-
-    const salt = getPasswordSalt();
-    user.password = getPasswordHash(request.body.newPassword, salt);
-    user.salt = salt;
-    await storage.setItem(toKey(request.body.handle), user);
-    return response.sendStatus(204);
-});
-
-const adminEndpoints = express.Router();
-
-adminEndpoints.post('/get', requireAdminMiddleware, jsonParser, async (request, response) => {
-    /** @type {User[]} */
-    const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
-
-    const viewModels = users
-        .sort((x, y) => x.created - y.created)
-        .map(user => ({
-            handle: user.handle,
-            name: user.name,
-            avatar: getUserAvatar(user.handle),
-            admin: user.admin,
-            enabled: user.enabled,
-            created: user.created,
-            password: !!user.password,
-        }));
-
-    return response.json(viewModels);
-});
-
-adminEndpoints.post('/disable', requireAdminMiddleware, jsonParser, async (request, response) => {
-    if (!request.body.handle) {
-        console.log('Disable user failed: Missing required fields');
-        return response.status(400).json({ error: 'Missing required fields' });
-    }
-
-    if (request.body.handle === request.user.profile.handle) {
-        console.log('Disable user failed: Cannot disable yourself');
-        return response.status(400).json({ error: 'Cannot disable yourself' });
-    }
-
-    /** @type {User} */
-    const user = await storage.getItem(toKey(request.body.handle));
-
-    if (!user) {
-        console.log('Disable user failed: User not found');
-        return response.status(404).json({ error: 'User not found' });
-    }
-
-    user.enabled = false;
-    await storage.setItem(toKey(request.body.handle), user);
-    return response.sendStatus(204);
-});
-
-adminEndpoints.post('/enable', requireAdminMiddleware, jsonParser, async (request, response) => {
-    if (!request.body.handle) {
-        console.log('Enable user failed: Missing required fields');
-        return response.status(400).json({ error: 'Missing required fields' });
-    }
-
-    /** @type {User} */
-    const user = await storage.getItem(toKey(request.body.handle));
-
-    if (!user) {
-        console.log('Enable user failed: User not found');
-        return response.status(404).json({ error: 'User not found' });
-    }
-
-    user.enabled = true;
-    await storage.setItem(toKey(request.body.handle), user);
-    return response.sendStatus(204);
-});
-
-adminEndpoints.post('/create', requireAdminMiddleware, jsonParser, async (request, response) => {
-    if (!request.body.handle || !request.body.name) {
-        console.log('Create user failed: Missing required fields');
-        return response.status(400).json({ error: 'Missing required fields' });
-    }
-
-    const handles = await getAllUserHandles();
-    const handle = slugify(request.body.handle, { lower: true, trim: true });
-
-    if (handles.some(x => x === handle)) {
-        console.log('Create user failed: User with that handle already exists');
-        return response.status(409).json({ error: 'User already exists' });
-    }
-
-    const salt = getPasswordSalt();
-    const password = request.body.password ? getPasswordHash(request.body.password, salt) : '';
-
-    const newUser = {
-        uuid: uuid.v4(),
-        handle: handle,
-        name: request.body.name || 'Anonymous',
-        created: Date.now(),
-        password: password,
-        salt: salt,
-        admin: !!request.body.admin,
-        enabled: true,
-    };
-
-    await storage.setItem(toKey(handle), newUser);
-
-    // Create user directories
-    console.log('Creating data directories for', newUser.handle);
-    const directories = await ensurePublicDirectoriesExist();
-    await checkForNewContent(directories);
-    return response.json({ handle: newUser.handle });
-});
-
 module.exports = {
+    KEY_PREFIX,
+    toKey,
     initUserStorage,
     ensurePublicDirectoriesExist,
     getAllUserHandles,
     getUserDirectories,
     setUserDataMiddleware,
     requireLoginMiddleware,
+    requireAdminMiddleware,
     migrateUserData,
+    getPasswordSalt,
+    getPasswordHash,
     getCsrfSecret,
     getCookieSecret,
     getCookieSessionName,
-    router,
-    publicEndpoints,
-    authenticatedEndpoints,
-    adminEndpoints,
+    getUserAvatar,
     shouldRedirectToLogin,
     tryAutoLogin,
+    router,
 };

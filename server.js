@@ -192,36 +192,6 @@ app.use(cookieSession({
 
 app.use(userModule.setUserDataMiddleware);
 
-// Static files
-// Host index page
-app.get('/', (request, response) => {
-    if (userModule.shouldRedirectToLogin(request)) {
-        return response.redirect('/login');
-    }
-
-    return response.sendFile('index.html', { root: path.join(process.cwd(), 'public') });
-});
-// Host login page
-app.get('/login', async (request, response) => {
-    if (!enableAccounts) {
-        console.log('User accounts are disabled. Redirecting to index page.');
-        return response.redirect('/');
-    }
-
-    const autoLogin = await userModule.tryAutoLogin(request);
-
-    if (autoLogin) {
-        return response.redirect('/');
-    }
-
-    return response.sendFile('login.html', { root: path.join(process.cwd(), 'public') });
-});
-app.use(express.static(process.cwd() + '/public', {}));
-
-app.use('/api/users', userModule.publicEndpoints);
-
-app.use(userModule.requireLoginMiddleware);
-
 // CSRF Protection //
 if (!cliArguments.disableCsrf) {
     const COOKIES_SECRET = userModule.getCookieSecret();
@@ -255,12 +225,51 @@ if (!cliArguments.disableCsrf) {
     });
 }
 
-// User management
-app.use('/', userModule.router);
-app.use('/api/users', userModule.authenticatedEndpoints);
-app.use('/api/users', userModule.adminEndpoints);
+// Static files
+// Host index page
+app.get('/', (request, response) => {
+    if (userModule.shouldRedirectToLogin(request)) {
+        return response.redirect('/login');
+    }
 
+    return response.sendFile('index.html', { root: path.join(process.cwd(), 'public') });
+});
+
+// Host login page
+app.get('/login', async (request, response) => {
+    if (!enableAccounts) {
+        console.log('User accounts are disabled. Redirecting to index page.');
+        return response.redirect('/');
+    }
+
+    const autoLogin = await userModule.tryAutoLogin(request);
+
+    if (autoLogin) {
+        return response.redirect('/');
+    }
+
+    return response.sendFile('login.html', { root: path.join(process.cwd(), 'public') });
+});
+
+// Host frontend assets
+app.use(express.static(process.cwd() + '/public', {}));
+
+// Public API
+app.use('/api/users', require('./src/endpoints/users-public').router);
+
+// Everything below this line requires authentication
+app.use(userModule.requireLoginMiddleware);
+
+// File uploads
 app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
+
+// User data mount
+app.use('/', userModule.router);
+// Private endpoints
+app.use('/api/users', require('./src/endpoints/users-private').router);
+// Admin endpoints
+app.use('/api/users', require('./src/endpoints/users-admin').router);
+
 app.get('/version', async function (_, response) {
     const data = await getVersion();
     response.send(data);
