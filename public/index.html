@@ -4150,7 +4150,7 @@
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters" data-i18n="[title]Select/Create Characters"></div>
                     </div>
                     <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto wide100p">
-                        <div class="hotswap avatars_inline flex-container"></div>
+                        <div class="hotswap avatars_inline flex-container expander"></div>
                     </div>
                 </div>
                 <hr>
@@ -4187,75 +4187,73 @@
                                     Tokens: <span data-token-counter="character_name_pole" data-token-permanent="true">counting...</span>
                                 </div>
                             </div>
-                            <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween flexnowrap flexGap5">
-                                <label id="avatar_div_div" class="add_avatar avatar" for="add_avatar_button" title="Click to select a new avatar for this character" data-i18n="[title]Click to select a new avatar for this character">
-                                    <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
-                                    <input hidden type="file" id="add_avatar_button" name="avatar" accept="image/*">
-                                </label>
-                                <div class="flex-container flexFlowColumn">
-                                    <div class="flex-container flexFlowColumn">
-                                        <div class="flex-container justifyContentFlexEnd flexFlowColumn">
-                                            <div class="form_create_bottom_buttons_block">
-                                                <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
-                                                <!-- <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div> -->
-                                                <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
-                                                <input type="hidden" id="fav_checkbox" name="fav" />
-                                                <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions" data-i18n="[title]Advanced Definition"></div>
-                                                <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore" data-i18n="[title]Character Lore"></div>
-                                                <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
-                                                <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
-                                                <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
-                                                <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div> -->
-                                                <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character" data-i18n="[title]Duplicate Character"></div>
-                                                <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character" data-i18n="[title]Create Character">
-                                                    <input type="submit" id="create_button" name="create_button">
-                                                </label>
-                                                <div id="delete_button" class="menu_button fa-solid fa-skull " title="Delete Character" data-i18n="[title]Delete Character"></div>
-                                            </div>
-                                            <label class="flex1" for="char-management-dropdown">
-                                                <select id="char-management-dropdown">
-                                                    <option value="default" disabled selected data-i18n="More...">More...</option>
-                                                    <option id="set_character_world" data-i18n="Link to World Info">
-                                                        Link to World Info
-                                                    </option>
-                                                    <option id="import_character_info" data-i18n="Import Card Lore">
-                                                        Import Card Lore
-                                                    </option>
-                                                    <option id="set_chat_scenario" data-i18n="Scenario Override">
-                                                        Scenario Override
-                                                    </option>
-                                                    <option id="convert_to_persona" data-i18n="Convert to Persona">
-                                                        Convert to Persona
-                                                    </option>
-                                                    <option id="renameCharButton" data-i18n="Rename">
-                                                        Rename
-                                                    </option>
-                                                    <option id="character_source" data-i18n="Link to Source">
-                                                        Link to Source
-                                                    </option>
-                                                    <option id="replace_update" data-i18n="Replace / Update">
-                                                        Replace / Update
-                                                    </option>
-                                                    <!--<option id="dupe_button">
-                                                            Duplicate
-                                                        </option>
-                                                        <option id="export_button">
-                                                            Export
-                                                        </option>
-                                                        <option id="delete_button">
-                                                            Delete
-                                                        </option>-->
-                                                </select>
+                            <div class="flex-container flexFlowColumn">
+                                <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween flexnowrap">
+                                    <label id="avatar_div_div" class="add_avatar avatar" for="add_avatar_button" title="Click to select a new avatar for this character" data-i18n="[title]Click to select a new avatar for this character">
+                                        <img id="avatar_load_preview" src="img/ai4.png" alt="avatar">
+                                        <input hidden type="file" id="add_avatar_button" name="avatar" accept="image/*">
+                                    </label>
+                                    <div class="flex-container" id="avatar_controls">
+                                        <div class="form_create_bottom_buttons_block">
+                                            <div id="rm_button_back" class="menu_button fa-solid fa-left-long "></div>
+                                            <!-- <div id="renameCharButton" class="menu_button fa-solid fa-user-pen" title="Rename Character"></div> -->
+                                            <div id="favorite_button" class="menu_button fa-solid fa-star" title="Add to Favorites" data-i18n="[title]Add to Favorites"></div>
+                                            <input type="hidden" id="fav_checkbox" name="fav" />
+                                            <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions" data-i18n="[title]Advanced Definition"></div>
+                                            <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore" data-i18n="[title]Character Lore"></div>
+                                            <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
+                                            <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
+                                            <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
+                                            <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div> -->
+                                            <div id="dupe_button" class="menu_button fa-solid fa-clone " title="Duplicate Character" data-i18n="[title]Duplicate Character"></div>
+                                            <label for="create_button" id="create_button_label" class="menu_button fa-solid fa-user-check" title="Create Character" data-i18n="[title]Create Character">
+                                                <input type="submit" id="create_button" name="create_button">
                                             </label>
+                                            <div id="delete_button" class="menu_button fa-solid fa-skull " title="Delete Character" data-i18n="[title]Delete Character"></div>
                                         </div>
-                                        <div id="tags_div">
-                                            <div class="tag_controls">
-                                                <input id="tagInput" class="text_pole textarea_compact tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="50" />
-                                                <div class="tags_view menu_button fa-solid fa-tags" title="View all tags" data-i18n="[title]View all tags"></div>
-                                            </div>
-                                            <div id="tagList" class="tags"></div>
-                                        </div>
+                                        <label class="flex1 height100p" for="char-management-dropdown">
+                                            <select id="char-management-dropdown">
+                                                <option value="default" disabled selected data-i18n="More...">More...</option>
+                                                <option id="set_character_world" data-i18n="Link to World Info">
+                                                    Link to World Info
+                                                </option>
+                                                <option id="import_character_info" data-i18n="Import Card Lore">
+                                                    Import Card Lore
+                                                </option>
+                                                <option id="set_chat_scenario" data-i18n="Scenario Override">
+                                                    Scenario Override
+                                                </option>
+                                                <option id="convert_to_persona" data-i18n="Convert to Persona">
+                                                    Convert to Persona
+                                                </option>
+                                                <option id="renameCharButton" data-i18n="Rename">
+                                                    Rename
+                                                </option>
+                                                <option id="character_source" data-i18n="Link to Source">
+                                                    Link to Source
+                                                </option>
+                                                <option id="replace_update" data-i18n="Replace / Update">
+                                                    Replace / Update
+                                                </option>
+                                                <!--<option id="dupe_button">
+                                                        Duplicate
+                                                    </option>
+                                                    <option id="export_button">
+                                                        Export
+                                                    </option>
+                                                    <option id="delete_button">
+                                                        Delete
+                                                    </option>-->
+                                            </select>
+                                        </label>
                                     </div>
+                                </div>
+                                <div id="tags_div">
+                                    <div class="tag_controls">
+                                        <input id="tagInput" class="text_pole textarea_compact tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="50" />
+                                        <div class="tags_view menu_button fa-solid fa-tags" title="View all tags" data-i18n="[title]View all tags"></div>
+                                    </div>
+                                    <div id="tagList" class="tags"></div>
                                 </div>
                             </div>
                         </div>

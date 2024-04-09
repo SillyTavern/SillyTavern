@@ -939,8 +939,8 @@ body.reduced-motion #bg_custom {
 }
 
 .avatar img {
-    width: var(--avatar-base-width);
-    height: var(--avatar-base-height);
+    width: calc(var(--avatar-base-width) + 5px);
+    height: calc(var(--avatar-base-height) + 5px);
     object-fit: cover;
     object-position: center center;
     border-radius: var(--avatar-base-border-radius-round);
@@ -985,9 +985,7 @@ body.reduced-motion #bg_custom {
 }
 
 .avatars_inline .avatar {
-    margin-top: calc(var(--avatar-base-border-radius));
-    margin-left: calc(var(--avatar-base-border-radius));
-    margin-bottom: calc(var(--avatar-base-border-radius));
+    margin: calc(var(--avatar-base-border-radius));
 }
 
 .avatars_inline .avatar:last-of-type {
@@ -1652,6 +1650,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .missing-avatar.inline_avatar {
     padding: unset;
     border-radius: var(--avatar-base-border-radius-round);
+    width: fit-content;
 }
 
 /*applies to char list and mes_text char display name*/
@@ -2000,6 +1999,19 @@ grammarly-extension {
     justify-content: center;
     align-items: center;
     align-self: center !important;
+    width: 100%;
+    height: 100%;
+    /* Avoids cutting off the box shadow on the avatar*/
+    margin: 10px;
+}
+
+#avatar_controls {
+    height: 100%;
+    width: 100%;
+    flex-grow: 1;
+    justify-content: flex-end;
+    flex-flow: column;
+    padding: 10px 10px 10px 0;
 }
 
 #description_div,
@@ -2210,11 +2222,11 @@ grammarly-extension {
     font-weight: bold;
     padding: 5px;
     margin: 0;
-    height: 26px;
     filter: grayscale(0.5);
     text-align: center;
     font-size: 17px;
     aspect-ratio: 1 / 1;
+    flex: 0.075;
 }
 
 .menu_button:hover,
@@ -2633,7 +2645,11 @@ input[type="range"]::-webkit-slider-thumb {
     color: var(--SmartThemeBodyColor);
 }
 
-#char-management-dropdown,
+#char-management-dropdown {
+    height: 100%;
+    margin-bottom: 0;
+}
+
 #tagInput {
     height: 26px;
     margin-bottom: 0;

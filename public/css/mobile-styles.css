@@ -208,7 +208,6 @@
     #cfgConfig,
     #logprobsViewer,
     #movingDivs > div {
-        height: calc(100vh - 45px);
         height: calc(100svh - 45px);
         min-width: 100% !important;
         width: 100% !important;
@@ -221,6 +220,7 @@
         top: var(--topBarBlockSize) !important;
         left: 0 !important;
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+        padding-right: 15px;
     }
 
     #floatingPrompt,
@@ -241,6 +241,9 @@
     /*     .avatar_div {
         margin-top: 5px;
     } */
+    #avatar_controls {
+        padding:
+    }
 
     #character_popup {
         width: 100%;
