@@ -5,6 +5,7 @@
 @import url(css/character-group-overlay.css);
 @import url(css/file-form.css);
 @import url(css/logprobs.css);
+@import url(css/accounts.css);
 
 :root {
     --doc-height: 100%;

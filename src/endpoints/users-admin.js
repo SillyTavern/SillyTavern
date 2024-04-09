@@ -1,3 +1,4 @@
+const fsPromises = require('fs').promises;
 const storage = require('node-persist');
 const express = require('express');
 const slugify = require('slugify').default;
@@ -187,6 +188,33 @@ router.post('/create', requireAdminMiddleware, jsonParser, async (request, respo
         return response.json({ handle: newUser.handle });
     } catch (error) {
         console.error('User create failed:', error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/delete', requireAdminMiddleware, jsonParser, async (request, response) => {
+    try {
+        if (!request.body.handle) {
+            console.log('Delete user failed: Missing required fields');
+            return response.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (request.body.handle === request.user.profile.handle) {
+            console.log('Delete user failed: Cannot delete yourself');
+            return response.status(400).json({ error: 'Cannot delete yourself' });
+        }
+
+        await storage.removeItem(toKey(request.body.handle));
+
+        if (request.body.purge) {
+            const directories = getUserDirectories(request.body.handle);
+            console.log('Deleting data directories for', request.body.handle);
+            await fsPromises.rm(directories.root, { recursive: true, force: true });
+        }
+
+        return response.sendStatus(204);
+    } catch (error) {
+        console.error('User delete failed:', error);
         return response.sendStatus(500);
     }
 });

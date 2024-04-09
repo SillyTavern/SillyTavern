@@ -1,4 +1,5 @@
-import { callPopup, getRequestHeaders, renderTemplate } from '../script.js';
+import { getRequestHeaders, renderTemplate } from '../script.js';
+import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 
 /**
  * @type {import('../../src/users.js').User} Logged in user
@@ -256,6 +257,57 @@ async function backupUserData(handle, callback) {
     }
 }
 
+/**
+ * Shows a popup to change a user's password.
+ * @param {string} handle User handle
+ * @param {function} callback Success callback
+ */
+async function changePassword(handle, callback) {
+    try {
+        const template = $(renderTemplate('changePassword'));
+        template.find('.currentPasswordBlock').toggle(!isAdmin());
+        let newPassword = '';
+        let confirmPassword = '';
+        let oldPassword = '';
+        template.find('input[name="current"]').on('input', function () {
+            oldPassword = String($(this).val());
+        });
+        template.find('input[name="password"]').on('input', function () {
+            newPassword = String($(this).val());
+        });
+        template.find('input[name="confirm"]').on('input', function () {
+            confirmPassword = String($(this).val());
+        });
+        const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Change', cancelButton: 'Cancel', wide: false, large: false });
+        if (result === POPUP_RESULT.CANCELLED || result === POPUP_RESULT.NEGATIVE) {
+            throw new Error('Change password cancelled');
+        }
+
+        if (newPassword !== confirmPassword) {
+            toastr.error('Passwords do not match', 'Failed to change password');
+            throw new Error('Passwords do not match');
+        }
+
+        const response = await fetch('/api/users/change-password', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ handle, newPassword, oldPassword }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to change password');
+            throw new Error('Failed to change password');
+        }
+
+        toastr.success('Password changed successfully', 'Password Changed');
+        callback();
+    }
+    catch (error) {
+        console.error('Error changing password:', error);
+    }
+}
+
 async function openAdminPanel() {
     async function renderUsers() {
         const users = await getUsers();
@@ -274,6 +326,7 @@ async function openAdminPanel() {
             userBlock.find('.userDisableButton').toggle(user.enabled).on('click', () => disableUser(user.handle, renderUsers));
             userBlock.find('.userPromoteButton').toggle(!user.admin).on('click', () => promoteUser(user.handle, renderUsers));
             userBlock.find('.userDemoteButton').toggle(user.admin).on('click', () => demoteUser(user.handle, renderUsers));
+            userBlock.find('.userChangePasswordButton').on('click', () => changePassword(user.handle, renderUsers));
             userBlock.find('.userBackupButton').on('click', function () {
                 $(this).addClass('disabled').off('click');
                 backupUserData(user.handle, renderUsers);
@@ -303,7 +356,7 @@ async function openAdminPanel() {
         });
     });
 
-    callPopup(template, 'text', '', { okButton: 'Close', wide: true, large: true, allowVerticalScrolling: true, allowHorizontalScrolling: false });
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, allowVerticalScrolling: true, allowHorizontalScrolling: false });
     renderUsers();
 }
 

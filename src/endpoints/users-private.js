@@ -67,15 +67,20 @@ router.post('/change-password', jsonParser, async (request, response) => {
             return response.status(403).json({ error: 'User is disabled' });
         }
 
-        const isAdminChange = request.user.profile.admin && request.body.handle !== request.user.profile.handle;
-        if (!isAdminChange && user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
+        if (!request.user.profile.admin && user.password && user.password !== getPasswordHash(request.body.oldPassword, user.salt)) {
             console.log('Change password failed: Incorrect password');
             return response.status(401).json({ error: 'Incorrect password' });
         }
 
-        const salt = getPasswordSalt();
-        user.password = getPasswordHash(request.body.newPassword, salt);
-        user.salt = salt;
+        if (request.body.newPassword) {
+            const salt = getPasswordSalt();
+            user.password = getPasswordHash(request.body.newPassword, salt);
+            user.salt = salt;
+        } else {
+            user.password = '';
+            user.salt = '';
+        }
+
         await storage.setItem(toKey(request.body.handle), user);
         return response.sendStatus(204);
     } catch (error) {
