@@ -4027,7 +4027,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             ...thisPromptBits[currentArrayEntry],
             rawPrompt: generate_data.prompt || generate_data.input,
             mesId: getNextMessageId(type),
-            allAnchors: '',
+            allAnchors: getAllExtensionPrompts(),
+            chatInjects: injectedIndices?.map(index => arrMes[arrMes.length - index - 1])?.join('') || '',
             summarizeString: (extension_prompts['1_memory']?.value || ''),
             authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
             smartContextString: (extension_prompts['chromadb']?.value || ''),
@@ -4651,7 +4652,12 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         zeroDepthAnchorTokens: getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor), // TODO: unused
         thisPrompt_padding: itemizedPrompts[thisPromptSet].padding,
         this_main_api: itemizedPrompts[thisPromptSet].main_api,
+        chatInjects: getTokenCount(itemizedPrompts[thisPromptSet].chatInjects),
     };
+
+    if (params.chatInjects){
+        params.ActualChatHistoryTokens = params.ActualChatHistoryTokens - params.chatInjects;
+    }
 
     if (params.this_main_api == 'openai') {
         //for OAI API
