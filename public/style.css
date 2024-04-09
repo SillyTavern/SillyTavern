@@ -939,8 +939,8 @@ body.reduced-motion #bg_custom {
 }
 
 .avatar img {
-    width: calc(var(--avatar-base-width) + 5px);
-    height: calc(var(--avatar-base-height) + 5px);
+    width: var(--avatar-base-width);
+    height: var(--avatar-base-height);
     object-fit: cover;
     object-position: center center;
     border-radius: var(--avatar-base-border-radius-round);
