@@ -1777,6 +1777,7 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
                 'SlashCommandParserError',
                 { escapeHtml:false, timeOut: 10000, onclick:()=>callPopup(toast, 'text') },
             );
+            return;
         } else {
             throw e;
         }
