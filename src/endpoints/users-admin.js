@@ -157,7 +157,12 @@ router.post('/create', requireAdminMiddleware, jsonParser, async (request, respo
         }
 
         const handles = await getAllUserHandles();
-        const handle = slugify(request.body.handle, { lower: true, trim: true });
+        const handle = slugify(request.body.handle, { lower: true, trim: true, remove: /[^a-z0-9-]/g });
+
+        if (!handle) {
+            console.log('Create user failed: Invalid handle');
+            return response.status(400).json({ error: 'Invalid handle' });
+        }
 
         if (handles.some(x => x === handle)) {
             console.log('Create user failed: User with that handle already exists');

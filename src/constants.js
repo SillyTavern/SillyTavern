@@ -50,7 +50,7 @@ const DEFAULT_USER = Object.freeze({
     uuid: '00000000-0000-0000-0000-000000000000',
     handle: 'user0',
     name: 'User',
-    created: 0,
+    created: Date.now(),
     password: '',
     admin: true,
     enabled: true,
