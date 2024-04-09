@@ -372,7 +372,7 @@ export function formatInstructModeSystemPrompt(systemPrompt) {
  * @returns {string[]} Formatted example messages string.
  */
 export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
-    const blockHeading = power_user.context.example_separator ? power_user.context.example_separator + '\n' : '';
+    const blockHeading = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
 
     if (power_user.instruct.skip_examples) {
         return mesExamplesArray.map(x => x.replace(/<START>\n/i, blockHeading));
