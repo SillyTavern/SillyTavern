@@ -2,7 +2,7 @@ import { getRequestHeaders, renderTemplate } from '../script.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 
 /**
- * @type {import('../../src/users.js').User} Logged in user
+ * @type {import('../../src/users.js').UserViewModel} Logged in user
  */
 export let currentUser = null;
 
@@ -357,6 +357,27 @@ async function deleteUser(handle, callback) {
     }
 }
 
+async function openUserProfile() {
+    await getCurrentUser();
+    const template = $(renderTemplate('userProfile'));
+    template.find('.userName').text(currentUser.name);
+    template.find('.userHandle').text(currentUser.handle);
+    template.find('.avatar img').attr('src', currentUser.avatar);
+    template.find('.userRole').text(currentUser.admin ? 'Admin' : 'User');
+    template.find('.userCreated').text(new Date(currentUser.created).toLocaleString());
+    template.find('.hasPassword').toggle(currentUser.password);
+    template.find('.noPassword').toggle(!currentUser.password);
+    template.find('.userChangePasswordButton').on('click', () => changePassword(currentUser.handle, () => { }));
+    template.find('.userBackupButton').on('click', function () {
+        $(this).addClass('disabled');
+        backupUserData(currentUser.handle, () => {
+            $(this).removeClass('disabled');
+        });
+    });
+
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: false, large: false, allowVerticalScrolling: true, allowHorizontalScrolling: false });
+}
+
 async function openAdminPanel() {
     async function renderUsers() {
         const users = await getUsers();
@@ -406,7 +427,7 @@ async function openAdminPanel() {
         });
     });
 
-    callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, allowVerticalScrolling: true, allowHorizontalScrolling: false });
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: false, large: false, allowVerticalScrolling: true, allowHorizontalScrolling: false });
     renderUsers();
 }
 
@@ -429,5 +450,8 @@ jQuery(() => {
     });
     $('#admin_button').on('click', () => {
         openAdminPanel();
+    });
+    $('#account_button').on('click', () => {
+        openUserProfile();
     });
 });

@@ -33,6 +33,7 @@ router.get('/me', async (request, response) => {
             avatar: getUserAvatar(user.handle),
             admin: user.admin,
             password: !!user.password,
+            created: user.created,
         };
 
         return response.json(viewModel);

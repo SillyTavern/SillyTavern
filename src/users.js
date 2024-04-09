@@ -49,6 +49,7 @@ const STORAGE_KEYS = {
  * @property {string} avatar - The user's avatar image
  * @property {boolean} admin - Whether the user is an admin (can manage other users)
  * @property {boolean} password - Whether the user is password protected
+ * @property {number} [created] - The timestamp when the user was created
  */
 
 /**
