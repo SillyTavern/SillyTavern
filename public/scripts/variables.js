@@ -705,6 +705,46 @@ function randValuesCallback(from, to, args) {
     return String(value);
 }
 
+/**
+ * Declare a new variable in the current scope.
+ * @param {{_scope:SlashCommandScope}} args Named arguments.
+ * @param {String|[String, SlashCommandClosure]} value Name and optional value for the variable.
+ * @returns The variable's value
+ */
+function letCallback(args, value) {
+    if (Array.isArray(value)) {
+        args._scope.letVariable(value[0], value[1]);
+        return value[1];
+    }
+    if (value.includes(' ')) {
+        const key = value.split(' ')[0];
+        const val = value.split(' ').slice(1).join(' ');
+        args._scope.letVariable(key, val);
+        return val;
+    }
+    args._scope.letVariable(value);
+}
+
+/**
+ * Set or retrieve a variable in the current scope or nearest ancestor scope.
+ * @param {{_scope:SlashCommandScope, index:(String|Number)?}} args Named arguments.
+ * @param {String|[String, SlashCommandClosure]} value Name and optional value for the variable.
+ * @returns The variable's value
+ */
+function varCallback(args, value) {
+    if (Array.isArray(value)) {
+        args._scope.setVariable(value[0], value[1]);
+        return value[1];
+    }
+    if (value.includes(' ')) {
+        const key = value.split(' ')[0];
+        const val = value.split(' ').slice(1).join(' ');
+        args._scope.setVariable(key, val, args.index);
+        return val;
+    }
+    return args._scope.getVariable(value, args.index);
+}
+
 export function registerVariableCommands() {
     registerSlashCommand('listvar', listVariablesCallback, [], ' – list registered chat variables', true, true);
     registerSlashCommand('setvar', (args, value) => setLocalVariable(args.key || args.name, value, args), [], '<span class="monospace">key=varname index=listIndex (value)</span> – set a local variable value and pass it down the pipe, index is optional, e.g. <tt>/setvar key=color green</tt>', true, true);
@@ -738,30 +778,6 @@ export function registerVariableCommands() {
     registerSlashCommand('round', (args, value) => roundValuesCallback(args, value), [], '<span class="monospace">(a)</span> – rounds a value and passes the result down the pipe, can use variable names, e.g. <tt>/round i</tt>', true, true);
     registerSlashCommand('len', (_, value) => lenValuesCallback(value), [], '<span class="monospace">(a)</span> – gets the length of a value and passes the result down the pipe, can use variable names, e.g. <tt>/len i</tt>', true, true);
     registerSlashCommand('rand', (args, value) => randValuesCallback(Number(args.from ?? 0), Number(args.to ?? (value.length ? value : 1)), args), [], '<span class="monospace">(from=number=0 to=number=1 round=round|ceil|floor)</span> – returns a random number between from and to, e.g. <tt>/rand</tt> or <tt>/rand 10</tt> or <tt>/rand from=5 to=10</tt>', true, true);
-    registerSlashCommand('var', (args, value) => {
-        if (Array.isArray(value)) {
-            args._scope.setVariable(value[0], value[1]);
-            return value[1];
-        }
-        if (value.includes(' ')) {
-            const key = value.split(' ')[0];
-            const val = value.split(' ').slice(1).join(' ');
-            args._scope.setVariable(key, val, args.index);
-            return val;
-        }
-        return args._scope.getVariable(value, args.index);
-    }, [], '<span class="monospace">[optional index] (variableName) (optional variable value)</span> – Get or set a variable. Example: <code>/let x foo | /var x foo bar | /var x | /echo</code>', true, true);
-    registerSlashCommand('let', (args, value) => {
-        if (Array.isArray(value)) {
-            args._scope.letVariable(value[0], value[1]);
-            return value[1];
-        }
-        if (value.includes(' ')) {
-            const key = value.split(' ')[0];
-            const val = value.split(' ').slice(1).join(' ');
-            args._scope.letVariable(key, val);
-            return val;
-        }
-        args._scope.letVariable(value);
-    }, [], '<span class="monospace">(variableName) (optional variable value)</span> – Declares a new variable in the current scope. Example: <code>/let x foo bar | /echo {{var::x}}</code> or <code>/let y</code>', true, true);
+    registerSlashCommand('var', (args, value) => varCallback(args, value), [], '<span class="monospace">[optional index] (variableName) (optional variable value)</span> – Get or set a variable. Example: <code>/let x foo | /var x foo bar | /var x | /echo</code>', true, true);
+    registerSlashCommand('let', (args, value) => letCallback(args, value), [], '<span class="monospace">(variableName) (optional variable value)</span> – Declares a new variable in the current scope. Example: <code>/let x foo bar | /echo {{var::x}}</code> or <code>/let y</code>', true, true);
 }
