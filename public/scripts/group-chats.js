@@ -353,14 +353,30 @@ export function getGroupCharacterCards(groupId, characterId) {
         return null;
     }
 
-    /** Runs the macro engine on a text, with custom <FIELDNAME> replace @param {string} value @param {string} characterName @param {string} fieldName @returns {string} */
+    /**
+     * Runs the macro engine on a text, with custom <FIELDNAME> replace
+     * @param {string} value Value to replace
+     * @param {string} fieldName Name of the field
+     * @param {string} characterName Name of the character
+     * @returns {string} Replaced text
+     * */
     function customBaseChatReplace(value, fieldName, characterName) {
+        if (!value) {
+            return '';
+        }
+
         // We should do the custom field name replacement first, and then run it through the normal macro engine with provided names
         value = value.replace(/<FIELDNAME>/gi, fieldName);
         return baseChatReplace(value.trim(), name1, characterName);
     }
 
-    /** Prepares text with prefix/suffix for a character field @param {string} value @param {string} characterName @param {string} fieldName @returns {string} */
+    /**
+     * Prepares text with prefix/suffix for a character field
+     * @param {string} value Value to replace
+     * @param {string} characterName Name of the character
+     * @param {string} fieldName Name of the field
+     * @returns {string} Prepared text
+     * */
     function replaceAndPrepareForJoin(value, characterName, fieldName) {
         value = value.trim();
         if (!value) {
