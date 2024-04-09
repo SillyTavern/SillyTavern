@@ -1,4 +1,15 @@
-import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from '../../../script.js';
+import {
+    eventSource,
+    event_types,
+    extension_prompt_types,
+    getCurrentChatId,
+    getRequestHeaders,
+    is_send_press,
+    saveSettingsDebounced,
+    setExtensionPrompt,
+    substituteParams,
+    generateRaw,
+} from '../../../script.js';
 import { ModuleWorkerWrapper, extension_settings, getContext, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
@@ -140,6 +151,11 @@ async function synchronizeChat(batchSize = 5) {
 
         const newVectorItems = hashedMessages.filter(x => !hashesInCollection.includes(x.hash));
         const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
+
+        const sysPrompt = 'Pause your roleplay. Summarize the most important parts of the message. Your response should include nothing but the summary.';
+        for (let i = 0; i < hashedMessages.length; i++) {
+            hashedMessages[i].text = await generateRaw(hashedMessages[i].text, '', false, false, sysPrompt);
+        }
 
         if (newVectorItems.length > 0) {
             const chunkedBatch = splitByChunks(newVectorItems.slice(0, batchSize));
