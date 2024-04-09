@@ -283,6 +283,7 @@ export function evaluateMacros(content, env) {
     content = replaceVariableMacros(content);
     content = content.replace(/{{newline}}/gi, '\n');
     content = content.replace(/\n*{{trim}}\n*/gi, '');
+    content = content.replace(/{{noop}}/gi, '');
     content = content.replace(/{{input}}/gi, () => String($('#send_textarea').val()));
 
     // Substitute passed-in variables
