@@ -25,6 +25,7 @@ const settings = {
     include_wi: false,
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
+    summarize: false,
 
     // For chats
     enabled_chats: false,
@@ -152,9 +153,11 @@ async function synchronizeChat(batchSize = 5) {
         const newVectorItems = hashedMessages.filter(x => !hashesInCollection.includes(x.hash));
         const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
 
-        const sysPrompt = 'Pause your roleplay. Summarize the most important parts of the message. Your response should include nothing but the summary.';
-        for (let i = 0; i < hashedMessages.length; i++) {
-            hashedMessages[i].text = await generateRaw(hashedMessages[i].text, '', false, false, sysPrompt);
+        if (settings.summarize) {
+            const sysPrompt = 'Pause your roleplay. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.';
+            for (const element of hashedMessages) {
+                element.text = await generateRaw(element.text, '', false, false, sysPrompt);
+            }
         }
 
         if (newVectorItems.length > 0) {
@@ -769,6 +772,12 @@ jQuery(async () => {
 
     $('#vectors_include_wi').prop('checked', settings.include_wi).on('input', () => {
         settings.include_wi = !!$('#vectors_include_wi').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_summarize').prop('checked', settings.summarize).on('input', () => {
+        settings.summarize = !!$('#vectors_summarize').prop('checked');
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
