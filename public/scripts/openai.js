@@ -431,15 +431,15 @@ function convertChatCompletionToInstruct(messages, type) {
     const exampleMessages = messages.filter(x => x.role === 'system' && (x.name === 'example_user' || x.name === 'example_assistant'));
 
     if (exampleMessages.length) {
-        examplesText = power_user.context.example_separator + '\n';
-        examplesText += exampleMessages.map(toString).join('\n');
-        examplesText = formatInstructModeExamples(examplesText, name1, name2);
+        const blockHeading = power_user.context.example_separator ? (substituteParams(power_user.context.example_separator) + '\n') : '';
+        const examplesArray = exampleMessages.map(m => '<START>\n' + toString(m));
+        examplesText = blockHeading + formatInstructModeExamples(examplesArray, name1, name2).join('');
     }
 
     const chatMessages = messages.slice(firstChatMessage);
 
     if (chatMessages.length) {
-        chatMessagesText = power_user.context.chat_start + '\n';
+        chatMessagesText = substituteParams(power_user.context.chat_start) + '\n';
 
         for (const message of chatMessages) {
             const name = getPrefix(message);
