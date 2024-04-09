@@ -211,6 +211,7 @@ import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermati
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
+import { callGenericPopup } from './scripts/popup.js';
 
 //exporting functions and vars for mods
 export {
@@ -7808,6 +7809,7 @@ window['SillyTavern'].getContext = function () {
         registedDebugFunction: registerDebugFunction,
         renderExtensionTemplate: renderExtensionTemplate,
         callPopup: callPopup,
+        callGenericPopup: callGenericPopup,
         mainApi: main_api,
         extensionSettings: extension_settings,
         ModuleWorkerWrapper: ModuleWorkerWrapper,
