@@ -1,4 +1,4 @@
-import { callPopup } from '../../../../script.js';
+import { POPUP_TYPE, Popup } from '../../../popup.js';
 import { setSlashCommandAutoComplete } from '../../../slash-commands.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { getSortableDelay } from '../../../utils.js';
@@ -45,6 +45,8 @@ export class QuickReply {
     /**@type {HTMLElement}*/ settingsDom;
     /**@type {HTMLInputElement}*/ settingsDomLabel;
     /**@type {HTMLTextAreaElement}*/ settingsDomMessage;
+
+    /**@type {Popup}*/ editorPopup;
 
     /**@type {HTMLElement}*/ editorExecuteBtn;
     /**@type {HTMLElement}*/ editorExecuteErrors;
@@ -199,7 +201,8 @@ export class QuickReply {
             /**@type {HTMLElement} */
             // @ts-ignore
             const dom = this.template.cloneNode(true);
-            const popupResult = callPopup(dom, 'text', undefined, { okButton: 'OK', wide: true, large: true, rows: 1 });
+            this.editorPopup = new Popup(dom, POPUP_TYPE.TEXT, undefined, { okButton: 'OK', wide: true, large: true, rows: 1 });
+            const popupResult = this.editorPopup.show();
 
             // basics
             /**@type {HTMLInputElement}*/
@@ -446,7 +449,7 @@ export class QuickReply {
         this.editorExecuteBtn.classList.add('qr--busy');
         this.editorExecuteErrors.innerHTML = '';
         if (this.editorExecuteHide.checked) {
-            document.querySelector('#shadow_popup').classList.add('qr--hide');
+            this.editorPopup.dom.classList.add('qr--hide');
         }
         try {
             this.editorExecutePromise = this.execute();
@@ -456,7 +459,7 @@ export class QuickReply {
         }
         this.editorExecutePromise = null;
         this.editorExecuteBtn.classList.remove('qr--busy');
-        document.querySelector('#shadow_popup').classList.remove('qr--hide');
+        this.editorPopup.dom.classList.remove('qr--hide');
     }
 
 

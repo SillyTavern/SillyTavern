@@ -181,6 +181,7 @@ function downloadAssetsList(url) {
                         const displayName = DOMPurify.sanitize(asset['name'] || asset['id']);
                         const description = DOMPurify.sanitize(asset['description'] || '');
                         const url = isValidUrl(asset['url']) ? asset['url'] : '';
+                        const title = assetType === 'extension' ? `Extension repo/guide: ${url}` : 'Preview in browser';
                         const previewIcon = (assetType === 'extension' || assetType === 'character') ? 'fa-arrow-up-right-from-square' : 'fa-headphones-simple';
 
                         const assetBlock = $('<i></i>')
@@ -188,7 +189,7 @@ function downloadAssetsList(url) {
                             .append(`<div class="flex-container flexFlowColumn flexNoGap">
                                         <span class="asset-name flex-container alignitemscenter">
                                             <b>${displayName}</b>
-                                            <a class="asset_preview" href="${url}" target="_blank" title="Extension repo/guide: ${url}">
+                                            <a class="asset_preview" href="${url}" target="_blank" title="${title}">
                                                 <i class="fa-solid fa-sm ${previewIcon}"></i>
                                             </a>
                                         </span>
