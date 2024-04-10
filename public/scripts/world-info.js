@@ -42,6 +42,8 @@ const world_info_logic = {
     AND_ALL: 3,
 };
 
+const WI_ENTRY_EDIT_TEMPLATE = $('#entry_edit_template .world_entry');
+
 let world_info = {};
 let selected_world_info = [];
 let world_names;
@@ -96,6 +98,11 @@ class WorldInfoBuffer {
     #skew = 0;
 
     /**
+     * @type {number} The starting depth of the global scan depth. Incremented by "min activations" feature to not repeat scans. When > 0 it means a complete scan was done up to #startDepth already, and `advanceScanPosition` was called.
+     */
+    #startDepth = 0;
+
+    /**
      * Initialize the buffer with the given messages.
      * @param {string[]} messages Array of messages to add to the buffer
      */
@@ -137,7 +144,10 @@ class WorldInfoBuffer {
      * @returns {string} A slice of buffer until the given depth (inclusive)
      */
     get(entry) {
-        let depth = entry.scanDepth ?? (world_info_depth + this.#skew);
+        let depth = entry.scanDepth ?? this.getDepth();
+        if (depth <= this.#startDepth) {
+            return '';
+        }
 
         if (depth < 0) {
             console.error(`Invalid WI scan depth ${depth}. Must be >= 0`);
@@ -149,7 +159,7 @@ class WorldInfoBuffer {
             depth = MAX_SCAN_DEPTH;
         }
 
-        let result = this.#depthBuffer.slice(0, depth).join('\n');
+        let result = this.#depthBuffer.slice(this.#startDepth, depth).join('\n');
 
         if (this.#recurseBuffer.length > 0) {
             result += '\n' + this.#recurseBuffer.join('\n');
@@ -197,10 +207,18 @@ class WorldInfoBuffer {
     }
 
     /**
-     * Adds an increment to depth skew.
+     * Increments skew and sets startDepth to previous depth.
      */
-    addSkew() {
+    advanceScanPosition() {
+        this.#startDepth = this.getDepth();
         this.#skew++;
+    }
+
+    /**
+     * @returns {number} Settings' depth + current skew.
+     */
+    getDepth() {
+        return world_info_depth + this.#skew;
     }
 }
 
@@ -783,6 +801,11 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         afterSizeSelectorChange: function (e) {
             localStorage.setItem(storageKey, e.target.value);
         },
+        afterPaging: function () {
+            $('#world_popup_entries_list textarea[name="comment"]').each(function () {
+                initScrollHeight($(this));
+            });
+        },
     });
 
     if (typeof navigation === 'number' && Number(navigation) >= 0) {
@@ -970,7 +993,7 @@ function getWorldEntry(name, data, entry) {
         return;
     }
 
-    const template = $('#entry_edit_template .world_entry').clone();
+    const template = WI_ENTRY_EDIT_TEMPLATE.clone();
     template.data('uid', entry.uid);
     template.attr('uid', entry.uid);
 
@@ -982,10 +1005,10 @@ function getWorldEntry(name, data, entry) {
         event.stopPropagation();
     });
 
-    keyInput.on('input', function () {
+    keyInput.on('input', function (_, { skipReset } = {}) {
         const uid = $(this).data('uid');
         const value = String($(this).val());
-        resetScrollHeight(this);
+        !skipReset && resetScrollHeight(this);
         data.entries[uid].key = value
             .split(',')
             .map((x) => x.trim())
@@ -994,7 +1017,7 @@ function getWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, 'keys', data.entries[uid].key);
         saveWorldInfo(name, data);
     });
-    keyInput.val(entry.key.join(', ')).trigger('input');
+    keyInput.val(entry.key.join(', ')).trigger('input', { skipReset: true });
     //initScrollHeight(keyInput);
 
     // logic AND/NOT
@@ -1008,7 +1031,6 @@ function getWorldEntry(name, data, entry) {
     selectiveLogicDropdown.on('input', function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
-        console.debug(`logic for ${entry.uid} set to ${value}`);
         data.entries[uid].selectiveLogic = !isNaN(value) ? value : world_info_logic.AND_ANY;
         setOriginalDataValue(data, uid, 'selectiveLogic', data.entries[uid].selectiveLogic);
         saveWorldInfo(name, data);
@@ -1118,10 +1140,10 @@ function getWorldEntry(name, data, entry) {
     // keysecondary
     const keySecondaryInput = template.find('textarea[name="keysecondary"]');
     keySecondaryInput.data('uid', entry.uid);
-    keySecondaryInput.on('input', function () {
+    keySecondaryInput.on('input', function (_, { skipReset } = {}) {
         const uid = $(this).data('uid');
         const value = String($(this).val());
-        resetScrollHeight(this);
+        !skipReset && resetScrollHeight(this);
         data.entries[uid].keysecondary = value
             .split(',')
             .map((x) => x.trim())
@@ -1131,17 +1153,17 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
 
-    keySecondaryInput.val(entry.keysecondary.join(', ')).trigger('input');
-    initScrollHeight(keySecondaryInput);
+    keySecondaryInput.val(entry.keysecondary.join(', ')).trigger('input', { skipReset: true });
+    //initScrollHeight(keySecondaryInput);
 
     // comment
     const commentInput = template.find('textarea[name="comment"]');
     const commentToggle = template.find('input[name="addMemo"]');
     commentInput.data('uid', entry.uid);
-    commentInput.on('input', function () {
+    commentInput.on('input', function (_, { skipReset } = {}) {
         const uid = $(this).data('uid');
         const value = $(this).val();
-        resetScrollHeight(this);
+        !skipReset && resetScrollHeight(this);
         data.entries[uid].comment = value;
 
         setOriginalDataValue(data, uid, 'comment', data.entries[uid].comment);
@@ -1160,8 +1182,8 @@ function getWorldEntry(name, data, entry) {
         value ? commentContainer.show() : commentContainer.hide();
     });
 
-    commentInput.val(entry.comment).trigger('input');
-    initScrollHeight(commentInput);
+    commentInput.val(entry.comment).trigger('input', { skipReset: true });
+    //initScrollHeight(commentInput);
     commentToggle.prop('checked', true /* entry.addMemo */).trigger('input');
     commentToggle.parent().hide();
 
@@ -1196,6 +1218,8 @@ function getWorldEntry(name, data, entry) {
         if (counter.data('first-run')) {
             counter.data('first-run', false);
             countTokensDebounced(counter, contentInput.val());
+            initScrollHeight(keyInput);
+            initScrollHeight(keySecondaryInput);
         }
     });
 
@@ -1362,7 +1386,7 @@ function getWorldEntry(name, data, entry) {
     }
 
     const positionInput = template.find('select[name="position"]');
-    initScrollHeight(positionInput);
+    //initScrollHeight(positionInput);
     positionInput.data('uid', entry.uid);
     positionInput.on('click', function (event) {
         // Prevent closing the drawer on clicking the input
@@ -1419,7 +1443,6 @@ function getWorldEntry(name, data, entry) {
     //new tri-state selector for constant/normal/disabled
     const entryStateSelector = template.find('select[name="entryStateSelector"]');
     entryStateSelector.data('uid', entry.uid);
-    console.log(entry.uid);
     entryStateSelector.on('click', function (event) {
         // Prevent closing the drawer on clicking the input
         event.stopPropagation();
@@ -1434,7 +1457,6 @@ function getWorldEntry(name, data, entry) {
                 setOriginalDataValue(data, uid, 'enabled', true);
                 setOriginalDataValue(data, uid, 'constant', true);
                 template.removeClass('disabledWIEntry');
-                console.debug('set to constant');
                 break;
             case 'normal':
                 data.entries[uid].constant = false;
@@ -1442,7 +1464,6 @@ function getWorldEntry(name, data, entry) {
                 setOriginalDataValue(data, uid, 'enabled', true);
                 setOriginalDataValue(data, uid, 'constant', false);
                 template.removeClass('disabledWIEntry');
-                console.debug('set to normal');
                 break;
             case 'disabled':
                 data.entries[uid].constant = false;
@@ -1450,7 +1471,6 @@ function getWorldEntry(name, data, entry) {
                 setOriginalDataValue(data, uid, 'enabled', false);
                 setOriginalDataValue(data, uid, 'constant', false);
                 template.addClass('disabledWIEntry');
-                console.debug('set to disabled');
                 break;
         }
         saveWorldInfo(name, data);
@@ -1458,19 +1478,13 @@ function getWorldEntry(name, data, entry) {
     });
 
     const entryState = function () {
-
-        console.log(`constant: ${entry.constant},  disabled: ${entry.disable}`);
         if (entry.constant === true) {
-            console.debug('found constant');
             return 'constant';
         } else if (entry.disable === true) {
-            console.debug('found disabled');
             return 'disabled';
         } else {
-            console.debug('found normal');
             return 'normal';
         }
-
     };
     template
         .find(`select[name="entryStateSelector"] option[value=${entryState()}]`)
@@ -1966,15 +1980,12 @@ async function getSortedEntries() {
 
         switch (Number(world_info_character_strategy)) {
             case world_info_insertion_strategy.evenly:
-                console.debug('WI using evenly');
                 entries = [...globalLore, ...characterLore].sort(sortFn);
                 break;
             case world_info_insertion_strategy.character_first:
-                console.debug('WI using char first');
                 entries = [...characterLore.sort(sortFn), ...globalLore.sort(sortFn)];
                 break;
             case world_info_insertion_strategy.global_first:
-                console.debug('WI using global first');
                 entries = [...globalLore.sort(sortFn), ...characterLore.sort(sortFn)];
                 break;
             default:
@@ -2009,7 +2020,6 @@ async function checkWorldInfo(chat, maxContext) {
     const buffer = new WorldInfoBuffer(chat);
 
     // Combine the chat
-    let minActivationMsgIndex = world_info_depth; // tracks chat index to satisfy `world_info_min_activations`
 
     // Add the depth or AN if enabled
     // Put this code here since otherwise, the chat reference is modified
@@ -2102,8 +2112,6 @@ async function checkWorldInfo(chat, maxContext) {
                     const substituted = substituteParams(key);
                     const textToScan = buffer.get(entry);
 
-                    console.debug(`${entry.uid}: ${substituted}`);
-
                     if (substituted && buffer.matchKeys(textToScan, substituted.trim(), entry)) {
                         console.debug(`WI UID ${entry.uid} found by primary match: ${substituted}.`);
 
@@ -2160,7 +2168,7 @@ async function checkWorldInfo(chat, maxContext) {
                             activatedNow.add(entry);
                             break primary;
                         }
-                    } else { console.debug(`No active entries for logic checks for word: ${substituted}.`); }
+                    }
                 }
             }
         }
@@ -2225,15 +2233,14 @@ async function checkWorldInfo(chat, maxContext) {
         // world_info_min_activations
         if (!needsToScan && !token_budget_overflowed) {
             if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
-                let over_max = false;
-                over_max = (
+                let over_max = (
                     world_info_min_activations_depth_max > 0 &&
-                    minActivationMsgIndex > world_info_min_activations_depth_max
-                ) || (minActivationMsgIndex >= chat.length);
+                    buffer.getDepth() > world_info_min_activations_depth_max
+                ) || (buffer.getDepth() > chat.length);
+
                 if (!over_max) {
-                    needsToScan = true;
-                    minActivationMsgIndex += 1;
-                    buffer.addSkew();
+                    needsToScan = true; // loop
+                    buffer.advanceScanPosition();
                 }
             }
         }

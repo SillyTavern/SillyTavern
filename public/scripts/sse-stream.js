@@ -106,7 +106,7 @@ function getDelay(s) {
 /**
  * Parses the stream data and returns the parsed data and the chunk to be sent.
  * @param {object} json The JSON data.
- * @returns {AsyncGenerator<{data: object, chunk: string} | null>} The parsed data and the chunk to be sent.
+ * @returns {AsyncGenerator<{data: object, chunk: string}>} The parsed data and the chunk to be sent.
  */
 async function* parseStreamData(json) {
     // Claude
@@ -120,6 +120,7 @@ async function* parseStreamData(json) {
                 };
             }
         }
+        return;
     }
     // MakerSuite
     else if (Array.isArray(json.candidates)) {
@@ -145,6 +146,7 @@ async function* parseStreamData(json) {
                 }
             }
         }
+        return;
     }
     // NovelAI / KoboldCpp Classic
     else if (typeof json.token === 'string' && json.token.length > 0) {
@@ -155,6 +157,7 @@ async function* parseStreamData(json) {
                 chunk: str,
             };
         }
+        return;
     }
     // llama.cpp?
     else if (typeof json.content === 'string' && json.content.length > 0) {
@@ -165,6 +168,7 @@ async function* parseStreamData(json) {
                 chunk: str,
             };
         }
+        return;
     }
     // OpenAI-likes
     else if (Array.isArray(json.choices)) {
@@ -184,6 +188,7 @@ async function* parseStreamData(json) {
                     chunk: str,
                 };
             }
+            return;
         }
         else if (typeof json.choices[0].delta === 'object') {
             if (typeof json.choices[0].delta.text === 'string' && json.choices[0].delta.text.length > 0) {
@@ -197,6 +202,7 @@ async function* parseStreamData(json) {
                         chunk: str,
                     };
                 }
+                return;
             }
             else if (typeof json.choices[0].delta.content === 'string' && json.choices[0].delta.content.length > 0) {
                 for (let j = 0; j < json.choices[0].delta.content.length; j++) {
@@ -209,6 +215,7 @@ async function* parseStreamData(json) {
                         chunk: str,
                     };
                 }
+                return;
             }
         }
         else if (typeof json.choices[0].message === 'object') {
@@ -223,11 +230,12 @@ async function* parseStreamData(json) {
                         chunk: str,
                     };
                 }
+                return;
             }
         }
     }
 
-    return null;
+    throw new Error('Unknown event data format');
 }
 
 /**
@@ -243,6 +251,12 @@ export class SmoothEventSourceStream extends EventSourceStream {
                 const data = event.data;
                 try {
                     const hasFocus = document.hasFocus();
+
+                    if (data === '[DONE]') {
+                        lastStr = '';
+                        return controller.enqueue(event);
+                    }
+
                     const json = JSON.parse(data);
 
                     if (!json) {
@@ -251,17 +265,13 @@ export class SmoothEventSourceStream extends EventSourceStream {
                     }
 
                     for await (const parsed of parseStreamData(json)) {
-                        if (!parsed) {
-                            lastStr = '';
-                            return controller.enqueue(event);
-                        }
-
                         hasFocus && await delay(getDelay(lastStr));
                         controller.enqueue(new MessageEvent(event.type, { data: JSON.stringify(parsed.data) }));
                         lastStr = parsed.chunk;
                         hasFocus && await eventSource.emit(event_types.SMOOTH_STREAM_TOKEN_RECEIVED, parsed.chunk);
                     }
-                } catch {
+                } catch (error) {
+                    console.error('Smooth Streaming parsing error', error);
                     controller.enqueue(event);
                 }
             },

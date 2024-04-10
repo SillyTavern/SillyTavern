@@ -73,6 +73,11 @@
     background: none;
 }
 
+.tag.placeholder-expander {
+    cursor: alias;
+    border: 0;
+}
+
 .tagListHint {
     align-self: center;
     display: flex;
@@ -94,7 +99,7 @@
 
 #bulkTagsList,
 #tagList.tags {
-    margin: 2px 0;
+    margin: 5px 0;
 }
 
 #bulkTagsList,

@@ -186,6 +186,11 @@ const continue_postfix_types = {
     DOUBLE_NEWLINE: '\n\n',
 };
 
+const custom_prompt_post_processing_types = {
+    NONE: '',
+    CLAUDE: 'claude',
+};
+
 const prefixMap = selected_group ? {
     assistant: '',
     user: '',
@@ -262,6 +267,7 @@ const default_settings = {
     continue_prefill: false,
     names_behavior: character_names_behavior.NONE,
     continue_postfix: continue_postfix_types.SPACE,
+    custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     seed: -1,
     n: 1,
 };
@@ -331,6 +337,7 @@ const oai_settings = {
     continue_prefill: false,
     names_behavior: character_names_behavior.NONE,
     continue_postfix: continue_postfix_types.SPACE,
+    custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
     seed: -1,
     n: 1,
 };
@@ -431,15 +438,15 @@ function convertChatCompletionToInstruct(messages, type) {
     const exampleMessages = messages.filter(x => x.role === 'system' && (x.name === 'example_user' || x.name === 'example_assistant'));
 
     if (exampleMessages.length) {
-        examplesText = power_user.context.example_separator + '\n';
-        examplesText += exampleMessages.map(toString).join('\n');
-        examplesText = formatInstructModeExamples(examplesText, name1, name2);
+        const blockHeading = power_user.context.example_separator ? (substituteParams(power_user.context.example_separator) + '\n') : '';
+        const examplesArray = exampleMessages.map(m => '<START>\n' + toString(m));
+        examplesText = blockHeading + formatInstructModeExamples(examplesArray, name1, name2).join('');
     }
 
     const chatMessages = messages.slice(firstChatMessage);
 
     if (chatMessages.length) {
-        chatMessagesText = power_user.context.chat_start + '\n';
+        chatMessagesText = substituteParams(power_user.context.chat_start) + '\n';
 
         for (const message of chatMessages) {
             const name = getPrefix(message);
@@ -1743,6 +1750,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['custom_include_body'] = oai_settings.custom_include_body;
         generate_data['custom_exclude_body'] = oai_settings.custom_exclude_body;
         generate_data['custom_include_headers'] = oai_settings.custom_include_headers;
+        generate_data['custom_prompt_post_processing'] = oai_settings.custom_prompt_post_processing;
     }
 
     if (isCohere) {
@@ -2625,6 +2633,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
     oai_settings.custom_exclude_body = settings.custom_exclude_body ?? default_settings.custom_exclude_body;
     oai_settings.custom_include_headers = settings.custom_include_headers ?? default_settings.custom_include_headers;
+    oai_settings.custom_prompt_post_processing = settings.custom_prompt_post_processing ?? default_settings.custom_prompt_post_processing;
     oai_settings.google_model = settings.google_model ?? default_settings.google_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
@@ -2770,6 +2779,8 @@ function loadOpenAISettings(data, settings) {
 
     $('#chat_completion_source').val(oai_settings.chat_completion_source).trigger('change');
     $('#oai_max_context_unlocked').prop('checked', oai_settings.max_context_unlocked);
+    $('#custom_prompt_post_processing').val(oai_settings.custom_prompt_post_processing);
+    $(`#custom_prompt_post_processing option[value="${oai_settings.custom_prompt_post_processing}"]`).attr('selected', true);
 }
 
 function setNamesBehaviorControls() {
@@ -2924,6 +2935,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         custom_include_body: settings.custom_include_body,
         custom_exclude_body: settings.custom_exclude_body,
         custom_include_headers: settings.custom_include_headers,
+        custom_prompt_post_processing: settings.custom_prompt_post_processing,
         google_model: settings.google_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
@@ -3313,6 +3325,7 @@ function onSettingsPresetChange() {
         custom_include_body: ['#custom_include_body', 'custom_include_body', false],
         custom_exclude_body: ['#custom_exclude_body', 'custom_exclude_body', false],
         custom_include_headers: ['#custom_include_headers', 'custom_include_headers', false],
+        custom_prompt_post_processing: ['#custom_prompt_post_processing', 'custom_prompt_post_processing', false],
         google_model: ['#model_google_select', 'google_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
@@ -4025,12 +4038,13 @@ export function isImageInliningSupported() {
         'gemini-1.0-pro-vision-latest',
         'gemini-1.5-pro-latest',
         'gemini-pro-vision',
-        'claude-3'
+        'claude-3',
+        'gpt-4-turbo',
     ];
 
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
-            return visionSupportedModels.some(model => oai_settings.openai_model.includes(model));
+            return visionSupportedModels.some(model => oai_settings.openai_model.includes(model) && !oai_settings.openai_model.includes('gpt-4-turbo-preview'));
         case chat_completion_sources.MAKERSUITE:
             return visionSupportedModels.some(model => oai_settings.google_model.includes(model));
         case chat_completion_sources.CLAUDE:
@@ -4490,6 +4504,11 @@ $(document).ready(async function () {
 
     $('#custom_model_id').on('input', function () {
         oai_settings.custom_model = String($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#custom_prompt_post_processing').on('change', function () {
+        oai_settings.custom_prompt_post_processing = String($(this).val());
         saveSettingsDebounced();
     });
 

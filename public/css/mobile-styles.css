@@ -208,6 +208,7 @@
     #cfgConfig,
     #logprobsViewer,
     #movingDivs > div {
+        /* 100vh are fallback units for browsers that don't support svh */
         height: calc(100vh - 45px);
         height: calc(100svh - 45px);
         min-width: 100% !important;
@@ -221,6 +222,10 @@
         top: var(--topBarBlockSize) !important;
         left: 0 !important;
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+    }
+
+    #right-nav-panel {
+        padding-right: 15px;
     }
 
     #floatingPrompt,
