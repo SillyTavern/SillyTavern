@@ -4025,12 +4025,13 @@ export function isImageInliningSupported() {
         'gemini-1.0-pro-vision-latest',
         'gemini-1.5-pro-latest',
         'gemini-pro-vision',
-        'claude-3'
+        'claude-3',
+        'gpt-4-turbo',
     ];
 
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
-            return visionSupportedModels.some(model => oai_settings.openai_model.includes(model));
+            return visionSupportedModels.some(model => oai_settings.openai_model.includes(model) && !oai_settings.openai_model.includes('gpt-4-turbo-preview'));
         case chat_completion_sources.MAKERSUITE:
             return visionSupportedModels.some(model => oai_settings.google_model.includes(model));
         case chat_completion_sources.CLAUDE:
