@@ -263,4 +263,13 @@ function configureDiscreetLogin() {
     }
     document.getElementById('shadow_popup').style.opacity = '';
     $('#cancelRecovery').on('click', onCancelRecoveryClick);
+    $(document).on('keydown', (evt) => {
+        if (evt.key === 'Enter' && document.activeElement.tagName === 'INPUT') {
+            if ($('#passwordRecoveryBlock').is(':visible')) {
+                $('#sendRecovery').trigger('click');
+            } else {
+                $('#loginButton').trigger('click');
+            }
+        }
+    });
 })();

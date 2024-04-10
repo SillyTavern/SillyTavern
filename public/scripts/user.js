@@ -364,7 +364,11 @@ async function deleteUser(handle, callback) {
  */
 async function resetSettings(handle, callback) {
     try {
+        let password = '';
         const template = $(renderTemplate('resetSettings'));
+        template.find('input[name="password"]').on('input', function () {
+            password = String($(this).val());
+        });
         const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Reset', cancelButton: 'Cancel', wide: false, large: false });
 
         if (result !== POPUP_RESULT.AFFIRMATIVE) {
@@ -374,7 +378,7 @@ async function resetSettings(handle, callback) {
         const response = await fetch('/api/users/reset-settings', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ handle }),
+            body: JSON.stringify({ handle, password }),
         });
 
         if (!response.ok) {

@@ -157,7 +157,7 @@ router.post('/create', requireAdminMiddleware, jsonParser, async (request, respo
         }
 
         const handles = await getAllUserHandles();
-        const handle = slugify(request.body.handle, { lower: true, trim: true, remove: /[^a-z0-9-]/g });
+        const handle = slugify(String(request.body.handle).toLowerCase(), { lower: true, trim: true, remove: /[^a-z0-9-]/g });
 
         if (!handle) {
             console.log('Create user failed: Invalid handle');

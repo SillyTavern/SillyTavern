@@ -117,6 +117,13 @@ router.post('/backup', jsonParser, async (request, response) => {
 
 router.post('/reset-settings', jsonParser, async (request, response) => {
     try {
+        const password = request.body.password;
+
+        if (request.user.profile.password && request.user.profile.password !== getPasswordHash(password, request.user.profile.salt)) {
+            console.log('Reset settings failed: Incorrect password');
+            return response.status(401).json({ error: 'Incorrect password' });
+        }
+
         const pathToFile = path.join(request.user.directories.root, SETTINGS_FILE);
         await fsPromises.rm(pathToFile, { force: true });
         await contentManager.checkForNewContent([request.user.directories], [contentManager.CONTENT_TYPES.SETTINGS]);
