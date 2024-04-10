@@ -48,6 +48,7 @@ const sources = {
     comfy: 'comfy',
     togetherai: 'togetherai',
     drawthings: 'drawthings',
+    pollinations: 'pollinations',
 };
 
 const generationMode = {
@@ -254,6 +255,10 @@ const defaultSettings = {
     // ComyUI settings
     comfy_url: 'http://127.0.0.1:8188',
     comfy_workflow: 'Default_Comfy_Workflow.json',
+
+    // Pollinations settings
+    pollinations_enhance: false,
+    pollinations_refine: false,
 };
 
 function processTriggers(chat, _, abort) {
@@ -383,6 +388,8 @@ async function loadSettings() {
     $('#sd_novel_sm').prop('checked', extension_settings.sd.novel_sm);
     $('#sd_novel_sm_dyn').prop('checked', extension_settings.sd.novel_sm_dyn);
     $('#sd_novel_sm_dyn').prop('disabled', !extension_settings.sd.novel_sm);
+    $('#sd_pollinations_enhance').prop('checked', extension_settings.sd.pollinations_enhance);
+    $('#sd_pollinations_refine').prop('checked', extension_settings.sd.pollinations_refine);
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
     $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
@@ -828,6 +835,16 @@ function onNovelSmDynInput() {
     saveSettingsDebounced();
 }
 
+function onPollinationsEnhanceInput() {
+    extension_settings.sd.pollinations_enhance = !!$('#sd_pollinations_enhance').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onPollinationsRefineInput() {
+    extension_settings.sd.pollinations_refine = !!$('#sd_pollinations_refine').prop('checked');
+    saveSettingsDebounced();
+}
+
 function onHordeNsfwInput() {
     extension_settings.sd.horde_nsfw = !!$(this).prop('checked');
     saveSettingsDebounced();
@@ -1023,7 +1040,7 @@ async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
-    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai];
+    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai, sources.pollinations];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
         return;
@@ -1186,6 +1203,9 @@ async function loadSamplers() {
             samplers = await loadComfySamplers();
             break;
         case sources.togetherai:
+            samplers = ['N/A'];
+            break;
+        case sources.pollinations:
             samplers = ['N/A'];
             break;
     }
@@ -1368,6 +1388,9 @@ async function loadModels() {
         case sources.togetherai:
             models = await loadTogetherAIModels();
             break;
+        case sources.pollinations:
+            models = await loadPollinationsModels();
+            break;
     }
 
     for (const model of models) {
@@ -1382,6 +1405,55 @@ async function loadModels() {
         extension_settings.sd.model = models[0].value;
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
     }
+}
+
+async function loadPollinationsModels() {
+    return [
+        {
+            value: 'pixart',
+            text: 'PixArt-αlpha',
+        },
+        {
+            value: 'playground',
+            text: 'Playground v2',
+        },
+        {
+            value: 'dalle3xl',
+            text: 'DALL•E 3 XL',
+        },
+        {
+            value: 'formulaxl',
+            text: 'FormulaXL',
+        },
+        {
+            value: 'dreamshaper',
+            text: 'DreamShaper',
+        },
+        {
+            value: 'deliberate',
+            text: 'Deliberate',
+        },
+        {
+            value: 'dpo',
+            text: 'SDXL-DPO',
+        },
+        {
+            value: 'swizz8',
+            text: 'Swizz8',
+        },
+        {
+            value: 'juggernaut',
+            text: 'Juggernaut',
+        },
+        {
+            value: 'turbo',
+            text: 'SDXL Turbo',
+        },
+        {
+            value: 'realvis',
+            text: 'Realistic Vision',
+        },
+    ];
 }
 
 async function loadTogetherAIModels() {
@@ -1641,6 +1713,9 @@ async function loadSchedulers() {
         case sources.togetherai:
             schedulers = ['N/A'];
             break;
+        case sources.pollinations:
+            schedulers = ['N/A'];
+            break;
         case sources.comfy:
             schedulers = await loadComfySchedulers();
             break;
@@ -1704,6 +1779,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.togetherai:
+            vaes = ['N/A'];
+            break;
+        case sources.pollinations:
             vaes = ['N/A'];
             break;
         case sources.comfy:
@@ -2135,6 +2213,9 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
             case sources.togetherai:
                 result = await generateTogetherAIImage(prefixedPrompt, negativePrompt);
                 break;
+            case sources.pollinations:
+                result = await generatePollinationsImage(prefixedPrompt, negativePrompt);
+                break;
         }
 
         if (!result.data) {
@@ -2175,6 +2256,30 @@ async function generateTogetherAIImage(prompt, negativePrompt) {
     if (result.ok) {
         const data = await result.json();
         return { format: 'jpg', data: data?.output?.choices?.[0]?.image_base64 };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+async function generatePollinationsImage(prompt, negativePrompt) {
+    const result = await fetch('/api/sd/pollinations/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            model: extension_settings.sd.model,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+            enhance: extension_settings.sd.pollinations_enhance,
+            refine: extension_settings.sd.pollinations_refine,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'jpg', data: data?.image };
     } else {
         const text = await result.text();
         throw new Error(text);
@@ -2775,6 +2880,8 @@ function isValidState() {
             return true;
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
+        case sources.pollinations:
+            return true;
     }
 }
 
@@ -2922,6 +3029,8 @@ jQuery(async () => {
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
     $('#sd_novel_sm').on('input', onNovelSmInput);
     $('#sd_novel_sm_dyn').on('input', onNovelSmDynInput);
+    $('#sd_pollinations_enhance').on('input', onPollinationsEnhanceInput);
+    $('#sd_pollinations_refine').on('input', onPollinationsRefineInput);
     $('#sd_comfy_validate').on('click', validateComfyUrl);
     $('#sd_comfy_url').on('input', onComfyUrlInput);
     $('#sd_comfy_workflow').on('change', onComfyWorkflowChange);
