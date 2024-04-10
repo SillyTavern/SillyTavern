@@ -4,6 +4,7 @@ import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
 
 export class SlashCommandExecutor {
+    /**@type {Boolean}*/ injectPipe = true;
     /**@type {Number}*/ start;
     /**@type {Number}*/ end;
     /**@type {String}*/ name = '';

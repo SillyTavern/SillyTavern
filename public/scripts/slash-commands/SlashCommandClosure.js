@@ -144,7 +144,9 @@ export class SlashCommandClosure {
 
                 // substitute unnamed argument
                 if (executor.value === undefined) {
-                    value = this.scope.pipe;
+                    if (executor.injectPipe) {
+                        value = this.scope.pipe;
+                    }
                 } else if (executor.value instanceof SlashCommandClosure) {
                     /**@type {SlashCommandClosure}*/
                     const closure = executor.value;

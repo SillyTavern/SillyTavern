@@ -213,6 +213,7 @@ export class SlashCommandParser {
         return this.char == ':' && this.ahead[0] == '}' && this.behind.slice(-1) != '\\';
     }
     parseClosure() {
+        let injectPipe = true;
         this.take(2); // discard opening {:
         let closure = new SlashCommandClosure(this.scope);
         this.scope = closure.scope;
@@ -224,11 +225,23 @@ export class SlashCommandParser {
         }
         while (!this.testClosureEnd()) {
             if (this.testCommand()) {
-                closure.executorList.push(this.parseCommand());
+                const cmd = this.parseCommand();
+                cmd.injectPipe = injectPipe;
+                closure.executorList.push(cmd);
+                injectPipe = true;
             } else {
-                while (!this.testCommandEnd()) this.take(1); // discard plain text and comments
+                while (!this.testCommandEnd()) this.take(); // discard plain text and comments
             }
-            while (/\s|\|/.test(this.char)) this.take(); // discard whitespace and pipe (command separator)
+            this.discardWhitespace();
+            // first pipe marks end of command
+            if (this.char == '|') {
+                this.take(); // discard first pipe
+                // second pipe indicates no pipe injection for the next command
+                if (this.char == '|') {
+                    injectPipe = false;
+                }
+            }
+            while (/\s|\|/.test(this.char)) this.take(); // discard whitespace and further pipes (command separator)
         }
         this.take(2); // discard closing :}
         if (this.char == '(' && this.ahead[0] == ')') {
