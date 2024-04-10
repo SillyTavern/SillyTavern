@@ -1098,8 +1098,8 @@ select {
 
 @media screen and (min-width: 1001px) {
     #description_textarea {
-        height: 30vh;
-        height: 30svh;
+        height: 29vh;
+        height: 29svh;
     }
 
     #firstmessage_textarea {
@@ -1186,7 +1186,7 @@ input[type="file"] {
 #right-nav-panel-tabs {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 5px;
     overflow: hidden;
     width: 100%;
 }
@@ -1196,7 +1196,7 @@ input[type="file"] {
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    padding: 0 5px;
+    padding: 0px 10px 0px 5px;
 }
 
 #right-nav-panel-tabs .right_menu_button,
@@ -2011,7 +2011,7 @@ grammarly-extension {
     flex-grow: 1;
     justify-content: flex-end;
     flex-flow: column;
-    padding: 10px 10px 10px 0;
+    padding: 5px 5px 10px 0;
 }
 
 #description_div,
