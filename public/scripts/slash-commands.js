@@ -2162,4 +2162,13 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
     }
     window.addEventListener('resize', debounce(updatePosition, 100));
 }
-setSlashCommandAutoComplete(document.querySelector('#send_textarea'));
+/**@type {HTMLTextAreaElement} */
+const sendTextarea = document.querySelector('#send_textarea');
+setSlashCommandAutoComplete(sendTextarea);
+sendTextarea.addEventListener('input', () => {
+    if (sendTextarea.value[0] == '/') {
+        sendTextarea.style.fontFamily = 'monospace';
+    } else {
+        sendTextarea.style.fontFamily = null;
+    }
+});
