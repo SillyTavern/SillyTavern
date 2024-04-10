@@ -73,6 +73,7 @@ import {
 } from '../script.js';
 import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
+import { isExternalMediaAllowed } from './chats.js';
 
 export {
     selected_group,
@@ -176,7 +177,7 @@ async function loadGroupChat(chatId) {
     return [];
 }
 
-export async function getGroupChat(groupId) {
+export async function getGroupChat(groupId, reload = false) {
     const group = groups.find((x) => x.id === groupId);
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
@@ -214,6 +215,10 @@ export async function getGroupChat(groupId) {
     if (group) {
         let metadata = group.chat_metadata ?? {};
         updateChatMetadata(metadata, true);
+    }
+
+    if (reload) {
+        select_group_chats(groupId, true);
     }
 
     await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
@@ -1306,6 +1311,10 @@ function select_group_chats(groupId, skipAnimation) {
         $('#rm_group_delete').show();
         $('#rm_group_scenario').show();
         $('#group-metadata-controls .chat_lorebook_button').removeClass('disabled').prop('disabled', false);
+        $('#group_open_media_overrides').show();
+        const isMediaAllowed = isExternalMediaAllowed();
+        $('#group_media_allowed_icon').toggle(isMediaAllowed);
+        $('#group_media_forbidden_icon').toggle(!isMediaAllowed);
     } else {
         $('#rm_group_submit').show();
         if ($('#groupAddMemberListToggle .inline-drawer-content').css('display') !== 'block') {
@@ -1314,6 +1323,7 @@ function select_group_chats(groupId, skipAnimation) {
         $('#rm_group_delete').hide();
         $('#rm_group_scenario').hide();
         $('#group-metadata-controls .chat_lorebook_button').addClass('disabled').prop('disabled', true);
+        $('#group_open_media_overrides').hide();
     }
 
     updateFavButtonState(group?.fav ?? false);

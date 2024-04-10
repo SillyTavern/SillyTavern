@@ -204,6 +204,7 @@ let power_user = {
         output_suffix: '',
         system_sequence: '',
         system_suffix: '',
+        last_system_sequence: '',
         first_output_sequence: '',
         last_output_sequence: '',
         system_sequence_prefix: '',
@@ -254,6 +255,8 @@ let power_user = {
     auto_connect: false,
     auto_load_chat: false,
     forbid_external_images: false,
+    external_media_allowed_overrides: [],
+    external_media_forbidden_overrides: [],
 };
 
 let themes = [];
@@ -2760,22 +2763,35 @@ export function getCustomStoppingStrings(limit = undefined) {
 }
 
 $(document).ready(() => {
+    const adjustAutocompleteDebounced = debounce(() => {
+        $('.ui-autocomplete-input').each(function () {
+            const isOpen = $(this).autocomplete('widget')[0].style.display !== 'none';
+            if (isOpen) {
+                $(this).autocomplete('search');
+            }
+        });
+    });
 
-    $(window).on('resize', async () => {
-        if (isMobile()) {
-            return;
-        }
-
-        //console.log('Window resized!');
+    const reportZoomLevelDebounced = debounce(() => {
         const zoomLevel = Number(window.devicePixelRatio).toFixed(2);
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
         console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}`);
+    });
+
+    $(window).on('resize', async () => {
+        adjustAutocompleteDebounced();
+        setHotswapsDebounced();
+
+        if (isMobile()) {
+            return;
+        }
+
+        reportZoomLevelDebounced();
+
         if (Object.keys(power_user.movingUIState).length > 0) {
             resetMovablePanels('resize');
         }
-        // Adjust layout and styling here
-        setHotswapsDebounced();
     });
 
     // Settings that go to settings.json

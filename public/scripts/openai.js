@@ -3661,7 +3661,7 @@ async function onModelChange() {
         else if (['command-light-nightly', 'command-nightly'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_8k);
         }
-        else if (['command-r'].includes(oai_settings.cohere_model)) {
+        else if (['command-r', 'command-r-plus'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_128k);
         }
         else {

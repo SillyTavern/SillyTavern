@@ -208,7 +208,7 @@ import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_set
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
-import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags } from './scripts/chats.js';
+import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 
@@ -324,9 +324,12 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
         return;
     }
 
-    if (!power_user.forbid_external_images) {
+    const isMediaAllowed = isExternalMediaAllowed();
+    if (isMediaAllowed) {
         return;
     }
+
+    let mediaBlocked = false;
 
     switch (node.tagName) {
         case 'AUDIO':
@@ -350,6 +353,7 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
                     if (isExternalUrl(url)) {
                         console.warn('External media blocked', url);
                         node.remove();
+                        mediaBlocked = true;
                         break;
                     }
                 }
@@ -357,15 +361,36 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
 
             if (src && isExternalUrl(src)) {
                 console.warn('External media blocked', src);
+                mediaBlocked = true;
                 node.remove();
             }
 
             if (data && isExternalUrl(data)) {
                 console.warn('External media blocked', data);
+                mediaBlocked = true;
                 node.remove();
             }
         }
             break;
+    }
+
+    if (mediaBlocked) {
+        const entityId = getCurrentEntityId();
+        const warningShownKey = `mediaWarningShown:${entityId}`;
+
+        if (localStorage.getItem(warningShownKey) === null) {
+            const warningToast = toastr.warning(
+                'Use the "Ext. Media" button to allow it. Click on this message to dismiss.',
+                'External media has been blocked',
+                {
+                    timeOut: 0,
+                    preventDuplicates: true,
+                    onclick: () => toastr.clear(warningToast),
+                },
+            );
+
+            localStorage.setItem(warningShownKey, 'true');
+        }
     }
 });
 
@@ -752,7 +777,6 @@ function reloadMarkdownProcessor(render_formulas = false) {
 }
 
 function getCurrentChatId() {
-    console.debug(`selectedGroup:${selected_group}, this_chid:${this_chid}`);
     if (selected_group) {
         return groups.find(x => x.id == selected_group)?.chat_id;
     }
@@ -1693,7 +1717,7 @@ export async function reloadCurrentChat() {
     chat.length = 0;
 
     if (selected_group) {
-        await getGroupChat(selected_group);
+        await getGroupChat(selected_group, true);
     }
     else if (this_chid) {
         await getChat();
@@ -3442,7 +3466,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     // Add persona description to prompt
     addPersonaDescriptionExtensionPrompt();
     // Call combined AN into Generate
-    let allAnchors = getAllExtensionPrompts();
     const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
     const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
 
@@ -3489,10 +3512,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     function getMessagesTokenCount() {
         const encodeString = [
+            beforeScenarioAnchor,
             storyString,
+            afterScenarioAnchor,
             examplesString,
             chatString,
-            allAnchors,
             quiet_prompt,
             cyclePrompt,
             userAlignmentMessage,
@@ -3760,12 +3784,13 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         console.debug('---checking Prompt size');
         setPromptString();
         const prompt = [
+            beforeScenarioAnchor,
             storyString,
+            afterScenarioAnchor,
             mesExmString,
             mesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join(''),
             '\n',
             generatedPromptCache,
-            allAnchors,
             quiet_prompt,
         ].join('').replace(/\r/gm, '');
         let thisPromptContextSize = getTokenCount(prompt, power_user.token_padding);
@@ -4001,7 +4026,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             ...thisPromptBits[currentArrayEntry],
             rawPrompt: generate_data.prompt || generate_data.input,
             mesId: getNextMessageId(type),
-            allAnchors: allAnchors,
+            allAnchors: '',
             summarizeString: (extension_prompts['1_memory']?.value || ''),
             authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
             smartContextString: (extension_prompts['chromadb']?.value || ''),
@@ -6900,6 +6925,12 @@ export function select_selected_character(chid) {
 
     $('#form_create').attr('actiontype', 'editcharacter');
     $('.form_create_bottom_buttons_block .chat_lorebook_button').show();
+
+    const externalMediaState = isExternalMediaAllowed();
+    $('#character_open_media_overrides').toggle(!selected_group);
+    $('#character_media_allowed_icon').toggle(externalMediaState);
+    $('#character_media_forbidden_icon').toggle(!externalMediaState);
+
     saveSettingsDebounced();
 }
 
@@ -6960,6 +6991,7 @@ function select_rm_create() {
 
     $('#form_create').attr('actiontype', 'createcharacter');
     $('.form_create_bottom_buttons_block .chat_lorebook_button').hide();
+    $('#character_open_media_overrides').hide();
 }
 
 function select_rm_characters() {
@@ -9908,14 +9940,14 @@ jQuery(async function () {
         $('#character_import_file').click();
     });
 
-    $('#character_import_file').on('change', function (e) {
+    $('#character_import_file').on('change', async function (e) {
         $('#rm_info_avatar').html('');
         if (!e.target.files.length) {
             return;
         }
 
         for (const file of e.target.files) {
-            importCharacter(file);
+            await importCharacter(file);
         }
     });
 
