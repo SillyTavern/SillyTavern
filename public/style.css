@@ -2646,7 +2646,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 #char-management-dropdown {
-    height: 100%;
+    height: auto;
     margin-bottom: 0;
 }
 
