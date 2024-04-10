@@ -2,6 +2,7 @@
  * CRSF token for requests.
  */
 let csrfToken = '';
+let discreetLogin = false;
 
 /**
  * Gets a CSRF token from the server.
@@ -25,6 +26,17 @@ async function getUserList() {
             'X-CSRF-Token': csrfToken,
         },
     });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        return displayError(errorData.error || 'An error occurred');
+    }
+
+    if (response.status === 204) {
+        discreetLogin = true;
+        return [];
+    }
+
     const userListObj = await response.json();
     console.log(userListObj);
     return userListObj;
@@ -188,9 +200,15 @@ function onCancelRecoveryClick() {
     displayError('');
 }
 
-(async function () {
-    csrfToken = await getCsrfToken();
-    const userList = await getUserList();
+/**
+ * Configures the login page for normal login.
+ * @param {import('../../src/users').UserViewModel[]} userList List of users
+ */
+function configureNormalLogin(userList) {
+    console.log('Discreet login is disabled');
+    $('#handleEntryBlock').hide();
+    $('#normalLoginPrompt').show();
+    $('#discreetLoginPrompt').hide();
     console.log(userList);
     for (const user of userList) {
         const userBlock = $('<div></div>').addClass('userSelect');
@@ -201,6 +219,47 @@ function onCancelRecoveryClick() {
         userBlock.append($('<small></small>').text(user.handle));
         userBlock.on('click', () => onUserSelected(user));
         $('#userList').append(userBlock);
+    }
+}
+
+/**
+ * Configures the login page for discreet login.
+ */
+function configureDiscreetLogin() {
+    console.log('Discreet login is enabled');
+    $('#handleEntryBlock').show();
+    $('#normalLoginPrompt').hide();
+    $('#discreetLoginPrompt').show();
+    $('#userList').hide();
+    $('#passwordRecoveryBlock').hide();
+    $('#passwordEntryBlock').show();
+    $('#loginButton').off('click').on('click', async () => {
+        const handle = String($('#userHandle').val());
+        const password = String($('#userPassword').val());
+        await performLogin(handle, password);
+    });
+
+    $('#recoverPassword').off('click').on('click', async () => {
+        const handle = String($('#userHandle').val());
+        await sendRecoveryPart1(handle);
+    });
+
+    $('#sendRecovery').off('click').on('click', async () => {
+        const handle = String($('#userHandle').val());
+        const code = String($('#recoveryCode').val());
+        const newPassword = String($('#newPassword').val());
+        await sendRecoveryPart2(handle, code, newPassword);
+    });
+}
+
+(async function () {
+    csrfToken = await getCsrfToken();
+    const userList = await getUserList();
+
+    if (discreetLogin) {
+        configureDiscreetLogin();
+    } else {
+        configureNormalLogin(userList);
     }
     document.getElementById('shadow_popup').style.opacity = '';
     $('#cancelRecovery').on('click', onCancelRecoveryClick);

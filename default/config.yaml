@@ -22,6 +22,8 @@ basicAuthUser:
 enableCorsProxy: false
 # Enable multi-user mode
 enableUserAccounts: false
+# Enable discreet login mode: hides user list on the login screen
+enableDiscreetLogin: false
 # Used to sign session cookies. Will be auto-generated if not set
 cookieSecret: ''
 # Disable security checks - NOT RECOMMENDED

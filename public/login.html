@@ -38,12 +38,20 @@
                             <img src="img/logo.png" alt="SillyTavern" class="logo">
                             <span>Welcome to SillyTavern</span>
                         </h2>
-                        <h3>Select a User</h3>
+                        <h3 id="normalLoginPrompt">
+                            Select a User
+                        </h3>
+                        <h3 id="discreetLoginPrompt">
+                            Enter Login Details
+                        </h3>
                         <div id="userListBlock" class="wide100p">
                             <div id="userList" class="flex-container justifyCenter"></div>
+                            <div id="handleEntryBlock" style="display:none;" class="flex-container flexFlowColumn alignItemsCenter">
+                                <input id="userHandle" class="text_pole" type="text" placeholder="User handle" autocomplete="username">
+                            </div>
                             <div id="passwordEntryBlock" style="display:none;"
                                 class="flex-container flexFlowColumn alignItemsCenter">
-                                <input id="userPassword" class="text_pole" type="password" placeholder="Enter a password...">
+                                <input id="userPassword" class="text_pole" type="password" placeholder="Password" autocomplete="current-password">
                                 <div class="flex-container">
                                     <div id="loginButton" class="menu_button">Login</div>
                                     <div id="recoverPassword" class="menu_button">Recover</div>
@@ -55,8 +63,8 @@
                                     Recovery code has been posted to the server console.
                                 </div>
                                 <input id="recoveryCode" class="text_pole" type="text" placeholder="Recovery code">
-                                <input id="newPassword" class="text_pole" type="password" placeholder="New password...">
-                                <div class="flex-container">
+                                <input id="newPassword" class="text_pole" type="password" placeholder="New password" autocomplete="new-password">
+                                <div class="flex-container flexGap10">
                                     <div id="sendRecovery" class="menu_button">Send</div>
                                     <div id="cancelRecovery" class="menu_button">Cancel</div>
                                 </div>

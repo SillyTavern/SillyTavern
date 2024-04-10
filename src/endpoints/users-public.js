@@ -3,9 +3,10 @@ const storage = require('node-persist');
 const express = require('express');
 const { RateLimiterMemory, RateLimiterRes } = require('rate-limiter-flexible');
 const { jsonParser, getIpFromRequest } = require('../express-common');
-const { color, Cache } = require('../util');
+const { color, Cache, getConfigValue } = require('../util');
 const { KEY_PREFIX, getUserAvatar, toKey, getPasswordHash, getPasswordSalt } = require('../users');
 
+const DISCREET_LOGIN = getConfigValue('enableDiscreetLogin', false);
 const MFA_CACHE = new Cache(5 * 60 * 1000);
 
 const router = express.Router();
@@ -20,6 +21,10 @@ const recoverLimiter = new RateLimiterMemory({
 
 router.post('/list', async (_request, response) => {
     try {
+        if (DISCREET_LOGIN) {
+            return response.sendStatus(204);
+        }
+
         /** @type {import('../users').User[]} */
         const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
         const viewModels = users
