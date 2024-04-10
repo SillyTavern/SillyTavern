@@ -1,5 +1,6 @@
 import { getRequestHeaders, renderTemplate } from '../script.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { humanFileSize } from './utils.js';
 
 /**
  * @type {import('../../src/users.js').UserViewModel} Logged in user
@@ -435,6 +436,157 @@ async function changeName(handle, name, callback) {
     }
 }
 
+/**
+ * Restore a settings snapshot.
+ * @param {string} name Snapshot name
+ * @param {function} callback Success callback
+ */
+async function restoreSnapshot(name, callback) {
+    try {
+        const confirm = await callGenericPopup(
+            `Are you sure you want to restore the settings from "${name}"?`,
+            POPUP_TYPE.CONFIRM,
+            '',
+            { okButton: 'Restore', cancelButton: 'Cancel', wide: false, large: false },
+        );
+
+        if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
+            throw new Error('Restore snapshot cancelled');
+        }
+
+        const response = await fetch('/api/settings/restore-snapshot', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ name }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to restore snapshot');
+            throw new Error('Failed to restore snapshot');
+        }
+
+        callback();
+    } catch (error) {
+        console.error('Error restoring snapshot:', error);
+    }
+
+}
+
+/**
+ * Load the content of a settings snapshot.
+ * @param {string} name Snapshot name
+ * @returns {Promise<string>} Snapshot content
+ */
+async function loadSnapshotContent(name) {
+    try {
+        const response = await fetch('/api/settings/load-snapshot', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ name }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to load snapshot content');
+            throw new Error('Failed to load snapshot content');
+        }
+
+        return response.text();
+    } catch (error) {
+        console.error('Error loading snapshot content:', error);
+    }
+}
+
+/**
+ * Gets a list of settings snapshots.
+ * @returns {Promise<Snapshot[]>} List of snapshots
+ * @typedef {Object} Snapshot
+ * @property {string} name Snapshot name
+ * @property {number} date Date in milliseconds
+ * @property {number} size File size in bytes
+ */
+async function getSnapshots() {
+    try {
+        const response = await fetch('/api/settings/get-snapshots', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to get settings snapshots');
+            throw new Error('Failed to get settings snapshots');
+        }
+
+        const snapshots = await response.json();
+        return snapshots;
+    } catch (error) {
+        console.error('Error getting settings snapshots:', error);
+        return [];
+    }
+}
+
+/**
+ * Make a snapshot of the current settings.
+ * @param {function} callback Success callback
+ * @returns {Promise<void>}
+ */
+async function makeSnapshot(callback) {
+    try {
+        const response = await fetch('/api/settings/make-snapshot', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to make snapshot');
+            throw new Error('Failed to make snapshot');
+        }
+
+        toastr.success('Snapshot created successfully', 'Snapshot Created');
+        callback();
+    } catch (error) {
+        console.error('Error making snapshot:', error);
+    }
+}
+
+/**
+ * Open the settings snapshots view.
+ */
+async function viewSettingsSnapshots() {
+    const template = $(renderTemplate('snapshotsView'));
+    async function renderSnapshots() {
+        const snapshots = await getSnapshots();
+        template.find('.snapshotList').empty();
+
+        for (const snapshot of snapshots.sort((a, b) => b.date - a.date)) {
+            const snapshotBlock = template.find('.snapshotTemplate .snapshot').clone();
+            snapshotBlock.find('.snapshotName').text(snapshot.name);
+            snapshotBlock.find('.snapshotDate').text(new Date(snapshot.date).toLocaleString());
+            snapshotBlock.find('.snapshotSize').text(humanFileSize(snapshot.size));
+            snapshotBlock.find('.snapshotRestoreButton').on('click', async (e) => {
+                e.stopPropagation();
+                restoreSnapshot(snapshot.name, () => location.reload());
+            });
+            snapshotBlock.find('.inline-drawer-toggle').on('click', async () => {
+                const contentBlock = snapshotBlock.find('.snapshotContent');
+                if (!contentBlock.val()) {
+                    const content = await loadSnapshotContent(snapshot.name);
+                    contentBlock.val(content);
+                }
+
+            });
+            template.find('.snapshotList').append(snapshotBlock);
+        }
+    }
+
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: false, large: false });
+    template.find('.makeSnapshotButton').on('click', () => makeSnapshot(renderSnapshots));
+    renderSnapshots();
+}
+
 async function openUserProfile() {
     await getCurrentUser();
     const template = $(renderTemplate('userProfile'));
@@ -445,6 +597,7 @@ async function openUserProfile() {
     template.find('.userCreated').text(new Date(currentUser.created).toLocaleString());
     template.find('.hasPassword').toggle(currentUser.password);
     template.find('.noPassword').toggle(!currentUser.password);
+    template.find('.userSettingsSnapshotsButton').on('click', () => viewSettingsSnapshots());
     template.find('.userChangeNameButton').on('click', async () => changeName(currentUser.handle, currentUser.name, async () => {
         await getCurrentUser();
         template.find('.userName').text(currentUser.name);

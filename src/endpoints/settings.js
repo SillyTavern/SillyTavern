@@ -10,6 +10,12 @@ const { getAllUserHandles, getUserDirectories } = require('../users');
 const ENABLE_EXTENSIONS = getConfigValue('enableExtensions', true);
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 
+/**
+ * Reads and parses files from a directory.
+ * @param {string} directoryPath Path to the directory
+ * @param {string} fileExtension File extension
+ * @returns {Array} Parsed files
+ */
 function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
     const files = fs
         .readdirSync(directoryPath)
@@ -31,8 +37,22 @@ function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
     return parsedFiles;
 }
 
+/**
+ * Gets a sort function for sorting strings.
+ * @param {*} _
+ * @returns {(a: string, b: string) => number} Sort function
+ */
 function sortByName(_) {
     return (a, b) => a.localeCompare(b);
+}
+
+/**
+ * Gets backup file prefix for user settings.
+ * @param {string} handle User handle
+ * @returns {string} File prefix
+ */
+function getFilePrefix(handle) {
+    return `settings_${handle}_`;
 }
 
 function readPresetsFromDirectory(directoryPath, options = {}) {
@@ -70,20 +90,29 @@ async function backupSettings() {
         const userHandles = await getAllUserHandles();
 
         for (const handle of userHandles) {
-            const userDirectories = getUserDirectories(handle);
-            const backupFile = path.join(PUBLIC_DIRECTORIES.backups, `settings_${handle}_${generateTimestamp()}.json`);
-            const sourceFile = path.join(userDirectories.root, SETTINGS_FILE);
-
-            if (!fs.existsSync(sourceFile)) {
-                continue;
-            }
-
-            fs.copyFileSync(sourceFile, backupFile);
-            removeOldBackups(`settings_${handle}`);
+            backupUserSettings(handle);
         }
     } catch (err) {
         console.log('Could not backup settings file', err);
     }
+}
+
+/**
+ * Makes a backup of the user's settings file.
+ * @param {string} handle User handle
+ * @returns {void}
+ */
+function backupUserSettings(handle) {
+    const userDirectories = getUserDirectories(handle);
+    const backupFile = path.join(PUBLIC_DIRECTORIES.backups, `${getFilePrefix(handle)}${generateTimestamp()}.json`);
+    const sourceFile = path.join(userDirectories.root, SETTINGS_FILE);
+
+    if (!fs.existsSync(sourceFile)) {
+        return;
+    }
+
+    fs.copyFileSync(sourceFile, backupFile);
+    removeOldBackups(`settings_${handle}`);
 }
 
 const router = express.Router();
@@ -166,6 +195,84 @@ router.post('/get', jsonParser, (request, response) => {
         enable_extensions: ENABLE_EXTENSIONS,
         enable_accounts: ENABLE_ACCOUNTS,
     });
+});
+
+router.post('/get-snapshots', jsonParser, async (request, response) => {
+    try {
+        const snapshots = fs.readdirSync(PUBLIC_DIRECTORIES.backups);
+        const userFilesPattern = getFilePrefix(request.user.profile.handle);
+        const userSnapshots = snapshots.filter(x => x.startsWith(userFilesPattern));
+
+        const result = userSnapshots.map(x => {
+            const stat = fs.statSync(path.join(PUBLIC_DIRECTORIES.backups, x));
+            return { date: stat.ctimeMs, name: x, size: stat.size };
+        });
+
+        response.json(result);
+    } catch (error) {
+        console.log(error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/load-snapshot', jsonParser, async (request, response) => {
+    try {
+        const userFilesPattern = getFilePrefix(request.user.profile.handle);
+
+        if (!request.body.name || !request.body.name.startsWith(userFilesPattern)) {
+            return response.status(400).send({ error: 'Invalid snapshot name' });
+        }
+
+        const snapshotName = request.body.name;
+        const snapshotPath = path.join(PUBLIC_DIRECTORIES.backups, snapshotName);
+
+        if (!fs.existsSync(snapshotPath)) {
+            return response.sendStatus(404);
+        }
+
+        const content = fs.readFileSync(snapshotPath, 'utf8');
+
+        response.send(content);
+    } catch (error) {
+        console.log(error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/make-snapshot', jsonParser, async (request, response) => {
+    try {
+        backupUserSettings(request.user.profile.handle);
+        response.sendStatus(204);
+    } catch (error) {
+        console.log(error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/restore-snapshot', jsonParser, async (request, response) => {
+    try {
+        const userFilesPattern = getFilePrefix(request.user.profile.handle);
+
+        if (!request.body.name || !request.body.name.startsWith(userFilesPattern)) {
+            return response.status(400).send({ error: 'Invalid snapshot name' });
+        }
+
+        const snapshotName = request.body.name;
+        const snapshotPath = path.join(PUBLIC_DIRECTORIES.backups, snapshotName);
+
+        if (!fs.existsSync(snapshotPath)) {
+            return response.sendStatus(404);
+        }
+
+        const pathToSettings = path.join(request.user.directories.root, SETTINGS_FILE);
+        fs.rmSync(pathToSettings, { force: true });
+        fs.copyFileSync(snapshotPath, pathToSettings);
+
+        response.sendStatus(204);
+    } catch (error) {
+        console.log(error);
+        response.sendStatus(500);
+    }
 });
 
 /**

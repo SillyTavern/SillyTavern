@@ -561,7 +561,6 @@ function createRouteHandler(directoryFn) {
             const filePath = decodeURIComponent(req.params[0]);
             return res.sendFile(filePath, { root: directory });
         } catch (error) {
-            console.error(error);
             return res.sendStatus(404);
         }
     };
