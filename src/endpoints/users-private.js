@@ -1,7 +1,11 @@
+const path = require('path');
+const fsPromises = require('fs').promises;
 const storage = require('node-persist');
 const express = require('express');
 const { jsonParser } = require('../express-common');
 const { getUserAvatar, toKey, getPasswordHash, getPasswordSalt, createBackupArchive } = require('../users');
+const { SETTINGS_FILE } = require('../constants');
+const contentManager = require('./content-manager');
 
 const router = express.Router();
 
@@ -107,6 +111,19 @@ router.post('/backup', jsonParser, async (request, response) => {
         await createBackupArchive(handle, response);
     } catch (error) {
         console.error('Backup failed', error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/reset-settings', jsonParser, async (request, response) => {
+    try {
+        const pathToFile = path.join(request.user.directories.root, SETTINGS_FILE);
+        await fsPromises.rm(pathToFile, { force: true });
+        await contentManager.checkForNewContent([request.user.directories], [contentManager.CONTENT_TYPES.SETTINGS]);
+
+        return response.sendStatus(204);
+    } catch (error) {
+        console.error('Reset settings failed', error);
         return response.sendStatus(500);
     }
 });

@@ -2,12 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const { PUBLIC_DIRECTORIES } = require('../constants');
+const { PUBLIC_DIRECTORIES, SETTINGS_FILE } = require('../constants');
 const { getConfigValue, generateTimestamp, removeOldBackups } = require('../util');
 const { jsonParser } = require('../express-common');
 const { getAllUserHandles, getUserDirectories } = require('../users');
 
-const SETTINGS_FILE = 'settings.json';
 const ENABLE_EXTENSIONS = getConfigValue('enableExtensions', true);
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 

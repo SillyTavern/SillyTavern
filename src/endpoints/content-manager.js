@@ -16,6 +16,29 @@ const characterCardParser = require('../character-card-parser.js');
  */
 
 /**
+ * @typedef {string} ContentType
+ * @enum {string}
+ */
+const CONTENT_TYPES = {
+    SETTINGS: 'settings',
+    CHARACTER: 'character',
+    SPRITES: 'sprites',
+    BACKGROUND: 'background',
+    WORLD: 'world',
+    AVATAR: 'avatar',
+    THEME: 'theme',
+    WORKFLOW: 'workflow',
+    KOBOLD_PRESET: 'kobold_preset',
+    OPENAI_PRESET: 'openai_preset',
+    NOVEL_PRESET: 'novel_preset',
+    TEXTGEN_PRESET: 'textgen_preset',
+    INSTRUCT: 'instruct',
+    CONTEXT: 'context',
+    MOVING_UI: 'moving_ui',
+    QUICK_REPLIES: 'quick_replies',
+};
+
+/**
  * Gets the default presets from the content directory.
  * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {object[]} Array of default presets
@@ -67,8 +90,9 @@ function getDefaultPresetFile(filename) {
  * Seeds content for a user.
  * @param {ContentItem[]} contentIndex Content index
  * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {string[]} forceCategories List of categories to force check (even if content check is skipped)
  */
-async function seedContentForUser(contentIndex, directories) {
+async function seedContentForUser(contentIndex, directories, forceCategories) {
     if (!fs.existsSync(directories.root)) {
         fs.mkdirSync(directories.root, { recursive: true });
     }
@@ -78,7 +102,7 @@ async function seedContentForUser(contentIndex, directories) {
 
     for (const contentItem of contentIndex) {
         // If the content item is already in the log, skip it
-        if (contentLog.includes(contentItem.filename)) {
+        if (contentLog.includes(contentItem.filename) && !forceCategories?.includes(contentItem.type)) {
             continue;
         }
 
@@ -115,11 +139,12 @@ async function seedContentForUser(contentIndex, directories) {
 /**
  * Checks for new content and seeds it for all users.
  * @param {import('../users').UserDirectoryList[]} directoriesList List of user directories
+ * @param {string[]} forceCategories List of categories to force check (even if content check is skipped)
  * @returns {Promise<void>}
  */
-async function checkForNewContent(directoriesList) {
+async function checkForNewContent(directoriesList, forceCategories = []) {
     try {
-        if (getConfigValue('skipContentCheck', false)) {
+        if (getConfigValue('skipContentCheck', false) && forceCategories?.length === 0) {
             return;
         }
 
@@ -127,7 +152,7 @@ async function checkForNewContent(directoriesList) {
         const contentIndex = JSON.parse(contentIndexText);
 
         for (const directories of directoriesList) {
-            await seedContentForUser(contentIndex, directories);
+            await seedContentForUser(contentIndex, directories, forceCategories);
         }
     } catch (err) {
         console.log('Content check failed', err);
@@ -136,43 +161,43 @@ async function checkForNewContent(directoriesList) {
 
 /**
  * Gets the target directory for the specified asset type.
- * @param {string} type Asset type
+ * @param {ContentType} type Asset type
  * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {string | null} Target directory
  */
 function getTargetByType(type, directories) {
     switch (type) {
-        case 'settings':
+        case CONTENT_TYPES.SETTINGS:
             return directories.root;
-        case 'character':
+        case CONTENT_TYPES.CHARACTER:
             return directories.characters;
-        case 'sprites':
+        case CONTENT_TYPES.SPRITES:
             return directories.characters;
-        case 'background':
+        case CONTENT_TYPES.BACKGROUND:
             return directories.backgrounds;
-        case 'world':
+        case CONTENT_TYPES.WORLD:
             return directories.worlds;
-        case 'avatar':
+        case CONTENT_TYPES.AVATAR:
             return directories.avatars;
-        case 'theme':
+        case CONTENT_TYPES.THEME:
             return directories.themes;
-        case 'workflow':
+        case CONTENT_TYPES.WORKFLOW:
             return directories.comfyWorkflows;
-        case 'kobold_preset':
+        case CONTENT_TYPES.KOBOLD_PRESET:
             return directories.koboldAI_Settings;
-        case 'openai_preset':
+        case CONTENT_TYPES.OPENAI_PRESET:
             return directories.openAI_Settings;
-        case 'novel_preset':
+        case CONTENT_TYPES.NOVEL_PRESET:
             return directories.novelAI_Settings;
-        case 'textgen_preset':
+        case CONTENT_TYPES.TEXTGEN_PRESET:
             return directories.textGen_Settings;
-        case 'instruct':
+        case CONTENT_TYPES.INSTRUCT:
             return directories.instruct;
-        case 'context':
+        case CONTENT_TYPES.CONTEXT:
             return directories.context;
-        case 'moving_ui':
+        case CONTENT_TYPES.MOVING_UI:
             return directories.movingUI;
-        case 'quick_replies':
+        case CONTENT_TYPES.QUICK_REPLIES:
             return directories.quickreplies;
         default:
             return null;
@@ -477,6 +502,7 @@ router.post('/importUUID', jsonParser, async (request, response) => {
 });
 
 module.exports = {
+    CONTENT_TYPES,
     checkForNewContent,
     getDefaultPresets,
     getDefaultPresetFile,

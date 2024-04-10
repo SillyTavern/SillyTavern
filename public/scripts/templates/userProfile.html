@@ -1,7 +1,10 @@
 <div class="flex-container flexFlowColumn justifyLeft flexGap10">
     <div>
-        <h2 class="marginBot10">
-            <span>Hi,</span>&nbsp;<span class="userName margin0"></span>
+        <h2 class="marginBot10 flex-container">
+            <span>Hi,</span><span class="userName margin0"></span>
+            <div class="userChangeNameButton right_menu_button" title="Change display name.">
+                <i class="fa-fw fa-solid fa-pencil fa-xs"></i>
+            </div>
         </h2>
     </div>
     <div>
@@ -10,7 +13,7 @@
         </h3>
         <div class="flex-container flexGap10">
             <div>
-                <div class="avatar" title="To change your user avatar, select a default persona in Persona Management menu.">
+                <div class="avatar" title="To change your user avatar, select a default persona in the Persona Management menu.">
                     <img src="img/ai4.png" alt="avatar">
                 </div>
             </div>
@@ -55,7 +58,7 @@
                     <i class="fa-fw fa-solid fa-camera"></i>
                     <span data-i18n="Settings Snapshots">Settings Snapshots</span>
                 </div>
-                <div class="userBackupButton menu_button menu_button_icon" title="Download a complete backup of user data.">
+                <div class="userBackupButton menu_button menu_button_icon" title="Download a complete backup of your user data.">
                     <i class="fa-fw fa-solid fa-download"></i>
                     <span data-i18n="Download Backup">Download Backup</span>
                 </div>
@@ -67,11 +70,11 @@
             Danger Zone
         </h3>
         <div class="flex-container">
-            <div class="userResetSettings menu_button menu_button_icon" title="Reset your settings to factory defaults.">
+            <div class="userResetSettingsButton menu_button menu_button_icon" title="Reset your settings to factory defaults.">
                 <i class="fa-fw fa-solid fa-cog warning"></i>
                 <span data-i18n="Reset Settings">Reset Settings</span>
             </div>
-            <div class="userResetAll menu_button menu_button_icon" title="Wipe all user data and reset your account to factory settings.">
+            <div class="userResetAllButton menu_button menu_button_icon" title="Wipe all user data and reset your account to factory settings.">
                 <i class="fa-fw fa-solid fa-skull warning"></i>
                 <span data-i18n="Reset Everything">Reset Everything</span>
             </div>

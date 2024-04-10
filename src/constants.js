@@ -6,6 +6,7 @@ const PUBLIC_DIRECTORIES = {
 };
 
 const DEFAULT_AVATAR = '/img/ai4.png';
+const SETTINGS_FILE = 'settings.json';
 
 /**
  * @type {import('./users').UserDirectoryList}
@@ -300,6 +301,7 @@ const OPENROUTER_KEYS = [
 module.exports = {
     DEFAULT_USER,
     DEFAULT_AVATAR,
+    SETTINGS_FILE,
     PUBLIC_DIRECTORIES,
     USER_DIRECTORY_TEMPLATE,
     UNSAFE_EXTENSIONS,

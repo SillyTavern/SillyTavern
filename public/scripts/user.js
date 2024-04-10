@@ -357,6 +357,39 @@ async function deleteUser(handle, callback) {
     }
 }
 
+/**
+ * Reset a user's settings.
+ * @param {string} handle User handle
+ * @param {function} callback Success callback
+ */
+async function resetSettings(handle, callback) {
+    try {
+        const template = $(renderTemplate('resetSettings'));
+        const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { okButton: 'Reset', cancelButton: 'Cancel', wide: false, large: false });
+
+        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+            throw new Error('Reset settings cancelled');
+        }
+
+        const response = await fetch('/api/users/reset-settings', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ handle }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to reset settings');
+            throw new Error('Failed to reset settings');
+        }
+
+        toastr.success('Settings reset successfully', 'Settings Reset');
+        callback();
+    } catch (error) {
+        console.error('Error resetting settings:', error);
+    }
+}
+
 async function openUserProfile() {
     await getCurrentUser();
     const template = $(renderTemplate('userProfile'));
@@ -367,13 +400,18 @@ async function openUserProfile() {
     template.find('.userCreated').text(new Date(currentUser.created).toLocaleString());
     template.find('.hasPassword').toggle(currentUser.password);
     template.find('.noPassword').toggle(!currentUser.password);
-    template.find('.userChangePasswordButton').on('click', () => changePassword(currentUser.handle, () => { }));
+    template.find('.userChangePasswordButton').on('click', () => changePassword(currentUser.handle, async () => {
+        await getCurrentUser();
+        template.find('.hasPassword').toggle(currentUser.password);
+        template.find('.noPassword').toggle(!currentUser.password);
+    }));
     template.find('.userBackupButton').on('click', function () {
         $(this).addClass('disabled');
         backupUserData(currentUser.handle, () => {
             $(this).removeClass('disabled');
         });
     });
+    template.find('.userResetSettingsButton').on('click', () => resetSettings(currentUser.handle, () => location.reload()));
 
     callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: false, large: false, allowVerticalScrolling: true, allowHorizontalScrolling: false });
 }

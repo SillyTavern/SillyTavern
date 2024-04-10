@@ -10,7 +10,7 @@ const express = require('express');
 const mime = require('mime-types');
 const archiver = require('archiver');
 
-const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, DEFAULT_AVATAR } = require('./constants');
+const { USER_DIRECTORY_TEMPLATE, DEFAULT_USER, PUBLIC_DIRECTORIES, DEFAULT_AVATAR, SETTINGS_FILE } = require('./constants');
 const { getConfigValue, color, delay, setConfigValue, generateTimestamp } = require('./util');
 const { readSecret, writeSecret } = require('./endpoints/secrets');
 
@@ -431,7 +431,7 @@ function getUserDirectories(handle) {
 function getUserAvatar(handle) {
     try {
         const directory = getUserDirectories(handle);
-        const pathToSettings = path.join(directory.root, 'settings.json');
+        const pathToSettings = path.join(directory.root, SETTINGS_FILE);
         const settings = fs.existsSync(pathToSettings) ? JSON.parse(fs.readFileSync(pathToSettings, 'utf8')) : {};
         const avatarFile = settings?.power_user?.default_persona || settings?.user_avatar;
         if (!avatarFile) {
