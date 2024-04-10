@@ -54,6 +54,10 @@ async function getCurrentUser() {
     }
 }
 
+/**
+ * Get a list of all users.
+ * @returns {Promise<import('../../src/users.js').UserViewModel[]>} Users
+ */
 async function getUsers() {
     try {
         const response = await fetch('/api/users/get', {
@@ -394,6 +398,43 @@ async function resetSettings(handle, callback) {
     }
 }
 
+/**
+ * Change a user's display name.
+ * @param {string} handle User handle
+ * @param {string} name Current name
+ * @param {function} callback Success callback
+ */
+async function changeName(handle, name, callback) {
+    try {
+        const template = $(renderTemplate('changeName'));
+        const result = await callGenericPopup(template, POPUP_TYPE.INPUT, name, { okButton: 'Change', cancelButton: 'Cancel', wide: false, large: false });
+
+        if (!result) {
+            throw new Error('Change name cancelled');
+        }
+
+        name = String(result);
+
+        const response = await fetch('/api/users/change-name', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ handle, name }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to change name');
+            throw new Error('Failed to change name');
+        }
+
+        toastr.success('Name changed successfully', 'Name Changed');
+        callback();
+
+    } catch (error) {
+        console.error('Error changing name:', error);
+    }
+}
+
 async function openUserProfile() {
     await getCurrentUser();
     const template = $(renderTemplate('userProfile'));
@@ -404,6 +445,10 @@ async function openUserProfile() {
     template.find('.userCreated').text(new Date(currentUser.created).toLocaleString());
     template.find('.hasPassword').toggle(currentUser.password);
     template.find('.noPassword').toggle(!currentUser.password);
+    template.find('.userChangeNameButton').on('click', async () => changeName(currentUser.handle, currentUser.name, async () => {
+        await getCurrentUser();
+        template.find('.userName').text(currentUser.name);
+    }));
     template.find('.userChangePasswordButton').on('click', () => changePassword(currentUser.handle, async () => {
         await getCurrentUser();
         template.find('.hasPassword').toggle(currentUser.password);
@@ -417,7 +462,14 @@ async function openUserProfile() {
     });
     template.find('.userResetSettingsButton').on('click', () => resetSettings(currentUser.handle, () => location.reload()));
 
-    callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: false, large: false, allowVerticalScrolling: true, allowHorizontalScrolling: false });
+    const popupOptions = {
+        okButton: 'Close',
+        wide: false,
+        large: false,
+        allowVerticalScrolling: true,
+        allowHorizontalScrolling: false,
+    };
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', popupOptions);
 }
 
 async function openAdminPanel() {
@@ -440,6 +492,7 @@ async function openAdminPanel() {
             userBlock.find('.userDemoteButton').toggle(user.admin).on('click', () => demoteUser(user.handle, renderUsers));
             userBlock.find('.userChangePasswordButton').on('click', () => changePassword(user.handle, renderUsers));
             userBlock.find('.userDelete').on('click', () => deleteUser(user.handle, renderUsers));
+            userBlock.find('.userChangeNameButton').on('click', async () => changeName(user.handle, user.name, renderUsers));
             userBlock.find('.userBackupButton').on('click', function () {
                 $(this).addClass('disabled').off('click');
                 backupUserData(user.handle, renderUsers);

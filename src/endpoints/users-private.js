@@ -135,6 +135,36 @@ router.post('/reset-settings', jsonParser, async (request, response) => {
     }
 });
 
+router.post('/change-name', jsonParser, async (request, response) => {
+    try {
+        if (!request.body.name || !request.body.handle) {
+            console.log('Change name failed: Missing required fields');
+            return response.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (request.body.handle !== request.user.profile.handle && !request.user.profile.admin) {
+            console.log('Change name failed: Unauthorized');
+            return response.status(403).json({ error: 'Unauthorized' });
+        }
+
+        /** @type {import('../users').User} */
+        const user = await storage.getItem(toKey(request.body.handle));
+
+        if (!user) {
+            console.log('Change name failed: User not found');
+            return response.status(404).json({ error: 'User not found' });
+        }
+
+        user.name = request.body.name;
+        await storage.setItem(toKey(request.body.handle), user);
+
+        return response.sendStatus(204);
+    } catch (error) {
+        console.error('Change name failed', error);
+        return response.sendStatus(500);
+    }
+});
+
 module.exports = {
     router,
 };
