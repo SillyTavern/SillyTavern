@@ -30,7 +30,7 @@ function migrateSettings() {
     if (extension_settings.caption.source === 'openai') {
         extension_settings.caption.source = 'multimodal';
         extension_settings.caption.multimodal_api = 'openai';
-        extension_settings.caption.multimodal_model = 'gpt-4-vision-preview';
+        extension_settings.caption.multimodal_model = 'gpt-4-turbo';
     }
 
     if (!extension_settings.caption.multimodal_api) {
@@ -38,7 +38,7 @@ function migrateSettings() {
     }
 
     if (!extension_settings.caption.multimodal_model) {
-        extension_settings.caption.multimodal_model = 'gpt-4-vision-preview';
+        extension_settings.caption.multimodal_model = 'gpt-4-turbo';
     }
 
     if (!extension_settings.caption.prompt) {
@@ -369,6 +369,7 @@ jQuery(function () {
                             <label for="caption_multimodal_model">Model</label>
                             <select id="caption_multimodal_model" class="flex1 text_pole">
                                 <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
+                                <option data-type="openai" value="gpt-4-turbo">gpt-4-turbo</option>
                                 <option data-type="anthropic" value="claude-3-opus-20240229">claude-3-opus-20240229</option>
                                 <option data-type="anthropic" value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                 <option data-type="anthropic" value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
