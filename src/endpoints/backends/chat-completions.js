@@ -16,6 +16,23 @@ const API_MISTRAL = 'https://api.mistral.ai/v1';
 const API_COHERE = 'https://api.cohere.ai/v1';
 
 /**
+ * Applies a post-processing step to the generated messages.
+ * @param {object[]} messages Messages to post-process
+ * @param {string} type Prompt conversion type
+ * @param {string} charName Character name
+ * @param {string} userName User name
+ * @returns
+ */
+function postProcessPrompt(messages, type, charName, userName) {
+    switch (type) {
+        case 'claude':
+            return convertClaudeMessages(messages, '', false, '', charName, userName).messages;
+        default:
+            return messages;
+    }
+}
+
+/**
  * Ollama strikes back. Special boy #2's steaming routine.
  * Wrap this abomination into proper SSE stream, again.
  * @param {import('node-fetch').Response} jsonStream JSON stream
@@ -524,9 +541,8 @@ async function sendMistralAIRequest(request, response) {
 
 /**
  * Sends a request to Cohere API.
- * @param {import('express').Request} request
- * @param {import('express').Response} response
- * @returns {Promise<any>}
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
  */
 async function sendCohereRequest(request, response) {
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.COHERE);
@@ -856,6 +872,15 @@ router.post('/generate', jsonParser, function (request, response) {
 
         mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
+
+        if (request.body.custom_prompt_post_processing) {
+            console.log('Applying custom prompt post-processing of type', request.body.custom_prompt_post_processing);
+            request.body.messages = postProcessPrompt(
+                request.body.messages,
+                request.body.custom_prompt_post_processing,
+                request.body.char_name,
+                request.body.user_name);
+        }
     } else {
         console.log('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
