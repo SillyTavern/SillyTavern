@@ -725,6 +725,7 @@ pollinations.post('/generate', jsonParser, async (request, response) => {
             height: String(request.body.height ?? 1024),
             nologo: String(true),
             nofeed: String(true),
+            referer: 'sillytavern',
         });
         promptUrl.search = params.toString();
 
