@@ -568,7 +568,7 @@ jQuery(function () {
         const json_schema_string = String($(this).val());
 
         try {
-            settings.json_schema = JSON.parse(json_schema_string ?? '{}');
+            settings.json_schema = JSON.parse(json_schema_string || '{}');
         } catch {
             // Ignore errors from here
         }

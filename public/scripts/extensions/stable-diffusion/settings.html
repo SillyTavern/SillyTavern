@@ -32,14 +32,15 @@
             </label>
             <label for="sd_source">Source</label>
             <select id="sd_source">
-                <option value="extras">Extras API (local / remote)</option>
-                <option value="horde">Stable Horde</option>
-                <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
-                <option value="vlad">SD.Next (vladmandic)</option>
+                <option value="comfy">ComfyUI</option>
                 <option value="drawthings">DrawThings HTTP API</option>
+                <option value="extras">Extras API (local / remote)</option>
                 <option value="novel">NovelAI Diffusion</option>
                 <option value="openai">OpenAI (DALL-E)</option>
-                <option value="comfy">ComfyUI</option>
+                <option value="pollinations">Pollinations</option>
+                <option value="vlad">SD.Next (vladmandic)</option>
+                <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
+                <option value="horde">Stable Horde</option>
                 <option value="togetherai">TogetherAI</option>
             </select>
             <div data-sd-source="auto">
@@ -156,6 +157,25 @@
                     <div id="sd_comfy_delete_workflow" class="menu_button menu_button_icon" title="Delete workflow">
                         <i class="fa-solid fa-trash-can"></i>
                     </div>
+                </div>
+            </div>
+            <div data-sd-source="pollinations">
+                <p>
+                    <a href="https://pollinations.ai">Pollinations.ai</a>
+                </p>
+                <div class="flex-container">
+                    <label class="flex1 checkbox_label" for="sd_pollinations_enhance">
+                        <input id="sd_pollinations_enhance" type="checkbox" />
+                        <span data-i18n="Enhance">
+                            Enhance
+                        </span>
+                    </label>
+                    <label class="flex1 checkbox_label" for="sd_pollinations_refine">
+                        <input id="sd_pollinations_refine" type="checkbox" />
+                        <span data-i18n="Refine">
+                            Refine
+                        </span>
+                    </label>
                 </div>
             </div>
             <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>

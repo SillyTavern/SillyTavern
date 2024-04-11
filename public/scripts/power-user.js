@@ -1946,7 +1946,9 @@ export function renderStoryString(params) {
 
         // add a newline to the end of the story string if it doesn't have one
         if (output.length > 0 && !output.endsWith('\n')) {
-            output += '\n';
+            if (!power_user.instruct.enabled || power_user.instruct.wrap) {
+                output += '\n';
+            }
         }
 
         return output;

@@ -985,9 +985,7 @@ body.reduced-motion #bg_custom {
 }
 
 .avatars_inline .avatar {
-    margin-top: calc(var(--avatar-base-border-radius));
-    margin-left: calc(var(--avatar-base-border-radius));
-    margin-bottom: calc(var(--avatar-base-border-radius));
+    margin: calc(var(--avatar-base-border-radius));
 }
 
 .avatars_inline .avatar:last-of-type {
@@ -1177,8 +1175,8 @@ select {
 
 @media screen and (min-width: 1001px) {
     #description_textarea {
-        height: 30vh;
-        height: 30svh;
+        height: 29vh;
+        height: 29svh;
     }
 
     #firstmessage_textarea {
@@ -1265,7 +1263,7 @@ input[type="file"] {
 #right-nav-panel-tabs {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 5px;
     overflow: hidden;
     width: 100%;
 }
@@ -1275,7 +1273,7 @@ input[type="file"] {
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    padding: 0 5px;
+    padding: 0px 10px 0px 5px;
 }
 
 #right-nav-panel-tabs .right_menu_button,
@@ -1729,6 +1727,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .missing-avatar.inline_avatar {
     padding: unset;
     border-radius: var(--avatar-base-border-radius-round);
+    width: fit-content;
 }
 
 /*applies to char list and mes_text char display name*/
@@ -2077,6 +2076,19 @@ grammarly-extension {
     justify-content: center;
     align-items: center;
     align-self: center !important;
+    width: 100%;
+    height: 100%;
+    /* Avoids cutting off the box shadow on the avatar*/
+    margin: 10px;
+}
+
+#avatar_controls {
+    height: 100%;
+    width: 100%;
+    flex-grow: 1;
+    justify-content: flex-end;
+    flex-flow: column;
+    padding: 5px 5px 10px 0;
 }
 
 #description_div,
@@ -2287,11 +2299,11 @@ grammarly-extension {
     font-weight: bold;
     padding: 5px;
     margin: 0;
-    height: 26px;
     filter: grayscale(0.5);
     text-align: center;
     font-size: 17px;
     aspect-ratio: 1 / 1;
+    flex: 0.075;
 }
 
 .menu_button:hover,
@@ -2710,7 +2722,11 @@ input[type="range"]::-webkit-slider-thumb {
     color: var(--SmartThemeBodyColor);
 }
 
-#char-management-dropdown,
+#char-management-dropdown {
+    height: auto;
+    margin-bottom: 0;
+}
+
 #tagInput {
     height: 26px;
     margin-bottom: 0;
