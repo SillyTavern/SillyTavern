@@ -1,6 +1,6 @@
 import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
 import { hideLoader, showLoader } from './loader.js';
-import { renderTemplate, renderTemplateAsync } from '../script.js';
+import { renderTemplate, renderTemplateAsync } from './templates.js';
 import { isSubsetOf, setValueByPath } from './utils.js';
 export {
     getContext,

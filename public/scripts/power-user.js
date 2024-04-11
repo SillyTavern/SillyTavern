@@ -22,7 +22,6 @@ import {
     ANIMATION_DURATION_DEFAULT,
     setActiveGroup,
     setActiveCharacter,
-    renderTemplateAsync,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -39,6 +38,7 @@ import { registerSlashCommand } from './slash-commands.js';
 import { tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
+import { renderTemplateAsync } from './templates.js';
 
 import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 
