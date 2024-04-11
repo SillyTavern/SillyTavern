@@ -399,7 +399,7 @@ router.post('/google/count', jsonParser, async function (req, res) {
             accept: 'application/json',
             'content-type': 'application/json',
         },
-        body: JSON.stringify({ contents: convertGooglePrompt(req.body, String(req.query.model)) }),
+        body: JSON.stringify({ contents: convertGooglePrompt(req.body, String(req.query.model)).contents }),
     };
     try {
         const key = readSecret(req.user.directories, SECRET_KEYS.MAKERSUITE);

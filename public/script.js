@@ -5981,7 +5981,7 @@ function getUserAvatarBlock(name) {
     const personaName = power_user.personas[name];
     const personaDescription = power_user.persona_descriptions[name]?.description;
     template.find('.ch_name').text(personaName || '[Unnamed Persona]');
-    template.find('.ch_description').text(personaDescription || '[No description]').toggleClass('text_muted', !personaDescription);
+    template.find('.ch_description').text(personaDescription || $('#user_avatar_block').attr('no_desc_text')).toggleClass('text_muted', !personaDescription);
     template.attr('imgfile', name);
     template.find('.avatar').attr('imgfile', name).attr('title', name);
     template.toggleClass('default_persona', name === power_user.default_persona);
