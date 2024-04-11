@@ -4,7 +4,7 @@ TODO:
 //const DEBUG_TONY_SAMA_FORK_MODE = true
 
 import { getRequestHeaders, callPopup, processDroppedFiles } from '../../../script.js';
-import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplate } from '../../extensions.js';
+import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
 import { executeSlashCommands } from '../../slash-commands.js';
 import { getStringHash, isValidUrl } from '../../utils.js';
 export { MODULE_NAME };
@@ -355,7 +355,8 @@ async function updateCurrentAssets() {
 // This function is called when the extension is loaded
 jQuery(async () => {
     // This is an example of loading HTML from a file
-    const windowHtml = $(renderExtensionTemplate(MODULE_NAME, 'window', {}));
+    const windowTemplate = await renderExtensionTemplateAsync(MODULE_NAME, 'window', {});
+    const windowHtml = $(windowTemplate);
 
     const assetsJsonUrl = windowHtml.find('#assets-json-url-field');
     assetsJsonUrl.val(ASSETS_JSON_URL);
@@ -366,7 +367,7 @@ jQuery(async () => {
         const rememberKey = `Assets_SkipConfirm_${getStringHash(url)}`;
         const skipConfirm = localStorage.getItem(rememberKey) === 'true';
 
-        const template = renderExtensionTemplate(MODULE_NAME, 'confirm', { url });
+        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'confirm', { url });
         const confirmation = skipConfirm || await callPopup(template, 'confirm');
 
         if (confirmation) {

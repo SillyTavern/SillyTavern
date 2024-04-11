@@ -508,24 +508,36 @@ llamacpp.post('/slots', jsonParser, async function (request, response) {
         if (!request.body.server_url) {
             return response.sendStatus(400);
         }
-        if (!/^\d+$/.test(request.body.id_slot)) {
-            return response.sendStatus(400);
-        }
-        if (!/^(erase|restore|save)$/.test(request.body.action)) {
+        if (!/^(erase|info|restore|save)$/.test(request.body.action)) {
             return response.sendStatus(400);
         }
 
         console.log('LlamaCpp slots request:', request.body);
         const baseUrl = trimV1(request.body.server_url);
 
-        const fetchResponse = await fetch(`${baseUrl}/slots/${request.body.id_slot}?action=${request.body.action}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 0,
-            body: JSON.stringify({
-                filename: `${request.body.filename}`,
-            }),
-        });
+        let fetchResponse;
+        if (request.body.action === "info") {
+            fetchResponse = await fetch(`${baseUrl}/slots`, {
+                method: 'GET',
+                timeout: 0,
+            });
+        } else {
+            if (!/^\d+$/.test(request.body.id_slot)) {
+                return response.sendStatus(400);
+            }
+            if (request.body.action !== "erase" && !request.body.filename) {
+                return response.sendStatus(400);
+            }
+    
+            fetchResponse = await fetch(`${baseUrl}/slots/${request.body.id_slot}?action=${request.body.action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                timeout: 0,
+                body: JSON.stringify({
+                    filename: request.body.action !== "erase" ? `${request.body.filename}` : undefined,
+                }),
+            });
+        }
 
         if (!fetchResponse.ok) {
             console.log('LlamaCpp slots error:', fetchResponse.status, fetchResponse.statusText);

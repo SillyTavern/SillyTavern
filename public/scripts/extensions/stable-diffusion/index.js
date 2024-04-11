@@ -18,7 +18,7 @@ import {
     formatCharacterAvatar,
     substituteParams,
 } from '../../../script.js';
-import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from '../../extensions.js';
+import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
 import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay, isTrueBoolean } from '../../utils.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.js';
@@ -2990,7 +2990,8 @@ jQuery(async () => {
     registerSlashCommand('imagine', generatePicture, ['sd', 'img', 'image'], helpString, true, true);
     registerSlashCommand('imagine-comfy-workflow', changeComfyWorkflow, ['icw'], '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <tt>/imagine-comfy-workflow MyWorkflow</tt>');
 
-    $('#extensions_settings').append(renderExtensionTemplate('stable-diffusion', 'settings', defaultSettings));
+    const template = await renderExtensionTemplateAsync('stable-diffusion', 'settings', defaultSettings);
+    $('#extensions_settings').append(template);
     $('#sd_source').on('change', onSourceChange);
     $('#sd_scale').on('input', onScaleInput);
     $('#sd_steps').on('input', onStepsInput);

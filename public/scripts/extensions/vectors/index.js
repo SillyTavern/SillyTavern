@@ -1,5 +1,5 @@
 import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from '../../../script.js';
-import { ModuleWorkerWrapper, extension_settings, getContext, modules, renderExtensionTemplate } from '../../extensions.js';
+import { ModuleWorkerWrapper, extension_settings, getContext, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
@@ -658,7 +658,8 @@ jQuery(async () => {
 
     // Migrate from TensorFlow to Transformers
     settings.source = settings.source !== 'local' ? settings.source : 'transformers';
-    $('#extensions_settings2').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
+    const template = await renderExtensionTemplateAsync(MODULE_NAME, 'settings');
+    $('#extensions_settings2').append(template);
     $('#vectors_enabled_chats').prop('checked', settings.enabled_chats).on('input', () => {
         settings.enabled_chats = $('#vectors_enabled_chats').prop('checked');
         Object.assign(extension_settings.vectors, settings);

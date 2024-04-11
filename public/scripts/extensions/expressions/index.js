@@ -1,6 +1,6 @@
 import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
-import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplate } from '../../extensions.js';
+import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, power_user } from '../../power-user.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from '../../utils.js';
@@ -594,7 +594,7 @@ async function moduleWorker() {
     }
 
     // non-characters not supported
-    if (!context.groupId && (context.characterId === undefined || context.characterId === 'invalid-safety-id')) {
+    if (!context.groupId && context.characterId === undefined) {
         removeExpression();
         return;
     }
@@ -977,6 +977,10 @@ async function getExpressionLabel(text) {
         return getFallbackExpression();
     }
 
+    if (extension_settings.expressions.translate && typeof window['translate'] === 'function') {
+        text = await window['translate'](text, 'en');
+    }
+
     text = sampleClassifyText(text);
 
     try {
@@ -1051,18 +1055,18 @@ async function validateImages(character, forceRedrawCached) {
     if (spriteCache[character]) {
         if (forceRedrawCached && $('#image_list').data('name') !== character) {
             console.debug('force redrawing character sprites list');
-            drawSpritesList(character, labels, spriteCache[character]);
+            await drawSpritesList(character, labels, spriteCache[character]);
         }
 
         return;
     }
 
     const sprites = await getSpritesList(character);
-    let validExpressions = drawSpritesList(character, labels, sprites);
+    let validExpressions = await drawSpritesList(character, labels, sprites);
     spriteCache[character] = validExpressions;
 }
 
-function drawSpritesList(character, labels, sprites) {
+async function drawSpritesList(character, labels, sprites) {
     let validExpressions = [];
     $('#no_chat_expressions').hide();
     $('#open_chat_expressions').show();
@@ -1074,18 +1078,20 @@ function drawSpritesList(character, labels, sprites) {
         return [];
     }
 
-    labels.sort().forEach((item) => {
+    for (const item of labels.sort()) {
         const sprite = sprites.find(x => x.label == item);
         const isCustom = extension_settings.expressions.custom.includes(item);
 
         if (sprite) {
             validExpressions.push(sprite);
-            $('#image_list').append(getListItem(item, sprite.path, 'success', isCustom));
+            const listItem = await getListItem(item, sprite.path, 'success', isCustom);
+            $('#image_list').append(listItem);
         }
         else {
-            $('#image_list').append(getListItem(item, '/img/No-Image-Placeholder.svg', 'failure', isCustom));
+            const listItem = await getListItem(item, '/img/No-Image-Placeholder.svg', 'failure', isCustom);
+            $('#image_list').append(listItem);
         }
-    });
+    }
     return validExpressions;
 }
 
@@ -1095,12 +1101,12 @@ function drawSpritesList(character, labels, sprites) {
  * @param {string} imageSrc Path to image
  * @param {'success' | 'failure'} textClass 'success' or 'failure'
  * @param {boolean} isCustom If expression is added by user
- * @returns {string} Rendered list item template
+ * @returns {Promise<string>} Rendered list item template
  */
-function getListItem(item, imageSrc, textClass, isCustom) {
+async function getListItem(item, imageSrc, textClass, isCustom) {
     const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
     imageSrc = isFirefox ? `${imageSrc}?t=${Date.now()}` : imageSrc;
-    return renderExtensionTemplate(MODULE_NAME, 'list-item', { item, imageSrc, textClass, isCustom });
+    return renderExtensionTemplateAsync(MODULE_NAME, 'list-item', { item, imageSrc, textClass, isCustom });
 }
 
 async function getSpritesList(name) {
@@ -1162,7 +1168,7 @@ async function renderFallbackExpressionPicker() {
 async function getExpressionsList() {
     // Return cached list if available
     if (Array.isArray(expressionsList)) {
-        return expressionsList;
+        return [...expressionsList, ...extension_settings.expressions.custom].filter(onlyUnique);
     }
 
     /**
@@ -1211,7 +1217,7 @@ async function getExpressionsList() {
     }
 
     const result = await resolveExpressionsList();
-    return [...result, ...extension_settings.expressions.custom];
+    return [...result, ...extension_settings.expressions.custom].filter(onlyUnique);
 }
 
 async function setExpression(character, expression, force) {
@@ -1367,7 +1373,8 @@ function onClickExpressionImage() {
 }
 
 async function onClickExpressionAddCustom() {
-    let expressionName = await callPopup(renderExtensionTemplate(MODULE_NAME, 'add-custom-expression'), 'input');
+    const template = await renderExtensionTemplateAsync(MODULE_NAME, 'add-custom-expression');
+    let expressionName = await callPopup(template, 'input');
 
     if (!expressionName) {
         console.debug('No custom expression name provided');
@@ -1406,14 +1413,15 @@ async function onClickExpressionAddCustom() {
 }
 
 async function onClickExpressionRemoveCustom() {
-    const selectedExpression = $('#expression_custom').val();
+    const selectedExpression = String($('#expression_custom').val());
 
     if (!selectedExpression) {
         console.debug('No custom expression selected');
         return;
     }
 
-    const confirmation = await callPopup(renderExtensionTemplate(MODULE_NAME, 'remove-custom-expression', { expression: selectedExpression }), 'confirm');
+    const template = await renderExtensionTemplateAsync(MODULE_NAME, 'remove-custom-expression', { expression: selectedExpression });
+    const confirmation = await callPopup(template, 'confirm');
 
     if (!confirmation) {
         console.debug('Custom expression removal cancelled');
@@ -1712,11 +1720,16 @@ async function fetchImagesNoCache() {
         $('body').append(element);
     }
     async function addSettings() {
-        $('#extensions_settings').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
+        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'settings');
+        $('#extensions_settings').append(template);
         $('#expression_override_button').on('click', onClickExpressionOverrideButton);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
         $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
+        $('#expression_translate').prop('checked', extension_settings.expressions.translate).on('input', function () {
+            extension_settings.expressions.translate = !!$(this).prop('checked');
+            saveSettingsDebounced();
+        });
         $('#expression_local').prop('checked', extension_settings.expressions.local).on('input', function () {
             extension_settings.expressions.local = !!$(this).prop('checked');
             moduleWorker();
@@ -1743,7 +1756,7 @@ async function fetchImagesNoCache() {
 
         $('#expression_custom_add').on('click', onClickExpressionAddCustom);
         $('#expression_custom_remove').on('click', onClickExpressionRemoveCustom);
-        $('#expression_fallback').on('change', onExpressionFallbackChanged)
+        $('#expression_fallback').on('change', onExpressionFallbackChanged);
     }
 
     // Pause Talkinghead to save resources when the ST tab is not visible or the window is minimized.
