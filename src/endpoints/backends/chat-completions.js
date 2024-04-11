@@ -252,17 +252,25 @@ async function sendMakerSuiteRequest(request, response) {
     };
 
     function getGeminiBody() {
-        return {
-            contents: convertGooglePrompt(request.body.messages, model),
+        let should_use_system_prompt = model === 'gemini-1.5-pro-latest' && request.body.use_makersuite_sysprompt;
+        let prompt = convertGooglePrompt(request.body.messages, model, should_use_system_prompt);
+        let body = {
+            contents: prompt.contents,
             safetySettings: GEMINI_SAFETY,
             generationConfig: generationConfig,
-        };
+        }
+
+        if (should_use_system_prompt) {
+            body.system_instruction = prompt.system_instruction;
+        }
+
+        return body;
     }
 
     function getBisonBody() {
         const prompt = isText
             ? ({ text: convertTextCompletionPrompt(request.body.messages) })
-            : ({ messages: convertGooglePrompt(request.body.messages, model) });
+            : ({ messages: convertGooglePrompt(request.body.messages, model).contents });
 
         /** @type {any} Shut the lint up */
         const bisonBody = {

@@ -252,9 +252,10 @@ function convertCohereMessages(messages, charName = '', userName = '') {
  * Convert a prompt from the ChatML objects to the format used by Google MakerSuite models.
  * @param {object[]} messages Array of messages
  * @param {string} model Model name
- * @returns {object[]} Prompt for Google MakerSuite models
+ * @param {boolean} useSysPrompt Use system prompt
+ * @returns {{contents: *[], system_instruction: {parts: {text: string}}}} Prompt for Google MakerSuite models
  */
-function convertGooglePrompt(messages, model) {
+function convertGooglePrompt(messages, model, useSysPrompt = false) {
     // This is a 1x1 transparent PNG
     const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
@@ -266,6 +267,16 @@ function convertGooglePrompt(messages, model) {
 
     const isMultimodal = visionSupportedModels.includes(model);
     let hasImage = false;
+
+    let sys_prompt = '';
+    if (useSysPrompt) {
+        while (messages.length > 1 && messages[0].role === 'system') {
+            sys_prompt += `${messages[0].content}\n\n`;
+            messages.shift();
+        }
+    }
+
+    const system_instruction = { parts: { text: sys_prompt }};
 
     const contents = [];
     messages.forEach((message, index) => {
@@ -327,7 +338,7 @@ function convertGooglePrompt(messages, model) {
         });
     }
 
-    return contents;
+    return { contents: contents, system_instruction: system_instruction };
 }
 
 /**

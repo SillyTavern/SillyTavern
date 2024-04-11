@@ -260,6 +260,7 @@ const default_settings = {
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
     claude_use_sysprompt: false,
+    use_makersuite_sysprompt: true,
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
@@ -330,6 +331,7 @@ const oai_settings = {
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
     claude_use_sysprompt: false,
+    use_makersuite_sysprompt: true,
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
@@ -1733,6 +1735,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         const stopStringsLimit = 3; // 5 - 2 (nameStopString and new_chat_prompt)
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['stop'] = [nameStopString, substituteParams(oai_settings.new_chat_prompt), ...getCustomStoppingStrings(stopStringsLimit)];
+        generate_data['use_makersuite_sysprompt'] = oai_settings.use_makersuite_sysprompt;
     }
 
     if (isAI21) {
@@ -2668,6 +2671,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.use_ai21_tokenizer !== undefined) { oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer; oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200; }
     if (settings.use_google_tokenizer !== undefined) oai_settings.use_google_tokenizer = !!settings.use_google_tokenizer;
     if (settings.claude_use_sysprompt !== undefined) oai_settings.claude_use_sysprompt = !!settings.claude_use_sysprompt;
+    if (settings.use_makersuite_sysprompt !== undefined) oai_settings.use_makersuite_sysprompt = !!settings.use_makersuite_sysprompt;
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
@@ -2707,6 +2711,7 @@ function loadOpenAISettings(data, settings) {
     $('#use_ai21_tokenizer').prop('checked', oai_settings.use_ai21_tokenizer);
     $('#use_google_tokenizer').prop('checked', oai_settings.use_google_tokenizer);
     $('#claude_use_sysprompt').prop('checked', oai_settings.claude_use_sysprompt);
+    $('#use_makersuite_sysprompt').prop('checked', oai_settings.use_makersuite_sysprompt);
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
     $('#openrouter_force_instruct').prop('checked', oai_settings.openrouter_force_instruct);
@@ -2976,6 +2981,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         use_ai21_tokenizer: settings.use_ai21_tokenizer,
         use_google_tokenizer: settings.use_google_tokenizer,
         claude_use_sysprompt: settings.claude_use_sysprompt,
+        use_makersuite_sysprompt: settings.use_makersuite_sysprompt,
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
@@ -3354,6 +3360,7 @@ function onSettingsPresetChange() {
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', true],
         use_google_tokenizer: ['#use_google_tokenizer', 'use_google_tokenizer', true],
         claude_use_sysprompt: ['#claude_use_sysprompt', 'claude_use_sysprompt', true],
+        use_makersuite_sysprompt: ['#use_makersuite_sysprompt', 'use_makersuite_sysprompt', true],
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
         image_inlining: ['#openai_image_inlining', 'image_inlining', true],
@@ -4287,6 +4294,11 @@ $(document).ready(async function () {
     $('#claude_use_sysprompt').on('change', function () {
         oai_settings.claude_use_sysprompt = !!$('#claude_use_sysprompt').prop('checked');
         $('#claude_human_sysprompt_message_block').toggle(oai_settings.claude_use_sysprompt);
+        saveSettingsDebounced();
+    });
+
+    $('#use_makersuite_sysprompt').on('change', function () {
+        oai_settings.use_makersuite_sysprompt = !!$('#use_makersuite_sysprompt').prop('checked');
         saveSettingsDebounced();
     });
 
