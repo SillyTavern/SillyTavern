@@ -276,7 +276,7 @@ function convertGooglePrompt(messages, model, useSysPrompt = false) {
         }
     }
 
-    const system_instruction = { parts: { text: sys_prompt }};
+    const system_instruction = { parts: { text: sys_prompt.trim() }};
 
     const contents = [];
     messages.forEach((message, index) => {

@@ -252,8 +252,8 @@ async function sendMakerSuiteRequest(request, response) {
     };
 
     function getGeminiBody() {
-        let should_use_system_prompt = model === 'gemini-1.5-pro-latest' && request.body.use_makersuite_sysprompt;
-        let prompt = convertGooglePrompt(request.body.messages, model, should_use_system_prompt);
+        const should_use_system_prompt = model === 'gemini-1.5-pro-latest' && request.body.use_makersuite_sysprompt;
+        const prompt = convertGooglePrompt(request.body.messages, model, should_use_system_prompt);
         let body = {
             contents: prompt.contents,
             safetySettings: GEMINI_SAFETY,
