@@ -1,5 +1,5 @@
 import { getStringHash, debounce, waitUntilCondition, extractAllWords, delay } from '../../utils.js';
-import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from '../../extensions.js';
+import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import {
     activateSendButtons,
     deactivateSendButtons,
@@ -847,9 +847,9 @@ function setupListeners() {
     });
 }
 
-jQuery(function () {
-    function addExtensionControls() {
-        const settingsHtml = renderExtensionTemplate('memory', 'settings', { defaultSettings });
+jQuery(async function () {
+    async function addExtensionControls() {
+        const settingsHtml = await renderExtensionTemplateAsync('memory', 'settings', { defaultSettings });
         $('#extensions_settings2').append(settingsHtml);
         setupListeners();
         $('#summaryExtensionPopoutButton').off('click').on('click', function (e) {
@@ -858,7 +858,7 @@ jQuery(function () {
         });
     }
 
-    addExtensionControls();
+    await addExtensionControls();
     loadSettings();
     eventSource.on(event_types.MESSAGE_RECEIVED, onChatEvent);
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);

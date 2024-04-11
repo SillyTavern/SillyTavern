@@ -108,13 +108,22 @@ export function humanizeGenTime(total_gen_time) {
     return time_spent;
 }
 
-let parsedUA = null;
-try {
-    parsedUA = Bowser.parse(navigator.userAgent);
-} catch {
-    // In case the user agent is an empty string or Bowser can't parse it for some other reason
-}
+/**
+ * DON'T OPTIMIZE, don't change this to a const or let, it needs to be a var.
+ */
+var parsedUA = null;
 
+function getParsedUA() {
+    if (!parsedUA) {
+        try {
+            parsedUA = Bowser.parse(navigator.userAgent);
+        } catch {
+            // In case the user agent is an empty string or Bowser can't parse it for some other reason
+        }
+    }
+
+    return parsedUA;
+}
 
 /**
  * Checks if the device is a mobile device.
@@ -123,7 +132,7 @@ try {
 export function isMobile() {
     const mobileTypes = ['mobile', 'tablet'];
 
-    return mobileTypes.includes(parsedUA?.platform?.type);
+    return mobileTypes.includes(getParsedUA()?.platform?.type);
 }
 
 export function shouldSendOnEnter() {
