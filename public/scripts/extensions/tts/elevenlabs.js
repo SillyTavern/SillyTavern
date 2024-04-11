@@ -50,13 +50,13 @@ class ElevenLabsTtsProvider {
                 <input id="elevenlabs_tts_voice_cloning_name" type="text" class="text_pole" placeholder="Voice Name"/>
                 <input id="elevenlabs_tts_voice_cloning_description" type="text" class="text_pole" placeholder="Voice Description"/>
                 <input id="elevenlabs_tts_voice_cloning_labels" type="text" class="text_pole" placeholder="Labels"/>
-                <div class="menu_button" id="upload_audio_file" style="width: fit-content">
+                <div class="menu_button menu_button_icon" id="upload_audio_file">
                     <i class="fa-solid fa-file-import"></i>
                     <span>Upload Audio Files</span>
                 </div>
                 <input id="elevenlabs_tts_audio_files" type="file" name="audio_files" accept="audio/*" style="display: none;" multiple>
                 <div id="elevenlabs_tts_selected_files_list"></div>
-                <input id="elevenlabs_tts_clone_voice_button" class="menu_button" type="button" style="width: fit-content" value="Clone Voice">
+                <input id="elevenlabs_tts_clone_voice_button" class="menu_button menu_button_icon" type="button" value="Clone Voice">
             </div>
             <hr>
         </div>
