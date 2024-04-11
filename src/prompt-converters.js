@@ -253,9 +253,11 @@ function convertCohereMessages(messages, charName = '', userName = '') {
  * @param {object[]} messages Array of messages
  * @param {string} model Model name
  * @param {boolean} useSysPrompt Use system prompt
+ * @param {string} charName Character name
+ * @param {string} userName User name
  * @returns {{contents: *[], system_instruction: {parts: {text: string}}}} Prompt for Google MakerSuite models
  */
-function convertGooglePrompt(messages, model, useSysPrompt = false) {
+function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '', userName = '') {
     // This is a 1x1 transparent PNG
     const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
@@ -271,12 +273,23 @@ function convertGooglePrompt(messages, model, useSysPrompt = false) {
     let sys_prompt = '';
     if (useSysPrompt) {
         while (messages.length > 1 && messages[0].role === 'system') {
+            // Append example names if not already done by the frontend (e.g. for group chats).
+            if (userName && messages[0].name === 'example_user') {
+                if (!messages[0].content.startsWith(`${userName}: `)) {
+                    messages[0].content = `${userName}: ${messages[0].content}`;
+                }
+            }
+            if (charName && messages[0].name === 'example_assistant') {
+                if (!messages[0].content.startsWith(`${charName}: `)) {
+                    messages[0].content = `${charName}: ${messages[0].content}`;
+                }
+            }
             sys_prompt += `${messages[0].content}\n\n`;
             messages.shift();
         }
     }
 
-    const system_instruction = { parts: { text: sys_prompt.trim() }};
+    const system_instruction = { parts: { text: sys_prompt.trim() } };
 
     const contents = [];
     messages.forEach((message, index) => {
