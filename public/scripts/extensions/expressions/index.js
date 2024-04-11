@@ -977,6 +977,10 @@ async function getExpressionLabel(text) {
         return getFallbackExpression();
     }
 
+    if (extension_settings.expressions.translate && typeof window['translate'] === 'function') {
+        text = await window['translate'](text, 'en');
+    }
+
     text = sampleClassifyText(text);
 
     try {
@@ -1717,6 +1721,10 @@ async function fetchImagesNoCache() {
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
         $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
+        $('#expression_translate').prop('checked', extension_settings.expressions.translate).on('input', function () {
+            extension_settings.expressions.translate = !!$(this).prop('checked');
+            saveSettingsDebounced();
+        });
         $('#expression_local').prop('checked', extension_settings.expressions.local).on('input', function () {
             extension_settings.expressions.local = !!$(this).prop('checked');
             moduleWorker();
