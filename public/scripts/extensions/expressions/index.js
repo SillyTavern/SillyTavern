@@ -594,7 +594,7 @@ async function moduleWorker() {
     }
 
     // non-characters not supported
-    if (!context.groupId && (context.characterId === undefined || context.characterId === 'invalid-safety-id')) {
+    if (!context.groupId && context.characterId === undefined) {
         removeExpression();
         return;
     }

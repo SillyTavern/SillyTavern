@@ -737,7 +737,7 @@ function getCurrentChatId() {
     if (selected_group) {
         return groups.find(x => x.id == selected_group)?.chat_id;
     }
-    else if (this_chid) {
+    else if (this_chid !== undefined) {
         return characters[this_chid]?.chat;
     }
 }
@@ -1160,7 +1160,7 @@ export function resultCheckStatus() {
 }
 
 export async function selectCharacterById(id) {
-    if (characters[id] == undefined) {
+    if (characters[id] === undefined) {
         return;
     }
 
@@ -1523,7 +1523,7 @@ async function getCharacters() {
 
             characters[i]['chat'] = String(characters[i]['chat']);
         }
-        if (this_chid != undefined && this_chid != 'invalid-safety-id') {
+        if (this_chid !== undefined) {
             $('#avatar_url_pole').val(characters[this_chid].avatar);
         }
 
@@ -1676,11 +1676,12 @@ export async function reloadCurrentChat() {
     if (selected_group) {
         await getGroupChat(selected_group, true);
     }
-    else if (this_chid) {
+    else if (this_chid !== undefined) {
         await getChat();
     }
     else {
         resetChatState();
+        await getCharacters();
         await printMessages();
         await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
     }
@@ -1783,7 +1784,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
         mes = mes.replaceAll('<', '&lt;').replaceAll('>', '&gt;');
     }
 
-    if ((this_chid === undefined || this_chid === 'invalid-safety-id') && !selected_group) {
+    if (this_chid === undefined && !selected_group) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
             .replace(/\n/g, '<br/>');
@@ -2040,7 +2041,7 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
     if (!mes['is_user']) {
         if (mes.force_avatar) {
             avatarImg = mes.force_avatar;
-        } else if (this_chid === undefined || this_chid === 'invalid-safety-id') {
+        } else if (this_chid === undefined) {
             avatarImg = system_avatar;
         } else {
             if (characters[this_chid].avatar != 'none') {
@@ -3133,12 +3134,12 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         quiet_prompt = main_api == 'novel' && !quietToLoud ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
     }
 
-    const isChatValid = online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id';
+    const isChatValid = online_status !== 'no_connection' && this_chid !== undefined;
 
     // We can't do anything because we're not in a chat right now. (Unless it's a dry run, in which case we need to
     // assemble the prompt so we can count its tokens regardless of whether a chat is active.)
     if (!dryRun && !isChatValid) {
-        if (this_chid === undefined || this_chid === 'invalid-safety-id') {
+        if (this_chid === undefined) {
             toastr.warning('Сharacter is not selected');
         }
         is_send_press = false;
@@ -5267,7 +5268,7 @@ export function deactivateSendButtons() {
 
 function resetChatState() {
     //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
-    this_chid = 'invalid-safety-id';
+    this_chid = undefined;
     // replaces deleted charcter name with system user since it will be displayed next.
     name2 = systemUserName;
     // sets up system user to tell user about having deleted a character
@@ -7650,7 +7651,7 @@ async function createOrEditCharacter(e) {
 
                     $('#create_button').attr('value', '✅');
                     let oldSelectedChar = null;
-                    if (this_chid != undefined && this_chid != 'invalid-safety-id') {
+                    if (this_chid !== undefined) {
                         oldSelectedChar = characters[this_chid].avatar;
                     }
 
@@ -8401,7 +8402,7 @@ async function importCharacter(file, preserveFileName = false) {
         $('#character_search_bar').val('').trigger('input');
 
         let oldSelectedChar = null;
-        if (this_chid != undefined && this_chid != 'invalid-safety-id') {
+        if (this_chid !== undefined) {
             oldSelectedChar = characters[this_chid].avatar;
         }
 
@@ -8532,7 +8533,7 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
 export async function deleteCharacter(name, avatar, reloadCharacters = true) {
     await clearChat();
     $('#character_cross').click();
-    this_chid = 'invalid-safety-id';
+    this_chid = undefined;
     characters.length = 0;
     name2 = systemUserName;
     chat = [...safetychat];
