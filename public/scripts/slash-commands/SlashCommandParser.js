@@ -154,9 +154,11 @@ export class SlashCommandParser {
 
     getHelpString() {
         const listItems = Object
-            .entries(this.helpStrings)
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(x => x[1])
+            .keys(this.commands)
+            .filter(key=>this.commands[key].name == key)
+            .map(key=>this.commands[key])
+            .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
+            .map(x => x.helpStringFormatted)
             .map(x => `<li>${x}</li>`)
             .join('\n');
         return `<p>Slash commands:</p><ol>${listItems}</ol>
