@@ -48,8 +48,7 @@ const USER_DIRECTORY_TEMPLATE = Object.freeze({
  * @readonly
  */
 const DEFAULT_USER = Object.freeze({
-    uuid: '00000000-0000-0000-0000-000000000000',
-    handle: 'user0',
+    handle: 'default-user',
     name: 'User',
     created: Date.now(),
     password: '',

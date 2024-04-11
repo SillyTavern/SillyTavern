@@ -1,5 +1,6 @@
-import { getRequestHeaders, renderTemplate } from '../script.js';
+import { getRequestHeaders } from '../script.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { renderTemplateAsync } from './templates.js';
 import { humanFileSize } from './utils.js';
 
 /**
@@ -269,7 +270,7 @@ async function backupUserData(handle, callback) {
  */
 async function changePassword(handle, callback) {
     try {
-        const template = $(renderTemplate('changePassword'));
+        const template = $(await renderTemplateAsync('changePassword'));
         template.find('.currentPasswordBlock').toggle(!isAdmin());
         let newPassword = '';
         let confirmPassword = '';
@@ -313,6 +314,11 @@ async function changePassword(handle, callback) {
     }
 }
 
+/**
+ * Delete a user.
+ * @param {string} handle User handle
+ * @param {function} callback Success callback
+ */
 async function deleteUser(handle, callback) {
     try {
         if (handle === currentUser.handle) {
@@ -323,7 +329,7 @@ async function deleteUser(handle, callback) {
         let purge = false;
         let confirmHandle = '';
 
-        const template = $(renderTemplate('deleteUser'));
+        const template = $(await renderTemplateAsync('deleteUser'));
         template.find('#deleteUserName').text(handle);
         template.find('input[name="deleteUserData"]').on('input', function () {
             purge = $(this).is(':checked');
@@ -370,7 +376,7 @@ async function deleteUser(handle, callback) {
 async function resetSettings(handle, callback) {
     try {
         let password = '';
-        const template = $(renderTemplate('resetSettings'));
+        const template = $(await renderTemplateAsync('resetSettings'));
         template.find('input[name="password"]').on('input', function () {
             password = String($(this).val());
         });
@@ -407,7 +413,7 @@ async function resetSettings(handle, callback) {
  */
 async function changeName(handle, name, callback) {
     try {
-        const template = $(renderTemplate('changeName'));
+        const template = $(await renderTemplateAsync('changeName'));
         const result = await callGenericPopup(template, POPUP_TYPE.INPUT, name, { okButton: 'Change', cancelButton: 'Cancel', wide: false, large: false });
 
         if (!result) {
@@ -556,7 +562,7 @@ async function makeSnapshot(callback) {
  * Open the settings snapshots view.
  */
 async function viewSettingsSnapshots() {
-    const template = $(renderTemplate('snapshotsView'));
+    const template = $(await renderTemplateAsync('snapshotsView'));
     async function renderSnapshots() {
         const snapshots = await getSnapshots();
         template.find('.snapshotList').empty();
@@ -589,7 +595,7 @@ async function viewSettingsSnapshots() {
 
 async function openUserProfile() {
     await getCurrentUser();
-    const template = $(renderTemplate('userProfile'));
+    const template = $(await renderTemplateAsync('userProfile'));
     template.find('.userName').text(currentUser.name);
     template.find('.userHandle').text(currentUser.handle);
     template.find('.avatar img').attr('src', currentUser.avatar);
@@ -654,13 +660,18 @@ async function openAdminPanel() {
         }
     }
 
-    const template = $(renderTemplate('admin'));
+    const template = $(await renderTemplateAsync('admin'));
 
     template.find('.adminNav > button').on('click', function () {
         const target = String($(this).data('target-tab'));
         template.find('.navTab').each(function () {
             $(this).toggle(this.classList.contains(target));
         });
+    });
+
+    template.find('.createUserDisplayName').on('input', async function () {
+        const slug = await slugify(String($(this).val()));
+        template.find('.createUserHandle').val(slug);
     });
 
     template.find('.userCreateForm').on('submit', function (event) {
@@ -690,6 +701,30 @@ async function logout() {
     });
 
     window.location.reload();
+}
+
+/**
+ * Runs a text through the slugify API endpoint.
+ * @param {string} text Text to slugify
+ * @returns {Promise<string>} Slugified text
+ */
+async function slugify(text) {
+    try {
+        const response = await fetch('/api/users/slugify', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ text }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to slugify text');
+        }
+
+        return response.text();
+    } catch (error) {
+        console.error('Error slugifying text:', error);
+        return text;
+    }
 }
 
 jQuery(() => {

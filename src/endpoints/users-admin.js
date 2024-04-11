@@ -1,8 +1,7 @@
 const fsPromises = require('fs').promises;
 const storage = require('node-persist');
 const express = require('express');
-const slugify = require('slugify').default;
-const uuid = require('uuid');
+const lodash = require('lodash');
 const { jsonParser } = require('../express-common');
 const { checkForNewContent } = require('./content-manager');
 const {
@@ -16,6 +15,7 @@ const {
     getUserDirectories,
     ensurePublicDirectoriesExist,
 } = require('../users');
+const { DEFAULT_USER } = require('../constants');
 
 const router = express.Router();
 
@@ -157,7 +157,7 @@ router.post('/create', requireAdminMiddleware, jsonParser, async (request, respo
         }
 
         const handles = await getAllUserHandles();
-        const handle = slugify(String(request.body.handle).toLowerCase(), { lower: true, trim: true, remove: /[^a-z0-9-]/g });
+        const handle = lodash.kebabCase(String(request.body.handle).toLowerCase().trim());
 
         if (!handle) {
             console.log('Create user failed: Invalid handle');
@@ -173,7 +173,6 @@ router.post('/create', requireAdminMiddleware, jsonParser, async (request, respo
         const password = request.body.password ? getPasswordHash(request.body.password, salt) : '';
 
         const newUser = {
-            uuid: uuid.v4(),
             handle: handle,
             name: request.body.name || 'Anonymous',
             created: Date.now(),
@@ -209,6 +208,11 @@ router.post('/delete', requireAdminMiddleware, jsonParser, async (request, respo
             return response.status(400).json({ error: 'Cannot delete yourself' });
         }
 
+        if (request.body.handle === DEFAULT_USER.handle) {
+            console.log('Delete user failed: Cannot delete default user');
+            return response.status(400).json({ error: 'Sorry, but the default user cannot be deleted. It is required as a fallback.' });
+        }
+
         await storage.removeItem(toKey(request.body.handle));
 
         if (request.body.purge) {
@@ -220,6 +224,22 @@ router.post('/delete', requireAdminMiddleware, jsonParser, async (request, respo
         return response.sendStatus(204);
     } catch (error) {
         console.error('User delete failed:', error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/slugify', requireAdminMiddleware, jsonParser, async (request, response) => {
+    try {
+        if (!request.body.text) {
+            console.log('Slugify failed: Missing required fields');
+            return response.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const text = lodash.kebabCase(String(request.body.text).toLowerCase().trim());
+
+        return response.send(text);
+    } catch (error) {
+        console.error('Slugify failed:', error);
         return response.sendStatus(500);
     }
 });

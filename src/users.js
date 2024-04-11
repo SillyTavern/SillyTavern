@@ -32,7 +32,6 @@ const STORAGE_KEYS = {
 
 /**
  * @typedef {Object} User
- * @property {string} uuid - The user's id
  * @property {string} handle - The user's short handle. Used for directories and other references
  * @property {string} name - The user's name. Displayed in the UI
  * @property {number} created - The timestamp when the user was created
