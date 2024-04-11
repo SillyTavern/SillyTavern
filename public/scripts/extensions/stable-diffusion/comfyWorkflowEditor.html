@@ -1,0 +1,37 @@
+<div id="sd_comfy_workflow_editor_template">
+    <div class="sd_comfy_workflow_editor">
+        <h3><strong>ComfyUI Workflow Editor: <span id="sd_comfy_workflow_editor_name"></span></strong></h3>
+        <div class="sd_comfy_workflow_editor_content">
+            <div class="flex-container flexFlowColumn sd_comfy_workflow_editor_workflow_container">
+                <label for="sd_comfy_workflow_editor_workflow">Workflow (JSON)</label>
+                <textarea id="sd_comfy_workflow_editor_workflow" class="text_pole wide100p textarea_compact flex1" placeholder="Insert your ComfyUI workflow here by copying the JSON data obtained via the 'Save (API Format)' option. This option becomes available after enabling 'Dev Mode' in the settings. Remember to replace specific values within your workflow with placeholders as required for your use case."></textarea>
+            </div>
+            <div class="sd_comfy_workflow_editor_placeholder_container">
+                <div>Placeholders</div>
+                <ul class="sd_comfy_workflow_editor_placeholder_list">
+                    <li data-placeholder="prompt" class="sd_comfy_workflow_editor_not_found">"%prompt%"</li>
+                    <li data-placeholder="negative_prompt" class="sd_comfy_workflow_editor_not_found">"%negative_prompt%"</li>
+                    <li data-placeholder="model" class="sd_comfy_workflow_editor_not_found">"%model%"</li>
+                    <li data-placeholder="vae" class="sd_comfy_workflow_editor_not_found">"%vae%"</li>
+                    <li data-placeholder="sampler" class="sd_comfy_workflow_editor_not_found">"%sampler%"</li>
+                    <li data-placeholder="scheduler" class="sd_comfy_workflow_editor_not_found">"%scheduler%"</li>
+                    <li data-placeholder="steps" class="sd_comfy_workflow_editor_not_found">"%steps%"</li>
+                    <li data-placeholder="scale" class="sd_comfy_workflow_editor_not_found">"%scale%"</li>
+                    <li data-placeholder="width" class="sd_comfy_workflow_editor_not_found">"%width%"</li>
+                    <li data-placeholder="height" class="sd_comfy_workflow_editor_not_found">"%height%"</li>
+                    <li><hr></li>
+                    <li data-placeholder="seed" class="sd_comfy_workflow_editor_not_found">
+                        "%seed%"
+                        <a href="javascript:;" class="notes-link"><span class="note-link-span" title="Will generate a new random seed in SillyTavern that is then used in the ComfyUI workflow.">?</span></a>
+                    </li>
+                </ul>
+                <div>Custom</div>
+                <div class="sd_comfy_workflow_editor_placeholder_actions">
+                    <span id="sd_comfy_workflow_editor_placeholder_add" title="Add custom placeholder">+</span>
+                </div>
+                <ul class="sd_comfy_workflow_editor_placeholder_list" id="sd_comfy_workflow_editor_placeholder_list_custom">
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

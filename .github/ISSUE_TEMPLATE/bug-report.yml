@@ -1,0 +1,90 @@
+name: Bug Report 🐛
+description: Report something that's not working the intended way. Support requests for external programs (reverse proxies, 3rd party servers, other peoples' forks) will be refused!
+title: '[BUG] <title>'
+labels: ['🐛 Bug']
+body:
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: Where are you running SillyTavern?
+      options:
+        - 🪟 Windows
+        - 🐧 Linux
+        - 📱 Termux
+        - 🐋 Docker
+        - 🍎 Mac
+    validations:
+      required: true
+
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: >-
+        For deployment issues, specify your [distro or OS](https://whatsmyos.com/) and/ or Docker version.
+        For client-side issues, include your [browser version](https://www.whatsmybrowser.org/)
+      placeholder: e.g. Firefox 101, Manjaro Linux 21.3.0, Docker 20.10.16
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of SillyTavern are you running?
+      placeholder: (check User Settings to see the version)
+    validations:
+      required: true
+
+  - type: textarea
+    id: desktop
+    attributes:
+      label: Desktop Information
+      description: Please provide details about your desktop environment.
+      placeholder: |
+        - Node.js version (if applicable): [run `node --version` in cmd]
+        - Generation API [e.g. KoboldAI, OpenAI]
+        - Branch [staging, release]
+        - Model [e.g. Pygmalion 6b, LLaMa 13b]
+    validations:
+      required: false
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Describe the problem
+      description: Please describe exactly what is not working, include the steps to reproduce, actual result and expected result
+      placeholder: When doing ABC then DEF, I expect to see XYZ, but I actually see ZYX
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Additional info
+      description: Logs? Screenshots? Yes, please.
+      placeholder: If the issue happens during build-time, include terminal logs. For run-time errors, include browser logs which you can view in the Dev Tools (F12), under the Console tab. Take care to blank out any personal info.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: user-check
+    attributes:
+      label: Please tick the boxes
+      description: Before submitting, please ensure that you have completed the following checklist
+      options:
+        - label: I have explained the issue clearly, and I included all relevant info
+          required: true
+        - label: I have checked that this [issue hasn't already been raised](https://github.com/SillyTavern/SillyTavern/issues?q=is%3Aissue)
+          required: true
+        - label: I have checked the [docs](https://docs.sillytavern.app/) ![important](https://img.shields.io/badge/Important!-F6094E)
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |-
+        ## Thanks 🙏
+        Thank you for raising this ticket - in doing so you are helping to make SillyTavern better for everyone.
+    validations:
+      required: false

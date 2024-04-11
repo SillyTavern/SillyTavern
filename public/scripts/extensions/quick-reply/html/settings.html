@@ -1,0 +1,71 @@
+<div id="qr--settings">
+	<div class="inline-drawer">
+		<div class="inline-drawer-toggle inline-drawer-header">
+			<strong>Quick Reply</strong>
+			<div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+		</div>
+		<div class="inline-drawer-content">
+			<label class="flex-container">
+				<input type="checkbox" id="qr--isEnabled"> Enable Quick Replies
+			</label>
+			<label class="flex-container">
+				<input type="checkbox" id="qr--isCombined"> Combine buttons from all active sets
+			</label>
+
+			<hr>
+
+			<div id="qr--global">
+				<div class="qr--head">
+					<div class="qr--title">Global Quick Reply Sets</div>
+					<div class="qr--actions">
+						<div class="qr--setListAdd menu_button menu_button_icon fa-solid fa-plus" id="qr--global-setListAdd" title="Add quick reply set"></div>
+					</div>
+				</div>
+				<div id="qr--global-setList" class="qr--setList"></div>
+			</div>
+
+			<hr>
+
+			<div id="qr--chat">
+				<div class="qr--head">
+					<div class="qr--title">Chat Quick Reply Sets</div>
+					<div class="qr--actions">
+						<div class="qr--setListAdd menu_button menu_button_icon fa-solid fa-plus" id="qr--chat-setListAdd" title="Add quick reply set"></div>
+					</div>
+				</div>
+				<div id="qr--chat-setList" class="qr--setList"></div>
+			</div>
+
+			<hr>
+
+			<div id="qr--editor">
+				<div class="qr--head">
+					<div class="qr--title">Edit Quick Replies</div>
+					<div class="qr--actions">
+						<select id="qr--set" class="text_pole"></select>
+						<div class="qr--add menu_button menu_button_icon fa-solid fa-plus" id="qr--set-new" title="Create new quick reply set"></div>
+						<div class="qr--add menu_button menu_button_icon fa-solid fa-file-import" id="qr--set-import" title="Import quick reply set"></div>
+						<input type="file" id="qr--set-importFile" accept=".json" hidden>
+						<div class="qr--add menu_button menu_button_icon fa-solid fa-file-export" id="qr--set-export" title="Export quick reply set"></div>
+						<div class="qr--del menu_button menu_button_icon fa-solid fa-trash redWarningBG" id="qr--set-delete" title="Delete quick reply set"></div>
+					</div>
+				</div>
+				<div id="qr--set-settings">
+					<label class="flex-container">
+						<input type="checkbox" id="qr--disableSend"> <span>Disable send (insert into input field)</span>
+					</label>
+					<label class="flex-container">
+						<input type="checkbox" id="qr--placeBeforeInput"> <span>Place quick reply before input</span>
+					</label>
+					<label class="flex-container" id="qr--injectInputContainer">
+						<input type="checkbox" id="qr--injectInput"> <span>Inject user input automatically <small>(if disabled, use <code>{{input}}</code> macro for manual injection)</small></span>
+					</label>
+				</div>
+				<div id="qr--set-qrList" class="qr--qrList"></div>
+				<div class="qr--set-qrListActions">
+					<div class="qr--add menu_button menu_button_icon fa-solid fa-plus" id="qr--set-add" title="Add quick reply"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

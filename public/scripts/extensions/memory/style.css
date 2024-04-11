@@ -1,0 +1,37 @@
+#memory_settings {
+    display: flex;
+    flex-direction: column;
+}
+
+#memory_settings textarea {
+    font-size: calc(var(--mainFontSize) * 0.9);
+    line-height: 1.2;
+}
+
+label[for="memory_frozen"],
+label[for="memory_skipWIAN"] {
+    display: flex;
+    align-items: center;
+    margin: 0 !important;
+}
+
+label[for="memory_frozen"] input {
+    margin-right: 10px;
+}
+
+.memory_contents_controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.memory_disabled_hint {
+    margin-left: 2px;
+}
+
+#summarySettingsBlock {
+    display: flex;
+    flex-direction: column;
+    row-gap: 5px;
+}

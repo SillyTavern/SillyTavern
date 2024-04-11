@@ -1,0 +1,279 @@
+<div class="sd_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>
+                Image Generation
+                <a href="https://docs.sillytavern.app/extras/extensions/stable-diffusion/" class="notes-link" target="_blank">
+                    <span class="note-link-span">?</span>
+                </a>
+            </b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <label for="sd_refine_mode" class="checkbox_label" title="Allow to edit prompts manually before sending them to generation API">
+                <input id="sd_refine_mode" type="checkbox" />
+                Edit prompts before generation
+            </label>
+            <label for="sd_interactive_mode" class="checkbox_label" title="Automatically generate images when sending messages like 'send me a picture of cat'.">
+                <input id="sd_interactive_mode" type="checkbox" />
+                Interactive mode
+            </label>
+            <label for="sd_multimodal_captioning" class="checkbox_label" title="Use multimodal captioning to generate prompts for user and character portraits based on their avatars.">
+                <input id="sd_multimodal_captioning" type="checkbox" />
+                Use multimodal captioning for portraits
+            </label>
+            <label for="sd_expand" class="checkbox_label" title="Automatically extend prompts using text generation model">
+                <input id="sd_expand" type="checkbox" />
+                Auto-enhance prompts
+            </label>
+            <label for="sd_snap" class="checkbox_label" title="Snap generation requests with a forced aspect ratio (portraits, backgrounds) to the nearest known resolution, while trying to preserve the absolute pixel counts (recommended for SDXL).">
+                <input id="sd_snap" type="checkbox" />
+                Snap auto-adjusted resolutions
+            </label>
+            <label for="sd_source">Source</label>
+            <select id="sd_source">
+                <option value="comfy">ComfyUI</option>
+                <option value="drawthings">DrawThings HTTP API</option>
+                <option value="extras">Extras API (local / remote)</option>
+                <option value="novel">NovelAI Diffusion</option>
+                <option value="openai">OpenAI (DALL-E)</option>
+                <option value="pollinations">Pollinations</option>
+                <option value="vlad">SD.Next (vladmandic)</option>
+                <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
+                <option value="horde">Stable Horde</option>
+                <option value="togetherai">TogetherAI</option>
+            </select>
+            <div data-sd-source="auto">
+                <label for="sd_auto_url">SD Web UI URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_auto_url" type="text" class="text_pole" placeholder="Example: {{auto_url}}" value="{{auto_url}}" />
+                    <div id="sd_auto_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <label for="sd_auto_auth">Authentication (optional)</label>
+                <input id="sd_auto_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
+                <i><b>Important:</b> run SD Web UI with the <tt>--api</tt> flag! The server must be accessible from the SillyTavern host machine.</i>
+            </div>
+            <div data-sd-source="drawthings">
+                <label for="sd_drawthings_url">DrawThings API URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_drawthings_url" type="text" class="text_pole" placeholder="Example: {{drawthings_url}}" value="{{drawthings_url}}" />
+                    <div id="sd_drawthings_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <label for="sd_drawthings_auth">Authentication (optional)</label>
+                <input id="sd_drawthings_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
+                <i><b>Important:</b> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine.</i>
+            </div>
+            <div data-sd-source="vlad">
+                <label for="sd_vlad_url">SD.Next API URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_vlad_url" type="text" class="text_pole" placeholder="Example: {{vlad_url}}" value="{{vlad_url}}" />
+                    <div id="sd_vlad_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <label for="sd_vlad_auth">Authentication (optional)</label>
+                <input id="sd_vlad_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
+                <i>The server must be accessible from the SillyTavern host machine.</i>
+            </div>
+            <div data-sd-source="horde">
+                <i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i>
+                <label for="sd_horde_nsfw" class="checkbox_label">
+                    <input id="sd_horde_nsfw" type="checkbox" />
+                    <span data-i18n="Allow NSFW images from Horde">
+                        Allow NSFW images from Horde
+                    </span>
+                </label>
+                <label for="sd_horde_sanitize" class="checkbox_label">
+                    <input id="sd_horde_sanitize" type="checkbox" />
+                    <span data-i18n="Sanitize prompts (recommended)">
+                        Sanitize prompts (recommended)
+                    </span>
+                </label>
+            </div>
+            <div data-sd-source="novel">
+                <div class="flex-container flexFlowColumn">
+                    <label for="sd_novel_anlas_guard" class="checkbox_label flex1" title="Automatically adjust generation parameters to ensure free image generations.">
+                        <input id="sd_novel_anlas_guard" type="checkbox" />
+                        <span data-i18n="Avoid spending Anlas">
+                            Avoid spending Anlas
+                        </span>
+                        <span data-i18n="Opus tier" class="toggle-description">(Opus tier)</span>
+                    </label>
+                    <div id="sd_novel_view_anlas" class="menu_button menu_button_icon">
+                        View my Anlas
+                    </div>
+                </div>
+                <i>Hint: Save an API key in the NovelAI API settings to use it here.</i>
+            </div>
+            <div data-sd-source="openai">
+                <small>These settings only apply to DALL-E 3</small>
+                <div class="flex-container">
+                    <label for="sd_openai_style">Image Style</label>
+                    <select id="sd_openai_style">
+                        <option value="vivid">Vivid</option>
+                        <option value="natural">Natural</option>
+                    </select>
+                    <label for="sd_openai_quality">Image Quality</label>
+                    <select id="sd_openai_quality">
+                        <option value="standard">Standard</option>
+                        <option value="hd">HD</option>
+                    </select>
+                </div>
+            </div>
+            <div data-sd-source="comfy">
+                <label for="sd_comfy_url">ComfyUI URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_comfy_url" type="text" class="text_pole" placeholder="Example: {{comfy_url}}" value="{{comfy_url}}" />
+                    <div id="sd_comfy_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <p><i><b>Important:</b> The server must be accessible from the SillyTavern host machine.</i></p>
+                <label for="sd_comfy_workflow">ComfyUI Workflow</label>
+                <div class="flex-container flexnowrap">
+                    <select id="sd_comfy_workflow" class="flex1 text_pole"></select>
+                    <div id="sd_comfy_open_workflow_editor" class="menu_button menu_button_icon" title="Open workflow editor">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <div id="sd_comfy_new_workflow" class="menu_button menu_button_icon" title="Create new workflow">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <div id="sd_comfy_delete_workflow" class="menu_button menu_button_icon" title="Delete workflow">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </div>
+                </div>
+            </div>
+            <div data-sd-source="pollinations">
+                <p>
+                    <a href="https://pollinations.ai">Pollinations.ai</a>
+                </p>
+                <div class="flex-container">
+                    <label class="flex1 checkbox_label" for="sd_pollinations_enhance">
+                        <input id="sd_pollinations_enhance" type="checkbox" />
+                        <span data-i18n="Enhance">
+                            Enhance
+                        </span>
+                    </label>
+                    <label class="flex1 checkbox_label" for="sd_pollinations_refine">
+                        <input id="sd_pollinations_refine" type="checkbox" />
+                        <span data-i18n="Refine">
+                            Refine
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
+            <input id="sd_scale" type="range" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" />
+            <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
+            <input id="sd_steps" type="range" min="{{steps_min}}" max="{{steps_max}}" step="{{steps_step}}" value="{{steps}}" />
+            <label for="sd_width">Width (<span id="sd_width_value"></span>)</label>
+            <input id="sd_width" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{width}}" />
+            <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
+            <input id="sd_height" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" />
+            <label for="sd_model">Model</label>
+            <select id="sd_model"></select>
+            <label for="sd_sampler">Sampling method</label>
+            <select id="sd_sampler"></select>
+            <label data-sd-source="horde" for="sd_horde_karras" class="checkbox_label">
+                <input id="sd_horde_karras" type="checkbox" />
+                <span data-i18n="Karras (not all samplers supported)">
+                    Karras (not all samplers supported)
+                </span>
+            </label>
+            <div data-sd-source="novel" class="flex-container">
+                <label class="flex1 checkbox_label" title="SMEA versions of samplers are modified to perform better at high resolution.">
+                    <input id="sd_novel_sm" type="checkbox" />
+                    <span data-i18n="SMEA">
+                        SMEA
+                    </span>
+                </label>
+                <label class="flex1 checkbox_label" title="DYN variants of SMEA samplers often lead to more varied output, but may fail at very high resolutions.">
+                    <input id="sd_novel_sm_dyn" type="checkbox" />
+                    <span data-i18n="DYN">
+                        DYN
+                    </span>
+                </label>
+            </div>
+            <label for="sd_resolution">Resolution</label>
+            <select id="sd_resolution"><!-- Populated in JS --></select>
+            <div data-sd-source="comfy">
+                <label for="sd_scheduler">Scheduler</label>
+                <select id="sd_scheduler"></select>
+            </div>
+            <div data-sd-source="comfy">
+                <label for="sd_vae">VAE</label>
+                <select id="sd_vae"></select>
+            </div>
+            <div class="flex-container marginTop10 margin-bot-10px">
+                <label class="flex1 checkbox_label">
+                    <input id="sd_restore_faces" type="checkbox" />
+                    Restore Faces
+                </label>
+                <label class="flex1 checkbox_label">
+                    <input id="sd_enable_hr" type="checkbox" />
+                    Hires. Fix
+                </label>
+            </div>
+            <div data-sd-source="auto,vlad">
+                <label for="sd_hr_upscaler">Upscaler</label>
+                <select id="sd_hr_upscaler"></select>
+                <label for="sd_hr_scale">Upscale by (<span id="sd_hr_scale_value"></span>)</label>
+                <input id="sd_hr_scale" type="range" min="{{hr_scale_min}}" max="{{hr_scale_max}}" step="{{hr_scale_step}}" value="{{hr_scale}}" />
+                <label for="sd_denoising_strength">Denoising strength (<span id="sd_denoising_strength_value"></span>)</label>
+                <input id="sd_denoising_strength" type="range" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" />
+                <label for="sd_hr_second_pass_steps">Hires steps (2nd pass) (<span id="sd_hr_second_pass_steps_value"></span>)</label>
+                <input id="sd_hr_second_pass_steps" type="range" min="{{hr_second_pass_steps_min}}" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_step}}" value="{{hr_second_pass_steps}}" />
+            </div>
+            <div data-sd-source="novel">
+                <label for="sd_novel_upscale_ratio">Upscale by (<span id="sd_novel_upscale_ratio_value"></span>)</label>
+                <input id="sd_novel_upscale_ratio" type="range" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" />
+            </div>
+            <hr>
+            <h4 title="Preset for prompt prefix and negative prompt">
+                Style
+            </h4>
+            <div class="flex-container">
+                <select id="sd_style" class="flex1 text_pole"></select>
+                <div id="sd_save_style" title="Save style" class="menu_button">
+                    <i class="fa-solid fa-save"></i>
+                </div>
+            </div>
+            <label for="sd_prompt_prefix">Common prompt prefix</label>
+            <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="3" placeholder="Use {prompt} to specify where the generated prompt will be inserted"></textarea>
+            <label for="sd_negative_prompt">Negative prompt</label>
+            <textarea id="sd_negative_prompt" class="text_pole textarea_compact" rows="3"></textarea>
+            <div id="sd_character_prompt_block">
+                <label for="sd_character_prompt">Character-specific prompt prefix</label>
+                <small>Won't be used in groups.</small>
+                <textarea id="sd_character_prompt" class="text_pole textarea_compact" rows="3" placeholder="Any characteristics that describe the currently selected character. Will be added after a common prefix.&#10;Example: female, green eyes, brown hair, pink shirt"></textarea>
+                <label for="sd_character_negative_prompt">Character-specific negative prompt prefix</label>
+                <small>Won't be used in groups.</small>
+                <textarea id="sd_character_negative_prompt" class="text_pole textarea_compact" rows="3" placeholder="Any characteristics that should not appear for the selected character. Will be added after a negative common prefix.&#10;Example: jewellery, shoes, glasses"></textarea>
+            </div>
+        </div>
+    </div>
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Image Prompt Templates</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div id="sd_prompt_templates" class="inline-drawer-content">
+        </div>
+    </div>
+</div>

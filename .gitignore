@@ -1,0 +1,48 @@
+node_modules/
+public/chats/
+public/characters/
+public/User Avatars/
+public/backgrounds/
+public/groups/
+public/group chats/
+public/worlds/
+public/user/
+public/css/bg_load.css
+public/themes/
+public/OpenAI Settings/
+public/KoboldAI Settings/
+public/NovelAI Settings/
+public/TextGen Settings/
+public/instruct/
+public/context/
+public/scripts/extensions/third-party/
+public/stats.json
+/uploads/
+*.jsonl
+/config.conf
+/config.yaml
+/config.conf.bak
+/docker/config
+/docker/user
+/docker/extensions
+.DS_Store
+public/settings.json
+/thumbnails
+whitelist.txt
+.vscode/**
+!.vscode/extensions.json
+.idea/
+secrets.json
+/dist
+/backups/
+public/movingUI/
+public/QuickReplies/
+content.log
+cloudflared.exe
+public/assets/
+access.log
+/vectors/
+/cache/
+public/css/user.css
+/plugins/
+/data

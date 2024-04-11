@@ -1,0 +1,9 @@
+.git
+node_modules
+npm-debug.log
+readme*
+Start.bat
+/dist
+/backups/
+cloudflared.exe
+access.log

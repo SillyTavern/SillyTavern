@@ -1,0 +1,107 @@
+#assets-json-url-field {
+    width: 85%;
+}
+
+#assets-connect-button {
+    width: 15%;
+    margin-left: 5px;
+}
+
+.assets-connect-div {
+    display: flex;
+    flex-direction: row;
+    padding: 5px;
+}
+
+.assets-list-git {
+    font-size: calc(var(--mainFontSize) * 0.8);
+    opacity: 0.8;
+    margin-bottom: 0.25em;
+}
+
+.assets-list-div h3 {
+    text-transform: capitalize;
+}
+
+.assets-list-div i a {
+    color: inherit;
+}
+
+.assets-list-div > i {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+    padding: 5px;
+    font-style: normal;
+    gap: 5px;
+}
+
+.assets-list-div i span:first-of-type {
+    font-weight: bold;
+}
+
+.asset-download-button {
+    position: relative;
+    border: none;
+    outline: none;
+    border-radius: 2px;
+    cursor: pointer;
+    filter: none !important;
+}
+
+.asset-download-button:active {
+    background: #007a63;
+}
+
+.asset-download-button-text {
+    font: bold 20px "Quicksand", san-serif;
+    color: #ffffff;
+    transition: all 0.2s;
+}
+
+.asset-download-button-loading .asset-download-button-text {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.asset-download-button-loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    border: 4px solid transparent;
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: asset-download-button-loading-spinner 1s ease infinite;
+}
+
+.asset-name .avatar {
+    --imgSize: 30px !important;
+    flex: unset;
+    width: var(--imgSize);
+    height: var(--imgSize);
+}
+
+.asset-name .avatar img {
+    width: var(--imgSize);
+    height: var(--imgSize);
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center center;
+}
+
+@keyframes asset-download-button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+
+    to {
+        transform: rotate(1turn);
+    }
+}

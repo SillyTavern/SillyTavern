@@ -1,0 +1,30 @@
+{
+    "name": "SillyTavern",
+    "short_name": "SillyTavern",
+    "start_url": "/",
+    "display": "standalone",
+    "theme_color": "#202124",
+    "background_color": "#202124",
+    "icons": [
+        {
+            "src": "img/apple-icon-57x57.png",
+            "sizes": "57x57",
+            "type": "image/png"
+        },
+        {
+            "src": "img/apple-icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png"
+        },
+        {
+            "src": "img/apple-icon-114x114.png",
+            "sizes": "114x114",
+            "type": "image/png"
+        },
+        {
+            "src": "img/apple-icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png"
+        }
+    ]
+}

@@ -1,0 +1,193 @@
+<div class="vectors_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Vector Storage</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="flex-container flexFlowColumn">
+                <label for="vectors_source">
+                    Vectorization Source
+                </label>
+                <select id="vectors_source" class="text_pole">
+                    <option value="transformers">Local (Transformers)</option>
+                    <option value="extras">Extras</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="palm">Google MakerSuite (PaLM)</option>
+                    <option value="mistral">MistralAI</option>
+                    <option value="togetherai">TogetherAI</option>
+                    <option value="nomicai">NomicAI</option>
+                </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="openai_vectorsModel">
+                <label for="vectors_openai_model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_openai_model" class="text_pole">
+                    <option value="text-embedding-ada-002">text-embedding-ada-002</option>
+                    <option value="text-embedding-3-small">text-embedding-3-small</option>
+                    <option value="text-embedding-3-large">text-embedding-3-large</option>
+                </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="together_vectorsModel">
+                <label for="vectors_togetherai_model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_togetherai_model" class="text_pole">
+                    <option value="togethercomputer/m2-bert-80M-32k-retrieval">M2-BERT-Retrieval-32k</option>
+                    <option value="togethercomputer/m2-bert-80M-8k-retrieval">M2-BERT-Retrieval-8k</option>
+                    <option value="togethercomputer/m2-bert-80M-2k-retrieval">M2-BERT-Retrieval-2K</option>
+                    <option value="WhereIsAI/UAE-Large-V1">UAE-Large-V1</option>
+                    <option value="BAAI/bge-large-en-v1.5">BAAI-Bge-Large-1p5</option>
+                    <option value="BAAI/bge-base-en-v1.5">BAAI-Bge-Base-1p5</option>
+                    <option value="sentence-transformers/msmarco-bert-base-dot-v5">Sentence-BERT</option>
+                    <option value="bert-base-uncased">Bert Base Uncased</option>
+                </select>
+            </div>
+
+            <small id="vectors_modelWarning">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                <span data-i18n="Vectors Model Warning">
+                    It is recommended to purge vectors when changing the model mid-chat. Otherwise, it will lead to sub-par results.
+                </span>
+            </small>
+
+            <div class="flex-container flexFlowColumn" id="nomicai_apiKey">
+                <label for="api_key_nomicai">
+                    <span>NomicAI API Key</span>
+                </label>
+                <div class="flex-container">
+                    <input id="api_key_nomicai" name="api_key_nomicai" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                    <div title="Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_nomicai">
+                    </div>
+                </div>
+                <div data-for="api_key_nomicai" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                    For privacy reasons, your API key will be hidden after you reload the page.
+                </div>
+            </div>
+
+            <div class="flex-container flexFlowColumn" title="How many last messages will be matched for relevance.">
+                <label for="vectors_query">
+                    <span>Query messages</span>
+                </label>
+                <input type="number" id="vectors_query" class="text_pole widthUnset" min="1" max="99" />
+            </div>
+
+            <label class="checkbox_label" for="vectors_include_wi" title="Query results can activate World Info entries.">
+                <input id="vectors_include_wi" type="checkbox" class="checkbox">
+                Include in World Info Scanning
+            </label>
+
+            <hr>
+
+            <h4>
+                File vectorization settings
+            </h4>
+
+            <label class="checkbox_label" for="vectors_enabled_files">
+                <input id="vectors_enabled_files" type="checkbox" class="checkbox">
+                Enabled for files
+            </label>
+
+            <div id="vectors_files_settings">
+
+                <div class="flex-container">
+                    <div class="flex1" title="Only files past this size will be vectorized.">
+                        <label for="vectors_size_threshold">
+                            <small>Size threshold (KB)</small>
+                        </label>
+                        <input id="vectors_size_threshold" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                    </div>
+                    <div class="flex1" title="Chunk size for file splitting.">
+                        <label for="vectors_chunk_size">
+                            <small>Chunk size (chars)</small>
+                        </label>
+                        <input id="vectors_chunk_size" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                    </div>
+                    <div class="flex1" title="How many chunks to retrieve when querying.">
+                        <label for="vectors_chunk_count">
+                            <small>Retrieve chunks</small>
+                        </label>
+                        <input id="vectors_chunk_count" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <h4>
+                Chat vectorization settings
+            </h4>
+            <label class="checkbox_label" for="vectors_enabled_chats">
+                <input id="vectors_enabled_chats" type="checkbox" class="checkbox">
+                Enabled for chat messages
+            </label>
+
+            <div id="vectors_chats_settings">
+                <div id="vectors_advanced_settings">
+                    <label for="vectors_template">
+                        Insertion Template
+                    </label>
+                    <textarea id="vectors_template" class="text_pole textarea_compact" rows="3" placeholder="Use {{text}} macro to specify the position of retrieved text."></textarea>
+                    <label for="vectors_position">Injection Position</label>
+                    <div class="radio_group">
+                        <label>
+                            <input type="radio" name="vectors_position" value="2" />
+                            Before Main Prompt / Story String
+                        </label>
+                        <!--Keep these as 0 and 1 to interface with the setExtensionPrompt function-->
+                        <label>
+                            <input type="radio" name="vectors_position" value="0" />
+                            After Main Prompt / Story String
+                        </label>
+                        <label for="vectors_depth" title="How many messages before the current end of the chat." data-i18n="[title]How many messages before the current end of the chat.">
+                            <input type="radio" name="vectors_position" value="1" />
+                            In-chat @ Depth <input id="vectors_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
+                        </label>
+                    </div>
+                    <div class="flex-container">
+                        <div class="flex1" title="Can increase the retrieval quality for the cost of processing. 0 = disabled.">
+                            <label for="vectors_message_chunk_size">
+                                <small>Chunk size (chars)</small>
+                            </label>
+                            <input id="vectors_message_chunk_size" type="number" class="text_pole widthUnset" min="0" max="9999" />
+                        </div>
+                        <div class="flex1" title="Prevents last N messages from being placed out of order.">
+                            <label for="vectors_protect">
+                                <small>Retain#</small>
+                            </label>
+                            <input type="number" id="vectors_protect" class="text_pole widthUnset" min="1" max="9999" />
+                        </div>
+                        <div class="flex1" title="How many past messages to insert as memories.">
+                            <label for="vectors_insert">
+                                <small>Insert#</small>
+                            </label>
+                            <input type="number" id="vectors_insert" class="text_pole widthUnset" min="1" max="9999" />
+                        </div>
+                    </div>
+                </div>
+                <small>
+                    Old messages are vectorized gradually as you chat.
+                    To process all previous messages, click the button below.
+                </small>
+                <div class="flex-container">
+                    <div id="vectors_vectorize_all" class="menu_button menu_button_icon">
+                        Vectorize All
+                    </div>
+                    <div id="vectors_purge" class="menu_button menu_button_icon">
+                        Purge Vectors
+                    </div>
+                    <div id="vectors_view_stats" class="menu_button menu_button_icon">
+                        View Stats
+                    </div>
+                </div>
+                <div id="vectorize_progress" style="display: none;">
+                    <small>
+                        Processed <span id="vectorize_progress_percent">0</span>% of messages.
+                        ETA: <span id="vectorize_progress_eta">...</span> seconds.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,17 @@
+<div id="{{item}}" class="expression_list_item">
+    <div class="expression_list_buttons">
+        <div class="menu_button expression_list_upload" title="Upload image">
+            <i class="fa-solid fa-upload"></i>
+        </div>
+        <div class="menu_button expression_list_delete" title="Delete image">
+            <i class="fa-solid fa-trash"></i>
+        </div>
+    </div>
+    <div class="expression_list_title {{textClass}}">
+        <span>{{item}}</span>
+        {{#if isCustom}}
+            <small class="expression_list_custom">(custom)</small>
+        {{/if}}
+    </div>
+    <img class="expression_list_image" src="{{imageSrc}}" />
+</div>

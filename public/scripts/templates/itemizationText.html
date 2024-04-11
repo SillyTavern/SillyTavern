@@ -1,0 +1,109 @@
+<h3 class="flex-container justifyCenter alignitemscenter">
+    Prompt Itemization
+    <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+    <div id="copyPromptToClipboard" class="fa-solid fa-copy menu_button"></div>
+</h3>
+Tokenizer: {{selectedTokenizer}}<br>
+API Used: {{this_main_api}}<br>
+<span class="tokenItemizingSubclass">
+    Only the white numbers really matter. All numbers are estimates.
+    Grey color items may not have been included in the context due to certain prompt format settings.
+</span>
+<hr>
+<div class="justifyLeft">
+    <div class="flex-container">
+        <div class="flex-container flex1 flexFlowColumns flexNoGap wide50p tokenGraph">
+            <div class="wide100p" style="background-color: indianred; height: {{storyStringTokensPercentage}}%;"></div>
+            <div class="wide100p" style="background-color: gold; height: {{worldInfoStringTokensPercentage}}%;"></div>
+            <div class="wide100p" style="background-color: palegreen; height: {{ActualChatHistoryTokensPercentage}}%;">
+            </div>
+            <div class="wide100p" style="background-color: cornflowerblue; height: {{allAnchorsTokensPercentage}}%;">
+            </div>
+            <div class="wide100p" style="background-color: mediumpurple; height: {{promptBiasTokensPercentage}}%;">
+            </div>
+        </div>
+        <div class="flex-container wide50p">
+            <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                <div class="flex-container wide100p">
+                    <div class="flex1" style="color: indianred;"> Character Definitions:</div>
+                    <div class=""> {{storyStringTokens}}</div>
+                </div>
+                <div class="flex-container">
+                    <div class=" flex1 tokenItemizingSubclass">-- Description: </div>
+                    <div class="tokenItemizingSubclass">{{charDescriptionTokens}}</div>
+                </div>
+                <div class="flex-container">
+                    <div class=" flex1 tokenItemizingSubclass">-- Personality:</div>
+                    <div class="tokenItemizingSubclass"> {{charPersonalityTokens}}</div>
+                </div>
+                <div class="flex-container">
+                    <div class=" flex1 tokenItemizingSubclass">-- Scenario: </div>
+                    <div class="tokenItemizingSubclass">{{scenarioTextTokens}}</div>
+                </div>
+                <div class="flex-container">
+                    <div class=" flex1 tokenItemizingSubclass">-- Examples:</div>
+                    <div class="tokenItemizingSubclass"> {{examplesStringTokens}}</div>
+                </div>
+                <div class="flex-container">
+                    <div class=" flex1 tokenItemizingSubclass">-- User Persona:</div>
+                    <div class="tokenItemizingSubclass"> {{userPersonaStringTokens}}</div>
+                </div>
+                <div class="flex-container">
+                    <div class=" flex1 tokenItemizingSubclass">-- System Prompt (Instruct):</div>
+                    <div class="tokenItemizingSubclass"> {{instructionTokens}}</div>
+                </div>
+            </div>
+            <div class="wide100p flex-container">
+                <div class="flex1" style="color: gold;">World Info:</div>
+                <div class="">{{worldInfoStringTokens}}</div>
+            </div>
+            <div class="wide100p flex-container">
+                <div class="flex1" style="color: palegreen;">Chat History:</div>
+                <div class=""> {{ActualChatHistoryTokens}}</div>
+            </div>
+            <div class="wide100p flex-container flexNoGap flexFlowColumn">
+                <div class="wide100p flex-container">
+                    <div class="flex1" style="color: cornflowerblue;">Extensions:</div>
+                    <div class="">{{allAnchorsTokens}}</div>
+                </div>
+                <div class="flex-container">
+                    <div class=" flex1 tokenItemizingSubclass">-- Summarize: </div>
+                    <div class="tokenItemizingSubclass">{{summarizeStringTokens}}</div>
+                </div>
+                <div class="flex-container">
+                    <div class=" flex1 tokenItemizingSubclass">-- Author's Note:</div>
+                    <div class="tokenItemizingSubclass"> {{authorsNoteStringTokens}}</div>
+                </div>
+                <div class="flex-container">
+                    <div class=" flex1 tokenItemizingSubclass">-- Smart Context:</div>
+                    <div class="tokenItemizingSubclass"> {{smartContextStringTokens}}</div>
+                </div>
+            </div>
+            <div class="wide100p flex-container">
+                <div class="flex1" style="color: mediumpurple;">&lcub;&lcub;&rcub;&rcub; Bias:</div>
+                <div class="">{{promptBiasTokens}}</div>
+            </div>
+        </div>
+
+    </div>
+    <hr>
+    <div class="wide100p flex-container flexFlowColumns">
+        <div class="flex-container wide100p">
+            <div class="flex1">Total Tokens in Prompt:</div>
+            <div class=""> {{totalTokensInPrompt}}</div>
+        </div>
+        <div class="flex-container wide100p">
+            <div class="flex1">Max Context (Context Size - Response Length):</div>
+            <div class="">{{thisPrompt_max_context}}</div>
+        </div>
+        <div class="flex-container wide100p">
+            <div class="flex1">- Padding:</div>
+            <div class=""> {{thisPrompt_padding}}</div>
+        </div>
+        <div class="flex-container wide100p">
+            <div class="flex1">Actual Max Context Allowed:</div>
+            <div class="">{{thisPrompt_actual}}</div>
+        </div>
+    </div>
+</div>
+<hr>

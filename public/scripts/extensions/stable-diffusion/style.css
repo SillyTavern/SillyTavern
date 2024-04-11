@@ -1,0 +1,98 @@
+.sd_settings label:not(.checkbox_label) {
+    display: block;
+}
+
+#sd_gen {
+    /*order: 100;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 1px; */
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    /* justify-content: center; */
+}
+
+#sd_gen:hover {
+    opacity: 1;
+    filter: brightness(1.2);
+}
+
+#sd_dropdown {
+    z-index: 30000;
+    backdrop-filter: blur(--SmartThemeBlurStrength);
+}
+
+#sd_comfy_open_workflow_editor {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    width: fit-content;
+}
+
+#sd_comfy_workflow_editor_template {
+    height: 100%;
+}
+
+.sd_comfy_workflow_editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.sd_comfy_workflow_editor_content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: row;
+}
+
+.sd_comfy_workflow_editor_workflow_container {
+    flex: 1 1 auto;
+}
+
+#sd_comfy_workflow_editor_workflow {
+    font-family: monospace;
+}
+
+.sd_comfy_workflow_editor_placeholder_container {
+    flex: 0 0 auto;
+}
+
+.sd_comfy_workflow_editor_placeholder_list {
+    font-size: x-small;
+    list-style: none;
+    margin: 5px 0;
+    padding: 3px 5px;
+    text-align: left;
+}
+
+.sd_comfy_workflow_editor_placeholder_list>li[data-placeholder]:before {
+    content: "✅ ";
+}
+
+.sd_comfy_workflow_editor_placeholder_list>li.sd_comfy_workflow_editor_not_found:before {
+    content: "❌ ";
+}
+
+.sd_comfy_workflow_editor_placeholder_list>li>.notes-link {
+    cursor: help;
+}
+
+.sd_comfy_workflow_editor_placeholder_list input {
+    font-size: inherit;
+    margin: 0;
+}
+.sd_comfy_workflow_editor_custom_remove, #sd_comfy_workflow_editor_placeholder_add {
+    cursor: pointer;
+    font-weight: bold;
+    width: 1em;
+    opacity: 0.5;
+    &:hover {
+        opacity: 1;
+    }
+}

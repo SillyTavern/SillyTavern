@@ -1,0 +1,159 @@
+#tts_media_control {
+    /* order: 100; */
+    /*     width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 1px; */
+    outline: none;
+    border: none;
+    cursor: pointer;
+    /*     transition: 0.3s;
+    opacity: 0.7; */
+    display: flex;
+    align-items: center;
+    /* justify-content: center; */
+
+}
+
+#ttsExtensionMenuItem {
+    transition: 0.3s;
+    opacity: 0.7;
+}
+
+#ttsExtensionMenuItem:hover {
+    opacity: 1;
+    filter: brightness(1.2);
+}
+
+#tts_media_control:hover {
+    opacity: 1;
+    filter: brightness(1.2);
+}
+
+.voice_preview {
+    margin: 0.25rem 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.voice_preview .voice_name {
+    text-align: left;
+    flex: 1;
+}
+
+.voice_preview .voice_lang {
+    width: 4rem;
+    text-align: left;
+}
+
+.voice_preview .fa-play {
+    cursor: pointer;
+}
+
+.tts-button {
+    margin: 0;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.tts-button:hover {
+    opacity: 1;
+}
+
+.tts_block {
+    display: flex;
+    align-items: baseline;
+    column-gap: 5px;
+    flex-wrap: wrap;
+}
+
+.tts_custom_voices {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.novel_tts_hints {
+    font-size: calc(0.9 * var(--mainFontSize));
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.at-settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.at-settings-option {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.at-endpoint-option {
+    flex: 1; 
+    margin: 0 10px;
+    margin-right: 25px;
+    width: 38%;
+}
+
+.at-website-row {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    margin-top: 10px; 
+    margin-bottom: 10px;
+}
+
+.at-website-option {
+    flex: 1; 
+    margin-right: 10px; 
+    margin-left: 10px; 
+}
+
+.at-settings-separator {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 18x;
+    font-weight: bold;
+    border-top: 1px solid #e1e1e1; /* Grey line */
+    border-bottom: 1px solid #e1e1e1; /* Grey line */
+    text-align: center;
+}
+
+.at-status-message {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.at-model-endpoint-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.at-model-option, .endpoint-option {
+    flex: 1;
+    margin: 0 10px;
+    margin-left: 10px; 
+}
+
+.at-endpoint-option {
+    width: 38%;
+}
+
+#at-status_info {
+    color: lightgreen; 
+}

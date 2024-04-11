@@ -1,0 +1,206 @@
+/* Extensions */
+#extensions_url {
+    display: block;
+}
+
+.extensions_block input[type="submit"]:hover {
+    background-color: green;
+}
+
+.extensions_block input[type="checkbox"] {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+label[for="extensions_autoconnect"] {
+    display: flex;
+    align-items: center;
+    margin: 0 !important;
+}
+
+.extensions_url_block {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.extensions_url_block h4 {
+    display: inline;
+}
+
+.extensions_block {
+    clear: both;
+    padding: 0.05px;
+}
+
+.extensions_info {
+    text-align: left;
+    margin: 0 1em;
+}
+
+.extensions_info h3 {
+    margin-bottom: 0.5em;
+}
+
+.extensions_info h4 {
+    margin-bottom: 0.5em;
+}
+
+.extensions_info p {
+    margin-bottom: 0.5em;
+    margin-left: 1em;
+}
+
+.extensions_info .disabled {
+    color: lightgray;
+}
+
+.extensions_info .toggle_enable {
+    color: lightgreen;
+}
+
+.extensions_info .toggle_disable {
+    color: rgb(238, 144, 144);
+}
+
+.extensions_info .extension_enabled {
+    color: green;
+}
+
+.extensions_info .extension_disabled {
+    color: lightgray;
+}
+
+.extensions_info .extension_missing {
+    color: gray;
+}
+
+input.extension_missing[type="checkbox"] {
+    opacity: 0.5;
+}
+
+#extensions_list .disabled {
+    text-decoration: line-through;
+    color: lightgray;
+}
+
+.update-button {
+    margin-right: 10px;
+    display: inline-flex;
+}
+
+/* Fixes order of settings for extensions */
+#extensions_settings,
+#extensions_settings2 {
+    display: flex;
+    flex-direction: column;
+}
+
+/** LEFT COLUMN **/
+/* Must be always on top */
+#extensions_settings>#assets_ui {
+    order: -1;
+}
+
+#extensions_settings>.expression_settings {
+    order: 2;
+}
+
+#extensions_settings>.background_settings {
+    order: 3;
+}
+
+#extensions_settings>.sd_settings {
+    order: 4;
+}
+
+#extensions_settings>#tts_settings {
+    order: 5;
+}
+
+#extensions_settings>#rvc_settings {
+    order: 6;
+}
+
+#extensions_settings>.objective-settings {
+    order: 7;
+}
+
+#extensions_settings>#speech_recognition_settings {
+    order: 8;
+}
+
+#extensions_settings>#audio_settings {
+    order: 9;
+}
+
+/** RIGHT COLUMN **/
+#extensions_settings2>.translation_settings {
+    order: 1;
+}
+
+#extensions_settings2>.caption_settings {
+    order: 2;
+}
+
+#extensions_settings2>.quickReplySettings {
+    order: 3;
+}
+
+#extensions_settings2>.idle-settings {
+    order: 4;
+}
+
+#extensions_settings2>#memory_settings {
+    order: 5;
+}
+
+#extensions_settings2>.hypebot_settings {
+    order: 6;
+}
+
+#extensions_settings2>.regex_settings {
+    order: 7;
+}
+
+#extensions_settings2>.vectors_settings {
+    order: 8;
+}
+
+#extensions_settings2>.chromadb_settings {
+    order: 9;
+}
+
+#extensions_settings2>.randomizer_settings {
+    order: 10;
+}
+
+/** WAND MENU **/
+#extensionsMenu>#ttsExtensionMenuItem {
+    order: 1;
+}
+
+#extensionsMenu>#sd_gen {
+    order: 2;
+}
+
+#extensionsMenu>#send_picture {
+    order: 3;
+}
+
+#extensionsMenu>#token_counter {
+    order: 4;
+}
+
+#extensionsMenu>#objective-task-manual-check-menu-item {
+    order: 5;
+}
+
+#extensionsMenu>#roll_dice {
+    order: 6;
+}
+
+#extensionsMenu>#translate_chat {
+    order: 7;
+}

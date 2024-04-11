@@ -1,0 +1,75 @@
+# -- NETWORK CONFIGURATION --
+# Listen for incoming connections
+listen: false
+# Server port
+port: 8000
+# Toggle whitelist mode
+whitelistMode: true
+# Whitelist of allowed IP addresses
+whitelist:
+  - 127.0.0.1
+# Toggle basic authentication for endpoints
+basicAuthMode: false
+# Basic authentication credentials
+basicAuthUser:
+  username: "user"
+  password: "password"
+# Enables CORS proxy middleware
+enableCorsProxy: false
+# Disable security checks - NOT RECOMMENDED
+securityOverride: false
+# -- ADVANCED CONFIGURATION --
+# Open the browser automatically
+autorun: true
+# Disable thumbnail generation
+disableThumbnails: false
+# Thumbnail quality (0-100)
+thumbnailsQuality: 95
+# Generate avatar thumbnails as PNG instead of JPG (preserves transparency but increases filesize by about 100%)
+#  Changing this only affects new thumbnails. To recreate the old ones, clear out your ST/thumbnails/ folder.
+avatarThumbnailsPng: false
+# Allow secret keys exposure via API
+allowKeysExposure: false
+# Skip new default content checks
+skipContentCheck: false
+# Disable automatic chats backup
+disableChatBackup: false
+# API request overrides (for KoboldAI and Text Completion APIs)
+## Note: host includes the port number if it's not the default (80 or 443)
+## Format is an array of objects:
+## - hosts:
+##   - example.com
+##   headers:
+##     Content-Type: application/json
+##   - 127.0.0.1:5001
+##   headers:
+##     User-Agent: "Googlebot/2.1 (+http://www.google.com/bot.html)"
+requestOverrides: []
+# -- PLUGIN CONFIGURATION --
+# Enable UI extensions
+enableExtensions: true
+# Extension settings
+extras:
+  # Disables automatic model download from HuggingFace
+  disableAutoDownload: false
+  # Extra models for plugins. Expects model IDs from HuggingFace model hub in ONNX format
+  classificationModel: Cohee/distilbert-base-uncased-go-emotions-onnx
+  captioningModel: Xenova/vit-gpt2-image-captioning
+  embeddingModel: Cohee/jina-embeddings-v2-base-en
+  promptExpansionModel: Cohee/fooocus_expansion-onnx
+  speechToTextModel: Xenova/whisper-small
+  textToSpeechModel: Xenova/speecht5_tts
+# -- OPENAI CONFIGURATION --
+openai:
+  # Will send a random user ID to OpenAI completion API
+  randomizeUserId: false
+  # If not empty, will add this as a system message to the start of every caption completion prompt
+  # Example: "Perform the instructions to the best of your ability.\n" (for LLaVA)
+  # Not used in image inlining mode
+  captionSystemPrompt: ""
+# -- DEEPL TRANSLATION CONFIGURATION --
+deepl:
+  # Available options: default, more, less, prefer_more, prefer_less
+  formality: default
+# -- SERVER PLUGIN CONFIGURATION --
+enableServerPlugins: false
