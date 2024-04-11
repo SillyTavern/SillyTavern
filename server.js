@@ -62,6 +62,7 @@ const DEFAULT_PORT = 8000;
 const DEFAULT_AUTORUN = false;
 const DEFAULT_LISTEN = false;
 const DEFAULT_CORS_PROXY = false;
+const DEFAULT_WHITELIST = true;
 
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
@@ -97,6 +98,10 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'string',
         default: 'certs/privkey.pem',
         describe: 'Path to your private key file.',
+    }).option('whitelist', {
+        type: 'boolean',
+        default: false,
+        describe: 'Enables whitelist mode',
     }).parseSync();
 
 // change all relative paths
@@ -115,6 +120,7 @@ const server_port = cliArguments.port ?? process.env.SILLY_TAVERN_PORT ?? getCon
 const autorun = (cliArguments.autorun ?? getConfigValue('autorun', DEFAULT_AUTORUN)) && !cliArguments.ssl;
 const listen = cliArguments.listen ?? getConfigValue('listen', DEFAULT_LISTEN);
 const enableCorsProxy = cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', DEFAULT_CORS_PROXY);
+const enableWhitelist = cliArguments.whitelist ?? getConfigValue('whitelistMode', DEFAULT_WHITELIST);
 const basicAuthMode = getConfigValue('basicAuthMode', false);
 const enableAccounts = getConfigValue('enableUserAccounts', false);
 
@@ -130,7 +136,7 @@ app.use(CORS);
 
 if (listen && basicAuthMode) app.use(basicAuthMiddleware);
 
-app.use(whitelistMiddleware(listen));
+app.use(whitelistMiddleware(enableWhitelist, listen));
 
 if (enableCorsProxy) {
     const bodyParser = require('body-parser');
@@ -585,7 +591,7 @@ async function loadPlugins() {
     }
 }
 
-if (listen && !getConfigValue('whitelistMode', true) && !basicAuthMode) {
+if (listen && !enableWhitelist && !basicAuthMode) {
     if (getConfigValue('securityOverride', false)) {
         console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
     }

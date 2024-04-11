@@ -8,7 +8,6 @@ const { color, getConfigValue } = require('../util');
 const whitelistPath = path.join(process.cwd(), './whitelist.txt');
 let whitelist = getConfigValue('whitelist', []);
 let knownIPs = new Set();
-const whitelistMode = getConfigValue('whitelistMode', true);
 
 if (fs.existsSync(whitelistPath)) {
     try {
@@ -21,10 +20,11 @@ if (fs.existsSync(whitelistPath)) {
 
 /**
  * Returns a middleware function that checks if the client IP is in the whitelist.
+ * @param {boolean} whitelistMode If whitelist mode is enabled via config or command line
  * @param {boolean} listen If listen mode is enabled via config or command line
  * @returns {import('express').RequestHandler} The middleware function
  */
-function whitelistMiddleware(listen) {
+function whitelistMiddleware(whitelistMode, listen) {
     return function (req, res, next) {
         const clientIp = getIpFromRequest(req);
 
