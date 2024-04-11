@@ -566,7 +566,7 @@ async function sendCohereRequest(request, response) {
     }
 
     try {
-        const convertedHistory = convertCohereMessages(request.body.messages);
+        const convertedHistory = convertCohereMessages(request.body.messages, request.body.char_name, request.body.user_name);
 
         // https://docs.cohere.com/reference/chat
         const requestBody = {
