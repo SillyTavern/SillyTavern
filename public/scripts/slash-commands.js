@@ -1863,7 +1863,6 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                 consecutive.push(current);
             }
             consecutive.sort((a,b)=>b.length - a.length);
-            console.log({ name, parts, start, consecutive, longestConsecutive:consecutive[0]?.length ?? 0 });
             return { name, start, longestConsecutive:consecutive[0]?.length ?? 0 };
         };
         const fuzzyScoreCompare = (a, b) => {

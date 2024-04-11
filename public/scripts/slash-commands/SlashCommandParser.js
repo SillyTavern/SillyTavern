@@ -202,7 +202,6 @@ export class SlashCommandParser {
         this.scope = null;
         this.commandIndex = [];
         const closure = this.parseClosure();
-        console.log('[STS]', closure);
         closure.keptText = this.keptText;
         return closure;
     }
