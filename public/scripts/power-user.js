@@ -13,7 +13,6 @@ import {
     printCharactersDebounced,
     setCharacterId,
     setEditedMessageId,
-    renderTemplate,
     chat,
     getFirstDisplayedMessageId,
     showMoreMessages,
@@ -23,6 +22,7 @@ import {
     ANIMATION_DURATION_DEFAULT,
     setActiveGroup,
     setActiveCharacter,
+    renderTemplateAsync,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -1363,8 +1363,8 @@ export function registerDebugFunction(functionId, name, description, func) {
     debug_functions.push({ functionId, name, description, func });
 }
 
-function showDebugMenu() {
-    const template = renderTemplate('debug', { functions: debug_functions });
+async function showDebugMenu() {
+    const template = await renderTemplateAsync('debug', { functions: debug_functions });
     callPopup(template, 'text', '', { wide: true, large: true });
 }
 

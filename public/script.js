@@ -153,7 +153,7 @@ import {
     ensureImageFormatSupported,
 } from './scripts/utils.js';
 
-import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
+import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from './scripts/slash-commands.js';
 import {
     tag_map,
@@ -212,6 +212,7 @@ import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, de
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 import { callGenericPopup } from './scripts/popup.js';
+import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 
 //exporting functions and vars for mods
 export {
@@ -286,6 +287,7 @@ export {
     printCharactersDebounced,
     isOdd,
     countOccurrences,
+    renderTemplate,
 };
 
 showLoader();
@@ -575,14 +577,14 @@ export const MAX_INJECTION_DEPTH = 1000;
 
 let system_messages = {};
 
-function getSystemMessages() {
+async function getSystemMessages() {
     system_messages = {
         help: {
             name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: renderTemplate('help'),
+            mes: await renderTemplateAsync('help'),
         },
         slash_commands: {
             name: systemUserName,
@@ -596,21 +598,21 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: renderTemplate('hotkeys'),
+            mes: await renderTemplateAsync('hotkeys'),
         },
         formatting: {
             name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: renderTemplate('formatting'),
+            mes: await renderTemplateAsync('formatting'),
         },
         macros: {
             name: systemUserName,
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: renderTemplate('macros'),
+            mes: await renderTemplateAsync('macros'),
         },
         welcome:
         {
@@ -618,7 +620,7 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: renderTemplate('welcome'),
+            mes: await renderTemplateAsync('welcome'),
         },
         group: {
             name: systemUserName,
@@ -671,52 +673,6 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
         );
     }
 });
-
-/**
- * Loads a URL content using XMLHttpRequest synchronously.
- * @param {string} url URL to load synchronously
- * @returns {string} Response text
- */
-function getUrlSync(url) {
-    console.debug('Loading URL synchronously', url);
-    const request = new XMLHttpRequest();
-    request.open('GET', url, false); // `false` makes the request synchronous
-    request.send();
-
-    if (request.status >= 200 && request.status < 300) {
-        return request.responseText;
-    }
-
-    throw new Error(`Error loading ${url}: ${request.status} ${request.statusText}`);
-}
-
-const templateCache = new Map();
-
-export function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true, fullPath = false) {
-    try {
-        const pathToTemplate = fullPath ? templateId : `/scripts/templates/${templateId}.html`;
-        let template = templateCache.get(pathToTemplate);
-        if (!template) {
-            const templateContent = getUrlSync(pathToTemplate);
-            template = Handlebars.compile(templateContent);
-            templateCache.set(pathToTemplate, template);
-        }
-        let result = template(templateData);
-
-        if (sanitize) {
-            result = DOMPurify.sanitize(result);
-        }
-
-        if (localize) {
-            result = applyLocale(result);
-        }
-
-        return result;
-    } catch (err) {
-        console.error('Error rendering template', templateId, templateData, err);
-        toastr.error('Check the DevTools console for more information.', 'Error rendering template');
-    }
-}
 
 async function getClientVersion() {
     try {
@@ -901,7 +857,7 @@ async function firstLoadInit() {
     await getClientVersion();
     await readSecretState();
     await getSettings();
-    getSystemMessages();
+    await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     initLocales();
     initTags();
@@ -4614,7 +4570,7 @@ async function DupeChar() {
     }
 }
 
-function promptItemize(itemizedPrompts, requestedMesId) {
+async function promptItemize(itemizedPrompts, requestedMesId) {
     console.log('PROMPT ITEMIZE ENTERED');
     var incomingMesId = Number(requestedMesId);
     console.debug(`looking for MesId ${incomingMesId}`);
@@ -4655,7 +4611,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         chatInjects: getTokenCount(itemizedPrompts[thisPromptSet].chatInjects),
     };
 
-    if (params.chatInjects){
+    if (params.chatInjects) {
         params.ActualChatHistoryTokens = params.ActualChatHistoryTokens - params.chatInjects;
     }
 
@@ -4737,10 +4693,12 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     }
 
     if (params.this_main_api == 'openai') {
-        callPopup(renderTemplate('itemizationChat', params), 'text');
+        const template = await renderTemplateAsync('itemizationChat', params);
+        callPopup(template, 'text');
 
     } else {
-        callPopup(renderTemplate('itemizationText', params), 'text');
+        const template = await renderTemplateAsync('itemizationText', params);
+        callPopup(template, 'text');
     }
 }
 
@@ -7814,7 +7772,11 @@ window['SillyTavern'].getContext = function () {
          */
         registerHelper: () => { },
         registedDebugFunction: registerDebugFunction,
+        /**
+         * @deprecated Use renderExtensionTemplateAsync instead.
+         */
         renderExtensionTemplate: renderExtensionTemplate,
+        renderExtensionTemplateAsync: renderExtensionTemplateAsync,
         callPopup: callPopup,
         callGenericPopup: callGenericPopup,
         mainApi: main_api,
