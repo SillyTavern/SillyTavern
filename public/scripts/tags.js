@@ -1035,7 +1035,7 @@ function onViewTagsListClick() {
 
     makeTagListDraggable(tagContainer);
 
-    callPopup(list, 'text');
+    callPopup(list, 'text', null, { allowVerticalScrolling: true });
 }
 
 function makeTagListDraggable(tagContainer) {

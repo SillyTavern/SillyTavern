@@ -139,7 +139,6 @@ body.big-avatars .bogus_folder_select .avatar {
 body.big-avatars .avatar {
     width: calc(var(--avatar-base-width) * var(--big-avatar-width-factor));
     height: calc(var(--avatar-base-height) * var(--big-avatar-height-factor));
-    /* width: unset; */
     border-style: none;
     display: flex;
     justify-content: center;

@@ -86,10 +86,10 @@ observer.observe(document.documentElement, observerConfig);
  * particular measure (like days or hours), that measure will not be included in the output.
  *
  * @param {number} total_gen_time - The total generation time in milliseconds.
+ * @param {boolean} [short=false] - Optional flag indicating whether short form should be used. ('2h' instead of '2 Hours')
  * @returns {string} - A human-readable string that represents the time spent generating characters.
  */
-export function humanizeGenTime(total_gen_time) {
-
+export function humanizeGenTime(total_gen_time, short = false) {
     //convert time_spent to humanized format of "_ Hours, _ Minutes, _ Seconds" from milliseconds
     let time_spent = total_gen_time || 0;
     time_spent = Math.floor(time_spent / 1000);
@@ -100,12 +100,13 @@ export function humanizeGenTime(total_gen_time) {
     let hours = time_spent % 24;
     time_spent = Math.floor(time_spent / 24);
     let days = time_spent;
-    time_spent = '';
-    if (days > 0) { time_spent += `${days} Days, `; }
-    if (hours > 0) { time_spent += `${hours} Hours, `; }
-    if (minutes > 0) { time_spent += `${minutes} Minutes, `; }
-    time_spent += `${seconds} Seconds`;
-    return time_spent;
+    let parts = [];
+    if (days > 0) { parts.push(short ? `${days}d` : `${days} Days`); }
+    if (hours > 0) { parts.push(short ? `${hours}h` : `${hours} Hours`); }
+    if (minutes > 0) { parts.push(short ? `${minutes}m` : `${minutes} Minutes`); }
+    if (seconds > 0) { parts.push(short ? `${seconds}s` : `${seconds} Seconds`); }
+    if (!parts.length) { parts.push(short ? '&lt;1s' : 'Instant') }
+    return parts.join(short ? ' ' : ', ');
 }
 
 let parsedUA = null;

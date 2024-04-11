@@ -2052,10 +2052,6 @@ grammarly-extension {
     text-align: right;
 }
 
-.rm_stats_button {
-    cursor: pointer;
-}
-
 /* Focus */
 
 #bulk_tag_popup,
@@ -2085,11 +2081,6 @@ grammarly-extension {
     overflow-x: hidden;
 }
 
-.rm_stat_block {
-    display: flex;
-    justify-content: space-between;
-}
-
 .large_dialogue_popup {
     height: 90vh !important;
     height: 90svh !important;
@@ -2103,12 +2094,8 @@ grammarly-extension {
     min-width: var(--sheldWidth);
 }
 
-.horizontal_scrolling_dialogue_popup {
-    overflow-x: unset !important;
-}
-
-.vertical_scrolling_dialogue_popup {
-    overflow-y: unset !important;
+.wider_dialogue_popup {
+    min-width: 750px;
 }
 
 #bulk_tag_popup_holder,
@@ -2116,20 +2103,32 @@ grammarly-extension {
     display: flex;
     flex-direction: column;
     height: 100%;
-    overflow-y: hidden;
     padding: 0 10px;
 }
 
 #dialogue_popup_text {
     flex-grow: 1;
-    overflow-y: auto;
     height: 100%;
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    max-height: calc(90vh - 50px);
+    max-height: calc(90svh - 50px);
+}
+
+.horizontal_scrolling_dialogue_popup #dialogue_popup_text {
+    overflow-x: unset;
+}
+
+.vertical_scrolling_dialogue_popup #dialogue_popup_text {
+    overflow-y: unset;
 }
 
 #dialogue_popup_controls {
     display: flex;
     align-self: center;
     gap: 20px;
+    height: 40px;
 }
 
 #bulk_tag_popup_reset,
