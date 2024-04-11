@@ -1762,6 +1762,19 @@
                                             <span data-i18n="Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.">Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.</span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="makersuite">
+                                        <label for="use_makersuite_sysprompt" class="checkbox_label widthFreeExpand">
+                                            <input id="use_makersuite_sysprompt" type="checkbox" />
+                                            <span data-i18n="Use system prompt (Gemini 1.5 pro+ only)">
+                                                Use system prompt (Gemini 1.5 pro+ only)
+                                            </span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft marginBot5">
+                                            <span data-i18n="Merges all system messages up until the first message with a non system role, and sends them through google's system_instruction field instead of with the rest of the prompt contents.">
+                                                Merges all system messages up until the first message with a non system role, and sends them through google's system_instruction field instead of with the rest of the prompt contents.
+                                            </span>
+                                        </div>
+                                    </div>
                                     <div data-newbie-hidden class="range-block" data-source="claude">
                                         <div class="wide100p">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
