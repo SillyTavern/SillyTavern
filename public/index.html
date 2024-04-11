@@ -2248,7 +2248,7 @@
                             </div>
                             <div class="flex-container">
                                 <div id="api_button_textgenerationwebui" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,aphrodite,tabby,koboldcpp">Connect</div>
-                                <div data-tg-type="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
+                                <div data-tg-type="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="Authorize;[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
                                 <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
                             </div>
                             <label data-tg-type="ooba,aphrodite" class="checkbox_label margin-bot-10px" for="legacy_api_textgenerationwebui">
@@ -2338,7 +2338,7 @@
                                 <div class="wide100p">
                                     <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="500" />
                                     <small class="reverse_proxy_warning">
-                                        Doesn't work? Try adding <code>/v1</code> at the end!
+                                        <span data-i18n="Doesn't work? Try adding">Doesn't work? Try adding</span> <code>/v1</code> <span data-i18n="at the end!">at the end!</span>
                                     </small>
                                 </div>
                                 <div class="range-block-title justifyLeft" data-i18n="Proxy Password">
@@ -2743,7 +2743,7 @@
                             <div id="api_button_openai" class="api_button menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
                             <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
                             <div data-source="custom" id="customize_additional_parameters" class="menu_button menu_button_icon">Additional Parameters</div>
-                            <div data-source="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
+                            <div data-source="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="Authorize;[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
                             <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!"><span data-i18n="Test Message">Test Message</span></div>
                         </div>
                         <div class="online_status">
@@ -4092,7 +4092,7 @@
                                 <div id="persona_pagination_container" class="flex1"></div>
                                 <i id="persona_grid_toggle" class="fa-solid fa-table-cells-large menu_button" data-i18n="[title]Toggle grid view" title="Toggle grid view"></i>
                             </div>
-                            <div id="user_avatar_block">
+                            <div id="user_avatar_block" data-i18n="[no_desc_text]No persona description" no_desc_text="[No description]>
                                 <div class="avatar_upload">+</div>
                             </div>
                             <form id="form_upload_avatar" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -4159,7 +4159,7 @@
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters" data-i18n="[title]Select/Create Characters"></div>
                     </div>
                     <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto wide100p">
-                        <div class="hotswap avatars_inline flex-container expander"></div>
+                        <div class="hotswap avatars_inline flex-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps"></div>
                     </div>
                 </div>
                 <hr>
@@ -5843,7 +5843,7 @@
                     <div id="leftSendForm" class="alignContentCenter">
                         <div id="options_button" class="fa-solid fa-bars"></div>
                     </div>
-                    <textarea id="send_textarea" data-i18n="[placeholder]Not connected to API!" placeholder="Not connected to API!" name="text"></textarea>
+                    <textarea id="send_textarea" name="text" data-i18n="[no_connection_text]Not connected to API!;[connected_text]Type a message, or /? for help" placeholder="Not connected to API!" no_connection_text="Not connected to API!" connected_text="Type a message, or /? for help"></textarea>
                     <div id="rightSendForm" class="alignContentCenter">
                         <div id="mes_stop" title="Abort request" class="mes_stop" data-i18n="[title]Abort request">
                             <i class="fa-solid fa-circle-stop"></i>
