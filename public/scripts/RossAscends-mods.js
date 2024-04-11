@@ -275,7 +275,9 @@ export async function favsToHotswap() {
 
     //helpful instruction message if no characters are favorited
     if (favs.length == 0) {
-        container.html('<small><span><i class="fa-solid fa-star"></i> <span data-i18n="Favorite characters to add them to HotSwaps">Favorite characters to add them to HotSwaps</span></span></small>');
+        container.html('<small><span><i class="fa-solid fa-star"></i> '
+			+ container.attr('no_favs')
+			+ '</span></small>');
         return;
     }
 
@@ -285,7 +287,8 @@ export async function favsToHotswap() {
 //changes input bar and send button display depending on connection status
 function RA_checkOnlineStatus() {
     if (online_status == 'no_connection') {
-        $('#send_textarea').attr('placeholder', 'Not connected to API!'); //Input bar placeholder tells users they are not connected
+		var send_textarea = $('#send_textarea');
+        send_textarea.attr('placeholder', send_textarea.attr('no_connection_text')); //Input bar placeholder tells users they are not connected
         $('#send_form').addClass('no-connection'); //entire input form area is red when not connected
         $('#send_but').addClass('displayNone'); //send button is hidden when not connected;
         $('#mes_continue').addClass('displayNone'); //continue button is hidden when not connected;
@@ -294,7 +297,8 @@ function RA_checkOnlineStatus() {
         connection_made = false;
     } else {
         if (online_status !== undefined && online_status !== 'no_connection') {
-            $('#send_textarea').attr('placeholder', 'Type a message, or /? for help'); //on connect, placeholder tells user to type message
+			var send_textarea = $('#send_textarea');
+            send_textarea.attr('placeholder', send_textarea.attr('connected_text')); //on connect, placeholder tells user to type message
             $('#send_form').removeClass('no-connection');
             $('#API-status-top').removeClass('fa-plug-circle-exclamation redOverlayGlow');
             $('#API-status-top').addClass('fa-plug');
