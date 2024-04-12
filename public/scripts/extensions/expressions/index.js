@@ -982,6 +982,9 @@ function onTextGenSettingsReady(args) {
         const emotions = DEFAULT_EXPRESSIONS.filter((e) => e != 'talkinghead')
         Object.assign(args, {
             top_k: 1,
+            stop: [],
+            stopping_strings: [],
+            custom_token_bans: [],
             json_schema: {
                 $schema: "http://json-schema.org/draft-04/schema#",
                 type: "object",
