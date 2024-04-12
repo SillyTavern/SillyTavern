@@ -263,7 +263,7 @@ async function RA_autoloadchat() {
                 await selectCharacterById(String(active_character_id));
 
                 // Do a little tomfoolery to spoof the tag selector
-                const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`)
+                const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`);
                 applyTagsOnCharacterSelect.call(selectedCharElement);
             }
         }

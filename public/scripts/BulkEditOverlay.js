@@ -266,7 +266,7 @@ class BulkTagPopupHandler {
         printTagList($('#bulkTagList'), { tags: () => this.getMutualTags(), tagOptions: { removable: true } });
 
         // Tag input with resolvable list for the mutual tags to get redrawn, so that newly added tags get sorted correctly
-        createTagInput('#bulkTagInput', '#bulkTagList', { tags: () => this.getMutualTags(), tagOptions: { removable: true }});
+        createTagInput('#bulkTagInput', '#bulkTagList', { tags: () => this.getMutualTags(), tagOptions: { removable: true } });
 
         document.querySelector('#bulk_tag_popup_reset').addEventListener('click', this.resetTags.bind(this));
         document.querySelector('#bulk_tag_popup_remove_mutual').addEventListener('click', this.removeMutual.bind(this));
@@ -291,7 +291,7 @@ class BulkTagPopupHandler {
         // Find mutual tags for multiple characters
         const allTags = this.characterIds.map(cid => getTagsList(getTagKeyForEntity(cid)));
         const mutualTags = allTags.reduce((mutual, characterTags) =>
-            mutual.filter(tag => characterTags.some(cTag => cTag.id === tag.id))
+            mutual.filter(tag => characterTags.some(cTag => cTag.id === tag.id)),
         );
 
         this.currentMutualTags = mutualTags.sort(compareTagsForSort);
@@ -587,7 +587,7 @@ class BulkEditOverlay {
             this.container.removeEventListener('mouseup', cancelHold);
             this.container.removeEventListener('touchend', cancelHold);
         },
-            BulkEditOverlay.longPressDelay);
+        BulkEditOverlay.longPressDelay);
     };
 
     handleLongPressEnd = (event) => {
@@ -694,7 +694,7 @@ class BulkEditOverlay {
         } else {
             character.classList.remove(BulkEditOverlay.selectedClass);
             if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
-            this.#selectedCharacters = this.#selectedCharacters.filter(item => String(characterId) !== item)
+            this.#selectedCharacters = this.#selectedCharacters.filter(item => String(characterId) !== item);
         }
 
         this.updateSelectedCount();
@@ -816,7 +816,7 @@ class BulkEditOverlay {
                     <span>Also delete the chat files</span>
                 </label>
             </div>`;
-    }
+    };
 
     /**
      * Request user input before concurrently handle deletion
