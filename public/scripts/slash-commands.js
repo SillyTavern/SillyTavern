@@ -1797,7 +1797,6 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
 export function setSlashCommandAutoComplete(textarea, isFloating = false) {
     const dom = document.createElement('ul'); {
         dom.classList.add('slashCommandAutoComplete');
-        dom.classList.add('defaultThemed');
     }
     let isReplacable = false;
     let result = [];
@@ -1956,6 +1955,24 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
 
         // render autocomplete list
         dom.innerHTML = '';
+        dom.classList.remove('defaultDark');
+        dom.classList.remove('defaultLight');
+        dom.classList.remove('defaultThemed');
+        switch (power_user.stscript.autocomplete_style ?? 'theme') {
+            case 'dark': {
+                dom.classList.add('defaultDark');
+                break;
+            }
+            case 'light': {
+                dom.classList.add('defaultLight');
+                break;
+            }
+            case 'theme':
+            default: {
+                dom.classList.add('defaultThemed');
+                break;
+            }
+        }
         for (const item of result) {
             const li = document.createElement('li'); {
                 li.classList.add('item');

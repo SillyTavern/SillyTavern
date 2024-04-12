@@ -251,6 +251,7 @@ let power_user = {
     aux_field: 'character_version',
     stscript: {
         matching: 'fuzzy',
+        autocomplete_style: 'theme',
     },
     restore_user_input: true,
     reduced_motion: false,
@@ -1544,7 +1545,8 @@ function loadPowerUserSettings(settings, data) {
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
-    $('#stscript_matching').val(power_user.stscript.matching);
+    $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
+    $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete_style ?? 'theme');
     $('#restore_user_input').prop('checked', power_user.restore_user_input);
 
     $('#chat_truncation').val(power_user.chat_truncation);
@@ -3423,6 +3425,12 @@ $(document).ready(() => {
     $('#stscript_matching').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.stscript.matching = String(value);
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_autocomplete_style').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.stscript.autocomplete_style = String(value);
         saveSettingsDebounced();
     });
 
