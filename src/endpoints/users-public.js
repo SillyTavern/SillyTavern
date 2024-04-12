@@ -59,7 +59,7 @@ router.post('/login', jsonParser, async (request, response) => {
 
         if (!user) {
             console.log('Login failed: User not found');
-            return response.status(403).json({ error: 'User not found' });
+            return response.status(403).json({ error: 'Incorrect credentials' });
         }
 
         if (!user.enabled) {
@@ -67,10 +67,9 @@ router.post('/login', jsonParser, async (request, response) => {
             return response.status(403).json({ error: 'User is disabled' });
         }
 
-
         if (user.password && user.password !== getPasswordHash(request.body.password, user.salt)) {
             console.log('Login failed: Incorrect password');
-            return response.status(403).json({ error: 'Incorrect password' });
+            return response.status(403).json({ error: 'Incorrect credentials' });
         }
 
         if (!request.session) {
