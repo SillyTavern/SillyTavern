@@ -48,7 +48,7 @@ function isConvertible(type) {
  * @param {number} start Starting message ID
  * @param {number} end Ending message ID (inclusive)
  * @param {boolean} unhide If true, unhide the messages instead.
- * @returns
+ * @returns {void}
  */
 export async function hideChatMessageRange(start, end, unhide) {
     if (!getCurrentChatId()) return;
@@ -73,6 +73,28 @@ export async function hideChatMessageRange(start, end, unhide) {
     showSwipeButtons();
 
     saveChatDebounced();
+}
+
+/**
+ * Mark message as hidden (system message).
+ * @deprecated Use hideChatMessageRange.
+ * @param {number} messageId Message ID
+ * @param {JQuery<Element>} _messageBlock Unused
+ * @returns {void}
+ */
+export async function hideChatMessage(messageId, _messageBlock) {
+    hideChatMessageRange(messageId, messageId, false);
+}
+
+/**
+ * Mark message as visible (non-system message).
+ * @deprecated Use hideChatMessageRange.
+ * @param {number} messageId Message ID
+ * @param {JQuery<Element>} _messageBlock Unused
+ * @returns {void}
+ */
+export async function unhideChatMessage(messageId, _messageBlock) {
+    hideChatMessageRange(messageId, messageId, true);
 }
 
 /**
