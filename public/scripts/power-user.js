@@ -13,7 +13,6 @@ import {
     printCharactersDebounced,
     setCharacterId,
     setEditedMessageId,
-    renderTemplate,
     chat,
     getFirstDisplayedMessageId,
     showMoreMessages,
@@ -39,6 +38,7 @@ import { registerSlashCommand } from './slash-commands.js';
 import { tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
+import { renderTemplateAsync } from './templates.js';
 
 import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 
@@ -1366,8 +1366,8 @@ export function registerDebugFunction(functionId, name, description, func) {
     debug_functions.push({ functionId, name, description, func });
 }
 
-function showDebugMenu() {
-    const template = renderTemplate('debug', { functions: debug_functions });
+async function showDebugMenu() {
+    const template = await renderTemplateAsync('debug', { functions: debug_functions });
     callPopup(template, 'text', '', { wide: true, large: true });
 }
 

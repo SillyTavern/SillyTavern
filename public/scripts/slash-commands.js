@@ -52,6 +52,7 @@ import { textgen_types, textgenerationwebui_settings } from './textgen-settings.
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
 import { debounce, delay, escapeRegex, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
+import { background_settings } from './backgrounds.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
@@ -1629,7 +1630,9 @@ $(document).on('click', '[data-displayHelp]', function (e) {
 
 function setBackgroundCallback(_, bg) {
     if (!bg) {
-        return;
+        // allow reporting of the background name if called without args
+        // for use in ST Scripts via pipe
+        return background_settings.name;
     }
 
     console.log('Set background to ' + bg);

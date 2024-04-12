@@ -108,13 +108,22 @@ export function humanizeGenTime(total_gen_time) {
     return time_spent;
 }
 
-let parsedUA = null;
-try {
-    parsedUA = Bowser.parse(navigator.userAgent);
-} catch {
-    // In case the user agent is an empty string or Bowser can't parse it for some other reason
-}
+/**
+ * DON'T OPTIMIZE, don't change this to a const or let, it needs to be a var.
+ */
+var parsedUA = null;
 
+function getParsedUA() {
+    if (!parsedUA) {
+        try {
+            parsedUA = Bowser.parse(navigator.userAgent);
+        } catch {
+            // In case the user agent is an empty string or Bowser can't parse it for some other reason
+        }
+    }
+
+    return parsedUA;
+}
 
 /**
  * Checks if the device is a mobile device.
@@ -123,7 +132,7 @@ try {
 export function isMobile() {
     const mobileTypes = ['mobile', 'tablet'];
 
-    return mobileTypes.includes(parsedUA?.platform?.type);
+    return mobileTypes.includes(getParsedUA()?.platform?.type);
 }
 
 export function shouldSendOnEnter() {
@@ -275,7 +284,7 @@ export async function favsToHotswap() {
 
     //helpful instruction message if no characters are favorited
     if (favs.length == 0) {
-        container.html('<small><span><i class="fa-solid fa-star"></i> <span data-i18n="Favorite characters to add them to HotSwaps">Favorite characters to add them to HotSwaps</span></span></small>');
+        container.html(`<small><span><i class="fa-solid fa-star"></i>${DOMPurify.sanitize(container.attr('no_favs'))}</span></small>`);
         return;
     }
 
@@ -285,7 +294,8 @@ export async function favsToHotswap() {
 //changes input bar and send button display depending on connection status
 function RA_checkOnlineStatus() {
     if (online_status == 'no_connection') {
-        $('#send_textarea').attr('placeholder', 'Not connected to API!'); //Input bar placeholder tells users they are not connected
+        const send_textarea = $('#send_textarea');
+        send_textarea.attr('placeholder', send_textarea.attr('no_connection_text')); //Input bar placeholder tells users they are not connected
         $('#send_form').addClass('no-connection'); //entire input form area is red when not connected
         $('#send_but').addClass('displayNone'); //send button is hidden when not connected;
         $('#mes_continue').addClass('displayNone'); //continue button is hidden when not connected;
@@ -294,7 +304,8 @@ function RA_checkOnlineStatus() {
         connection_made = false;
     } else {
         if (online_status !== undefined && online_status !== 'no_connection') {
-            $('#send_textarea').attr('placeholder', 'Type a message, or /? for help'); //on connect, placeholder tells user to type message
+            const send_textarea = $('#send_textarea');
+            send_textarea.attr('placeholder', send_textarea.attr('connected_text')); //on connect, placeholder tells user to type message
             $('#send_form').removeClass('no-connection');
             $('#API-status-top').removeClass('fa-plug-circle-exclamation redOverlayGlow');
             $('#API-status-top').addClass('fa-plug');

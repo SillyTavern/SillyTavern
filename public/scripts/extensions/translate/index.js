@@ -509,6 +509,8 @@ const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () =>
 const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
 const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
 
+window['translate'] = translate;
+
 jQuery(() => {
     const html = `
     <div class="translation_settings">
