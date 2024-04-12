@@ -59,7 +59,7 @@ router.post('/login', jsonParser, async (request, response) => {
 
         if (!user) {
             console.log('Login failed: User not found');
-            return response.status(401).json({ error: 'User not found' });
+            return response.status(403).json({ error: 'User not found' });
         }
 
         if (!user.enabled) {
@@ -70,7 +70,7 @@ router.post('/login', jsonParser, async (request, response) => {
 
         if (user.password && user.password !== getPasswordHash(request.body.password, user.salt)) {
             console.log('Login failed: Incorrect password');
-            return response.status(401).json({ error: 'Incorrect password' });
+            return response.status(403).json({ error: 'Incorrect password' });
         }
 
         if (!request.session) {
@@ -159,7 +159,7 @@ router.post('/recover-step2', jsonParser, async (request, response) => {
         if (request.body.code !== mfaCode) {
             await recoverLimiter.consume(ip);
             console.log('Recover step 2 failed: Incorrect code');
-            return response.status(401).json({ error: 'Incorrect code' });
+            return response.status(403).json({ error: 'Incorrect code' });
         }
 
         if (request.body.newPassword) {

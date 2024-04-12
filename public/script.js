@@ -666,13 +666,15 @@ async function getSystemMessages() {
 registerPromptManagerMigration();
 
 $(document).ajaxError(function myErrorHandler(_, xhr) {
+    // Cohee: CSRF doesn't error out in multiple tabs anymore, so this is unnecessary
+    /*
     if (xhr.status == 403) {
         toastr.warning(
             'doubleCsrf errors in console are NORMAL in this case. If you want to run ST in multiple tabs, start the server with --disableCsrf option.',
             'Looks like you\'ve opened SillyTavern in another browser tab',
             { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true },
         );
-    }
+    } */
 });
 
 async function getClientVersion() {

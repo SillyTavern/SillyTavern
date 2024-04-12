@@ -597,6 +597,64 @@ async function viewSettingsSnapshots() {
     renderSnapshots();
 }
 
+/**
+ * Reset everything to default.
+ * @param {function} callback Success callback
+ */
+async function resetEverything(callback) {
+    try {
+        const step1Response = await fetch('/api/users/reset-step1', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+
+        if (!step1Response.ok) {
+            const data = await step1Response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to reset');
+            throw new Error('Failed to reset everything');
+        }
+
+        let password = '';
+        let code = '';
+
+        const template = $(await renderTemplateAsync('userReset'));
+        template.find('input[name="password"]').on('input', function () {
+            password = String($(this).val());
+        });
+        template.find('input[name="code"]').on('input', function () {
+            code = String($(this).val());
+        });
+        const confirm = await callGenericPopup(
+            template,
+            POPUP_TYPE.CONFIRM,
+            '',
+            { okButton: 'Reset', cancelButton: 'Cancel', wide: false, large: false },
+        );
+
+        if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
+            throw new Error('Reset everything cancelled');
+        }
+
+        const step2Response = await fetch('/api/users/reset-step2', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ password, code }),
+        });
+
+        if (!step2Response.ok) {
+            const data = await step2Response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to reset');
+            throw new Error('Failed to reset everything');
+        }
+
+        toastr.success('Everything reset successfully', 'Reset Everything');
+        callback();
+    } catch (error) {
+        console.error('Error resetting everything:', error);
+    }
+
+}
+
 async function openUserProfile() {
     await getCurrentUser();
     const template = $(await renderTemplateAsync('userProfile'));
@@ -624,6 +682,7 @@ async function openUserProfile() {
         });
     });
     template.find('.userResetSettingsButton').on('click', () => resetSettings(currentUser.handle, () => location.reload()));
+    template.find('.userResetAllButton').on('click', () => resetEverything(() => location.reload()));
 
     if (!accountsEnabled) {
         template.find('[data-require-accounts]').hide();

@@ -551,7 +551,7 @@ async function setUserDataMiddleware(request, response, next) {
  */
 function requireLoginMiddleware(request, response, next) {
     if (!request.user) {
-        return response.sendStatus(401);
+        return response.sendStatus(403);
     }
 
     return next();
@@ -583,7 +583,7 @@ function createRouteHandler(directoryFn) {
  */
 function requireAdminMiddleware(request, response, next) {
     if (!request.user) {
-        return response.sendStatus(401);
+        return response.sendStatus(403);
     }
 
     if (request.user.profile.admin) {
