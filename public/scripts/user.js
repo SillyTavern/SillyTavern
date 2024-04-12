@@ -7,6 +7,7 @@ import { humanFileSize } from './utils.js';
  * @type {import('../../src/users.js').UserViewModel} Logged in user
  */
 export let currentUser = null;
+export let accountsEnabled = false;
 
 /**
  * Enable or disable user account controls in the UI.
@@ -14,12 +15,15 @@ export let currentUser = null;
  * @returns {Promise<void>}
  */
 export async function setUserControls(isEnabled) {
+    accountsEnabled = isEnabled;
+
     if (!isEnabled) {
-        $('#account_controls').hide();
+        $('#logout_button').hide();
+        $('#admin_button').hide();
         return;
     }
 
-    $('#account_controls').show();
+    $('#logout_button').show();
     await getCurrentUser();
 }
 
@@ -50,7 +54,7 @@ async function getCurrentUser() {
         }
 
         currentUser = await response.json();
-        $('#admin_button').toggle(isAdmin());
+        $('#admin_button').toggle(accountsEnabled && isAdmin());
     } catch (error) {
         console.error('Error getting current user:', error);
     }
@@ -620,6 +624,11 @@ async function openUserProfile() {
         });
     });
     template.find('.userResetSettingsButton').on('click', () => resetSettings(currentUser.handle, () => location.reload()));
+
+    if (!accountsEnabled) {
+        template.find('[data-require-accounts]').hide();
+        template.find('.accountsDisabledHint').show();
+    }
 
     const popupOptions = {
         okButton: 'Close',
