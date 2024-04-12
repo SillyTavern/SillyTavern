@@ -225,7 +225,11 @@ export class SlashCommandParser {
             this.discardWhitespace();
         }
         while (!this.testClosureEnd()) {
-            if (this.testCommand()) {
+            if (this.testRunShorthand()) {
+                const cmd = this.parseRunShorthand();
+                closure.executorList.push(cmd);
+                injectPipe = true;
+            } else if (this.testCommand()) {
                 const cmd = this.parseCommand();
                 cmd.injectPipe = injectPipe;
                 closure.executorList.push(cmd);
@@ -252,6 +256,39 @@ export class SlashCommandParser {
         this.discardWhitespace(); // discard trailing whitespace
         this.scope = closure.scope.parent;
         return closure;
+    }
+
+    testRunShorthand() {
+        return this.char == '/' && this.behind.slice(-1) != '\\' && this.ahead[0] == ':';
+    }
+    testRunShorthandEnd() {
+        return this.testCommandEnd();
+    }
+    parseRunShorthand() {
+        const start = this.index;
+        const cmd = new SlashCommandExecutor(start);
+        cmd.name = 'run';
+        cmd.value = '';
+        cmd.command = this.commands[cmd.name];
+        this.commandIndex.push(cmd);
+        this.take(2); //discard "/:"
+        while (!/\s/.test(this.char) && !this.testCommandEnd()) cmd.value += this.take(); // take chars until whitespace or end
+        this.discardWhitespace();
+        while (this.testNamedArgument()) {
+            const arg = this.parseNamedArgument();
+            cmd.args[arg.key] = arg.value;
+            this.discardWhitespace();
+        }
+        this.discardWhitespace();
+        // /run shorthand does not take unnamed arguments (the command name practically *is* the unnamed argument)
+        if (this.testCommandEnd()) {
+            cmd.end = this.index;
+            if (!cmd.command?.purgeFromMessage) this.keptText += this.text.slice(cmd.start, cmd.end);
+            return cmd;
+        } else {
+            console.warn(this.behind, this.char, this.ahead);
+            throw new SlashCommandParserError(`Unexpected end of command at position ${this.index - 2}: "/${cmd.name}"`, this.text, this.index);
+        }
     }
 
     testCommand() {
