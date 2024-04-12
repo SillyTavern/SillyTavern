@@ -175,9 +175,13 @@ export class SlashCommandParser {
             console.warn(e);
         }
         index += 2;
-        return this.commandIndex.filter(it=>it.start <= index && (it.end >= index || it.end == null)).slice(-1)[0]
+        const executor = this.commandIndex
+            .filter(it=>it.start <= index && (it.end >= index || it.end == null))
+            .slice(-1)[0]
             ?? null
         ;
+        if (executor && executor.name == ':') return null;
+        return executor;
     }
 
     take(length = 1, keep = false) {
@@ -259,7 +263,7 @@ export class SlashCommandParser {
     }
 
     testRunShorthand() {
-        return this.char == '/' && this.behind.slice(-1) != '\\' && this.ahead[0] == ':';
+        return this.ahead.length > 1 && this.char == '/' && this.behind.slice(-1) != '\\' && this.ahead[0] == ':' && this.ahead[1] != '}';
     }
     testRunShorthandEnd() {
         return this.testCommandEnd();
@@ -267,7 +271,7 @@ export class SlashCommandParser {
     parseRunShorthand() {
         const start = this.index;
         const cmd = new SlashCommandExecutor(start);
-        cmd.name = 'run';
+        cmd.name = ':';
         cmd.value = '';
         cmd.command = this.commands[cmd.name];
         this.commandIndex.push(cmd);
@@ -293,7 +297,7 @@ export class SlashCommandParser {
     }
 
     testCommand() {
-        return this.char == '/' && this.behind.slice(-1) != '\\' && !['/', '#'].includes(this.ahead[0]);
+        return this.char == '/' && this.behind.slice(-1) != '\\' && !['/', '#'].includes(this.ahead[0]) && !(this.ahead[0] == ':' && this.ahead[1] != '}');
     }
     testCommandEnd() {
         return this.testClosureEnd() || this.endOfText || (this.char == '|' && this.behind.slice(-1) != '\\');
