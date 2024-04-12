@@ -272,7 +272,7 @@ export class SlashCommandParser {
         cmd.command = this.commands[cmd.name];
         this.commandIndex.push(cmd);
         this.take(2); //discard "/:"
-        while (!/\s/.test(this.char) && !this.testCommandEnd()) cmd.value += this.take(); // take chars until whitespace or end
+        while (!/\s/.test(this.char) && !this.testRunShorthandEnd()) cmd.value += this.take(); // take chars until whitespace or end
         this.discardWhitespace();
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
