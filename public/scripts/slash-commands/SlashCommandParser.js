@@ -321,7 +321,7 @@ export class SlashCommandParser {
             return cmd;
         } else {
             console.warn(this.behind, this.char, this.ahead);
-            throw new SlashCommandParserError(`Unexpected end of command at position ${this.index - 2}: "/${cmd.command}"`, this.text, this.index);
+            throw new SlashCommandParserError(`Unexpected end of command at position ${this.index - 2}: "/${cmd.name}"`, this.text, this.index);
         }
     }
 
