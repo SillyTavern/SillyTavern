@@ -510,12 +510,8 @@ function evalBoolean(rule, a, b) {
  * @returns {Promise<string>} Pipe result
  */
 async function executeSubCommands(command, scope = null) {
-    if (command.startsWith('"')) {
-        command = command.slice(1);
-    }
-
-    if (command.endsWith('"')) {
-        command = command.slice(0, -1);
+    if (command.startsWith('"') && command.endsWith('"')) {
+        command = command.slice(1, -1);
     }
 
     const result = await executeSlashCommands(command, true, scope);
