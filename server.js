@@ -100,7 +100,7 @@ const cliArguments = yargs(hideBin(process.argv))
         describe: 'Path to your private key file.',
     }).option('whitelist', {
         type: 'boolean',
-        default: false,
+        default: null,
         describe: 'Enables whitelist mode',
     }).option('dataRoot', {
         type: 'string',
