@@ -387,7 +387,11 @@ export class SlashCommandParser {
         return this.char == '"' && this.behind.slice(-1) != '\\';
     }
     testQuotedValueEnd() {
-        if (this.endOfText) throw new SlashCommandParserError(`Unexpected end of quoted value at position ${this.index}`, this.text, this.index);
+        if (this.endOfText) {
+            if (this.verifyCommandNames) throw new SlashCommandParserError(`Unexpected end of quoted value at position ${this.index}`, this.text, this.index);
+            else return true;
+        }
+        if (!this.verifyCommandNames && this.char == ':' && this.ahead == '}') return true;
         return this.char == '"' && this.behind.slice(-1) != '\\';
     }
     parseQuotedValue() {
