@@ -211,7 +211,7 @@ export class SlashCommandParser {
     }
 
     testClosure() {
-        return this.ahead.length > 0 && this.char == '{' && this.ahead[0] == ':';
+        return this.ahead.length > 0 && this.char == '{' && this.ahead[0] == ':' && this.behind.slice(-1) != '\\';
     }
     testClosureEnd() {
         if (this.ahead.length < 1) throw new SlashCommandParserError(`Unclosed closure at position ${this.index - 2}`, this.text, this.index);
@@ -395,7 +395,7 @@ export class SlashCommandParser {
         let value = '';
         while (!this.testQuotedValueEnd()) value += this.take(); // take all chars until closing quote
         this.take(); // discard closing quote
-        return value;
+        return value.replace(/\\(")/g, '$1');
     }
 
     testListValue() {
@@ -409,19 +409,19 @@ export class SlashCommandParser {
         let value = '';
         while (!this.testListValueEnd()) value += this.take(); // take all chars until closing bracket
         value += this.take(); // take closing bracket
-        return value;
+        return value.replace(/\\([[\]])/g, '$1');
     }
 
     testValue() {
         return !/\s/.test(this.char);
     }
     testValueEnd() {
-        if (/\s/.test(this.char)) return true;
+        if (/\s/.test(this.char) && this.behind.slice(-1) != '\\') return true;
         return this.testCommandEnd();
     }
     parseValue() {
         let value = '';
         while (!this.testValueEnd()) value += this.take(); // take all chars until value end
-        return value;
+        return value.replace(/\\([\s{:])/g, '$1');
     }
 }
