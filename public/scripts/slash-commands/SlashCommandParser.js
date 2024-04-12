@@ -272,7 +272,8 @@ export class SlashCommandParser {
         cmd.command = this.commands[cmd.name];
         this.commandIndex.push(cmd);
         this.take(2); //discard "/:"
-        while (!/\s/.test(this.char) && !this.testRunShorthandEnd()) cmd.value += this.take(); // take chars until whitespace or end
+        if (this.testQuotedValue()) cmd.value = this.parseQuotedValue();
+        else cmd.value = this.parseValue();
         this.discardWhitespace();
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
@@ -281,7 +282,7 @@ export class SlashCommandParser {
         }
         this.discardWhitespace();
         // /run shorthand does not take unnamed arguments (the command name practically *is* the unnamed argument)
-        if (this.testCommandEnd()) {
+        if (this.testRunShorthandEnd()) {
             cmd.end = this.index;
             if (!cmd.command?.purgeFromMessage) this.keptText += this.text.slice(cmd.start, cmd.end);
             return cmd;
