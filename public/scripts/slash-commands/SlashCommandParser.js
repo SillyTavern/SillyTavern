@@ -300,8 +300,8 @@ export class SlashCommandParser {
     parseCommand() {
         const start = this.index;
         const cmd = new SlashCommandExecutor(start);
-        this.take(); // discard "/"
         this.commandIndex.push(cmd);
+        this.take(); // discard "/"
         while (!/\s/.test(this.char) && !this.testCommandEnd()) cmd.name += this.take(); // take chars until whitespace or end
         this.discardWhitespace();
         if (this.verifyCommandNames && !this.commands[cmd.name]) throw new SlashCommandParserError(`Unknown command at position ${this.index - cmd.name.length - 2}: "/${cmd.name}"`, this.text, this.index - cmd.name.length);
