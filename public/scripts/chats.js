@@ -48,7 +48,7 @@ function isConvertible(type) {
  * @param {number} start Starting message ID
  * @param {number} end Ending message ID (inclusive)
  * @param {boolean} unhide If true, unhide the messages instead.
- * @returns {void}
+ * @returns {Promise<void>}
  */
 export async function hideChatMessageRange(start, end, unhide) {
     if (!getCurrentChatId()) return;
@@ -80,10 +80,10 @@ export async function hideChatMessageRange(start, end, unhide) {
  * @deprecated Use hideChatMessageRange.
  * @param {number} messageId Message ID
  * @param {JQuery<Element>} _messageBlock Unused
- * @returns {void}
+ * @returns {Promise<void>}
  */
 export async function hideChatMessage(messageId, _messageBlock) {
-    hideChatMessageRange(messageId, messageId, false);
+    return hideChatMessageRange(messageId, messageId, false);
 }
 
 /**
@@ -91,10 +91,10 @@ export async function hideChatMessage(messageId, _messageBlock) {
  * @deprecated Use hideChatMessageRange.
  * @param {number} messageId Message ID
  * @param {JQuery<Element>} _messageBlock Unused
- * @returns {void}
+ * @returns {Promise<void>}
  */
 export async function unhideChatMessage(messageId, _messageBlock) {
-    hideChatMessageRange(messageId, messageId, true);
+    return hideChatMessageRange(messageId, messageId, true);
 }
 
 /**
@@ -480,7 +480,7 @@ jQuery(function () {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        await hideChatMessageRange(messageId);
+        await hideChatMessageRange(messageId, messageId, false);
     });
 
     $(document).on('click', '.mes_unhide', async function () {
