@@ -8,9 +8,9 @@ import { SlashCommandScope } from './SlashCommandScope.js';
 
 export class SlashCommandParser {
     // @ts-ignore
-    /**@type {Map<String, SlashCommand>}*/ commands = {};
+    /**@type {Object.<string, SlashCommand>}*/ commands = {};
     // @ts-ignore
-    /**@type {Map<String, String>}*/ helpStrings = {};
+    /**@type {Object.<string, string>}*/ helpStrings = {};
     /**@type {Boolean}*/ verifyCommandNames = true;
     /**@type {String}*/ text;
     /**@type {String}*/ keptText;
