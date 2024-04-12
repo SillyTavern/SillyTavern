@@ -520,6 +520,8 @@ const setupTasks = async function () {
 
     if (autorun) open(autorunUrl.toString());
 
+    console.log(String.fromCharCode(27) + "]0;SillyTavern WebServer" + String.fromCharCode(7)); // set window title
+
     console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
 
     if (listen) {
