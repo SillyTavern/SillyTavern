@@ -122,7 +122,7 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
         }
 
         const basePath = path.parse(contentItem.filename).base;
-        const targetPath = path.join(process.cwd(), contentTarget, basePath);
+        const targetPath = path.join(contentTarget, basePath);
 
         if (fs.existsSync(targetPath)) {
             console.log(`Content file ${contentItem.filename} already exists in ${contentTarget}`);

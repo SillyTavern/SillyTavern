@@ -15,9 +15,14 @@ const { getConfigValue, color, delay, setConfigValue, generateTimestamp } = requ
 const { readSecret, writeSecret } = require('./endpoints/secrets');
 
 const KEY_PREFIX = 'user:';
-const DATA_ROOT = getConfigValue('dataRoot', './data');
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
+
+/**
+ * The root directory for user data.
+ * @type {string}
+ */
+let DATA_ROOT = './data';
 
 /**
  * Cache for user directories.
@@ -312,9 +317,13 @@ function toKey(handle) {
 
 /**
  * Initializes the user storage. Currently a no-op.
+ * @param {string} dataRoot The root directory for user data
  * @returns {Promise<void>}
  */
-async function initUserStorage() {
+async function initUserStorage(dataRoot) {
+    DATA_ROOT = dataRoot;
+    console.log('Using data root:', color.green(DATA_ROOT));
+    console.log();
     await storage.init({
         dir: path.join(DATA_ROOT, '_storage'),
         ttl: true,

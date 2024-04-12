@@ -102,6 +102,10 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'boolean',
         default: false,
         describe: 'Enables whitelist mode',
+    }).option('dataRoot', {
+        type: 'string',
+        default: null,
+        describe: 'Root directory for data storage',
     }).parseSync();
 
 // change all relative paths
@@ -121,6 +125,7 @@ const autorun = (cliArguments.autorun ?? getConfigValue('autorun', DEFAULT_AUTOR
 const listen = cliArguments.listen ?? getConfigValue('listen', DEFAULT_LISTEN);
 const enableCorsProxy = cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', DEFAULT_CORS_PROXY);
 const enableWhitelist = cliArguments.whitelist ?? getConfigValue('whitelistMode', DEFAULT_WHITELIST);
+const dataRoot = cliArguments.dataRoot ?? getConfigValue('dataRoot', './data');
 const basicAuthMode = getConfigValue('basicAuthMode', false);
 const enableAccounts = getConfigValue('enableUserAccounts', false);
 
@@ -526,7 +531,7 @@ const setupTasks = async function () {
 
     // TODO: do endpoint init functions depend on certain directories existing or not existing? They should be callable
     // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
-    await userModule.initUserStorage();
+    await userModule.initUserStorage(dataRoot);
     await settingsEndpoint.init();
     const directories = await userModule.ensurePublicDirectoriesExist();
     await userModule.migrateUserData();

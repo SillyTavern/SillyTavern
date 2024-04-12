@@ -1,5 +1,7 @@
 const fs = require('fs');
+const fsPromises = require('fs').promises;
 const path = require('path');
+const mime = require('mime-types');
 const express = require('express');
 const sanitize = require('sanitize-filename');
 const jimp = require('jimp');
@@ -165,38 +167,63 @@ const router = express.Router();
 
 // Important: This route must be mounted as '/thumbnail'. It is used in the client code and saved to chat files.
 router.get('/', jsonParser, async function (request, response) {
-    if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') return response.sendStatus(400);
+    try{
+        if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') {
+            return response.sendStatus(400);
+        }
 
-    const type = request.query.type;
-    const file = sanitize(request.query.file);
+        const type = request.query.type;
+        const file = sanitize(request.query.file);
 
-    if (!type || !file) {
-        return response.sendStatus(400);
+        if (!type || !file) {
+            return response.sendStatus(400);
+        }
+
+        if (!(type == 'bg' || type == 'avatar')) {
+            return response.sendStatus(400);
+        }
+
+        if (sanitize(file) !== file) {
+            console.error('Malicious filename prevented');
+            return response.sendStatus(403);
+        }
+
+        const thumbnailsDisabled = getConfigValue('disableThumbnails', false);
+        if (thumbnailsDisabled) {
+            const folder = getOriginalFolder(request.user.directories, type);
+
+            if (folder === undefined) {
+                return response.sendStatus(400);
+            }
+
+            const pathToOriginalFile = path.join(folder, file);
+            if (!fs.existsSync(pathToOriginalFile)) {
+                return response.sendStatus(404);
+            }
+            const contentType = mime.lookup(pathToOriginalFile) || 'image/png';
+            const originalFile = await fsPromises.readFile(pathToOriginalFile);
+            response.setHeader('Content-Type', contentType);
+            return response.send(originalFile);
+        }
+
+        const pathToCachedFile = await generateThumbnail(request.user.directories, type, file);
+
+        if (!pathToCachedFile) {
+            return response.sendStatus(404);
+        }
+
+        if (!fs.existsSync(pathToCachedFile)) {
+            return response.sendStatus(404);
+        }
+
+        const contentType = mime.lookup(pathToCachedFile) || 'image/jpeg';
+        const cachedFile = await fsPromises.readFile(pathToCachedFile);
+        response.setHeader('Content-Type', contentType);
+        return response.send(cachedFile);
+    } catch (error) {
+        console.error('Failed getting thumbnail', error);
+        return response.sendStatus(500);
     }
-
-    if (!(type == 'bg' || type == 'avatar')) {
-        return response.sendStatus(400);
-    }
-
-    if (sanitize(file) !== file) {
-        console.error('Malicious filename prevented');
-        return response.sendStatus(403);
-    }
-
-    if (getConfigValue('disableThumbnails', false) == true) {
-        let folder = getOriginalFolder(request.user.directories, type);
-        if (folder === undefined) return response.sendStatus(400);
-        const pathToOriginalFile = path.join(folder, file);
-        return response.sendFile(pathToOriginalFile, { root: process.cwd() });
-    }
-
-    const pathToCachedFile = await generateThumbnail(request.user.directories, type, file);
-
-    if (!pathToCachedFile) {
-        return response.sendStatus(404);
-    }
-
-    return response.sendFile(pathToCachedFile, { root: process.cwd() });
 });
 
 module.exports = {

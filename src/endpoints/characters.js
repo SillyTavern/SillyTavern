@@ -1,11 +1,13 @@
 const path = require('path');
 const fs = require('fs');
+const fsPromises = require('fs').promises;
 const readline = require('readline');
 const express = require('express');
 const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const yaml = require('yaml');
 const _ = require('lodash');
+const mime = require('mime-types');
 
 const jimp = require('jimp');
 
@@ -1078,33 +1080,43 @@ router.post('/duplicate', jsonParser, async function (request, response) {
 });
 
 router.post('/export', jsonParser, async function (request, response) {
-    if (!request.body.format || !request.body.avatar_url) {
-        return response.sendStatus(400);
-    }
+    try {
+        if (!request.body.format || !request.body.avatar_url) {
+            return response.sendStatus(400);
+        }
 
-    let filename = path.join(request.user.directories.characters, sanitize(request.body.avatar_url));
+        let filename = path.join(request.user.directories.characters, sanitize(request.body.avatar_url));
 
-    if (!fs.existsSync(filename)) {
-        return response.sendStatus(404);
-    }
+        if (!fs.existsSync(filename)) {
+            return response.sendStatus(404);
+        }
 
-    switch (request.body.format) {
-        case 'png':
-            return response.sendFile(filename, { root: process.cwd() });
-        case 'json': {
-            try {
-                let json = await readCharacterData(filename);
-                if (json === undefined) return response.sendStatus(400);
-                let jsonObject = getCharaCardV2(JSON.parse(json), request.user.directories);
-                return response.type('json').send(JSON.stringify(jsonObject, null, 4));
+        switch (request.body.format) {
+            case 'png': {
+                const fileContent = await fsPromises.readFile(filename);
+                const contentType = mime.lookup(filename) || 'image/png';
+                response.setHeader('Content-Type', contentType);
+                response.setHeader('Content-Disposition', `attachment; filename=${path.basename(filename)}`);
+                return response.send(fileContent);
             }
-            catch {
-                return response.sendStatus(400);
+            case 'json': {
+                try {
+                    let json = await readCharacterData(filename);
+                    if (json === undefined) return response.sendStatus(400);
+                    let jsonObject = getCharaCardV2(JSON.parse(json), request.user.directories);
+                    return response.type('json').send(JSON.stringify(jsonObject, null, 4));
+                }
+                catch {
+                    return response.sendStatus(400);
+                }
             }
         }
-    }
 
-    return response.sendStatus(400);
+        return response.sendStatus(400);
+    } catch (err) {
+        console.error('Character export failed', err);
+        response.sendStatus(500);
+    }
 });
 
 module.exports = { router };

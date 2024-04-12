@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const mime = require('mime-types');
 const express = require('express');
 const sanitize = require('sanitize-filename');
 const fetch = require('node-fetch').default;
@@ -216,9 +217,11 @@ router.post('/download', jsonParser, async (request, response) => {
         await finished(res.body.pipe(fileStream));
 
         if (category === 'character') {
-            response.sendFile(temp_path, { root: process.cwd() }, () => {
-                fs.rmSync(temp_path);
-            });
+            const fileContent = fs.readFileSync(temp_path);
+            const contentType = mime.lookup(temp_path) || 'application/octet-stream';
+            response.setHeader('Content-Type', contentType);
+            response.send(fileContent);
+            fs.rmSync(temp_path);
             return;
         }
 
