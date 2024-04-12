@@ -630,6 +630,26 @@ async function createBackupArchive(handle, response) {
     archive.finalize();
 }
 
+async function checkAccountsProtection() {
+    if (!ENABLE_ACCOUNTS) {
+        return;
+    }
+
+    /**
+     * @type {User[]}
+     */
+    const users = await storage.values();
+    const unprotectedUsers = users.filter(x => x.enabled && x.admin && !x.password);
+    if (unprotectedUsers.length > 0) {
+        console.warn(color.red('The following admin users are not password protected:'));
+        unprotectedUsers.forEach(x => console.warn(color.yellow(x.handle)));
+        console.log();
+        console.warn('Please disable them or set a password in the admin panel.');
+        console.log();
+        await delay(3000);
+    }
+}
+
 /**
  * Express router for serving files from the user's directories.
  */
@@ -662,5 +682,6 @@ module.exports = {
     shouldRedirectToLogin,
     createBackupArchive,
     tryAutoLogin,
+    checkAccountsProtection,
     router,
 };

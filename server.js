@@ -532,6 +532,11 @@ const setupTasks = async function () {
     // TODO: do endpoint init functions depend on certain directories existing or not existing? They should be callable
     // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
     await userModule.initUserStorage(dataRoot);
+
+    if (listen && !basicAuthMode && enableAccounts) {
+        await userModule.checkAccountsProtection();
+    }
+
     await settingsEndpoint.init();
     const directories = await userModule.ensurePublicDirectoriesExist();
     await userModule.migrateUserData();
