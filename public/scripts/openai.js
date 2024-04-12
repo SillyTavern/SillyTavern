@@ -2264,7 +2264,7 @@ export class ChatCompletion {
 
             const shouldSquash = (message) => {
                 return !excludeList.includes(message.identifier) && message.role === 'system' && !message.name;
-            }
+            };
 
             if (shouldSquash(message)) {
                 if (lastMessage && shouldSquash(lastMessage)) {
