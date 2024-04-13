@@ -4,7 +4,7 @@ const storage = require('node-persist');
 const express = require('express');
 const crypto = require('crypto');
 const { jsonParser } = require('../express-common');
-const { getUserAvatar, toKey, getPasswordHash, getPasswordSalt, createBackupArchive, ensurePublicDirectoriesExist } = require('../users');
+const { getUserAvatar, toKey, getPasswordHash, getPasswordSalt, createBackupArchive, ensurePublicDirectoriesExist, toAvatarKey } = require('../users');
 const { SETTINGS_FILE } = require('../constants');
 const contentManager = require('./content-manager');
 const { color, Cache } = require('../util');
@@ -39,13 +39,48 @@ router.get('/me', async (request, response) => {
         const viewModel = {
             handle: user.handle,
             name: user.name,
-            avatar: getUserAvatar(user.handle),
+            avatar: await getUserAvatar(user.handle),
             admin: user.admin,
             password: !!user.password,
             created: user.created,
         };
 
         return response.json(viewModel);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/change-avatar', jsonParser, async (request, response) => {
+    try {
+        if (!request.body.handle) {
+            console.log('Change avatar failed: Missing required fields');
+            return response.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (request.body.handle !== request.user.profile.handle && !request.user.profile.admin) {
+            console.log('Change avatar failed: Unauthorized');
+            return response.status(403).json({ error: 'Unauthorized' });
+        }
+
+        // Avatar is not a data URL or not an empty string
+        if (!request.body.avatar.startsWith('data:image/') && request.body.avatar !== '') {
+            console.log('Change avatar failed: Invalid data URL');
+            return response.status(400).json({ error: 'Invalid data URL' });
+        }
+
+        /** @type {import('../users').User} */
+        const user = await storage.getItem(toKey(request.body.handle));
+
+        if (!user) {
+            console.log('Change avatar failed: User not found');
+            return response.status(404).json({ error: 'User not found' });
+        }
+
+        await storage.setItem(toAvatarKey(request.body.handle), request.body.avatar);
+
+        return response.sendStatus(204);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
@@ -185,7 +220,7 @@ router.post('/reset-step1', jsonParser, async (request, response) => {
 });
 
 router.post('/reset-step2', jsonParser, async (request, response) => {
-    try{
+    try {
         if (!request.body.code) {
             console.log('Recover step 2 failed: Missing required fields');
             return response.status(400).json({ error: 'Missing required fields' });

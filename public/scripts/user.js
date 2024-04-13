@@ -1,7 +1,7 @@
-import { getRequestHeaders } from '../script.js';
+import { callPopup, getCropPopup, getRequestHeaders } from '../script.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { renderTemplateAsync } from './templates.js';
-import { humanFileSize } from './utils.js';
+import { ensureImageFormatSupported, getBase64Async, humanFileSize } from './utils.js';
 
 /**
  * @type {import('../../src/users.js').UserViewModel} Logged in user
@@ -683,6 +683,26 @@ async function openUserProfile() {
     });
     template.find('.userResetSettingsButton').on('click', () => resetSettings(currentUser.handle, () => location.reload()));
     template.find('.userResetAllButton').on('click', () => resetEverything(() => location.reload()));
+    template.find('.userAvatarChange').on('click', () => template.find('.avatarUpload').trigger('click'));
+    template.find('.avatarUpload').on('change', async function () {
+        if (!(this instanceof HTMLInputElement)) {
+            return;
+        }
+
+        const file = this.files[0];
+        if (!file) {
+            return;
+        }
+
+        await cropAndUploadAvatar(currentUser.handle, file);
+        await getCurrentUser();
+        template.find('.avatar img').attr('src', currentUser.avatar);
+    });
+    template.find('.userAvatarRemove').on('click', async function () {
+        await changeAvatar(currentUser.handle, '');
+        await getCurrentUser();
+        template.find('.avatar img').attr('src', currentUser.avatar);
+    });
 
     if (!accountsEnabled) {
         template.find('[data-require-accounts]').hide();
@@ -697,6 +717,48 @@ async function openUserProfile() {
         allowHorizontalScrolling: false,
     };
     callGenericPopup(template, POPUP_TYPE.TEXT, '', popupOptions);
+}
+
+/**
+ * Crop and upload an avatar image.
+ * @param {string} handle User handle
+ * @param {File} file Avatar file
+ * @returns {Promise<string>}
+ */
+async function cropAndUploadAvatar(handle, file) {
+    const dataUrl = await getBase64Async(await ensureImageFormatSupported(file));
+    const croppedImage = await callPopup(getCropPopup(dataUrl), 'avatarToCrop', '', { cropAspect: 1 });
+    if (!croppedImage) {
+        return;
+    }
+
+    await changeAvatar(handle, String(croppedImage));
+
+    return croppedImage;
+}
+
+/**
+ * Change the avatar of the user.
+ * @param {string} handle User handle
+ * @param {string} avatar File to upload or base64 string
+ * @returns {Promise<void>} Avatar URL
+ */
+async function changeAvatar(handle, avatar) {
+    try {
+        const response = await fetch('/api/users/change-avatar', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ avatar, handle }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            toastr.error(data.error || 'Unknown error', 'Failed to change avatar');
+            return;
+        }
+    } catch (error) {
+        console.error('Error changing avatar:', error);
+    }
 }
 
 async function openAdminPanel() {
@@ -723,6 +785,24 @@ async function openAdminPanel() {
             userBlock.find('.userBackupButton').on('click', function () {
                 $(this).addClass('disabled').off('click');
                 backupUserData(user.handle, renderUsers);
+            });
+            userBlock.find('.userAvatarChange').on('click', () => userBlock.find('.avatarUpload').trigger('click'));
+            userBlock.find('.avatarUpload').on('change', async function () {
+                if (!(this instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                const file = this.files[0];
+                if (!file) {
+                    return;
+                }
+
+                await cropAndUploadAvatar(user.handle, file);
+                renderUsers();
+            });
+            userBlock.find('.userAvatarRemove').on('click', async function () {
+                await changeAvatar(user.handle, '');
+                renderUsers();
             });
             template.find('.usersList').append(userBlock);
         }

@@ -98,6 +98,14 @@
     justify-content: space-between;
 }
 
+.justifySpaceEvenly {
+    justify-content: space-evenly;
+}
+
+.justifySpaceAround {
+    justify-content: space-around;
+}
+
 .alignitemsflexstart {
     align-items: flex-start !important;
 }

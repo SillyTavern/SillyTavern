@@ -9,10 +9,21 @@
     </nav>
     <div class="userAccountTemplate template_element">
         <div class="flex-container userAccount alignItemsCenter flexGap10">
-            <div>
-                <div class="avatar">
+            <div class="flex-container flexFlowColumn alignItemsCenter flexNoGap">
+                <div class="avatar" title="If a custom avatar is not set, the user's default persona image will be displayed.">
                     <img src="img/ai4.png" alt="avatar">
                 </div>
+                <div class="flex-container alignItemsCenter">
+                    <div class="userAvatarChange right_menu_button" title="Set a custom avatar.">
+                        <i class="fa-fw fa-solid fa-image"></i>
+                    </div>
+                    <div class="userAvatarRemove right_menu_button" title="Remove a custom avatar.">
+                        <i class="fa-fw fa-solid fa-trash"></i>
+                    </div>
+                </div>
+                <form>
+                    <input type="file" class="avatarUpload" accept="image/*" hidden>
+                </form>
             </div>
             <div class="flex1 flex-container flexFlowColumn flexNoGap justifyLeft">
                 <div class="flex-container flexGap10 alignItemsCenter">

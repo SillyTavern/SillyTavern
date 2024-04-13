@@ -7073,10 +7073,10 @@ function onScenarioOverrideRemoveClick() {
  * @param {string} type
  * @param {string} inputValue - Value to set the input to.
  * @param {PopupOptions} options - Options for the popup.
- * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean }} PopupOptions - Options for the popup.
+ * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean, cropAspect?: number }} PopupOptions - Options for the popup.
  * @returns
  */
-function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
+function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
     dialogueCloseStop = true;
     if (type) {
         popup_type = type;
@@ -7133,7 +7133,7 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, a
         crop_data = undefined;
 
         $('#avatarToCrop').cropper({
-            aspectRatio: 2 / 3,
+            aspectRatio: cropAspect ?? 2 / 3,
             autoCropArea: 1,
             viewMode: 2,
             rotatable: false,

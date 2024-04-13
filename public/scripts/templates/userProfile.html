@@ -15,10 +15,21 @@
             Account Info
         </h3>
         <div class="flex-container flexGap10">
-            <div>
-                <div class="avatar" title="To change your user avatar, select a default persona in the Persona Management menu.">
+            <div class="flex-container flexFlowColumn alignItemsCenter flexNoGap">
+                <div class="avatar" title="To change your user avatar, use the buttons below or select a default persona in the Persona Management menu.">
                     <img src="img/ai4.png" alt="avatar">
                 </div>
+                <div class="flex-container alignItemsCenter">
+                    <div class="userAvatarChange right_menu_button" title="Set your custom avatar.">
+                        <i class="fa-fw fa-solid fa-image"></i>
+                    </div>
+                    <div class="userAvatarRemove right_menu_button" title="Remove your custom avatar.">
+                        <i class="fa-fw fa-solid fa-trash"></i>
+                    </div>
+                </div>
+                <form>
+                    <input type="file" class="avatarUpload" accept="image/*" hidden>
+                </form>
             </div>
             <div class="flex1 flex-container flexGap10">
                 <div class="flex-container flexFlowColumn">

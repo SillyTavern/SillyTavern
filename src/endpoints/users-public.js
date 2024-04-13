@@ -27,16 +27,24 @@ router.post('/list', async (_request, response) => {
 
         /** @type {import('../users').User[]} */
         const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
-        const viewModels = users
+
+        /** @type {Promise<import('../users').UserViewModel>[]} */
+        const viewModelPromises = users
             .filter(x => x.enabled)
-            .sort((x, y) => x.created - y.created)
-            .map(user => ({
-                handle: user.handle,
-                name: user.name,
-                avatar: getUserAvatar(user.handle),
-                password: !!user.password,
+            .map(user => new Promise(async (resolve) => {
+                getUserAvatar(user.handle).then(avatar =>
+                    resolve({
+                        handle: user.handle,
+                        name: user.name,
+                        created: user.created,
+                        avatar: avatar,
+                        password: !!user.password,
+                    }),
+                );
             }));
 
+        const viewModels = await Promise.all(viewModelPromises);
+        viewModels.sort((x, y) => (x.created ?? 0) - (y.created ?? 0));
         return response.json(viewModels);
     } catch (error) {
         console.error('User list failed:', error);
