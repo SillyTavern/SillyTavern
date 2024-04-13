@@ -107,6 +107,13 @@ export class Popup {
             // illegal argument
         }
 
+        this.input.addEventListener('keydown', (evt)=>{
+            if (evt.key != 'Enter' || evt.altKey || evt.ctrlKey || evt.shiftKey) return;
+            evt.preventDefault();
+            evt.stopPropagation();
+            this.completeAffirmative();
+        });
+
         this.ok.addEventListener('click', ()=>this.completeAffirmative());
         this.cancel.addEventListener('click', ()=>this.completeNegative());
         const keyListener = (evt)=>{
