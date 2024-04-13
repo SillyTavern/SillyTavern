@@ -499,11 +499,14 @@ const setupTasks = async function () {
 
     const cleanupPlugins = await loadPlugins();
 
+    const BackUpTitle = process.title;
+
     const exitProcess = async () => {
         statsEndpoint.onExit();
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
         }
+        setWindowTitle(BackUpTitle);
         process.exit();
     };
 
@@ -520,7 +523,7 @@ const setupTasks = async function () {
 
     if (autorun) open(autorunUrl.toString());
 
-    console.log(String.fromCharCode(27) + "]0;SillyTavern WebServer" + String.fromCharCode(7)); // set window title
+    setWindowTitle('SillyTavern WebServer');
 
     console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
 
@@ -588,4 +591,11 @@ function ensurePublicDirectoriesExist() {
             fs.mkdirSync(dir, { recursive: true });
         }
     }
+}
+
+function setWindowTitle(title) {
+    if (process.platform == 'win32')
+        process.title = title
+    else
+        process.stdout.write('\x1b]2;' + title + '\x1b\x5c')
 }
