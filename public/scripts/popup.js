@@ -226,7 +226,7 @@ export function callGenericPopup(text, type, inputValue = '', { okButton, cancel
         text,
         type,
         inputValue,
-        { okButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling },
+        { okButton, cancelButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling },
     );
     return popup.show();
 }
