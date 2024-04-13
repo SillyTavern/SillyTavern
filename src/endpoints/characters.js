@@ -876,7 +876,7 @@ router.post('/all', jsonParser, async function (request, response) {
         const files = fs.readdirSync(request.user.directories.characters);
         const pngFiles = files.filter(file => file.endsWith('.png'));
         const processingPromises = pngFiles.map(file => processCharacter(file, request.user.directories));
-        const data = await Promise.all(processingPromises);
+        const data = (await Promise.all(processingPromises)).filter(c => c.name);
         return response.send(data);
     } catch (err) {
         console.error(err);
