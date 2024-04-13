@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 // native node modules
-const crypto = require('crypto');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
@@ -19,8 +18,10 @@ const doubleCsrf = require('csrf-csrf').doubleCsrf;
 const express = require('express');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const multer = require('multer');
 const responseTime = require('response-time');
+const helmet = require('helmet').default;
 
 // net related library imports
 const net = require('net');
@@ -33,6 +34,7 @@ util.inspect.defaultOptions.maxStringLength = null;
 util.inspect.defaultOptions.depth = 4;
 
 // local library imports
+const userModule = require('./src/users');
 const basicAuthMiddleware = require('./src/middleware/basicAuth');
 const whitelistMiddleware = require('./src/middleware/whitelist');
 const contentManager = require('./src/endpoints/content-manager');
@@ -60,6 +62,7 @@ const DEFAULT_PORT = 8000;
 const DEFAULT_AUTORUN = false;
 const DEFAULT_LISTEN = false;
 const DEFAULT_CORS_PROXY = false;
+const DEFAULT_WHITELIST = true;
 
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
@@ -95,6 +98,14 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'string',
         default: 'certs/privkey.pem',
         describe: 'Path to your private key file.',
+    }).option('whitelist', {
+        type: 'boolean',
+        default: null,
+        describe: 'Enables whitelist mode',
+    }).option('dataRoot', {
+        type: 'string',
+        default: null,
+        describe: 'Root directory for data storage',
     }).parseSync();
 
 // change all relative paths
@@ -103,6 +114,9 @@ const serverDirectory = __dirname;
 process.chdir(serverDirectory);
 
 const app = express();
+app.use(helmet({
+    contentSecurityPolicy: false,
+}));
 app.use(compression());
 app.use(responseTime());
 
@@ -110,9 +124,12 @@ const server_port = cliArguments.port ?? process.env.SILLY_TAVERN_PORT ?? getCon
 const autorun = (cliArguments.autorun ?? getConfigValue('autorun', DEFAULT_AUTORUN)) && !cliArguments.ssl;
 const listen = cliArguments.listen ?? getConfigValue('listen', DEFAULT_LISTEN);
 const enableCorsProxy = cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', DEFAULT_CORS_PROXY);
+const enableWhitelist = cliArguments.whitelist ?? getConfigValue('whitelistMode', DEFAULT_WHITELIST);
+const dataRoot = cliArguments.dataRoot ?? getConfigValue('dataRoot', './data');
 const basicAuthMode = getConfigValue('basicAuthMode', false);
+const enableAccounts = getConfigValue('enableUserAccounts', false);
 
-const { DIRECTORIES, UPLOADS_PATH } = require('./src/constants');
+const { UPLOADS_PATH } = require('./src/constants');
 
 // CORS Settings //
 const CORS = cors({
@@ -124,41 +141,7 @@ app.use(CORS);
 
 if (listen && basicAuthMode) app.use(basicAuthMiddleware);
 
-app.use(whitelistMiddleware(listen));
-
-// CSRF Protection //
-if (!cliArguments.disableCsrf) {
-    const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
-    const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
-
-    const { generateToken, doubleCsrfProtection } = doubleCsrf({
-        getSecret: () => CSRF_SECRET,
-        cookieName: 'X-CSRF-Token',
-        cookieOptions: {
-            httpOnly: true,
-            sameSite: 'strict',
-            secure: false,
-        },
-        size: 64,
-        getTokenFromRequest: (req) => req.headers['x-csrf-token'],
-    });
-
-    app.get('/csrf-token', (req, res) => {
-        res.json({
-            'token': generateToken(res, req),
-        });
-    });
-
-    app.use(cookieParser(COOKIES_SECRET));
-    app.use(doubleCsrfProtection);
-} else {
-    console.warn('\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n');
-    app.get('/csrf-token', (req, res) => {
-        res.json({
-            'token': 'disabled',
-        });
-    });
-}
+app.use(whitelistMiddleware(enableWhitelist, listen));
 
 if (enableCorsProxy) {
     const bodyParser = require('body-parser');
@@ -210,34 +193,94 @@ if (enableCorsProxy) {
     });
 }
 
+app.use(cookieSession({
+    name: userModule.getCookieSessionName(),
+    sameSite: 'strict',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    secret: userModule.getCookieSecret(),
+}));
+
+app.use(userModule.setUserDataMiddleware);
+
+// CSRF Protection //
+if (!cliArguments.disableCsrf) {
+    const COOKIES_SECRET = userModule.getCookieSecret();
+
+    const { generateToken, doubleCsrfProtection } = doubleCsrf({
+        getSecret: userModule.getCsrfSecret,
+        cookieName: 'X-CSRF-Token',
+        cookieOptions: {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: false,
+        },
+        size: 64,
+        getTokenFromRequest: (req) => req.headers['x-csrf-token'],
+    });
+
+    app.get('/csrf-token', (req, res) => {
+        res.json({
+            'token': generateToken(res, req),
+        });
+    });
+
+    app.use(cookieParser(COOKIES_SECRET));
+    app.use(doubleCsrfProtection);
+} else {
+    console.warn('\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n');
+    app.get('/csrf-token', (req, res) => {
+        res.json({
+            'token': 'disabled',
+        });
+    });
+}
+
+// Static files
+// Host index page
+app.get('/', (request, response) => {
+    if (userModule.shouldRedirectToLogin(request)) {
+        return response.redirect('/login');
+    }
+
+    return response.sendFile('index.html', { root: path.join(process.cwd(), 'public') });
+});
+
+// Host login page
+app.get('/login', async (request, response) => {
+    if (!enableAccounts) {
+        console.log('User accounts are disabled. Redirecting to index page.');
+        return response.redirect('/');
+    }
+
+    const autoLogin = await userModule.tryAutoLogin(request);
+
+    if (autoLogin) {
+        return response.redirect('/');
+    }
+
+    return response.sendFile('login.html', { root: path.join(process.cwd(), 'public') });
+});
+
+// Host frontend assets
 app.use(express.static(process.cwd() + '/public', {}));
 
-app.use('/backgrounds', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), DIRECTORIES.backgrounds, req.url.replace(/%20/g, ' ')));
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            res.status(404).send('File not found');
-            return;
-        }
-        //res.contentType('image/jpeg');
-        res.send(data);
-    });
-});
+// Public API
+app.use('/api/users', require('./src/endpoints/users-public').router);
 
-app.use('/characters', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), DIRECTORIES.characters, req.url.replace(/%20/g, ' ')));
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            res.status(404).send('File not found');
-            return;
-        }
-        res.send(data);
-    });
-});
+// Everything below this line requires authentication
+app.use(userModule.requireLoginMiddleware);
+
+// File uploads
 app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
-app.get('/', function (request, response) {
-    response.sendFile(process.cwd() + '/public/index.html');
-});
+
+// User data mount
+app.use('/', userModule.router);
+// Private endpoints
+app.use('/api/users', require('./src/endpoints/users-private').router);
+// Admin endpoints
+app.use('/api/users', require('./src/endpoints/users-admin').router);
+
 app.get('/version', async function (_, response) {
     const data = await getVersion();
     response.send(data);
@@ -488,10 +531,17 @@ const setupTasks = async function () {
 
     // TODO: do endpoint init functions depend on certain directories existing or not existing? They should be callable
     // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
+    await userModule.initUserStorage(dataRoot);
+
+    if (listen && !basicAuthMode && enableAccounts) {
+        await userModule.checkAccountsProtection();
+    }
+
     await settingsEndpoint.init();
-    ensurePublicDirectoriesExist();
+    const directories = await userModule.ensurePublicDirectoriesExist();
+    await userModule.migrateUserData();
+    await contentManager.checkForNewContent(directories);
     await ensureThumbnailCache();
-    contentManager.checkForNewContent();
     cleanUploads();
 
     await loadTokenizers();
@@ -551,7 +601,7 @@ async function loadPlugins() {
     }
 }
 
-if (listen && !getConfigValue('whitelistMode', true) && !basicAuthMode) {
+if (listen && !enableWhitelist && !basicAuthMode) {
     if (getConfigValue('securityOverride', false)) {
         console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
     }
@@ -578,12 +628,4 @@ if (cliArguments.ssl) {
         tavernUrl.hostname,
         setupTasks,
     );
-}
-
-function ensurePublicDirectoriesExist() {
-    for (const dir of Object.values(DIRECTORIES)) {
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-    }
 }

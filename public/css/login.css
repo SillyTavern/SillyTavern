@@ -1,0 +1,35 @@
+body.login #shadow_popup {
+    opacity: 1;
+    display: flex;
+}
+
+body.login .logo {
+    max-width: 30px;
+}
+
+body.login #logoBlock {
+    align-items: center;
+    margin: 0 auto;
+    gap: 10px;
+}
+
+body.login .userSelect {
+    display: flex;
+    flex-direction: column;
+    color: var(--SmartThemeBodyColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 3px 5px;
+    width: min-content;
+    cursor: pointer;
+    margin: 5px 0;
+    transition: background-color 0.15s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+body.login .userSelect:hover {
+    background-color: var(--black30a);
+}

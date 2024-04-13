@@ -5,7 +5,6 @@ const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
 const { jsonParser } = require('../express-common');
-const { DIRECTORIES } = require('../constants');
 
 const router = express.Router();
 
@@ -14,7 +13,7 @@ router.post('/save', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
 
-    const filename = path.join(DIRECTORIES.quickreplies, sanitize(request.body.name) + '.json');
+    const filename = path.join(request.user.directories.quickreplies, sanitize(request.body.name) + '.json');
     writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
@@ -25,7 +24,7 @@ router.post('/delete', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
 
-    const filename = path.join(DIRECTORIES.quickreplies, sanitize(request.body.name) + '.json');
+    const filename = path.join(request.user.directories.quickreplies, sanitize(request.body.name) + '.json');
     if (fs.existsSync(filename)) {
         fs.unlinkSync(filename);
     }

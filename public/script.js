@@ -211,6 +211,7 @@ import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermati
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
+import { currentUser, setUserControls } from './scripts/user.js';
 import { callGenericPopup } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 
@@ -665,13 +666,15 @@ async function getSystemMessages() {
 registerPromptManagerMigration();
 
 $(document).ajaxError(function myErrorHandler(_, xhr) {
+    // Cohee: CSRF doesn't error out in multiple tabs anymore, so this is unnecessary
+    /*
     if (xhr.status == 403) {
         toastr.warning(
             'doubleCsrf errors in console are NORMAL in this case. If you want to run ST in multiple tabs, start the server with --disableCsrf option.',
             'Looks like you\'ve opened SillyTavern in another browser tab',
             { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true },
         );
-    }
+    } */
 });
 
 async function getClientVersion() {
@@ -1500,7 +1503,7 @@ function getCharacterSource(chId = this_chid) {
 }
 
 async function getCharacters() {
-    var response = await fetch('/api/characters/all', {
+    const response = await fetch('/api/characters/all', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -1508,11 +1511,9 @@ async function getCharacters() {
         }),
     });
     if (response.ok === true) {
-        var getData = ''; //RossAscends: reset to force array to update to account for deleted character.
-        getData = await response.json();
-        const load_ch_count = Object.getOwnPropertyNames(getData);
-        for (var i = 0; i < load_ch_count.length; i++) {
-            characters[i] = [];
+        characters.splice(0, characters.length);
+        const getData = await response.json();
+        for (let i = 0; i < getData.length; i++) {
             characters[i] = getData[i];
             characters[i]['name'] = DOMPurify.sanitize(characters[i]['name']);
 
@@ -6066,7 +6067,7 @@ async function doOnboarding(avatarId) {
     template.find('input[name="enable_simple_mode"]').on('input', function () {
         simpleUiMode = $(this).is(':checked');
     });
-    var userName = await callPopup(template, 'input', name1);
+    let userName = await callPopup(template, 'input', currentUser?.name || name1);
 
     if (userName) {
         userName = userName.replace('\n', ' ');
@@ -6119,6 +6120,8 @@ async function getSettings() {
             name1 = settings.username;
             $('#your_name').val(name1);
         }
+
+        await setUserControls(data.enable_accounts);
 
         // Allow subscribers to mutate settings
         eventSource.emit(event_types.SETTINGS_LOADED_BEFORE, settings);
@@ -10137,6 +10140,7 @@ jQuery(async function () {
             '#character_cross',
             '#avatar-and-name-block',
             '#shadow_popup',
+            '.shadow_popup',
             '#world_popup',
             '.ui-widget',
             '.text_pole',

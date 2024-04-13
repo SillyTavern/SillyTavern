@@ -98,7 +98,7 @@ async function parseCohereStream(jsonStream, request, response) {
  */
 async function sendClaudeRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
-    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.CLAUDE);
     const divider = '-'.repeat(process.stdout.columns);
 
     if (!apiKey) {
@@ -179,7 +179,7 @@ async function sendClaudeRequest(request, response) {
  */
 async function sendScaleRequest(request, response) {
     const apiUrl = new URL(request.body.api_url_scale).toString();
-    const apiKey = readSecret(SECRET_KEYS.SCALE);
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.SCALE);
 
     if (!apiKey) {
         console.log('Scale API key is missing.');
@@ -230,7 +230,7 @@ async function sendScaleRequest(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendMakerSuiteRequest(request, response) {
-    const apiKey = readSecret(SECRET_KEYS.MAKERSUITE);
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
 
     if (!apiKey) {
         console.log('MakerSuite API key is missing.');
@@ -392,7 +392,7 @@ async function sendAI21Request(request, response) {
         headers: {
             accept: 'application/json',
             'content-type': 'application/json',
-            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`,
+            Authorization: `Bearer ${readSecret(request.user.directories, SECRET_KEYS.AI21)}`,
         },
         body: JSON.stringify({
             numResults: 1,
@@ -456,7 +456,7 @@ async function sendAI21Request(request, response) {
  */
 async function sendMistralAIRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
-    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.MISTRALAI);
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
 
     if (!apiKey) {
         console.log('MistralAI API key is missing.');
@@ -553,7 +553,7 @@ async function sendMistralAIRequest(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendCohereRequest(request, response) {
-    const apiKey = readSecret(SECRET_KEYS.COHERE);
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.COHERE);
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
@@ -642,25 +642,25 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
 
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         api_url = new URL(request.body.reverse_proxy || API_OPENAI).toString();
-        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
+        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.OPENAI);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         api_url = 'https://openrouter.ai/api/v1';
-        api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
+        api_key_openai = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
         headers = { ...OPENROUTER_HEADERS };
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.MISTRALAI) {
         api_url = new URL(request.body.reverse_proxy || API_MISTRAL).toString();
-        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.MISTRALAI);
+        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MISTRALAI);
         headers = {};
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         api_url = request.body.custom_url;
-        api_key_openai = readSecret(SECRET_KEYS.CUSTOM);
+        api_key_openai = readSecret(request.user.directories, SECRET_KEYS.CUSTOM);
         headers = {};
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE) {
         api_url = API_COHERE;
-        api_key_openai = readSecret(SECRET_KEYS.COHERE);
+        api_key_openai = readSecret(request.user.directories, SECRET_KEYS.COHERE);
         headers = {};
     } else {
         console.log('This chat completion source is not supported yet.');
@@ -825,10 +825,11 @@ router.post('/generate', jsonParser, function (request, response) {
 
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         apiUrl = new URL(request.body.reverse_proxy || API_OPENAI).toString();
-        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
+        apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.OPENAI);
         headers = {};
         bodyParams = {
             logprobs: request.body.logprobs,
+            top_logprobs: undefined,
         };
 
         // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
@@ -842,7 +843,7 @@ router.post('/generate', jsonParser, function (request, response) {
         }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENROUTER) {
         apiUrl = 'https://openrouter.ai/api/v1';
-        apiKey = readSecret(SECRET_KEYS.OPENROUTER);
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the Referer and X-Title: https://openrouter.ai/docs#requests
         headers = { ...OPENROUTER_HEADERS };
         bodyParams = { 'transforms': ['middle-out'] };
@@ -864,10 +865,11 @@ router.post('/generate', jsonParser, function (request, response) {
         }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.CUSTOM) {
         apiUrl = request.body.custom_url;
-        apiKey = readSecret(SECRET_KEYS.CUSTOM);
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.CUSTOM);
         headers = {};
         bodyParams = {
             logprobs: request.body.logprobs,
+            top_logprobs: undefined,
         };
 
         // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }

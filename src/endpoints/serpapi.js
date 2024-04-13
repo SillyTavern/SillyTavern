@@ -24,7 +24,7 @@ const visitHeaders = {
 
 router.post('/search', jsonParser, async (request, response) => {
     try {
-        const key = readSecret(SECRET_KEYS.SERPAPI);
+        const key = readSecret(request.user.directories, SECRET_KEYS.SERPAPI);
 
         if (!key) {
             console.log('No SerpApi key found');

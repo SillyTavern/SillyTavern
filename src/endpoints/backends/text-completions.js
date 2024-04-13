@@ -516,7 +516,7 @@ llamacpp.post('/slots', jsonParser, async function (request, response) {
         const baseUrl = trimV1(request.body.server_url);
 
         let fetchResponse;
-        if (request.body.action === "info") {
+        if (request.body.action === 'info') {
             fetchResponse = await fetch(`${baseUrl}/slots`, {
                 method: 'GET',
                 timeout: 0,
@@ -525,16 +525,16 @@ llamacpp.post('/slots', jsonParser, async function (request, response) {
             if (!/^\d+$/.test(request.body.id_slot)) {
                 return response.sendStatus(400);
             }
-            if (request.body.action !== "erase" && !request.body.filename) {
+            if (request.body.action !== 'erase' && !request.body.filename) {
                 return response.sendStatus(400);
             }
-    
+
             fetchResponse = await fetch(`${baseUrl}/slots/${request.body.id_slot}?action=${request.body.action}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 timeout: 0,
                 body: JSON.stringify({
-                    filename: request.body.action !== "erase" ? `${request.body.filename}` : undefined,
+                    filename: request.body.action !== 'erase' ? `${request.body.filename}` : undefined,
                 }),
             });
         }

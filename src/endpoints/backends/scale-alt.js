@@ -14,7 +14,7 @@ router.post('/generate', jsonParser, function (request, response) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'cookie': `_jwt=${readSecret(SECRET_KEYS.SCALE_COOKIE)}`,
+            'cookie': `_jwt=${readSecret(request.user.directories, SECRET_KEYS.SCALE_COOKIE)}`,
         },
         body: JSON.stringify({
             json: {

@@ -4,7 +4,7 @@ const fs = require('fs');
 const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { DIRECTORIES, AVATAR_WIDTH, AVATAR_HEIGHT, UPLOADS_PATH } = require('../constants');
+const { AVATAR_WIDTH, AVATAR_HEIGHT, UPLOADS_PATH } = require('../constants');
 const { getImages, tryParse } = require('../util');
 
 // image processing related library imports
@@ -13,7 +13,7 @@ const jimp = require('jimp');
 const router = express.Router();
 
 router.post('/get', jsonParser, function (request, response) {
-    var images = getImages(DIRECTORIES.avatars);
+    var images = getImages(request.user.directories.avatars);
     response.send(JSON.stringify(images));
 });
 
@@ -25,7 +25,7 @@ router.post('/delete', jsonParser, function (request, response) {
         return response.sendStatus(403);
     }
 
-    const fileName = path.join(DIRECTORIES.avatars, sanitize(request.body.avatar));
+    const fileName = path.join(request.user.directories.avatars, sanitize(request.body.avatar));
 
     if (fs.existsSync(fileName)) {
         fs.rmSync(fileName);
@@ -50,7 +50,7 @@ router.post('/upload', urlencodedParser, async (request, response) => {
         const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
 
         const filename = request.body.overwrite_name || `${Date.now()}.png`;
-        const pathToNewFile = path.join(DIRECTORIES.avatars, filename);
+        const pathToNewFile = path.join(request.user.directories.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
         fs.rmSync(pathToUpload);
         return response.send({ path: filename });

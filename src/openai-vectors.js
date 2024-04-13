@@ -23,10 +23,11 @@ const SOURCES = {
  * Gets the vector for the given text batch from an OpenAI compatible endpoint.
  * @param {string[]} texts - The array of texts to get the vector for
  * @param {string} source - The source of the vector
+ * @param {import('./users').UserDirectoryList} directories - The directories object for the user
  * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getOpenAIBatchVector(texts, source, model = '') {
+async function getOpenAIBatchVector(texts, source, directories, model = '') {
     const config = SOURCES[source];
 
     if (!config) {
@@ -34,7 +35,7 @@ async function getOpenAIBatchVector(texts, source, model = '') {
         throw new Error('Unknown source');
     }
 
-    const key = readSecret(config.secretKey);
+    const key = readSecret(directories, config.secretKey);
 
     if (!key) {
         console.log('No API key found');
@@ -78,11 +79,12 @@ async function getOpenAIBatchVector(texts, source, model = '') {
  * Gets the vector for the given text from an OpenAI compatible endpoint.
  * @param {string} text - The text to get the vector for
  * @param {string} source - The source of the vector
- * @param model
+ * @param {import('./users').UserDirectoryList} directories - The directories object for the user
+ * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getOpenAIVector(text, source, model = '') {
-    const vectors = await getOpenAIBatchVector([text], source, model);
+async function getOpenAIVector(text, source, directories, model = '') {
+    const vectors = await getOpenAIBatchVector([text], source, directories, model);
     return vectors[0];
 }
 

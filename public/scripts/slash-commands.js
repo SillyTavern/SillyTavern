@@ -41,7 +41,7 @@ import { SlashCommandParser as NewSlashCommandParser } from './slash-commands/Sl
 import { SlashCommandParserError } from './slash-commands/SlashCommandParserError.js';
 import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
-import { hideChatMessage, unhideChatMessage } from './chats.js';
+import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
@@ -937,16 +937,7 @@ async function hideMessageCallback(_, arg) {
         return;
     }
 
-    for (let messageId = range.start; messageId <= range.end; messageId++) {
-        const messageBlock = $(`.mes[mesid="${messageId}"]`);
-
-        if (!messageBlock.length) {
-            console.warn(`WARN: No message found with ID ${messageId}`);
-            return;
-        }
-
-        await hideChatMessage(messageId, messageBlock);
-    }
+    await hideChatMessageRange(range.start, range.end, false);
 }
 
 async function unhideMessageCallback(_, arg) {
@@ -962,17 +953,7 @@ async function unhideMessageCallback(_, arg) {
         return '';
     }
 
-    for (let messageId = range.start; messageId <= range.end; messageId++) {
-        const messageBlock = $(`.mes[mesid="${messageId}"]`);
-
-        if (!messageBlock.length) {
-            console.warn(`WARN: No message found with ID ${messageId}`);
-            return '';
-        }
-
-        await unhideChatMessage(messageId, messageBlock);
-    }
-
+    await hideChatMessageRange(range.start, range.end, true);
     return '';
 }
 
