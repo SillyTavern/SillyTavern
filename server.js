@@ -498,15 +498,14 @@ const setupTasks = async function () {
     await statsEndpoint.init();
 
     const cleanupPlugins = await loadPlugins();
-
-    const BackUpTitle = process.title;
+    const consoleTitle = process.title;
 
     const exitProcess = async () => {
         statsEndpoint.onExit();
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
         }
-        setWindowTitle(BackUpTitle);
+        setWindowTitle(consoleTitle);
         process.exit();
     };
 
@@ -566,6 +565,19 @@ if (listen && !getConfigValue('whitelistMode', true) && !basicAuthMode) {
     }
 }
 
+/**
+ * Set the title of the terminal window
+ * @param {string} title Desired title for the window
+ */
+function setWindowTitle(title) {
+    if (process.platform === 'win32') {
+        process.title = title;
+    }
+    else {
+        process.stdout.write(`\x1b]2;${title}\x1b\x5c`);
+    }
+}
+
 if (cliArguments.ssl) {
     https.createServer(
         {
@@ -591,11 +603,4 @@ function ensurePublicDirectoriesExist() {
             fs.mkdirSync(dir, { recursive: true });
         }
     }
-}
-
-function setWindowTitle(title) {
-    if (process.platform == 'win32')
-        process.title = title
-    else
-        process.stdout.write('\x1b]2;' + title + '\x1b\x5c')
 }
