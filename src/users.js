@@ -559,6 +559,12 @@ async function setUserDataMiddleware(request, response, next) {
         profile: user,
         directories: directories,
     };
+
+    // Touch the session if loading the home page
+    if (request.method === 'GET' && request.path === '/') {
+        request.session.touch = Date.now();
+    }
+
     return next();
 }
 

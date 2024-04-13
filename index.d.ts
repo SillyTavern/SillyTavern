@@ -14,6 +14,7 @@ declare global {
 declare module 'express-session' {
     export interface SessionData {
       handle: string;
+      touch: number;
       // other properties...
     }
   }
