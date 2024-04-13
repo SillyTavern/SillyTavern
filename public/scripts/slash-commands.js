@@ -49,7 +49,7 @@ import { chat_completion_sources, oai_settings } from './openai.js';
 import { autoSelectPersona } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
-import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
+import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
 import { debounce, delay, escapeRegex, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
@@ -255,7 +255,7 @@ parser.addCommand('trimend', trimEndCallback, [], '<span class="monospace">(text
 parser.addCommand('inject', injectCallback, [], '<span class="monospace">id=injectId (position=before/after/chat depth=number scan=true/false role=system/user/assistant [text])</span> – injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false).', true, true);
 parser.addCommand('listinjects', listInjectsCallback, [], ' – lists all script injections for the current chat.', true, true);
 parser.addCommand('flushinjects', flushInjectsCallback, [], ' – removes all script injections for the current chat.', true, true);
-parser.addCommand('tokens', (_, text) => getTokenCount(text), [], '<span class="monospace">(text)</span> – counts the number of tokens in the text.', true, true);
+parser.addCommand('tokens', (_, text) => getTokenCountAsync(text), [], '<span class="monospace">(text)</span> – counts the number of tokens in the text.', true, true);
 parser.addCommand('model', modelCallback, [], '<span class="monospace">(model name)</span> – sets the model for the current API. Gets the current model name if no argument is provided.', true, true);
 registerVariableCommands();
 
@@ -394,7 +394,7 @@ function trimEndCallback(_, value) {
     return trimToEndSentence(value);
 }
 
-function trimTokensCallback(arg, value) {
+async function trimTokensCallback(arg, value) {
     if (!value) {
         console.warn('WARN: No argument provided for /trimtokens command');
         return '';
@@ -412,7 +412,7 @@ function trimTokensCallback(arg, value) {
     }
 
     const direction = arg.direction || 'end';
-    const tokenCount = getTokenCount(value);
+    const tokenCount = await getTokenCountAsync(value);
 
     // Token count is less than the limit, do nothing
     if (tokenCount <= limit) {

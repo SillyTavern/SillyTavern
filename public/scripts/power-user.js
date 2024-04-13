@@ -2770,6 +2770,14 @@ export function getCustomStoppingStrings(limit = undefined) {
     return strings;
 }
 
+export function forceCharacterEditorTokenize() {
+    $('[data-token-counter]').each(function () {
+        $(document.getElementById($(this).data('token-counter'))).data('last-value-hash', '');
+    });
+    $('#rm_ch_create_block').trigger('input');
+    $('#character_popup').trigger('input');
+}
+
 $(document).ready(() => {
     const adjustAutocompleteDebounced = debounce(() => {
         $('.ui-autocomplete-input').each(function () {
@@ -3181,8 +3189,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
 
         // Trigger character editor re-tokenize
-        $('#rm_ch_create_block').trigger('input');
-        $('#character_popup').trigger('input');
+        forceCharacterEditorTokenize();
     });
 
     $('#send_on_enter').on('change', function () {

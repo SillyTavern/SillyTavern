@@ -26,7 +26,9 @@ enableUserAccounts: false
 enableDiscreetLogin: false
 # Used to sign session cookies. Will be auto-generated if not set
 cookieSecret: ''
-# Disable security checks - NOT RECOMMENDED
+# Disable CSRF protection - NOT RECOMMENDED
+disableCsrfProtection: false
+# Disable startup security checks - NOT RECOMMENDED
 securityOverride: false
 # -- ADVANCED CONFIGURATION --
 # Open the browser automatically

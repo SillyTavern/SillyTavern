@@ -684,14 +684,16 @@ drawthings.post('/generate', jsonParser, async (request, response) => {
         url.pathname = '/sdapi/v1/txt2img';
 
         const body = { ...request.body };
+        const auth = getBasicAuthHeader(request.body.auth);
         delete body.url;
+        delete body.auth;
 
         const result = await fetch(url, {
             method: 'POST',
             body: JSON.stringify(body),
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': getBasicAuthHeader(request.body.auth),
+                'Authorization': auth,
             },
             timeout: 0,
         });

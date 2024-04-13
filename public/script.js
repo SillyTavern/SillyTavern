@@ -82,6 +82,7 @@ import {
     flushEphemeralStoppingStrings,
     context_presets,
     resetMovableStyles,
+    forceCharacterEditorTokenize,
 } from './scripts/power-user.js';
 
 import {
@@ -202,7 +203,7 @@ import {
     selectContextPreset,
 } from './scripts/instruct-mode.js';
 import { applyLocale, initLocales } from './scripts/i18n.js';
-import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
+import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
 import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription, updatePersonaNameIfExists } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
@@ -3469,7 +3470,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     let chatString = '';
     let cyclePrompt = '';
 
-    function getMessagesTokenCount() {
+    async function getMessagesTokenCount() {
         const encodeString = [
             beforeScenarioAnchor,
             storyString,
@@ -3480,7 +3481,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             cyclePrompt,
             userAlignmentMessage,
         ].join('').replace(/\r/gm, '');
-        return getTokenCount(encodeString, power_user.token_padding);
+        return getTokenCountAsync(encodeString, power_user.token_padding);
     }
 
     // Force pinned examples into the context
@@ -3496,7 +3497,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     // Collect enough messages to fill the context
     let arrMes = new Array(chat2.length);
-    let tokenCount = getMessagesTokenCount();
+    let tokenCount = await getMessagesTokenCount();
     let lastAddedIndex = -1;
 
     // Pre-allocate all injections first.
@@ -3508,7 +3509,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             continue;
         }
 
-        tokenCount += getTokenCount(item.replace(/\r/gm, ''));
+        tokenCount += await getTokenCountAsync(item.replace(/\r/gm, ''));
         chatString = item + chatString;
         if (tokenCount < this_max_context) {
             arrMes[index] = item;
@@ -3538,7 +3539,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             continue;
         }
 
-        tokenCount += getTokenCount(item.replace(/\r/gm, ''));
+        tokenCount += await getTokenCountAsync(item.replace(/\r/gm, ''));
         chatString = item + chatString;
         if (tokenCount < this_max_context) {
             arrMes[i] = item;
@@ -3554,7 +3555,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     // Add user alignment message if last message is not a user message
     const stoppedAtUser = userMessageIndices.includes(lastAddedIndex);
     if (addUserAlignment && !stoppedAtUser) {
-        tokenCount += getTokenCount(userAlignmentMessage.replace(/\r/gm, ''));
+        tokenCount += await getTokenCountAsync(userAlignmentMessage.replace(/\r/gm, ''));
         chatString = userAlignmentMessage + chatString;
         arrMes.push(userAlignmentMessage);
         injectedIndices.push(arrMes.length - 1);
@@ -3580,11 +3581,11 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     }
 
     // Estimate how many unpinned example messages fit in the context
-    tokenCount = getMessagesTokenCount();
+    tokenCount = await getMessagesTokenCount();
     let count_exm_add = 0;
     if (!power_user.pin_examples) {
         for (let example of mesExamplesArray) {
-            tokenCount += getTokenCount(example.replace(/\r/gm, ''));
+            tokenCount += await getTokenCountAsync(example.replace(/\r/gm, ''));
             examplesString += example;
             if (tokenCount < this_max_context) {
                 count_exm_add++;
@@ -3739,7 +3740,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         return promptCache;
     }
 
-    function checkPromptSize() {
+    async function checkPromptSize() {
         console.debug('---checking Prompt size');
         setPromptString();
         const prompt = [
@@ -3752,15 +3753,15 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             generatedPromptCache,
             quiet_prompt,
         ].join('').replace(/\r/gm, '');
-        let thisPromptContextSize = getTokenCount(prompt, power_user.token_padding);
+        let thisPromptContextSize = await getTokenCountAsync(prompt, power_user.token_padding);
 
         if (thisPromptContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
             if (count_exm_add > 0) {                            // ..and we have example mesages..
                 count_exm_add--;                            // remove the example messages...
-                checkPromptSize();                            // and try agin...
+                await checkPromptSize();                            // and try agin...
             } else if (mesSend.length > 0) {                    // if the chat history is longer than 0
                 mesSend.shift();                            // remove the first (oldest) chat entry..
-                checkPromptSize();                            // and check size again..
+                await checkPromptSize();                            // and check size again..
             } else {
                 //end
                 console.debug(`---mesSend.length = ${mesSend.length}`);
@@ -3770,7 +3771,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     if (generatedPromptCache.length > 0 && main_api !== 'openai') {
         console.debug('---Generated Prompt Cache length: ' + generatedPromptCache.length);
-        checkPromptSize();
+        await checkPromptSize();
     } else {
         console.debug('---calling setPromptString ' + generatedPromptCache.length);
         setPromptString();
@@ -4433,7 +4434,7 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     };
 
     if (power_user.message_token_count_enabled) {
-        message.extra.token_count = getTokenCount(message.mes, 0);
+        message.extra.token_count = await getTokenCountAsync(message.mes, 0);
     }
 
     // Lock user avatar to a persona.
@@ -4596,21 +4597,21 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
     }
 
     const params = {
-        charDescriptionTokens: getTokenCount(itemizedPrompts[thisPromptSet].charDescription),
-        charPersonalityTokens: getTokenCount(itemizedPrompts[thisPromptSet].charPersonality),
-        scenarioTextTokens: getTokenCount(itemizedPrompts[thisPromptSet].scenarioText),
-        userPersonaStringTokens: getTokenCount(itemizedPrompts[thisPromptSet].userPersona),
-        worldInfoStringTokens: getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString),
-        allAnchorsTokens: getTokenCount(itemizedPrompts[thisPromptSet].allAnchors),
-        summarizeStringTokens: getTokenCount(itemizedPrompts[thisPromptSet].summarizeString),
-        authorsNoteStringTokens: getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString),
-        smartContextStringTokens: getTokenCount(itemizedPrompts[thisPromptSet].smartContextString),
-        beforeScenarioAnchorTokens: getTokenCount(itemizedPrompts[thisPromptSet].beforeScenarioAnchor),
-        afterScenarioAnchorTokens: getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor),
-        zeroDepthAnchorTokens: getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor), // TODO: unused
+        charDescriptionTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].charDescription),
+        charPersonalityTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].charPersonality),
+        scenarioTextTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].scenarioText),
+        userPersonaStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].userPersona),
+        worldInfoStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].worldInfoString),
+        allAnchorsTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].allAnchors),
+        summarizeStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].summarizeString),
+        authorsNoteStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].authorsNoteString),
+        smartContextStringTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].smartContextString),
+        beforeScenarioAnchorTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].beforeScenarioAnchor),
+        afterScenarioAnchorTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].afterScenarioAnchor),
+        zeroDepthAnchorTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].zeroDepthAnchor), // TODO: unused
         thisPrompt_padding: itemizedPrompts[thisPromptSet].padding,
         this_main_api: itemizedPrompts[thisPromptSet].main_api,
-        chatInjects: getTokenCount(itemizedPrompts[thisPromptSet].chatInjects),
+        chatInjects: await getTokenCountAsync(itemizedPrompts[thisPromptSet].chatInjects),
     };
 
     if (params.chatInjects) {
@@ -4664,13 +4665,13 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
     } else {
         //for non-OAI APIs
         //console.log('-- Counting non-OAI Tokens');
-        params.finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPrompt);
-        params.storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - params.worldInfoStringTokens;
-        params.examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
-        params.mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString);
+        params.finalPromptTokens = await getTokenCountAsync(itemizedPrompts[thisPromptSet].finalPrompt);
+        params.storyStringTokens = await getTokenCountAsync(itemizedPrompts[thisPromptSet].storyString) - params.worldInfoStringTokens;
+        params.examplesStringTokens = await getTokenCountAsync(itemizedPrompts[thisPromptSet].examplesString);
+        params.mesSendStringTokens = await getTokenCountAsync(itemizedPrompts[thisPromptSet].mesSendString);
         params.ActualChatHistoryTokens = params.mesSendStringTokens - (params.allAnchorsTokens - (params.beforeScenarioAnchorTokens + params.afterScenarioAnchorTokens)) + power_user.token_padding;
-        params.instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
-        params.promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
+        params.instructionTokens = await getTokenCountAsync(itemizedPrompts[thisPromptSet].instruction);
+        params.promptBiasTokens = await getTokenCountAsync(itemizedPrompts[thisPromptSet].promptBias);
 
         params.totalTokensInPrompt =
             params.storyStringTokens +     //chardefs total
@@ -5073,7 +5074,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
             chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             if (power_user.message_token_count_enabled) {
-                chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
+                chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(chat[chat.length - 1]['mes'], 0);
             }
             const chat_id = (chat.length - 1);
             await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
@@ -5093,7 +5094,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
         chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         if (power_user.message_token_count_enabled) {
-            chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
+            chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(chat[chat.length - 1]['mes'], 0);
         }
         const chat_id = (chat.length - 1);
         await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
@@ -5110,7 +5111,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
         chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
         chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
         if (power_user.message_token_count_enabled) {
-            chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
+            chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(chat[chat.length - 1]['mes'], 0);
         }
         const chat_id = (chat.length - 1);
         await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
@@ -5135,7 +5136,7 @@ async function saveReply(type, getMessage, fromStreaming, title, swipes) {
         chat[chat.length - 1]['gen_finished'] = generationFinished;
 
         if (power_user.message_token_count_enabled) {
-            chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
+            chat[chat.length - 1]['extra']['token_count'] = await getTokenCountAsync(chat[chat.length - 1]['mes'], 0);
         }
 
         if (selected_group) {
@@ -5841,10 +5842,11 @@ function changeMainAPI() {
 
     if (main_api == 'koboldhorde') {
         getStatusHorde();
-        getHordeModels();
+        getHordeModels(true);
     }
 
     setupChatCompletionPromptManager(oai_settings);
+    forceCharacterEditorTokenize();
 }
 
 ////////////////////////////////////////////////////
@@ -7073,10 +7075,10 @@ function onScenarioOverrideRemoveClick() {
  * @param {string} type
  * @param {string} inputValue - Value to set the input to.
  * @param {PopupOptions} options - Options for the popup.
- * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean }} PopupOptions - Options for the popup.
+ * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean, cropAspect?: number }} PopupOptions - Options for the popup.
  * @returns
  */
-function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
+function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
     dialogueCloseStop = true;
     if (type) {
         popup_type = type;
@@ -7133,7 +7135,7 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, a
         crop_data = undefined;
 
         $('#avatarToCrop').cropper({
-            aspectRatio: 2 / 3,
+            aspectRatio: cropAspect ?? 2 / 3,
             autoCropArea: 1,
             viewMode: 2,
             rotatable: false,
@@ -7854,7 +7856,7 @@ function swipe_left() {      // when we swipe left..but no generation.
             duration: swipe_duration,
             easing: animation_easing,
             queue: false,
-            complete: function () {
+            complete: async function () {
                 const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop('scrollHeight') - $('#chat').outerHeight()) - 10);
                 //console.log('on left swipe click calling addOneMessage');
                 addOneMessage(chat[chat.length - 1], { type: 'swipe' });
@@ -7865,7 +7867,7 @@ function swipe_left() {      // when we swipe left..but no generation.
                     }
 
                     const swipeMessage = $('#chat').find(`[mesid="${chat.length - 1}"]`);
-                    const tokenCount = getTokenCount(chat[chat.length - 1].mes, 0);
+                    const tokenCount = await getTokenCountAsync(chat[chat.length - 1].mes, 0);
                     chat[chat.length - 1]['extra']['token_count'] = tokenCount;
                     swipeMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
                 }
@@ -8030,7 +8032,7 @@ const swipe_right = () => {
             duration: swipe_duration,
             easing: animation_easing,
             queue: false,
-            complete: function () {
+            complete: async function () {
                 /*if (!selected_group) {
                     var typingIndicator = $("#typing_indicator_template .typing_indicator").clone();
                     typingIndicator.find(".typing_indicator_name").text(characters[this_chid].name);
@@ -8056,7 +8058,7 @@ const swipe_right = () => {
                             chat[chat.length - 1].extra = {};
                         }
 
-                        const tokenCount = getTokenCount(chat[chat.length - 1].mes, 0);
+                        const tokenCount = await getTokenCountAsync(chat[chat.length - 1].mes, 0);
                         chat[chat.length - 1]['extra']['token_count'] = tokenCount;
                         swipeMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
                     }
@@ -8566,7 +8568,7 @@ function addDebugFunctions() {
                 message.extra = {};
             }
 
-            message.extra.token_count = getTokenCount(message.mes, 0);
+            message.extra.token_count = await getTokenCountAsync(message.mes, 0);
         }
 
         await saveChatConditional();

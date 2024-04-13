@@ -63,6 +63,9 @@ const DEFAULT_AUTORUN = false;
 const DEFAULT_LISTEN = false;
 const DEFAULT_CORS_PROXY = false;
 const DEFAULT_WHITELIST = true;
+const DEFAULT_ACCOUNTS = false;
+const DEFAULT_CSRF_DISABLED = false;
+const DEFAULT_BASIC_AUTH = false;
 
 const cliArguments = yargs(hideBin(process.argv))
     .usage('Usage: <your-start-script> <command> [options]')
@@ -84,7 +87,7 @@ const cliArguments = yargs(hideBin(process.argv))
         describe: `Enables CORS proxy\nIf not provided falls back to yaml config 'enableCorsProxy'.\n[config default: ${DEFAULT_CORS_PROXY}]`,
     }).option('disableCsrf', {
         type: 'boolean',
-        default: false,
+        default: null,
         describe: 'Disables CSRF protection',
     }).option('ssl', {
         type: 'boolean',
@@ -106,6 +109,10 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'string',
         default: null,
         describe: 'Root directory for data storage',
+    }).option('basicAuthMode', {
+        type: 'boolean',
+        default: null,
+        describe: 'Enables basic authentication',
     }).parseSync();
 
 // change all relative paths
@@ -126,8 +133,9 @@ const listen = cliArguments.listen ?? getConfigValue('listen', DEFAULT_LISTEN);
 const enableCorsProxy = cliArguments.corsProxy ?? getConfigValue('enableCorsProxy', DEFAULT_CORS_PROXY);
 const enableWhitelist = cliArguments.whitelist ?? getConfigValue('whitelistMode', DEFAULT_WHITELIST);
 const dataRoot = cliArguments.dataRoot ?? getConfigValue('dataRoot', './data');
-const basicAuthMode = getConfigValue('basicAuthMode', false);
-const enableAccounts = getConfigValue('enableUserAccounts', false);
+const disableCsrf = cliArguments.disableCsrf ?? getConfigValue('disableCsrfProtection', DEFAULT_CSRF_DISABLED);
+const basicAuthMode = cliArguments.basicAuthMode ?? getConfigValue('basicAuthMode', DEFAULT_BASIC_AUTH);
+const enableAccounts = getConfigValue('enableUserAccounts', DEFAULT_ACCOUNTS);
 
 const { UPLOADS_PATH } = require('./src/constants');
 
@@ -204,7 +212,7 @@ app.use(cookieSession({
 app.use(userModule.setUserDataMiddleware);
 
 // CSRF Protection //
-if (!cliArguments.disableCsrf) {
+if (!disableCsrf) {
     const COOKIES_SECRET = userModule.getCookieSecret();
 
     const { generateToken, doubleCsrfProtection } = doubleCsrf({
@@ -548,12 +556,14 @@ const setupTasks = async function () {
     await statsEndpoint.init();
 
     const cleanupPlugins = await loadPlugins();
+    const consoleTitle = process.title;
 
     const exitProcess = async () => {
         statsEndpoint.onExit();
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
         }
+        setWindowTitle(consoleTitle);
         process.exit();
     };
 
@@ -569,6 +579,8 @@ const setupTasks = async function () {
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
+
+    setWindowTitle('SillyTavern WebServer');
 
     console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
 
@@ -608,6 +620,19 @@ if (listen && !enableWhitelist && !basicAuthMode) {
     else {
         console.error(color.red('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.'));
         process.exit(1);
+    }
+}
+
+/**
+ * Set the title of the terminal window
+ * @param {string} title Desired title for the window
+ */
+function setWindowTitle(title) {
+    if (process.platform === 'win32') {
+        process.title = title;
+    }
+    else {
+        process.stdout.write(`\x1b]2;${title}\x1b\x5c`);
     }
 }
 

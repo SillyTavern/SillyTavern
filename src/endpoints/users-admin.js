@@ -19,23 +19,29 @@ const { DEFAULT_USER } = require('../constants');
 
 const router = express.Router();
 
-router.post('/get', requireAdminMiddleware, jsonParser, async (request, response) => {
+router.post('/get', requireAdminMiddleware, jsonParser, async (_request, response) => {
     try {
         /** @type {import('../users').User[]} */
         const users = await storage.values(x => x.key.startsWith(KEY_PREFIX));
 
-        const viewModels = users
-            .sort((x, y) => x.created - y.created)
-            .map(user => ({
-                handle: user.handle,
-                name: user.name,
-                avatar: getUserAvatar(user.handle),
-                admin: user.admin,
-                enabled: user.enabled,
-                created: user.created,
-                password: !!user.password,
+        /** @type {Promise<import('../users').UserViewModel>[]} */
+        const viewModelPromises = users
+            .map(user => new Promise(resolve => {
+                getUserAvatar(user.handle).then(avatar =>
+                    resolve({
+                        handle: user.handle,
+                        name: user.name,
+                        avatar: avatar,
+                        admin: user.admin,
+                        enabled: user.enabled,
+                        created: user.created,
+                        password: !!user.password,
+                    }),
+                );
             }));
 
+        const viewModels = await Promise.all(viewModelPromises);
+        viewModels.sort((x, y) => (x.created ?? 0) - (y.created ?? 0));
         return response.json(viewModels);
     } catch (error) {
         console.error('User list failed:', error);

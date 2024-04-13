@@ -15,6 +15,7 @@ const { getConfigValue, color, delay, setConfigValue, generateTimestamp } = requ
 const { readSecret, writeSecret } = require('./endpoints/secrets');
 
 const KEY_PREFIX = 'user:';
+const AVATAR_PREFIX = 'avatar:';
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
 const ANON_CSRF_SECRET = crypto.randomBytes(64).toString('base64');
 
@@ -40,7 +41,7 @@ const STORAGE_KEYS = {
  * @property {string} handle - The user's short handle. Used for directories and other references
  * @property {string} name - The user's name. Displayed in the UI
  * @property {number} created - The timestamp when the user was created
- * @property {string} password - SHA256 hash of the user's password
+ * @property {string} password - Scrypt hash of the user's password
  * @property {string} salt - Salt used for hashing the password
  * @property {boolean} enabled - Whether the user is enabled
  * @property {boolean} admin - Whether the user is an admin (can manage other users)
@@ -51,7 +52,7 @@ const STORAGE_KEYS = {
  * @property {string} handle - The user's short handle. Used for directories and other references
  * @property {string} name - The user's name. Displayed in the UI
  * @property {string} avatar - The user's avatar image
- * @property {boolean} admin - Whether the user is an admin (can manage other users)
+ * @property {boolean} [admin] - Whether the user is an admin (can manage other users)
  * @property {boolean} password - Whether the user is password protected
  * @property {boolean} [enabled] - Whether the user is enabled
  * @property {number} [created] - The timestamp when the user was created
@@ -316,6 +317,15 @@ function toKey(handle) {
 }
 
 /**
+ * Converts a user handle to a storage key for avatars.
+ * @param {string} handle User handle
+ * @returns {string} The key for the avatar storage
+ */
+function toAvatarKey(handle) {
+    return `${AVATAR_PREFIX}${handle}`;
+}
+
+/**
  * Initializes the user storage. Currently a no-op.
  * @param {string} dataRoot The root directory for user data
  * @returns {Promise<void>}
@@ -372,13 +382,13 @@ function getCookieSessionName() {
 }
 
 /**
- * Hashes a password using SHA256.
+ * Hashes a password using scrypt with the provided salt.
  * @param {string} password Password to hash
  * @param {string} salt Salt to use for hashing
  * @returns {string} Hashed password
  */
 function getPasswordHash(password, salt) {
-    return crypto.createHash('sha256').update(password + salt).digest('hex');
+    return crypto.scryptSync(password.normalize(), salt, 64).toString('base64');
 }
 
 /**
@@ -435,10 +445,19 @@ function getUserDirectories(handle) {
 /**
  * Gets the avatar URL for the provided user.
  * @param {string} handle User handle
- * @returns {string} User avatar URL
+ * @returns {Promise<string>} User avatar URL
  */
-function getUserAvatar(handle) {
+async function getUserAvatar(handle) {
     try {
+        // Check if the user has a custom avatar
+        const avatarKey = toAvatarKey(handle);
+        const avatar = await storage.getItem(avatarKey);
+
+        if (avatar) {
+            return avatar;
+        }
+
+        // Fallback to reading from files if custom avatar is not set
         const directory = getUserDirectories(handle);
         const pathToSettings = path.join(directory.root, SETTINGS_FILE);
         const settings = fs.existsSync(pathToSettings) ? JSON.parse(fs.readFileSync(pathToSettings, 'utf8')) : {};
@@ -540,6 +559,12 @@ async function setUserDataMiddleware(request, response, next) {
         profile: user,
         directories: directories,
     };
+
+    // Touch the session if loading the home page
+    if (request.method === 'GET' && request.path === '/') {
+        request.session.touch = Date.now();
+    }
+
     return next();
 }
 
@@ -665,6 +690,7 @@ router.use('/scripts/extensions/third-party/*', createRouteHandler(req => req.us
 module.exports = {
     KEY_PREFIX,
     toKey,
+    toAvatarKey,
     initUserStorage,
     ensurePublicDirectoriesExist,
     getAllUserHandles,
