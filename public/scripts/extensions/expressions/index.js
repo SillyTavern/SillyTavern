@@ -1055,7 +1055,8 @@ async function getExpressionLabel(text) {
                 }
         }
     } catch (error) {
-        console.log(error);
+        toastr.info("Could not classify expression. Check the console or your backend for more information.")
+        console.error(error);
         return getFallbackExpression();
     }
 }
