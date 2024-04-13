@@ -11,7 +11,7 @@ import { selected_group } from './group-chats.js';
 import { extension_settings, getContext, saveMetadataDebounced } from './extensions.js';
 import { registerSlashCommand } from './slash-commands.js';
 import { getCharaFilename, debounce, delay } from './utils.js';
-import { getTokenCount } from './tokenizers.js';
+import { getTokenCountAsync } from './tokenizers.js';
 export { MODULE_NAME as NOTE_MODULE_NAME };
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
@@ -84,9 +84,9 @@ function updateSettings() {
     setFloatingPrompt();
 }
 
-const setMainPromptTokenCounterDebounced = debounce((value) => $('#extension_floating_prompt_token_counter').text(getTokenCount(value)), 1000);
-const setCharaPromptTokenCounterDebounced = debounce((value) => $('#extension_floating_chara_token_counter').text(getTokenCount(value)), 1000);
-const setDefaultPromptTokenCounterDebounced = debounce((value) => $('#extension_floating_default_token_counter').text(getTokenCount(value)), 1000);
+const setMainPromptTokenCounterDebounced = debounce(async (value) => $('#extension_floating_prompt_token_counter').text(await getTokenCountAsync(value)), 1000);
+const setCharaPromptTokenCounterDebounced = debounce(async (value) => $('#extension_floating_chara_token_counter').text(await getTokenCountAsync(value)), 1000);
+const setDefaultPromptTokenCounterDebounced = debounce(async (value) => $('#extension_floating_default_token_counter').text(await getTokenCountAsync(value)), 1000);
 
 async function onExtensionFloatingPromptInput() {
     chat_metadata[metadata_keys.prompt] = $(this).val();
@@ -394,7 +394,7 @@ function onANMenuItemClick() {
     }
 }
 
-function onChatChanged() {
+async function onChatChanged() {
     loadSettings();
     setFloatingPrompt();
     const context = getContext();
@@ -402,7 +402,7 @@ function onChatChanged() {
     // Disable the chara note if in a group
     $('#extension_floating_chara').prop('disabled', context.groupId ? true : false);
 
-    const tokenCounter1 = chat_metadata[metadata_keys.prompt] ? getTokenCount(chat_metadata[metadata_keys.prompt]) : 0;
+    const tokenCounter1 = chat_metadata[metadata_keys.prompt] ? await getTokenCountAsync(chat_metadata[metadata_keys.prompt]) : 0;
     $('#extension_floating_prompt_token_counter').text(tokenCounter1);
 
     let tokenCounter2;
@@ -410,15 +410,13 @@ function onChatChanged() {
         const charaNote = extension_settings.note.chara.find((e) => e.name === getCharaFilename());
 
         if (charaNote) {
-            tokenCounter2 = getTokenCount(charaNote.prompt);
+            tokenCounter2 = await getTokenCountAsync(charaNote.prompt);
         }
     }
 
-    if (tokenCounter2) {
-        $('#extension_floating_chara_token_counter').text(tokenCounter2);
-    }
+    $('#extension_floating_chara_token_counter').text(tokenCounter2 || 0);
 
-    const tokenCounter3 = extension_settings.note.default ? getTokenCount(extension_settings.note.default) : 0;
+    const tokenCounter3 = extension_settings.note.default ? await getTokenCountAsync(extension_settings.note.default) : 0;
     $('#extension_floating_default_token_counter').text(tokenCounter3);
 }
 

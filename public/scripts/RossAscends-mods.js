@@ -34,7 +34,7 @@ import {
 } from './secrets.js';
 import { debounce, delay, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
-import { getTokenCount } from './tokenizers.js';
+import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
 
 import Bowser from '../lib/bowser.min.js';
@@ -51,6 +51,7 @@ var SelectedCharacterTab = document.getElementById('rm_button_selected_ch');
 
 var connection_made = false;
 var retry_delay = 500;
+let counterNonce = Date.now();
 
 const observerConfig = { childList: true, subtree: true };
 const countTokensDebounced = debounce(RA_CountCharTokens, 1000);
@@ -202,24 +203,32 @@ $('#rm_ch_create_block').on('input', function () { countTokensDebounced(); });
 //when any input is made to the advanced editing popup textareas
 $('#character_popup').on('input', function () { countTokensDebounced(); });
 //function:
-export function RA_CountCharTokens() {
+export async function RA_CountCharTokens() {
+    counterNonce = Date.now();
+    const counterNonceLocal = counterNonce;
     let total_tokens = 0;
     let permanent_tokens = 0;
 
-    $('[data-token-counter]').each(function () {
-        const counter = $(this);
+    const tokenCounters = document.querySelectorAll('[data-token-counter]');
+    for (const tokenCounter of tokenCounters) {
+        if (counterNonceLocal !== counterNonce) {
+            return;
+        }
+
+        const counter = $(tokenCounter);
         const input = $(document.getElementById(counter.data('token-counter')));
         const isPermanent = counter.data('token-permanent') === true;
         const value = String(input.val());
 
         if (input.length === 0) {
             counter.text('Invalid input reference');
-            return;
+            continue;
         }
 
         if (!value) {
+            input.data('last-value-hash', '');
             counter.text(0);
-            return;
+            continue;
         }
 
         const valueHash = getStringHash(value);
@@ -230,13 +239,18 @@ export function RA_CountCharTokens() {
         } else {
             // We substitute macro for existing characters, but not for the character being created
             const valueToCount = menu_type === 'create' ? value : substituteParams(value);
-            const tokens = getTokenCount(valueToCount);
+            const tokens = await getTokenCountAsync(valueToCount);
+
+            if (counterNonceLocal !== counterNonce) {
+                return;
+            }
+
             counter.text(tokens);
             total_tokens += tokens;
             permanent_tokens += isPermanent ? tokens : 0;
             input.data('last-value-hash', valueHash);
         }
-    });
+    }
 
     // Warn if total tokens exceeds the limit of half the max context
     const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);

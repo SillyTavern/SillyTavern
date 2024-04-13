@@ -5,7 +5,7 @@ import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-no
 import { registerSlashCommand } from './slash-commands.js';
 import { isMobile } from './RossAscends-mods.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
-import { getTokenCount } from './tokenizers.js';
+import { getTokenCountAsync } from './tokenizers.js';
 import { power_user } from './power-user.js';
 import { getTagKeyForEntity } from './tags.js';
 import { resolveVariable } from './variables.js';
@@ -1189,8 +1189,8 @@ function getWorldEntry(name, data, entry) {
 
     // content
     const counter = template.find('.world_entry_form_token_counter');
-    const countTokensDebounced = debounce(function (counter, value) {
-        const numberOfTokens = getTokenCount(value);
+    const countTokensDebounced = debounce(async function (counter, value) {
+        const numberOfTokens = await getTokenCountAsync(value);
         $(counter).text(numberOfTokens);
     }, 1000);
 
@@ -2177,7 +2177,7 @@ async function checkWorldInfo(chat, maxContext) {
         const newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = '';
-        const textToScanTokens = getTokenCount(allActivatedText);
+        const textToScanTokens = await getTokenCountAsync(allActivatedText);
         const probabilityChecksBefore = failedProbabilityChecks.size;
 
         filterByInclusionGroups(newEntries, allActivatedEntries);
@@ -2194,7 +2194,7 @@ async function checkWorldInfo(chat, maxContext) {
 
             newContent += `${substituteParams(entry.content)}\n`;
 
-            if (textToScanTokens + getTokenCount(newContent) >= budget) {
+            if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
                 console.debug('WI budget reached, stopping');
                 if (world_info_overflow_alert) {
                     console.log('Alerting');

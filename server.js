@@ -556,12 +556,14 @@ const setupTasks = async function () {
     await statsEndpoint.init();
 
     const cleanupPlugins = await loadPlugins();
+    const consoleTitle = process.title;
 
     const exitProcess = async () => {
         statsEndpoint.onExit();
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
         }
+        setWindowTitle(consoleTitle);
         process.exit();
     };
 
@@ -577,6 +579,8 @@ const setupTasks = async function () {
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
+
+    setWindowTitle('SillyTavern WebServer');
 
     console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
 
@@ -616,6 +620,19 @@ if (listen && !enableWhitelist && !basicAuthMode) {
     else {
         console.error(color.red('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.'));
         process.exit(1);
+    }
+}
+
+/**
+ * Set the title of the terminal window
+ * @param {string} title Desired title for the window
+ */
+function setWindowTitle(title) {
+    if (process.platform === 'win32') {
+        process.title = title;
+    }
+    else {
+        process.stdout.write(`\x1b]2;${title}\x1b\x5c`);
     }
 }
 
