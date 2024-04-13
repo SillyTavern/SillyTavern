@@ -192,17 +192,65 @@ export class SlashCommandParser {
         return executor;
     }
 
+    /**
+     * Moves the index <length> number of characters forward and returns the last character taken.
+     * @param {number} length Number of characters to take.
+     * @param {boolean} keep Whether to add the characters to the kept text.
+     * @returns The last character taken.
+     */
     take(length = 1, keep = false) {
-        let content = '';
-        while (length-- > 0) {
-            content += this.char;
-            this.index++;
-        }
+        let content = this.char;
+        this.index++;
         if (keep) this.keptText += content;
+        if (length > 1) {
+            content = this.take(length - 1, keep);
+        }
         return content;
     }
     discardWhitespace() {
         while (/\s/.test(this.char)) this.take(); // discard whitespace
+    }
+    /**
+     * Tests if the next characters match a symbol.
+     * Moves the index forward if the next characters are backslashes directly followed by the symbol.
+     * Expects that the current char is taken after testing.
+     * @param {string|RegExp} sequence Sequence of chars or regex character group that is the symbol.
+     * @param {number} offset Offset from the current index (won't move the index if offset != 0).
+     * @returns Whether the next characters are the indicated symbol.
+     */
+    testSymbol(sequence, offset = 0) {
+        // /echo abc | /echo def
+        // -> TOAST: abc
+        // -> TOAST: def
+        // /echo abc \| /echo def
+        // -> TOAST: abc | /echo def
+        // /echo abc \\| /echo def
+        // -> TOAST: abc \
+        // -> TOAST: def
+        // /echo abc \\\| /echo def
+        // -> TOAST: abc \| /echo def
+        // /echo abc \\\\| /echo def
+        // -> TOAST: abc \\
+        // -> TOAST: def
+        const escapes = this.text.slice(this.index + offset).replace(/^(\\*).*$/s, '$1').length;
+        const test = (sequence instanceof RegExp) ?
+            (text) => new RegExp(`^${sequence.source}`).test(text) :
+            (text) => text.startsWith(sequence)
+        ;
+        if (test(this.text.slice(this.index + offset + escapes))) {
+            // no backslashes before sequence
+            //   -> sequence found
+            if (escapes == 0) return true;
+            // uneven number of backslashes before sequence
+            //   = the final backslash escapes the sequence
+            //   = every preceding pair is one literal backslash
+            //    -> move index forward to skip the backslash escaping the first backslash or the symbol
+            // even number of backslashes before sequence
+            //   = every pair is one literal backslash
+            //    -> move index forward to skip the backslash escaping the first backslash
+            if (offset == 0) this.index++;
+            return false;
+        }
     }
 
 
@@ -220,11 +268,11 @@ export class SlashCommandParser {
     }
 
     testClosure() {
-        return this.ahead.length > 0 && this.char == '{' && this.ahead[0] == ':' && this.behind.slice(-1) != '\\';
+        return this.testSymbol('{:');
     }
     testClosureEnd() {
         if (this.ahead.length < 1) throw new SlashCommandParserError(`Unclosed closure at position ${this.index - 2}`, this.text, this.index);
-        return this.char == ':' && this.ahead[0] == '}' && this.behind.slice(-1) != '\\';
+        return this.testSymbol(':}');
     }
     parseClosure() {
         let injectPipe = true;
@@ -253,17 +301,18 @@ export class SlashCommandParser {
             }
             this.discardWhitespace();
             // first pipe marks end of command
-            if (this.char == '|') {
+            if (this.testSymbol('|')) {
                 this.take(); // discard first pipe
                 // second pipe indicates no pipe injection for the next command
-                if (this.char == '|') {
+                if (this.testSymbol('|')) {
                     injectPipe = false;
+                    this.take(); // discard second pipe
                 }
             }
-            while (/\s|\|/.test(this.char)) this.take(); // discard whitespace and further pipes (command separator)
+            this.discardWhitespace(); // discard further whitespace
         }
         this.take(2); // discard closing :}
-        if (this.char == '(' && this.ahead[0] == ')') {
+        if (this.testSymbol('()')) {
             this.take(2); // discard ()
             closure.executeNow = true;
         }
@@ -273,7 +322,7 @@ export class SlashCommandParser {
     }
 
     testRunShorthand() {
-        return this.ahead.length > 1 && this.char == '/' && this.behind.slice(-1) != '\\' && this.ahead[0] == ':' && this.ahead[1] != '}';
+        return this.testSymbol('/:') && !this.testSymbol(':}', 1);
     }
     testRunShorthandEnd() {
         return this.testCommandEnd();
@@ -308,10 +357,10 @@ export class SlashCommandParser {
     }
 
     testCommand() {
-        return this.char == '/' && this.behind.slice(-1) != '\\' && !['/', '#'].includes(this.ahead[0]) && !(this.ahead[0] == ':' && this.ahead[1] != '}');
+        return this.testSymbol('/') && !this.testSymbol('//') && !this.testSymbol('/#') && !this.testSymbol(':}', 1);
     }
     testCommandEnd() {
-        return this.testClosureEnd() || this.endOfText || (this.char == '|' && this.behind.slice(-1) != '\\');
+        return this.testClosureEnd() || this.testSymbol('|');
     }
     parseCommand() {
         const start = this.index + 1;
@@ -401,52 +450,52 @@ export class SlashCommandParser {
             if (listValues.length == 1) return listValues[0];
             return listValues;
         }
-        return value.trim().replace(/\\([\s{:])/g, '$1');
+        return value.trim();
     }
 
     testQuotedValue() {
-        return this.char == '"' && this.behind.slice(-1) != '\\';
+        return this.testSymbol('"');
     }
     testQuotedValueEnd() {
         if (this.endOfText) {
             if (this.verifyCommandNames) throw new SlashCommandParserError(`Unexpected end of quoted value at position ${this.index}`, this.text, this.index);
             else return true;
         }
-        if (!this.verifyCommandNames && this.char == ':' && this.ahead == '}') return true;
-        return this.char == '"' && this.behind.slice(-1) != '\\';
+        if (!this.verifyCommandNames && this.testClosureEnd()) return true;
+        return this.testSymbol('"');
     }
     parseQuotedValue() {
         this.take(); // discard opening quote
         let value = '';
         while (!this.testQuotedValueEnd()) value += this.take(); // take all chars until closing quote
         this.take(); // discard closing quote
-        return value.replace(/\\(")/g, '$1');
+        return value;
     }
 
     testListValue() {
-        return this.char == '[' && this.behind.slice(-1) != '\\';
+        return this.testSymbol('[');
     }
     testListValueEnd() {
         if (this.endOfText) throw new SlashCommandParserError(`Unexpected end of list value at position ${this.index}`, this.text, this.index);
-        return this.char == ']' && this.behind.slice(-1) != '\\';
+        return this.testSymbol(']');
     }
     parseListValue() {
         let value = '';
         while (!this.testListValueEnd()) value += this.take(); // take all chars until closing bracket
         value += this.take(); // take closing bracket
-        return value.replace(/\\([[\]])/g, '$1');
+        return value;
     }
 
     testValue() {
-        return !/\s/.test(this.char);
+        return !this.testSymbol(/\s/);
     }
     testValueEnd() {
-        if (/\s/.test(this.char) && this.behind.slice(-1) != '\\') return true;
+        if (this.testSymbol(/\s/)) return true;
         return this.testCommandEnd();
     }
     parseValue() {
         let value = '';
         while (!this.testValueEnd()) value += this.take(); // take all chars until value end
-        return value.replace(/\\([\s{:])/g, '$1');
+        return value;
     }
 }
