@@ -1,8 +1,9 @@
 import { SlashCommand } from './SlashCommand.js';
+import { OPTION_TYPE, SlashCommandAutoCompleteOption } from './SlashCommandAutoCompleteOption.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
-import { SlashCommandClosureExecutor } from './SlashCommandClosureExecutor.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 import { SlashCommandParserError } from './SlashCommandParserError.js';
+import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './SlashCommandParserNameResult.js';
 // eslint-disable-next-line no-unused-vars
 import { SlashCommandScope } from './SlashCommandScope.js';
 
@@ -17,8 +18,11 @@ export class SlashCommandParser {
     /**@type {Number}*/ index;
     /**@type {SlashCommandScope}*/ scope;
 
+    /**@type {{start:number, end:number}[]}*/ closureIndex;
     /**@type {SlashCommandExecutor[]}*/ commandIndex;
     /**@type {SlashCommandScope[]}*/ scopeIndex;
+
+    get userIndex() { return this.index - 2; }
 
     get ahead() {
         return this.text.slice(this.index + 1);
@@ -170,11 +174,10 @@ export class SlashCommandParser {
 
     /**
      *
-     * @param {*} text
-     * @param {*} index
-     * @returns {SlashCommandExecutor|String[]}
+     * @param {*} text The text to parse.
+     * @param {*} index Index to check for names (cursor position).
      */
-    getCommandAt(text, index) {
+    getNameAt(text, index) {
         try {
             this.parse(text, false);
         } catch (e) {
@@ -187,9 +190,32 @@ export class SlashCommandParser {
             .slice(-1)[0]
             ?? null
         ;
-        const scope = this.scopeIndex[this.commandIndex.indexOf(executor)];
-        if (executor && executor.name == ':') return [executor, scope?.allVariableNames];
-        return executor;
+
+        if (executor) {
+            const childClosure = this.closureIndex
+                .find(it=>it.start <= index && (it.end >= index || it.end == null) && it.start > executor.start)
+                ?? null
+            ;
+            if (childClosure !== null) return null;
+            if (executor.name == ':') {
+                return new SlashCommandParserNameResult(
+                    NAME_RESULT_TYPE.CLOSURE,
+                    executor.value.toString(),
+                    executor.start,
+                    this.scopeIndex[this.commandIndex.indexOf(executor)]
+                        ?.allVariableNames
+                        ?.map(it=>new SlashCommandAutoCompleteOption(OPTION_TYPE.VARIABLE_NAME, it, it))
+                        ?? []
+                    ,
+                );
+            }
+            return new SlashCommandParserNameResult(
+                NAME_RESULT_TYPE.COMMAND,
+                executor.name,
+                executor.start,
+            );
+        }
+        return null;
     }
 
     /**
@@ -260,6 +286,7 @@ export class SlashCommandParser {
         this.keptText = '';
         this.index = 0;
         this.scope = null;
+        this.closureIndex = [];
         this.commandIndex = [];
         this.scopeIndex = [];
         const closure = this.parseClosure();
@@ -271,10 +298,12 @@ export class SlashCommandParser {
         return this.testSymbol('{:');
     }
     testClosureEnd() {
-        if (this.ahead.length < 1) throw new SlashCommandParserError(`Unclosed closure at position ${this.index - 2}`, this.text, this.index);
+        if (this.ahead.length < 1) throw new SlashCommandParserError(`Unclosed closure at position ${this.userIndex}`, this.text, this.index);
         return this.testSymbol(':}');
     }
     parseClosure() {
+        const closureIndexEntry = { start:this.index + 1, end:null };
+        this.closureIndex.push(closureIndexEntry);
         let injectPipe = true;
         this.take(2); // discard opening {:
         let closure = new SlashCommandClosure(this.scope);
@@ -316,6 +345,7 @@ export class SlashCommandParser {
             this.take(2); // discard ()
             closure.executeNow = true;
         }
+        closureIndexEntry.end = this.index - 1;
         this.discardWhitespace(); // discard trailing whitespace
         this.scope = closure.scope.parent;
         return closure;
@@ -352,12 +382,12 @@ export class SlashCommandParser {
             return cmd;
         } else {
             console.warn(this.behind, this.char, this.ahead);
-            throw new SlashCommandParserError(`Unexpected end of command at position ${this.index - 2}: "/${cmd.name}"`, this.text, this.index);
+            throw new SlashCommandParserError(`Unexpected end of command at position ${this.userIndex}: "/${cmd.name}"`, this.text, this.index);
         }
     }
 
     testCommand() {
-        return this.testSymbol('/') && !this.testSymbol('//') && !this.testSymbol('/#') && !this.testSymbol(':}', 1);
+        return this.testSymbol('/') && !this.testSymbol('//') && !this.testSymbol('/#');
     }
     testCommandEnd() {
         return this.testClosureEnd() || this.testSymbol('|');
@@ -396,7 +426,7 @@ export class SlashCommandParser {
             return cmd;
         } else {
             console.warn(this.behind, this.char, this.ahead);
-            throw new SlashCommandParserError(`Unexpected end of command at position ${this.index - 2}: "/${cmd.name}"`, this.text, this.index);
+            throw new SlashCommandParserError(`Unexpected end of command at position ${this.userIndex}: "/${cmd.name}"`, this.text, this.index);
         }
     }
 

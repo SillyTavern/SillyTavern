@@ -56,6 +56,8 @@ import { background_settings } from './backgrounds.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
+import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './slash-commands/SlashCommandParserNameResult.js';
+import { OPTION_TYPE, SlashCommandAutoCompleteOption } from './slash-commands/SlashCommandAutoCompleteOption.js';
 export {
     executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -1797,8 +1799,8 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     let selectedItem = null;
     let isActive = false;
     let text;
-    /**@type {SlashCommandExecutor}*/
-    let executor;
+    /**@type {SlashCommandParserNameResult}*/
+    let parserResult;
     let clone;
     let startQuote;
     let endQuote;
@@ -1816,56 +1818,73 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
 
         // request parser to get command executor (potentially "incomplete", i.e. not an actual existing command) for
         // cursor position
-        const parserResult = parser.getCommandAt(text, textarea.selectionStart);
-        let run;
-        let options;
-        if (Array.isArray(parserResult)) {
-            executor = null;
-            run = parserResult[0];
-            options = parserResult[1];
-            startQuote = text[run.start - 2] == '"';
-            endQuote = startQuote && text[run.start - 2 + run.value.length + 1] == '"';
-            try {
-                const qrApi = (await import('./extensions/quick-reply/index.js')).quickReplyApi;
-                options.push(...qrApi.listSets().map(set=>qrApi.listQuickReplies(set).map(qr=>`${set}.${qr}`)).flat());
-            } catch { /* empty */ }
-        } else {
-            executor = parserResult;
+        parserResult = parser.getNameAt(text, textarea.selectionStart);
+        switch (parserResult?.type) {
+            case NAME_RESULT_TYPE.CLOSURE: {
+                startQuote = text[parserResult.start - 2] == '"';
+                endQuote = startQuote && text[parserResult.start - 2 + parserResult.name.length + 1] == '"';
+                try {
+                    const qrApi = (await import('./extensions/quick-reply/index.js')).quickReplyApi;
+                    parserResult.optionList.push(...qrApi.listSets()
+                        .map(set=>qrApi.listQuickReplies(set).map(qr=>`${set}.${qr}`))
+                        .flat()
+                        .map(qr=>new SlashCommandAutoCompleteOption(OPTION_TYPE.QUICK_REPLY, qr, qr)),
+                    );
+                } catch { /* empty */ }
+                break;
+            }
+            default: // no result -> empty slash "/" -> list all commands
+            case NAME_RESULT_TYPE.COMMAND: {
+                parserResult.optionList.push(...Object.keys(parser.commands)
+                    .map(key=>new SlashCommandAutoCompleteOption(OPTION_TYPE.COMMAND, parser.commands[key], key)),
+                );
+                break;
+            }
         }
-        let slashCommand = run ? run.value?.toLowerCase() : executor?.name?.toLowerCase() ?? '';
+        let slashCommand = parserResult?.name?.toLowerCase() ?? '';
         // do autocomplete if triggered by a user input and we either don't have an executor or the cursor is at the end
         // of the name part of the command
-        if (options) {
-            isReplacable = isInput && (!run.value ? true : textarea.selectionStart == run.start - 2 + run.value.length + (startQuote ? 1 : 0));
-        } else {
-            isReplacable = isInput && (!executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length);
-        }
-        // if forced (ctrl+space) or user input and cursor is in the middle of the name part (not at the end)
-        if ((isForced || isInput)
-            && (
-                ((executor) && textarea.selectionStart >= executor.start - 2 && textarea.selectionStart <= executor.start - 2 + executor.name.length)
-                ||
-                ((run) && textarea.selectionStart >= run.start - 2 && textarea.selectionStart <= run.start - 2 + run.value.length + (startQuote ? 1 : 0))
-            )
-        ){
-            if (run) {
-                slashCommand = slashCommand.slice(0, textarea.selectionStart - (run.start - 2) - (startQuote ? 1 : 0));
-                run.value = slashCommand;
-                run.end = run.start + slashCommand.length;
-            } else {
-                slashCommand = slashCommand.slice(0, textarea.selectionStart - (executor.start - 2));
-                executor.name = slashCommand;
-                executor.end = executor.start + slashCommand.length;
+        switch (parserResult?.type) {
+            case NAME_RESULT_TYPE.CLOSURE: {
+                isReplacable = isInput && (!parserResult ? true : textarea.selectionStart == parserResult.start - 2 + parserResult.name.length + (startQuote ? 1 : 0));
+                break;
             }
-            isReplacable = true;
+            default: // no result -> empty slash "/" -> list all commands
+            case NAME_RESULT_TYPE.COMMAND: {
+                isReplacable = isInput && (!parserResult ? true : textarea.selectionStart == parserResult.start - 2 + parserResult.name.length);
+                break;
+            }
+        }
+
+        // if forced (ctrl+space) or user input and cursor is in the middle of the name part (not at the end)
+        if (isForced || isInput) {
+            switch (parserResult?.type) {
+                case NAME_RESULT_TYPE.CLOSURE: {
+                    if (textarea.selectionStart >= parserResult.start - 2 && textarea.selectionStart <= parserResult.start - 2 + parserResult.name.length + (startQuote ? 1 : 0)) {
+                        slashCommand = slashCommand.slice(0, textarea.selectionStart - (parserResult.start - 2) - (startQuote ? 1 : 0));
+                        parserResult.name = slashCommand;
+                        isReplacable = true;
+                    }
+                    break;
+                }
+                default: // no result -> empty slash "/" -> list all commands
+                case NAME_RESULT_TYPE.COMMAND: {
+                    if (textarea.selectionStart >= parserResult.start - 2 && textarea.selectionStart <= parserResult.start - 2 + parserResult.name.length) {
+                        slashCommand = slashCommand.slice(0, textarea.selectionStart - (parserResult.start - 2));
+                        parserResult.name = slashCommand;
+                        isReplacable = true;
+                    }
+                    break;
+                }
+            }
         }
 
         const matchType = power_user.stscript?.matching ?? 'strict';
         const fuzzyRegex = new RegExp(`^(.*?)${slashCommand.split('').map(char=>`(${escapeRegex(char)})`).join('(.*?)')}(.*?)$`, 'i');
         const matchers = {
-            'strict': (cmd) => cmd.toLowerCase().startsWith(slashCommand),
-            'includes': (cmd) => cmd.toLowerCase().includes(slashCommand),
-            'fuzzy': (cmd) => fuzzyRegex.test(cmd),
+            'strict': (name) => name.toLowerCase().startsWith(slashCommand),
+            'includes': (name) => name.toLowerCase().includes(slashCommand),
+            'fuzzy': (name) => fuzzyRegex.test(name),
         };
         const fuzzyScore = (name) => {
             const parts = fuzzyRegex.exec(name).slice(1, -1);
@@ -1931,39 +1950,50 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         };
 
         // don't show if no executor found, i.e. cursor's area is not a command
-        if (!executor && !options) return hide();
+        if (!parserResult) return hide();
         else {
-            const helpStrings = (options ?? Object.keys(parser.commands)) // Get all slash commands
-                .filter(it => run?.value == '' || executor?.name == '' || isReplacable ? matchers[matchType](it) : it.toLowerCase() == slashCommand) // Filter by the input
+            const matchingOptions = parserResult.optionList
+                .filter(it => isReplacable || it.name == '' ? matchers[matchType](it.name) : it.name.toLowerCase() == slashCommand) // Filter by the input
             ;
-            result = helpStrings
-                .filter((it,idx)=>options || [idx, -1].includes(helpStrings.indexOf(parser.commands[it].name.toLowerCase()))) // remove duplicates
-                .map(name => {
-                    if (options) {
-                        return {
-                            name: name,
-                            label: `<span class="type monospace">${name.includes('.')?'QR':'𝑥'}</span> ${buildHelpStringName(name, true)}`,
-                            value: name.includes(' ') || startQuote || endQuote ? `"${name}"` : `${name}`,
-                            score: matchType == 'fuzzy' ? fuzzyScore(name) : null,
-                            li: null,
-                        };
-                    }
-                    const cmd = parser.commands[name];
+            result = matchingOptions
+                .filter((it,idx) => matchingOptions.indexOf(it) == idx)
+                .map(option => {
+                    let typeIcon = '';
+                    let noSlash = false;
+                    let helpString = '';
                     let aliases = '';
-                    if (cmd.aliases?.length > 0) {
-                        aliases = ' (alias: ';
-                        aliases += [cmd.name, ...cmd.aliases]
-                            .filter(it=>it != name)
-                            .map(it=>`<span class="monospace">/${it}</span>`)
-                            .join(', ')
-                        ;
-                        aliases += ')';
+                    switch (option.type) {
+                        case OPTION_TYPE.QUICK_REPLY: {
+                            typeIcon = 'QR';
+                            noSlash = true;
+                            break;
+                        }
+                        case OPTION_TYPE.VARIABLE_NAME: {
+                            typeIcon = '𝑥';
+                            noSlash = true;
+                            break;
+                        }
+                        case OPTION_TYPE.COMMAND: {
+                            typeIcon = '/';
+                            noSlash = false;
+                            helpString = option.value.helpString;
+                            if (option.value.aliases.length > 0) {
+                                aliases = ' (alias: ';
+                                aliases += [option.value.name, ...option.value.aliases]
+                                    .filter(it=>it != option)
+                                    .map(it=>`<span class="monospace">/${it}</span>`)
+                                    .join(', ')
+                                ;
+                                aliases += ')';
+                            }
+                            break;
+                        }
                     }
                     return {
-                        name: name,
-                        label: `${buildHelpStringName(name)}${cmd.helpString}${aliases}`,
-                        value: `${name}`,
-                        score: matchType == 'fuzzy' ? fuzzyScore(name) : null,
+                        name: option.name,
+                        label: `<span class="type monospace">${typeIcon}</span> ${buildHelpStringName(option.name, noSlash)}${helpString}${aliases}`,
+                        value: option.name.includes(' ') || startQuote || endQuote ? `"${option.name}"` : `${option.name}`,
+                        score: matchType == 'fuzzy' ? fuzzyScore(option.name) : null,
                         li: null,
                     };
                 }) // Map to the help string and score
@@ -1977,26 +2007,31 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                 return hide();
             }
             // otherwise add "no match" notice
-            if (options) {
-                result.push({
-                    name: '',
-                    label: slashCommand.length ?
-                        `No matching variables in scope for "${slashCommand}"`
-                        : 'No variables in scope.',
-                    value: null,
-                    score: null,
-                    li: null,
-                });
-            } else {
-                result.push({
-                    name: '',
-                    label: `No matching commands for "/${slashCommand}"`,
-                    value: null,
-                    score: null,
-                    li: null,
-                });
+            switch (parserResult.type) {
+                case NAME_RESULT_TYPE.CLOSURE: {
+                    result.push({
+                        name: '',
+                        label: slashCommand.length ?
+                            `No matching variables in scope and no matching Quick Replies for "${slashCommand}"`
+                            : 'No variables in scope and no Quick Replies found.',
+                        value: null,
+                        score: null,
+                        li: null,
+                    });
+                    break;
+                }
+                case NAME_RESULT_TYPE.COMMAND: {
+                    result.push({
+                        name: '',
+                        label: `No matching commands for "/${slashCommand}"`,
+                        value: null,
+                        score: null,
+                        li: null,
+                    });
+                    break;
+                }
             }
-        } else if (result.length == 1 && ((executor && result[0].value == `/${executor.name}`) || (options && result[0].value == run.value))) {
+        } else if (result.length == 1 && parserResult && result[0].name == parserResult.name) {
             // only one result that is exactly the current value? just show hint, no autocomplete
             isReplacable = false;
         } else if (!isReplacable && result.length > 1) {
@@ -2051,9 +2086,6 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         updatePosition();
         document.body.append(dom);
         isActive = true;
-        if (options) {
-            executor = {start:run.start, name:`${slashCommand}`};
-        }
     };
     const updatePosition = () => {
         if (isFloating) {
@@ -2128,10 +2160,10 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     let pointerup = Promise.resolve();
     const select = async() => {
         if (isReplacable && selectedItem.value !== null) {
-            textarea.value = `${text.slice(0, executor.start - 2)}${selectedItem.value}${text.slice(executor.start - 2 + executor.name.length + (startQuote ? 1 : 0) + (endQuote ? 1 : 0))}`;
+            textarea.value = `${text.slice(0, parserResult.start - 2)}${selectedItem.value}${text.slice(parserResult.start - 2 + parserResult.name.length + (startQuote ? 1 : 0) + (endQuote ? 1 : 0))}`;
             await pointerup;
             textarea.focus();
-            textarea.selectionStart = executor.start - 2 + selectedItem.value.length;
+            textarea.selectionStart = parserResult.start - 2 + selectedItem.value.length;
             textarea.selectionEnd = textarea.selectionStart;
             show();
         }
