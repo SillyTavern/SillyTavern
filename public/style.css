@@ -1129,6 +1129,15 @@ select {
             background-color: var(--ac-color-selected-background);
             color: var(--ac-color-selected-text);
         }
+        > .type {
+            display: inline-block;
+            width: 2.75em;
+            font-size: 0.8em;
+            text-align: center;
+            opacity: 0.6;
+            &:before { content: "["; }
+            &:after { content: "]"; }
+        }
         .matched {
             background-color: var(--ac-color-matched-background);
             color: var(--ac-color-matched-text);

@@ -18,6 +18,7 @@ export class SlashCommandParser {
     /**@type {SlashCommandScope}*/ scope;
 
     /**@type {SlashCommandExecutor[]}*/ commandIndex;
+    /**@type {SlashCommandScope[]}*/ scopeIndex;
 
     get ahead() {
         return this.text.slice(this.index + 1);
@@ -167,6 +168,12 @@ export class SlashCommandParser {
         <li>This will remove the first message in chat, send a system message that starts with 'Hello,', and then ask the AI to continue the message.</li></ul>`;
     }
 
+    /**
+     *
+     * @param {*} text
+     * @param {*} index
+     * @returns {SlashCommandExecutor|String[]}
+     */
     getCommandAt(text, index) {
         try {
             this.parse(text, false);
@@ -180,7 +187,8 @@ export class SlashCommandParser {
             .slice(-1)[0]
             ?? null
         ;
-        if (executor && executor.name == ':') return null;
+        const scope = this.scopeIndex[this.commandIndex.indexOf(executor)];
+        if (executor && executor.name == ':') return [executor, scope?.allVariableNames];
         return executor;
     }
 
@@ -205,6 +213,7 @@ export class SlashCommandParser {
         this.index = 0;
         this.scope = null;
         this.commandIndex = [];
+        this.scopeIndex = [];
         const closure = this.parseClosure();
         closure.keptText = this.keptText;
         return closure;
@@ -226,6 +235,7 @@ export class SlashCommandParser {
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
             closure.arguments[arg.key] = arg.value;
+            this.scope.variableNames.push(arg.key);
             this.discardWhitespace();
         }
         while (!this.testClosureEnd()) {
@@ -269,12 +279,13 @@ export class SlashCommandParser {
         return this.testCommandEnd();
     }
     parseRunShorthand() {
-        const start = this.index;
+        const start = this.index + 2;
         const cmd = new SlashCommandExecutor(start);
         cmd.name = ':';
         cmd.value = '';
-        cmd.command = this.commands[cmd.name];
+        cmd.command = this.commands['run'];
         this.commandIndex.push(cmd);
+        this.scopeIndex.push(this.scope.getCopy());
         this.take(2); //discard "/:"
         if (this.testQuotedValue()) cmd.value = this.parseQuotedValue();
         else cmd.value = this.parseValue();
@@ -303,9 +314,10 @@ export class SlashCommandParser {
         return this.testClosureEnd() || this.endOfText || (this.char == '|' && this.behind.slice(-1) != '\\');
     }
     parseCommand() {
-        const start = this.index;
+        const start = this.index + 1;
         const cmd = new SlashCommandExecutor(start);
         this.commandIndex.push(cmd);
+        this.scopeIndex.push(this.scope.getCopy());
         this.take(); // discard "/"
         while (!/\s/.test(this.char) && !this.testCommandEnd()) cmd.name += this.take(); // take chars until whitespace or end
         this.discardWhitespace();
@@ -319,6 +331,15 @@ export class SlashCommandParser {
         this.discardWhitespace();
         if (this.testUnnamedArgument()) {
             cmd.value = this.parseUnnamedArgument();
+            if (cmd.name == 'let') {
+                if (Array.isArray(cmd.value)) {
+                    if (typeof cmd.value[0] == 'string') {
+                        this.scope.variableNames.push(cmd.value[0]);
+                    }
+                } else if (typeof cmd.value == 'string') {
+                    this.scope.variableNames.push(cmd.value.split(/\s+/)[0]);
+                }
+            }
         }
         if (this.testCommandEnd()) {
             cmd.end = this.index;
@@ -380,7 +401,7 @@ export class SlashCommandParser {
             if (listValues.length == 1) return listValues[0];
             return listValues;
         }
-        return value.trim();
+        return value.trim().replace(/\\([\s{:])/g, '$1');
     }
 
     testQuotedValue() {

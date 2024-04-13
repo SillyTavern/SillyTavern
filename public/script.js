@@ -2393,7 +2393,7 @@ async function processCommands(message) {
     }
 
     const previousText = String($('#send_textarea').val());
-    const result = await executeSlashCommands(message);
+    const result = await executeSlashCommands(message, true, null, true);
 
     if (!result || typeof result !== 'object') {
         return false;

@@ -1757,7 +1757,7 @@ function modelCallback(_, model) {
  * @param {SlashCommandScope} scope The scope to be used when executing the commands.
  * @returns {Promise<SlashCommandClosureResult>}
  */
-async function executeSlashCommands(text, handleParserErrors = true, scope = null) {
+async function executeSlashCommands(text, handleParserErrors = true, scope = null, handleExecutionErrors = false) {
     if (!text) {
         return null;
     }
@@ -1780,13 +1780,26 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
                 'SlashCommandParserError',
                 { escapeHtml:false, timeOut: 10000, onclick:()=>callPopup(toast, 'text') },
             );
-            return;
+            const result = new SlashCommandClosureResult();
+            result.interrupt = true;
+            return result;
         } else {
             throw e;
         }
     }
 
-    return await closure.execute();
+    try {
+        return await closure.execute();
+    } catch (e) {
+        if (handleExecutionErrors) {
+            toastr.error(e.message);
+            const result = new SlashCommandClosureResult();
+            result.interrupt = true;
+            return result;
+        } else {
+            throw e;
+        }
+    }
 }
 
 /**
@@ -1794,7 +1807,7 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
  * @param {HTMLTextAreaElement} textarea The textarea to receive autocomplete
  * @param {Boolean} isFloating Whether to show the auto complete as a floating window (e.g., large QR editor)
  */
-export function setSlashCommandAutoComplete(textarea, isFloating = false) {
+export async function setSlashCommandAutoComplete(textarea, isFloating = false) {
     const dom = document.createElement('ul'); {
         dom.classList.add('slashCommandAutoComplete');
     }
@@ -1803,13 +1816,16 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
     let selectedItem = null;
     let isActive = false;
     let text;
+    /**@type {SlashCommandExecutor}*/
     let executor;
     let clone;
+    let startQuote;
+    let endQuote;
     const hide = () => {
         dom?.remove();
         isActive = false;
     };
-    const show = (isInput = false, isForced = false) => {
+    const show = async(isInput = false, isForced = false) => {
         //TODO check if isInput and isForced are both required
         text = textarea.value;
         // only show with textarea in focus
@@ -1819,16 +1835,47 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
 
         // request parser to get command executor (potentially "incomplete", i.e. not an actual existing command) for
         // cursor position
-        executor = parser.getCommandAt(text, textarea.selectionStart);
-        let slashCommand = executor?.name?.toLowerCase() ?? '';
+        const parserResult = parser.getCommandAt(text, textarea.selectionStart);
+        let run;
+        let options;
+        if (Array.isArray(parserResult)) {
+            executor = null;
+            run = parserResult[0];
+            options = parserResult[1];
+            startQuote = text[run.start - 2] == '"';
+            endQuote = startQuote && text[run.start - 2 + run.value.length + 1] == '"';
+            try {
+                const qrApi = (await import('./extensions/quick-reply/index.js')).quickReplyApi;
+                options.push(...qrApi.listSets().map(set=>qrApi.listQuickReplies(set).map(qr=>`${set}.${qr}`)).flat());
+            } catch { /* empty */ }
+        } else {
+            executor = parserResult;
+        }
+        let slashCommand = run ? run.value?.toLowerCase() : executor?.name?.toLowerCase() ?? '';
         // do autocomplete if triggered by a user input and we either don't have an executor or the cursor is at the end
         // of the name part of the command
-        isReplacable = isInput && (!executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length + 1);
+        if (options) {
+            isReplacable = isInput && (!run.value ? true : textarea.selectionStart == run.start - 2 + run.value.length + (startQuote ? 1 : 0));
+        } else {
+            isReplacable = isInput && (!executor ? true : textarea.selectionStart == executor.start - 2 + executor.name.length);
+        }
         // if forced (ctrl+space) or user input and cursor is in the middle of the name part (not at the end)
-        if ((isForced || isInput) && executor && textarea.selectionStart > executor.start - 2 && textarea.selectionStart <= executor.start - 2 + executor.name.length + 1) {
-            slashCommand = slashCommand.slice(0, textarea.selectionStart - (executor.start - 2) - 1);
-            executor.name = slashCommand;
-            executor.end = executor.start + slashCommand.length;
+        if ((isForced || isInput)
+            && (
+                ((executor) && textarea.selectionStart >= executor.start - 2 && textarea.selectionStart <= executor.start - 2 + executor.name.length)
+                ||
+                ((run) && textarea.selectionStart >= run.start - 2 && textarea.selectionStart <= run.start - 2 + run.value.length + (startQuote ? 1 : 0))
+            )
+        ){
+            if (run) {
+                slashCommand = slashCommand.slice(0, textarea.selectionStart - (run.start - 2) - (startQuote ? 1 : 0));
+                run.value = slashCommand;
+                run.end = run.start + slashCommand.length;
+            } else {
+                slashCommand = slashCommand.slice(0, textarea.selectionStart - (executor.start - 2));
+                executor.name = slashCommand;
+                executor.end = executor.start + slashCommand.length;
+            }
             isReplacable = true;
         }
 
@@ -1874,14 +1921,14 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
             if (a.score.longestConsecutive < b.score.longestConsecutive) return 1;
             return a.name.localeCompare(b.name);
         };
-        const buildHelpStringName = (name) => {
+        const buildHelpStringName = (name, noSlash=false) => {
             switch (matchType) {
                 case 'strict': {
-                    return `<span class="monospace">/<span class="matched">${name.slice(0, slashCommand.length)}</span>${name.slice(slashCommand.length)}</span> `;
+                    return `<span class="monospace">${noSlash?'':'/'}<span class="matched">${name.slice(0, slashCommand.length)}</span>${name.slice(slashCommand.length)}</span> `;
                 }
                 case 'includes': {
                     const start = name.toLowerCase().search(slashCommand);
-                    return `<span class="monospace">/${name.slice(0, start)}<span class="matched">${name.slice(start, start + slashCommand.length)}</span>${name.slice(start + slashCommand.length)}</span> `;
+                    return `<span class="monospace">${noSlash?'':'/'}${name.slice(0, start)}<span class="matched">${name.slice(start, start + slashCommand.length)}</span>${name.slice(start + slashCommand.length)}</span> `;
                 }
                 case 'fuzzy': {
                     const matched = name.replace(fuzzyRegex, (_, ...parts)=>{
@@ -1897,21 +1944,29 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                             return it;
                         }).join('');
                     });
-                    return `<span class="monospace">/${matched}</span> `;
+                    return `<span class="monospace">${noSlash?'':'/'}${matched}</span> `;
                 }
             }
         };
 
         // don't show if no executor found, i.e. cursor's area is not a command
-        if (!executor) return hide();
+        if (!executor && !options) return hide();
         else {
-            const helpStrings = Object
-                .keys(parser.commands) // Get all slash commands
-                .filter(it => executor.name == '' || isReplacable ? matchers[matchType](it) : it.toLowerCase() == slashCommand) // Filter by the input
+            const helpStrings = (options ?? Object.keys(parser.commands)) // Get all slash commands
+                .filter(it => run?.value == '' || executor?.name == '' || isReplacable ? matchers[matchType](it) : it.toLowerCase() == slashCommand) // Filter by the input
             ;
             result = helpStrings
-                .filter((it,idx)=>[idx, -1].includes(helpStrings.indexOf(parser.commands[it].name.toLowerCase()))) // remove duplicates
+                .filter((it,idx)=>options || [idx, -1].includes(helpStrings.indexOf(parser.commands[it].name.toLowerCase()))) // remove duplicates
                 .map(name => {
+                    if (options) {
+                        return {
+                            name: name,
+                            label: `<span class="type monospace">${name.includes('.')?'QR':'𝑥'}</span> ${buildHelpStringName(name, true)}`,
+                            value: name.includes(' ') || startQuote || endQuote ? `"${name}"` : `${name}`,
+                            score: matchType == 'fuzzy' ? fuzzyScore(name) : null,
+                            li: null,
+                        };
+                    }
                     const cmd = parser.commands[name];
                     let aliases = '';
                     if (cmd.aliases?.length > 0) {
@@ -1926,7 +1981,7 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                     return {
                         name: name,
                         label: `${buildHelpStringName(name)}${cmd.helpString}${aliases}`,
-                        value: `/${name}`,
+                        value: `${name}`,
                         score: matchType == 'fuzzy' ? fuzzyScore(name) : null,
                         li: null,
                     };
@@ -1941,16 +1996,30 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
                 return hide();
             }
             // otherwise add "no match" notice
-            result.push({
-                name: '',
-                label: `No matching commands for "/${slashCommand}"`,
-                value:'',
-                score: null,
-                li: null,
-            });
-        } else if (result.length == 1 && result[0].value == `/${executor.name}`) {
+            if (options) {
+                result.push({
+                    name: '',
+                    label: slashCommand.length ?
+                        `No matching variables in scope for "${slashCommand}"`
+                        : 'No variables in scope.',
+                    value: null,
+                    score: null,
+                    li: null,
+                });
+            } else {
+                result.push({
+                    name: '',
+                    label: `No matching commands for "/${slashCommand}"`,
+                    value: null,
+                    score: null,
+                    li: null,
+                });
+            }
+        } else if (result.length == 1 && ((executor && result[0].value == `/${executor.name}`) || (options && result[0].value == run.value))) {
             // only one result that is exactly the current value? just show hint, no autocomplete
             isReplacable = false;
+        } else if (!isReplacable && result.length > 1) {
+            return hide();
         }
 
         // render autocomplete list
@@ -2001,6 +2070,9 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
         updatePosition();
         document.body.append(dom);
         isActive = true;
+        if (options) {
+            executor = {start:run.start, name:`${slashCommand}`};
+        }
     };
     const updatePosition = () => {
         if (isFloating) {
@@ -2074,8 +2146,8 @@ export function setSlashCommandAutoComplete(textarea, isFloating = false) {
     };
     let pointerup = Promise.resolve();
     const select = async() => {
-        if (isReplacable) {
-            textarea.value = `${text.slice(0, executor.start - 2)}${selectedItem.value}${text.slice(executor.start - 2 + executor.name.length + 1)}`;
+        if (isReplacable && selectedItem.value !== null) {
+            textarea.value = `${text.slice(0, executor.start - 2)}${selectedItem.value}${text.slice(executor.start - 2 + executor.name.length + (startQuote ? 1 : 0) + (endQuote ? 1 : 0))}`;
             await pointerup;
             textarea.focus();
             textarea.selectionStart = executor.start - 2 + selectedItem.value.length;

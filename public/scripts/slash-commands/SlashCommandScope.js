@@ -1,8 +1,13 @@
 export class SlashCommandScope {
+    /**@type {String[]}*/ variableNames = [];
+    get allVariableNames() {
+        const names = [...this.variableNames, ...(this.parent?.allVariableNames ?? [])];
+        return names.filter((it,idx)=>idx == names.indexOf(it));
+    }
     // @ts-ignore
-    /**@type {Map<String, Object>}*/ variables = {};
+    /**@type {Object.<string, Object>}*/ variables = {};
     // @ts-ignore
-    /**@type {Map<String, Object>}*/ macros = {};
+    /**@type {Object.<string, Object>}*/ macros = {};
     get macroList() {
         return [...Object.keys(this.macros).map(key=>({ key, value:this.macros[key] })), ...(this.parent?.macroList ?? [])];
     }
@@ -22,6 +27,7 @@ export class SlashCommandScope {
 
     getCopy() {
         const scope = new SlashCommandScope(this.parent);
+        scope.variableNames = [...this.variableNames];
         scope.variables = Object.assign({}, this.variables);
         scope.macros = this.macros;
         scope.#pipe = this.#pipe;

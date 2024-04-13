@@ -8,9 +8,9 @@ export class SlashCommandClosure {
     /**@type {SlashCommandScope}*/ scope;
     /**@type {Boolean}*/ executeNow = false;
     // @ts-ignore
-    /**@type {Map<string,string|SlashCommandClosure>}*/ arguments = {};
+    /**@type {Object.<string,string|SlashCommandClosure>}*/ arguments = {};
     // @ts-ignore
-    /**@type {Map<string,string|SlashCommandClosure>}*/ providedArguments = {};
+    /**@type {Object.<string,string|SlashCommandClosure>}*/ providedArguments = {};
     /**@type {SlashCommandExecutor[]}*/ executorList = [];
     /**@type {String}*/ keptText;
 

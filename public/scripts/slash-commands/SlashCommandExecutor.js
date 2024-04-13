@@ -10,7 +10,7 @@ export class SlashCommandExecutor {
     /**@type {String}*/ name = '';
     /**@type {SlashCommand}*/ command;
     // @ts-ignore
-    /**@type {Map<String,String|SlashCommandClosure>}*/ args = {};
+    /**@type {Object.<string,String|SlashCommandClosure>}*/ args = {};
     /**@type {String|SlashCommandClosure|(String|SlashCommandClosure)[]}*/ value;
 
     constructor(start) {
