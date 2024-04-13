@@ -429,6 +429,10 @@
         "type": "context"
     },
     {
+        "filename": "presets/context/Command R.json",
+        "type": "context"
+    },
+    {
         "filename": "presets/instruct/Adventure.json",
         "type": "instruct"
     },
@@ -510,6 +514,10 @@
     },
     {
         "filename": "presets/instruct/simple-proxy-for-tavern.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Command R.json",
         "type": "instruct"
     }
 ]
