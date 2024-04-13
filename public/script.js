@@ -82,6 +82,7 @@ import {
     flushEphemeralStoppingStrings,
     context_presets,
     resetMovableStyles,
+    forceCharacterEditorTokenize,
 } from './scripts/power-user.js';
 
 import {
@@ -5840,10 +5841,11 @@ function changeMainAPI() {
 
     if (main_api == 'koboldhorde') {
         getStatusHorde();
-        getHordeModels();
+        getHordeModels(true);
     }
 
     setupChatCompletionPromptManager(oai_settings);
+    forceCharacterEditorTokenize();
 }
 
 ////////////////////////////////////////////////////
