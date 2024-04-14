@@ -27,6 +27,11 @@
                     <option value="2">LLM</option>
                 </select>
             </div>
+            <div class="expression_llm_prompt_block m-b-1 m-t-1">
+                <label for="expression_llm_prompt">LLM Prompt</label>
+                <small>Will be used if the API doesn't support JSON schemas.</small>
+                <textarea id="expression_llm_prompt" type="text" class="text_pole" rows="2"></textarea>
+            </div>
             <div class="expression_fallback_block m-b-1 m-t-1">
                 <label for="expression_fallback">Default / Fallback Expression</label>
                 <small>Set the default and fallback expression being used when no matching expression is found.</small>
