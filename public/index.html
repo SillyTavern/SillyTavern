@@ -49,6 +49,7 @@
     <script src="lib/svg-inject.js"></script>
     <script src="lib/Readability.js"></script>
     <script src="lib/Readability-readerable.js"></script>
+    <script src="lib/jquery.izoomify.js"></script>
     <script type="module" src="lib/structured-clone/monkey-patch.js"></script>
     <script type="module" src="lib/swiped-events.js"></script>
     <script type="module" src="lib/eventemitter.js"></script>
@@ -5941,8 +5942,13 @@
     </div>
     <div id="zoomed_avatar_template" class="template_element">
         <div class="zoomed_avatar">
-            <div id="" class="fa-solid fa-grip drag-grabber"></div>
-            <img class="zoomed_avatar_img" src="">
+            <div class="fa-solid fa-grip drag-grabber"></div>
+            <div class="zoomed_avatar_container">
+                <img class="zoomed_avatar_img" src=""
+                     data-izoomify-url=""
+                     data-izoomify-magnify="1.8"
+                     data-izoomify-duration="300" alt="">
+            </div>
         </div>
     </div>
     <template id="generic_draggable_template">

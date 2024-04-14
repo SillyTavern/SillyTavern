@@ -3811,13 +3811,22 @@ body:not(.movingUI) .drawer-content.maximized {
     background-color: transparent;
     max-width: var(--maxWidth);
     left: var(--leftPosition);
+    position: absolute;
+    height: 100%;
+    max-height: 100vh !important;
+    align-items: center;
+}
+
+.zoomed_avatar_container {
+    width: 100%;
+    margin-inline: 10px;
 }
 
 .zoomed_avatar img {
-    height: 100%;
+    height: unset !important;
     width: 100%;
-    vertical-align: bottom;
-    object-fit: cover;
+    object-fit: contain !important;
+    border-radius: 10px;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
