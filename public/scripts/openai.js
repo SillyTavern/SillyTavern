@@ -209,7 +209,7 @@ const default_settings = {
     top_a_openai: 1,
     repetition_penalty_openai: 1,
     stream_openai: false,
-	websearch_cohere: false,
+    websearch_cohere: false,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
     wrap_in_quotes: false,
@@ -279,7 +279,7 @@ const oai_settings = {
     top_a_openai: 1,
     repetition_penalty_openai: 1,
     stream_openai: false,
-	websearch_cohere: false,
+    websearch_cohere: false,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
     wrap_in_quotes: false,
@@ -1618,7 +1618,6 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
     const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !(isGoogle && oai_settings.google_model.includes('bison'));
-	const websearch = oai_settings.websearch_cohere && isCohere;
     const useLogprobs = !!power_user.request_token_probabilities;
     const canMultiSwipe = oai_settings.n > 1 && !isContinue && !isImpersonate && !isQuiet && (isOAI || isCustom);
 
@@ -1665,7 +1664,6 @@ async function sendOpenAIRequest(type, messages, signal) {
         'top_p': Number(oai_settings.top_p_openai),
         'max_tokens': oai_settings.openai_max_tokens,
         'stream': stream,
-		'websearch': websearch,
         'logit_bias': logit_bias,
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
         'chat_completion_source': oai_settings.chat_completion_source,
@@ -1757,6 +1755,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['frequency_penalty'] = Math.min(Math.max(Number(oai_settings.freq_pen_openai), 0), 1);
         generate_data['presence_penalty'] = Math.min(Math.max(Number(oai_settings.pres_pen_openai), 0), 1);
         generate_data['stop'] = getCustomStoppingStrings(5);
+        generate_data['websearch'] = oai_settings.websearch_cohere;
     }
 
     if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere) && oai_settings.seed >= 0) {
@@ -2257,7 +2256,7 @@ export class ChatCompletion {
 
             const shouldSquash = (message) => {
                 return !excludeList.includes(message.identifier) && message.role === 'system' && !message.name;
-            }
+            };
 
             if (shouldSquash(message)) {
                 if (lastMessage && shouldSquash(lastMessage)) {
@@ -2604,7 +2603,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.min_p_openai = settings.min_p_openai ?? default_settings.min_p_openai;
     oai_settings.repetition_penalty_openai = settings.repetition_penalty_openai ?? default_settings.repetition_penalty_openai;
     oai_settings.stream_openai = settings.stream_openai ?? default_settings.stream_openai;
-	oai_settings.websearch_cohere = settings.websearch_cohere ?? default_settings.websearch_cohere;
+    oai_settings.websearch_cohere = settings.websearch_cohere ?? default_settings.websearch_cohere;
     oai_settings.openai_max_context = settings.openai_max_context ?? default_settings.openai_max_context;
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
     oai_settings.bias_preset_selected = settings.bias_preset_selected ?? default_settings.bias_preset_selected;
@@ -2666,7 +2665,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.claude_use_sysprompt !== undefined) oai_settings.claude_use_sysprompt = !!settings.claude_use_sysprompt;
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
-	$('#websearch_toggle').prop('checked', oai_settings.websearch_cohere);
+    $('#websearch_toggle').prop('checked', oai_settings.websearch_cohere);
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
@@ -2961,7 +2960,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         personality_format: settings.personality_format,
         group_nudge_prompt: settings.group_nudge_prompt,
         stream_openai: settings.stream_openai,
-		websearch_cohere: settings.websearch_cohere,
+        websearch_cohere: settings.websearch_cohere,
         prompts: settings.prompts,
         prompt_order: settings.prompt_order,
         api_url_scale: settings.api_url_scale,
@@ -3338,7 +3337,7 @@ function onSettingsPresetChange() {
         personality_format: ['#personality_format_textarea', 'personality_format', false],
         group_nudge_prompt: ['#group_nudge_prompt_textarea', 'group_nudge_prompt', false],
         stream_openai: ['#stream_toggle', 'stream_openai', true],
-		websearch_cohere: ['#websearch_toggle', 'websearch_cohere', false],
+        websearch_cohere: ['#websearch_toggle', 'websearch_cohere', true],
         prompts: ['', 'prompts', false],
         prompt_order: ['', 'prompt_order', false],
         api_url_scale: ['#api_url_scale', 'api_url_scale', false],
@@ -4033,7 +4032,7 @@ export function isImageInliningSupported() {
         'gemini-1.0-pro-vision-latest',
         'gemini-1.5-pro-latest',
         'gemini-pro-vision',
-        'claude-3'
+        'claude-3',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -4258,8 +4257,8 @@ $(document).ready(async function () {
         oai_settings.stream_openai = !!$('#stream_toggle').prop('checked');
         saveSettingsDebounced();
     });
-	
-	$('#websearch_toggle').on('change', function () {
+
+    $('#websearch_toggle').on('change', function () {
         oai_settings.websearch_cohere = !!$('#websearch_toggle').prop('checked');
         saveSettingsDebounced();
     });

@@ -537,56 +537,36 @@ async function sendCohereRequest(request, response) {
 
     try {
         const convertedHistory = convertCohereMessages(request.body.messages);
+        const connectors = [];
+
+        if (request.body.websearch) {
+            connectors.push({
+                id: 'web-search',
+            });
+        }
 
         // https://docs.cohere.com/reference/chat
-		requestBody = {};
-		
-		if (request.body.websearch) {
-			requestBody = {
-				stream: Boolean(request.body.stream),
-				model: request.body.model,
-				message: convertedHistory.userPrompt,
-				preamble: convertedHistory.systemPrompt,
-				chat_history: convertedHistory.chatHistory,
-				temperature: request.body.temperature,
-				max_tokens: request.body.max_tokens,
-				k: request.body.top_k,
-				p: request.body.top_p,
-				seed: request.body.seed,
-				stop_sequences: request.body.stop,
-				frequency_penalty: request.body.frequency_penalty,
-				presence_penalty: request.body.presence_penalty,
-				prompt_truncation: 'AUTO_PRESERVE_ORDER',
-				connectors: [{"id": "web-search"}], // TODO
-				documents: [],
-				tools: [],
-				tool_results: [],
-				search_queries_only: false,
-			};
-		}
-		else {
-			requestBody = {
-				stream: Boolean(request.body.stream),
-				model: request.body.model,
-				message: convertedHistory.userPrompt,
-				preamble: convertedHistory.systemPrompt,
-				chat_history: convertedHistory.chatHistory,
-				temperature: request.body.temperature,
-				max_tokens: request.body.max_tokens,
-				k: request.body.top_k,
-				p: request.body.top_p,
-				seed: request.body.seed,
-				stop_sequences: request.body.stop,
-				frequency_penalty: request.body.frequency_penalty,
-				presence_penalty: request.body.presence_penalty,
-				prompt_truncation: 'AUTO_PRESERVE_ORDER',
-				connectors: [], // TODO
-				documents: [],
-				tools: [],
-				tool_results: [],
-				search_queries_only: false,
-			};
-		}
+        const requestBody = {
+            stream: Boolean(request.body.stream),
+            model: request.body.model,
+            message: convertedHistory.userPrompt,
+            preamble: convertedHistory.systemPrompt,
+            chat_history: convertedHistory.chatHistory,
+            temperature: request.body.temperature,
+            max_tokens: request.body.max_tokens,
+            k: request.body.top_k,
+            p: request.body.top_p,
+            seed: request.body.seed,
+            stop_sequences: request.body.stop,
+            frequency_penalty: request.body.frequency_penalty,
+            presence_penalty: request.body.presence_penalty,
+            prompt_truncation: 'AUTO_PRESERVE_ORDER',
+            connectors: connectors,
+            documents: [],
+            tools: [],
+            tool_results: [],
+            search_queries_only: false,
+        };
 
         console.log('Cohere request:', requestBody);
 
