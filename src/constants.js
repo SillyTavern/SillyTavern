@@ -271,8 +271,8 @@ const OLLAMA_KEYS = [
     'mirostat_eta',
 ];
 
-const AVATAR_WIDTH = 400;
-const AVATAR_HEIGHT = 600;
+const AVATAR_WIDTH = 512;
+const AVATAR_HEIGHT = 768;
 
 const OPENROUTER_HEADERS = {
     'HTTP-Referer': 'https://sillytavern.app',
