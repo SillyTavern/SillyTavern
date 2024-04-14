@@ -10231,7 +10231,9 @@ jQuery(async function () {
         const avatarSrc = isDataURL(thumbURL) ? thumbURL : charsPath + targetAvatarImg;
         if ($(`.zoomed_avatar[forChar="${charname}"]`).length) {
             console.debug('removing container as it already existed');
-            $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+            $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
+                $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+            });
         } else {
             console.debug('making new container from template');
             const template = $('#zoomed_avatar_template').html();
@@ -10242,18 +10244,43 @@ jQuery(async function () {
             newElement.find('.drag-grabber').attr('id', `zoomFor_${charname}header`);
 
             $('body').append(newElement);
-            if (messageElement.attr('is_user') == 'true') { //handle user avatars
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', thumbURL);
-            } else if (messageElement.attr('is_system') == 'true' && !isValidCharacter) { //handle system avatars
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', thumbURL);
+            newElement.fadeIn(animation_duration);
+            const zoomedAvatarImgElement = $(`.zoomed_avatar[forChar="${charname}"] img`);
+            if (messageElement.attr('is_user') == 'true' || (messageElement.attr('is_system') == 'true' && !isValidCharacter)) { //handle user and system avatars
+                zoomedAvatarImgElement.attr('src', thumbURL);
+                zoomedAvatarImgElement.attr('data-izoomify-url', thumbURL);
             } else if (messageElement.attr('is_user') == 'false') { //handle char avatars
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', avatarSrc);
+                zoomedAvatarImgElement.attr('src', avatarSrc);
+                zoomedAvatarImgElement.attr('data-izoomify-url', avatarSrc);
             }
             loadMovingUIState();
-            $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'block');
+            $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'flex');
             dragElement(newElement);
 
-            $(`.zoomed_avatar[forChar="${charname}"] img`).on('dragstart', (e) => {
+            if (power_user.zoomed_avatar_magnification) {
+                $('.zoomed_avatar_container').izoomify();
+            } else {
+                $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
+            }
+
+            $('.zoomed_avatar').on('mouseup', (e) => {
+                if (e.target.closest('.drag-grabber')) {
+                    return;
+                }
+                $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
+                    $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+                });
+            });
+
+            $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
+                if (e.target.closest('.dragClose')) {
+                    $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
+                        $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+                    });
+                }
+            });
+
+            zoomedAvatarImgElement.on('dragstart', (e) => {
                 console.log('saw drag on avatar!');
                 e.preventDefault();
                 return false;
