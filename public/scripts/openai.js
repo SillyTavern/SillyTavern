@@ -4171,8 +4171,7 @@ $('#delete_proxy').on('click', async function () {
 
 function runProxyCallback(_, value) {
     if (!value) {
-        toastr.warning('Proxy preset name is required');
-        return '';
+        return selected_proxy?.name || '';
     }
 
     const proxyNames = proxies.map(preset => preset.name);
