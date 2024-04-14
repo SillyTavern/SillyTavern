@@ -3,6 +3,7 @@ import {
     event_types,
     getRequestHeaders,
     getStoppingStrings,
+    main_api,
     max_context,
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
@@ -976,6 +977,10 @@ function getModel() {
     }
 
     return undefined;
+}
+
+export function isJsonSchemaSupported() {
+    return settings.type === TABBY && main_api === 'textgenerationwebui';
 }
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
