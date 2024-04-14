@@ -532,14 +532,14 @@ body.reduced-motion #bg_custom {
     opacity: 1;
 }
 
-.panelControlBar {
+body .panelControlBar {
     position: absolute;
     right: 5px;
     top: 5px;
-    margin-right: 5px;
     z-index: 2000;
     min-width: 55px;
     justify-content: flex-end;
+    gap: 0px;
 }
 
 .panelControlBar .drag-grabber {
@@ -2226,7 +2226,7 @@ grammarly-extension {
     text-align: center;
     font-size: 17px;
     aspect-ratio: 1 / 1;
-    flex: 0.075;
+    flex: 0.05;
 }
 
 .menu_button:hover,
@@ -3805,19 +3805,33 @@ body:not(.movingUI) .drawer-content.maximized {
     --leftGapWidth: calc((100vw - var(--sheldWidth)) / 2);
     /* Left position of the avatar (half of the gap minus half of the avatar width) */
     --leftPosition: max(0px, calc((var(--leftGapWidth) - var(--maxWidth)) / 2));
-    aspect-ratio: 2 / 3;
     padding: 0;
     border: 0;
     background-color: transparent;
     max-width: var(--maxWidth);
     left: var(--leftPosition);
+    position: absolute;
+    height: auto;
+    max-height: 90vh !important;
+    align-items: end;
+}
+
+.zoomed_avatar .dragClose {
+    display: none;
+}
+
+.zoomed_avatar_container {
+    width: 100%;
+    margin-inline: 10px;
+    max-height: 90vh;
+    max-width: 90svh;
 }
 
 .zoomed_avatar img {
-    height: 100%;
+    height: unset !important;
     width: 100%;
-    vertical-align: bottom;
-    object-fit: cover;
+    object-fit: contain !important;
+    border-radius: 10px;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

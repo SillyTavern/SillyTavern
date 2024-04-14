@@ -247,6 +247,7 @@ let power_user = {
     encode_tags: false,
     servers: [],
     bogus_folders: false,
+    zoomed_avatar_magnification: false,
     show_tag_filters: false,
     aux_field: 'character_version',
     restore_user_input: true,
@@ -1304,6 +1305,13 @@ async function applyTheme(name) {
             },
         },
         {
+            key: 'zoomed_avatar_magnification',
+            action: async () => {
+                $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
+                printCharactersDebounced();
+            },
+        },
+        {
             key: 'reduced_motion',
             action: async () => {
                 localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
@@ -1498,6 +1506,7 @@ function loadPowerUserSettings(settings, data) {
     $('#auto_fix_generated_markdown').prop('checked', power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop('checked', power_user.auto_scroll_chat_to_bottom);
     $('#bogus_folders').prop('checked', power_user.bogus_folders);
+    $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr('selected', true);
     $('#import_card_tags').prop('checked', power_user.import_card_tags);
@@ -2148,6 +2157,7 @@ async function saveTheme(name = undefined) {
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
         bogus_folders: power_user.bogus_folders,
+        zoomed_avatar_magnification: power_user.zoomed_avatar_magnification,
         reduced_motion: power_user.reduced_motion,
         compact_input_area: power_user.compact_input_area,
     };
@@ -3410,8 +3420,13 @@ $(document).ready(() => {
     });
 
     $('#bogus_folders').on('input', function () {
-        const value = !!$(this).prop('checked');
-        power_user.bogus_folders = value;
+        power_user.bogus_folders = !!$(this).prop('checked');
+        printCharactersDebounced();
+        saveSettingsDebounced();
+    });
+
+    $('#zoomed_avatar_magnification').on('input', function () {
+        power_user.zoomed_avatar_magnification = !!$(this).prop('checked');
         printCharactersDebounced();
         saveSettingsDebounced();
     });
