@@ -10242,6 +10242,9 @@ jQuery(async function () {
                 $('.zoomed_avatar_container').izoomify();
 
             $('.zoomed_avatar').on('click', (e) => {
+                if (e.target.closest('.drag-grabber')) {
+                    return;
+                }
                 $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut();
                 setTimeout(function() { $(`.zoomed_avatar[forChar="${charname}"]`).remove(); }, 410);
             });
