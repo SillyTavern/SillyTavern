@@ -10245,13 +10245,21 @@ jQuery(async function () {
                 $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
             }
 
-            $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
+            $('.zoomed_avatar').on('mouseup', (e) => {
                 if (e.target.closest('.drag-grabber')) {
                     return;
                 }
                 $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
                     $(`.zoomed_avatar[forChar="${charname}"]`).remove();
                 });
+            });
+
+            $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
+                if (e.target.closest('.dragClose')) {
+                    $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
+                        $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+                    });
+                }
             });
 
             zoomedAvatarImgElement.on('dragstart', (e) => {
