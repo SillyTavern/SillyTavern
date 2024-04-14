@@ -10226,28 +10226,27 @@ jQuery(async function () {
 
             $('body').append(newElement);
             newElement.fadeIn();
-            if (messageElement.attr('is_user') == 'true') { //handle user avatars
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', thumbURL);
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('data-izoomify-url', thumbURL);
-            } else if (messageElement.attr('is_system') == 'true' && !isValidCharacter) { //handle system avatars
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', thumbURL);
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('data-izoomify-url', thumbURL);
+            const zoomedAvatarImgElement = $(`.zoomed_avatar[forChar="${charname}"] img`);
+            if (messageElement.attr('is_user') == 'true' || (messageElement.attr('is_system') == 'true' && !isValidCharacter)) { //handle user and system avatars
+                zoomedAvatarImgElement.attr('src', thumbURL);
+                zoomedAvatarImgElement.attr('data-izoomify-url', thumbURL);
             } else if (messageElement.attr('is_user') == 'false') { //handle char avatars
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', avatarSrc);
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('data-izoomify-url', avatarSrc);
+                zoomedAvatarImgElement.attr('src', avatarSrc);
+                zoomedAvatarImgElement.attr('data-izoomify-url', avatarSrc);
             }
             loadMovingUIState();
             $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'flex');
             dragElement(newElement);
 
-            $('.zoomed_avatar_container').izoomify();
+            if (power_user.zoomed_avatar_magnification)
+                $('.zoomed_avatar_container').izoomify();
 
-            $(`.zoomed_avatar[forChar="${charname}"] img`).on('click', (e) => {
+            zoomedAvatarImgElement.on('click', (e) => {
                 $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut();
                 setTimeout(function() { $(`.zoomed_avatar[forChar="${charname}"]`).remove(); }, 410);
             });
 
-            $(`.zoomed_avatar[forChar="${charname}"] img`).on('dragstart', (e) => {
+            zoomedAvatarImgElement.on('dragstart', (e) => {
                 console.log('saw drag on avatar!');
                 e.preventDefault();
                 return false;
