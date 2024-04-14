@@ -47,7 +47,7 @@ const EXPRESSION_API = {
     local: 0,
     extras: 1,
     llm: 2,
-}
+};
 
 let expressionsList = null;
 let lastCharacter = undefined;
@@ -979,25 +979,25 @@ function sampleClassifyText(text) {
 function onTextGenSettingsReady(args) {
     // Only call if inside an API call
     if (inApiCall) {
-        const emotions = DEFAULT_EXPRESSIONS.filter((e) => e != 'talkinghead')
+        const emotions = DEFAULT_EXPRESSIONS.filter((e) => e != 'talkinghead');
         Object.assign(args, {
             top_k: 1,
             stop: [],
             stopping_strings: [],
             custom_token_bans: [],
             json_schema: {
-                $schema: "http://json-schema.org/draft-04/schema#",
-                type: "object",
+                $schema: 'http://json-schema.org/draft-04/schema#',
+                type: 'object',
                 properties: {
                     emotion: {
-                        type: "string",
-                        enum: emotions
-                    }
+                        type: 'string',
+                        enum: emotions,
+                    },
                 },
                 required: [
-                    "emotion"
-                ]
-            }
+                    'emotion',
+                ],
+            },
         });
     }
 }
@@ -1055,7 +1055,7 @@ async function getExpressionLabel(text) {
                 }
         }
     } catch (error) {
-        toastr.info("Could not classify expression. Check the console or your backend for more information.")
+        toastr.info('Could not classify expression. Check the console or your backend for more information.');
         console.error(error);
         return getFallbackExpression();
     }
@@ -1236,7 +1236,7 @@ async function getExpressionsList() {
                     const data = await apiResult.json();
                     expressionsList = data.labels;
                     return expressionsList;
-                }                
+                }
             } else {
                 const apiResult = await fetch('/api/extra/classify/labels', {
                     method: 'POST',
@@ -1754,7 +1754,7 @@ async function fetchImagesNoCache() {
 function migrateSettings() {
     if (Object.keys(extension_settings.expressions).includes('local')) {
         if (extension_settings.expressions.local) {
-            extension_settings.expressions.api == EXPRESSION_API.local;
+            extension_settings.expressions.api = EXPRESSION_API.local;
         }
 
         delete extension_settings.expressions.local;
@@ -1811,7 +1811,7 @@ function migrateSettings() {
         });
 
         await renderAdditionalExpressionSettings();
-        $('#expression_api').val(extension_settings.expressions.api || 0);
+        $('#expression_api').val(extension_settings.expressions.api || EXPRESSION_API.extras);
 
         $('#expression_custom_add').on('click', onClickExpressionAddCustom);
         $('#expression_custom_remove').on('click', onClickExpressionRemoveCustom);
