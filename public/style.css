@@ -3812,7 +3812,7 @@ body:not(.movingUI) .drawer-content.maximized {
     max-width: var(--maxWidth);
     left: var(--leftPosition);
     position: absolute;
-    height: 100%;
+    height: auto;
     max-height: 100vh !important;
     align-items: end;
 }
