@@ -532,14 +532,14 @@ body.reduced-motion #bg_custom {
     opacity: 1;
 }
 
-.panelControlBar {
+body .panelControlBar {
     position: absolute;
     right: 5px;
     top: 5px;
-    margin-right: 5px;
     z-index: 2000;
     min-width: 55px;
     justify-content: flex-end;
+    gap: 0px;
 }
 
 .panelControlBar .drag-grabber {
@@ -3812,13 +3812,19 @@ body:not(.movingUI) .drawer-content.maximized {
     left: var(--leftPosition);
     position: absolute;
     height: auto;
-    max-height: 100vh !important;
+    max-height: 90vh !important;
     align-items: end;
+}
+
+.zoomed_avatar .dragClose {
+    display: none;
 }
 
 .zoomed_avatar_container {
     width: 100%;
     margin-inline: 10px;
+    max-height: 90vh;
+    max-width: 90svh;
 }
 
 .zoomed_avatar img {

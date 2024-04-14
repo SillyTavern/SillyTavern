@@ -10239,10 +10239,13 @@ jQuery(async function () {
             $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'flex');
             dragElement(newElement);
 
-            if (power_user.zoomed_avatar_magnification)
+            if (power_user.zoomed_avatar_magnification) {
                 $('.zoomed_avatar_container').izoomify();
+            } else {
+                $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
+            }
 
-            $('.zoomed_avatar').on('click', (e) => {
+            $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
                 if (e.target.closest('.drag-grabber')) {
                     return;
                 }
