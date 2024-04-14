@@ -28,14 +28,18 @@
         z-index: 30;
         overflow: hidden;
         right: 0;
-        aspect-ratio: 2 / 3;
         width: fit-content;
         max-height: calc(60vh - 60px);
         max-height: calc(60svh - 60px);
         max-width: 90vw;
         max-width: 90svw;
         left: 50%;
-        transform: translateX(-50%);
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        align-items: center;
+        justify-content: center;
+        height: fit-content;
+        width: 100%;
     }
 
     /* .world_entry_thin_controls, */
@@ -346,12 +350,17 @@
     }
 
     body:not(.waifuMode) .zoomed_avatar {
-
-        width: fit-content;
         max-height: calc(60vh - 60px);
         max-height: calc(60svh - 60px);
         max-width: 90vw;
         max-width: 90svw;
+        left: 50%;
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        align-items: center;
+        justify-content: center;
+        height: fit-content;
+        width: 100%;
     }
 
 
@@ -372,9 +381,13 @@
         overflow: hidden;
         display: none;
         right: 0;
-        aspect-ratio: 2 / 3;
         left: 50%;
-        transform: translateX(-50%);
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        align-items: center;
+        justify-content: center;
+        height: fit-content;
+        width: 100%;
     }
 
     .drawer25pWidth {
