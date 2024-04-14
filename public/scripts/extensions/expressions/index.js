@@ -828,7 +828,7 @@ function setTalkingHeadState(newState) {
     extension_settings.expressions.talkinghead = newState; // Store setting
     saveSettingsDebounced();
 
-    if (extension_settings.expressions.api == EXPRESSION_API.local) {
+    if (extension_settings.expressions.api == EXPRESSION_API.local || extension_settings.expressions.api == EXPRESSION_API.llm) {
         return;
     }
 
