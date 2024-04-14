@@ -897,11 +897,11 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    await readSecretState();
-    await getSettings();
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await getClientVersion();
+    await readSecretState();
+    await getSettings();
     initLocales();
     initTags();
     await getUserAvatars(true, user_avatar);
