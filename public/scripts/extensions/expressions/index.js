@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, saveSettingsDebounced } from '../../../script.js';
+import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, power_user } from '../../power-user.js';
@@ -988,7 +988,9 @@ async function getLlmPrompt(labels) {
         return '';
     }
 
-    const prompt = String(extension_settings.expressions.llmPrompt).replace(/{{labels}}/gi, labels.map(x => `"${x}"`).join(', '));
+    const labelsString = labels.map(x => `"${x}"`).join(', ');
+    const prompt = substituteParams(String(extension_settings.expressions.llmPrompt))
+        .replace(/{{labels}}/gi, labelsString);
     return prompt;
 }
 
@@ -1866,6 +1868,11 @@ function migrateSettings() {
         $('#expression_llm_prompt').val(extension_settings.expressions.llmPrompt ?? '');
         $('#expression_llm_prompt').on('input', function () {
             extension_settings.expressions.llmPrompt = $(this).val();
+            saveSettingsDebounced();
+        });
+        $('#expression_llm_prompt_restore').on('click', function () {
+            $('#expression_llm_prompt').val(DEFAULT_LLM_PROMPT);
+            extension_settings.expressions.llmPrompt = DEFAULT_LLM_PROMPT;
             saveSettingsDebounced();
         });
 
