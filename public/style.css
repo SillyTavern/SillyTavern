@@ -2226,7 +2226,7 @@ grammarly-extension {
     text-align: center;
     font-size: 17px;
     aspect-ratio: 1 / 1;
-    flex: 0.075;
+    flex: 0.05;
 }
 
 .menu_button:hover,
