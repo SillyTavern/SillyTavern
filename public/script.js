@@ -2443,9 +2443,14 @@ function sendSystemMessage(type, text, extra = {}) {
     is_send_press = false;
 }
 
+/**
+ * Extracts the contents of bias macros from a message.
+ * @param {string} message Message text
+ * @returns {string} Message bias extracted from the message (or an empty string if not found)
+ */
 export function extractMessageBias(message) {
     if (!message) {
-        return null;
+        return '';
     }
 
     try {
