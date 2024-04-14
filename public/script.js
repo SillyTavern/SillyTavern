@@ -10241,7 +10241,7 @@ jQuery(async function () {
             if (power_user.zoomed_avatar_magnification)
                 $('.zoomed_avatar_container').izoomify();
 
-            zoomedAvatarImgElement.on('click', (e) => {
+            $('.zoomed_avatar').on('click', (e) => {
                 $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut();
                 setTimeout(function() { $(`.zoomed_avatar[forChar="${charname}"]`).remove(); }, 410);
             });

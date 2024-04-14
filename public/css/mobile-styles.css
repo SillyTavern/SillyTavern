@@ -28,7 +28,6 @@
         z-index: 30;
         overflow: hidden;
         right: 0;
-        top: 50px;
         aspect-ratio: 2 / 3;
         width: fit-content;
         max-height: calc(60vh - 60px);
@@ -373,7 +372,6 @@
         overflow: hidden;
         display: none;
         right: 0;
-        top: 50px;
         aspect-ratio: 2 / 3;
         left: 50%;
         transform: translateX(-50%);
