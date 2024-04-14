@@ -1006,7 +1006,6 @@ function parseLlmResponse(emotionResponse, labels) {
     try {
         const parsedEmotion = JSON.parse(emotionResponse);
         return parsedEmotion?.emotion ?? fallbackExpression;
-
     } catch {
         const fuse = new Fuse([emotionResponse]);
         for (const label of labels) {
@@ -1017,7 +1016,7 @@ function parseLlmResponse(emotionResponse, labels) {
         }
     }
 
-    return fallbackExpression;
+    throw new Error('Could not parse emotion response ' + emotionResponse);
 }
 
 function onTextGenSettingsReady(args) {
