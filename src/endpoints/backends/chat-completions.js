@@ -537,6 +537,13 @@ async function sendCohereRequest(request, response) {
 
     try {
         const convertedHistory = convertCohereMessages(request.body.messages);
+        const connectors = [];
+
+        if (request.body.websearch) {
+            connectors.push({
+                id: 'web-search',
+            });
+        }
 
         // https://docs.cohere.com/reference/chat
         const requestBody = {
@@ -554,7 +561,7 @@ async function sendCohereRequest(request, response) {
             frequency_penalty: request.body.frequency_penalty,
             presence_penalty: request.body.presence_penalty,
             prompt_truncation: 'AUTO_PRESERVE_ORDER',
-            connectors: [], // TODO
+            connectors: connectors,
             documents: [],
             tools: [],
             tool_results: [],
