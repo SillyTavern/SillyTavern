@@ -31,7 +31,7 @@ import {
     system_message_types,
     this_chid,
 } from '../script.js';
-import { groups, selected_group } from './group-chats.js';
+import { selected_group } from './group-chats.js';
 import { registerSlashCommand } from './slash-commands.js';
 
 import {

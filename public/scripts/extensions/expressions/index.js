@@ -507,6 +507,10 @@ async function loadTalkingHead() {
                 },
                 body: JSON.stringify(emotionsSettings),
             });
+
+            if (!apiResult.ok) {
+                throw new Error(apiResult.statusText);
+            }
         }
         catch (error) {
             // it's ok if not supported
@@ -539,6 +543,10 @@ async function loadTalkingHead() {
                 },
                 body: JSON.stringify(animatorSettings),
             });
+
+            if (!apiResult.ok) {
+                throw new Error(apiResult.statusText);
+            }
         }
         catch (error) {
             // it's ok if not supported

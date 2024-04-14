@@ -818,7 +818,7 @@ async function CreateZenSliders(elmnt) {
                         isManualInput = true;
                         //allow enter to trigger slider update
                         if (e.key === 'Enter') {
-                            e.preventDefault;
+                            e.preventDefault();
                             handle.trigger('blur');
                         }
                     })
