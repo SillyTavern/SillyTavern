@@ -855,11 +855,11 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    await getClientVersion();
     await readSecretState();
     await getSettings();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
+    await getClientVersion();
     initLocales();
     initTags();
     await getUserAvatars(true, user_avatar);
