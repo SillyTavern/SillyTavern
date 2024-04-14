@@ -42,7 +42,7 @@ import {
     promptManagerDefaultPromptOrders,
 } from './PromptManager.js';
 
-import { getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
+import { forceCharacterEditorTokenize, getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 import { getEventSourceStream } from './sse-stream.js';
@@ -2264,7 +2264,7 @@ export class ChatCompletion {
 
             const shouldSquash = (message) => {
                 return !excludeList.includes(message.identifier) && message.role === 'system' && !message.name;
-            }
+            };
 
             if (shouldSquash(message)) {
                 if (lastMessage && shouldSquash(lastMessage)) {
@@ -3566,7 +3566,7 @@ async function onModelChange() {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
+            $('#openai_max_context').attr('max', max_1mil);
         } else if (value === 'gemini-1.5-pro-latest') {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value === 'gemini-ultra' || value === 'gemini-1.0-pro-latest' || value === 'gemini-pro' || value === 'gemini-1.0-ultra-latest') {
@@ -4429,6 +4429,7 @@ $(document).ready(async function () {
         toggleChatCompletionForms();
         saveSettingsDebounced();
         reconnectOpenAi();
+        forceCharacterEditorTokenize();
         eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
     });
 
