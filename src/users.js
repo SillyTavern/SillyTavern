@@ -336,7 +336,7 @@ async function initUserStorage(dataRoot) {
     console.log();
     await storage.init({
         dir: path.join(DATA_ROOT, '_storage'),
-        ttl: true,
+        ttl: false, // Never expire
     });
 
     const keys = await getAllUserHandles();
