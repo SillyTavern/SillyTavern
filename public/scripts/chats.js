@@ -18,6 +18,8 @@ import {
     saveSettingsDebounced,
     showSwipeButtons,
     this_chid,
+    saveChatConditional,
+    chat_metadata,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { power_user } from './power-user.js';
@@ -29,9 +31,25 @@ import {
     getStringHash,
     humanFileSize,
     saveBase64AsFile,
+    isValidUrl,
 } from './utils.js';
+import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced, writeExtensionField } from './extensions.js';
+import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+
+/**
+ * @typedef {Object} FileAttachment
+ * @property {string} url File URL
+ * @property {number} size File size
+ * @property {string} name File name
+ * @property {string} [text] File text
+ */
 
 const fileSizeLimit = 1024 * 1024 * 10; // 10 MB
+const ATTACHMENT_SOURCE = {
+    GLOBAL: 'global',
+    CHAT: 'chat',
+    CHARACTER: 'character',
+};
 
 const converters = {
     'application/pdf': extractTextFromPDF,
@@ -39,6 +57,11 @@ const converters = {
     'text/markdown': extractTextFromMarkdown,
 };
 
+/**
+ * Determines if the file type has a converter function.
+ * @param {string} type MIME type
+ * @returns {boolean} True if the file type is convertible, false otherwise.
+ */
 function isConvertible(type) {
     return Object.keys(converters).includes(type);
 }
@@ -275,9 +298,9 @@ async function onFileAttach() {
  * @param {number} messageId Message ID
  */
 async function deleteMessageFile(messageId) {
-    const confirm = await callPopup('Are you sure you want to delete this file?', 'confirm');
+    const confirm = await callGenericPopup('Are you sure you want to delete this file?', POPUP_TYPE.CONFIRM);
 
-    if (!confirm) {
+    if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
         console.debug('Delete file cancelled');
         return;
     }
@@ -289,10 +312,14 @@ async function deleteMessageFile(messageId) {
         return;
     }
 
+    const url = message.extra.file.url;
+
     delete message.extra.file;
     $(`.mes[mesid="${messageId}"] .mes_file_container`).remove();
-    saveChatDebounced();
+    await saveChatConditional();
+    await deleteFileFromServer(url);
 }
+
 
 /**
  * Opens file from message in a modal.
@@ -306,14 +333,7 @@ async function viewMessageFile(messageId) {
         return;
     }
 
-    const fileText = messageFile.text || (await getFileAttachment(messageFile.url));
-
-    const modalTemplate = $('<div><pre><code></code></pre></div>');
-    modalTemplate.find('code').addClass('txt').text(fileText);
-    modalTemplate.addClass('file_modal');
-    addCopyToCodeBlocks(modalTemplate);
-
-    callPopup(modalTemplate, 'text', '', { wide: true, large: true });
+    await openFilePopup(messageFile);
 }
 
 /**
@@ -348,7 +368,7 @@ function embedMessageFile(messageId, messageBlock) {
 
         await populateFileAttachment(message, 'embed_file_input');
         appendMediaToMessage(message, messageBlock);
-        saveChatDebounced();
+        await saveChatConditional();
     }
 }
 
@@ -476,6 +496,366 @@ export function isExternalMediaAllowed() {
     return !power_user.forbid_external_images;
 }
 
+function enlargeMessageImage() {
+    const mesBlock = $(this).closest('.mes');
+    const mesId = mesBlock.attr('mesid');
+    const message = chat[mesId];
+    const imgSrc = message?.extra?.image;
+    const title = message?.extra?.title;
+
+    if (!imgSrc) {
+        return;
+    }
+
+    const img = document.createElement('img');
+    img.classList.add('img_enlarged');
+    img.src = imgSrc;
+    const imgContainer = $('<div><pre><code></code></pre></div>');
+    imgContainer.prepend(img);
+    imgContainer.addClass('img_enlarged_container');
+    imgContainer.find('code').addClass('txt').text(title);
+    const titleEmpty = !title || title.trim().length === 0;
+    imgContainer.find('pre').toggle(!titleEmpty);
+    addCopyToCodeBlocks(imgContainer);
+    callGenericPopup(imgContainer, POPUP_TYPE.TEXT, '', { wide: true, large: true });
+}
+
+async function deleteMessageImage() {
+    const value = await callGenericPopup('<h3>Delete image from message?<br>This action can\'t be undone.</h3>', POPUP_TYPE.CONFIRM);
+
+    if (value !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
+
+    const mesBlock = $(this).closest('.mes');
+    const mesId = mesBlock.attr('mesid');
+    const message = chat[mesId];
+    delete message.extra.image;
+    delete message.extra.inline_image;
+    mesBlock.find('.mes_img_container').removeClass('img_extra');
+    mesBlock.find('.mes_img').attr('src', '');
+    await saveChatConditional();
+}
+
+/**
+ * Deletes file from the server.
+ * @param {string} url Path to the file on the server
+ * @returns {Promise<boolean>} True if file was deleted, false otherwise.
+ */
+async function deleteFileFromServer(url) {
+    try {
+        const result = await fetch('/api/files/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ path: url }),
+        });
+
+        if (!result.ok) {
+            const error = await result.text();
+            throw new Error(error);
+        }
+
+        return true;
+    } catch (error) {
+        toastr.error(String(error), 'Could not delete file');
+        console.error('Could not delete file', error);
+        return false;
+    }
+}
+
+/**
+ * Opens file attachment in a modal.
+ * @param {FileAttachment} attachment File attachment
+ */
+async function openFilePopup(attachment) {
+    const fileText = attachment.text || (await getFileAttachment(attachment.url));
+
+    const modalTemplate = $('<div><pre><code></code></pre></div>');
+    modalTemplate.find('code').addClass('txt').text(fileText);
+    modalTemplate.addClass('file_modal').addClass('textarea_compact').addClass('fontsize90p');
+    addCopyToCodeBlocks(modalTemplate);
+
+    callGenericPopup(modalTemplate, POPUP_TYPE.TEXT, '', { wide: true, large: true });
+}
+
+/**
+ * Deletes an attachment from the server and the chat.
+ * @param {FileAttachment} attachment Attachment to delete
+ * @param {string} source Source of the attachment
+ * @param {function} callback Callback function
+ * @returns {Promise<void>} A promise that resolves when the attachment is deleted.
+ */
+async function deleteAttachment(attachment, source, callback) {
+    const confirm = await callGenericPopup('Are you sure you want to delete this attachment?', POPUP_TYPE.CONFIRM);
+
+    if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
+
+    ensureAttachmentsExist();
+
+    switch (source) {
+        case 'global':
+            extension_settings.attachments = extension_settings.attachments.filter((a) => a.url !== attachment.url);
+            saveSettingsDebounced();
+            break;
+        case 'chat':
+            chat_metadata.attachments = chat_metadata.attachments.filter((a) => a.url !== attachment.url);
+            saveMetadataDebounced();
+            break;
+        case 'character':
+            characters[this_chid].data.extensions.attachments = characters[this_chid].data.extensions.attachments.filter((a) => a.url !== attachment.url);
+            await writeExtensionField(this_chid, 'attachments', characters[this_chid].data.extensions.attachments);
+            break;
+    }
+
+    await deleteFileFromServer(attachment.url);
+    callback();
+}
+
+/**
+ * Opens the attachment manager.
+ */
+async function openAttachmentManager() {
+    /**
+     *
+     * @param {FileAttachment[]} attachments List of attachments
+     * @param {string} source Source of the attachments
+     */
+    async function renderList(attachments, source) {
+        const sources = {
+            [ATTACHMENT_SOURCE.GLOBAL]: '.globalAttachmentsList',
+            [ATTACHMENT_SOURCE.CHARACTER]: '.characterAttachmentsList',
+            [ATTACHMENT_SOURCE.CHAT]: '.chatAttachmentsList',
+        };
+
+        template.find(sources[source]).empty();
+        for (const attachment of attachments) {
+            const attachmentTemplate = template.find('.attachmentListItemTemplate .attachmentListItem').clone();
+            attachmentTemplate.find('.attachmentListItemName').text(attachment.name);
+            attachmentTemplate.find('.attachmentListItemSize').text(humanFileSize(attachment.size));
+            attachmentTemplate.find('.viewAttachmentButton').on('click', () => openFilePopup(attachment));
+            attachmentTemplate.find('.deleteAttachmentButton').on('click', () => deleteAttachment(attachment, source, renderAttachments));
+            template.find(sources[source]).append(attachmentTemplate);
+        }
+    }
+
+    async function renderAttachments() {
+        /** @type {FileAttachment[]} */
+        const globalAttachments = extension_settings.attachments ?? [];
+        /** @type {FileAttachment[]} */
+        const chatAttachments = chat_metadata.attachments ?? [];
+        /** @type {FileAttachment[]} */
+        const characterAttachments = characters[this_chid]?.data?.extensions?.attachments ?? [];
+
+        await renderList(globalAttachments, ATTACHMENT_SOURCE.GLOBAL);
+        await renderList(chatAttachments, ATTACHMENT_SOURCE.CHAT);
+        await renderList(characterAttachments, ATTACHMENT_SOURCE.CHARACTER);
+
+        const isNotCharacter = this_chid === undefined || selected_group;
+        const isNotInChat = getCurrentChatId() === undefined;
+        template.find('.characterAttachmentsBlock').toggle(!isNotCharacter);
+        template.find('.chatAttachmentsBlock').toggle(!isNotInChat);
+    }
+
+    const hasFandomPlugin = await isFandomPluginAvailable();
+    const template = $(await renderExtensionTemplateAsync('attachments', 'manager', {}));
+    template.find('.scrapeWebpageButton').on('click', function () {
+        openWebpageScraper(String($(this).data('attachment-manager-target')), renderAttachments);
+    });
+    template.find('.scrapeFandomButton').toggle(hasFandomPlugin).on('click', function () {
+        openFandomScraper(String($(this).data('attachment-manager-target')), renderAttachments);
+    });
+    template.find('.uploadFileButton').on('click', function () {
+        openFileUploader(String($(this).data('attachment-manager-target')), renderAttachments);
+    });
+    await renderAttachments();
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });
+}
+
+/**
+ * Scrapes a webpage for attachments.
+ * @param {string} target Target for the attachment
+ * @param {function} callback Callback function
+ */
+async function openWebpageScraper(target, callback) {
+    const template = $(await renderExtensionTemplateAsync('attachments', 'web-scrape', {}));
+    const link = await callGenericPopup(template, POPUP_TYPE.INPUT, '', { wide: false, large: false });
+
+    if (!link) {
+        return;
+    }
+
+    try {
+        if (!isValidUrl(link)) {
+            toastr.error('Invalid URL');
+            return;
+        }
+
+        const result = await fetch('/api/serpapi/visit', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url: link }),
+        });
+
+        const blob = await result.blob();
+        const domain = new URL(link).hostname;
+        const timestamp = Date.now();
+        const title = await getTitleFromHtmlBlob(blob) || 'webpage';
+        const file = new File([blob], `${title} - ${domain} - ${timestamp}.html`, { type: 'text/html' });
+        await uploadFileAttachmentToServer(file, target);
+        callback();
+    } catch (error) {
+        console.error('Scraping failed', error);
+        toastr.error('Check browser console for details.', 'Scraping failed');
+    }
+}
+
+/**
+ *
+ * @param {Blob} blob Blob of the HTML file
+ * @returns {Promise<string>} Title of the HTML file
+ */
+async function getTitleFromHtmlBlob(blob) {
+    const text = await blob.text();
+    const titleMatch = text.match(/<title>(.*?)<\/title>/i);
+    return titleMatch ? titleMatch[1] : '';
+}
+
+/**
+ * Scrapes a Fandom page for attachments.
+ * @param {string} target Target for the attachment
+ * @param {function} callback Callback function
+ */
+async function openFandomScraper(target, callback) {
+    toastr.info('Not implemented yet', target);
+    callback();
+}
+
+/**
+ * Uploads a file attachment.
+ * @param {string} target File upload target
+ * @param {function} callback Callback function
+ */
+async function openFileUploader(target, callback) {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.txt, .md, .pdf, .html, .htm';
+    fileInput.onchange = async function () {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        await uploadFileAttachmentToServer(file, target);
+
+        callback();
+    };
+
+    fileInput.click();
+}
+
+/**
+ * Uploads a file attachment to the server.
+ * @param {File} file File to upload
+ * @param {string} target Target for the attachment
+ * @returns
+ */
+async function uploadFileAttachmentToServer(file, target) {
+    const isValid = await validateFile(file);
+
+    if (!isValid) {
+        return;
+    }
+
+    let base64Data = await getBase64Async(file);
+    const slug = getStringHash(file.name);
+    const uniqueFileName = `${Date.now()}_${slug}.txt`;
+
+    if (isConvertible(file.type)) {
+        try {
+            const converter = converters[file.type];
+            const fileText = await converter(file);
+            base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
+        } catch (error) {
+            toastr.error(String(error), 'Could not convert file');
+            console.error('Could not convert file', error);
+        }
+    } else {
+        const fileText = await file.text();
+        base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
+    }
+
+    const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);
+
+    if (!fileUrl) {
+        return;
+    }
+
+    const attachment = {
+        url: fileUrl,
+        size: file.size,
+        name: file.name,
+    };
+
+    ensureAttachmentsExist();
+
+    switch (target) {
+        case ATTACHMENT_SOURCE.GLOBAL:
+            extension_settings.attachments.push(attachment);
+            saveSettingsDebounced();
+            break;
+        case ATTACHMENT_SOURCE.CHAT:
+            chat_metadata.attachments.push(attachment);
+            saveMetadataDebounced();
+            break;
+        case ATTACHMENT_SOURCE.CHARACTER:
+            characters[this_chid].data.extensions.attachments.push(attachment);
+            await writeExtensionField(this_chid, 'attachments', characters[this_chid].data.extensions.attachments);
+            break;
+    }
+}
+
+function ensureAttachmentsExist() {
+    if (!Array.isArray(extension_settings.attachments)) {
+        extension_settings.attachments = [];
+    }
+
+    if (!Array.isArray(chat_metadata.attachments)) {
+        chat_metadata.attachments = [];
+    }
+
+    if (this_chid !== undefined && characters[this_chid]) {
+        if (!characters[this_chid].data) {
+            characters[this_chid].data = {};
+        }
+
+        if (!characters[this_chid].data.extensions) {
+            characters[this_chid].data.extensions = {};
+        }
+
+        if (!Array.isArray(characters[this_chid]?.data?.extensions?.attachments)) {
+            characters[this_chid].data.extensions.attachments = [];
+        }
+    }
+}
+
+/**
+ * Probes the server to check if the Fandom plugin is available.
+ * @returns {Promise<boolean>} True if the plugin is available, false otherwise.
+ */
+async function isFandomPluginAvailable() {
+    try {
+        const result = await fetch('/api/plugins/fandom/probe', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
+
+        return result.ok;
+    } catch (error) {
+        console.debug('Could not probe Fandom plugin', error);
+        return false;
+    }
+}
+
 jQuery(function () {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');
@@ -504,6 +884,11 @@ jQuery(function () {
     // Do not change. #attachFile is added by extension.
     $(document).on('click', '#attachFile', function () {
         $('#file_form_input').trigger('click');
+    });
+
+    // Do not change. #manageAttachments is added by extension.
+    $(document).on('click', '#manageAttachments', function () {
+        openAttachmentManager();
     });
 
     $(document).on('click', '.mes_embed', function () {
@@ -596,6 +981,9 @@ jQuery(function () {
         saveSettingsDebounced();
         reloadCurrentChat();
     });
+
+    $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
+    $(document).on('click', '.mes_img_delete', deleteMessageImage);
 
     $('#file_form_input').on('change', onFileAttach);
     $('#file_form').on('reset', function () {

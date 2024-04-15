@@ -145,6 +145,7 @@ const extension_settings = {
     variables: {
         global: {},
     },
+    attachments: [],
 };
 
 let modules = [];

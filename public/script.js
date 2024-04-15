@@ -7361,47 +7361,6 @@ export function cancelTtsPlay() {
     }
 }
 
-async function deleteMessageImage() {
-    const value = await callPopup('<h3>Delete image from message?<br>This action can\'t be undone.</h3>', 'confirm');
-
-    if (!value) {
-        return;
-    }
-
-    const mesBlock = $(this).closest('.mes');
-    const mesId = mesBlock.attr('mesid');
-    const message = chat[mesId];
-    delete message.extra.image;
-    delete message.extra.inline_image;
-    mesBlock.find('.mes_img_container').removeClass('img_extra');
-    mesBlock.find('.mes_img').attr('src', '');
-    await saveChatConditional();
-}
-
-function enlargeMessageImage() {
-    const mesBlock = $(this).closest('.mes');
-    const mesId = mesBlock.attr('mesid');
-    const message = chat[mesId];
-    const imgSrc = message?.extra?.image;
-    const title = message?.extra?.title;
-
-    if (!imgSrc) {
-        return;
-    }
-
-    const img = document.createElement('img');
-    img.classList.add('img_enlarged');
-    img.src = imgSrc;
-    const imgContainer = $('<div><pre><code></code></pre></div>');
-    imgContainer.prepend(img);
-    imgContainer.addClass('img_enlarged_container');
-    imgContainer.find('code').addClass('txt').text(title);
-    const titleEmpty = !title || title.trim().length === 0;
-    imgContainer.find('pre').toggle(!titleEmpty);
-    addCopyToCodeBlocks(imgContainer);
-    callPopup(imgContainer, 'text', '', { wide: true, large: true });
-}
-
 function updateAlternateGreetingsHintVisibility(root) {
     const numberOfGreetings = root.find('.alternate_greetings_list .alternate_greeting').length;
     $(root).find('.alternate_grettings_hint').toggle(numberOfGreetings == 0);
@@ -10391,9 +10350,6 @@ jQuery(async function () {
         }
         $('#char-management-dropdown').prop('selectedIndex', 0);
     });
-
-    $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
-    $(document).on('click', '.mes_img_delete', deleteMessageImage);
 
     $(window).on('beforeunload', () => {
         cancelTtsPlay();
