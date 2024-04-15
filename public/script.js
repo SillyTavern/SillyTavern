@@ -10260,7 +10260,7 @@ jQuery(async function () {
             }
 
             $('.zoomed_avatar').on('mouseup', (e) => {
-                if (e.target.closest('.drag-grabber') || e.button === 2) {
+                if (e.target.closest('.drag-grabber') || e.button !== 0) {
                     return;
                 }
                 $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
