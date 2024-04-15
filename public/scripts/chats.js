@@ -656,6 +656,12 @@ async function openAttachmentManager() {
         const isNotInChat = getCurrentChatId() === undefined;
         template.find('.characterAttachmentsBlock').toggle(!isNotCharacter);
         template.find('.chatAttachmentsBlock').toggle(!isNotInChat);
+
+        const characterName = characters[this_chid]?.name || 'Anonymous';
+        template.find('.characterAttachmentsName').text(characterName);
+
+        const chatName = getCurrentChatId() || 'Unnamed chat';
+        template.find('.chatAttachmentsName').text(chatName);
     }
 
     const hasFandomPlugin = await isFandomPluginAvailable();

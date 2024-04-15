@@ -44,7 +44,9 @@
     </div>
     <div class="justifyLeft characterAttachmentsBlock marginBot10">
         <h3 class="margin0 title_restorable">
-            <span data-i18n="Character Attachments">Character Attachments</span>
+            <span data-i18n="Character Attachments">
+                Character Attachments
+            </span>
             <div class="flex-container flexGap10">
                 <div class="scrapeWebpageButton menu_button_icon menu_button" data-attachment-manager-target="character" title="Download a page from the web.">
                     <i class="fa-fw fa-solid fa-globe"></i>
@@ -66,9 +68,12 @@
                 </div>
             </div>
         </h3>
-        <small data-i18n="These files are available the current character in all chats they are in.">
-            These files are available the current character in all chats they are in.
-        </small>
+        <div class="flex-container flexFlowColumn">
+            <strong><small class="characterAttachmentsName"></small></strong>
+            <small data-i18n="These files are available the current character in all chats they are in.">
+                These files are available the current character in all chats they are in.
+            </small>
+        </div>
         <div class="characterAttachmentsList attachmentsList"></div>
         <hr>
     </div>
@@ -98,9 +103,12 @@
                 </div>
             </div>
         </h3>
-        <small data-i18n="These files are available to all characters in the current chat.">
-            These files are available to all characters in the current chat.
-        </small>
+        <div class="flex-container flexFlowColumn">
+            <strong><small class="chatAttachmentsName"></small></strong>
+            <small data-i18n="These files are available to all characters in the current chat.">
+                These files are available to all characters in the current chat.
+            </small>
+        </div>
         <div class="chatAttachmentsList attachmentsList"></div>
     </div>
 
