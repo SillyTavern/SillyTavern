@@ -41,6 +41,7 @@ import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
  * @property {string} url File URL
  * @property {number} size File size
  * @property {string} name File name
+ * @property {number} created Timestamp
  * @property {string} [text] File text
  */
 
@@ -168,6 +169,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                 url: fileUrl,
                 size: file.size,
                 name: file.name,
+                created: Date.now(),
             };
         }
 
@@ -734,8 +736,85 @@ async function getTitleFromHtmlBlob(blob) {
  * @param {function} callback Callback function
  */
 async function openFandomScraper(target, callback) {
-    toastr.info('Not implemented yet', target);
-    callback();
+    if (!await isFandomPluginAvailable()) {
+        toastr.error('Fandom scraper plugin is not available');
+        return;
+    }
+
+    let fandom = '';
+    let filter = '';
+    let output = 'single';
+
+    const template = $(await renderExtensionTemplateAsync('attachments', 'fandom-scrape', {}));
+    template.find('input[name="fandomScrapeInput"]').on('input', function () {
+        fandom = String($(this).val());
+    });
+    template.find('input[name="fandomScrapeFilter"]').on('input', function () {
+        filter = String($(this).val());
+    });
+    template.find('input[name="fandomScrapeOutput"]').on('input', function () {
+        output = String($(this).val());
+    });
+
+    const confirm = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: false, large: false });
+
+    if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
+
+    if (!fandom) {
+        toastr.error('Fandom name is required');
+        return;
+    }
+
+    try {
+        const result = await fetch('/api/plugins/fandom/scrape', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ fandom, filter }),
+        });
+
+        if (!result.ok) {
+            const error = await result.text();
+            throw new Error(error);
+        }
+
+        // Get domain name part if it's a URL
+        try {
+            const url = new URL(fandom);
+            const fandomId = url.hostname.split('.')[0] || fandom;
+            fandom = fandomId;
+        } catch {
+            // Ignore
+        }
+
+        const data = await result.json();
+        let numberOfAttachments;
+
+        if (output === 'multi') {
+            numberOfAttachments = data.length;
+            for (const attachment of data) {
+                const file = new File([String(attachment.content).trim()], `${String(attachment.title).trim()}.txt`, { type: 'text/plain' });
+                await uploadFileAttachmentToServer(file, target);
+            }
+        }
+
+        if (output === 'single') {
+            numberOfAttachments = 1;
+            const combinedContent = data.map((a) => String(a.title).trim() + '\n\n' + String(a.content).trim()).join('\n\n\n\n');
+            const file = new File([combinedContent], `${fandom}.txt`, { type: 'text/plain' });
+            await uploadFileAttachmentToServer(file, target);
+        }
+
+        if (numberOfAttachments) {
+            toastr.success(`Scraped ${numberOfAttachments} attachments from ${fandom}`);
+        }
+
+        callback();
+    } catch (error) {
+        console.error('Fandom scraping failed', error);
+        toastr.error('Check browser console for details.', 'Fandom scraping failed');
+    }
 }
 
 /**
@@ -791,6 +870,7 @@ async function uploadFileAttachmentToServer(file, target) {
     }
 
     const fileUrl = await uploadFileAttachment(uniqueFileName, base64Data);
+    const convertedSize = Math.round(base64Data.length * 0.75);
 
     if (!fileUrl) {
         return;
@@ -798,8 +878,9 @@ async function uploadFileAttachmentToServer(file, target) {
 
     const attachment = {
         url: fileUrl,
-        size: file.size,
+        size: convertedSize,
         name: file.name,
+        created: Date.now(),
     };
 
     ensureAttachmentsExist();
