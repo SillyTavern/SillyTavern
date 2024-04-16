@@ -692,6 +692,7 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     let api_url;
     let api_key_openai;
     let headers;
+    let bedrock_region = 'us-east-1';
 
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         api_url = new URL(request.body.reverse_proxy || API_OPENAI).toString();
@@ -712,7 +713,7 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         headers = {};
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
-        var bedrock_region = request.body.bedrock_region;
+        bedrock_region = request.body.bedrock_region;
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE) {
         api_url = API_COHERE;
         api_key_openai = readSecret(SECRET_KEYS.COHERE);
@@ -722,7 +723,6 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         return response_getstatus_openai.status(400).send({ error: true });
     }
 
-    // todo: should check Key or IAM Role permission
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
         try {
             let resp = await listTextModels(bedrock_region);
@@ -951,11 +951,6 @@ router.post('/generate', jsonParser, function (request, response) {
             bodyParams.logprobs = true;
         }
 
-        mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
-        mergeObjectWithYaml(headers, request.body.custom_include_headers);
-    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
-        console.log(request);
-        apiKey = readSecret(SECRET_KEYS.BEDROCK);
         mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
     } else {

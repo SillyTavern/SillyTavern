@@ -20,7 +20,8 @@ export const SECRET_KEYS = {
     DREAMGEN: 'api_key_dreamgen',
     CUSTOM: 'api_key_custom',
     OOBA: 'api_key_ooba',
-    BEDROCK: 'api_key_bedrock',
+    BEDROCK_ACCESS_KEY: 'api_key_bedrock_access',
+    BEDROCK_SECRET_KEY: 'api_key_bedrock_secret',
     NOMICAI: 'api_key_nomicai',
     KOBOLDCPP: 'api_key_koboldcpp',
     LLAMACPP: 'api_key_llamacpp',
@@ -34,7 +35,6 @@ const INPUT_MAP = {
     [SECRET_KEYS.NOVEL]: '#api_key_novel',
     [SECRET_KEYS.CLAUDE]: '#api_key_claude',
     [SECRET_KEYS.OPENROUTER]: '.api_key_openrouter',
-    [SECRET_KEYS.OPENROUTER]: '.api_key_openrouter',
     [SECRET_KEYS.SCALE]: '#api_key_scale',
     [SECRET_KEYS.AI21]: '#api_key_ai21',
     [SECRET_KEYS.SCALE_COOKIE]: '#scale_cookie',
@@ -45,7 +45,8 @@ const INPUT_MAP = {
     [SECRET_KEYS.CUSTOM]: '#api_key_custom',
     [SECRET_KEYS.TOGETHERAI]: '#api_key_togetherai',
     [SECRET_KEYS.OOBA]: '#api_key_ooba',
-    [SECRET_KEYS.BEDROCK]: '#api_key_bedrock',
+    [SECRET_KEYS.BEDROCK_ACCESS_KEY]: '#api_key_bedrock_access',
+    [SECRET_KEYS.BEDROCK_SECRET_KEY]: '#api_key_bedrock_secret',
     [SECRET_KEYS.INFERMATICAI]: '#api_key_infermaticai',
     [SECRET_KEYS.DREAMGEN]: '#api_key_dreamgen',
     [SECRET_KEYS.NOMICAI]: '#api_key_nomicai',
@@ -63,11 +64,7 @@ async function clearSecret() {
     await writeSecret(key, '');
     secret_state[key] = false;
     updateSecretDisplay();
-    $(INPUT_MAP[key]).val('').trigger('input').trigger('input');
-    if (key == SECRET_KEYS.BEDROCK) {
-        $('#access_key_aws').val('').trigger('input');
-        $('#secret_key_aws').val('').trigger('input');
-    }
+    $(INPUT_MAP[key]).val('').trigger('input');
     $('#main_api').trigger('change');
 }
 

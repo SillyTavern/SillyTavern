@@ -1301,6 +1301,7 @@
                                                 <input class="neo-range-input" type="number" min="1" max="10" step="0.01" data-for="smoothing_curve_textgenerationwebui" id="smoothing_curve_counter_textgenerationwebui">
                                             </div>
                                         </div>
+                                    </div>
                                     <!--
                                         <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Responses">
                                             <small>Responses</small>
@@ -2444,24 +2445,17 @@
                                 </select>
                             </div>
 
-                            <h4>AWS AKSK(Optional, if you use IAM Role/AWS CLI)</h4>
-                            <!-- <div>
-                                <span data-i18n="Get your key from">Get your key from </span> <a target="_blank" href="https://console.anthropic.com/account/keys" data-i18n="Anthropic's developer console">Anthropic's developer console</a>.
-                            </div> -->
+                            <h4>AWS AK/SK(Optional if you use IAM Role/AWS CLI)</h4>
                             <div class="flex-container">
-                                <input id="api_key_bedrock" name="api_key_bedrock" readonly placeholder="Bedrock Key(AWS AK/SK)" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
-                                <div title="Clear your API key" data-i18n="[title]Clear your Access key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_bedrock"></div>
+                                <input id="api_key_bedrock_access" name="api_key_bedrock_access" placeholder="AWS Access key" title="AWS Access key" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your Access key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_bedrock_access"></div>
+                                <input id="api_key_bedrock_secret" name="api_key_bedrock_secret" placeholder="AWS Secret key" title="AWS Secret key" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your Secret key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_bedrock_secret"></div>
                             </div>
-                            <div class="flex-container">
-                                <input id="access_key_aws" name="access_key_aws" placeholder="AWS Access Key" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
-                            </div>
-                            <div class="flex-container">
-                                <input id="secret_key_aws" name="secret_key_aws" placeholder="AWS Secret Key" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
-                            </div>
-                            <div data-for="access_key_aws" class="neutral_warning">
+                            <div data-for="api_key_bedrock_access" class="neutral_warning">
                                 For privacy reasons, your Access key will be hidden after you reload the page.
                             </div>
-                            <div data-for="secret_key_aws" class="neutral_warning">
+                            <div data-for="api_key_bedrock_secret" class="neutral_warning">
                                 For privacy reasons, your Secret key will be hidden after you reload the page.
                             </div>
                             <div>

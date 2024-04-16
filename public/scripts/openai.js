@@ -3929,16 +3929,21 @@ async function onConnectButtonClick(e) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.BEDROCK) {
-        const access_key_aws = String($('#access_key_aws').val()).trim();
-        const secret_key_aws = String($('#secret_key_aws').val()).trim();
+        const access_key_aws = String($('#api_key_bedrock_access').val()).trim();
+        const secret_key_aws = String($('#api_key_bedrock_secret').val()).trim();
 
-        if (access_key_aws.length > 0 && secret_key_aws.length > 0) {
-            await writeSecret(SECRET_KEYS.BEDROCK, [access_key_aws, secret_key_aws]);
+        if (access_key_aws.length) {
+            await writeSecret(SECRET_KEYS.BEDROCK_ACCESS_KEY, access_key_aws);
+        }
+        if (!secret_state[SECRET_KEYS.BEDROCK_ACCESS_KEY]) {
+            console.log('No access key saved for Amazon Bedrock');
+        }
 
-            if (!secret_state[SECRET_KEYS.BEDROCK]) {
-                console.log('No secret key saved for Amazon Bedrock');
-                return;
-            }
+        if (secret_key_aws.length) {
+            await writeSecret(SECRET_KEYS.BEDROCK_SECRET_KEY, secret_key_aws);
+        }
+        if (!secret_state[SECRET_KEYS.BEDROCK_SECRET_KEY]) {
+            console.log('No secret key saved for Amazon Bedrock');
         }
     }
     startStatusLoading();

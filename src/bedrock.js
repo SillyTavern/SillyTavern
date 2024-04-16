@@ -8,19 +8,20 @@ const getClient = (function() {
     const client = {};
     let aksk = '';
     return function(region_name) {
-        const secrets = readSecret(SECRET_KEYS.BEDROCK);
-        const _aksk = secrets[0] + secrets[1] || '';
+        const access_key = readSecret(SECRET_KEYS.BEDROCK_ACCESS_KEY) || '';
+        const secret_key = readSecret(SECRET_KEYS.BEDROCK_SECRET_KEY) || '';
+        const _aksk = access_key + secret_key;
         const refresh = _aksk != aksk;
 
         if(! client[region_name] || refresh) {
             aksk = _aksk;
             const secrets = readSecret(SECRET_KEYS.BEDROCK);
-            if (secrets[0] && secrets[1]) {
+            if (access_key && secret_key) {
                 client[region_name] = new BedrockClient({
                     region: region_name,
                     credentials: {
-                        accessKeyId: secrets[0],
-                        secretAccessKey: secrets[1]
+                        accessKeyId: access_key,
+                        secretAccessKey: secret_key
                     }
                 });
             } else {
@@ -36,18 +37,19 @@ const getRuntimeClient = (function() {
     const client = {};
     let aksk = '';
     return function(region_name) {
-        const secrets = readSecret(SECRET_KEYS.BEDROCK);
-        const _aksk = secrets[0] + secrets[1] || '';
+        const access_key = readSecret(SECRET_KEYS.BEDROCK_ACCESS_KEY) || '';
+        const secret_key = readSecret(SECRET_KEYS.BEDROCK_SECRET_KEY) || '';
+        const _aksk = access_key + secret_key;
         const refresh = _aksk != aksk;
 
         if(! client[region_name] || refresh) {
             aksk = _aksk;
-            if (secrets[0] && secrets[1]) {
+            if (access_key && secret_key) {
                 client[region_name] = new BedrockRuntimeClient({
                     region: region_name,
                     credentials: {
-                        accessKeyId: secrets[0],
-                        secretAccessKey: secrets[1]
+                        accessKeyId: access_key,
+                        secretAccessKey: secret_key
                     }
                 });
             } else {
