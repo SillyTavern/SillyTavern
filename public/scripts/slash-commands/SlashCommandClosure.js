@@ -1,4 +1,5 @@
 import { substituteParams } from '../../script.js';
+import { escapeRegex } from '../utils.js';
 import { SlashCommandClosureExecutor } from './SlashCommandClosureExecutor.js';
 import { SlashCommandClosureResult } from './SlashCommandClosureResult.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
@@ -22,10 +23,10 @@ export class SlashCommandClosure {
         scope = scope ?? this.scope;
         text = substituteParams(text)
             .replace(/{{pipe}}/g, scope.pipe)
-            .replace(/{{var::(\w+?)}}/g, (_, key)=>scope.getVariable(key))
+            .replace(/{{var::([^\s]+?)}}/g, (_, key)=>scope.getVariable(key))
         ;
         for (const { key, value } of scope.macroList) {
-            text = text.replace(new RegExp(`{{${key}}}`), value);
+            text = text.replace(new RegExp(`{{${escapeRegex(key)}}}`), value);
         }
         return text;
     }
