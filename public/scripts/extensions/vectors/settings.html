@@ -78,10 +78,20 @@
                     <input id="vectors_include_wi" type="checkbox" class="checkbox">
                     Include in World Info Scanning
                 </label>
+            </div>
+
+            <hr>
+
+            <div class="flex-container flexFlowColumn">
                 <label class="checkbox_label expander" for="vectors_summarize" title="Summarize chat messages before generating embeddings.">
                     <input id="vectors_summarize" type="checkbox" class="checkbox">
                     Summarize chat messages
                 </label>
+                <label for="vectors_summary_source">Summarize with:</label>
+                <select id="vectors_summary_source">
+                    <option value="main">Main API</option>
+                    <option value="extras">Extras API</option>
+                </select>
             </div>
 
             <hr>
