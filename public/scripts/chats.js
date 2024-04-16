@@ -757,7 +757,7 @@ async function openAttachmentManager() {
  */
 async function openWebpageScraper(target, callback) {
     const template = $(await renderExtensionTemplateAsync('attachments', 'web-scrape', {}));
-    const link = await callGenericPopup(template, POPUP_TYPE.INPUT, '', { wide: false, large: false });
+    const link = await callGenericPopup(template, POPUP_TYPE.INPUT, '', { wide: false, large: false, okButton: 'Scrape', cancelButton: 'Cancel' });
 
     if (!link) {
         return;
@@ -825,7 +825,7 @@ async function openFandomScraper(target, callback) {
         output = String($(this).val());
     });
 
-    const confirm = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: false, large: false });
+    const confirm = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Scrape', cancelButton: 'Cancel' });
 
     if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
         return;
@@ -992,6 +992,19 @@ function ensureAttachmentsExist() {
             characters[this_chid].data.extensions.attachments = [];
         }
     }
+}
+
+/**
+ * Gets all currently available attachments.
+ * @returns {FileAttachment[]} List of attachments
+ */
+export function getDataBankAttachments() {
+    ensureAttachmentsExist();
+    const globalAttachments = extension_settings.attachments ?? [];
+    const chatAttachments = chat_metadata.attachments ?? [];
+    const characterAttachments = characters[this_chid]?.data?.extensions?.attachments ?? [];
+
+    return [...globalAttachments, ...chatAttachments, ...characterAttachments];
 }
 
 /**

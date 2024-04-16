@@ -998,6 +998,15 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         }
     }
 
+    // Vectors Data Bank
+    if (prompts.has('vectorsDataBank')) {
+        const vectorsDataBank = prompts.get('vectorsDataBank');
+
+        if (vectorsDataBank.position) {
+            chatCompletion.insert(Message.fromPrompt(vectorsDataBank), 'main', vectorsDataBank.position);
+        }
+    }
+
     // Smart Context (ChromaDB)
     if (prompts.has('smartContext')) {
         const smartContext = prompts.get('smartContext');
@@ -1087,6 +1096,14 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
         content: vectorsMemory.value,
         identifier: 'vectorsMemory',
         position: getPromptPosition(vectorsMemory.position),
+    });
+
+    const vectorsDataBank = extensionPrompts['4_vectors_data_bank'];
+    if (vectorsDataBank && vectorsDataBank.value) systemPrompts.push({
+        role: getPromptRole(vectorsDataBank.role),
+        content: vectorsDataBank.value,
+        identifier: 'vectorsDataBank',
+        position: getPromptPosition(vectorsDataBank.position),
     });
 
     // Smart Context (ChromaDB)
