@@ -72,7 +72,6 @@ export class SlashCommandClosure {
             // unescape value
             if (typeof v == 'string') {
                 v = v
-                    ?.replace(/\\\|/g, '|')
                     ?.replace(/\\\{/g, '{')
                     ?.replace(/\\\}/g, '}')
                 ;
@@ -96,7 +95,6 @@ export class SlashCommandClosure {
             // unescape value
             if (typeof v == 'string') {
                 v = v
-                    ?.replace(/\\\|/g, '|')
                     ?.replace(/\\\{/g, '{')
                     ?.replace(/\\\}/g, '}')
                 ;
@@ -136,7 +134,6 @@ export class SlashCommandClosure {
                     // unescape named argument
                     if (typeof args[key] == 'string') {
                         args[key] = args[key]
-                            ?.replace(/\\\|/g, '|')
                             ?.replace(/\\\{/g, '{')
                             ?.replace(/\\\}/g, '}')
                         ;
@@ -184,7 +181,6 @@ export class SlashCommandClosure {
                 // unescape unnamed argument
                 if (typeof value == 'string') {
                     value = value
-                        ?.replace(/\\\|/g, '|')
                         ?.replace(/\\\{/g, '{')
                         ?.replace(/\\\}/g, '}')
                     ;
