@@ -57,7 +57,7 @@ import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
 import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './slash-commands/SlashCommandParserNameResult.js';
-import { OPTION_TYPE, SlashCommandAutoCompleteOption } from './slash-commands/SlashCommandAutoCompleteOption.js';
+import { OPTION_TYPE, SlashCommandAutoCompleteOption, SlashCommandFuzzyScore } from './slash-commands/SlashCommandAutoCompleteOption.js';
 export {
     executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -1795,6 +1795,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         dom.classList.add('slashCommandAutoComplete');
     }
     let isReplacable = false;
+    /**@type {SlashCommandAutoCompleteOption[]} */
     let result = [];
     let selectedItem = null;
     let isActive = false;
@@ -1804,6 +1805,67 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     let clone;
     let startQuote;
     let endQuote;
+    /**@type {Object.<string,HTMLElement>} */
+    const items = {};
+    let hasCache = false;
+    let selectionStart;
+    const makeItem = (key, typeIcon, noSlash, helpString = '', aliasList = []) => {
+        const li = document.createElement('li'); {
+            li.classList.add('item');
+            const type = document.createElement('span'); {
+                type.classList.add('type');
+                type.classList.add('monospace');
+                type.textContent = typeIcon;
+                li.append(type);
+            }
+            const name = document.createElement('span'); {
+                name.classList.add('name');
+                name.classList.add('monospace');
+                name.textContent = noSlash ? '' : '/';
+                key.split('').forEach(char=>{
+                    const span = document.createElement('span'); {
+                        span.textContent = char;
+                        name.append(span);
+                    }
+                });
+                li.append(name);
+            }
+            li.append(' ');
+            const help = document.createElement('span'); {
+                help.classList.add('help');
+                help.innerHTML = helpString;
+                li.append(help);
+            }
+            if (aliasList.length > 0) {
+                const aliases = document.createElement('span'); {
+                    aliases.classList.add('aliases');
+                    aliases.append(' (alias: ');
+                    for (const aliasName of aliasList) {
+                        const alias = document.createElement('span'); {
+                            alias.classList.add('monospace');
+                            alias.textContent = `/${aliasName}`;
+                            aliases.append(alias);
+                        }
+                    }
+                    aliases.append(')');
+                    li.append(aliases);
+                }
+            }
+            // gotta listen to pointerdown (happens before textarea-blur)
+            li.addEventListener('pointerdown', ()=>{
+                // gotta catch pointerup to restore focus to textarea (blurs after pointerdown)
+                pointerup = new Promise(resolve=>{
+                    const resolver = ()=>{
+                        window.removeEventListener('pointerup', resolver);
+                        resolve();
+                    };
+                    window.addEventListener('pointerup', resolver);
+                });
+                select();
+            });
+        }
+        return li;
+    };
     const hide = () => {
         dom?.remove();
         isActive = false;
@@ -1815,6 +1877,15 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         if (document.activeElement != textarea) return hide();
         // only show for slash commands
         if (text[0] != '/') return hide();
+
+        if (!hasCache) {
+            hasCache = true;
+            // init by appending all command options
+            Object.keys(parser.commands).forEach(key=>{
+                const cmd = parser.commands[key];
+                items[key] = makeItem(key, '/', false, cmd.helpString, [cmd.name, ...(cmd.aliases ?? [])].filter(it=>it != key));
+            });
+        }
 
         // request parser to get command executor (potentially "incomplete", i.e. not an actual existing command) for
         // cursor position
@@ -1833,11 +1904,14 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                 } catch { /* empty */ }
                 break;
             }
-            default: // no result -> empty slash "/" -> list all commands
             case NAME_RESULT_TYPE.COMMAND: {
                 parserResult.optionList.push(...Object.keys(parser.commands)
                     .map(key=>new SlashCommandAutoCompleteOption(OPTION_TYPE.COMMAND, parser.commands[key], key)),
                 );
+                break;
+            }
+            default: {
+                // no result
                 break;
             }
         }
@@ -1849,14 +1923,14 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                 isReplacable = isInput && (!parserResult ? true : textarea.selectionStart == parserResult.start - 2 + parserResult.name.length + (startQuote ? 1 : 0));
                 break;
             }
-            default: // no result -> empty slash "/" -> list all commands
+            default: // no result
             case NAME_RESULT_TYPE.COMMAND: {
                 isReplacable = isInput && (!parserResult ? true : textarea.selectionStart == parserResult.start - 2 + parserResult.name.length);
                 break;
             }
         }
 
-        // if forced (ctrl+space) or user input and cursor is in the middle of the name part (not at the end)
+        // if [forced (ctrl+space) or user input] and cursor is in the middle of the name part (not at the end)
         if (isForced || isInput) {
             switch (parserResult?.type) {
                 case NAME_RESULT_TYPE.CLOSURE: {
@@ -1867,13 +1941,16 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                     }
                     break;
                 }
-                default: // no result -> empty slash "/" -> list all commands
                 case NAME_RESULT_TYPE.COMMAND: {
                     if (textarea.selectionStart >= parserResult.start - 2 && textarea.selectionStart <= parserResult.start - 2 + parserResult.name.length) {
                         slashCommand = slashCommand.slice(0, textarea.selectionStart - (parserResult.start - 2));
                         parserResult.name = slashCommand;
                         isReplacable = true;
                     }
+                    break;
+                }
+                default: {
+                    // no result
                     break;
                 }
             }
@@ -1886,8 +1963,13 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             'includes': (name) => name.toLowerCase().includes(slashCommand),
             'fuzzy': (name) => fuzzyRegex.test(name),
         };
-        const fuzzyScore = (name) => {
-            const parts = fuzzyRegex.exec(name).slice(1, -1);
+        /**
+         *
+         * @param {SlashCommandAutoCompleteOption} option
+         * @returns
+         */
+        const fuzzyScore = (option) => {
+            const parts = fuzzyRegex.exec(option.name).slice(1, -1);
             let start = null;
             let consecutive = [];
             let current = '';
@@ -1912,8 +1994,13 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                 consecutive.push(current);
             }
             consecutive.sort((a,b)=>b.length - a.length);
-            return { name, start, longestConsecutive:consecutive[0]?.length ?? 0 };
+            option.score = new SlashCommandFuzzyScore(start, consecutive[0]?.length ?? 0);
+            return option;
         };
+        /**
+         * @param {SlashCommandAutoCompleteOption} a
+         * @param {SlashCommandAutoCompleteOption} b
+         */
         const fuzzyScoreCompare = (a, b) => {
             if (a.score.start < b.score.start) return -1;
             if (a.score.start > b.score.start) return 1;
@@ -1921,81 +2008,90 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             if (a.score.longestConsecutive < b.score.longestConsecutive) return 1;
             return a.name.localeCompare(b.name);
         };
-        const buildHelpStringName = (name, noSlash=false) => {
+        /**
+         *
+         * @param {SlashCommandAutoCompleteOption} item
+         */
+        const updateName = (item) => {
+            const chars = Array.from(item.dom.querySelector('.name').children);
             switch (matchType) {
                 case 'strict': {
-                    return `<span class="monospace">${noSlash?'':'/'}<span class="matched">${name.slice(0, slashCommand.length)}</span>${name.slice(slashCommand.length)}</span> `;
+                    chars.forEach((it, idx)=>{
+                        if (idx < item.name.length) {
+                            it.classList.add('matched');
+                        } else {
+                            it.classList.remove('matched');
+                        }
+                    });
+                    break;
                 }
                 case 'includes': {
-                    const start = name.toLowerCase().search(slashCommand);
-                    return `<span class="monospace">${noSlash?'':'/'}${name.slice(0, start)}<span class="matched">${name.slice(start, start + slashCommand.length)}</span>${name.slice(start + slashCommand.length)}</span> `;
+                    const start = item.name.toLowerCase().search(slashCommand);
+                    chars.forEach((it, idx)=>{
+                        if (idx < start) {
+                            it.classList.remove('matched');
+                        } else if (idx < start + item.name.length) {
+                            it.classList.add('matched');
+                        } else {
+                            it.classList.remove('matched');
+                        }
+                    });
+                    break;
                 }
                 case 'fuzzy': {
-                    const matched = name.replace(fuzzyRegex, (_, ...parts)=>{
+                    item.name.replace(fuzzyRegex, (_, ...parts)=>{
                         parts.splice(-2, 2);
                         if (parts.length == 2) {
-                            return parts.join('');
+                            chars.forEach(c=>c.classList.remove('matched'));
+                        } else {
+                            let cIdx = 0;
+                            parts.forEach((it, idx)=>{
+                                if (it === null || it.length == 0) return '';
+                                if (idx % 2 == 1) {
+                                    chars.slice(cIdx, cIdx + it.length).forEach(c=>c.classList.add('matched'));
+                                } else {
+                                    chars.slice(cIdx, cIdx + it.length).forEach(c=>c.classList.remove('matched'));
+                                }
+                                cIdx += it.length;
+                            });
                         }
-                        return parts.map((it, idx)=>{
-                            if (it === null || it.length == 0) return '';
-                            if (idx % 2 == 1) {
-                                return `<span class="matched">${it}</span>`;
-                            }
-                            return it;
-                        }).join('');
+                        return '';
                     });
-                    return `<span class="monospace">${noSlash?'':'/'}${matched}</span> `;
                 }
             }
+            return item;
         };
 
         // don't show if no executor found, i.e. cursor's area is not a command
         if (!parserResult) return hide();
         else {
-            const matchingOptions = parserResult.optionList
+            let matchingOptions = parserResult.optionList
                 .filter(it => isReplacable || it.name == '' ? matchers[matchType](it.name) : it.name.toLowerCase() == slashCommand) // Filter by the input
+                .filter((it,idx,list) => list.indexOf(it) == idx)
             ;
             result = matchingOptions
                 .filter((it,idx) => matchingOptions.indexOf(it) == idx)
                 .map(option => {
-                    let typeIcon = '';
-                    let noSlash = false;
-                    let helpString = '';
-                    let aliases = '';
+                    let li;
                     switch (option.type) {
                         case OPTION_TYPE.QUICK_REPLY: {
-                            typeIcon = 'QR';
-                            noSlash = true;
+                            li = makeItem(option.name, 'QR', true);
                             break;
                         }
                         case OPTION_TYPE.VARIABLE_NAME: {
-                            typeIcon = '𝑥';
-                            noSlash = true;
+                            li = makeItem(option.name, '𝑥', true);
                             break;
                         }
                         case OPTION_TYPE.COMMAND: {
-                            typeIcon = '/';
-                            noSlash = false;
-                            helpString = option.value.helpString;
-                            if (option.value.aliases.length > 0) {
-                                aliases = ' (alias: ';
-                                aliases += [option.value.name, ...option.value.aliases]
-                                    .filter(it=>it != option)
-                                    .map(it=>`<span class="monospace">/${it}</span>`)
-                                    .join(', ')
-                                ;
-                                aliases += ')';
-                            }
+                            li = items[option.name];
                             break;
                         }
                     }
-                    return {
-                        name: option.name,
-                        label: `<span class="type monospace">${typeIcon}</span> ${buildHelpStringName(option.name, noSlash)}${helpString}${aliases}`,
-                        value: option.name.includes(' ') || startQuote || endQuote ? `"${option.name}"` : `${option.name}`,
-                        score: matchType == 'fuzzy' ? fuzzyScore(option.name) : null,
-                        li: null,
-                    };
+                    option.replacer = option.name.includes(' ') || startQuote || endQuote ? `"${option.name}"` : `${option.name}`;
+                    option.dom = li;
+                    if (matchType == 'fuzzy') fuzzyScore(option);
+                    updateName(option);
+                    return option;
                 }) // Map to the help string and score
                 .toSorted(matchType == 'fuzzy' ? fuzzyScoreCompare : (a, b) => a.name.localeCompare(b.name)) // sort by score (if fuzzy) or name
             ;
@@ -2007,26 +2103,30 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                 return hide();
             }
             // otherwise add "no match" notice
-            switch (parserResult.type) {
+            switch (parserResult?.type) {
                 case NAME_RESULT_TYPE.CLOSURE: {
+                    const li = document.createElement('li'); {
+                        li.textContent = slashCommand.length ?
+                            `No matching variables in scope and no matching Quick Replies for "${slashCommand}"`
+                            : 'No variables in scope and no Quick Replies found.';
+                    }
                     result.push({
                         name: '',
-                        label: slashCommand.length ?
-                            `No matching variables in scope and no matching Quick Replies for "${slashCommand}"`
-                            : 'No variables in scope and no Quick Replies found.',
                         value: null,
                         score: null,
-                        li: null,
+                        li,
                     });
                     break;
                 }
                 case NAME_RESULT_TYPE.COMMAND: {
+                    const li = document.createElement('li'); {
+                        li.textContent = `No matching commands for "/${slashCommand}"`;
+                    }
                     result.push({
                         name: '',
-                        label: `No matching commands for "/${slashCommand}"`,
                         value: null,
                         score: null,
-                        li: null,
+                        li,
                     });
                     break;
                 }
@@ -2037,7 +2137,11 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         } else if (!isReplacable && result.length > 1) {
             return hide();
         }
-
+        selectedItem = result[0];
+        isActive = true;
+        renderDebounced();
+    };
+    const render = ()=>{
         // render autocomplete list
         dom.innerHTML = '';
         dom.classList.remove('defaultDark');
@@ -2058,35 +2162,21 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                 break;
             }
         }
+        const frag = document.createDocumentFragment();
         for (const item of result) {
-            const li = document.createElement('li'); {
-                li.classList.add('item');
-                if (item == result[0]) {
-                    li.classList.add('selected');
-                }
-                li.innerHTML = item.label;
-                // gotta listen to pointerdown (happens before textarea-blur)
-                li.addEventListener('pointerdown', ()=>{
-                    // gotta catch pointerup to restore focus to textarea (blurs after pointerdown)
-                    pointerup = new Promise(resolve=>{
-                        const resolver = ()=>{
-                            window.removeEventListener('pointerup', resolver);
-                            resolve();
-                        };
-                        window.addEventListener('pointerup', resolver);
-                    });
-                    selectedItem = item;
-                    select();
-                });
-                item.li = li;
-                dom.append(li);
+            if (item == selectedItem) {
+                item.dom.classList.add('selected');
+            } else {
+                item.dom.classList.remove('selected');
             }
+            frag.append(item.dom);
         }
-        selectedItem = result[0];
+        dom.append(frag);
         updatePosition();
         document.body.append(dom);
-        isActive = true;
+        // prevType = parserResult.type;
     };
+    const renderDebounced = debounce(render, 100);
     const updatePosition = () => {
         if (isFloating) {
             updateFloatingPosition();
@@ -2127,17 +2217,28 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
      */
     const getCursorPosition = () => {
         const inputRect = textarea.getBoundingClientRect();
-        clone?.remove();
-        clone = document.createElement('div');
+        // clone?.remove();
         const style = window.getComputedStyle(textarea);
-        for (const key of style) {
-            clone.style[key] = style[key];
+        if (!clone) {
+            clone = document.createElement('div');
+            for (const key of style) {
+                clone.style[key] = style[key];
+            }
+            clone.style.position = 'fixed';
+            clone.style.visibility = 'hidden';
+            document.body.append(clone);
+            const mo = new MutationObserver(muts=>{
+                if (muts.find(it=>Array.from(it.removedNodes).includes(textarea))) {
+                    clone.remove();
+                }
+            });
+            mo.observe(textarea.parentElement, { childList:true });
         }
         clone.style.height = `${inputRect.height}px`;
         clone.style.left = `${inputRect.left}px`;
         clone.style.top = `${inputRect.top}px`;
-        clone.style.position = 'fixed';
-        clone.style.visibility = 'hidden';
+        clone.style.whiteSpace = style.whiteSpace;
+        clone.style.tabSize = style.tabSize;
         const text = textarea.value;
         const before = text.slice(0, textarea.selectionStart);
         clone.textContent = before;
@@ -2145,7 +2246,6 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         locator.textContent = text[textarea.selectionStart];
         clone.append(locator);
         clone.append(text.slice(textarea.selectionStart + 1));
-        document.body.append(clone);
         clone.scrollTop = textarea.scrollTop;
         clone.scrollLeft = textarea.scrollLeft;
         const locatorRect = locator.getBoundingClientRect();
@@ -2154,24 +2254,25 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             top: locatorRect.top,
             bottom: locatorRect.bottom,
         };
-        clone.remove();
+        // clone.remove();
         return location;
     };
     let pointerup = Promise.resolve();
     const select = async() => {
         if (isReplacable && selectedItem.value !== null) {
-            textarea.value = `${text.slice(0, parserResult.start - 2)}${selectedItem.value}${text.slice(parserResult.start - 2 + parserResult.name.length + (startQuote ? 1 : 0) + (endQuote ? 1 : 0))}`;
+            textarea.value = `${text.slice(0, parserResult.start - 2)}${selectedItem.replacer}${text.slice(parserResult.start - 2 + parserResult.name.length + (startQuote ? 1 : 0) + (endQuote ? 1 : 0))}`;
             await pointerup;
             textarea.focus();
-            textarea.selectionStart = parserResult.start - 2 + selectedItem.value.length;
+            textarea.selectionStart = parserResult.start - 2 + selectedItem.replacer.length;
             textarea.selectionEnd = textarea.selectionStart;
             show();
         }
     };
-    const showAutoCompleteDebounced = debounce(show, 100);
+    const showAutoCompleteDebounced = show;
     textarea.addEventListener('input', ()=>showAutoCompleteDebounced(true));
     textarea.addEventListener('click', ()=>showAutoCompleteDebounced());
-    textarea.addEventListener('keydown', (evt)=>{
+    textarea.addEventListener('selectionchange', ()=>showAutoCompleteDebounced());
+    textarea.addEventListener('keydown', async(evt)=>{
         // autocomplete is shown and cursor at end of current command name (or inside name and typed or forced)
         if (isActive && isReplacable) {
             switch (evt.key) {
@@ -2184,13 +2285,13 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                     let newIdx;
                     if (idx == 0) newIdx = result.length - 1;
                     else newIdx = idx - 1;
-                    selectedItem.li.classList.remove('selected');
+                    selectedItem.dom.classList.remove('selected');
                     selectedItem = result[newIdx];
-                    selectedItem.li.classList.add('selected');
-                    const rect = selectedItem.li.getBoundingClientRect();
+                    selectedItem.dom.classList.add('selected');
+                    const rect = selectedItem.dom.getBoundingClientRect();
                     const rectParent = dom.getBoundingClientRect();
                     if (rect.top < rectParent.top || rect.bottom > rectParent.bottom ) {
-                        selectedItem.li.scrollIntoView();
+                        selectedItem.dom.scrollIntoView();
                     }
                     return;
                 }
@@ -2201,13 +2302,13 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                     evt.stopPropagation();
                     const idx = result.indexOf(selectedItem);
                     const newIdx = (idx + 1) % result.length;
-                    selectedItem.li.classList.remove('selected');
+                    selectedItem.dom.classList.remove('selected');
                     selectedItem = result[newIdx];
-                    selectedItem.li.classList.add('selected');
-                    const rect = selectedItem.li.getBoundingClientRect();
+                    selectedItem.dom.classList.add('selected');
+                    const rect = selectedItem.dom.getBoundingClientRect();
                     const rectParent = dom.getBoundingClientRect();
                     if (rect.top < rectParent.top || rect.bottom > rectParent.bottom ) {
-                        selectedItem.li.scrollIntoView();
+                        selectedItem.dom.scrollIntoView();
                     }
                     return;
                 }
@@ -2258,9 +2359,29 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             // ignore keydown on modifier keys
             return;
         }
-        showAutoCompleteDebounced();
+        switch (evt.key) {
+            default:
+            case 'ArrowUp':
+            case 'ArrowDown':
+            case 'ArrowRight':
+            case 'ArrowLeft': {
+                // keyboard navigation, wait for keyup to complete cursor move
+                const oldText = textarea.value;
+                await new Promise(resolve=>{
+                    const keyUpListener = ()=>{
+                        window.removeEventListener('keyup', keyUpListener);
+                        resolve();
+                    };
+                    window.addEventListener('keyup', keyUpListener);
+                });
+                if (selectionStart != textarea.selectionStart) {
+                    selectionStart = textarea.selectionStart;
+                    showAutoCompleteDebounced(oldText != textarea.value);
+                }
+            }
+        }
     });
-    textarea.addEventListener('blur', ()=>hide());
+    // textarea.addEventListener('blur', ()=>hide());
     if (isFloating) {
         textarea.addEventListener('scroll', debounce(updateFloatingPosition, 100));
     }

@@ -10,11 +10,28 @@ export const OPTION_TYPE = {
     'VARIABLE_NAME': 3,
 };
 
+export class SlashCommandFuzzyScore {
+    /**@type {number}*/ start;
+    /**@type {number}*/ longestConsecutive;
+
+    /**
+     * @param {number} start
+     * @param {number} longestConsecutive
+     */
+    constructor(start, longestConsecutive) {
+        this.start = start;
+        this.longestConsecutive = longestConsecutive;
+    }
+}
+
 
 export class SlashCommandAutoCompleteOption {
     /**@type {OPTION_TYPE}*/ type;
     /**@type {string|SlashCommand}*/ value;
     /**@type {string}*/ name;
+    /**@type {SlashCommandFuzzyScore}*/ score;
+    /**@type {string}*/ replacer;
+    /**@type {HTMLElement}*/ dom;
 
 
     /**
