@@ -385,7 +385,7 @@ export async function appendFileContent(message, messageText) {
         const fileText = message.extra.file.text || (await getFileAttachment(message.extra.file.url));
 
         if (fileText) {
-            const fileWrapped = `\`\`\`\n${fileText}\n\`\`\`\n\n`;
+            const fileWrapped = `${fileText}\n\n`;
             message.extra.fileLength = fileWrapped.length;
             messageText = fileWrapped + messageText;
         }
