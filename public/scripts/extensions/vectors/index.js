@@ -10,7 +10,14 @@ import {
     substituteParams,
     generateRaw,
 } from '../../../script.js';
-import { ModuleWorkerWrapper, extension_settings, getContext, modules, renderExtensionTemplateAsync } from '../../extensions.js';
+import {
+    ModuleWorkerWrapper,
+    extension_settings,
+    getContext,
+    modules,
+    renderExtensionTemplateAsync,
+    doExtrasFetch, getApiUrl,
+} from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
@@ -26,7 +33,9 @@ const settings = {
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
     summarize: false,
+    summarize_sent: false,
     summary_source: 'main',
+    summary_prompt: 'Pause your roleplay. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.',
 
     // For chats
     enabled_chats: false,
@@ -158,9 +167,8 @@ async function summarizeExtra(hashedMessages) {
 }
 
 async function summarizeMain(hashedMessages) {
-    const sysPrompt = 'Pause your roleplay. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.';
     for (const element of hashedMessages) {
-        element.text = await generateRaw(element.text, '', false, false, sysPrompt);
+        element.text = await generateRaw(element.text, '', false, false, settings.summary_prompt);
     }
 
     return hashedMessages;
@@ -465,7 +473,7 @@ async function getQueryText(chat) {
 
     let hashedMessages = chat.map(x => ({ text: String(substituteParams(x.mes)) }));
 
-    if (settings.summarize) {
+    if (settings.summarize && settings.summarize_sent) {
         hashedMessages = await summarize(hashedMessages, settings.summary_source);
     }
 
@@ -839,8 +847,20 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
-    $('#vectors_summary_source').val(settings.togetherai_model).on('change', () => {
+    $('#vectors_summarize_user').prop('checked', settings.summarize_sent).on('input', () => {
+        settings.summarize_sent = !!$('#vectors_summarize_user').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_summary_source').val(settings.summary_source).on('change', () => {
         settings.summary_source = String($('#vectors_summary_source').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_summary_prompt').val(settings.summary_prompt).on('input', () => {
+        settings.summary_prompt = String($('#vectors_summary_prompt').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
