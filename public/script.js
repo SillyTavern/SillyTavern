@@ -9188,15 +9188,6 @@ jQuery(async function () {
         }
     });
 
-    $('#access_key_aws, #secret_key_aws').on('change', async function(e){
-        e.stopPropagation();
-
-        const access_key_aws = String($('#access_key_aws').val()).trim();
-        const secret_key_aws = String($('#secret_key_aws').val()).trim();
-
-        $('#api_key_bedrock').val(JSON.stringify([access_key_aws, secret_key_aws]));
-    });
-
     $('#api_button_textgenerationwebui').on('click', async function (e) {
         const keys = [
             { id: 'api_key_mancer', secret: SECRET_KEYS.MANCER },
