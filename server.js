@@ -248,7 +248,9 @@ if (!disableCsrf) {
 // Host index page
 app.get('/', (request, response) => {
     if (userModule.shouldRedirectToLogin(request)) {
-        return response.redirect('/login');
+        const query = request.url.split('?')[1];
+        const redirectUrl = query ? `/login?${query}` : '/login';
+        return response.redirect(redirectUrl);
     }
 
     return response.sendFile('index.html', { root: path.join(process.cwd(), 'public') });

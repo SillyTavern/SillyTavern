@@ -326,7 +326,7 @@ function toAvatarKey(handle) {
 }
 
 /**
- * Initializes the user storage. Currently a no-op.
+ * Initializes the user storage.
  * @param {string} dataRoot The root directory for user data
  * @returns {Promise<void>}
  */
@@ -655,6 +655,10 @@ async function createBackupArchive(handle, response) {
     archive.finalize();
 }
 
+/**
+ * Checks if any admin users are not password protected. If so, logs a warning.
+ * @returns {Promise<void>}
+ */
 async function checkAccountsProtection() {
     if (!ENABLE_ACCOUNTS) {
         return;
