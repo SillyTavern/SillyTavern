@@ -620,11 +620,38 @@ async function deleteAttachment(attachment, source, callback) {
  */
 async function openAttachmentManager() {
     /**
-     *
+     * Renders a list of attachments.
      * @param {FileAttachment[]} attachments List of attachments
      * @param {string} source Source of the attachments
      */
     async function renderList(attachments, source) {
+        /**
+         * Sorts attachments by sortField and sortOrder.
+         * @param {FileAttachment} a First attachment
+         * @param {FileAttachment} b Second attachment
+         * @returns {number} Sort order
+         */
+        function sortFn(a, b) {
+            const sortValueA = a[sortField];
+            const sortValueB = b[sortField];
+            if (typeof sortValueA === 'string' && typeof sortValueB === 'string') {
+                return sortValueA.localeCompare(sortValueB) * (sortOrder === 'asc' ? 1 : -1);
+            }
+            return (sortValueA - sortValueB) * (sortOrder === 'asc' ? 1 : -1);
+        }
+
+        /**
+         * Filters attachments by name.
+         * @param {FileAttachment} a Attachment
+         * @returns {boolean} True if attachment matches the filter, false otherwise.
+         */
+        function filterFn(a) {
+            if (!filterString) {
+                return true;
+            }
+
+            return a.name.toLowerCase().includes(filterString.toLowerCase());
+        }
         const sources = {
             [ATTACHMENT_SOURCE.GLOBAL]: '.globalAttachmentsList',
             [ATTACHMENT_SOURCE.CHARACTER]: '.characterAttachmentsList',
@@ -632,14 +659,35 @@ async function openAttachmentManager() {
         };
 
         template.find(sources[source]).empty();
-        for (const attachment of attachments) {
+
+        // Sort attachments by sortField and sortOrder, and apply filter
+        const sortedAttachmentList = attachments.slice().filter(filterFn).sort(sortFn);
+
+        for (const attachment of sortedAttachmentList) {
             const attachmentTemplate = template.find('.attachmentListItemTemplate .attachmentListItem').clone();
             attachmentTemplate.find('.attachmentListItemName').text(attachment.name);
             attachmentTemplate.find('.attachmentListItemSize').text(humanFileSize(attachment.size));
+            attachmentTemplate.find('.attachmentListItemCreated').text(new Date(attachment.created).toLocaleString());
             attachmentTemplate.find('.viewAttachmentButton').on('click', () => openFilePopup(attachment));
             attachmentTemplate.find('.deleteAttachmentButton').on('click', () => deleteAttachment(attachment, source, renderAttachments));
             template.find(sources[source]).append(attachmentTemplate);
         }
+    }
+
+    /**
+     * Renders buttons for the attachment manager.
+     * @param {string} source Source of the buttons
+     */
+    function renderButtons(source) {
+        const sources = {
+            [ATTACHMENT_SOURCE.GLOBAL]: '.globalAttachmentsTitle',
+            [ATTACHMENT_SOURCE.CHARACTER]: '.characterAttachmentsTitle',
+            [ATTACHMENT_SOURCE.CHAT]: '.chatAttachmentsTitle',
+        };
+
+        const buttonsList = template.find('.actionButtonsTemplate .actionButtons').clone();
+        buttonsList.find('.menu_button').data('attachment-manager-target', source);
+        template.find(sources[source]).append(buttonsList);
     }
 
     async function renderAttachments() {
@@ -666,8 +714,14 @@ async function openAttachmentManager() {
         template.find('.chatAttachmentsName').text(chatName);
     }
 
+    let sortField = localStorage.getItem('DataBank_sortField') || 'created';
+    let sortOrder = localStorage.getItem('DataBank_sortOrder') || 'desc';
+    let filterString = '';
     const hasFandomPlugin = await isFandomPluginAvailable();
     const template = $(await renderExtensionTemplateAsync('attachments', 'manager', {}));
+    renderButtons(ATTACHMENT_SOURCE.GLOBAL);
+    renderButtons(ATTACHMENT_SOURCE.CHARACTER);
+    renderButtons(ATTACHMENT_SOURCE.CHAT);
     template.find('.scrapeWebpageButton').on('click', function () {
         openWebpageScraper(String($(this).data('attachment-manager-target')), renderAttachments);
     });
@@ -676,6 +730,21 @@ async function openAttachmentManager() {
     });
     template.find('.uploadFileButton').on('click', function () {
         openFileUploader(String($(this).data('attachment-manager-target')), renderAttachments);
+    });
+    template.find('.attachmentSearch').on('input', function () {
+        filterString = String($(this).val());
+        renderAttachments();
+    });
+    template.find('.attachmentSort').on('change', function () {
+        if (!(this instanceof HTMLSelectElement) || this.selectedOptions.length === 0)  {
+            return;
+        }
+
+        sortField = this.selectedOptions[0].dataset.sortField;
+        sortOrder = this.selectedOptions[0].dataset.sortOrder;
+        localStorage.setItem('DataBank_sortField', sortField);
+        localStorage.setItem('DataBank_sortOrder', sortOrder);
+        renderAttachments();
     });
     await renderAttachments();
     callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });

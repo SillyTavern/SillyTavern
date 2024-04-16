@@ -18,3 +18,12 @@
 .attachmentListItem {
     padding: 10px;
 }
+
+.attachmentListItemSize {
+    min-width: 4em;
+    text-align: right;
+}
+
+.attachmentListItemCreated {
+    text-align: right;
+}
