@@ -29,7 +29,7 @@ export class SlashCommandScope {
         const scope = new SlashCommandScope(this.parent);
         scope.variableNames = [...this.variableNames];
         scope.variables = Object.assign({}, this.variables);
-        scope.macros = this.macros;
+        scope.macros = Object.assign({}, this.macros);
         scope.#pipe = this.#pipe;
         return scope;
     }
