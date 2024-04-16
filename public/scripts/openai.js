@@ -1594,6 +1594,11 @@ async function sendAltScaleRequest(messages, logit_bias, signal, type) {
         signal: signal,
     });
 
+    if (!response.ok) {
+        tryParseStreamingError(response, await response.text());
+        throw new Error('Scale response does not indicate success.');
+    }
+
     const data = await response.json();
     return data.output;
 }
