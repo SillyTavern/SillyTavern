@@ -16,6 +16,6 @@ export class SlashCommand {
             ;
             aliases += ')';
         }
-        return `<span class="monospace">/${this.name}</span>${this.helpString}${aliases}`;
+        return `<span class="monospace">/${this.name}</span> ${this.helpString}${aliases}`;
     }
 }
