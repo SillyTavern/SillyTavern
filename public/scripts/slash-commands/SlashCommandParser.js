@@ -178,11 +178,13 @@ export class SlashCommandParser {
      * @param {*} index Index to check for names (cursor position).
      */
     getNameAt(text, index) {
-        try {
-            this.parse(text, false);
-        } catch (e) {
-            // do nothing
-            console.warn(e);
+        if (this.text != `{:${text}:}`) {
+            try {
+                this.parse(text, false);
+            } catch (e) {
+                // do nothing
+                console.warn(e);
+            }
         }
         index += 2;
         const executor = this.commandIndex
