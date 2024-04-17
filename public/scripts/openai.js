@@ -726,12 +726,16 @@ export function isOpenRouterWithInstruct() {
 /**
  * Populates the chat history of the conversation.
  * @param {object[]} messages - Array containing all messages.
- * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {import('./PromptManager').PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  * @param type
  * @param cyclePrompt
  */
 async function populateChatHistory(messages, prompts, chatCompletion, type = null, cyclePrompt = null) {
+    if (!prompts.has('chatHistory')) {
+        return;
+    }
+
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
     // Reserve budget for new chat message
@@ -816,11 +820,15 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 /**
  * This function populates the dialogue examples in the conversation.
  *
- * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {import('./PromptManager').PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  * @param {Object[]} messageExamples - Array containing all message examples.
  */
 function populateDialogueExamples(prompts, chatCompletion, messageExamples) {
+    if (!prompts.has('dialogueExamples')) {
+        return;
+    }
+
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (Array.isArray(messageExamples) && messageExamples.length) {
         const newExampleChat = new Message('system', substituteParams(oai_settings.new_example_chat_prompt), 'newChat');

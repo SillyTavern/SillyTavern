@@ -102,7 +102,7 @@ class Prompt {
 /**
  * Representing a collection of prompts.
  */
-class PromptCollection {
+export class PromptCollection {
     collection = [];
     overriddenPrompts = [];
 
@@ -163,7 +163,7 @@ class PromptCollection {
     /**
      * Retrieves the index of a Prompt instance in the collection by its identifier.
      *
-     * @param {null} identifier - The identifier of the Prompt instance to find.
+     * @param {string} identifier - The identifier of the Prompt instance to find.
      * @returns {number} The index of the Prompt instance in the collection, or -1 if not found.
      */
     index(identifier) {
@@ -904,7 +904,7 @@ class PromptManager {
      * @returns {boolean} True if the prompt can be deleted, false otherwise.
      */
     isPromptToggleAllowed(prompt) {
-        const forceTogglePrompts = ['charDescription', 'charPersonality', 'scenario', 'personaDescription', 'worldInfoBefore', 'worldInfoAfter', 'main'];
+        const forceTogglePrompts = ['charDescription', 'charPersonality', 'scenario', 'personaDescription', 'worldInfoBefore', 'worldInfoAfter', 'main', 'chatHistory', 'dialogueExamples'];
         return prompt.marker && !forceTogglePrompts.includes(prompt.identifier) ? false : !this.configuration.toggleDisabled.includes(prompt.identifier);
     }
 
