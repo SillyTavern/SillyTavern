@@ -2266,6 +2266,13 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             textarea.selectionStart = parserResult.start - 2 + selectedItem.replacer.length;
             textarea.selectionEnd = textarea.selectionStart;
             show();
+        } else {
+            const selectionStart = textarea.selectionStart;
+            const selectionEnd = textarea.selectionDirection;
+            await pointerup;
+            textarea.focus();
+            textarea.selectionStart = selectionStart;
+            textarea.selectionDirection = selectionEnd;
         }
     };
     const showAutoCompleteDebounced = show;
