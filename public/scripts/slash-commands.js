@@ -2067,7 +2067,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         else {
             let matchingOptions = parserResult.optionList
                 .filter(it => isReplacable || it.name == '' ? matchers[matchType](it.name) : it.name.toLowerCase() == slashCommand) // Filter by the input
-                .filter((it,idx,list) => list.indexOf(it) == idx)
+                .filter((it,idx,list) => list.findIndex(opt=>opt.value == it.value) == idx)
             ;
             result = matchingOptions
                 .filter((it,idx) => matchingOptions.indexOf(it) == idx)
