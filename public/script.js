@@ -215,6 +215,7 @@ import { evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { callGenericPopup } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
+import { ScraperManager } from './scripts/scrapers.js';
 
 //exporting functions and vars for mods
 export {
@@ -7756,6 +7757,7 @@ window['SillyTavern'].getContext = function () {
          */
         renderExtensionTemplate: renderExtensionTemplate,
         renderExtensionTemplateAsync: renderExtensionTemplateAsync,
+        registerDataBankScraper: ScraperManager.registerDataBankScraper,
         callPopup: callPopup,
         callGenericPopup: callGenericPopup,
         mainApi: main_api,

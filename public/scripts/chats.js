@@ -31,10 +31,10 @@ import {
     getStringHash,
     humanFileSize,
     saveBase64AsFile,
-    isValidUrl,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced, writeExtensionField } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { ScraperManager } from './scrapers.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -417,7 +417,7 @@ export function decodeStyleTags(text) {
 
     return text.replaceAll(styleDecodeRegex, (_, style) => {
         try {
-			let styleCleaned = unescape(style).replaceAll(/<br\/>/g, '');
+            let styleCleaned = unescape(style).replaceAll(/<br\/>/g, '');
             const ast = css.parse(styleCleaned);
             const rules = ast?.stylesheet?.rules;
             if (rules) {
@@ -677,22 +677,71 @@ async function openAttachmentManager() {
 
     /**
      * Renders buttons for the attachment manager.
-     * @param {string} source Source of the buttons
      */
-    function renderButtons(source) {
+    function renderButtons() {
         const sources = {
             [ATTACHMENT_SOURCE.GLOBAL]: '.globalAttachmentsTitle',
             [ATTACHMENT_SOURCE.CHARACTER]: '.characterAttachmentsTitle',
             [ATTACHMENT_SOURCE.CHAT]: '.chatAttachmentsTitle',
         };
 
-        const buttonsList = template.find('.actionButtonsTemplate .actionButtons').clone();
-        buttonsList.find('.menu_button').data('attachment-manager-target', source);
-        template.find(sources[source]).append(buttonsList);
+        const modal = template.find('.actionButtonsModal').hide();
+        const scrapers = ScraperManager.getDataBankScrapers();
+
+        for (const scraper of scrapers) {
+            const buttonTemplate = template.find('.actionButtonTemplate .actionButton').clone();
+            buttonTemplate.find('.actionButtonIcon').addClass(scraper.iconClass);
+            buttonTemplate.find('.actionButtonText').text(scraper.name);
+            buttonTemplate.attr('title', scraper.description);
+            buttonTemplate.on('click', () => {
+                const target = modal.attr('data-attachment-manager-target');
+                runScraper(scraper.id, target, renderAttachments);
+            });
+            modal.append(buttonTemplate);
+        }
+
+        const modalButtonData = Object.entries(sources).map(entry => {
+            const [source, selector] = entry;
+            const button = template.find(selector).find('.openActionModalButton').get(0);
+
+            if (!button) {
+                return;
+            }
+
+            const bodyListener = (e) => {
+                if (modal.is(':visible') && (!$(e.target).closest('.openActionModalButton').length)) {
+                    modal.hide();
+                }
+
+                // Replay a click if the modal was already open by another button
+                if ($(e.target).closest('.openActionModalButton').length && !modal.is(':visible')) {
+                    modal.show();
+                }
+            };
+            document.body.addEventListener('click', bodyListener);
+
+            const popper = Popper.createPopper(button, modal.get(0), { placement: 'bottom-end' });
+            button.addEventListener('click', () => {
+                modal.attr('data-attachment-manager-target', source);
+                modal.toggle();
+                popper.update();
+            });
+
+            return [popper, bodyListener];
+        }).filter(Boolean);
+
+        return () => {
+            modalButtonData.forEach(p => {
+                const [popper, bodyListener] = p;
+                popper.destroy();
+                document.body.removeEventListener('click', bodyListener);
+            });
+            modal.remove();
+        };
     }
 
     async function renderAttachments() {
-        /** @type {FileAttachment[]} */
+    /** @type {FileAttachment[]} */
         const globalAttachments = extension_settings.attachments ?? [];
         /** @type {FileAttachment[]} */
         const chatAttachments = chat_metadata.attachments ?? [];
@@ -718,26 +767,15 @@ async function openAttachmentManager() {
     let sortField = localStorage.getItem('DataBank_sortField') || 'created';
     let sortOrder = localStorage.getItem('DataBank_sortOrder') || 'desc';
     let filterString = '';
-    const hasFandomPlugin = await isFandomPluginAvailable();
+
     const template = $(await renderExtensionTemplateAsync('attachments', 'manager', {}));
-    renderButtons(ATTACHMENT_SOURCE.GLOBAL);
-    renderButtons(ATTACHMENT_SOURCE.CHARACTER);
-    renderButtons(ATTACHMENT_SOURCE.CHAT);
-    template.find('.scrapeWebpageButton').on('click', function () {
-        openWebpageScraper(String($(this).data('attachment-manager-target')), renderAttachments);
-    });
-    template.find('.scrapeFandomButton').toggle(hasFandomPlugin).on('click', function () {
-        openFandomScraper(String($(this).data('attachment-manager-target')), renderAttachments);
-    });
-    template.find('.uploadFileButton').on('click', function () {
-        openFileUploader(String($(this).data('attachment-manager-target')), renderAttachments);
-    });
+
     template.find('.attachmentSearch').on('input', function () {
         filterString = String($(this).val());
         renderAttachments();
     });
     template.find('.attachmentSort').on('change', function () {
-        if (!(this instanceof HTMLSelectElement) || this.selectedOptions.length === 0)  {
+        if (!(this instanceof HTMLSelectElement) || this.selectedOptions.length === 0) {
             return;
         }
 
@@ -747,165 +785,48 @@ async function openAttachmentManager() {
         localStorage.setItem('DataBank_sortOrder', sortOrder);
         renderAttachments();
     });
+
+    const cleanupFn = renderButtons();
     await renderAttachments();
-    callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });
+    await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });
+
+    cleanupFn();
 }
 
 /**
- * Scrapes a webpage for attachments.
+ * Runs a known scraper on a source and saves the result as an attachment.
+ * @param {string} scraperId Id of the scraper
  * @param {string} target Target for the attachment
  * @param {function} callback Callback function
+ * @returns {Promise<void>} A promise that resolves when the source is scraped.
  */
-async function openWebpageScraper(target, callback) {
-    const template = $(await renderExtensionTemplateAsync('attachments', 'web-scrape', {}));
-    const link = await callGenericPopup(template, POPUP_TYPE.INPUT, '', { wide: false, large: false, okButton: 'Scrape', cancelButton: 'Cancel' });
-
-    if (!link) {
-        return;
-    }
-
+async function runScraper(scraperId, target, callback) {
     try {
-        if (!isValidUrl(link)) {
-            toastr.error('Invalid URL');
+        console.log(`Running scraper ${scraperId} for ${target}`);
+        const files = await ScraperManager.runDataBankScraper(scraperId);
+
+        if (!Array.isArray(files)) {
+            console.warn('Scraping returned nothing');
             return;
         }
 
-        const result = await fetch('/api/serpapi/visit', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ url: link }),
-        });
-
-        const blob = await result.blob();
-        const domain = new URL(link).hostname;
-        const timestamp = Date.now();
-        const title = await getTitleFromHtmlBlob(blob) || 'webpage';
-        const file = new File([blob], `${title} - ${domain} - ${timestamp}.html`, { type: 'text/html' });
-        await uploadFileAttachmentToServer(file, target);
-        callback();
-    } catch (error) {
-        console.error('Scraping failed', error);
-        toastr.error('Check browser console for details.', 'Scraping failed');
-    }
-}
-
-/**
- *
- * @param {Blob} blob Blob of the HTML file
- * @returns {Promise<string>} Title of the HTML file
- */
-async function getTitleFromHtmlBlob(blob) {
-    const text = await blob.text();
-    const titleMatch = text.match(/<title>(.*?)<\/title>/i);
-    return titleMatch ? titleMatch[1] : '';
-}
-
-/**
- * Scrapes a Fandom page for attachments.
- * @param {string} target Target for the attachment
- * @param {function} callback Callback function
- */
-async function openFandomScraper(target, callback) {
-    if (!await isFandomPluginAvailable()) {
-        toastr.error('Fandom scraper plugin is not available');
-        return;
-    }
-
-    let fandom = '';
-    let filter = '';
-    let output = 'single';
-
-    const template = $(await renderExtensionTemplateAsync('attachments', 'fandom-scrape', {}));
-    template.find('input[name="fandomScrapeInput"]').on('input', function () {
-        fandom = String($(this).val());
-    });
-    template.find('input[name="fandomScrapeFilter"]').on('input', function () {
-        filter = String($(this).val());
-    });
-    template.find('input[name="fandomScrapeOutput"]').on('input', function () {
-        output = String($(this).val());
-    });
-
-    const confirm = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Scrape', cancelButton: 'Cancel' });
-
-    if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
-        return;
-    }
-
-    if (!fandom) {
-        toastr.error('Fandom name is required');
-        return;
-    }
-
-    try {
-        const result = await fetch('/api/plugins/fandom/scrape', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ fandom, filter }),
-        });
-
-        if (!result.ok) {
-            const error = await result.text();
-            throw new Error(error);
+        if (files.length === 0) {
+            console.warn('Scraping returned no files');
+            toastr.info('No files were scraped.', 'Data Bank');
+            return;
         }
 
-        // Get domain name part if it's a URL
-        try {
-            const url = new URL(fandom);
-            const fandomId = url.hostname.split('.')[0] || fandom;
-            fandom = fandomId;
-        } catch {
-            // Ignore
-        }
-
-        const data = await result.json();
-        let numberOfAttachments;
-
-        if (output === 'multi') {
-            numberOfAttachments = data.length;
-            for (const attachment of data) {
-                const file = new File([String(attachment.content).trim()], `${String(attachment.title).trim()}.txt`, { type: 'text/plain' });
-                await uploadFileAttachmentToServer(file, target);
-            }
-        }
-
-        if (output === 'single') {
-            numberOfAttachments = 1;
-            const combinedContent = data.map((a) => String(a.title).trim() + '\n\n' + String(a.content).trim()).join('\n\n\n\n');
-            const file = new File([combinedContent], `${fandom}.txt`, { type: 'text/plain' });
+        for (const file of files) {
             await uploadFileAttachmentToServer(file, target);
         }
 
-        if (numberOfAttachments) {
-            toastr.success(`Scraped ${numberOfAttachments} attachments from ${fandom}`);
-        }
-
+        toastr.success(`Scraped ${files.length} files from ${scraperId} to ${target}.`, 'Data Bank');
         callback();
-    } catch (error) {
-        console.error('Fandom scraping failed', error);
-        toastr.error('Check browser console for details.', 'Fandom scraping failed');
     }
-}
-
-/**
- * Uploads a file attachment.
- * @param {string} target File upload target
- * @param {function} callback Callback function
- */
-async function openFileUploader(target, callback) {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.txt, .md, .pdf, .html, .htm';
-    fileInput.onchange = async function () {
-        const file = fileInput.files[0];
-        if (!file) return;
-
-        await uploadFileAttachmentToServer(file, target);
-
-        callback();
-    };
-
-    fileInput.click();
+    catch (error) {
+        console.error('Scraping failed', error);
+        toastr.error('Check browser console for details.', 'Scraping failed');
+    }
 }
 
 /**
@@ -1006,24 +927,6 @@ export function getDataBankAttachments() {
     const characterAttachments = characters[this_chid]?.data?.extensions?.attachments ?? [];
 
     return [...globalAttachments, ...chatAttachments, ...characterAttachments];
-}
-
-/**
- * Probes the server to check if the Fandom plugin is available.
- * @returns {Promise<boolean>} True if the plugin is available, false otherwise.
- */
-async function isFandomPluginAvailable() {
-    try {
-        const result = await fetch('/api/plugins/fandom/probe', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-        });
-
-        return result.ok;
-    } catch (error) {
-        console.debug('Could not probe Fandom plugin', error);
-        return false;
-    }
 }
 
 jQuery(function () {

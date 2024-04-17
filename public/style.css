@@ -709,7 +709,8 @@ body .panelControlBar {
 }
 
 #options,
-#extensionsMenu {
+#extensionsMenu,
+.shadow_popup .popper-modal {
     display: flex;
     z-index: 29999;
     background-color: var(--SmartThemeBlurTintColor);
