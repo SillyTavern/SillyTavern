@@ -417,7 +417,8 @@ export function decodeStyleTags(text) {
 
     return text.replaceAll(styleDecodeRegex, (_, style) => {
         try {
-            const ast = css.parse(unescape(style));
+			let styleCleaned = unescape(style).replaceAll(/<br\/>/g, '');
+            const ast = css.parse(styleCleaned);
             const rules = ast?.stylesheet?.rules;
             if (rules) {
                 for (const rule of rules) {
