@@ -2381,7 +2381,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             }
         }
     });
-    // textarea.addEventListener('blur', ()=>hide());
+    textarea.addEventListener('blur', ()=>hide());
     if (isFloating) {
         textarea.addEventListener('scroll', debounce(updateFloatingPosition, 100));
     }
