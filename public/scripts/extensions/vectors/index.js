@@ -353,7 +353,8 @@ async function processFiles(chat) {
             message.mes = message.mes.substring(message.extra.fileLength);
 
             const fileName = message.extra.file.name;
-            const collectionId = `file_${getStringHash(fileName)}`;
+            const fileUrl = message.extra.file.url;
+            const collectionId = `file_${getStringHash(fileUrl)}`;
             const hashesInCollection = await getSavedHashes(collectionId);
 
             // File is already in the collection
@@ -749,6 +750,37 @@ async function queryMultipleCollections(collectionIds, searchText, topK) {
 }
 
 /**
+ * Purges the vector index for a file.
+ * @param {string} fileUrl File URL to purge
+ */
+async function purgeFileVectorIndex(fileUrl) {
+    try {
+        if (!settings.enabled_files) {
+            return;
+        }
+
+        console.log(`Vectors: Purging file vector index for ${fileUrl}`);
+        const collectionId = `file_${getStringHash(fileUrl)}`;
+
+        const response = await fetch('/api/vector/purge', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                collectionId: collectionId,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Could not delete vector index for collection ${collectionId}`);
+        }
+
+        console.log(`Vectors: Purged vector index for collection ${collectionId}`);
+    } catch (error) {
+        console.error('Vectors: Failed to purge file', error);
+    }
+}
+
+/**
  * Purges the vector index for a collection.
  * @param {string} collectionId Collection ID to purge
  * @returns <Promise<boolean>> True if deleted, false if not
@@ -1025,4 +1057,5 @@ jQuery(async () => {
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
     eventSource.on(event_types.CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.GROUP_CHAT_DELETED, purgeVectorIndex);
+    eventSource.on(event_types.FILE_ATTACHMENT_DELETED, purgeFileVectorIndex);
 });

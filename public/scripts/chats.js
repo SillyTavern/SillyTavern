@@ -558,6 +558,7 @@ async function deleteFileFromServer(url) {
             throw new Error(error);
         }
 
+        await eventSource.emit(event_types.FILE_ATTACHMENT_DELETED, url);
         return true;
     } catch (error) {
         toastr.error(String(error), 'Could not delete file');

@@ -448,6 +448,7 @@ export const event_types = {
     CHARACTER_DELETED: 'characterDeleted',
     CHARACTER_DUPLICATED: 'character_duplicated',
     SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
+    FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
 };
 
 export const eventSource = new EventEmitter();
