@@ -460,7 +460,7 @@ export class SlashCommandParser {
     }
     parseUnnamedArgument() {
         /**@type {SlashCommandClosure|String}*/
-        let value = '';
+        let value = this.take(); // take the first, already tested, char
         let isList = false;
         let listValues = [];
         while (!this.testUnnamedArgumentEnd()) {
@@ -512,7 +512,7 @@ export class SlashCommandParser {
         return this.testSymbol(']');
     }
     parseListValue() {
-        let value = '';
+        let value = this.take(); // take the already tested opening bracket
         while (!this.testListValueEnd()) value += this.take(); // take all chars until closing bracket
         value += this.take(); // take closing bracket
         return value;
@@ -526,7 +526,7 @@ export class SlashCommandParser {
         return this.testCommandEnd();
     }
     parseValue() {
-        let value = '';
+        let value = this.take(); // take the first, already tested, char
         while (!this.testValueEnd()) value += this.take(); // take all chars until value end
         return value;
     }
