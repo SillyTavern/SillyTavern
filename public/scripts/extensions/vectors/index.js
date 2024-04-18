@@ -35,6 +35,7 @@ const settings = {
     include_wi: false,
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
+    cohere_model: 'embed-english-v3.0',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -598,6 +599,9 @@ function getVectorHeaders() {
         case 'openai':
             addOpenAiHeaders(headers);
             break;
+        case 'cohere':
+            addCohereHeaders(headers);
+            break;
         default:
             break;
     }
@@ -637,6 +641,16 @@ function addOpenAiHeaders(headers) {
 }
 
 /**
+ * Add headers for the Cohere API source.
+ * @param {object} headers Header object
+ */
+function addCohereHeaders(headers) {
+    Object.assign(headers, {
+        'X-Cohere-Model': extension_settings.vectors.cohere_model,
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
@@ -647,7 +661,8 @@ async function insertVectorItems(collectionId, items) {
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
         settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
-        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI]) {
+        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
+        settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
@@ -816,6 +831,7 @@ function toggleSettings() {
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
+    $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
 }
 
@@ -910,6 +926,12 @@ jQuery(async () => {
     $('#vectors_openai_model').val(settings.openai_model).on('change', () => {
         $('#vectors_modelWarning').show();
         settings.openai_model = String($('#vectors_openai_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_cohere_model').val(settings.cohere_model).on('change', () => {
+        $('#vectors_modelWarning').show();
+        settings.cohere_model = String($('#vectors_cohere_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

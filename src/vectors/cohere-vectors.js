@@ -1,39 +1,23 @@
 const fetch = require('node-fetch').default;
-const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
-
-const SOURCES = {
-    'nomicai': {
-        secretKey: SECRET_KEYS.NOMICAI,
-        url: 'api-atlas.nomic.ai/v1/embedding/text',
-        model: 'nomic-embed-text-v1.5',
-    },
-};
+const { SECRET_KEYS, readSecret } = require('../endpoints/secrets');
 
 /**
  * Gets the vector for the given text batch from an OpenAI compatible endpoint.
  * @param {string[]} texts - The array of texts to get the vector for
- * @param {string} source - The source of the vector
- * @param {import('./users').UserDirectoryList} directories - The directories object for the user
+ * @param {boolean} isQuery - If the text is a query for embedding search
+ * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[][]>} - The array of vectors for the texts
  */
-async function getNomicAIBatchVector(texts, source, directories) {
-    const config = SOURCES[source];
-
-    if (!config) {
-        console.log('Unknown source', source);
-        throw new Error('Unknown source');
-    }
-
-    const key = readSecret(directories, config.secretKey);
+async function getCohereBatchVector(texts, isQuery, directories, model) {
+    const key = readSecret(directories, SECRET_KEYS.COHERE);
 
     if (!key) {
         console.log('No API key found');
         throw new Error('No API key found');
     }
 
-    const url = config.url;
-    let response;
-    response = await fetch(`https://${url}`, {
+    const response = await fetch('https://api.cohere.ai/v1/embed', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -41,7 +25,9 @@ async function getNomicAIBatchVector(texts, source, directories) {
         },
         body: JSON.stringify({
             texts: texts,
-            model: config.model,
+            model: model,
+            input_type: isQuery ? 'search_query' : 'search_document',
+            truncate: 'END',
         }),
     });
 
@@ -63,16 +49,17 @@ async function getNomicAIBatchVector(texts, source, directories) {
 /**
  * Gets the vector for the given text from an OpenAI compatible endpoint.
  * @param {string} text - The text to get the vector for
- * @param {string} source - The source of the vector
- * @param {import('./users').UserDirectoryList} directories - The directories object for the user
+ * @param {boolean} isQuery - If the text is a query for embedding search
+ * @param {import('../users').UserDirectoryList} directories - The directories object for the user
+ * @param {string} model - The model to use for the embedding
  * @returns {Promise<number[]>} - The vector for the text
  */
-async function getNomicAIVector(text, source, directories) {
-    const vectors = await getNomicAIBatchVector([text], source, directories);
+async function getCohereVector(text, isQuery, directories, model) {
+    const vectors = await getCohereBatchVector([text], isQuery, directories, model);
     return vectors[0];
 }
 
 module.exports = {
-    getNomicAIVector,
-    getNomicAIBatchVector,
+    getCohereBatchVector,
+    getCohereVector,
 };
