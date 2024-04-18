@@ -28,12 +28,12 @@ export class SlashCommandClosure {
         let isList = false;
         let listValues = [];
         scope = scope ?? this.scope;
-        const re = /({{pipe}})|(?:{{var::([^\s]+?)}})/;
+        const re = /({{pipe}})|(?:{{var::([^\s]+?)(?:::((?!}}).+))?}})/;
         while (re.test(text)) {
             const match = re.exec(text);
             const before = text.slice(0, match.index);
             const after = text.slice(match.index + match[0].length);
-            const replacer = match[1] ? scope.pipe : scope.getVariable(match[2]);
+            const replacer = match[1] ? scope.pipe : scope.getVariable(match[2], match[3]);
             if (replacer instanceof SlashCommandClosure) {
                 isList = true;
                 if (match.index > 0) {
