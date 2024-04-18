@@ -22,10 +22,6 @@ export const POPUP_RESULT = {
 
 
 export class Popup {
-    /**@type {Popup[]}*/
-    static stack = [];
-
-
     /**@type {POPUP_TYPE}*/ type;
 
     /**@type {HTMLElement}*/ dom;
@@ -123,7 +119,9 @@ export class Popup {
         const keyListener = (evt) => {
             switch (evt.key) {
                 case 'Escape': {
-                    if (Popup.stack.slice(-1)[0] == this) {
+                    // does it really matter where we check?
+                    const topModal = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2)?.closest('.shadow_popup');
+                    if (topModal == this.dom) {
                         evt.preventDefault();
                         evt.stopPropagation();
                         this.completeCancelled();
@@ -138,7 +136,6 @@ export class Popup {
     }
 
     async show() {
-        Popup.stack.push(this);
         document.body.append(this.dom);
         this.dom.style.display = 'block';
         switch (this.type) {
@@ -205,7 +202,6 @@ export class Popup {
 
 
     hide() {
-        Popup.stack.splice(Popup.stack.indexOf(this), 1);
         $(this.dom).transition({
             opacity: 0,
             duration: animation_duration,
