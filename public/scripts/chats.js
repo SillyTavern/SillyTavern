@@ -32,7 +32,7 @@ import {
     humanFileSize,
     saveBase64AsFile,
 } from './utils.js';
-import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced, writeExtensionField } from './extensions.js';
+import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { ScraperManager } from './scrapers.js';
 
@@ -607,8 +607,7 @@ async function deleteAttachment(attachment, source, callback) {
             saveMetadataDebounced();
             break;
         case 'character':
-            characters[this_chid].data.extensions.attachments = characters[this_chid].data.extensions.attachments.filter((a) => a.url !== attachment.url);
-            await writeExtensionField(this_chid, 'attachments', characters[this_chid].data.extensions.attachments);
+            extension_settings.character_attachments[characters[this_chid]?.avatar] = extension_settings.character_attachments[characters[this_chid]?.avatar].filter((a) => a.url !== attachment.url);
             break;
     }
 
@@ -678,7 +677,7 @@ async function openAttachmentManager() {
     /**
      * Renders buttons for the attachment manager.
      */
-    function renderButtons() {
+    async function renderButtons() {
         const sources = {
             [ATTACHMENT_SOURCE.GLOBAL]: '.globalAttachmentsTitle',
             [ATTACHMENT_SOURCE.CHARACTER]: '.characterAttachmentsTitle',
@@ -689,6 +688,11 @@ async function openAttachmentManager() {
         const scrapers = ScraperManager.getDataBankScrapers();
 
         for (const scraper of scrapers) {
+            const isAvailable = await ScraperManager.isScraperAvailable(scraper.id);
+            if (!isAvailable) {
+                continue;
+            }
+
             const buttonTemplate = template.find('.actionButtonTemplate .actionButton').clone();
             buttonTemplate.find('.actionButtonIcon').addClass(scraper.iconClass);
             buttonTemplate.find('.actionButtonText').text(scraper.name);
@@ -746,7 +750,7 @@ async function openAttachmentManager() {
         /** @type {FileAttachment[]} */
         const chatAttachments = chat_metadata.attachments ?? [];
         /** @type {FileAttachment[]} */
-        const characterAttachments = characters[this_chid]?.data?.extensions?.attachments ?? [];
+        const characterAttachments = extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
 
         await renderList(globalAttachments, ATTACHMENT_SOURCE.GLOBAL);
         await renderList(chatAttachments, ATTACHMENT_SOURCE.CHAT);
@@ -786,7 +790,7 @@ async function openAttachmentManager() {
         renderAttachments();
     });
 
-    const cleanupFn = renderButtons();
+    const cleanupFn = await renderButtons();
     await renderAttachments();
     await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });
 
@@ -886,8 +890,8 @@ async function uploadFileAttachmentToServer(file, target) {
             saveMetadataDebounced();
             break;
         case ATTACHMENT_SOURCE.CHARACTER:
-            characters[this_chid].data.extensions.attachments.push(attachment);
-            await writeExtensionField(this_chid, 'attachments', characters[this_chid].data.extensions.attachments);
+            extension_settings.character_attachments[characters[this_chid]?.avatar].push(attachment);
+            saveSettingsDebounced();
             break;
     }
 }
@@ -902,16 +906,12 @@ function ensureAttachmentsExist() {
     }
 
     if (this_chid !== undefined && characters[this_chid]) {
-        if (!characters[this_chid].data) {
-            characters[this_chid].data = {};
+        if (!extension_settings.character_attachments) {
+            extension_settings.character_attachments = {};
         }
 
-        if (!characters[this_chid].data.extensions) {
-            characters[this_chid].data.extensions = {};
-        }
-
-        if (!Array.isArray(characters[this_chid]?.data?.extensions?.attachments)) {
-            characters[this_chid].data.extensions.attachments = [];
+        if (!Array.isArray(extension_settings.character_attachments[characters[this_chid].avatar])) {
+            extension_settings.character_attachments[characters[this_chid].avatar] = [];
         }
     }
 }
@@ -924,7 +924,7 @@ export function getDataBankAttachments() {
     ensureAttachmentsExist();
     const globalAttachments = extension_settings.attachments ?? [];
     const chatAttachments = chat_metadata.attachments ?? [];
-    const characterAttachments = characters[this_chid]?.data?.extensions?.attachments ?? [];
+    const characterAttachments = extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
 
     return [...globalAttachments, ...chatAttachments, ...characterAttachments];
 }

@@ -61,6 +61,20 @@ export class ScraperManager {
         }
         return scraper.scrape();
     }
+
+    /**
+     * Check if a scraper is available.
+     * @param {string} scraperId ID of the scraper to check
+     * @returns {Promise<boolean>} Whether the scraper is available
+     */
+    static isScraperAvailable(scraperId) {
+        const scraper = ScraperManager.#scrapers.find(s => s.id === scraperId);
+        if (!scraper) {
+            console.warn(`Scraper with ID ${scraperId} not found`);
+            return;
+        }
+        return scraper.isAvailable();
+    }
 }
 
 /**
