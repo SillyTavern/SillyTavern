@@ -286,13 +286,21 @@ async function migrateUserData() {
                 // Copy the file to the new location
                 fs.cpSync(migration.old, migration.new, { force: true });
                 // Move the file to the backup location
-                fs.cpSync(migration.old, path.join(backupDirectory, path.basename(migration.old)));
+                fs.cpSync(
+                    migration.old,
+                    path.join(backupDirectory, path.basename(migration.old)),
+                    { recursive: true, force: true }
+                );
                 fs.rmSync(migration.old, { recursive: true, force: true });
             } else {
                 // Copy the directory to the new location
                 fs.cpSync(migration.old, migration.new, { recursive: true, force: true });
                 // Move the directory to the backup location
-                fs.cpSync(migration.old, path.join(backupDirectory, path.basename(migration.old)));
+                fs.cpSync(
+                    migration.old,
+                    path.join(backupDirectory, path.basename(migration.old)),
+                    { recursive: true, force: true }
+                );
                 fs.rmSync(migration.old, { recursive: true, force: true });
             }
         } catch (error) {
