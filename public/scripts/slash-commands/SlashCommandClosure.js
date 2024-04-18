@@ -19,14 +19,52 @@ export class SlashCommandClosure {
         this.scope = new SlashCommandScope(parent);
     }
 
+    toString() {
+        return '[Closure]';
+    }
+
     substituteParams(text, scope = null) {
+        text = substituteParams(text);
+        let isList = false;
+        let listValues = [];
         scope = scope ?? this.scope;
-        text = substituteParams(text)
-            .replace(/{{pipe}}/g, scope.pipe)
-            .replace(/{{var::([^\s]+?)}}/g, (_, key)=>scope.getVariable(key))
-        ;
+        const re = /({{pipe}})|(?:{{var::([^\s]+?)}})/;
+        while (re.test(text)) {
+            const match = re.exec(text);
+            const before = text.slice(0, match.index);
+            const after = text.slice(match.index + match[0].length);
+            const replacer = match[1] ? scope.pipe : scope.getVariable(match[2]);
+            if (replacer instanceof SlashCommandClosure) {
+                isList = true;
+                if (match.index > 0) {
+                    listValues.push(before);
+                }
+                listValues.push(replacer);
+                if (match.index + match[0].length + 1 < text.length) {
+                    const rest = this.substituteParams(after, scope);
+                    listValues.push(...(Array.isArray(rest) ? rest : [rest]));
+                }
+                break;
+            } else {
+                text = `${before}${replacer}${after}`;
+            }
+        }
         for (const { key, value } of scope.macroList) {
-            text = text.replace(new RegExp(`{{${escapeRegex(key)}}}`), value);
+            if (isList) {
+                listValues.map((lv,idx)=>{
+                    if (lv instanceof SlashCommandClosure) {
+                        // do nothing
+                    } else {
+                        listValues[idx] = lv.replace(new RegExp(`{{${escapeRegex(key)}}}`), value);
+                    }
+                });
+            } else {
+                text = text.replace(new RegExp(`{{${escapeRegex(key)}}}`), value);
+            }
+        }
+        if (isList) {
+            if (listValues.length > 1) return listValues;
+            return listValues[0];
         }
         return text;
     }
