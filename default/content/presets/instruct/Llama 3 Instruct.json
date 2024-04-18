@@ -4,7 +4,7 @@
     "output_sequence": "<|start_header_id|>assistant<|end_header_id|>\n\n",
     "last_output_sequence": "",
     "system_sequence": "<|start_header_id|>system<|end_header_id|>\n\n",
-    "stop_sequence": "<|end_of_text|>",
+    "stop_sequence": "<|eot_id|>",
     "wrap": false,
     "macro": true,
     "names": true,
