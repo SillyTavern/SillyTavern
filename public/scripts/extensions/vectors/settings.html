@@ -73,10 +73,12 @@
                 <input type="number" id="vectors_query" class="text_pole widthUnset" min="1" max="99" />
             </div>
 
-            <label class="checkbox_label" for="vectors_include_wi" title="Query results can activate World Info entries.">
-                <input id="vectors_include_wi" type="checkbox" class="checkbox">
-                Include in World Info Scanning
-            </label>
+            <div class="flex-container">
+                <label class="checkbox_label expander" for="vectors_include_wi" title="Query results can activate World Info entries.">
+                    <input id="vectors_include_wi" type="checkbox" class="checkbox">
+                    Include in World Info Scanning
+                </label>
+            </div>
 
             <hr>
 
@@ -90,7 +92,6 @@
             </label>
 
             <div id="vectors_files_settings">
-
                 <div class="flex-container">
                     <div class="flex1" title="Only files past this size will be vectorized.">
                         <label for="vectors_size_threshold">
@@ -122,6 +123,8 @@
                 <input id="vectors_enabled_chats" type="checkbox" class="checkbox">
                 Enabled for chat messages
             </label>
+
+            <hr>
 
             <div id="vectors_chats_settings">
                 <div id="vectors_advanced_settings">
@@ -164,6 +167,34 @@
                             </label>
                             <input type="number" id="vectors_insert" class="text_pole widthUnset" min="1" max="9999" />
                         </div>
+                    </div>
+                    <hr class="m-b-1">
+                    <div class="flex-container flexFlowColumn">
+                        <div class="flex-container alignitemscenter justifyCenter">
+                            <i class="fa-solid fa-flask" title="Summarization for vectors is an experimental feature that may improve vectors or may worsen them. Use at your own discretion."></i>
+                            <span>Vector Summarization</span>
+                        </div>
+                        <label class="checkbox_label expander" for="vectors_summarize" title="Summarize chat messages before generating embeddings.">
+                            <input id="vectors_summarize" type="checkbox" class="checkbox">
+                            Summarize chat messages for vector generation
+                        </label>
+                        <i class="failure">Warning: This will slow down vector generation drastically, as all messages have to be summarized first.</i>
+
+                        <label class="checkbox_label expander" for="vectors_summarize_user" title="Summarize sent chat messages before generating embeddings.">
+                            <input id="vectors_summarize_user" type="checkbox" class="checkbox">
+                            Summarize chat messages when sending
+                        </label>
+                        <i class="failure">Warning: This might cause your sent messages to take a bit to process and slow down response time.</i>
+
+                        <label for="vectors_summary_source">Summarize with:</label>
+                        <select id="vectors_summary_source" class="text_pole">
+                            <option value="main">Main API</option>
+                            <option value="extras">Extras API</option>
+                        </select>
+
+                        <label for="vectors_summary_prompt">Summary Prompt:</label>
+                        <small>Only used when Main API is selected.</small>
+                        <textarea id="vectors_summary_prompt" class="text_pole textarea_compact" rows="6" placeholder="This prompt will be sent to AI to request the summary generation."></textarea>
                     </div>
                 </div>
                 <small>
