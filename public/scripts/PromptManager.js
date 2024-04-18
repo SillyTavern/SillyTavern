@@ -841,7 +841,7 @@ class PromptManager {
             const promptReferences = this.getPromptOrderForCharacter(this.activeCharacter);
             for (let i = promptReferences.length - 1; i >= 0; i--) {
                 const reference = promptReferences[i];
-                if (-1 === this.serviceSettings.prompts.findIndex(prompt => prompt.identifier === reference.identifier)) {
+                if (reference && -1 === this.serviceSettings.prompts.findIndex(prompt => prompt.identifier === reference.identifier)) {
                     promptReferences.splice(i, 1);
                     this.log('Removed unused reference: ' + reference.identifier);
                 }
