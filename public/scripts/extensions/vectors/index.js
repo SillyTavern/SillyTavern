@@ -426,13 +426,14 @@ async function retrieveFileChunks(queryText, collectionId) {
  */
 async function vectorizeFile(fileText, fileName, collectionId, chunkSize) {
     try {
-        toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
+        const toast = toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
         const chunks = splitRecursive(fileText, chunkSize);
         console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks`, chunks);
 
         const items = chunks.map((chunk, index) => ({ hash: getStringHash(chunk), text: chunk, index: index }));
         await insertVectorItems(collectionId, items);
 
+        toastr.clear(toast);
         console.log(`Vectors: Inserted ${chunks.length} vector items for file ${fileName} into ${collectionId}`);
     } catch (error) {
         console.error('Vectors: Failed to vectorize file', error);
