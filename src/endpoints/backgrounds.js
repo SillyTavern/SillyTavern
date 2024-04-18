@@ -51,7 +51,8 @@ router.post('/rename', jsonParser, function (request, response) {
         return response.sendStatus(400);
     }
 
-    fs.renameSync(oldFileName, newFileName);
+    fs.copyFileSync(oldFileName, newFileName);
+    fs.rmSync(oldFileName);
     invalidateThumbnail(request.user.directories, 'bg', request.body.old_bg);
     return response.send('ok');
 });
@@ -63,7 +64,8 @@ router.post('/upload', urlencodedParser, function (request, response) {
     const filename = request.file.originalname;
 
     try {
-        fs.renameSync(img_path, path.join(request.user.directories.backgrounds, filename));
+        fs.copyFileSync(img_path, path.join(request.user.directories.backgrounds, filename));
+        fs.rmSync(img_path);
         invalidateThumbnail(request.user.directories, 'bg', filename);
         response.send(filename);
     } catch (err) {

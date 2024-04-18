@@ -227,7 +227,8 @@ router.post('/download', jsonParser, async (request, response) => {
 
         // Move into asset place
         console.debug('Download finished, moving file from', temp_path, 'to', file_path);
-        fs.renameSync(temp_path, file_path);
+        fs.copyFileSync(temp_path, file_path);
+        fs.rmSync(temp_path);
         response.sendStatus(200);
     }
     catch (error) {

@@ -213,8 +213,9 @@ router.post('/rename', jsonParser, async function (request, response) {
         return response.status(400).send({ error: true });
     }
 
+    fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
+    fs.rmSync(pathToOriginalFile);
     console.log('Successfully renamed.');
-    fs.renameSync(pathToOriginalFile, pathToRenamedFile);
     return response.send({ ok: true });
 });
 
