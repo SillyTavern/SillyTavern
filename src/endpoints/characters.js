@@ -680,7 +680,8 @@ router.post('/rename', jsonParser, async function (request, response) {
 
         // Rename chats folder
         if (fs.existsSync(oldChatsPath) && !fs.existsSync(newChatsPath)) {
-            fs.renameSync(oldChatsPath, newChatsPath);
+            fs.cpSync(oldChatsPath, newChatsPath);
+            fs.rmSync(oldChatsPath, { recursive: true, force: true });
         }
 
         // Remove the old character file

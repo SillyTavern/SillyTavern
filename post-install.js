@@ -60,7 +60,8 @@ function convertConfig() {
         try {
             console.log(color.blue('Converting config.conf to config.yaml. Your old config.conf will be renamed to config.conf.bak'));
             const config = require(path.join(process.cwd(), './config.conf'));
-            fs.renameSync('./config.conf', './config.conf.bak');
+            fs.copyFileSync('./config.conf', './config.conf.bak');
+            fs.rmSync('./config.conf');
             fs.writeFileSync('./config.yaml', yaml.stringify(config));
             console.log(color.green('Conversion successful. Please check your config.yaml and fix it if necessary.'));
         } catch (error) {
