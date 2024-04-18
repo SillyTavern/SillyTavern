@@ -322,7 +322,7 @@ async function processFiles(chat) {
                 await vectorizeFile(fileText, fileName, collectionId);
             }
 
-            const queryText = getQueryText(chat);
+            const queryText = await getQueryText(chat);
             const fileChunks = await retrieveFileChunks(queryText, collectionId);
 
             // Wrap it back in a code block
@@ -399,7 +399,7 @@ async function rearrangeChat(chat) {
             return;
         }
 
-        const queryText = getQueryText(chat);
+        const queryText = await getQueryText(chat);
 
         if (queryText.length === 0) {
             console.debug('Vectors: No text to query');
@@ -465,7 +465,7 @@ const onChatEvent = debounce(async () => await moduleWorker.update(), 500);
 /**
  * Gets the text to query from the chat
  * @param {object[]} chat Chat messages
- * @returns {string} Text to query
+ * @returns {Promise<string>} Text to query
  */
 async function getQueryText(chat) {
     let queryText = '';
