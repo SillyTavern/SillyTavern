@@ -202,7 +202,7 @@ import {
     instruct_presets,
     selectContextPreset,
 } from './scripts/instruct-mode.js';
-import { applyLocale, initLocales } from './scripts/i18n.js';
+import { initLocales } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
 import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription, updatePersonaNameIfExists } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
@@ -215,6 +215,7 @@ import { evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
 import { callGenericPopup } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
+import { ScraperManager } from './scripts/scrapers.js';
 
 //exporting functions and vars for mods
 export {
@@ -447,6 +448,7 @@ export const event_types = {
     CHARACTER_DELETED: 'characterDeleted',
     CHARACTER_DUPLICATED: 'character_duplicated',
     SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
+    FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
 };
 
 export const eventSource = new EventEmitter();
@@ -858,11 +860,11 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
+    await getSystemMessages();
+    sendSystemMessage(system_message_types.WELCOME);
     await getClientVersion();
     await readSecretState();
     await getSettings();
-    await getSystemMessages();
-    sendSystemMessage(system_message_types.WELCOME);
     initLocales();
     initTags();
     await getUserAvatars(true, user_avatar);
@@ -2444,9 +2446,14 @@ function sendSystemMessage(type, text, extra = {}) {
     is_send_press = false;
 }
 
+/**
+ * Extracts the contents of bias macros from a message.
+ * @param {string} message Message text
+ * @returns {string} Message bias extracted from the message (or an empty string if not found)
+ */
 export function extractMessageBias(message) {
     if (!message) {
-        return null;
+        return '';
     }
 
     try {
@@ -3067,14 +3074,14 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
         if (interruptedByCommand) {
             //$("#send_textarea").val('').trigger('input');
-            unblockGeneration();
+            unblockGeneration(type);
             return Promise.resolve();
         }
     }
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
         toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
-        unblockGeneration();
+        unblockGeneration(type);
         return Promise.resolve();
     }
 
@@ -3083,12 +3090,12 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         textgen_settings.legacy_api &&
         (textgen_settings.type === OOBA || textgen_settings.type === APHRODITE)) {
         toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use new API to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
-        unblockGeneration();
+        unblockGeneration(type);
         return Promise.resolve();
     }
 
     if (isHordeGenerationNotAllowed()) {
-        unblockGeneration();
+        unblockGeneration(type);
         return Promise.resolve();
     }
 
@@ -3124,7 +3131,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             setCharacterName('');
         } else {
             console.log('No enabled members found');
-            unblockGeneration();
+            unblockGeneration(type);
             return Promise.resolve();
         }
     }
@@ -3298,7 +3305,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
         if (aborted) {
             console.debug('Generation aborted by extension interceptors');
-            unblockGeneration();
+            unblockGeneration(type);
             return Promise.resolve();
         }
     } else {
@@ -3312,7 +3319,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
         }
         catch {
-            unblockGeneration();
+            unblockGeneration(type);
             return Promise.resolve();
         }
         if (horde_settings.auto_adjust_context_length) {
@@ -4099,7 +4106,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
             }
             else if (type == 'quiet') {
-                unblockGeneration();
+                unblockGeneration(type);
                 return getMessage;
             }
             else {
@@ -4167,7 +4174,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
         console.debug('/api/chats/save called by /Generate');
         await saveChatConditional();
-        unblockGeneration();
+        unblockGeneration(type);
         streamingProcessor = null;
 
         if (type !== 'quiet') {
@@ -4185,7 +4192,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
         generatedPromptCache = '';
 
-        unblockGeneration();
+        unblockGeneration(type);
         console.log(exception);
         streamingProcessor = null;
         throw exception;
@@ -4255,7 +4262,16 @@ function flushWIDepthInjections() {
     }
 }
 
-function unblockGeneration() {
+/**
+ * Unblocks the UI after a generation is complete.
+ * @param {string} [type] Generation type (optional)
+ */
+function unblockGeneration(type) {
+    // Don't unblock if a parallel stream is still running
+    if (type === 'quiet' && streamingProcessor && !streamingProcessor.isFinished) {
+        return;
+    }
+
     is_send_press = false;
     activateSendButtons();
     showSwipeButtons();
@@ -6342,14 +6358,20 @@ async function saveSettings(type) {
     });
 }
 
-export function setGenerationParamsFromPreset(preset) {
+export function setGenerationParamsFromPreset(preset, isMancerChange = null) {
     const needsUnlock = (preset.max_length ?? max_context) > MAX_CONTEXT_DEFAULT || (preset.genamt ?? amount_gen) > MAX_RESPONSE_DEFAULT;
     $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
 
     if (preset.genamt !== undefined) {
         amount_gen = preset.genamt;
-        $('#amount_gen').val(amount_gen);
-        $('#amount_gen_counter').val(amount_gen);
+        if (isMancerChange) {
+            $('#amount_gen').attr('max', amount_gen);
+            $('#amount_gen_counter').val($('#amount_gen').val());
+        }
+        else {
+            $('#amount_gen').val(amount_gen);
+            $('#amount_gen_counter').val(amount_gen);
+        }
     }
 
     if (preset.max_length !== undefined) {
@@ -7347,47 +7369,6 @@ export function cancelTtsPlay() {
     }
 }
 
-async function deleteMessageImage() {
-    const value = await callPopup('<h3>Delete image from message?<br>This action can\'t be undone.</h3>', 'confirm');
-
-    if (!value) {
-        return;
-    }
-
-    const mesBlock = $(this).closest('.mes');
-    const mesId = mesBlock.attr('mesid');
-    const message = chat[mesId];
-    delete message.extra.image;
-    delete message.extra.inline_image;
-    mesBlock.find('.mes_img_container').removeClass('img_extra');
-    mesBlock.find('.mes_img').attr('src', '');
-    await saveChatConditional();
-}
-
-function enlargeMessageImage() {
-    const mesBlock = $(this).closest('.mes');
-    const mesId = mesBlock.attr('mesid');
-    const message = chat[mesId];
-    const imgSrc = message?.extra?.image;
-    const title = message?.extra?.title;
-
-    if (!imgSrc) {
-        return;
-    }
-
-    const img = document.createElement('img');
-    img.classList.add('img_enlarged');
-    img.src = imgSrc;
-    const imgContainer = $('<div><pre><code></code></pre></div>');
-    imgContainer.prepend(img);
-    imgContainer.addClass('img_enlarged_container');
-    imgContainer.find('code').addClass('txt').text(title);
-    const titleEmpty = !title || title.trim().length === 0;
-    imgContainer.find('pre').toggle(!titleEmpty);
-    addCopyToCodeBlocks(imgContainer);
-    callPopup(imgContainer, 'text', '', { wide: true, large: true });
-}
-
 function updateAlternateGreetingsHintVisibility(root) {
     const numberOfGreetings = root.find('.alternate_greetings_list .alternate_greeting').length;
     $(root).find('.alternate_grettings_hint').toggle(numberOfGreetings == 0);
@@ -7783,6 +7764,7 @@ window['SillyTavern'].getContext = function () {
          */
         renderExtensionTemplate: renderExtensionTemplate,
         renderExtensionTemplateAsync: renderExtensionTemplateAsync,
+        registerDataBankScraper: ScraperManager.registerDataBankScraper,
         callPopup: callPopup,
         callGenericPopup: callGenericPopup,
         mainApi: main_api,
@@ -10217,7 +10199,9 @@ jQuery(async function () {
         const avatarSrc = isDataURL(thumbURL) ? thumbURL : charsPath + targetAvatarImg;
         if ($(`.zoomed_avatar[forChar="${charname}"]`).length) {
             console.debug('removing container as it already existed');
-            $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+            $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
+                $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+            });
         } else {
             console.debug('making new container from template');
             const template = $('#zoomed_avatar_template').html();
@@ -10228,18 +10212,43 @@ jQuery(async function () {
             newElement.find('.drag-grabber').attr('id', `zoomFor_${charname}header`);
 
             $('body').append(newElement);
-            if (messageElement.attr('is_user') == 'true') { //handle user avatars
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', thumbURL);
-            } else if (messageElement.attr('is_system') == 'true' && !isValidCharacter) { //handle system avatars
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', thumbURL);
+            newElement.fadeIn(animation_duration);
+            const zoomedAvatarImgElement = $(`.zoomed_avatar[forChar="${charname}"] img`);
+            if (messageElement.attr('is_user') == 'true' || (messageElement.attr('is_system') == 'true' && !isValidCharacter)) { //handle user and system avatars
+                zoomedAvatarImgElement.attr('src', thumbURL);
+                zoomedAvatarImgElement.attr('data-izoomify-url', thumbURL);
             } else if (messageElement.attr('is_user') == 'false') { //handle char avatars
-                $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', avatarSrc);
+                zoomedAvatarImgElement.attr('src', avatarSrc);
+                zoomedAvatarImgElement.attr('data-izoomify-url', avatarSrc);
             }
             loadMovingUIState();
-            $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'block');
+            $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'flex');
             dragElement(newElement);
 
-            $(`.zoomed_avatar[forChar="${charname}"] img`).on('dragstart', (e) => {
+            if (power_user.zoomed_avatar_magnification) {
+                $('.zoomed_avatar_container').izoomify();
+            } else {
+                $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
+            }
+
+            $('.zoomed_avatar').on('mouseup', (e) => {
+                if (e.target.closest('.drag-grabber') || e.button !== 0) {
+                    return;
+                }
+                $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
+                    $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+                });
+            });
+
+            $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
+                if (e.target.closest('.dragClose')) {
+                    $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
+                        $(`.zoomed_avatar[forChar="${charname}"]`).remove();
+                    });
+                }
+            });
+
+            zoomedAvatarImgElement.on('dragstart', (e) => {
                 console.log('saw drag on avatar!');
                 e.preventDefault();
                 return false;
@@ -10350,9 +10359,6 @@ jQuery(async function () {
         }
         $('#char-management-dropdown').prop('selectedIndex', 0);
     });
-
-    $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
-    $(document).on('click', '.mes_img_delete', deleteMessageImage);
 
     $(window).on('beforeunload', () => {
         cancelTtsPlay();

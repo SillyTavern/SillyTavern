@@ -42,6 +42,8 @@ module.exports = {
                 showdownKatex: 'readonly',
                 SVGInject: 'readonly',
                 toastr: 'readonly',
+                Readability: 'readonly',
+                isProbablyReaderable: 'readonly',
             },
         },
     ],
@@ -68,6 +70,8 @@ module.exports = {
         'no-trailing-spaces': 'error',
         'object-curly-spacing': ['error', 'always'],
         'space-infix-ops': 'error',
+        'no-unused-expressions': ['error', { allowShortCircuit: true, allowTernary: true }],
+        'no-cond-assign': 'error',
 
         // These rules should eventually be enabled.
         'no-async-promise-executor': 'off',

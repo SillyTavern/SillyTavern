@@ -491,6 +491,10 @@ textarea:disabled {
     font-size: calc(var(--mainFontSize) * 1.2) !important;
 }
 
+.fontsize90p {
+    font-size: calc(var(--mainFontSize) * 0.9) !important;
+}
+
 .fontsize80p {
     font-size: calc(var(--mainFontSize) * 0.8) !important;
 }

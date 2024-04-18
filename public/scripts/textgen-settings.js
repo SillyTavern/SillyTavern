@@ -3,6 +3,7 @@ import {
     event_types,
     getRequestHeaders,
     getStoppingStrings,
+    main_api,
     max_context,
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
@@ -978,6 +979,10 @@ function getModel() {
     return undefined;
 }
 
+export function isJsonSchemaSupported() {
+    return settings.type === TABBY && main_api === 'textgenerationwebui';
+}
+
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     let params = {
@@ -1078,7 +1083,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         params.dynatemp_mode = params.dynamic_temperature ? 1 : 0;
         params.dynatemp_min = params.dynatemp_low;
         params.dynatemp_max = params.dynatemp_high;
-        delete params.dynatemp_low, params.dynatemp_high;
+        delete params.dynatemp_low;
+        delete params.dynatemp_high;
     }
 
     if (settings.type === APHRODITE) {

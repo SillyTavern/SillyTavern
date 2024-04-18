@@ -31,7 +31,7 @@ import {
     system_message_types,
     this_chid,
 } from '../script.js';
-import { groups, selected_group } from './group-chats.js';
+import { selected_group } from './group-chats.js';
 import { registerSlashCommand } from './slash-commands.js';
 
 import {
@@ -214,6 +214,7 @@ const default_settings = {
     top_a_openai: 1,
     repetition_penalty_openai: 1,
     stream_openai: false,
+    websearch_cohere: false,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
     wrap_in_quotes: false,
@@ -285,6 +286,7 @@ const oai_settings = {
     top_a_openai: 1,
     repetition_penalty_openai: 1,
     stream_openai: false,
+    websearch_cohere: false,
     openai_max_context: max_4k,
     openai_max_tokens: 300,
     wrap_in_quotes: false,
@@ -724,12 +726,16 @@ export function isOpenRouterWithInstruct() {
 /**
  * Populates the chat history of the conversation.
  * @param {object[]} messages - Array containing all messages.
- * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {import('./PromptManager').PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  * @param type
  * @param cyclePrompt
  */
 async function populateChatHistory(messages, prompts, chatCompletion, type = null, cyclePrompt = null) {
+    if (!prompts.has('chatHistory')) {
+        return;
+    }
+
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
     // Reserve budget for new chat message
@@ -814,11 +820,15 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
 /**
  * This function populates the dialogue examples in the conversation.
  *
- * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {import('./PromptManager').PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  * @param {Object[]} messageExamples - Array containing all message examples.
  */
 function populateDialogueExamples(prompts, chatCompletion, messageExamples) {
+    if (!prompts.has('dialogueExamples')) {
+        return;
+    }
+
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (Array.isArray(messageExamples) && messageExamples.length) {
         const newExampleChat = new Message('system', substituteParams(oai_settings.new_example_chat_prompt), 'newChat');
@@ -996,6 +1006,15 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         }
     }
 
+    // Vectors Data Bank
+    if (prompts.has('vectorsDataBank')) {
+        const vectorsDataBank = prompts.get('vectorsDataBank');
+
+        if (vectorsDataBank.position) {
+            chatCompletion.insert(Message.fromPrompt(vectorsDataBank), 'main', vectorsDataBank.position);
+        }
+    }
+
     // Smart Context (ChromaDB)
     if (prompts.has('smartContext')) {
         const smartContext = prompts.get('smartContext');
@@ -1085,6 +1104,14 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
         content: vectorsMemory.value,
         identifier: 'vectorsMemory',
         position: getPromptPosition(vectorsMemory.position),
+    });
+
+    const vectorsDataBank = extensionPrompts['4_vectors_data_bank'];
+    if (vectorsDataBank && vectorsDataBank.value) systemPrompts.push({
+        role: getPromptRole(vectorsDataBank.role),
+        content: vectorsDataBank.value,
+        identifier: 'vectorsDataBank',
+        position: getPromptPosition(vectorsDataBank.position),
     });
 
     // Smart Context (ChromaDB)
@@ -1592,6 +1619,11 @@ async function sendAltScaleRequest(messages, logit_bias, signal, type) {
         signal: signal,
     });
 
+    if (!response.ok) {
+        tryParseStreamingError(response, await response.text());
+        throw new Error('Scale response does not indicate success.');
+    }
+
     const data = await response.json();
     return data.output;
 }
@@ -1764,6 +1796,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['frequency_penalty'] = Math.min(Math.max(Number(oai_settings.freq_pen_openai), 0), 1);
         generate_data['presence_penalty'] = Math.min(Math.max(Number(oai_settings.pres_pen_openai), 0), 1);
         generate_data['stop'] = getCustomStoppingStrings(5);
+        generate_data['websearch'] = oai_settings.websearch_cohere;
     }
 
     if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere) && oai_settings.seed >= 0) {
@@ -2611,6 +2644,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.min_p_openai = settings.min_p_openai ?? default_settings.min_p_openai;
     oai_settings.repetition_penalty_openai = settings.repetition_penalty_openai ?? default_settings.repetition_penalty_openai;
     oai_settings.stream_openai = settings.stream_openai ?? default_settings.stream_openai;
+    oai_settings.websearch_cohere = settings.websearch_cohere ?? default_settings.websearch_cohere;
     oai_settings.openai_max_context = settings.openai_max_context ?? default_settings.openai_max_context;
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
     oai_settings.bias_preset_selected = settings.bias_preset_selected ?? default_settings.bias_preset_selected;
@@ -2674,6 +2708,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.use_makersuite_sysprompt !== undefined) oai_settings.use_makersuite_sysprompt = !!settings.use_makersuite_sysprompt;
     if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
+    $('#websearch_toggle').prop('checked', oai_settings.websearch_cohere);
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
@@ -2972,6 +3007,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         personality_format: settings.personality_format,
         group_nudge_prompt: settings.group_nudge_prompt,
         stream_openai: settings.stream_openai,
+        websearch_cohere: settings.websearch_cohere,
         prompts: settings.prompts,
         prompt_order: settings.prompt_order,
         api_url_scale: settings.api_url_scale,
@@ -3350,6 +3386,7 @@ function onSettingsPresetChange() {
         personality_format: ['#personality_format_textarea', 'personality_format', false],
         group_nudge_prompt: ['#group_nudge_prompt_textarea', 'group_nudge_prompt', false],
         stream_openai: ['#stream_toggle', 'stream_openai', true],
+        websearch_cohere: ['#websearch_toggle', 'websearch_cohere', true],
         prompts: ['', 'prompts', false],
         prompt_order: ['', 'prompt_order', false],
         api_url_scale: ['#api_url_scale', 'api_url_scale', false],
@@ -3562,6 +3599,7 @@ async function onModelChange() {
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
@@ -3689,6 +3727,7 @@ async function onModelChange() {
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        $('#temp_openai').attr('max', claude_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
@@ -3727,6 +3766,7 @@ async function onModelChange() {
         $('#openai_max_context').attr('max', unlocked_max);
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
     $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
@@ -4171,8 +4211,7 @@ $('#delete_proxy').on('click', async function () {
 
 function runProxyCallback(_, value) {
     if (!value) {
-        toastr.warning('Proxy preset name is required');
-        return '';
+        return selected_proxy?.name || '';
     }
 
     const proxyNames = proxies.map(preset => preset.name);
@@ -4269,6 +4308,11 @@ $(document).ready(async function () {
 
     $('#stream_toggle').on('change', function () {
         oai_settings.stream_openai = !!$('#stream_toggle').prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#websearch_toggle').on('change', function () {
+        oai_settings.websearch_cohere = !!$('#websearch_toggle').prop('checked');
         saveSettingsDebounced();
     });
 

@@ -177,9 +177,10 @@ function displayError(message) {
 
 /**
  * Redirects the user to the home page.
+ * Preserves the query string.
  */
 function redirectToHome() {
-    window.location.href = '/';
+    window.location.href = '/' + window.location.search;
 }
 
 /**

@@ -393,6 +393,7 @@ body.waifuMode .zoomed_avatar {
     margin: 0 auto;
     top: 50px;
     aspect-ratio: 2 / 3;
+    height: auto;
 }
 
 /* movingUI*/

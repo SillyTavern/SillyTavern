@@ -685,6 +685,11 @@ export function sortMoments(a, b) {
  * splitRecursive('Hello, world!', 3); // ['Hel', 'lo,', 'wor', 'ld!']
 */
 export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '']) {
+    // Invalid length
+    if (length <= 0) {
+        return [input];
+    }
+
     const delim = delimiters[0] ?? '';
     const parts = input.split(delim);
 
