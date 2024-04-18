@@ -69,6 +69,15 @@ const settings = {
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
 
+/**
+ * Gets the Collection ID for a file embedded in the chat.
+ * @param {string} fileUrl URL of the file
+ * @returns {string} Collection ID
+ */
+function getFileCollectionId(fileUrl) {
+    return `file_${getStringHash(fileUrl)}`;
+}
+
 async function onVectorizeAllClick() {
     try {
         if (!settings.enabled_chats) {
@@ -309,7 +318,7 @@ async function processFiles(chat) {
         const dataBankCollectionIds = [];
 
         for (const file of dataBank) {
-            const collectionId = `file_${getStringHash(file.url)}`;
+            const collectionId = getFileCollectionId(file.url);
             const hashesInCollection = await getSavedHashes(collectionId);
             dataBankCollectionIds.push(collectionId);
 
@@ -355,7 +364,7 @@ async function processFiles(chat) {
 
             const fileName = message.extra.file.name;
             const fileUrl = message.extra.file.url;
-            const collectionId = `file_${getStringHash(fileUrl)}`;
+            const collectionId = getFileCollectionId(fileUrl);
             const hashesInCollection = await getSavedHashes(collectionId);
 
             // File is already in the collection
@@ -775,7 +784,7 @@ async function purgeFileVectorIndex(fileUrl) {
         }
 
         console.log(`Vectors: Purging file vector index for ${fileUrl}`);
-        const collectionId = `file_${getStringHash(fileUrl)}`;
+        const collectionId = getFileCollectionId(fileUrl);
 
         const response = await fetch('/api/vector/purge', {
             method: 'POST',
@@ -875,6 +884,42 @@ async function onViewStatsClick() {
 
 }
 
+async function onVectorizeAllFilesClick() {
+    try {
+        const dataBank = getDataBankAttachments();
+        const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
+        const allFiles = [...dataBank, ...chatAttachments];
+
+        for (const file of allFiles) {
+            const text = await getFileAttachment(file.url);
+            const collectionId = getFileCollectionId(file.url);
+            await vectorizeFile(text, file.name, collectionId, settings.chunk_size);
+        }
+
+        toastr.success('All files vectorized', 'Vectorization successful');
+    } catch (error) {
+        console.error('Vectors: Failed to vectorize all files', error);
+        toastr.error('Failed to vectorize all files', 'Vectorization failed');
+    }
+}
+
+async function onPurgeFilesClick() {
+    try {
+        const dataBank = getDataBankAttachments();
+        const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
+        const allFiles = [...dataBank, ...chatAttachments];
+
+        for (const file of allFiles) {
+            await purgeFileVectorIndex(file.url);
+        }
+
+        toastr.success('All files purged', 'Purge successful');
+    } catch (error) {
+        console.error('Vectors: Failed to purge all files', error);
+        toastr.error('Failed to purge all files', 'Purge failed');
+    }
+}
+
 jQuery(async () => {
     if (!extension_settings.vectors) {
         extension_settings.vectors = settings;
@@ -969,6 +1014,8 @@ jQuery(async () => {
     $('#vectors_vectorize_all').on('click', onVectorizeAllClick);
     $('#vectors_purge').on('click', onPurgeClick);
     $('#vectors_view_stats').on('click', onViewStatsClick);
+    $('#vectors_files_vectorize_all').on('click', onVectorizeAllFilesClick);
+    $('#vectors_files_purge').on('click', onPurgeFilesClick);
 
     $('#vectors_size_threshold').val(settings.size_threshold).on('input', () => {
         settings.size_threshold = Number($('#vectors_size_threshold').val());
