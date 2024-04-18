@@ -119,11 +119,15 @@ export class Popup {
         const keyListener = (evt) => {
             switch (evt.key) {
                 case 'Escape': {
-                    evt.preventDefault();
-                    evt.stopPropagation();
-                    this.completeCancelled();
-                    window.removeEventListener('keydown', keyListenerBound);
-                    break;
+                    // does it really matter where we check?
+                    const topModal = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2)?.closest('.shadow_popup');
+                    if (topModal == this.dom) {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        this.completeCancelled();
+                        window.removeEventListener('keydown', keyListenerBound);
+                        break;
+                    }
                 }
             }
         };
