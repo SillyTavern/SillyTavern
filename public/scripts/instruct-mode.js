@@ -354,7 +354,9 @@ export function formatInstructModeSystemPrompt(systemPrompt) {
     const separator = power_user.instruct.wrap ? '\n' : '';
 
     if (power_user.instruct.system_sequence_prefix) {
-        systemPrompt = power_user.instruct.system_sequence_prefix + separator + systemPrompt;
+        // TODO: Replace with a proper 'System' prompt entity name input
+        const prefix = power_user.instruct.system_sequence_prefix.replace(/{{name}}/gi, 'System');
+        systemPrompt = prefix + separator + systemPrompt;
     }
 
     if (power_user.instruct.system_sequence_suffix) {
