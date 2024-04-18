@@ -3521,9 +3521,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         } else {
             break;
         }
-
-        // Prevent UI thread lock on tokenization
-        await delay(1);
     }
 
     for (let i = 0; i < chat2.length; i++) {
@@ -3551,9 +3548,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         } else {
             break;
         }
-
-        // Prevent UI thread lock on tokenization
-        await delay(1);
     }
 
     // Add user alignment message if last message is not a user message
@@ -3596,7 +3590,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             } else {
                 break;
             }
-            await delay(1);
         }
     }
 
