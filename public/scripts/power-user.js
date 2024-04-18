@@ -2376,8 +2376,10 @@ async function doMesCut(_, text) {
 
     let totalMesToCut = (range.end - range.start) + 1;
     let mesIDToCut = range.start;
+    let cutText = '';
 
     for (let i = 0; i < totalMesToCut; i++) {
+        cutText += (chat[mesIDToCut]?.mes || '') + '\n';
         let done = false;
         let mesToCut = $('#chat').find(`.mes[mesid=${mesIDToCut}]`);
 
@@ -2398,6 +2400,8 @@ async function doMesCut(_, text) {
             await delay(1);
         }
     }
+
+    return cutText;
 }
 
 async function doDelMode(_, text) {
@@ -3520,7 +3524,7 @@ $(document).ready(() => {
     registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
     registerSlashCommand('random', doRandomChat, [], '– start a new chat with a random character', true, true);
     registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes last N messages if numeric argument is provided', true, true);
-    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive!', true, true);
+    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive! Returns the text of cut messages separated by a newline.', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
     registerSlashCommand('theme', setThemeCallback, [], '<span class="monospace">(name)</span> – sets a UI theme by name', true, true);
