@@ -6353,14 +6353,20 @@ async function saveSettings(type) {
     });
 }
 
-export function setGenerationParamsFromPreset(preset) {
+export function setGenerationParamsFromPreset(preset, isMancerChange = null) {
     const needsUnlock = (preset.max_length ?? max_context) > MAX_CONTEXT_DEFAULT || (preset.genamt ?? amount_gen) > MAX_RESPONSE_DEFAULT;
     $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
 
     if (preset.genamt !== undefined) {
         amount_gen = preset.genamt;
-        $('#amount_gen').val(amount_gen);
-        $('#amount_gen_counter').val(amount_gen);
+        if (isMancerChange) {
+            $('#amount_gen').attr('max', amount_gen);
+            $('#amount_gen_counter').val($('#amount_gen').val());
+        }
+        else {
+            $('#amount_gen').val(amount_gen);
+            $('#amount_gen_counter').val(amount_gen);
+        }
     }
 
     if (preset.max_length !== undefined) {
