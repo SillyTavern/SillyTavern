@@ -2673,6 +2673,10 @@ async function generateComfyImage(prompt, negativePrompt) {
             }`,
         }),
     });
+    if (!promptResult.ok) {
+        const text = await promptResult.text();
+        throw new Error(text);
+    }
     return { format: 'png', data: await promptResult.text() };
 }
 
