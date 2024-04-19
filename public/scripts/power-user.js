@@ -255,7 +255,7 @@ let power_user = {
     compact_input_area: true,
     auto_connect: false,
     auto_load_chat: false,
-    forbid_external_images: false,
+    forbid_external_media: true,
     external_media_allowed_overrides: [],
     external_media_forbidden_overrides: [],
 };
@@ -1584,7 +1584,7 @@ function loadPowerUserSettings(settings, data) {
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
     $('#auto-connect-checkbox').prop('checked', power_user.auto_connect);
     $('#auto-load-chat-checkbox').prop('checked', power_user.auto_load_chat);
-    $('#forbid_external_images').prop('checked', power_user.forbid_external_images);
+    $('#forbid_external_media').prop('checked', power_user.forbid_external_media);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -3471,8 +3471,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#forbid_external_images').on('input', function () {
-        power_user.forbid_external_images = !!$(this).prop('checked');
+    $('#forbid_external_media').on('input', function () {
+        power_user.forbid_external_media = !!$(this).prop('checked');
         saveSettingsDebounced();
         reloadCurrentChat();
     });

@@ -458,8 +458,8 @@ async function openExternalMediaOverridesDialog() {
     }
 
     const template = $('#forbid_media_override_template > .forbid_media_override').clone();
-    template.find('.forbid_media_global_state_forbidden').toggle(power_user.forbid_external_images);
-    template.find('.forbid_media_global_state_allowed').toggle(!power_user.forbid_external_images);
+    template.find('.forbid_media_global_state_forbidden').toggle(power_user.forbid_external_media);
+    template.find('.forbid_media_global_state_allowed').toggle(!power_user.forbid_external_media);
 
     if (power_user.external_media_allowed_overrides.includes(entityId)) {
         template.find('#forbid_media_override_allowed').prop('checked', true);
@@ -485,7 +485,7 @@ export function getCurrentEntityId() {
 export function isExternalMediaAllowed() {
     const entityId = getCurrentEntityId();
     if (!entityId) {
-        return !power_user.forbid_external_images;
+        return !power_user.forbid_external_media;
     }
 
     if (power_user.external_media_allowed_overrides.includes(entityId)) {
@@ -496,7 +496,7 @@ export function isExternalMediaAllowed() {
         return false;
     }
 
-    return !power_user.forbid_external_images;
+    return !power_user.forbid_external_media;
 }
 
 function enlargeMessageImage() {
