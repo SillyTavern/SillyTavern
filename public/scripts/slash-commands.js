@@ -1822,8 +1822,8 @@ async function executeSlashCommands(text, unescape = false) {
 function setSlashCommandAutocomplete(textarea) {
     textarea.autocomplete({
         source: (input, output) => {
-            // Only show for slash commands and if there's no space
-            if (!input.term.startsWith('/') || input.term.includes(' ')) {
+            // Only show for slash commands (requiring at least 1 letter after the slash) and if there's no space
+            if (!input.term.startsWith('/') || input.term.includes(' ') || input.term === '/') {
                 output([]);
                 return;
             }
