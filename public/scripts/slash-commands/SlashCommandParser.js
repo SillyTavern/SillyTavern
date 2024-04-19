@@ -12,11 +12,13 @@ export class SlashCommandParser {
     /**@type {Object.<string, SlashCommand>}*/ commands = {};
     // @ts-ignore
     /**@type {Object.<string, string>}*/ helpStrings = {};
-    /**@type {Boolean}*/ verifyCommandNames = true;
-    /**@type {String}*/ text;
-    /**@type {String}*/ keptText;
-    /**@type {Number}*/ index;
+    /**@type {boolean}*/ verifyCommandNames = true;
+    /**@type {string}*/ text;
+    /**@type {string}*/ keptText;
+    /**@type {number}*/ index;
     /**@type {SlashCommandScope}*/ scope;
+
+    /**@type {boolean}*/ jumpedEscapeSequence = false;
 
     /**@type {{start:number, end:number}[]}*/ closureIndex;
     /**@type {SlashCommandExecutor[]}*/ commandIndex;
@@ -227,6 +229,7 @@ export class SlashCommandParser {
      * @returns The last character taken.
      */
     take(length = 1, keep = false) {
+        this.jumpedEscapeSequence = false;
         let content = this.char;
         this.index++;
         if (keep) this.keptText += content;
@@ -236,7 +239,10 @@ export class SlashCommandParser {
         return content;
     }
     discardWhitespace() {
-        while (/\s/.test(this.char)) this.take(); // discard whitespace
+        while (/\s/.test(this.char)) {
+            this.take(); // discard whitespace
+            this.jumpedEscapeSequence = false;
+        }
     }
     /**
      * Tests if the next characters match a symbol.
@@ -260,12 +266,16 @@ export class SlashCommandParser {
         // /echo abc \\\\| /echo def
         // -> TOAST: abc \\
         // -> TOAST: def
-        const escapes = this.text.slice(this.index + offset).replace(/^(\\*).*$/s, '$1').length;
+        // /echo title=\:} \{: | /echo title=\{: \:}
+        // -> TOAST: *:}* {:
+        // -> TOAST: *{:* :}
+        const escapeOffset = this.jumpedEscapeSequence ? -1 : 0;
+        const escapes = this.text.slice(this.index + offset + escapeOffset).replace(/^(\\*).*$/s, '$1').length;
         const test = (sequence instanceof RegExp) ?
             (text) => new RegExp(`^${sequence.source}`).test(text) :
             (text) => text.startsWith(sequence)
         ;
-        if (test(this.text.slice(this.index + offset + escapes))) {
+        if (test(this.text.slice(this.index + offset + escapeOffset + escapes))) {
             // no backslashes before sequence
             //   -> sequence found
             if (escapes == 0) return true;
@@ -276,7 +286,10 @@ export class SlashCommandParser {
             // even number of backslashes before sequence
             //   = every pair is one literal backslash
             //    -> move index forward to skip the backslash escaping the first backslash
-            if (offset == 0) this.index++;
+            if (!this.jumpedEscapeSequence && offset == 0) {
+                this.index++;
+                this.jumpedEscapeSequence = true;
+            }
             return false;
         }
     }
@@ -460,7 +473,7 @@ export class SlashCommandParser {
     }
     parseUnnamedArgument() {
         /**@type {SlashCommandClosure|String}*/
-        let value = this.take(); // take the first, already tested, char
+        let value = this.jumpedEscapeSequence ? this.take() : ''; // take the first, already tested, char if it is an escaped one
         let isList = false;
         let listValues = [];
         while (!this.testUnnamedArgumentEnd()) {
@@ -526,7 +539,7 @@ export class SlashCommandParser {
         return this.testCommandEnd();
     }
     parseValue() {
-        let value = this.take(); // take the first, already tested, char
+        let value = this.jumpedEscapeSequence ? this.take() : ''; // take the first, already tested, char if it is an escaped one
         while (!this.testValueEnd()) value += this.take(); // take all chars until value end
         return value;
     }
