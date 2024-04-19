@@ -47,7 +47,7 @@ import { autoSelectPersona } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
-import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
 
@@ -1682,6 +1682,7 @@ function modelCallback(_, model) {
         { id: 'model_mistralai_select', api: 'openai', type: chat_completion_sources.MISTRALAI },
         { id: 'model_custom_select', api: 'openai', type: chat_completion_sources.CUSTOM },
         { id: 'model_cohere_select', api: 'openai', type: chat_completion_sources.COHERE },
+        { id: 'model_perplexity_select', api: 'openai', type: chat_completion_sources.PERPLEXITY },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
@@ -1863,11 +1864,24 @@ export async function executeSlashCommands(text, unescape = false) {
     return { interrupt, newText, pipe: pipeResult };
 }
 
+/**
+ * @param {JQuery<HTMLElement>} textarea
+ */
 function setSlashCommandAutocomplete(textarea) {
+    const nativeElement = textarea.get(0);
+    let width = 0;
+
+    function setItemWidth() {
+        width = nativeElement.offsetWidth - 5;
+    }
+
+    const setWidthDebounced = debounce(setItemWidth);
+    $(window).on('resize', () => setWidthDebounced());
+
     textarea.autocomplete({
         source: (input, output) => {
             // Only show for slash commands (requiring at least 1 letter after the slash) and if there's no space
-            if (!input.term.startsWith('/') || input.term.includes(' ') || input.term === '/') {
+            if (!input.term.startsWith('/') || input.term.includes(' ')) {
                 output([]);
                 return;
             }
@@ -1877,7 +1891,7 @@ function setSlashCommandAutocomplete(textarea) {
                 .keys(parser.helpStrings) // Get all slash commands
                 .filter(x => x.startsWith(slashCommand)) // Filter by the input
                 .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
-                .slice(0, 5) // Limit to 5 results
+                .slice(0, 50) // Limit to 50 results
                 .map(x => ({ label: parser.helpStrings[x], value: `/${x} ` })); // Map to the help string
 
             output(result); // Return the results
@@ -1891,10 +1905,11 @@ function setSlashCommandAutocomplete(textarea) {
     });
 
     textarea.autocomplete('instance')._renderItem = function (ul, item) {
-        const width = $(textarea).innerWidth();
         const content = $('<div></div>').html(item.label);
         return $('<li>').width(width).append(content).appendTo(ul);
     };
+
+    setItemWidth();
 }
 
 jQuery(function () {

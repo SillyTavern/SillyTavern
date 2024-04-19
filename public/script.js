@@ -5657,7 +5657,7 @@ async function getChat() {
             contentType: 'application/json',
         });
         if (response[0] !== undefined) {
-            chat.push(...response);
+            chat.splice(0, chat.length, ...response);
             chat_create_date = chat[0]['create_date'];
             chat_metadata = chat[0]['chat_metadata'] ?? {};
 
@@ -8208,9 +8208,14 @@ const CONNECT_API_MAP = {
         source: chat_completion_sources.CUSTOM,
     },
     'cohere': {
-        selected: 'cohere',
+        selected: 'openai',
         button: '#api_button_openai',
         source: chat_completion_sources.COHERE,
+    },
+    'perplexity': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.PERPLEXITY,
     },
     'infermaticai': {
         selected: 'textgenerationwebui',
