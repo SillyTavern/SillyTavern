@@ -50,10 +50,18 @@ import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCoun
 import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
-export {
-    executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
-};
 
+/**
+ * @typedef {object} SlashCommand
+ * @property {function} callback - The callback function to execute
+ * @property {string} helpString - The help string for the command
+ * @property {boolean} interruptsGeneration - Whether the command interrupts message generation
+ * @property {boolean} purgeFromMessage - Whether the command should be purged from the message
+ */
+
+/**
+ * Provides a parser for slash commands.
+ */
 class SlashCommandParser {
     static COMMENT_KEYWORDS = ['#', '/'];
     static RESERVED_KEYWORDS = [
@@ -61,10 +69,26 @@ class SlashCommandParser {
     ];
 
     constructor() {
+        /**
+         * @type {Record<string, SlashCommand>} - Slash commands registered in the parser
+         */
         this.commands = {};
+        /**
+         * @type {Record<string, string>} - Help strings for each command
+         */
         this.helpStrings = {};
     }
 
+    /**
+     * Adds a slash command to the parser.
+     * @param {string} command - The command name
+     * @param {function} callback - The callback function to execute
+     * @param {string[]} aliases - The command aliases
+     * @param {string} helpString - The help string for the command
+     * @param {boolean} [interruptsGeneration] - Whether the command interrupts message generation
+     * @param {boolean} [purgeFromMessage] - Whether the command should be purged from the message
+     * @returns {void}
+     */
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
         const fnObj = { callback, helpString, interruptsGeneration, purgeFromMessage };
 
@@ -96,7 +120,7 @@ class SlashCommandParser {
     /**
      * Parses a slash command to extract the command name, the (named) arguments and the remaining text
      * @param {string} text - Slash command text
-     * @returns {{command: string, args: object, value: string}} - The parsed command, its arguments and the remaining text
+     * @returns {{command: SlashCommand, args: object, value: string, commandName: string}} - The parsed command, its arguments and the remaining text
      */
     parse(text) {
         // Parses a command even when spaces are present in arguments
@@ -116,6 +140,20 @@ class SlashCommandParser {
             command = match[1];
             remainingText = match[2];
             console.debug('command:' + command);
+        }
+
+        if (SlashCommandParser.COMMENT_KEYWORDS.includes(command)) {
+            return {
+                commandName: command,
+                command: {
+                    callback: () => {},
+                    helpString: '',
+                    interruptsGeneration: false,
+                    purgeFromMessage: true,
+                },
+                args: {},
+                value: '',
+            };
         }
 
         // parse the rest of the string to extract named arguments, the remainder is the "unnamedArg" which is usually text, like the prompt to send
@@ -176,7 +214,7 @@ class SlashCommandParser {
 
         // your weird complex command is now transformed into a juicy tiny text or something useful :)
         if (this.commands[command]) {
-            return { command: this.commands[command], args: argObj, value: unnamedArg };
+            return { command: this.commands[command], args: argObj, value: unnamedArg, commandName: command };
         }
 
         return null;
@@ -197,8 +235,13 @@ class SlashCommandParser {
 }
 
 const parser = new SlashCommandParser();
-const registerSlashCommand = parser.addCommand.bind(parser);
-const getSlashCommandsHelp = parser.getHelpString.bind(parser);
+
+/**
+ * Registers a slash command in the parser.
+* @type {(command: string, callback: function, aliases: string[], helpString: string, interruptsGeneration?: boolean, purgeFromMessage?: boolean) => void}
+*/
+export const registerSlashCommand = parser.addCommand.bind(parser);
+export const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
 parser.addCommand('?', helpCommandCallback, ['help'], ' – get help on macros, chat formatting and commands', true, true);
 parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace">(name)</span> – sets user name and persona avatar (if set)', true, true);
@@ -1293,7 +1336,7 @@ export async function generateSystemMessage(_, prompt) {
 
     // Generate and regex the output if applicable
     toastr.info('Please wait', 'Generating...');
-    let message = await generateQuietPrompt(prompt);
+    let message = await generateQuietPrompt(prompt, false, false);
     message = getRegexedString(message, regex_placement.SLASH_COMMAND);
 
     sendNarratorMessage(_, message);
@@ -1485,7 +1528,7 @@ export async function promptQuietForLoudResponse(who, text) {
 
     //text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
 
-    let reply = await generateQuietPrompt(text, true);
+    let reply = await generateQuietPrompt(text, true, false);
     text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
 
     const message = {
@@ -1717,7 +1760,7 @@ function modelCallback(_, model) {
  * @param {boolean} unescape Whether to unescape the batch separator
  * @returns {Promise<{interrupt: boolean, newText: string, pipe: string} | boolean>}
  */
-async function executeSlashCommands(text, unescape = false) {
+export async function executeSlashCommands(text, unescape = false) {
     if (!text) {
         return false;
     }
@@ -1758,7 +1801,8 @@ async function executeSlashCommands(text, unescape = false) {
         }
 
         // Skip comment commands. They don't run macros or interrupt pipes.
-        if (SlashCommandParser.COMMENT_KEYWORDS.includes(result.command)) {
+        if (SlashCommandParser.COMMENT_KEYWORDS.includes(result.commandName)) {
+            result.command.purgeFromMessage && linesToRemove.push(lines[index]);
             continue;
         }
 
