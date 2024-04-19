@@ -2176,7 +2176,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         document.body.append(dom);
         // prevType = parserResult.type;
     };
-    const renderDebounced = debounce(render, 100);
+    const renderDebounced = debounce(render, 10);
     const updatePosition = () => {
         if (isFloating) {
             updateFloatingPosition();
