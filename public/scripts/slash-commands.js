@@ -2174,7 +2174,6 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         dom.append(frag);
         updatePosition();
         document.body.append(dom);
-        // prevType = parserResult.type;
     };
     const renderDebounced = debounce(render, 10);
     const updatePosition = () => {
