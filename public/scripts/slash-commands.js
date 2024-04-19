@@ -1833,7 +1833,7 @@ function setSlashCommandAutocomplete(textarea) {
                 .keys(parser.helpStrings) // Get all slash commands
                 .filter(x => x.startsWith(slashCommand)) // Filter by the input
                 .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
-                // .slice(0, 20) // Limit to 20 results
+                .slice(0, 5) // Limit to 5 results
                 .map(x => ({ label: parser.helpStrings[x], value: `/${x} ` })); // Map to the help string
 
             output(result); // Return the results
