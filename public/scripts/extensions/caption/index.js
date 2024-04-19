@@ -1,10 +1,11 @@
-import { getBase64Async, saveBase64AsFile } from '../../utils.js';
+import { getBase64Async, isTrueBoolean, saveBase64AsFile } from '../../utils.js';
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules } from '../../extensions.js';
 import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getMultimodalCaption } from '../shared.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
+import { registerSlashCommand } from '../../slash-commands.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -30,7 +31,7 @@ function migrateSettings() {
     if (extension_settings.caption.source === 'openai') {
         extension_settings.caption.source = 'multimodal';
         extension_settings.caption.multimodal_api = 'openai';
-        extension_settings.caption.multimodal_model = 'gpt-4-vision-preview';
+        extension_settings.caption.multimodal_model = 'gpt-4-turbo';
     }
 
     if (!extension_settings.caption.multimodal_api) {
@@ -38,7 +39,7 @@ function migrateSettings() {
     }
 
     if (!extension_settings.caption.multimodal_model) {
-        extension_settings.caption.multimodal_model = 'gpt-4-vision-preview';
+        extension_settings.caption.multimodal_model = 'gpt-4-turbo';
     }
 
     if (!extension_settings.caption.prompt) {
@@ -124,9 +125,10 @@ async function sendCaptionedMessage(caption, image) {
  * Generates a caption for an image using a selected source.
  * @param {string} base64Img Base64 encoded image without the data:image/...;base64, prefix
  * @param {string} fileData Base64 encoded image with the data:image/...;base64, prefix
+ * @param {string} externalPrompt Caption prompt
  * @returns {Promise<{caption: string}>} Generated caption
  */
-async function doCaptionRequest(base64Img, fileData) {
+async function doCaptionRequest(base64Img, fileData, externalPrompt) {
     switch (extension_settings.caption.source) {
         case 'local':
             return await captionLocal(base64Img);
@@ -135,7 +137,7 @@ async function doCaptionRequest(base64Img, fileData) {
         case 'horde':
             return await captionHorde(base64Img);
         case 'multimodal':
-            return await captionMultimodal(fileData);
+            return await captionMultimodal(fileData, externalPrompt);
         default:
             throw new Error('Unknown caption source.');
     }
@@ -214,12 +216,13 @@ async function captionHorde(base64Img) {
 /**
  * Generates a caption for an image using a multimodal model.
  * @param {string} base64Img Base64 encoded image with the data:image/...;base64, prefix
+ * @param {string} externalPrompt Caption prompt
  * @returns {Promise<{caption: string}>} Generated caption
  */
-async function captionMultimodal(base64Img) {
-    let prompt = extension_settings.caption.prompt || PROMPT_DEFAULT;
+async function captionMultimodal(base64Img, externalPrompt) {
+    let prompt = externalPrompt || extension_settings.caption.prompt || PROMPT_DEFAULT;
 
-    if (extension_settings.caption.prompt_ask) {
+    if (!externalPrompt && extension_settings.caption.prompt_ask) {
         const customPrompt = await callPopup('<h3>Enter a comment or question:</h3>', 'input', prompt, { rows: 2 });
         if (!customPrompt) {
             throw new Error('User aborted the caption sending.');
@@ -231,29 +234,46 @@ async function captionMultimodal(base64Img) {
     return { caption };
 }
 
-async function onSelectImage(e) {
-    setSpinnerIcon();
+/**
+ * Handles the image selection event.
+ * @param {Event} e Input event
+ * @param {string} prompt Caption prompt
+ * @param {boolean} quiet Suppresses sending a message
+ * @returns {Promise<string>} Generated caption
+ */
+async function onSelectImage(e, prompt, quiet) {
+    if (!(e.target instanceof HTMLInputElement)) {
+        return '';
+    }
+
     const file = e.target.files[0];
+    const form = e.target.form;
 
     if (!file || !(file instanceof File)) {
-        return;
+        form && form.reset();
+        return '';
     }
 
     try {
+        setSpinnerIcon();
         const context = getContext();
         const fileData = await getBase64Async(file);
         const base64Format = fileData.split(',')[0].split(';')[0].split('/')[1];
         const base64Data = fileData.split(',')[1];
-        const { caption } = await doCaptionRequest(base64Data, fileData);
-        const imagePath = await saveBase64AsFile(base64Data, context.name2, '', base64Format);
-        await sendCaptionedMessage(caption, imagePath);
+        const { caption } = await doCaptionRequest(base64Data, fileData, prompt);
+        if (!quiet) {
+            const imagePath = await saveBase64AsFile(base64Data, context.name2, '', base64Format);
+            await sendCaptionedMessage(caption, imagePath);
+        }
+        return caption;
     }
     catch (error) {
         toastr.error('Failed to caption image.');
         console.log(error);
+        return '';
     }
     finally {
-        e.target.form.reset();
+        form && form.reset();
         setImageIcon();
     }
 }
@@ -261,6 +281,26 @@ async function onSelectImage(e) {
 function onRefineModeInput() {
     extension_settings.caption.refine_mode = $('#caption_refine_mode').prop('checked');
     saveSettingsDebounced();
+}
+
+/**
+ * Callback for the /caption command.
+ * @param {object} args Named parameters
+ * @param {string} prompt Caption prompt
+ */
+function captionCommandCallback(args, prompt) {
+    return new Promise(resolve => {
+        const quiet = isTrueBoolean(args?.quiet);
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async (e) => {
+            const caption = await onSelectImage(e, prompt, quiet);
+            resolve(caption);
+        };
+        input.oncancel = () => resolve('');
+        input.click();
+    });
 }
 
 jQuery(function () {
@@ -308,7 +348,7 @@ jQuery(function () {
         $(imgForm).append(inputHtml);
         $(imgForm).hide();
         $('#form_sheld').append(imgForm);
-        $('#img_file').on('change', onSelectImage);
+        $('#img_file').on('change', (e) => onSelectImage(e.originalEvent, '', false));
     }
     function switchMultimodalBlocks() {
         const isMultimodal = extension_settings.caption.source === 'multimodal';
@@ -369,6 +409,7 @@ jQuery(function () {
                             <label for="caption_multimodal_model">Model</label>
                             <select id="caption_multimodal_model" class="flex1 text_pole">
                                 <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
+                                <option data-type="openai" value="gpt-4-turbo">gpt-4-turbo</option>
                                 <option data-type="anthropic" value="claude-3-opus-20240229">claude-3-opus-20240229</option>
                                 <option data-type="anthropic" value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                 <option data-type="anthropic" value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
@@ -456,4 +497,6 @@ jQuery(function () {
         extension_settings.caption.prompt_ask = $('#caption_prompt_ask').prop('checked');
         saveSettingsDebounced();
     });
+
+    registerSlashCommand('caption', captionCommandCallback, [], '<span class="monospace">quiet=true/false [prompt]</span> - caption an image with an optional prompt and passes the caption down the pipe. Only multimodal sources support custom prompts. Set the "quiet" argument to true to suppress sending a captioned message, default: false.', true, true);
 });

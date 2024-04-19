@@ -4,7 +4,7 @@ TODO:
 //const DEBUG_TONY_SAMA_FORK_MODE = true
 
 import { getRequestHeaders, callPopup, processDroppedFiles } from '../../../script.js';
-import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplate } from '../../extensions.js';
+import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
 import { executeSlashCommands } from '../../slash-commands.js';
 import { getStringHash, isValidUrl } from '../../utils.js';
 export { MODULE_NAME };
@@ -103,7 +103,8 @@ function downloadAssetsList(url) {
                     if (assetType == 'extension') {
                         assetTypeMenu.append(`
                         <div class="assets-list-git">
-                            To download extensions from this page, you need to have <a href="https://git-scm.com/downloads" target="_blank">Git</a> installed.
+                            To download extensions from this page, you need to have <a href="https://git-scm.com/downloads" target="_blank">Git</a> installed.<br>
+                            Click the <i class="fa-solid fa-sm fa-arrow-up-right-from-square"></i> icon to visit the Extension's repo for tips on how to use it.
                         </div>`);
                     }
 
@@ -180,6 +181,7 @@ function downloadAssetsList(url) {
                         const displayName = DOMPurify.sanitize(asset['name'] || asset['id']);
                         const description = DOMPurify.sanitize(asset['description'] || '');
                         const url = isValidUrl(asset['url']) ? asset['url'] : '';
+                        const title = assetType === 'extension' ? `Extension repo/guide: ${url}` : 'Preview in browser';
                         const previewIcon = (assetType === 'extension' || assetType === 'character') ? 'fa-arrow-up-right-from-square' : 'fa-headphones-simple';
 
                         const assetBlock = $('<i></i>')
@@ -187,7 +189,7 @@ function downloadAssetsList(url) {
                             .append(`<div class="flex-container flexFlowColumn flexNoGap">
                                         <span class="asset-name flex-container alignitemscenter">
                                             <b>${displayName}</b>
-                                            <a class="asset_preview" href="${url}" target="_blank" title="Preview in browser">
+                                            <a class="asset_preview" href="${url}" target="_blank" title="${title}">
                                                 <i class="fa-solid fa-sm ${previewIcon}"></i>
                                             </a>
                                         </span>
@@ -353,7 +355,8 @@ async function updateCurrentAssets() {
 // This function is called when the extension is loaded
 jQuery(async () => {
     // This is an example of loading HTML from a file
-    const windowHtml = $(renderExtensionTemplate(MODULE_NAME, 'window', {}));
+    const windowTemplate = await renderExtensionTemplateAsync(MODULE_NAME, 'window', {});
+    const windowHtml = $(windowTemplate);
 
     const assetsJsonUrl = windowHtml.find('#assets-json-url-field');
     assetsJsonUrl.val(ASSETS_JSON_URL);
@@ -364,7 +367,7 @@ jQuery(async () => {
         const rememberKey = `Assets_SkipConfirm_${getStringHash(url)}`;
         const skipConfirm = localStorage.getItem(rememberKey) === 'true';
 
-        const template = renderExtensionTemplate(MODULE_NAME, 'confirm', { url });
+        const template = await renderExtensionTemplateAsync(MODULE_NAME, 'confirm', { url });
         const confirmation = skipConfirm || await callPopup(template, 'confirm');
 
         if (confirmation) {

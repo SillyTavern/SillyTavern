@@ -1,5 +1,5 @@
 import { callPopup, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced } from '../../../script.js';
-import { extension_settings } from '../../extensions.js';
+import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
 import { resolveVariable } from '../../variables.js';
@@ -71,7 +71,7 @@ async function deleteRegexScript({ existingId }) {
 async function loadRegexScripts() {
     $('#saved_regex_scripts').empty();
 
-    const scriptTemplate = $(await $.get('scripts/extensions/regex/scriptTemplate.html'));
+    const scriptTemplate = $(await renderExtensionTemplateAsync('regex', 'scriptTemplate'));
 
     extension_settings.regex.forEach((script) => {
         // Have to clone here
@@ -113,7 +113,7 @@ async function loadRegexScripts() {
 }
 
 async function onRegexEditorOpenClick(existingId) {
-    const editorHtml = $(await $.get('scripts/extensions/regex/editor.html'));
+    const editorHtml = $(await renderExtensionTemplateAsync('regex', 'editor'));
 
     // If an ID exists, fill in all the values
     let existingScriptIndex = -1;
@@ -316,7 +316,7 @@ jQuery(async () => {
         return;
     }
 
-    const settingsHtml = await $.get('scripts/extensions/regex/dropdown.html');
+    const settingsHtml = $(await renderExtensionTemplateAsync('regex', 'dropdown'));
     $('#extensions_settings2').append(settingsHtml);
     $('#open_regex_editor').on('click', function () {
         onRegexEditorOpenClick(false);

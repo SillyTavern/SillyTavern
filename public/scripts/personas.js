@@ -17,7 +17,7 @@ import {
     user_avatar,
 } from '../script.js';
 import { persona_description_positions, power_user } from './power-user.js';
-import { getTokenCount } from './tokenizers.js';
+import { getTokenCountAsync } from './tokenizers.js';
 import { debounce, delay, download, parseJsonFile } from './utils.js';
 
 const GRID_STORAGE_KEY = 'Personas_GridView';
@@ -171,9 +171,9 @@ export async function convertCharacterToPersona(characterId = null) {
 /**
  * Counts the number of tokens in a persona description.
  */
-const countPersonaDescriptionTokens = debounce(() => {
+const countPersonaDescriptionTokens = debounce(async () => {
     const description = String($('#persona_description').val());
-    const count = getTokenCount(description);
+    const count = await getTokenCountAsync(description);
     $('#persona_description_token_count').text(String(count));
 }, 1000);
 
@@ -404,7 +404,7 @@ function onPersonaDescriptionInput() {
     }
 
     $(`.avatar-container[imgfile="${user_avatar}"] .ch_description`)
-        .text(power_user.persona_description || '[No description]')
+        .text(power_user.persona_description || $('#user_avatar_block').attr('no_desc_text'))
         .toggleClass('text_muted', !power_user.persona_description);
     saveSettingsDebounced();
 }

@@ -58,6 +58,11 @@
     cursor: unset;
 }
 
+#rm_group_buttons textarea {
+    margin: 0px;
+    min-width: 200px;
+}
+
 #rm_group_members,
 #rm_group_add_members {
     margin-top: 0.25rem;

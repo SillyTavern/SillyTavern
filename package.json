@@ -45,6 +45,9 @@
         "vectra": {
             "openai": "^4.17.0"
         },
+        "load-bmfont": {
+            "phin": "^3.7.1"
+        },
         "axios": {
             "follow-redirects": "^1.15.4"
         },
@@ -59,7 +62,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.11.7",
+    "version": "1.11.8",
     "scripts": {
         "start": "node server.js",
         "start-multi": "node server.js --disableCsrf",

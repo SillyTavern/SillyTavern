@@ -13,7 +13,6 @@ import {
     printCharactersDebounced,
     setCharacterId,
     setEditedMessageId,
-    renderTemplate,
     chat,
     getFirstDisplayedMessageId,
     showMoreMessages,
@@ -39,6 +38,7 @@ import { registerSlashCommand } from './slash-commands.js';
 import { tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
+import { renderTemplateAsync } from './templates.js';
 
 import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 
@@ -247,6 +247,7 @@ let power_user = {
     encode_tags: false,
     servers: [],
     bogus_folders: false,
+    zoomed_avatar_magnification: false,
     show_tag_filters: false,
     aux_field: 'character_version',
     restore_user_input: true,
@@ -1304,6 +1305,13 @@ async function applyTheme(name) {
             },
         },
         {
+            key: 'zoomed_avatar_magnification',
+            action: async () => {
+                $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
+                printCharactersDebounced();
+            },
+        },
+        {
             key: 'reduced_motion',
             action: async () => {
                 localStorage.setItem(storage_keys.reduced_motion, String(power_user.reduced_motion));
@@ -1363,8 +1371,8 @@ export function registerDebugFunction(functionId, name, description, func) {
     debug_functions.push({ functionId, name, description, func });
 }
 
-function showDebugMenu() {
-    const template = renderTemplate('debug', { functions: debug_functions });
+async function showDebugMenu() {
+    const template = await renderTemplateAsync('debug', { functions: debug_functions });
     callPopup(template, 'text', '', { wide: true, large: true });
 }
 
@@ -1498,6 +1506,7 @@ function loadPowerUserSettings(settings, data) {
     $('#auto_fix_generated_markdown').prop('checked', power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop('checked', power_user.auto_scroll_chat_to_bottom);
     $('#bogus_folders').prop('checked', power_user.bogus_folders);
+    $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr('selected', true);
     $('#import_card_tags').prop('checked', power_user.import_card_tags);
@@ -1942,7 +1951,9 @@ export function renderStoryString(params) {
 
         // add a newline to the end of the story string if it doesn't have one
         if (output.length > 0 && !output.endsWith('\n')) {
-            output += '\n';
+            if (!power_user.instruct.enabled || power_user.instruct.wrap) {
+                output += '\n';
+            }
         }
 
         return output;
@@ -2146,6 +2157,7 @@ async function saveTheme(name = undefined) {
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
         bogus_folders: power_user.bogus_folders,
+        zoomed_avatar_magnification: power_user.zoomed_avatar_magnification,
         reduced_motion: power_user.reduced_motion,
         compact_input_area: power_user.compact_input_area,
     };
@@ -2364,8 +2376,10 @@ async function doMesCut(_, text) {
 
     let totalMesToCut = (range.end - range.start) + 1;
     let mesIDToCut = range.start;
+    let cutText = '';
 
     for (let i = 0; i < totalMesToCut; i++) {
+        cutText += (chat[mesIDToCut]?.mes || '') + '\n';
         let done = false;
         let mesToCut = $('#chat').find(`.mes[mesid=${mesIDToCut}]`);
 
@@ -2386,6 +2400,8 @@ async function doMesCut(_, text) {
             await delay(1);
         }
     }
+
+    return cutText;
 }
 
 async function doDelMode(_, text) {
@@ -2760,6 +2776,14 @@ export function getCustomStoppingStrings(limit = undefined) {
     }
 
     return strings;
+}
+
+export function forceCharacterEditorTokenize() {
+    $('[data-token-counter]').each(function () {
+        $(document.getElementById($(this).data('token-counter'))).data('last-value-hash', '');
+    });
+    $('#rm_ch_create_block').trigger('input');
+    $('#character_popup').trigger('input');
 }
 
 $(document).ready(() => {
@@ -3173,8 +3197,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
 
         // Trigger character editor re-tokenize
-        $('#rm_ch_create_block').trigger('input');
-        $('#character_popup').trigger('input');
+        forceCharacterEditorTokenize();
     });
 
     $('#send_on_enter').on('change', function () {
@@ -3401,8 +3424,13 @@ $(document).ready(() => {
     });
 
     $('#bogus_folders').on('input', function () {
-        const value = !!$(this).prop('checked');
-        power_user.bogus_folders = value;
+        power_user.bogus_folders = !!$(this).prop('checked');
+        printCharactersDebounced();
+        saveSettingsDebounced();
+    });
+
+    $('#zoomed_avatar_magnification').on('input', function () {
+        power_user.zoomed_avatar_magnification = !!$(this).prop('checked');
         printCharactersDebounced();
         saveSettingsDebounced();
     });
@@ -3496,7 +3524,7 @@ $(document).ready(() => {
     registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
     registerSlashCommand('random', doRandomChat, [], '– start a new chat with a random character', true, true);
     registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes last N messages if numeric argument is provided', true, true);
-    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive!', true, true);
+    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive! Returns the text of cut messages separated by a newline.', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
     registerSlashCommand('theme', setThemeCallback, [], '<span class="monospace">(name)</span> – sets a UI theme by name', true, true);

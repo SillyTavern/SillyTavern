@@ -398,7 +398,7 @@ router.post('/google/count', jsonParser, async function (req, res) {
             accept: 'application/json',
             'content-type': 'application/json',
         },
-        body: JSON.stringify({ contents: convertGooglePrompt(req.body, String(req.query.model)) }),
+        body: JSON.stringify({ contents: convertGooglePrompt(req.body, String(req.query.model)).contents }),
     };
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${req.query.model}:countTokens?key=${readSecret(SECRET_KEYS.MAKERSUITE)}`, options);

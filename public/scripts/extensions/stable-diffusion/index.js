@@ -18,7 +18,7 @@ import {
     formatCharacterAvatar,
     substituteParams,
 } from '../../../script.js';
-import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from '../../extensions.js';
+import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import { selected_group } from '../../group-chats.js';
 import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay, isTrueBoolean } from '../../utils.js';
 import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.js';
@@ -48,6 +48,7 @@ const sources = {
     comfy: 'comfy',
     togetherai: 'togetherai',
     drawthings: 'drawthings',
+    pollinations: 'pollinations',
 };
 
 const generationMode = {
@@ -254,6 +255,10 @@ const defaultSettings = {
     // ComyUI settings
     comfy_url: 'http://127.0.0.1:8188',
     comfy_workflow: 'Default_Comfy_Workflow.json',
+
+    // Pollinations settings
+    pollinations_enhance: false,
+    pollinations_refine: false,
 };
 
 function processTriggers(chat, _, abort) {
@@ -383,6 +388,8 @@ async function loadSettings() {
     $('#sd_novel_sm').prop('checked', extension_settings.sd.novel_sm);
     $('#sd_novel_sm_dyn').prop('checked', extension_settings.sd.novel_sm_dyn);
     $('#sd_novel_sm_dyn').prop('disabled', !extension_settings.sd.novel_sm);
+    $('#sd_pollinations_enhance').prop('checked', extension_settings.sd.pollinations_enhance);
+    $('#sd_pollinations_refine').prop('checked', extension_settings.sd.pollinations_refine);
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
     $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
@@ -828,6 +835,16 @@ function onNovelSmDynInput() {
     saveSettingsDebounced();
 }
 
+function onPollinationsEnhanceInput() {
+    extension_settings.sd.pollinations_enhance = !!$('#sd_pollinations_enhance').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onPollinationsRefineInput() {
+    extension_settings.sd.pollinations_refine = !!$('#sd_pollinations_refine').prop('checked');
+    saveSettingsDebounced();
+}
+
 function onHordeNsfwInput() {
     extension_settings.sd.horde_nsfw = !!$(this).prop('checked');
     saveSettingsDebounced();
@@ -1023,7 +1040,7 @@ async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
-    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai];
+    const cloudSources = [sources.horde, sources.novel, sources.openai, sources.togetherai, sources.pollinations];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
         return;
@@ -1186,6 +1203,9 @@ async function loadSamplers() {
             samplers = await loadComfySamplers();
             break;
         case sources.togetherai:
+            samplers = ['N/A'];
+            break;
+        case sources.pollinations:
             samplers = ['N/A'];
             break;
     }
@@ -1368,6 +1388,9 @@ async function loadModels() {
         case sources.togetherai:
             models = await loadTogetherAIModels();
             break;
+        case sources.pollinations:
+            models = await loadPollinationsModels();
+            break;
     }
 
     for (const model of models) {
@@ -1382,6 +1405,55 @@ async function loadModels() {
         extension_settings.sd.model = models[0].value;
         $('#sd_model').val(extension_settings.sd.model).trigger('change');
     }
+}
+
+async function loadPollinationsModels() {
+    return [
+        {
+            value: 'pixart',
+            text: 'PixArt-αlpha',
+        },
+        {
+            value: 'playground',
+            text: 'Playground v2',
+        },
+        {
+            value: 'dalle3xl',
+            text: 'DALL•E 3 XL',
+        },
+        {
+            value: 'formulaxl',
+            text: 'FormulaXL',
+        },
+        {
+            value: 'dreamshaper',
+            text: 'DreamShaper',
+        },
+        {
+            value: 'deliberate',
+            text: 'Deliberate',
+        },
+        {
+            value: 'dpo',
+            text: 'SDXL-DPO',
+        },
+        {
+            value: 'swizz8',
+            text: 'Swizz8',
+        },
+        {
+            value: 'juggernaut',
+            text: 'Juggernaut',
+        },
+        {
+            value: 'turbo',
+            text: 'SDXL Turbo',
+        },
+        {
+            value: 'realvis',
+            text: 'Realistic Vision',
+        },
+    ];
 }
 
 async function loadTogetherAIModels() {
@@ -1641,6 +1713,9 @@ async function loadSchedulers() {
         case sources.togetherai:
             schedulers = ['N/A'];
             break;
+        case sources.pollinations:
+            schedulers = ['N/A'];
+            break;
         case sources.comfy:
             schedulers = await loadComfySchedulers();
             break;
@@ -1704,6 +1779,9 @@ async function loadVaes() {
             vaes = ['N/A'];
             break;
         case sources.togetherai:
+            vaes = ['N/A'];
+            break;
+        case sources.pollinations:
             vaes = ['N/A'];
             break;
         case sources.comfy:
@@ -2033,21 +2111,11 @@ async function generateMultimodalPrompt(generationType, quietPrompt) {
     let avatarUrl;
 
     if (generationType == generationMode.USER_MULTIMODAL) {
-        avatarUrl = getUserAvatar(user_avatar);
+        avatarUrl = getUserAvatarUrl();
     }
 
     if (generationType == generationMode.CHARACTER_MULTIMODAL || generationType === generationMode.FACE_MULTIMODAL) {
-        const context = getContext();
-
-        if (context.groupId) {
-            const groupMembers = context.groups.find(x => x.id === context.groupId)?.members;
-            const lastMessageAvatar = context.chat?.filter(x => !x.is_system && !x.is_user)?.slice(-1)[0]?.original_avatar;
-            const randomMemberAvatar = Array.isArray(groupMembers) ? groupMembers[Math.floor(Math.random() * groupMembers.length)]?.avatar : null;
-            const avatarToUse = lastMessageAvatar || randomMemberAvatar;
-            avatarUrl = formatCharacterAvatar(avatarToUse);
-        } else {
-            avatarUrl = getCharacterAvatar(context.characterId);
-        }
+        avatarUrl = getCharacterAvatarUrl();
     }
 
     try {
@@ -2072,6 +2140,24 @@ async function generateMultimodalPrompt(generationType, quietPrompt) {
         toastr.error('Multimodal captioning failed. Please try again.', 'Image Generation');
         throw new Error('Multimodal captioning failed.');
     }
+}
+
+function getCharacterAvatarUrl() {
+    const context = getContext();
+
+    if (context.groupId) {
+        const groupMembers = context.groups.find(x => x.id === context.groupId)?.members;
+        const lastMessageAvatar = context.chat?.filter(x => !x.is_system && !x.is_user)?.slice(-1)[0]?.original_avatar;
+        const randomMemberAvatar = Array.isArray(groupMembers) ? groupMembers[Math.floor(Math.random() * groupMembers.length)]?.avatar : null;
+        const avatarToUse = lastMessageAvatar || randomMemberAvatar;
+        return formatCharacterAvatar(avatarToUse);
+    } else {
+        return getCharacterAvatar(context.characterId);
+    }
+}
+
+function getUserAvatarUrl() {
+    return getUserAvatar(user_avatar);
 }
 
 /**
@@ -2135,6 +2221,9 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
             case sources.togetherai:
                 result = await generateTogetherAIImage(prefixedPrompt, negativePrompt);
                 break;
+            case sources.pollinations:
+                result = await generatePollinationsImage(prefixedPrompt, negativePrompt);
+                break;
         }
 
         if (!result.data) {
@@ -2175,6 +2264,30 @@ async function generateTogetherAIImage(prompt, negativePrompt) {
     if (result.ok) {
         const data = await result.json();
         return { format: 'jpg', data: data?.output?.choices?.[0]?.image_base64 };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+async function generatePollinationsImage(prompt, negativePrompt) {
+    const result = await fetch('/api/sd/pollinations/generate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            prompt: prompt,
+            negative_prompt: negativePrompt,
+            model: extension_settings.sd.model,
+            width: extension_settings.sd.width,
+            height: extension_settings.sd.height,
+            enhance: extension_settings.sd.pollinations_enhance,
+            refine: extension_settings.sd.pollinations_refine,
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'jpg', data: data?.image };
     } else {
         const text = await result.text();
         throw new Error(text);
@@ -2531,6 +2644,22 @@ async function generateComfyImage(prompt, negativePrompt) {
     (extension_settings.sd.comfy_placeholders ?? []).forEach(ph => {
         workflow = workflow.replace(`"%${ph.find}%"`, JSON.stringify(substituteParams(ph.replace)));
     });
+    if (/%user_avatar%/gi.test(workflow)) {
+        const response = await fetch(getUserAvatarUrl());
+        if (response.ok) {
+            const avatarBlob = await response.blob();
+            const avatarBase64 = await getBase64Async(avatarBlob);
+            workflow = workflow.replace('"%user_avatar%"', JSON.stringify(avatarBase64));
+        }
+    }
+    if (/%char_avatar%/gi.test(workflow)) {
+        const response = await fetch(getCharacterAvatarUrl());
+        if (response.ok) {
+            const avatarBlob = await response.blob();
+            const avatarBase64 = await getBase64Async(avatarBlob);
+            workflow = workflow.replace('"%char_avatar%"', JSON.stringify(avatarBase64));
+        }
+    }
     console.log(`{
         "prompt": ${workflow}
     }`);
@@ -2544,6 +2673,10 @@ async function generateComfyImage(prompt, negativePrompt) {
             }`,
         }),
     });
+    if (!promptResult.ok) {
+        const text = await promptResult.text();
+        throw new Error(text);
+    }
     return { format: 'png', data: await promptResult.text() };
 }
 
@@ -2775,6 +2908,8 @@ function isValidState() {
             return true;
         case sources.togetherai:
             return secret_state[SECRET_KEYS.TOGETHERAI];
+        case sources.pollinations:
+            return true;
     }
 }
 
@@ -2883,7 +3018,8 @@ jQuery(async () => {
     registerSlashCommand('imagine', generatePicture, ['sd', 'img', 'image'], helpString, true, true);
     registerSlashCommand('imagine-comfy-workflow', changeComfyWorkflow, ['icw'], '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <tt>/imagine-comfy-workflow MyWorkflow</tt>');
 
-    $('#extensions_settings').append(renderExtensionTemplate('stable-diffusion', 'settings', defaultSettings));
+    const template = await renderExtensionTemplateAsync('stable-diffusion', 'settings', defaultSettings);
+    $('#extensions_settings').append(template);
     $('#sd_source').on('change', onSourceChange);
     $('#sd_scale').on('input', onScaleInput);
     $('#sd_steps').on('input', onStepsInput);
@@ -2922,6 +3058,8 @@ jQuery(async () => {
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
     $('#sd_novel_sm').on('input', onNovelSmInput);
     $('#sd_novel_sm_dyn').on('input', onNovelSmDynInput);
+    $('#sd_pollinations_enhance').on('input', onPollinationsEnhanceInput);
+    $('#sd_pollinations_refine').on('input', onPollinationsRefineInput);
     $('#sd_comfy_validate').on('click', validateComfyUrl);
     $('#sd_comfy_url').on('input', onComfyUrlInput);
     $('#sd_comfy_workflow').on('change', onComfyWorkflowChange);

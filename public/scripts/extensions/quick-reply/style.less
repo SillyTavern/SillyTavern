@@ -242,7 +242,7 @@
 
 
 @media screen and (max-width: 750px) {
-	body #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor {
+	body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor {
 		flex-direction: column;
 		> #qr--main > .qr--labels {
 			flex-direction: column;
@@ -252,10 +252,10 @@
 		}
 	}
 }
-#dialogue_popup:has(#qr--modalEditor) {
+.dialogue_popup:has(#qr--modalEditor) {
 	aspect-ratio: unset;
 
-	#dialogue_popup_text {
+	.dialogue_popup_text {
 		display: flex;
 		flex-direction: column;
 
@@ -293,6 +293,20 @@
 					flex: 1 1 auto;
 					display: flex;
 					flex-direction: column;
+					> .qr--modal-editorSettings {
+						display: flex;
+						flex-direction: row;
+						gap: 1em;
+						color: var(--grey70);
+						font-size: smaller;
+						align-items: baseline;
+						> .checkbox_label {
+							white-space: nowrap;
+							> input {
+								font-size: inherit;
+							}
+						}
+					}
 					> #qr--modal-message {
 						flex: 1 1 auto;
 					}
@@ -312,6 +326,6 @@
 	}
 }
 
-#shadow_popup.qr--hide {
+.shadow_popup.qr--hide {
 	opacity: 0 !important;
 }

@@ -102,7 +102,7 @@ class Prompt {
 /**
  * Representing a collection of prompts.
  */
-class PromptCollection {
+export class PromptCollection {
     collection = [];
     overriddenPrompts = [];
 
@@ -163,7 +163,7 @@ class PromptCollection {
     /**
      * Retrieves the index of a Prompt instance in the collection by its identifier.
      *
-     * @param {null} identifier - The identifier of the Prompt instance to find.
+     * @param {string} identifier - The identifier of the Prompt instance to find.
      * @returns {number} The index of the Prompt instance in the collection, or -1 if not found.
      */
     index(identifier) {
@@ -841,7 +841,7 @@ class PromptManager {
             const promptReferences = this.getPromptOrderForCharacter(this.activeCharacter);
             for (let i = promptReferences.length - 1; i >= 0; i--) {
                 const reference = promptReferences[i];
-                if (-1 === this.serviceSettings.prompts.findIndex(prompt => prompt.identifier === reference.identifier)) {
+                if (reference && -1 === this.serviceSettings.prompts.findIndex(prompt => prompt.identifier === reference.identifier)) {
                     promptReferences.splice(i, 1);
                     this.log('Removed unused reference: ' + reference.identifier);
                 }
@@ -904,7 +904,7 @@ class PromptManager {
      * @returns {boolean} True if the prompt can be deleted, false otherwise.
      */
     isPromptToggleAllowed(prompt) {
-        const forceTogglePrompts = ['charDescription', 'charPersonality', 'scenario', 'personaDescription', 'worldInfoBefore', 'worldInfoAfter', 'main'];
+        const forceTogglePrompts = ['charDescription', 'charPersonality', 'scenario', 'personaDescription', 'worldInfoBefore', 'worldInfoAfter', 'main', 'chatHistory', 'dialogueExamples'];
         return prompt.marker && !forceTogglePrompts.includes(prompt.identifier) ? false : !this.configuration.toggleDisabled.includes(prompt.identifier);
     }
 

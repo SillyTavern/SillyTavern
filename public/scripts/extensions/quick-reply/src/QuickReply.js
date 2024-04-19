@@ -1,4 +1,4 @@
-import { callPopup } from '../../../../script.js';
+import { POPUP_TYPE, Popup } from '../../../popup.js';
 import { getSortableDelay } from '../../../utils.js';
 import { log, warn } from '../index.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
@@ -43,6 +43,13 @@ export class QuickReply {
     /**@type {HTMLElement}*/ settingsDom;
     /**@type {HTMLInputElement}*/ settingsDomLabel;
     /**@type {HTMLTextAreaElement}*/ settingsDomMessage;
+
+    /**@type {Popup}*/ editorPopup;
+
+    /**@type {HTMLElement}*/ editorExecuteBtn;
+    /**@type {HTMLElement}*/ editorExecuteErrors;
+    /**@type {HTMLInputElement}*/ editorExecuteHide;
+    /**@type {Promise}*/ editorExecutePromise;
 
 
     get hasContext() {
@@ -192,7 +199,8 @@ export class QuickReply {
             /**@type {HTMLElement} */
             // @ts-ignore
             const dom = this.template.cloneNode(true);
-            const popupResult = callPopup(dom, 'text', undefined, { okButton: 'OK', wide: true, large: true, rows: 1 });
+            this.editorPopup = new Popup(dom, POPUP_TYPE.TEXT, undefined, { okButton: 'OK', wide: true, large: true, rows: 1 });
+            const popupResult = this.editorPopup.show();
 
             // basics
             /**@type {HTMLInputElement}*/
@@ -209,7 +217,7 @@ export class QuickReply {
             });
             /**@type {HTMLInputElement}*/
             const wrap = dom.querySelector('#qr--modal-wrap');
-            wrap.checked = JSON.parse(localStorage.getItem('qr--wrap'));
+            wrap.checked = JSON.parse(localStorage.getItem('qr--wrap') ?? 'false');
             wrap.addEventListener('click', () => {
                 localStorage.setItem('qr--wrap', JSON.stringify(wrap.checked));
                 updateWrap();
@@ -221,9 +229,26 @@ export class QuickReply {
                     message.style.whiteSpace = 'pre';
                 }
             };
+            /**@type {HTMLInputElement}*/
+            const tabSize = dom.querySelector('#qr--modal-tabSize');
+            tabSize.value = JSON.parse(localStorage.getItem('qr--tabSize') ?? '4');
+            const updateTabSize = () => {
+                message.style.tabSize = tabSize.value;
+            };
+            tabSize.addEventListener('change', () => {
+                localStorage.setItem('qr--tabSize', JSON.stringify(Number(tabSize.value)));
+                updateTabSize();
+            });
+            /**@type {HTMLInputElement}*/
+            const executeShortcut = dom.querySelector('#qr--modal-executeShortcut');
+            executeShortcut.checked = JSON.parse(localStorage.getItem('qr--executeShortcut') ?? 'true');
+            executeShortcut.addEventListener('click', () => {
+                localStorage.setItem('qr--executeShortcut', JSON.stringify(executeShortcut.checked));
+            });
             /**@type {HTMLTextAreaElement}*/
             const message = dom.querySelector('#qr--modal-message');
             updateWrap();
+            updateTabSize();
             message.value = this.message;
             message.addEventListener('input', () => {
                 this.updateMessage(message.value);
@@ -257,6 +282,12 @@ export class QuickReply {
                     message.selectionStart = start - 1;
                     message.selectionEnd = end - count;
                     this.updateMessage(message.value);
+                } else if (evt.key == 'Enter' && evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    if (executeShortcut.checked) {
+                        this.executeFromEditor();
+                    }
                 }
             });
 
@@ -385,33 +416,39 @@ export class QuickReply {
 
             /**@type {HTMLElement}*/
             const executeErrors = dom.querySelector('#qr--modal-executeErrors');
+            this.editorExecuteErrors = executeErrors;
             /**@type {HTMLInputElement}*/
             const executeHide = dom.querySelector('#qr--modal-executeHide');
-            let executePromise;
+            this.editorExecuteHide = executeHide;
             /**@type {HTMLElement}*/
             const executeBtn = dom.querySelector('#qr--modal-execute');
+            this.editorExecuteBtn = executeBtn;
             executeBtn.addEventListener('click', async()=>{
-                if (executePromise) return;
-                executeBtn.classList.add('qr--busy');
-                executeErrors.innerHTML = '';
-                if (executeHide.checked) {
-                    document.querySelector('#shadow_popup').classList.add('qr--hide');
-                }
-                try {
-                    executePromise = this.execute();
-                    await executePromise;
-                } catch (ex) {
-                    executeErrors.textContent = ex.message;
-                }
-                executePromise = null;
-                executeBtn.classList.remove('qr--busy');
-                document.querySelector('#shadow_popup').classList.remove('qr--hide');
+                await this.executeFromEditor();
             });
 
             await popupResult;
         } else {
             warn('failed to fetch qrEditor template');
         }
+    }
+
+    async executeFromEditor() {
+        if (this.editorExecutePromise) return;
+        this.editorExecuteBtn.classList.add('qr--busy');
+        this.editorExecuteErrors.innerHTML = '';
+        if (this.editorExecuteHide.checked) {
+            this.editorPopup.dom.classList.add('qr--hide');
+        }
+        try {
+            this.editorExecutePromise = this.execute();
+            await this.editorExecutePromise;
+        } catch (ex) {
+            this.editorExecuteErrors.textContent = ex.message;
+        }
+        this.editorExecutePromise = null;
+        this.editorExecuteBtn.classList.remove('qr--busy');
+        this.editorPopup.dom.classList.remove('qr--hide');
     }
 
 

@@ -1,7 +1,7 @@
 import { callPopup, main_api } from '../../../script.js';
 import { getContext } from '../../extensions.js';
 import { registerSlashCommand } from '../../slash-commands.js';
-import { getFriendlyTokenizerName, getTextTokens, getTokenCount, tokenizers } from '../../tokenizers.js';
+import { getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, tokenizers } from '../../tokenizers.js';
 import { resetScrollHeight, debounce } from '../../utils.js';
 
 function rgb2hex(rgb) {
@@ -38,7 +38,7 @@ async function doTokenCounter() {
     </div>`;
 
     const dialog = $(html);
-    const countDebounced = debounce(() => {
+    const countDebounced = debounce(async () => {
         const text = String($('#token_counter_textarea').val());
         const ids = main_api == 'openai' ? getTextTokens(tokenizers.OPENAI, text) : getTextTokens(tokenizerId, text);
 
@@ -50,8 +50,7 @@ async function doTokenCounter() {
                 drawChunks(Object.getOwnPropertyDescriptor(ids, 'chunks').value, ids);
             }
         } else {
-            const context = getContext();
-            const count = context.getTokenCount(text);
+            const count = await getTokenCountAsync(text);
             $('#token_counter_ids').text('—');
             $('#token_counter_result').text(count);
             $('#tokenized_chunks_display').text('—');
@@ -109,7 +108,7 @@ function drawChunks(chunks, ids) {
     }
 }
 
-function doCount() {
+async function doCount() {
     // get all of the messages in the chat
     const context = getContext();
     const messages = context.chat.filter(x => x.mes && !x.is_system).map(x => x.mes);
@@ -120,7 +119,8 @@ function doCount() {
     console.debug('All messages:', allMessages);
 
     //toastr success with the token count of the chat
-    toastr.success(`Token count: ${getTokenCount(allMessages)}`);
+    const count = await getTokenCountAsync(allMessages);
+    toastr.success(`Token count: ${count}`);
 }
 
 jQuery(() => {

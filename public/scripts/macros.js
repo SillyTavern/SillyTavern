@@ -1,4 +1,4 @@
-import { chat, main_api, getMaxContextSize, getCurrentChatId } from '../script.js';
+import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId } from '../script.js';
 import { timestampToMoment, isDigitsOnly, getStringHash } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
@@ -7,6 +7,25 @@ import { replaceVariableMacros } from './variables.js';
 // Register any macro that you want to leave in the compiled story string
 Handlebars.registerHelper('trim', () => '{{trim}}');
 
+/**
+ * Gets a hashed id of the current chat from the metadata.
+ * If no metadata exists, creates a new hash and saves it.
+ * @returns {number} The hashed chat id
+ */
+function getChatIdHash() {
+    const cachedIdHash = chat_metadata['chat_id_hash'];
+
+    // If chat_id_hash is not already set, calculate it
+    if (!cachedIdHash) {
+        // Use the main_chat if it's available, otherwise get the current chat ID
+        const chatId = chat_metadata['main_chat'] ?? getCurrentChatId();
+        const chatIdHash = getStringHash(chatId);
+        chat_metadata['chat_id_hash'] = chatIdHash;
+        return chatIdHash;
+    }
+
+    return cachedIdHash;
+}
 
 /**
  * Returns the ID of the last message in the chat
@@ -186,7 +205,10 @@ function randomReplace(input, emptyListPlaceholder = '') {
 
 function pickReplace(input, rawContent, emptyListPlaceholder = '') {
     const pickPattern = /{{pick\s?::?([^}]+)}}/gi;
-    const chatIdHash = getStringHash(getCurrentChatId());
+
+    // We need to have a consistent chat hash, otherwise we'll lose rolls on chat file rename or branch switches
+    // No need to save metadata here - branching and renaming will implicitly do the save for us, and until then loading it like this is consistent
+    const chatIdHash = getChatIdHash();
     const rawContentHash = getStringHash(rawContent);
 
     return input.replace(pickPattern, (match, listString, offset) => {
@@ -257,10 +279,11 @@ export function evaluateMacros(content, env) {
     }
 
     content = diceRollReplace(content);
-    content = replaceInstructMacros(content);
+    content = replaceInstructMacros(content, env);
     content = replaceVariableMacros(content);
     content = content.replace(/{{newline}}/gi, '\n');
     content = content.replace(/\n*{{trim}}\n*/gi, '');
+    content = content.replace(/{{noop}}/gi, '');
     content = content.replace(/{{input}}/gi, () => String($('#send_textarea').val()));
 
     // Substitute passed-in variables

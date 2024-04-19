@@ -216,71 +216,85 @@
   align-items: baseline;
 }
 @media screen and (max-width: 750px) {
-  body #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor {
+  body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor {
     flex-direction: column;
   }
-  body #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
+  body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
     flex-direction: column;
   }
-  body #dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-message {
+  body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-message {
     min-height: 90svh;
   }
 }
-#dialogue_popup:has(#qr--modalEditor) {
+.dialogue_popup:has(#qr--modalEditor) {
   aspect-ratio: unset;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text {
   display: flex;
   flex-direction: column;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor {
   flex: 1 1 auto;
   display: flex;
   flex-direction: row;
   gap: 1em;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
   flex: 0 0 auto;
   display: flex;
   flex-direction: row;
   gap: 0.5em;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label {
   flex: 1 1 1px;
   display: flex;
   flex-direction: column;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelText {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelText {
   flex: 1 1 auto;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelHint {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > .qr--labelHint {
   flex: 1 1 auto;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > input {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels > label > input {
   flex: 0 0 auto;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-message {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+  color: var(--grey70);
+  font-size: smaller;
+  align-items: baseline;
+}
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings > .checkbox_label {
+  white-space: nowrap;
+}
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > .qr--modal-editorSettings > .checkbox_label > input {
+  font-size: inherit;
+}
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-message {
   flex: 1 1 auto;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor #qr--modal-execute {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-execute {
   display: flex;
   flex-direction: row;
   gap: 0.5em;
 }
-#dialogue_popup:has(#qr--modalEditor) #dialogue_popup_text > #qr--modalEditor #qr--modal-execute.qr--busy {
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-execute.qr--busy {
   opacity: 0.5;
   cursor: wait;
 }
-#shadow_popup.qr--hide {
+.shadow_popup.qr--hide {
   opacity: 0 !important;
 }
