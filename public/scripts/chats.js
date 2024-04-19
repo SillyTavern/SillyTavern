@@ -27,6 +27,7 @@ import {
     extractTextFromHTML,
     extractTextFromMarkdown,
     extractTextFromPDF,
+    extractTextFromEpub,
     getBase64Async,
     getStringHash,
     humanFileSize,
@@ -56,6 +57,7 @@ const converters = {
     'application/pdf': extractTextFromPDF,
     'text/html': extractTextFromHTML,
     'text/markdown': extractTextFromMarkdown,
+    'application/epub+zip': extractTextFromEpub,
 };
 
 /**

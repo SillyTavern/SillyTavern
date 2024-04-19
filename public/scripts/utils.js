@@ -695,7 +695,7 @@ export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '
 
     const flatParts = parts.flatMap(p => {
         if (p.length < length) return p;
-        return splitRecursive(input, length, delimiters.slice(1));
+        return splitRecursive(p, length, delimiters.slice(1));
     });
 
     // Merge short chunks
@@ -1298,6 +1298,54 @@ export async function extractTextFromMarkdown(blob) {
     const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
     const text = postProcessText(document.body.textContent, false);
     return text;
+}
+
+export async function extractTextFromEpub(blob) {
+    async function initEpubJs() {
+        const epubScript = new Promise((resolve, reject) => {
+            const epubScript = document.createElement('script');
+            epubScript.async = true;
+            epubScript.src = 'lib/epub.min.js';
+            epubScript.onload = resolve;
+            epubScript.onerror = reject;
+            document.head.appendChild(epubScript);
+        });
+
+        const jszipScript = new Promise((resolve, reject) => {
+            const jszipScript = document.createElement('script');
+            jszipScript.async = true;
+            jszipScript.src = 'lib/jszip.min.js';
+            jszipScript.onload = resolve;
+            jszipScript.onerror = reject;
+            document.head.appendChild(jszipScript);
+        });
+
+        return Promise.all([epubScript, jszipScript]);
+    }
+
+    if (!('ePub' in window)) {
+        await initEpubJs();
+    }
+
+    const book = ePub(blob);
+    await book.ready;
+    const sectionPromises = [];
+
+    book.spine.each((section) => {
+        const sectionPromise = (async () => {
+            const chapter = await book.load(section.href);
+            if (!(chapter instanceof Document) || !chapter.body?.textContent) {
+                return '';
+            }
+            return chapter.body.textContent.trim();
+        })();
+
+        sectionPromises.push(sectionPromise);
+    });
+
+    const content = await Promise.all(sectionPromises);
+    const text = content.filter(text => text);
+    return postProcessText(text.join('\n'), false);
 }
 
 /**
