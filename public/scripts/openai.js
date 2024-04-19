@@ -172,6 +172,7 @@ export const chat_completion_sources = {
     MISTRALAI: 'mistralai',
     CUSTOM: 'custom',
     COHERE: 'cohere',
+    PERPLEXITY: 'perplexity',
 };
 
 const character_names_behavior = {
@@ -238,6 +239,7 @@ const default_settings = {
     ai21_model: 'j2-ultra',
     mistralai_model: 'mistral-medium-latest',
     cohere_model: 'command-r',
+    perplexity_model: 'llama-3-70b-instruct',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -310,6 +312,7 @@ const oai_settings = {
     ai21_model: 'j2-ultra',
     mistralai_model: 'mistral-medium-latest',
     cohere_model: 'command-r',
+    perplexity_model: 'llama-3-70b-instruct',
     custom_model: '',
     custom_url: '',
     custom_include_body: '',
@@ -1410,6 +1413,8 @@ function getChatCompletionModel() {
             return oai_settings.custom_model;
         case chat_completion_sources.COHERE:
             return oai_settings.cohere_model;
+        case chat_completion_sources.PERPLEXITY:
+            return oai_settings.perplexity_model;
         default:
             throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
     }
@@ -1630,6 +1635,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isMistral = oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI;
     const isCustom = oai_settings.chat_completion_source == chat_completion_sources.CUSTOM;
     const isCohere = oai_settings.chat_completion_source == chat_completion_sources.COHERE;
+    const isPerplexity = oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY;
     const isTextCompletion = (isOAI && textCompletionModels.includes(oai_settings.openai_model)) || (isOpenRouter && oai_settings.openrouter_force_instruct && power_user.instruct.enabled);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
@@ -1777,6 +1783,16 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['websearch'] = oai_settings.websearch_cohere;
     }
 
+    if (isPerplexity) {
+        generate_data['top_k'] = Number(oai_settings.top_k_openai);
+        // Normalize values. 1 == disabled. 0 == is usual disabled state in OpenAI.
+        generate_data['frequency_penalty'] = Math.max(0, Number(oai_settings.freq_pen_openai)) + 1;
+        generate_data['presence_penalty'] = Number(oai_settings.pres_pen_openai);
+
+        // YEAH BRO JUST USE OPENAI CLIENT BRO
+        delete generate_data['stop'];
+    }
+
     if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere) && oai_settings.seed >= 0) {
         generate_data['seed'] = oai_settings.seed;
     }
@@ -1847,7 +1863,7 @@ function getStreamingReply(data) {
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {
-        return data.choices[0]?.delta?.content || data.choices[0]?.message?.content || data.choices[0]?.text || '';
+        return data.choices[0]?.delta?.content ?? data.choices[0]?.message?.content ?? data.choices[0]?.text ?? '';
     }
 }
 
@@ -2643,6 +2659,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.ai21_model = settings.ai21_model ?? default_settings.ai21_model;
     oai_settings.mistralai_model = settings.mistralai_model ?? default_settings.mistralai_model;
     oai_settings.cohere_model = settings.cohere_model ?? default_settings.cohere_model;
+    oai_settings.perplexity_model = settings.perplexity_model ?? default_settings.perplexity_model;
     oai_settings.custom_model = settings.custom_model ?? default_settings.custom_model;
     oai_settings.custom_url = settings.custom_url ?? default_settings.custom_url;
     oai_settings.custom_include_body = settings.custom_include_body ?? default_settings.custom_include_body;
@@ -2708,6 +2725,8 @@ function loadOpenAISettings(data, settings) {
     $(`#model_mistralai_select option[value="${oai_settings.mistralai_model}"`).attr('selected', true);
     $('#model_cohere_select').val(oai_settings.cohere_model);
     $(`#model_cohere_select option[value="${oai_settings.cohere_model}"`).attr('selected', true);
+    $('#model_perplexity_select').val(oai_settings.perplexity_model);
+    $(`#model_perplexity_select option[value="${oai_settings.perplexity_model}"`).attr('selected', true);
     $('#custom_model_id').val(oai_settings.custom_model);
     $('#custom_api_url_text').val(oai_settings.custom_url);
     $('#openai_max_context').val(oai_settings.openai_max_context);
@@ -2857,7 +2876,7 @@ async function getStatusOpen() {
         return resultCheckStatus();
     }
 
-    const noValidateSources = [chat_completion_sources.SCALE, chat_completion_sources.CLAUDE, chat_completion_sources.AI21, chat_completion_sources.MAKERSUITE];
+    const noValidateSources = [chat_completion_sources.SCALE, chat_completion_sources.CLAUDE, chat_completion_sources.AI21, chat_completion_sources.MAKERSUITE, chat_completion_sources.PERPLEXITY];
     if (noValidateSources.includes(oai_settings.chat_completion_source)) {
         let status = 'Unable to verify key; press "Test Message" to validate.';
         setOnlineStatus(status);
@@ -2948,6 +2967,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         ai21_model: settings.ai21_model,
         mistralai_model: settings.mistralai_model,
         cohere_model: settings.cohere_model,
+        perplexity_model: settings.perplexity_model,
         custom_model: settings.custom_model,
         custom_url: settings.custom_url,
         custom_include_body: settings.custom_include_body,
@@ -3340,6 +3360,7 @@ function onSettingsPresetChange() {
         ai21_model: ['#model_ai21_select', 'ai21_model', false],
         mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
         cohere_model: ['#model_cohere_select', 'cohere_model', false],
+        perplexity_model: ['#model_perplexity_select', 'perplexity_model', false],
         custom_model: ['#custom_model_id', 'custom_model', false],
         custom_url: ['#custom_api_url_text', 'custom_url', false],
         custom_include_body: ['#custom_include_body', 'custom_include_body', false],
@@ -3563,6 +3584,11 @@ async function onModelChange() {
         oai_settings.cohere_model = value;
     }
 
+    if ($(this).is('#model_perplexity_select')) {
+        console.log('Perplexity model changed to', value);
+        oai_settings.perplexity_model = value;
+    }
+
     if (value && $(this).is('#model_custom_select')) {
         console.log('Custom model changed to', value);
         oai_settings.custom_model = value;
@@ -3704,6 +3730,28 @@ async function onModelChange() {
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.PERPLEXITY) {
+        if (oai_settings.max_context_unlocked) {
+            $('#openai_max_context').attr('max', unlocked_max);
+        }
+        else if (['sonar-small-chat', 'sonar-medium-chat', 'codellama-70b-instruct', 'mistral-7b-instruct', 'mixtral-8x7b-instruct', 'mixtral-8x22b-instruct'].includes(oai_settings.perplexity_model)) {
+            $('#openai_max_context').attr('max', max_16k);
+        }
+        else if (['llama-3-8b-instruct', 'llama-3-70b-instruct'].includes(oai_settings.perplexity_model)) {
+            $('#openai_max_context').attr('max', max_8k);
+        }
+        else if (['sonar-small-online', 'sonar-medium-online'].includes(oai_settings.perplexity_model)) {
+            $('#openai_max_context').attr('max', 12000);
+        }
+        else {
+            $('#openai_max_context').attr('max', max_4k);
+        }
+        oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
+        $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
+        oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
+        $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
@@ -3912,6 +3960,19 @@ async function onConnectButtonClick(e) {
         }
     }
 
+    if (oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY) {
+        const api_key_perplexity = String($('#api_key_perplexity').val()).trim();
+
+        if (api_key_perplexity.length) {
+            await writeSecret(SECRET_KEYS.PERPLEXITY, api_key_perplexity);
+        }
+
+        if (!secret_state[SECRET_KEYS.PERPLEXITY]) {
+            console.log('No secret key saved for Perplexity');
+            return;
+        }
+    }
+
     startStatusLoading();
     saveSettingsDebounced();
     await getStatusOpen();
@@ -3949,6 +4010,9 @@ function toggleChatCompletionForms() {
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.COHERE) {
         $('#model_cohere_select').trigger('change');
+    }
+    else if (oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY) {
+        $('#model_perplexity_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.CUSTOM) {
         $('#model_custom_select').trigger('change');
@@ -4619,6 +4683,7 @@ $(document).ready(async function () {
     $('#model_ai21_select').on('change', onModelChange);
     $('#model_mistralai_select').on('change', onModelChange);
     $('#model_cohere_select').on('change', onModelChange);
+    $('#model_perplexity_select').on('change', onModelChange);
     $('#model_custom_select').on('change', onModelChange);
     $('#settings_preset_openai').on('change', onSettingsPresetChange);
     $('#new_oai_preset').on('click', onNewPresetClick);

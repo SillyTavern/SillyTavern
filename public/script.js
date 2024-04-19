@@ -8243,9 +8243,14 @@ const CONNECT_API_MAP = {
         source: chat_completion_sources.CUSTOM,
     },
     'cohere': {
-        selected: 'cohere',
+        selected: 'openai',
         button: '#api_button_openai',
         source: chat_completion_sources.COHERE,
+    },
+    'perplexity': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.PERPLEXITY,
     },
     'infermaticai': {
         selected: 'textgenerationwebui',

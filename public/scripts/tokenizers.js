@@ -497,6 +497,15 @@ export function getTokenizerModel() {
         return oai_settings.custom_model;
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.PERPLEXITY)  {
+        if (oai_settings.perplexity_model.includes('llama')) {
+            return llamaTokenizer;
+        }
+        if (oai_settings.perplexity_model.includes('mistral')) {
+            return mistralTokenizer;
+        }
+    }
+
     // Default to Turbo 3.5
     return turboTokenizer;
 }
