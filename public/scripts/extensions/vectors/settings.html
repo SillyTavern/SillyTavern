@@ -10,13 +10,14 @@
                     Vectorization Source
                 </label>
                 <select id="vectors_source" class="text_pole">
-                    <option value="transformers">Local (Transformers)</option>
+                    <option value="cohere">Cohere</option>
                     <option value="extras">Extras</option>
-                    <option value="openai">OpenAI</option>
                     <option value="palm">Google MakerSuite (PaLM)</option>
+                    <option value="transformers">Local (Transformers)</option>
                     <option value="mistral">MistralAI</option>
-                    <option value="togetherai">TogetherAI</option>
                     <option value="nomicai">NomicAI</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="togetherai">TogetherAI</option>
                 </select>
             </div>
             <div class="flex-container flexFlowColumn" id="openai_vectorsModel">
@@ -27,6 +28,20 @@
                     <option value="text-embedding-ada-002">text-embedding-ada-002</option>
                     <option value="text-embedding-3-small">text-embedding-3-small</option>
                     <option value="text-embedding-3-large">text-embedding-3-large</option>
+                </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="cohere_vectorsModel">
+                <label for="vectors_cohere_model">
+                    Vectorization Model
+                </label>
+                <select id="vectors_cohere_model" class="text_pole">
+                    <option value="embed-english-v3.0">embed-english-v3.0</option>
+                    <option value="embed-multilingual-v3.0">embed-multilingual-v3.0</option>
+                    <option value="embed-english-light-v3.0">embed-english-light-v3.0</option>
+                    <option value="embed-multilingual-light-v3.0">embed-multilingual-light-v3.0</option>
+                    <option value="embed-english-v2.0">embed-english-v2.0</option>
+                    <option value="embed-english-light-v2.0">embed-english-light-v2.0</option>
+                    <option value="embed-multilingual-v2.0">embed-multilingual-v2.0</option>
                 </select>
             </div>
             <div class="flex-container flexFlowColumn" id="together_vectorsModel">
@@ -165,6 +180,14 @@
                                 <option value="2">Assistant</option>
                             </select>
                         </label>
+                    </div>
+                </div>
+                <div class="flex-container">
+                    <div id="vectors_files_vectorize_all" class="menu_button menu_button_icon" title="Vectorize all files in the Data Bank and current chat.">
+                        Vectorize All
+                    </div>
+                    <div id="vectors_files_purge" class="menu_button menu_button_icon" title="Purge all file vectors in the Data Bank and current chat.">
+                        Purge Vectors
                     </div>
                 </div>
             </div>

@@ -35,6 +35,7 @@ const settings = {
     include_wi: false,
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
+    cohere_model: 'embed-english-v3.0',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -67,6 +68,15 @@ const settings = {
 };
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
+
+/**
+ * Gets the Collection ID for a file embedded in the chat.
+ * @param {string} fileUrl URL of the file
+ * @returns {string} Collection ID
+ */
+function getFileCollectionId(fileUrl) {
+    return `file_${getStringHash(fileUrl)}`;
+}
 
 async function onVectorizeAllClick() {
     try {
@@ -308,7 +318,7 @@ async function processFiles(chat) {
         const dataBankCollectionIds = [];
 
         for (const file of dataBank) {
-            const collectionId = `file_${getStringHash(file.url)}`;
+            const collectionId = getFileCollectionId(file.url);
             const hashesInCollection = await getSavedHashes(collectionId);
             dataBankCollectionIds.push(collectionId);
 
@@ -354,7 +364,7 @@ async function processFiles(chat) {
 
             const fileName = message.extra.file.name;
             const fileUrl = message.extra.file.url;
-            const collectionId = `file_${getStringHash(fileUrl)}`;
+            const collectionId = getFileCollectionId(fileUrl);
             const hashesInCollection = await getSavedHashes(collectionId);
 
             // File is already in the collection
@@ -598,6 +608,9 @@ function getVectorHeaders() {
         case 'openai':
             addOpenAiHeaders(headers);
             break;
+        case 'cohere':
+            addCohereHeaders(headers);
+            break;
         default:
             break;
     }
@@ -637,6 +650,16 @@ function addOpenAiHeaders(headers) {
 }
 
 /**
+ * Add headers for the Cohere API source.
+ * @param {object} headers Header object
+ */
+function addCohereHeaders(headers) {
+    Object.assign(headers, {
+        'X-Cohere-Model': extension_settings.vectors.cohere_model,
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
@@ -647,7 +670,8 @@ async function insertVectorItems(collectionId, items) {
         settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
         settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
         settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
-        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI]) {
+        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
+        settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
         throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
     }
 
@@ -760,7 +784,7 @@ async function purgeFileVectorIndex(fileUrl) {
         }
 
         console.log(`Vectors: Purging file vector index for ${fileUrl}`);
-        const collectionId = `file_${getStringHash(fileUrl)}`;
+        const collectionId = getFileCollectionId(fileUrl);
 
         const response = await fetch('/api/vector/purge', {
             method: 'POST',
@@ -816,6 +840,7 @@ function toggleSettings() {
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
+    $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
 }
 
@@ -857,6 +882,42 @@ async function onViewStatsClick() {
         }
     }
 
+}
+
+async function onVectorizeAllFilesClick() {
+    try {
+        const dataBank = getDataBankAttachments();
+        const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
+        const allFiles = [...dataBank, ...chatAttachments];
+
+        for (const file of allFiles) {
+            const text = await getFileAttachment(file.url);
+            const collectionId = getFileCollectionId(file.url);
+            await vectorizeFile(text, file.name, collectionId, settings.chunk_size);
+        }
+
+        toastr.success('All files vectorized', 'Vectorization successful');
+    } catch (error) {
+        console.error('Vectors: Failed to vectorize all files', error);
+        toastr.error('Failed to vectorize all files', 'Vectorization failed');
+    }
+}
+
+async function onPurgeFilesClick() {
+    try {
+        const dataBank = getDataBankAttachments();
+        const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
+        const allFiles = [...dataBank, ...chatAttachments];
+
+        for (const file of allFiles) {
+            await purgeFileVectorIndex(file.url);
+        }
+
+        toastr.success('All files purged', 'Purge successful');
+    } catch (error) {
+        console.error('Vectors: Failed to purge all files', error);
+        toastr.error('Failed to purge all files', 'Purge failed');
+    }
 }
 
 jQuery(async () => {
@@ -913,6 +974,12 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
+    $('#vectors_cohere_model').val(settings.cohere_model).on('change', () => {
+        $('#vectors_modelWarning').show();
+        settings.cohere_model = String($('#vectors_cohere_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
     $('#vectors_template').val(settings.template).on('input', () => {
         settings.template = String($('#vectors_template').val());
         Object.assign(extension_settings.vectors, settings);
@@ -947,6 +1014,8 @@ jQuery(async () => {
     $('#vectors_vectorize_all').on('click', onVectorizeAllClick);
     $('#vectors_purge').on('click', onPurgeClick);
     $('#vectors_view_stats').on('click', onViewStatsClick);
+    $('#vectors_files_vectorize_all').on('click', onVectorizeAllFilesClick);
+    $('#vectors_files_purge').on('click', onPurgeFilesClick);
 
     $('#vectors_size_threshold').val(settings.size_threshold).on('input', () => {
         settings.size_threshold = Number($('#vectors_size_threshold').val());
