@@ -19,11 +19,9 @@ const MAX_TIMESTAMP = new Date('9999-12-31T23:59:59.999Z').getTime();
 const MIN_DATE = new Date(MIN_TIMESTAMP);
 const MAX_DATE = new Date(MAX_TIMESTAMP);
 const CURRENT_STATS_VERSION = '1.1';
-const EMPTY_GLOBAL_STATS = { _calculated: MIN_DATE, version: CURRENT_STATS_VERSION, stats: {} };
 
-
-/** @type {StatsCollection} The collection of all stats, accessable via their key */
-let globalStats = { ...EMPTY_GLOBAL_STATS };
+/** @type {StatsCollection} The collection of all stats, accessable via their key - gets set/built on init */
+let globalStats;
 let lastSaveDate = MIN_DATE;
 
 /**
@@ -48,8 +46,6 @@ async function init() {
             throw err; // Rethrow the error if it's something we didn't expect
         }
     }
-    // Save stats every 5 minutes
-    setInterval(saveStatsToFile, 5 * 60 * 1000);
 }
 
 /**
@@ -71,8 +67,10 @@ async function onExit() {
 /**
  * @typedef {object} StatsCollection - An object holding all character stats, and some additional main stats
  * @property {string} version - Version number indication the version of this stats data - so it can be automatically migrated/recalculated if any of the calculation logic changes
+ * @property {CharacterStats} global - global characer stats
  * @property {{[characterKey: string]: CharacterStats}} stats - All the dynamically saved stats objecs
  * @property {Date} _calculated -
+ * @property {Date} _recalcualted -
  */
 
 /**
@@ -252,38 +250,58 @@ class AggregateStat {
 async function recreateStats() {
     console.log('Collecting and creating stats...');
 
+    /** @type {StatsCollection}  */
+    const EMPTY_GLOBAL_STATS = { _calculated: MIN_DATE, _recalcualted: MIN_DATE, version: CURRENT_STATS_VERSION, global: newCharacterStats('global', 'Global'), stats: {} };
+
     // Resetting global stats first
-    globalStats = { ...EMPTY_GLOBAL_STATS };
+    globalStats = { ...EMPTY_GLOBAL_STATS, };
 
     // Load all char files to process their chat folders
     const files = await readdir(DIRECTORIES.characters);
     const charFiles = files.filter((file) => file.endsWith('.png'));
     let processingPromises = charFiles.map((charFileName, _) =>
-        recreateCharacterStats(charFileName),
+        recreateCharacterStats(charFileName.replace('.png', '')),
     );
     await Promise.all(processingPromises);
+
+    // Remember the date at which those stats were recalculated from the ground up
+    globalStats._recalcualted = now();
 
     await saveStatsToFile();
     console.debug('Stats (re)created and saved to file.');
 
     return globalStats;
-
-    /** @param  {string} characterKey @return {CharacterStats?} */
-    function recreateCharacterStats(characterKey) {
-        const charName = characterKey.replace('.png', '');
-        const charChatsDir = path.join(DIRECTORIES.chats, charName);
-        if (!fs.existsSync(charChatsDir)) {
-            return null;
-        }
-
-        const chatFiles = fs.readdirSync(charChatsDir);
-        chatFiles.forEach(chatName => {
-            triggerChatUpdate(characterKey, chatName);
-        });
-
-        return globalStats[characterKey];
-    };
 }
+
+/**
+ * Recreates stats for a specific character.
+ * Should be used very carefully, as it still has to recalculate most of the global stats.
+ *
+ * @param  {string} characterKey
+ * @return {CharacterStats?}
+ */
+function recreateCharacterStats(characterKey) {
+    // If we are replacing on a existing global stats, we need to "remove" all old stats
+    if (globalStats.stats[characterKey]) {
+        for (const chatStats of globalStats.stats[characterKey].chatsStats) {
+            removeChatFromCharStats(globalStats.global, chatStats);
+        }
+        delete globalStats.stats[characterKey];
+    }
+
+    // Then load chats dir for this character to process
+    const charChatsDir = path.join(DIRECTORIES.chats, characterKey);
+    if (!fs.existsSync(charChatsDir)) {
+        return null;
+    }
+
+    const chatFiles = fs.readdirSync(charChatsDir);
+    chatFiles.forEach(chatName => {
+        triggerChatUpdate(characterKey, chatName);
+    });
+
+    return globalStats[characterKey];
+};
 
 
 /**
@@ -324,6 +342,11 @@ function triggerChatUpdate(characterKey, chatName) {
     // Update char stats with the processed chat stats
     updateCharStatsWithChat(globalStats.stats[characterKey], chatStats);
 
+    // Update the global stats with this chat
+    updateCharStatsWithChat(globalStats.global, chatStats);
+
+    chatStats._calculated = now();
+    globalStats._calculated = now();
     return chatStats;
 }
 
@@ -338,6 +361,8 @@ function triggerChatUpdate(characterKey, chatName) {
 function updateCharStatsWithChat(stats, chatStats) {
     // Check if we need to remove this chat's previous data first
     removeChatFromCharStats(stats, chatStats);
+
+    stats.chatsStats.push(chatStats);
 
     stats.chats++;
     stats.chatSize += chatStats.chatSize;
@@ -372,6 +397,7 @@ function updateCharStatsWithChat(stats, chatStats) {
 
     Object.entries(chatStats.genModels).forEach(([model, data]) => addModelUsage(stats.genModels, model, data.tokens, data.count));
 
+    stats._calculated = now();
     console.debug(`Successfully updated ${stats.name}'s stats with chat ${chatStats.chatName}`);
     return true;
 }
@@ -495,7 +521,6 @@ function processChat(chatName, lines, { chatSize = 0 } = {}) {
     // Set up the final values for chat
     stats.chattingTime = calculateDuration(stats.createDate, stats.lastInteractionDate);
 
-    stats._calculated = now();
     return stats;
 }
 
@@ -702,18 +727,44 @@ function getGlobalStats() {
 
 const router = express.Router();
 
+
 /**
- * Handle a POST request to get the stats object
+ * @typedef {object} StatsRequestBody
+ * @property {boolean?} [global] - Whether the global stats are requested. If true, all other arguments are ignored
+ * @property {string?} [characterKey] - The character key for the character to request stats from
+ * @property {string?} [chatName] - The name of the chat file
+ */
+
+/**
+ * Handle a POST request to get the stats fromm
  *
- * This function returns the stats object that was calculated by the `calculateStats` function.
- *
+ * This function returns the stats object that was calculated and updated based on the chats.
+ * Depending on the given request filter, it will either return global stats, character stats or chat stats.
  *
  * @param {Object} request - The HTTP request object.
  * @param {Object} response - The HTTP response object.
  * @returns {void}
  */
 router.post('/get', jsonParser, function (request, response) {
-    response.send(JSON.stringify(getGlobalStats()));
+    const send = (data) => response.send(JSON.stringify(data ?? {}));
+    /** @type {StatsRequestBody} */
+    const body = request.body;
+
+    if (!!body.global) {
+        return send(globalStats.global);
+    }
+
+    const characterKey = String(body.characterKey);
+    const chatName = String(body.characterKey);
+    if (characterKey && chatName) {
+        return send(globalStats.stats[characterKey]?.chatsStats.find(x => x.chatName == chatName));
+    }
+    if (characterKey) {
+        return send(globalStats.stats[characterKey]);
+    }
+
+    // If no specific filter was requested, we send all stats back
+    return send(globalStats);
 });
 
 /**
@@ -725,29 +776,22 @@ router.post('/get', jsonParser, function (request, response) {
  * @param {Object} response - Express response object.
  */
 router.post('/recreate', jsonParser, async function (request, response) {
+    const send = (data) => response.send(JSON.stringify(data ?? {}));
+    /** @type {StatsRequestBody} */
+    const body = request.body;
+
     try {
+        const characterKey = String(body.characterKey);
+        if (characterKey) {
+            recreateCharacterStats(characterKey);
+            return send(globalStats.stats[characterKey]);
+        }
         await recreateStats();
-        return response.sendStatus(200);
+        return send(globalStats);
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
-});
-
-/**
- * Handle a POST request to update the stats object
- *
- * This function updates the stats object with the data from the request body.
- *
- * @param {Object} request - The HTTP request object.
- * @param {Object} response - The HTTP response object.
- * @returns {void}
- *
-*/
-router.post('/update', jsonParser, function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-    setCharStats(request.body);
-    return response.sendStatus(200);
 });
 
 module.exports = {

@@ -663,7 +663,7 @@ function calculateDuration(startTime, endTime) {
     const startDate = startTime instanceof Date ? startTime : new Date(startTime);
     const endDate = endTime instanceof Date ? endTime : new Date(endTime);
 
-    return startDate > endDate ? 0 : Math.max(endDate.getDate() - startDate.getDate(), 0);
+    return startDate > endDate ? 0 : Math.max(endDate.getTime() - startDate.getTime(), 0);
 }
 
 /** @param {string} timestamp @returns {Date|null} */
