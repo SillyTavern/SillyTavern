@@ -191,6 +191,7 @@ const CHAT_COMPLETION_SOURCES = {
     MISTRALAI: 'mistralai',
     CUSTOM: 'custom',
     COHERE: 'cohere',
+    PERPLEXITY: 'perplexity',
 };
 
 const UPLOADS_PATH = './uploads';

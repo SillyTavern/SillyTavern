@@ -3524,9 +3524,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         } else {
             break;
         }
-
-        // Prevent UI thread lock on tokenization
-        await delay(1);
     }
 
     for (let i = 0; i < chat2.length; i++) {
@@ -3554,9 +3551,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         } else {
             break;
         }
-
-        // Prevent UI thread lock on tokenization
-        await delay(1);
     }
 
     // Add user alignment message if last message is not a user message
@@ -3599,7 +3593,6 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             } else {
                 break;
             }
-            await delay(1);
         }
     }
 
@@ -5664,7 +5657,7 @@ async function getChat() {
             contentType: 'application/json',
         });
         if (response[0] !== undefined) {
-            chat.push(...response);
+            chat.splice(0, chat.length, ...response);
             chat_create_date = chat[0]['create_date'];
             chat_metadata = chat[0]['chat_metadata'] ?? {};
 
@@ -8215,9 +8208,14 @@ const CONNECT_API_MAP = {
         source: chat_completion_sources.CUSTOM,
     },
     'cohere': {
-        selected: 'cohere',
+        selected: 'openai',
         button: '#api_button_openai',
         source: chat_completion_sources.COHERE,
+    },
+    'perplexity': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.PERPLEXITY,
     },
     'infermaticai': {
         selected: 'textgenerationwebui',

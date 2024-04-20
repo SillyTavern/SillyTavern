@@ -893,6 +893,13 @@ async function onVectorizeAllFilesClick() {
         for (const file of allFiles) {
             const text = await getFileAttachment(file.url);
             const collectionId = getFileCollectionId(file.url);
+            const hashes = await getSavedHashes(collectionId);
+
+            if (hashes.length) {
+                console.log(`Vectors: File ${file.name} is already vectorized`);
+                continue;
+            }
+
             await vectorizeFile(text, file.name, collectionId, settings.chunk_size);
         }
 

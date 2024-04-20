@@ -194,7 +194,8 @@
         "encode_tags": false,
         "enableLabMode": false,
         "enableZenSliders": false,
-        "ui_mode": 1
+        "ui_mode": 1,
+        "forbid_external_media": true
     },
     "extension_settings": {
         "apiUrl": "http://localhost:5100",

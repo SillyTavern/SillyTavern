@@ -14,6 +14,7 @@ const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
 const API_MISTRAL = 'https://api.mistral.ai/v1';
 const API_COHERE = 'https://api.cohere.ai/v1';
+const API_PERPLEXITY = 'https://api.perplexity.ai';
 
 /**
  * Applies a post-processing step to the generated messages.
@@ -439,7 +440,7 @@ async function sendAI21Request(request, response) {
             } else {
                 console.log(r.completions[0].data.text);
             }
-            const reply = { choices: [{ 'message': { 'content': r.completions[0].data.text } }] };
+            const reply = { choices: [{ 'message': { 'content': r.completions?.[0]?.data?.text } }] };
             return response.send(reply);
         })
         .catch(err => {
@@ -896,6 +897,12 @@ router.post('/generate', jsonParser, function (request, response) {
                 request.body.char_name,
                 request.body.user_name);
         }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PERPLEXITY) {
+        apiUrl = API_PERPLEXITY;
+        apiKey = readSecret(SECRET_KEYS.PERPLEXITY);
+        headers = {};
+        bodyParams = {};
+        request.body.messages = postProcessPrompt(request.body.messages, 'claude', request.body.char_name, request.body.user_name);
     } else {
         console.log('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });

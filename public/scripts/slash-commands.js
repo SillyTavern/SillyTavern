@@ -69,10 +69,26 @@ class SlashCommandParser {
     ];
 
     constructor() {
+        /**
+         * @type {Record<string, SlashCommand>} - Slash commands registered in the parser
+         */
         this.commands = {};
+        /**
+         * @type {Record<string, string>} - Help strings for each command
+         */
         this.helpStrings = {};
     }
 
+    /**
+     * Adds a slash command to the parser.
+     * @param {string} command - The command name
+     * @param {function} callback - The callback function to execute
+     * @param {string[]} aliases - The command aliases
+     * @param {string} helpString - The help string for the command
+     * @param {boolean} [interruptsGeneration] - Whether the command interrupts message generation
+     * @param {boolean} [purgeFromMessage] - Whether the command should be purged from the message
+     * @returns {void}
+     */
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
         const fnObj = { callback, helpString, interruptsGeneration, purgeFromMessage };
 
@@ -104,7 +120,7 @@ class SlashCommandParser {
     /**
      * Parses a slash command to extract the command name, the (named) arguments and the remaining text
      * @param {string} text - Slash command text
-     * @returns {{command: string, args: object, value: string}} - The parsed command, its arguments and the remaining text
+     * @returns {{command: SlashCommand, args: object, value: string, commandName: string}} - The parsed command, its arguments and the remaining text
      */
     parse(text) {
         // Parses a command even when spaces are present in arguments
@@ -124,6 +140,20 @@ class SlashCommandParser {
             command = match[1];
             remainingText = match[2];
             console.debug('command:' + command);
+        }
+
+        if (SlashCommandParser.COMMENT_KEYWORDS.includes(command)) {
+            return {
+                commandName: command,
+                command: {
+                    callback: () => {},
+                    helpString: '',
+                    interruptsGeneration: false,
+                    purgeFromMessage: true,
+                },
+                args: {},
+                value: '',
+            };
         }
 
         // parse the rest of the string to extract named arguments, the remainder is the "unnamedArg" which is usually text, like the prompt to send
@@ -184,7 +214,7 @@ class SlashCommandParser {
 
         // your weird complex command is now transformed into a juicy tiny text or something useful :)
         if (this.commands[command]) {
-            return { command: this.commands[command], args: argObj, value: unnamedArg };
+            return { command: this.commands[command], args: argObj, value: unnamedArg, commandName: command };
         }
 
         return null;
@@ -1315,7 +1345,7 @@ export async function generateSystemMessage(_, prompt) {
 
     // Generate and regex the output if applicable
     toastr.info('Please wait', 'Generating...');
-    let message = await generateQuietPrompt(prompt);
+    let message = await generateQuietPrompt(prompt, false, false);
     message = getRegexedString(message, regex_placement.SLASH_COMMAND);
 
     sendNarratorMessage(_, message);
@@ -1507,7 +1537,7 @@ export async function promptQuietForLoudResponse(who, text) {
 
     //text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
 
-    let reply = await generateQuietPrompt(text, true);
+    let reply = await generateQuietPrompt(text, true, false);
     text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
 
     const message = {
@@ -1661,6 +1691,7 @@ function modelCallback(_, model) {
         { id: 'model_mistralai_select', api: 'openai', type: chat_completion_sources.MISTRALAI },
         { id: 'model_custom_select', api: 'openai', type: chat_completion_sources.CUSTOM },
         { id: 'model_cohere_select', api: 'openai', type: chat_completion_sources.COHERE },
+        { id: 'model_perplexity_select', api: 'openai', type: chat_completion_sources.PERPLEXITY },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
