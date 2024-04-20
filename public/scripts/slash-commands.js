@@ -2103,6 +2103,11 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                 return hide();
             }
             // otherwise add "no match" notice
+            const option = new SlashCommandAutoCompleteOption(
+                OPTION_TYPE.BLANK,
+                null,
+                '',
+            );
             switch (parserResult?.type) {
                 case NAME_RESULT_TYPE.CLOSURE: {
                     const li = document.createElement('li'); {
@@ -2110,24 +2115,16 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                             `No matching variables in scope and no matching Quick Replies for "${slashCommand}"`
                             : 'No variables in scope and no Quick Replies found.';
                     }
-                    result.push({
-                        name: '',
-                        value: null,
-                        score: null,
-                        li,
-                    });
+                    option.dom = li;
+                    result.push(option);
                     break;
                 }
                 case NAME_RESULT_TYPE.COMMAND: {
                     const li = document.createElement('li'); {
                         li.textContent = `No matching commands for "/${slashCommand}"`;
                     }
-                    result.push({
-                        name: '',
-                        value: null,
-                        score: null,
-                        li,
-                    });
+                    option.dom = li;
+                    result.push(option);
                     break;
                 }
             }
