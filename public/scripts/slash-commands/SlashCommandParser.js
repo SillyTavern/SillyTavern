@@ -50,6 +50,18 @@ export class SlashCommandParser {
 
 
     constructor() {
+        // add dummy commands for help strings / autocomplete
+        this.addDummyCommand('parser-flag',
+            [],
+            `<span class="monospace">(${Object.keys(PARSER_FLAG).join('|')}) (on|off)</span> – Set a parser flag.`,
+        );
+        this.addDummyCommand('/',
+            ['#'],
+            '<span class="monospace">(comment)</span> – Write a comment.',
+        );
+        this.registerLanguage();
+    }
+    registerLanguage() {
         // NUMBER mode is copied from highlightjs's own implementation for JavaScript
         // https://tc39.es/ecma262/#sec-literals-numeric-literals
         const decimalDigits = '[0-9](_?[0-9])*';
@@ -150,13 +162,19 @@ export class SlashCommandParser {
     }
 
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
-        if (['/', '#'].includes(command[0])) {
-            throw new Error(`Illegal Name. Slash command name cannot begin with "${command[0]}".`);
+        const reserved = ['/', '#', ':', 'parser-flag'];
+        for (const start of reserved) {
+            if (command.toLowerCase().startsWith(start) || (aliases ?? []).find(a=>a.toLowerCase().startsWith(reserved))) {
+                throw new Error(`Illegal Name. Slash command name cannot begin with "${start}".`);
+            }
         }
+        this.addCommandUnsafe(command, callback, aliases, helpString, interruptsGeneration, purgeFromMessage);
+    }
+    addCommandUnsafe(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
         const fnObj = Object.assign(new SlashCommand(), { name:command, callback, helpString, interruptsGeneration, purgeFromMessage, aliases });
 
         if ([command, ...aliases].some(x => Object.hasOwn(this.commands, x))) {
-            console.trace('WARN: Duplicate slash command registered!');
+            console.trace('WARN: Duplicate slash command registered!', [command, ...aliases]);
         }
 
         this.commands[command] = fnObj;
@@ -166,6 +184,9 @@ export class SlashCommandParser {
                 this.commands[alias] = fnObj;
             });
         }
+    }
+    addDummyCommand(command, aliases, helpString) {
+        this.addCommandUnsafe(command, null, aliases, helpString, true, true);
     }
 
     getHelpString() {
