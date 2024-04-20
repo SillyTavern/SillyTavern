@@ -93,8 +93,8 @@ class WebScraper {
      * Check if the scraper is available.
      * @returns {Promise<boolean>}
      */
-    isAvailable() {
-        return Promise.resolve(true);
+    async isAvailable() {
+        return true;
     }
 
     /**
@@ -167,8 +167,8 @@ class FileScraper {
      * Check if the scraper is available.
      * @returns {Promise<boolean>}
      */
-    isAvailable() {
-        return Promise.resolve(true);
+    async isAvailable() {
+        return true;
     }
 
     /**
@@ -199,6 +199,10 @@ class FandomScraper {
         this.iconClass = 'fa-solid fa-fire';
     }
 
+    /**
+     * Check if the scraper is available.
+     * @returns {Promise<boolean>}
+     */
     async isAvailable() {
         try {
             const result = await fetch('/api/plugins/fandom/probe', {
@@ -289,6 +293,77 @@ class FandomScraper {
     }
 }
 
+/**
+ * Scrape transcript from a YouTube video.
+ * @implements {Scraper}
+ */
+class YouTubeScraper {
+    constructor() {
+        this.id = 'youtube';
+        this.name = 'YouTube';
+        this.description = 'Download a transcript from a YouTube video.';
+        this.iconClass = 'fa-solid fa-closed-captioning';
+    }
+
+    /**
+     * Check if the scraper is available.
+     * @returns {Promise<boolean>}
+     */
+    async isAvailable() {
+        return true;
+    }
+
+    /**
+     * Parse the ID of a YouTube video from a URL.
+     * @param {string} url URL of the YouTube video
+     * @returns {string} ID of the YouTube video
+     */
+    parseId(url){
+        const regex = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|&v(?:i)?=))([^#&?]*).*/;
+        const match = url.match(regex);
+        return (match?.length && match[1] ? match[1] : url);
+    }
+
+    /**
+     * Scrape transcript from a YouTube video.
+     * @returns {Promise<File[]>} File attachments scraped from the YouTube video
+     */
+    async scrape() {
+        let lang = '';
+        const template = $(await renderExtensionTemplateAsync('attachments', 'youtube-scrape', {}));
+        const videoUrl = await callGenericPopup(template, POPUP_TYPE.INPUT, '', { wide: false, large: false, okButton: 'Scrape', cancelButton: 'Cancel', rows: 2 });
+
+        template.find('input[name="youtubeLanguageCode"]').on('input', function () {
+            lang = String($(this).val()).trim();
+        });
+
+        if (!videoUrl) {
+            return;
+        }
+
+        const id = this.parseId(String(videoUrl).trim());
+        const toast = toastr.info('Working, please wait...');
+
+        const result = await fetch('/api/serpapi/transcript', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ id, lang }),
+        });
+
+        if (!result.ok) {
+            const error = await result.text();
+            throw new Error(error);
+        }
+
+        const transcript = await result.text();
+        toastr.clear(toast);
+
+        const file = new File([transcript], `YouTube - ${id} - ${Date.now()}.txt`, { type: 'text/plain' });
+        return [file];
+    }
+}
+
 ScraperManager.registerDataBankScraper(new FileScraper());
 ScraperManager.registerDataBankScraper(new WebScraper());
 ScraperManager.registerDataBankScraper(new FandomScraper());
+ScraperManager.registerDataBankScraper(new YouTubeScraper());
