@@ -932,6 +932,24 @@ export function getDataBankAttachments() {
     return [...globalAttachments, ...chatAttachments, ...characterAttachments];
 }
 
+/**
+ * Gets all attachments for a specific source.
+ * @param {string} source Attachment source
+ * @returns {FileAttachment[]} List of attachments
+ */
+export function getDataBankAttachmentsForSource(source) {
+    ensureAttachmentsExist();
+
+    switch (source) {
+        case ATTACHMENT_SOURCE.GLOBAL:
+            return extension_settings.attachments ?? [];
+        case ATTACHMENT_SOURCE.CHAT:
+            return chat_metadata.attachments ?? [];
+        case ATTACHMENT_SOURCE.CHARACTER:
+            return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+    }
+}
+
 jQuery(function () {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');
