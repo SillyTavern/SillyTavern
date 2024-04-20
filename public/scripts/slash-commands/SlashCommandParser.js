@@ -1,3 +1,4 @@
+import { power_user } from '../power-user.js';
 import { isTrueBoolean, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { OPTION_TYPE, SlashCommandAutoCompleteOption } from './SlashCommandAutoCompleteOption.js';
@@ -384,10 +385,8 @@ export class SlashCommandParser {
 
     parse(text, verifyCommandNames = true, flags = null) {
         this.verifyCommandNames = verifyCommandNames;
-        if (flags) {
-            for (const key of Object.keys(PARSER_FLAG)) {
-                this.flags[PARSER_FLAG[key]] = flags[PARSER_FLAG[key]] ?? false;
-            }
+        for (const key of Object.keys(PARSER_FLAG)) {
+            this.flags[PARSER_FLAG[key]] = flags?.[PARSER_FLAG[key]] ?? power_user.stscript.parser.flags[PARSER_FLAG[key]] ?? false;
         }
         this.text = `{:${text}:}`;
         this.keptText = '';

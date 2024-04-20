@@ -41,6 +41,7 @@ import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
 import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { PARSER_FLAG } from './slash-commands/SlashCommandParser.js';
 
 export {
     loadPowerUserSettings,
@@ -253,6 +254,10 @@ let power_user = {
     stscript: {
         matching: 'fuzzy',
         autocomplete_style: 'theme',
+        parser: {
+            /**@type {Object.<PARSER_FLAG,boolean>} */
+            flags: {},
+        },
     },
     restore_user_input: true,
     reduced_motion: false,
@@ -1411,9 +1416,18 @@ function getExampleMessagesBehavior() {
 }
 
 function loadPowerUserSettings(settings, data) {
+    const defaultStscript = JSON.parse(JSON.stringify(power_user.stscript));
     // Load from settings.json
     if (settings.power_user !== undefined) {
         Object.assign(power_user, settings.power_user);
+    }
+
+    if (power_user.stscript === undefined) {
+        power_user.stscript = defaultStscript;
+    } else if (power_user.stscript.parser === undefined) {
+        power_user.stscript.parser = defaultStscript.parser;
+    } else if (power_user.stscript.parser.flags === undefined) {
+        power_user.stscript.parser.flags = defaultStscript.parser.flags;
     }
 
     if (data.themes !== undefined) {
@@ -1556,6 +1570,8 @@ function loadPowerUserSettings(settings, data) {
     $('#aux_field').val(power_user.aux_field);
     $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
     $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete_style ?? 'theme');
+    $('#stscript_parser_flag_strict_escaping').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] ?? false);
+    $('#stscript_parser_flag_replace_getvar').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] ?? false);
     $('#restore_user_input').prop('checked', power_user.restore_user_input);
 
     $('#chat_truncation').val(power_user.chat_truncation);
@@ -3513,6 +3529,18 @@ $(document).ready(() => {
     $('#stscript_autocomplete_style').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.stscript.autocomplete_style = String(value);
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_parser_flag_strict_escaping').on('click', function () {
+        const value = $(this).prop('checked');
+        power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] = value;
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_parser_flag_replace_getvar').on('click', function () {
+        const value = $(this).prop('checked');
+        power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] = value;
         saveSettingsDebounced();
     });
 
