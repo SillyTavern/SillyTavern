@@ -1,4 +1,4 @@
-import { isTrueBoolean } from '../utils.js';
+import { isTrueBoolean, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { OPTION_TYPE, SlashCommandAutoCompleteOption } from './SlashCommandAutoCompleteOption.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
@@ -12,6 +12,7 @@ import { SlashCommandScope } from './SlashCommandScope.js';
 /**@enum {Number}*/
 export const PARSER_FLAG = {
     'STRICT_ESCAPING': 1,
+    'REPLACE_GETVAR': 2,
 };
 
 export class SlashCommandParser {
@@ -24,6 +25,7 @@ export class SlashCommandParser {
     /**@type {string}*/ keptText;
     /**@type {number}*/ index;
     /**@type {SlashCommandScope}*/ scope;
+    /**@type {SlashCommandClosure}*/ closure;
 
     /**@type {Object.<PARSER_FLAG,boolean>}*/ flags = {};
 
@@ -346,6 +348,39 @@ export class SlashCommandParser {
         }
     }
 
+    replaceGetvar(value) {
+        return value.replace(/{{(get(?:global)?var)::([^}]+)}}/gi, (_, cmd, name) => {
+            name = name.trim();
+            // store pipe
+            const pipeName = `_PARSER_${uuidv4()}`;
+            const storePipe = new SlashCommandExecutor(null);
+            storePipe.command = this.commands['let'];
+            storePipe.name = 'let';
+            storePipe.value = `${pipeName} {{pipe}}`;
+            this.closure.executorList.push(storePipe);
+            // getvar / getglobalvar
+            const getvar = new SlashCommandExecutor(null);
+            getvar.command = this.commands[cmd];
+            getvar.name = 'cmd';
+            getvar.value = name;
+            this.closure.executorList.push(getvar);
+            // set to temp scoped var
+            const varName = `_PARSER_${uuidv4()}`;
+            const setvar = new SlashCommandExecutor(null);
+            setvar.command = this.commands['let'];
+            setvar.name = 'let';
+            setvar.value = `${varName} {{pipe}}`;
+            this.closure.executorList.push(setvar);
+            // return pipe
+            const returnPipe = new SlashCommandExecutor(null);
+            returnPipe.command = this.commands['return'];
+            returnPipe.name = 'return';
+            returnPipe.value = `{{var::${pipeName}}}`;
+            this.closure.executorList.push(returnPipe);
+            return `{{var::${varName}}}`;
+        });
+    }
+
 
     parse(text, verifyCommandNames = true, flags = null) {
         this.verifyCommandNames = verifyCommandNames;
@@ -380,6 +415,7 @@ export class SlashCommandParser {
         this.take(2); // discard opening {:
         let closure = new SlashCommandClosure(this.scope);
         this.scope = closure.scope;
+        this.closure = closure;
         this.discardWhitespace();
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
@@ -595,7 +631,11 @@ export class SlashCommandParser {
             if (listValues.length == 1) return listValues[0];
             return listValues;
         }
-        return value.trim();
+        value = value.trim();
+        if (this.flags[PARSER_FLAG.REPLACE_GETVAR]) {
+            value = this.replaceGetvar(value);
+        }
+        return value;
     }
 
     testQuotedValue() {
@@ -614,6 +654,9 @@ export class SlashCommandParser {
         let value = '';
         while (!this.testQuotedValueEnd()) value += this.take(); // take all chars until closing quote
         this.take(); // discard closing quote
+        if (this.flags[PARSER_FLAG.REPLACE_GETVAR]) {
+            value = this.replaceGetvar(value);
+        }
         return value;
     }
 
@@ -628,6 +671,9 @@ export class SlashCommandParser {
         let value = this.take(); // take the already tested opening bracket
         while (!this.testListValueEnd()) value += this.take(); // take all chars until closing bracket
         value += this.take(); // take closing bracket
+        if (this.flags[PARSER_FLAG.REPLACE_GETVAR]) {
+            value = this.replaceGetvar(value);
+        }
         return value;
     }
 
@@ -641,6 +687,9 @@ export class SlashCommandParser {
     parseValue() {
         let value = this.jumpedEscapeSequence ? this.take() : ''; // take the first, already tested, char if it is an escaped one
         while (!this.testValueEnd()) value += this.take(); // take all chars until value end
+        if (this.flags[PARSER_FLAG.REPLACE_GETVAR]) {
+            value = this.replaceGetvar(value);
+        }
         return value;
     }
 }
