@@ -2177,7 +2177,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                 case 'Enter':
                 case 'Tab': {
                     // pick the selected item to autocomplete
-                    if (evt.ctrlKey || evt.altKey || evt.shiftKey || selectedItem.type == OPTION_TYPE.BLANK) return;
+                    if (evt.ctrlKey || evt.altKey || evt.shiftKey || selectedItem.type == OPTION_TYPE.BLANK) break;
                     evt.preventDefault();
                     evt.stopImmediatePropagation();
                     select();
