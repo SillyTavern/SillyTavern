@@ -647,7 +647,10 @@ export class SlashCommandParser {
             else return true;
         }
         if (!this.verifyCommandNames && this.testClosureEnd()) return true;
-        return this.testSymbol('"');
+        if (this.verifyCommandNames && !this.flags[PARSER_FLAG.STRICT_ESCAPING] && this.testCommandEnd()) {
+            throw new SlashCommandParserError(`Unexpected end of quoted value at position ${this.index}`, this.text, this.index);
+        }
+        return this.testSymbol('"') || (!this.flags[PARSER_FLAG.STRICT_ESCAPING] && this.testCommandEnd());
     }
     parseQuotedValue() {
         this.take(); // discard opening quote
