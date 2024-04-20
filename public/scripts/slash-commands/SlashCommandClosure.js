@@ -23,45 +23,45 @@ export class SlashCommandClosure {
         return '[Closure]';
     }
 
+    /**
+     *
+     * @param {string} text
+     * @param {SlashCommandScope} scope
+     * @returns
+     */
     substituteParams(text, scope = null) {
-        text = substituteParams(text);
         let isList = false;
         let listValues = [];
         scope = scope ?? this.scope;
-        const re = /({{pipe}})|(?:{{var::([^\s]+?)(?:::((?!}}).+))?}})/;
-        while (re.test(text)) {
-            const match = re.exec(text);
-            const before = text.slice(0, match.index);
-            const after = text.slice(match.index + match[0].length);
-            const replacer = match[1] ? scope.pipe : scope.getVariable(match[2], match[3]);
+        const macros = scope.macroList.map(it=>escapeRegex(it.key)).join('|');
+        const re = new RegExp(`({{pipe}})|(?:{{var::([^\\s]+?)(?:::((?!}}).+))?}})|(?:{{(${macros})}})`);
+        let done = '';
+        let remaining = text;
+        while (re.test(remaining)) {
+            const match = re.exec(remaining);
+            const before = substituteParams(remaining.slice(0, match.index));
+            const after = remaining.slice(match.index + match[0].length);
+            const replacer = match[1] ? scope.pipe : match[2] ? scope.getVariable(match[2], match[3]) : scope.macroList.find(it=>it.key == match[4])?.value;
             if (replacer instanceof SlashCommandClosure) {
                 isList = true;
                 if (match.index > 0) {
                     listValues.push(before);
                 }
                 listValues.push(replacer);
-                if (match.index + match[0].length + 1 < text.length) {
+                if (match.index + match[0].length + 1 < remaining.length) {
                     const rest = this.substituteParams(after, scope);
                     listValues.push(...(Array.isArray(rest) ? rest : [rest]));
                 }
                 break;
             } else {
-                text = `${before}${replacer}${after}`;
+                done = `${before}${replacer}`;
+                remaining = after;
             }
         }
-        for (const { key, value } of scope.macroList) {
-            if (isList) {
-                listValues.map((lv,idx)=>{
-                    if (lv instanceof SlashCommandClosure) {
-                        // do nothing
-                    } else {
-                        listValues[idx] = lv.replace(new RegExp(`{{${escapeRegex(key)}}}`), value);
-                    }
-                });
-            } else {
-                text = text.replace(new RegExp(`{{${escapeRegex(key)}}}`), value);
-            }
+        if (!isList) {
+            text = `${done}${substituteParams(remaining)}`;
         }
+
         if (isList) {
             if (listValues.length > 1) return listValues;
             return listValues[0];
