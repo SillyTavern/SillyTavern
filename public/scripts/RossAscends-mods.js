@@ -1202,7 +1202,7 @@ export function initRossMods() {
 
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {
             // This will eventually be to trigger quick replies
-            event.preventDefault();
+            // event.preventDefault();
             console.log('Ctrl +' + event.key + ' pressed!');
         }
     }
