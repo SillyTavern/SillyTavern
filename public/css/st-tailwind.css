@@ -86,6 +86,10 @@
     margin: 5px;
 }
 
+.marginLeft5 {
+    margin-left: 5px;
+}
+
 .overflowYAuto {
     overflow-y: auto;
 }
@@ -247,6 +251,10 @@
 
 .flexBasis48p {
     flex-basis: 48%
+}
+
+.flexBasis30p {
+    flex-basis: 30%;
 }
 
 .flex-container {
