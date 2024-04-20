@@ -842,7 +842,7 @@ async function runScraper(scraperId, target, callback) {
  * @param {string} target Target for the attachment
  * @returns
  */
-async function uploadFileAttachmentToServer(file, target) {
+export async function uploadFileAttachmentToServer(file, target) {
     const isValid = await validateFile(file);
 
     if (!isValid) {
