@@ -1,3 +1,4 @@
+import { isTrueBoolean } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { OPTION_TYPE, SlashCommandAutoCompleteOption } from './SlashCommandAutoCompleteOption.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
@@ -6,6 +7,12 @@ import { SlashCommandParserError } from './SlashCommandParserError.js';
 import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './SlashCommandParserNameResult.js';
 // eslint-disable-next-line no-unused-vars
 import { SlashCommandScope } from './SlashCommandScope.js';
+
+/**@readonly*/
+/**@enum {Number}*/
+export const PARSER_FLAG = {
+    'STRICT_ESCAPING': 1,
+};
 
 export class SlashCommandParser {
     // @ts-ignore
@@ -17,6 +24,8 @@ export class SlashCommandParser {
     /**@type {string}*/ keptText;
     /**@type {number}*/ index;
     /**@type {SlashCommandScope}*/ scope;
+
+    /**@type {Object.<PARSER_FLAG,boolean>}*/ flags = {};
 
     /**@type {boolean}*/ jumpedEscapeSequence = false;
 
@@ -253,6 +262,7 @@ export class SlashCommandParser {
      * @returns Whether the next characters are the indicated symbol.
      */
     testSymbol(sequence, offset = 0) {
+        if (!this.flags[PARSER_FLAG.STRICT_ESCAPING]) return this.testSymbolLooseyGoosey(sequence, offset);
         // /echo abc | /echo def
         // -> TOAST: abc
         // -> TOAST: def
@@ -294,9 +304,35 @@ export class SlashCommandParser {
         }
     }
 
+    testSymbolLooseyGoosey(sequence, offset = 0) {
+        const escapeOffset = this.jumpedEscapeSequence ? -1 : 0;
+        const escapes = this.text[this.index + offset + escapeOffset] == '\\' ? 1 : 0;
+        const test = (sequence instanceof RegExp) ?
+            (text) => new RegExp(`^${sequence.source}`).test(text) :
+            (text) => text.startsWith(sequence)
+        ;
+        if (test(this.text.slice(this.index + offset + escapeOffset + escapes))) {
+            // no backslashes before sequence
+            //   -> sequence found
+            if (escapes == 0) return true;
+            // otherwise
+            //   -> sequence found
+            if (!this.jumpedEscapeSequence && offset == 0) {
+                this.index++;
+                this.jumpedEscapeSequence = true;
+            }
+            return false;
+        }
+    }
 
-    parse(text, verifyCommandNames = true) {
+
+    parse(text, verifyCommandNames = true, flags = null) {
         this.verifyCommandNames = verifyCommandNames;
+        if (flags) {
+            for (const key of Object.keys(PARSER_FLAG)) {
+                this.flags[PARSER_FLAG[key]] = flags[PARSER_FLAG[key]] ?? false;
+            }
+        }
         this.text = `{:${text}:}`;
         this.keptText = '';
         this.index = 0;
@@ -331,7 +367,11 @@ export class SlashCommandParser {
             this.discardWhitespace();
         }
         while (!this.testClosureEnd()) {
-            if (this.testRunShorthand()) {
+            if (this.testComment()) {
+                this.parseComment();
+            } else if (this.testParserFlag()) {
+                this.parseParserFlag();
+            } else if (this.testRunShorthand()) {
                 const cmd = this.parseRunShorthand();
                 closure.executorList.push(cmd);
                 injectPipe = true;
@@ -364,6 +404,44 @@ export class SlashCommandParser {
         this.discardWhitespace(); // discard trailing whitespace
         this.scope = closure.scope.parent;
         return closure;
+    }
+
+    testComment() {
+        return this.testSymbol(/\/[/#]/);
+    }
+    testCommentEnd() {
+        return this.testCommandEnd();
+    }
+    parseComment() {
+        const start = this.index + 2;
+        const cmd = new SlashCommandExecutor(start);
+        this.commandIndex.push(cmd);
+        this.scopeIndex.push(this.scope.getCopy());
+        this.take(); // discard "/"
+        cmd.name = this.take(); // set second "/" or "#" as name
+        while (!this.testCommentEnd()) this.take();
+        cmd.end = this.index;
+    }
+
+    testParserFlag() {
+        return this.testSymbol('/parser-flag ');
+    }
+    testParserFlagEnd() {
+        return this.testCommandEnd();
+    }
+    parseParserFlag() {
+        const start = this.index + 1;
+        const cmd = new SlashCommandExecutor(start);
+        cmd.name = 'parser-flag';
+        cmd.value = '';
+        this.commandIndex.push(cmd);
+        this.scopeIndex.push(this.scope.getCopy());
+        this.take(13); // discard "/parser-flag "
+        const [flag, state] = this.parseUnnamedArgument()?.split(/\s+/) ?? [null, null];
+        if (Object.keys(PARSER_FLAG).includes(flag)) {
+            this.flags[PARSER_FLAG[flag]] = isTrueBoolean(state);
+        }
+        cmd.end = this.index;
     }
 
     testRunShorthand() {
@@ -402,7 +480,7 @@ export class SlashCommandParser {
     }
 
     testCommand() {
-        return this.testSymbol('/') && !this.testSymbol('//') && !this.testSymbol('/#');
+        return this.testSymbol('/');
     }
     testCommandEnd() {
         return this.testClosureEnd() || this.testSymbol('|');
@@ -410,6 +488,7 @@ export class SlashCommandParser {
     parseCommand() {
         const start = this.index + 1;
         const cmd = new SlashCommandExecutor(start);
+        cmd.parserFlags = Object.assign({}, this.flags);
         this.commandIndex.push(cmd);
         this.scopeIndex.push(this.scope.getCopy());
         this.take(); // discard "/"

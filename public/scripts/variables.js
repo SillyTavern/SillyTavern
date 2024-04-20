@@ -320,7 +320,7 @@ async function whileCallback(args, command) {
 
         if (result && command) {
             if (command instanceof SlashCommandClosure) await command.execute();
-            else await executeSubCommands(command, args._scope);
+            else await executeSubCommands(command, args._scope, args._parserFlags);
         } else {
             break;
         }
@@ -346,7 +346,7 @@ async function timesCallback(args, value) {
             await command.execute();
         }
         else {
-            await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i), args._scope);
+            await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i), args._scope, args._parserFlags);
         }
     }
 
@@ -359,10 +359,10 @@ async function ifCallback(args, command) {
 
     if (result && command) {
         if (command instanceof SlashCommandClosure) return (await command.execute()).pipe;
-        return await executeSubCommands(command, args._scope);
+        return await executeSubCommands(command, args._scope, args._parserFlags);
     } else if (!result && args.else && ((typeof args.else === 'string' && args.else !== '') || args.else instanceof SlashCommandClosure)) {
         if (args.else instanceof SlashCommandClosure) return (await args.else.execute(args._scope)).pipe;
-        return await executeSubCommands(args.else, args._scope);
+        return await executeSubCommands(args.else, args._scope, args._parserFlags);
     }
 
     return '';
@@ -509,12 +509,12 @@ function evalBoolean(rule, a, b) {
  * @param {string} command Command to execute. May contain escaped macro and batch separators.
  * @returns {Promise<string>} Pipe result
  */
-async function executeSubCommands(command, scope = null) {
+async function executeSubCommands(command, scope = null, parserFlags = null) {
     if (command.startsWith('"') && command.endsWith('"')) {
         command = command.slice(1, -1);
     }
 
-    const result = await executeSlashCommands(command, true, scope);
+    const result = await executeSlashCommands(command, true, scope, true, parserFlags);
 
     if (!result || typeof result !== 'object') {
         return '';

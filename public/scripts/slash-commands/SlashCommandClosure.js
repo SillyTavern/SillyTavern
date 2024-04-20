@@ -153,6 +153,7 @@ export class SlashCommandClosure {
                 interrupt = executor.command.interruptsGeneration;
                 let args = {
                     _scope: this.scope,
+                    _parserFlags: executor.parserFlags,
                 };
                 let value;
                 // substitute named arguments

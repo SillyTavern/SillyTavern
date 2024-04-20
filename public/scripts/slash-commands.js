@@ -1740,14 +1740,14 @@ function modelCallback(_, model) {
  * @param {SlashCommandScope} scope The scope to be used when executing the commands.
  * @returns {Promise<SlashCommandClosureResult>}
  */
-async function executeSlashCommands(text, handleParserErrors = true, scope = null, handleExecutionErrors = false) {
+async function executeSlashCommands(text, handleParserErrors = true, scope = null, handleExecutionErrors = false, parserFlags = null) {
     if (!text) {
         return null;
     }
 
     let closure;
     try {
-        closure = parser.parse(text);
+        closure = parser.parse(text, true, parserFlags);
         closure.scope.parent = scope;
     } catch (e) {
         if (handleParserErrors && e instanceof SlashCommandParserError) {

@@ -2,6 +2,7 @@
 import { SlashCommand } from './SlashCommand.js';
 // eslint-disable-next-line no-unused-vars
 import { SlashCommandClosure } from './SlashCommandClosure.js';
+import { PARSER_FLAG } from './SlashCommandParser.js';
 
 export class SlashCommandExecutor {
     /**@type {Boolean}*/ injectPipe = true;
@@ -12,6 +13,7 @@ export class SlashCommandExecutor {
     // @ts-ignore
     /**@type {Object.<string,String|SlashCommandClosure>}*/ args = {};
     /**@type {String|SlashCommandClosure|(String|SlashCommandClosure)[]}*/ value;
+    /**@type {Object<PARSER_FLAG,boolean>} */ parserFlags;
 
     constructor(start) {
         this.start = start;
