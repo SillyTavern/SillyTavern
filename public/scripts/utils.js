@@ -1185,16 +1185,23 @@ export function uuidv4() {
 }
 
 function postProcessText(text, collapse = true) {
+    // Remove carriage returns
+    text = text.replace(/\r/g, '');
+    // Replace tabs with spaces
+    text = text.replace(/\t/g, ' ');
+    // Normalize unicode spaces
+    text = text.replace(/\u00A0/g, ' ');
     // Collapse multiple newlines into one
     if (collapse) {
         text = collapseNewlines(text);
         // Trim leading and trailing whitespace, and remove empty lines
         text = text.split('\n').map(l => l.trim()).filter(Boolean).join('\n');
+    } else {
+        // Replace more than 4 newlines with 4 newlines
+        text = text.replace(/\n{4,}/g, '\n\n\n\n');
+        // Trim lines that contain nothing but whitespace
+        text = text.split('\n').map(l => /^\s+$/.test(l) ? '' : l).join('\n');
     }
-    // Remove carriage returns
-    text = text.replace(/\r/g, '');
-    // Normalize unicode spaces
-    text = text.replace(/\u00A0/g, ' ');
     // Collapse multiple spaces into one (except for newlines)
     text = text.replace(/ {2,}/g, ' ');
     // Remove leading and trailing spaces
