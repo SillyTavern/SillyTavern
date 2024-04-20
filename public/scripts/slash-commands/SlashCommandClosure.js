@@ -54,7 +54,7 @@ export class SlashCommandClosure {
                 }
                 break;
             } else {
-                done = `${before}${replacer}`;
+                done = `${done}${before}${replacer}`;
                 remaining = after;
             }
         }
