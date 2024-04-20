@@ -4129,8 +4129,12 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             // regenerate with character speech reenforced
             // to make sure we leave on swipe type while also adding the name2 appendage
             await delay(1000);
+            // A message was already deleted on regeneration, so instead treat is as a normal gen
+            if (type === 'regenerate') {
+                type = 'normal';
+            }
             // The first await is for waiting for the generate to start. The second one is waiting for it to finish
-            const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
+            const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName, maxLoops: maxLoops - 1 });
             return result;
         }
 
