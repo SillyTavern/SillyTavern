@@ -899,7 +899,7 @@ router.post('/generate', jsonParser, function (request, response) {
         }
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PERPLEXITY) {
         apiUrl = API_PERPLEXITY;
-        apiKey = readSecret(SECRET_KEYS.PERPLEXITY);
+        apiKey = readSecret(request.user.directories, SECRET_KEYS.PERPLEXITY);
         headers = {};
         bodyParams = {};
         request.body.messages = postProcessPrompt(request.body.messages, 'claude', request.body.char_name, request.body.user_name);
