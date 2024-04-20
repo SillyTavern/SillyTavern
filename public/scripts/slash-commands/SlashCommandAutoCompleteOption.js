@@ -8,6 +8,7 @@ export const OPTION_TYPE = {
     'COMMAND': 1,
     'QUICK_REPLY': 2,
     'VARIABLE_NAME': 3,
+    'BLANK': 4,
 };
 
 export class SlashCommandFuzzyScore {
