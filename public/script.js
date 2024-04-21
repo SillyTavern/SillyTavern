@@ -6773,8 +6773,9 @@ function select_rm_info(type, charId, previousCharId = null) {
     importFlashTimeout = setTimeout(function () {
         if (type === 'char_import' || type === 'char_create') {
             // Find the page at which the character is located
+            const avatarFileName = `${charId}.png`;
             const charData = getEntitiesList({ doFilter: true });
-            const charIndex = charData.findIndex((x) => x?.item?.avatar?.startsWith(charId));
+            const charIndex = charData.findIndex((x) => x?.item?.avatar?.startsWith(avatarFileName));
 
             if (charIndex === -1) {
                 console.log(`Could not find character ${charId} in the list`);
@@ -6784,7 +6785,7 @@ function select_rm_info(type, charId, previousCharId = null) {
             try {
                 const perPage = Number(localStorage.getItem('Characters_PerPage')) || per_page_default;
                 const page = Math.floor(charIndex / perPage) + 1;
-                const selector = `#rm_print_characters_block [title^="${charId}"]`;
+                const selector = `#rm_print_characters_block [title*="${avatarFileName}"]`;
                 $('#rm_print_characters_pagination').pagination('go', page);
 
                 waitUntilCondition(() => document.querySelector(selector) !== null).then(() => {
