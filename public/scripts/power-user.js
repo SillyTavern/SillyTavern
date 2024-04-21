@@ -35,7 +35,7 @@ import {
 } from './instruct-mode.js';
 
 import { registerSlashCommand } from './slash-commands.js';
-import { tags } from './tags.js';
+import { tag_map, tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
@@ -255,7 +255,7 @@ let power_user = {
     compact_input_area: true,
     auto_connect: false,
     auto_load_chat: false,
-    forbid_external_images: false,
+    forbid_external_media: true,
     external_media_allowed_overrides: [],
     external_media_forbidden_overrides: [],
 };
@@ -819,7 +819,7 @@ async function CreateZenSliders(elmnt) {
                         isManualInput = true;
                         //allow enter to trigger slider update
                         if (e.key === 'Enter') {
-                            e.preventDefault;
+                            e.preventDefault();
                             handle.trigger('blur');
                         }
                     })
@@ -1584,7 +1584,7 @@ function loadPowerUserSettings(settings, data) {
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
     $('#auto-connect-checkbox').prop('checked', power_user.auto_connect);
     $('#auto-load-chat-checkbox').prop('checked', power_user.auto_load_chat);
-    $('#forbid_external_images').prop('checked', power_user.forbid_external_images);
+    $('#forbid_external_media').prop('checked', power_user.forbid_external_media);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -2327,9 +2327,65 @@ function doNewChat() {
     }, 1);
 }
 
-async function doRandomChat() {
+/**
+ * Finds the ID of the tag with the given name.
+ * @param {string} name
+ * @returns {string} The ID of the tag with the given name.
+ */
+function findTagIdByName(name) {
+    const matchTypes = [
+        (a, b) => a === b,
+        (a, b) => a.startsWith(b),
+        (a, b) => a.includes(b),
+    ];
+
+    // Only get tags that contain at least one record in the tag_map
+    const liveTagIds = new Set(Object.values(tag_map).flat());
+    const liveTags = tags.filter(x => liveTagIds.has(x.id));
+
+    const exactNameMatchIndex = liveTags.map(x => x.name.toLowerCase()).indexOf(name.toLowerCase());
+
+    if (exactNameMatchIndex !== -1) {
+        return liveTags[exactNameMatchIndex].id;
+    }
+
+    for (const matchType of matchTypes) {
+        const index = liveTags.findIndex(x => matchType(x.name.toLowerCase(), name.toLowerCase()));
+        if (index !== -1) {
+            return liveTags[index].id;
+        }
+    }
+}
+
+async function doRandomChat(_, tagName) {
+    /**
+     * Gets the ID of a random character.
+     * @returns {string} The order index of the randomly selected character.
+     */
+    function getRandomCharacterId() {
+        if (!tagName) {
+            return Math.floor(Math.random() * characters.length).toString();
+        }
+
+        const tagId = findTagIdByName(tagName);
+        const taggedCharacters = Object.entries(tag_map)
+            .filter(x => x[1].includes(tagId)) // Get only records that include the tag
+            .map(x => x[0]) // Map the character avatar
+            .filter(x => characters.find(y => y.avatar === x)); // Filter out characters that don't exist
+        const randomCharacter = taggedCharacters[Math.floor(Math.random() * taggedCharacters.length)];
+        const randomIndex =  characters.findIndex(x => x.avatar === randomCharacter);
+        if (randomIndex === -1) {
+            return;
+        }
+        return randomIndex.toString();
+    }
+
     resetSelectedGroup();
-    const characterId = Math.floor(Math.random() * characters.length).toString();
+    const characterId = getRandomCharacterId();
+    if (!characterId) {
+        toastr.error('No characters found');
+        return;
+    }
     setCharacterId(characterId);
     setActiveCharacter(characters[characterId]?.avatar);
     setActiveGroup(null);
@@ -3471,8 +3527,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#forbid_external_images').on('input', function () {
-        power_user.forbid_external_images = !!$(this).prop('checked');
+    $('#forbid_external_media').on('input', function () {
+        power_user.forbid_external_media = !!$(this).prop('checked');
         saveSettingsDebounced();
         reloadCurrentChat();
     });
@@ -3522,7 +3578,7 @@ $(document).ready(() => {
 
     registerSlashCommand('vn', toggleWaifu, [], '– swaps Visual Novel Mode On/Off', false, true);
     registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
-    registerSlashCommand('random', doRandomChat, [], '– start a new chat with a random character', true, true);
+    registerSlashCommand('random', doRandomChat, [], '<span class="monospace">(optional tag name)</span> – start a new chat with a random character. If an argument is provided, only considers characters that have the specified tag.', true, true);
     registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes last N messages if numeric argument is provided', true, true);
     registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive! Returns the text of cut messages separated by a newline.', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);

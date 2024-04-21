@@ -1,4 +1,4 @@
-import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId } from '../script.js';
+import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams } from '../script.js';
 import { timestampToMoment, isDigitsOnly, getStringHash } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
@@ -6,6 +6,12 @@ import { replaceVariableMacros } from './variables.js';
 
 // Register any macro that you want to leave in the compiled story string
 Handlebars.registerHelper('trim', () => '{{trim}}');
+// Catch-all helper for any macro that is not defined for story strings
+Handlebars.registerHelper('helperMissing', function () {
+    const options = arguments[arguments.length - 1];
+    const macroName = options.name;
+    return substituteParams(`{{${macroName}}}`);
+});
 
 /**
  * Gets a hashed id of the current chat from the metadata.

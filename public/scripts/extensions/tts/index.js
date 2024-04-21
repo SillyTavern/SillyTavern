@@ -1,4 +1,4 @@
-import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced } from '../../../script.js';
+import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js';
 import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
@@ -424,6 +424,9 @@ async function processTtsQueue() {
     console.debug('New message found, running TTS');
     currentTtsJob = ttsJobQueue.shift();
     let text = extension_settings.tts.narrate_translated_only ? (currentTtsJob?.extra?.display_text || currentTtsJob.mes) : currentTtsJob.mes;
+
+    // Substitute macros
+    text = substituteParams(text);
 
     if (extension_settings.tts.skip_codeblocks) {
         text = text.replace(/^\s{4}.*$/gm, '').trim();

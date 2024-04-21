@@ -64,7 +64,7 @@ const saveSettingsDebounced = debounce(() => {
     saveSettings();
 }, 1000);
 const sortFn = (a, b) => b.order - a.order;
-let updateEditor = (navigation) => { navigation; };
+let updateEditor = (navigation) => { console.debug('Triggered WI navigation', navigation); };
 
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 const worldInfoFilter = new FilterHelper(() => updateEditor());

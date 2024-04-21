@@ -18,7 +18,7 @@
     "input_suffix": "<|eot_id|>",
     "system_suffix": "<|eot_id|>",
     "user_alignment_message": "",
-    "system_same_as_user": false,
+    "system_same_as_user": true,
     "last_system_sequence": "",
     "name": "Llama 3 Instruct"
 }

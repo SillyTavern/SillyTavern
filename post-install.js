@@ -60,7 +60,8 @@ function convertConfig() {
         try {
             console.log(color.blue('Converting config.conf to config.yaml. Your old config.conf will be renamed to config.conf.bak'));
             const config = require(path.join(process.cwd(), './config.conf'));
-            fs.renameSync('./config.conf', './config.conf.bak');
+            fs.copyFileSync('./config.conf', './config.conf.bak');
+            fs.rmSync('./config.conf');
             fs.writeFileSync('./config.yaml', yaml.stringify(config));
             console.log(color.green('Conversion successful. Please check your config.yaml and fix it if necessary.'));
         } catch (error) {
@@ -106,7 +107,6 @@ function addMissingConfigValues() {
  */
 function createDefaultFiles() {
     const files = {
-        settings: './public/settings.json',
         config: './config.yaml',
         user: './public/css/user.css',
     };
@@ -167,29 +167,6 @@ function copyWasmFiles() {
     }
 }
 
-/**
- * Moves the custom background into settings.json.
- */
-function migrateBackground() {
-    if (!fs.existsSync('./public/css/bg_load.css')) return;
-
-    const bgCSS = fs.readFileSync('./public/css/bg_load.css', 'utf-8');
-    const bgMatch = /url\('([^']*)'\)/.exec(bgCSS);
-    if (!bgMatch) return;
-    const bgFilename = bgMatch[1].replace('../backgrounds/', '');
-
-    const settings = fs.readFileSync('./public/settings.json', 'utf-8');
-    const settingsJSON = JSON.parse(settings);
-    if (Object.hasOwn(settingsJSON, 'background')) {
-        console.log(color.yellow('Both bg_load.css and the "background" setting exist. Please delete bg_load.css manually.'));
-        return;
-    }
-
-    settingsJSON.background = { name: bgFilename, url: `url('backgrounds/${bgFilename}')` };
-    fs.writeFileSync('./public/settings.json', JSON.stringify(settingsJSON, null, 4));
-    fs.rmSync('./public/css/bg_load.css');
-}
-
 try {
     // 0. Convert config.conf to config.yaml
     convertConfig();
@@ -199,8 +176,6 @@ try {
     copyWasmFiles();
     // 3. Add missing config values
     addMissingConfigValues();
-    // 4. Migrate bg_load.css to settings.json
-    migrateBackground();
 } catch (error) {
     console.error(error);
 }

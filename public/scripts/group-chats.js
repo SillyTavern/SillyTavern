@@ -188,9 +188,7 @@ export async function getGroupChat(groupId, reload = false) {
 
     if (Array.isArray(data) && data.length) {
         data[0].is_group = true;
-        for (let key of data) {
-            chat.push(key);
-        }
+        chat.splice(0, chat.length, ...data);
         await printMessages();
     } else {
         sendSystemMessage(system_message_types.GROUP, '', { isSmallSys: true });

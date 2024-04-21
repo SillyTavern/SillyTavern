@@ -310,14 +310,8 @@ jQuery(function () {
             <div class="fa-solid fa-image extensionsMenuExtensionButton"></div>
             Generate Caption
         </div>`);
-        const attachFileButton = $(`
-        <div id="attachFile" class="list-group-item flex-container flexGap5">
-            <div class="fa-solid fa-paperclip extensionsMenuExtensionButton"></div>
-            Attach a File
-        </div>`);
 
         $('#extensionsMenu').prepend(sendButton);
-        $('#extensionsMenu').prepend(attachFileButton);
         $(sendButton).on('click', () => {
             const hasCaptionModule =
                 (modules.includes('caption') && extension_settings.caption.source === 'extras') ||

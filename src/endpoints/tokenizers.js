@@ -370,12 +370,13 @@ const router = express.Router();
 
 router.post('/ai21/count', jsonParser, async function (req, res) {
     if (!req.body) return res.sendStatus(400);
+    const key = readSecret(req.user.directories, SECRET_KEYS.AI21);
     const options = {
         method: 'POST',
         headers: {
             accept: 'application/json',
             'content-type': 'application/json',
-            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`,
+            Authorization: `Bearer ${key}`,
         },
         body: JSON.stringify({ text: req.body[0].content }),
     };
@@ -401,7 +402,8 @@ router.post('/google/count', jsonParser, async function (req, res) {
         body: JSON.stringify({ contents: convertGooglePrompt(req.body, String(req.query.model)).contents }),
     };
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${req.query.model}:countTokens?key=${readSecret(SECRET_KEYS.MAKERSUITE)}`, options);
+        const key = readSecret(req.user.directories, SECRET_KEYS.MAKERSUITE);
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${req.query.model}:countTokens?key=${key}`, options);
         const data = await response.json();
         return res.send({ 'token_count': data?.totalTokens || 0 });
     } catch (err) {
