@@ -5,45 +5,62 @@ const writeFileAtomic = require('write-file-atomic');
 const crypto = require('crypto');
 const sanitize = require('sanitize-filename');
 
+const { jsonParser } = require('../express-common');
+const { readAndParseJsonlFile, timestampToMoment, humanizedToDate, calculateDuration, minDate, maxDate, now } = require('../util');
+const { getAllUserHandles, getUserDirectories } = require('../users');
+
 const readFile = fs.promises.readFile;
 const readdir = fs.promises.readdir;
-
-const { jsonParser } = require('../express-common');
-const { DIRECTORIES } = require('../constants');
-const { readAndParseJsonlFile, timestampToMoment, humanizedToDate, calculateDuration, minDate, maxDate, now } = require('../util');
-
-const statsFilePath = 'public/stats.json';
 
 const MIN_TIMESTAMP = 0;
 const MAX_TIMESTAMP = new Date('9999-12-31T23:59:59.999Z').getTime();
 const MIN_DATE = new Date(MIN_TIMESTAMP);
 const MAX_DATE = new Date(MAX_TIMESTAMP);
+const STATS_FILE = 'stats.json';
 const CURRENT_STATS_VERSION = '1.1';
 
-/** @type {StatsCollection} The collection of all stats, accessable via their key - gets set/built on init */
-let globalStats;
+/** @type {Map<string, UserStatsCollection>} The stats collections for each user, accessable via their key - gets set/built on init */
+const STATS = new Map();
+
 let lastSaveDate = MIN_DATE;
+
+/**
+ * Gets the user stats collection. Creates a new empty one, if it didn't exist before
+ * @param {string} userHandle - The user handle
+ * @returns {UserStatsCollection}
+ */
+function getUserStats(userHandle) {
+    return STATS.get(userHandle) ?? createEmptyStats(userHandle)
+}
 
 /**
  * Loads the stats file into memory. If the file doesn't exist or is invalid,
  * initializes stats by collecting and creating them for each character.
  */
 async function init() {
-    try {
-        const statsFileContent = await readFile(statsFilePath, 'utf-8');
-        const obj = JSON.parse(statsFileContent);
-        // Migrate/recreate stats if the version has changed
-        if (obj.version !== CURRENT_STATS_VERSION) {
-            console.info(`Found outdated stats of version '${obj.version}'. Recreating stats for current version '${CURRENT_STATS_VERSION}'...`);
-            await recreateStats();
-        }
-        globalStats = obj;
-    } catch (err) {
-        // If the file doesn't exist or is invalid, initialize stats
-        if (err.code === 'ENOENT' || err instanceof SyntaxError) {
-            recreateStats();
-        } else {
-            throw err; // Rethrow the error if it's something we didn't expect
+    const userHandles = await getAllUserHandles();
+    for (const userHandle of userHandles) {
+        try {
+            const directories = getUserDirectories(userHandle);
+            const statsFilePath = path.join(directories.root, STATS_FILE);
+            const statsFileContent = await readFile(statsFilePath, 'utf-8');
+            let userStats = JSON.parse(statsFileContent);
+
+            // Migrate/recreate stats if the version has changed
+            if (userStats.version !== CURRENT_STATS_VERSION) {
+                console.info(`Found outdated stats for user ${userHandle} of version '${userStats.version}'. Recreating stats for current version '${CURRENT_STATS_VERSION}'...`);
+                userStats = await recreateStats(userHandle);
+            }
+
+            STATS.set(userHandle, userStats);
+        } catch (err) {
+            // If the file doesn't exist or is invalid, initialize stats
+            if (err.code === 'ENOENT' || err instanceof SyntaxError) {
+                console.warn(`Error on reading stats file for user ${userHandle}. Trying to recreate it... Error was: ${err.message}`);
+                recreateStats(userHandle);
+            } else {
+                throw err; // Rethrow the error if it's something we didn't expect
+            }
         }
     }
 }
@@ -65,9 +82,9 @@ async function onExit() {
  */
 
 /**
- * @typedef {object} StatsCollection - An object holding all character stats, and some additional main stats
+ * @typedef {object} UserStatsCollection - An object holding all character stats, and some additional main stats
  * @property {string} version - Version number indication the version of this stats data - so it can be automatically migrated/recalculated if any of the calculation logic changes
- * @property {CharacterStats} global - global characer stats
+ * @property {CharacterStats} global - global user/profile stats
  * @property {{[characterKey: string]: CharacterStats}} stats - All the dynamically saved stats objecs
  * @property {Date} _calculated -
  * @property {Date} _recalcualted -
@@ -244,109 +261,128 @@ class AggregateStat {
 
 /**
  *
- *
- * @returns {Promise<StatsCollection>} The aggregated stats object.
+ * @param {string} userHandle - User handle
+ * @returns {UserStatsCollection} The aggregated stats object
  */
-async function recreateStats() {
+function createEmptyStats(userHandle) {
+    const EMPTY_USER_STATS = { _calculated: MIN_DATE, _recalcualted: MIN_DATE, version: CURRENT_STATS_VERSION, global: newCharacterStats(userHandle, 'Global'), stats: {} };
+
+    // Resetting global user stats
+    const userStats = { ...EMPTY_USER_STATS };
+    STATS.set(userHandle, userStats);
+    return userStats;
+}
+
+/**
+ *
+ * @param {string} userHandle - User handle
+ * @returns {Promise<UserStatsCollection>} The aggregated stats object
+ */
+async function recreateStats(userHandle) {
     console.log('Collecting and creating stats...');
 
-    /** @type {StatsCollection}  */
-    const EMPTY_GLOBAL_STATS = { _calculated: MIN_DATE, _recalcualted: MIN_DATE, version: CURRENT_STATS_VERSION, global: newCharacterStats('global', 'Global'), stats: {} };
-
-    // Resetting global stats first
-    globalStats = { ...EMPTY_GLOBAL_STATS, };
+    const userStats = createEmptyStats(userHandle);
 
     // Load all char files to process their chat folders
-    const files = await readdir(DIRECTORIES.characters);
+    const directories = getUserDirectories(userHandle);
+    const files = await readdir(directories.characters);
     const charFiles = files.filter((file) => file.endsWith('.png'));
     let processingPromises = charFiles.map((charFileName, _) =>
-        recreateCharacterStats(charFileName.replace('.png', '')),
+        recreateCharacterStats(userHandle, charFileName.replace('.png', '')),
     );
     await Promise.all(processingPromises);
 
     // Remember the date at which those stats were recalculated from the ground up
-    globalStats._recalcualted = now();
+    userStats._recalcualted = now();
 
     await saveStatsToFile();
-    console.debug('Stats (re)created and saved to file.');
+    console.info(`Stats for user ${userHandle} (re)created and saved to file.`);
 
-    return globalStats;
+    return userStats;
 }
 
 /**
  * Recreates stats for a specific character.
  * Should be used very carefully, as it still has to recalculate most of the global stats.
  *
- * @param  {string} characterKey
+ * @param {string} userHandle - User handle
+ * @param {string} characterKey -
  * @return {CharacterStats?}
  */
-function recreateCharacterStats(characterKey) {
+function recreateCharacterStats(userHandle, characterKey) {
+    const userStats = getUserStats(userHandle);
+
     // If we are replacing on a existing global stats, we need to "remove" all old stats
-    if (globalStats.stats[characterKey]) {
-        for (const chatStats of globalStats.stats[characterKey].chatsStats) {
-            removeChatFromCharStats(globalStats.global, chatStats);
+    if (userStats.stats[characterKey]) {
+        for (const chatStats of userStats.stats[characterKey].chatsStats) {
+            removeChatFromCharStats(userStats.global, chatStats);
         }
-        delete globalStats.stats[characterKey];
+        delete userStats.stats[characterKey];
     }
 
     // Then load chats dir for this character to process
-    const charChatsDir = path.join(DIRECTORIES.chats, characterKey);
+    const directories = getUserDirectories(userHandle);
+    const charChatsDir = path.join(directories.chats, characterKey);
     if (!fs.existsSync(charChatsDir)) {
         return null;
     }
 
     const chatFiles = fs.readdirSync(charChatsDir);
     chatFiles.forEach(chatName => {
-        triggerChatUpdate(characterKey, chatName);
+        triggerChatUpdate(userHandle, characterKey, chatName);
     });
 
-    return globalStats[characterKey];
+    console.info(`(Re)created ${characterKey}'s character stats for user ${userHandle}.`);
+    return userStats[characterKey];
 };
 
 
 /**
  *
- * @param {string} charChatsDir - The directoy path
+ * @param {string} userHandle - The user handle
+ * @param {string} characterKey
  * @param {string} chatName
- * @returns {{chatName: string, lines: object[]}}
+ * @returns {{chatName: string, charName: string, filePath: string, lines: object[]}}
  */
-function loadChatFile(charChatsDir, chatName) {
-    const fullFilePath = path.join(charChatsDir, sanitize(chatName));
-    const lines = readAndParseJsonlFile(fullFilePath);
-    return { chatName, lines };
+function loadChatFile(userHandle, characterKey, chatName) {
+    const charName = characterKey.replace('.png', '');
+    const directories = getUserDirectories(userHandle);
+    const charChatsDir = path.join(directories.chats, charName);
+
+    const filePath = path.join(charChatsDir, sanitize(chatName));
+    const lines = readAndParseJsonlFile(filePath);
+    return { chatName, charName, filePath, lines };
 }
 
 /**
  *
- *
+ * @param {string} userHandle - The user handle
  * @param {string} characterKey - The character key
  * @param {string} chatName - The name of the chat
  * @returns {ChatStats?}
  */
-function triggerChatUpdate(characterKey, chatName) {
-    const charName = characterKey.replace('.png', '');
-    const charChatsDir = path.join(DIRECTORIES.chats, charName);
-
+function triggerChatUpdate(userHandle, characterKey, chatName) {
     // Load and process chats to get its stats
-    const loadedChat = loadChatFile(charChatsDir, chatName);
-    const fsStats = fs.statSync(path.join(charChatsDir, chatName));
+    const loadedChat = loadChatFile(userHandle, characterKey, chatName);
+    const fsStats = fs.statSync(loadedChat.filePath);
 
     const chatStats = processChat(chatName, loadedChat.lines, { chatSize: fsStats.size });
     if (chatStats === null) {
         return null;
     }
 
+    const userStats = getUserStats(userHandle);
+
     // Create empty stats if character stats don't exist yet
-    globalStats.stats[characterKey] ??= newCharacterStats(characterKey, charName);
+    userStats.stats[characterKey] ??= newCharacterStats(characterKey, loadedChat.charName);
 
-    // Update char stats with the processed chat stats
-    updateCharStatsWithChat(globalStats.stats[characterKey], chatStats);
-
-    // Update the global stats with this chat
-    updateCharStatsWithChat(globalStats.global, chatStats);
+    // Update both the char stats and the global user stats with this chat
+    updateCharStatsWithChat(userStats.stats[characterKey], chatStats);
+    updateCharStatsWithChat(userStats.global, chatStats);
 
     chatStats._calculated = now();
-    globalStats._calculated = now();
+    userStats.global._calculated = now()
+    userStats._calculated = now();
     return chatStats;
 }
 
@@ -702,31 +738,26 @@ function newMessageStats() {
 
 /**
  * Saves the current state of charStats to a file, only if the data has changed since the last save.
+ * @param {string?} [userHandle] - Optionally only save file for one user handle
  */
-async function saveStatsToFile() {
-    if (globalStats._calculated > lastSaveDate) {
-        //console.debug("Saving stats to file...");
-        try {
-            await writeFileAtomic(statsFilePath, JSON.stringify(globalStats));
-            lastSaveDate = now();
-        } catch (error) {
-            console.log('Failed to save stats to file.', error);
+async function saveStatsToFile(userHandle = null) {
+    const userHandles = userHandle ? [userHandle] : await getAllUserHandles();
+    for (const userHandle of userHandles) {
+        const userStats = getUserStats(userHandle);
+        if (userStats._calculated > lastSaveDate) {
+            try {
+                const directories = getUserDirectories(userHandle);
+                const statsFilePath = path.join(directories.root, STATS_FILE);
+                await writeFileAtomic(statsFilePath, JSON.stringify(userStats));
+                lastSaveDate = now();
+            } catch (error) {
+                console.log('Failed to save stats to file.', error);
+            }
         }
-    } else {
-        //console.debug('Stats have not changed since last save. Skipping file write.');
     }
 }
 
-/**
- * Returns the current global stats object
- * @returns {StatsCollection}
- **/
-function getGlobalStats() {
-    return globalStats;
-}
-
 const router = express.Router();
-
 
 /**
  * @typedef {object} StatsRequestBody
@@ -750,21 +781,24 @@ router.post('/get', jsonParser, function (request, response) {
     /** @type {StatsRequestBody} */
     const body = request.body;
 
+    const userHandle = request.user.profile.handle;
+    const userStats = getUserStats(userHandle);
+
     if (!!body.global) {
-        return send(globalStats.global);
+        return send(userStats.global);
     }
 
     const characterKey = String(body.characterKey);
     const chatName = String(body.characterKey);
     if (characterKey && chatName) {
-        return send(globalStats.stats[characterKey]?.chatsStats.find(x => x.chatName == chatName));
+        return send(userStats.stats[characterKey]?.chatsStats.find(x => x.chatName == chatName));
     }
     if (characterKey) {
-        return send(globalStats.stats[characterKey]);
+        return send(userStats.stats[characterKey]);
     }
 
     // If no specific filter was requested, we send all stats back
-    return send(globalStats);
+    return send(userStats);
 });
 
 /**
@@ -780,14 +814,16 @@ router.post('/recreate', jsonParser, async function (request, response) {
     /** @type {StatsRequestBody} */
     const body = request.body;
 
+    const userHandle = request.user.profile.handle;
+
     try {
         const characterKey = String(body.characterKey);
         if (characterKey) {
-            recreateCharacterStats(characterKey);
-            return send(globalStats.stats[characterKey]);
+            recreateCharacterStats(userHandle, characterKey);
+            return send(getUserStats(userHandle).stats[characterKey]);
         }
-        await recreateStats();
-        return send(globalStats);
+        await recreateStats(userHandle);
+        return send(getUserStats(userHandle));
     } catch (error) {
         console.error(error);
         return response.sendStatus(500);
