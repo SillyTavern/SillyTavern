@@ -231,9 +231,11 @@
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     }
 
+    /*
     #right-nav-panel {
         padding-right: 15px;
     }
+    */
 
     #floatingPrompt,
     #cfgConfig,
