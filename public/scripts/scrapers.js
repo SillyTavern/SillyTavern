@@ -78,6 +78,52 @@ export class ScraperManager {
 }
 
 /**
+ * Create a text file from a string.
+ * @implements {Scraper}
+ */
+class Notepad {
+    constructor() {
+        this.id = 'text';
+        this.name = 'Notepad';
+        this.description = 'Create a text file from scratch.';
+        this.iconClass = 'fa-solid fa-note-sticky';
+    }
+
+    /**
+     * Check if the scraper is available.
+     * @returns {Promise<boolean>}
+     */
+    async isAvailable() {
+        return true;
+    }
+
+    /**
+     * Create a text file from a string.
+     * @returns {Promise<File[]>} File attachments scraped from the text
+     */
+    async scrape() {
+        const template = $(await renderExtensionTemplateAsync('attachments', 'notepad', {}));
+        let fileName = `Untitled - ${new Date().toLocaleString()}`;
+        let text = '';
+        template.find('input[name="notepadFileName"]').val(fileName).on('input', function () {
+            fileName = String($(this).val()).trim();
+        });
+        template.find('textarea[name="notepadFileContent"]').on('input', function () {
+            text = String($(this).val());
+        });
+
+        const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: true, large: true, okButton: 'Save', cancelButton: 'Cancel' });
+
+        if (!result || text === '') {
+            return;
+        }
+
+        const file = new File([text], `Notepad - ${fileName}.txt`, { type: 'text/plain' });
+        return [file];
+    }
+}
+
+/**
  * Scrape data from a webpage.
  * @implements {Scraper}
  */
@@ -364,6 +410,7 @@ class YouTubeScraper {
 }
 
 ScraperManager.registerDataBankScraper(new FileScraper());
+ScraperManager.registerDataBankScraper(new Notepad());
 ScraperManager.registerDataBankScraper(new WebScraper());
 ScraperManager.registerDataBankScraper(new FandomScraper());
 ScraperManager.registerDataBankScraper(new YouTubeScraper());
