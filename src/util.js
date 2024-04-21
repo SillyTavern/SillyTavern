@@ -412,6 +412,37 @@ function forwardFetchResponse(from, to) {
 }
 
 /**
+ * Pipe a fetch() response to an Express.js Response, including status code.
+ * @param {import('node-fetch').Response} from The Fetch API response to pipe from.
+ * @param {Express.Response} to The Express response to pipe to.
+ */
+async function forwardBedrockStreamResponse(from, to) {
+    to.header('Content-Type', 'text/event-stream');
+    to.header('Cache-Control', 'no-cache');
+    to.header('Connection', 'keep-alive');
+    to.flushHeaders(); // flush the headers to establish SSE with client
+
+    for await (const event of from.body) {
+        let respCode = from.$metadata.httpStatusCode;
+
+        if (event.chunk && event.chunk.bytes) {
+            const chunk = Buffer.from(event.chunk.bytes).toString("utf-8");
+            to.write(`data: ${chunk}\n\n`);
+        } else if (
+            event.internalServerException ||
+            event.modelStreamErrorException ||
+            event.throttlingException ||
+            event.validationException
+        ) {
+            console.error(event);
+            break;
+        }
+    }
+
+    to.end()
+}
+
+/**
  * Makes an HTTP/2 request to the specified endpoint.
  *
  * @deprecated Use `node-fetch` if possible.
@@ -612,6 +643,7 @@ module.exports = {
     removeOldBackups,
     getImages,
     forwardFetchResponse,
+    forwardBedrockStreamResponse,
     getHexString,
     mergeObjectWithYaml,
     excludeKeysByYaml,

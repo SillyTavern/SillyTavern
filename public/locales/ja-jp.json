@@ -140,7 +140,7 @@
     "Influences bot behavior in its responses": "返信でボットの動作に影響を与えます",
     "Connect": "接続",
     "Test Message": "テストメッセージ",
-    "API": "API",    
+    "API": "API",
     "KoboldAI": "KoboldAI",
     "Use Horde": "ホードを使用",
     "API url": "API URL",
@@ -914,5 +914,5 @@
     "Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.": "Googleモデル用の適切なトークナイザーを使用します。 API経由で。 処理が遅くなりますが、トークンの数え上げがはるかに正確になります。",
     "Load koboldcpp order": "koboldcppオーダーを読み込む",
     "Use Google Tokenizer": "Googleトークナイザーを使用"
-    
+
 }

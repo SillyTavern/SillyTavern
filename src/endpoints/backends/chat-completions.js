@@ -4,11 +4,13 @@ const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
-const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
-const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages } = require('../../prompt-converters');
+const { forwardFetchResponse, forwardBedrockStreamResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
+const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralPrompt } = require('../../prompt-converters');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
 const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
+
+const { listTextModels, invokeModel, invokeModelWithStreaming } = require('../../bedrock');
 
 const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
@@ -522,6 +524,130 @@ async function sendMistralAIRequest(request, response) {
     }
 }
 
+/**
+ * Constuct Bedrock Claude inference request payload
+ * @param {express.Request} request Express request
+ */
+function constructBedrockClaudePayload(request) {
+    let use_system_prompt = ( request.body.model.startsWith('anthropic.claude-2') || request.body.model.startsWith('anthropic.claude-3') ) && request.body.claude_use_sysprompt;
+    let converted_prompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, use_system_prompt, request.body.human_sysprompt_message, request.body.char_name, request.body.user_name);
+
+    // Add custom stop sequences
+    const stopSequences = ['\n\nHuman:', '\n\nSystem:', '\n\nAssistant:'];
+    if (Array.isArray(request.body.stop)) {
+        stopSequences.push(...request.body.stop);
+    }
+
+    const modelRequestBody = {
+        messages: converted_prompt.messages,
+        max_tokens: request.body.max_tokens,
+        stop_sequences: stopSequences,
+        temperature: request.body.temperature,
+        top_p: request.body.top_p,
+        top_k: request.body.top_k,
+        anthropic_version: 'bedrock-2023-05-31',
+    };
+
+    if (use_system_prompt) {
+        modelRequestBody.system = converted_prompt.systemPrompt;
+    }
+
+    return modelRequestBody;
+}
+
+/**
+ * Constuct Bedrock Mistral inference request payload.
+ *   format: <s>[INST] System Prompt + Instruction [/INST] Model answer</s>[INST] Follow-up instruction [/INST]
+ * @param {express.Request} request Express request
+ */
+function constructBedrockMistralPayload(request) {
+    let converted_prompt = convertMistralPrompt(request.body.messages, request.body.assistant_prefill);
+
+    const modelRequestBody = {
+        prompt: converted_prompt,
+        max_tokens: request.body.max_tokens,
+        stop: request.body.stop || [],
+        temperature: request.body.temperature,
+        top_p: request.body.top_p,
+        top_k: request.body.top_k,
+    };
+
+    return modelRequestBody;
+}
+
+/**
+ * Sends a request to Amazon Bedrock
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
+async function sendBedrockRequest(request, response) {
+    const divider = '-'.repeat(process.stdout.columns);
+    const bedrock_region = request.body.bedrock_region || 'us-east-1';
+    let modelRequestBody;
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        if(request.body.model.startsWith('anthropic.')){
+            modelRequestBody = constructBedrockClaudePayload(request);
+        } else if(request.body.model.startsWith('mistral.')){
+            modelRequestBody = constructBedrockMistralPayload(request);
+        } else {
+            console.log(color.red(`Unknown model family ${request.body.model}\n${divider}`));
+            return response.status(400).send({ error: true });
+        }
+
+        const bedrockRequestBody = { // InvokeModelRequest
+            body: JSON.stringify(modelRequestBody), //new Uint8Array(), // e.g. Buffer.from("") or new TextEncoder().encode("")   // required
+            contentType: 'application/json',
+            accept: 'application/json',
+            modelId: request.body.model, // required
+        };
+
+        console.log('Bedrock request:', JSON.stringify(bedrockRequestBody));
+
+        if (request.body.stream) {
+            const respBedrockStream = await invokeModelWithStreaming(bedrock_region, bedrockRequestBody);
+
+            // Pipe remote SSE stream to Express response
+            forwardBedrockStreamResponse(respBedrockStream, response);
+        } else {
+            const resp = await invokeModel(bedrock_region, bedrockRequestBody);
+            const statusCode = resp['$metadata']['httpStatusCode'];
+            const body = resp.body.transformToString();
+
+            if (statusCode !== 200 ){
+                console.log(color.red(`Claude API returned error: ${resp['$metadata']['httpStatusCode']} ${body}\n${divider}`));
+                return response.status(statusCode).send({ error: true });
+            }
+
+            console.log('Claude response:', body);
+
+            let content;
+            // Wrap it back to OAI format
+            if(request.body.model.startsWith('anthropic.')){
+                content = JSON.parse(body)['content'][0]['text'];
+            } else if(request.body.model.startsWith('mistral.')){
+                content = JSON.parse(body)['outputs'][0]['text'];
+            }
+            const reply = { choices: [{ 'message': { 'content': content } }] };
+            return response.send(reply);
+        }
+    } catch (error) {
+        console.log(color.red(`Error communicating with Bedrock Claude: ${error}\n${divider}`));
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        } else {
+            response.end();
+        }
+    }
+}
+
+
 async function sendCohereRequest(request, response) {
     const apiKey = readSecret(SECRET_KEYS.COHERE);
     const controller = new AbortController();
@@ -616,6 +742,7 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     let api_url;
     let api_key_openai;
     let headers;
+    let bedrock_region = 'us-east-1';
 
     if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.OPENAI) {
         api_url = new URL(request.body.reverse_proxy || API_OPENAI).toString();
@@ -635,6 +762,8 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
         api_key_openai = readSecret(SECRET_KEYS.CUSTOM);
         headers = {};
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
+        bedrock_region = request.body.bedrock_region;
     } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.COHERE) {
         api_url = API_COHERE;
         api_key_openai = readSecret(SECRET_KEYS.COHERE);
@@ -642,6 +771,24 @@ router.post('/status', jsonParser, async function (request, response_getstatus_o
     } else {
         console.log('This chat completion source is not supported yet.');
         return response_getstatus_openai.status(400).send({ error: true });
+    }
+
+    if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.BEDROCK) {
+        try {
+            let resp = await listTextModels(bedrock_region);
+            let models = resp.modelSummaries;
+            response_getstatus_openai.send(models);
+            console.log('Available Bedrock Text models:', models);
+        } catch(e) {
+            console.error(e);
+
+            if (!response_getstatus_openai.headersSent) {
+                response_getstatus_openai.send({ error: true });
+            } else {
+                response_getstatus_openai.end();
+            }
+        }
+        return;
     }
 
     if (!api_key_openai && !request.body.reverse_proxy && request.body.chat_completion_source !== CHAT_COMPLETION_SOURCES.CUSTOM) {
@@ -791,6 +938,7 @@ router.post('/generate', jsonParser, function (request, response) {
         case CHAT_COMPLETION_SOURCES.AI21: return sendAI21Request(request, response);
         case CHAT_COMPLETION_SOURCES.MAKERSUITE: return sendMakerSuiteRequest(request, response);
         case CHAT_COMPLETION_SOURCES.MISTRALAI: return sendMistralAIRequest(request, response);
+        case CHAT_COMPLETION_SOURCES.BEDROCK: return sendBedrockRequest(request, response);
         case CHAT_COMPLETION_SOURCES.COHERE: return sendCohereRequest(request, response);
     }
 

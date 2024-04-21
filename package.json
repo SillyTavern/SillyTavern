@@ -36,7 +36,9 @@
         "ws": "^8.13.0",
         "yaml": "^2.3.4",
         "yargs": "^17.7.1",
-        "yauzl": "^2.10.0"
+        "yauzl": "^2.10.0",
+        "@aws-sdk/client-bedrock-runtime": "^3.515.0",
+        "@aws-sdk/client-bedrock": "^3.515.0"
     },
     "overrides": {
         "parse-bmfont-xml": {

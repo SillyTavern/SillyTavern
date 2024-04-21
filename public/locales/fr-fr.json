@@ -205,7 +205,7 @@
     "Scale API Key": "Clé API Scale",
     "Alt Method": "Méthode alternative",
     "AI21 API Key": "Clé API AI21",
-    "AI21 Model": "Modèle AI21",    
+    "AI21 Model": "Modèle AI21",
     "View API Usage Metrics": "Afficher les mesures d'utilisation de l'API",
     "Show External models (provided by API)": "Afficher les modèles externes (fournis par l'API)",
     "Bot": "Bot",
@@ -914,5 +914,5 @@
     "Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.": "Utilisez le tokenizer approprié pour les modèles Google via leur API. Traitement des invitations plus lent, mais offre un décompte de jetons beaucoup plus précis.",
     "Load koboldcpp order": "Charger l'ordre koboldcpp",
     "Use Google Tokenizer": "Utiliser le tokenizer Google"
-    
+
 }
