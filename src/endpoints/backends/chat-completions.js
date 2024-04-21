@@ -836,14 +836,7 @@ router.post('/generate', jsonParser, function (request, response) {
         apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
         bodyParams = {
-            logprobs: request.body.logprobs,
         };
-
-        // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
-        if (!isTextCompletion && bodyParams.logprobs > 0) {
-            bodyParams.top_logprobs = bodyParams.logprobs;
-            bodyParams.logprobs = true;
-        }
 
         if (getConfigValue('openai.randomizeUserId', false)) {
             bodyParams['user'] = uuidv4();
@@ -875,14 +868,8 @@ router.post('/generate', jsonParser, function (request, response) {
         apiKey = readSecret(SECRET_KEYS.CUSTOM);
         headers = {};
         bodyParams = {
-            logprobs: request.body.logprobs,
         };
 
-        // Adjust logprobs params for Chat Completions API, which expects { top_logprobs: number; logprobs: boolean; }
-        if (!isTextCompletion && bodyParams.logprobs > 0) {
-            bodyParams.top_logprobs = bodyParams.logprobs;
-            bodyParams.logprobs = true;
-        }
 
         mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
@@ -939,7 +926,6 @@ router.post('/generate', jsonParser, function (request, response) {
         'top_p': request.body.top_p,
         'top_k': request.body.top_k,
         'stop': isTextCompletion === false ? request.body.stop : undefined,
-        'logit_bias': request.body.logit_bias,
         'seed': request.body.seed,
         'n': request.body.n,
         ...bodyParams,
