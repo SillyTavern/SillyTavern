@@ -1704,7 +1704,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         delete generate_data.logprobs;
     }
 
-    if (isClaude || isBedrock) {
+    if (isClaude || (isBedrock && model.startsWith('anthropic.claude')) ) {
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['claude_use_sysprompt'] = oai_settings.claude_use_sysprompt;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
@@ -1713,9 +1713,17 @@ async function sendOpenAIRequest(type, messages, signal) {
         if (!isQuiet) {
             generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
         }
+    }
+    if (isBedrock) {
+        generate_data['bedrock_region'] = oai_settings.bedrock_region;
 
-        if (isBedrock) {
-            generate_data['bedrock_region'] = oai_settings.bedrock_region;
+        // min value of top_k is 1, max is 200.
+        if(model.startsWith('mistral.')) {
+            generate_data['top_k'] = Number(Math.max(oai_settings.top_k_openai, 1));
+            // Don't add a prefill on quiet gens (summarization)
+            if (!isQuiet) {
+                generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
+            }
         }
     }
 
@@ -1835,9 +1843,14 @@ async function sendOpenAIRequest(type, messages, signal) {
 }
 
 function getStreamingReply(data) {
-    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE ||
-        oai_settings.chat_completion_source == chat_completion_sources.BEDROCK) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         return data?.delta?.text || '';
+    } else if (oai_settings.chat_completion_source == chat_completion_sources.BEDROCK) {
+        if (oai_settings.bedrock_model.startsWith('anthropic.')) {
+            return data?.delta?.text || '';
+        } else if (oai_settings.bedrock_model.startsWith('mistral.')) {
+            return data?.outputs?.[0].text || '';
+        }
     } else if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     } else {

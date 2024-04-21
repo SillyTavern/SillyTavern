@@ -469,7 +469,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,bedrock">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -521,7 +521,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,ai21,makersuite,cohere">
+                                <div data-newbie-hidden class="range-block" data-source="claude,openrouter,ai21,makersuite,cohere,bedrock">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -534,7 +534,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere">
+                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,bedrock">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -1773,7 +1773,7 @@
                                             <span data-i18n="Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.">Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.</span>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden class="range-block" data-source="claude">
+                                    <div data-newbie-hidden class="range-block" data-source="claude,bedrock">
                                         <div class="wide100p">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                             <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
@@ -2482,6 +2482,11 @@
                                     </optgroup>
                                     <optgroup label="Claude Instant">
                                         <option value="anthropic.claude-instant-v1">claude-instant-v1</option>
+                                    </optgroup>
+                                    <optgroup label="Mistral">
+                                        <option value="mistral.mistral-large-2402-v1:0">Mistral-Large(2402)</option>
+                                        <option value="mistral.mixtral-8x7b-instruct-v0:1">Mixtral-8X7B-Instruct(v0.1)</option>
+                                        <option value="mistral.mistral-7b-instruct-v0:2">Mistral-7B-Instruct(v0.2)</option>
                                     </optgroup>
                                     <!-- <optgroup label="LLaMA">
                                         <option value="anthropic.llama-13b-chat">llama-13b-chat</option>

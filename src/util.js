@@ -422,20 +422,12 @@ async function forwardBedrockStreamResponse(from, to) {
     to.header('Connection', 'keep-alive');
     to.flushHeaders(); // flush the headers to establish SSE with client
 
-    const readable = new Readable({
-        read() {}
-    });
-
-    readable.pipe(to);
-
     for await (const event of from.body) {
         let respCode = from.$metadata.httpStatusCode;
 
         if (event.chunk && event.chunk.bytes) {
             const chunk = Buffer.from(event.chunk.bytes).toString("utf-8");
-            const chunk_json = JSON.parse(chunk);
-            // chunks.push(chunk.completion); // change this line
-            readable.push(`event: ${chunk_json.type}\ndata: ${chunk}\n\n`);
+            to.write(`data: ${chunk}\n\n`);
         } else if (
             event.internalServerException ||
             event.modelStreamErrorException ||
@@ -447,13 +439,7 @@ async function forwardBedrockStreamResponse(from, to) {
         }
     }
 
-    to.socket.on('close', function () {
-        readable.destroy(); // Close the remote stream
-        to.end(); // End the Express response
-    });
-
-    readable.push(null);
-    to.end();
+    to.end()
 }
 
 /**

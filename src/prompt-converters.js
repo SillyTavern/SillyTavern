@@ -355,10 +355,73 @@ function convertTextCompletionPrompt(messages) {
     return messageStrings.join('\n') + '\nassistant:';
 }
 
+/**
+ * Convert a prompt from the ChatML objects to the format used by Mistral.
+ * @param {object[]} messages Array of messages
+ * @param {string}   assistantPrefill Add Assistant prefill at the end of prompt.
+ * @returns {string} Prompt for Mistral
+ */
+function convertMistralPrompt(messages, assistantPrefill) {
+
+    //Prepare messages for mistral.
+    let systemPrompt = '';
+    if(messages.length) {
+        // remove last assistant message
+        if(messages[messages.length - 1].role === 'assistant') {
+            messages.pop();
+        }
+
+        // Collect all the system messages up until the first instance of a non-system message,
+        // and then remove them from the messages array.
+        let i;
+        for (i = 0; i < messages.length; i++) {
+            if (messages[i].role !== 'system') {
+                break;
+            }
+            systemPrompt += `${messages[i].content}\n`;
+        }
+
+        messages.splice(0, i);
+    }
+
+    // merge system prompt into first user msg, or inject as first user message.
+    if(messages.length && messages[0].role === 'user') {
+        messages[0].message = systemPrompt + messages[0].message;
+    } else {
+        messages.unshift({
+            role: 'user',
+            message: systemPrompt
+        });
+    }
+
+    // Convert messages to the prompt.
+    let requestPrompt = messages.map((v, i) => {
+        // Set prefix and subfix according to the role.
+        let prefix = {
+            'user': (i !== 0 || messages.length - 1 == i) ? '[INST] ' : `<s>${systemPrompt}[INST] `,
+            'assistant': ' ',
+        }[v.role] ?? '';
+
+        let subfix = {
+            'user': ' [/INST]',
+            'assistant': '</s>',
+        }[v.role] ?? '';
+
+        if(i % 2 !== 0) {
+            console.log("WARN: msg should be in user/assist/user/assist order.")
+        }
+
+        return `${prefix}${v.content}${subfix}`;
+    }).join('');
+
+    return requestPrompt + assistantPrefill;
+}
+
 module.exports = {
     convertClaudePrompt,
     convertClaudeMessages,
     convertGooglePrompt,
     convertTextCompletionPrompt,
     convertCohereMessages,
+    convertMistralPrompt,
 };
