@@ -592,9 +592,10 @@ async function deleteMessageImage() {
 /**
  * Deletes file from the server.
  * @param {string} url Path to the file on the server
+ * @param {boolean} [silent=false] If true, do not show error messages
  * @returns {Promise<boolean>} True if file was deleted, false otherwise.
  */
-async function deleteFileFromServer(url) {
+async function deleteFileFromServer(url, silent = false) {
     try {
         const result = await fetch('/api/files/delete', {
             method: 'POST',
@@ -602,7 +603,7 @@ async function deleteFileFromServer(url) {
             body: JSON.stringify({ path: url }),
         });
 
-        if (!result.ok) {
+        if (!result.ok && !silent) {
             const error = await result.text();
             throw new Error(error);
         }
@@ -702,7 +703,8 @@ async function deleteAttachment(attachment, source, callback, confirm = true) {
             break;
     }
 
-    await deleteFileFromServer(attachment.url);
+    const silent = confirm === false;
+    await deleteFileFromServer(attachment.url, silent);
     callback();
 }
 
@@ -756,6 +758,7 @@ async function openAttachmentManager() {
 
         for (const attachment of sortedAttachmentList) {
             const attachmentTemplate = template.find('.attachmentListItemTemplate .attachmentListItem').clone();
+            attachmentTemplate.find('.attachmentFileIcon').attr('title', attachment.url);
             attachmentTemplate.find('.attachmentListItemName').text(attachment.name);
             attachmentTemplate.find('.attachmentListItemSize').text(humanFileSize(attachment.size));
             attachmentTemplate.find('.attachmentListItemCreated').text(new Date(attachment.created).toLocaleString());
@@ -883,6 +886,7 @@ async function openAttachmentManager() {
     });
 
     const cleanupFn = await renderButtons();
+    await verifyAttachments();
     await renderAttachments();
     await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });
 
@@ -1036,6 +1040,48 @@ export function getDataBankAttachmentsForSource(source) {
             return chat_metadata.attachments ?? [];
         case ATTACHMENT_SOURCE.CHARACTER:
             return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+    }
+}
+
+/**
+ * Verifies all attachments in the Data Bank.
+ * @returns {Promise<void>} A promise that resolves when attachments are verified.
+ */
+async function verifyAttachments() {
+    for (const source of Object.values(ATTACHMENT_SOURCE)) {
+        await verifyAttachmentsForSource(source);
+    }
+}
+
+/**
+ * Verifies all attachments for a specific source.
+ * @param {string} source Attachment source
+ * @returns {Promise<void>} A promise that resolves when attachments are verified.
+ */
+async function verifyAttachmentsForSource(source) {
+    try {
+        const attachments = getDataBankAttachmentsForSource(source);
+        const urls = attachments.map(a => a.url);
+        const response = await fetch('/api/files/verify', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ urls }),
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error);
+        }
+
+        const verifiedUrls = await response.json();
+        for (const attachment of attachments) {
+            if (verifiedUrls[attachment.url] === false) {
+                console.log('Deleting orphaned attachment', attachment);
+                await deleteAttachment(attachment, source, () => { }, false);
+            }
+        }
+    } catch (error) {
+        console.error('Attachment verification failed', error);
     }
 }
 
