@@ -53,6 +53,7 @@ const settings = {
 
     // For files
     enabled_files: false,
+    translate_files: false,
     size_threshold: 10,
     chunk_size: 5000,
     chunk_count: 2,
@@ -437,6 +438,12 @@ async function retrieveFileChunks(queryText, collectionId) {
  */
 async function vectorizeFile(fileText, fileName, collectionId, chunkSize) {
     try {
+        if (settings.translate_files && typeof window['translate'] === 'function') {
+            console.log(`Vectors: Translating file ${fileName} to English...`);
+            const translatedText = await window['translate'](fileText, 'en');
+            fileText = translatedText;
+        }
+
         const toast = toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
         const chunks = splitRecursive(fileText, chunkSize);
         console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks`, chunks);
@@ -1117,6 +1124,12 @@ jQuery(async () => {
 
     $('#vectors_file_depth_role_db').val(settings.file_depth_role_db).on('input', () => {
         settings.file_depth_role_db = Number($('#vectors_file_depth_role_db').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_translate_files').prop('checked', settings.translate_files).on('input', () => {
+        settings.translate_files = !!$('#vectors_translate_files').prop('checked');
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
