@@ -32,6 +32,7 @@ import {
     getStringHash,
     humanFileSize,
     saveBase64AsFile,
+    extractTextFromOffice,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
@@ -46,6 +47,12 @@ import { ScraperManager } from './scrapers.js';
  * @property {string} [text] File text
  */
 
+/**
+ * @typedef {function} ConverterFunction
+ * @param {File} file File object
+ * @returns {Promise<string>} Converted file text
+ */
+
 const fileSizeLimit = 1024 * 1024 * 10; // 10 MB
 const ATTACHMENT_SOURCE = {
     GLOBAL: 'global',
@@ -53,12 +60,42 @@ const ATTACHMENT_SOURCE = {
     CHARACTER: 'character',
 };
 
+/**
+ * @type {Record<string, ConverterFunction>} File converters
+ */
 const converters = {
     'application/pdf': extractTextFromPDF,
     'text/html': extractTextFromHTML,
     'text/markdown': extractTextFromMarkdown,
     'application/epub+zip': extractTextFromEpub,
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': extractTextFromOffice,
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': extractTextFromOffice,
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': extractTextFromOffice,
+    'application/vnd.oasis.opendocument.text': extractTextFromOffice,
+    'application/vnd.oasis.opendocument.presentation': extractTextFromOffice,
+    'application/vnd.oasis.opendocument.spreadsheet': extractTextFromOffice,
 };
+
+/**
+ * Finds a matching key in the converters object.
+ * @param {string} type MIME type
+ * @returns {string} Matching key
+ */
+function findConverterKey(type) {
+    return Object.keys(converters).find((key) => {
+        // Match exact type
+        if (type === key) {
+            return true;
+        }
+
+        // Match wildcards
+        if (key.endsWith('*')) {
+            return type.startsWith(key.substring(0, key.length - 1));
+        }
+
+        return false;
+    });
+}
 
 /**
  * Determines if the file type has a converter function.
@@ -66,7 +103,17 @@ const converters = {
  * @returns {boolean} True if the file type is convertible, false otherwise.
  */
 function isConvertible(type) {
-    return Object.keys(converters).includes(type);
+    return Boolean(findConverterKey(type));
+}
+
+/**
+ * Gets the converter function for a file type.
+ * @param {string} type MIME type
+ * @returns {ConverterFunction} Converter function
+ */
+function getConverter(type) {
+    const key = findConverterKey(type);
+    return key && converters[key];
 }
 
 /**
@@ -152,7 +199,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
 
             if (isConvertible(file.type)) {
                 try {
-                    const converter = converters[file.type];
+                    const converter = getConverter(file.type);
                     const fileText = await converter(file);
                     base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
                 } catch (error) {
@@ -585,17 +632,58 @@ async function openFilePopup(attachment) {
 }
 
 /**
+ * Edit a file attachment in a notepad-like modal.
+ * @param {FileAttachment} attachment Attachment to edit
+ * @param {string} source Attachment source
+ * @param {function} callback Callback function
+ */
+async function editAttachment(attachment, source, callback) {
+    const originalFileText = attachment.text || (await getFileAttachment(attachment.url));
+    const template = $(await renderExtensionTemplateAsync('attachments', 'notepad'));
+
+    let editedFileText = originalFileText;
+    template.find('[name="notepadFileContent"]').val(editedFileText).on('input', function () {
+        editedFileText = String($(this).val());
+    });
+
+    let editedFileName = attachment.name;
+    template.find('[name="notepadFileName"]').val(editedFileName).on('input', function () {
+        editedFileName = String($(this).val());
+    });
+
+    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: true, large: true, okButton: 'Save', cancelButton: 'Cancel' });
+
+    if (result !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
+
+    if (editedFileText === originalFileText && editedFileName === attachment.name) {
+        return;
+    }
+
+    const nullCallback = () => { };
+    await deleteAttachment(attachment, source, nullCallback, false);
+    const file = new File([editedFileText], editedFileName, { type: 'text/plain' });
+    await uploadFileAttachmentToServer(file, source);
+
+    callback();
+}
+
+/**
  * Deletes an attachment from the server and the chat.
  * @param {FileAttachment} attachment Attachment to delete
  * @param {string} source Source of the attachment
  * @param {function} callback Callback function
+ * @param {boolean} [confirm=true] If true, show a confirmation dialog
  * @returns {Promise<void>} A promise that resolves when the attachment is deleted.
  */
-async function deleteAttachment(attachment, source, callback) {
-    const confirm = await callGenericPopup('Are you sure you want to delete this attachment?', POPUP_TYPE.CONFIRM);
+async function deleteAttachment(attachment, source, callback, confirm = true) {
+    if (confirm) {
+        const result = await callGenericPopup('Are you sure you want to delete this attachment?', POPUP_TYPE.CONFIRM);
 
-    if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
-        return;
+        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+            return;
+        }
     }
 
     ensureAttachmentsExist();
@@ -672,6 +760,7 @@ async function openAttachmentManager() {
             attachmentTemplate.find('.attachmentListItemSize').text(humanFileSize(attachment.size));
             attachmentTemplate.find('.attachmentListItemCreated').text(new Date(attachment.created).toLocaleString());
             attachmentTemplate.find('.viewAttachmentButton').on('click', () => openFilePopup(attachment));
+            attachmentTemplate.find('.editAttachmentButton').on('click', () => editAttachment(attachment, source, renderAttachments));
             attachmentTemplate.find('.deleteAttachmentButton').on('click', () => deleteAttachment(attachment, source, renderAttachments));
             template.find(sources[source]).append(attachmentTemplate);
         }
@@ -748,7 +837,7 @@ async function openAttachmentManager() {
     }
 
     async function renderAttachments() {
-    /** @type {FileAttachment[]} */
+        /** @type {FileAttachment[]} */
         const globalAttachments = extension_settings.attachments ?? [];
         /** @type {FileAttachment[]} */
         const chatAttachments = chat_metadata.attachments ?? [];
@@ -842,7 +931,7 @@ async function runScraper(scraperId, target, callback) {
  * @param {string} target Target for the attachment
  * @returns
  */
-async function uploadFileAttachmentToServer(file, target) {
+export async function uploadFileAttachmentToServer(file, target) {
     const isValid = await validateFile(file);
 
     if (!isValid) {
@@ -855,7 +944,7 @@ async function uploadFileAttachmentToServer(file, target) {
 
     if (isConvertible(file.type)) {
         try {
-            const converter = converters[file.type];
+            const converter = getConverter(file.type);
             const fileText = await converter(file);
             base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
         } catch (error) {
@@ -930,6 +1019,44 @@ export function getDataBankAttachments() {
     const characterAttachments = extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
 
     return [...globalAttachments, ...chatAttachments, ...characterAttachments];
+}
+
+/**
+ * Gets all attachments for a specific source.
+ * @param {string} source Attachment source
+ * @returns {FileAttachment[]} List of attachments
+ */
+export function getDataBankAttachmentsForSource(source) {
+    ensureAttachmentsExist();
+
+    switch (source) {
+        case ATTACHMENT_SOURCE.GLOBAL:
+            return extension_settings.attachments ?? [];
+        case ATTACHMENT_SOURCE.CHAT:
+            return chat_metadata.attachments ?? [];
+        case ATTACHMENT_SOURCE.CHARACTER:
+            return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+    }
+}
+
+/**
+ * Registers a file converter function.
+ * @param {string} mimeType MIME type
+ * @param {ConverterFunction} converter Function to convert file
+ * @returns {void}
+ */
+export function registerFileConverter(mimeType, converter) {
+    if (typeof mimeType !== 'string' || typeof converter !== 'function') {
+        console.error('Invalid converter registration');
+        return;
+    }
+
+    if (Object.keys(converters).includes(mimeType)) {
+        console.error('Converter already registered');
+        return;
+    }
+
+    converters[mimeType] = converter;
 }
 
 jQuery(function () {

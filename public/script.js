@@ -4132,8 +4132,12 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             // regenerate with character speech reenforced
             // to make sure we leave on swipe type while also adding the name2 appendage
             await delay(1000);
+            // A message was already deleted on regeneration, so instead treat is as a normal gen
+            if (type === 'regenerate') {
+                type = 'normal';
+            }
             // The first await is for waiting for the generate to start. The second one is waiting for it to finish
-            const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, skipWIAN, force_chid, maxLoops: maxLoops - 1 });
+            const result = await await Generate(type, { automatic_trigger, force_name2: true, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, quietName, maxLoops: maxLoops - 1 });
             return result;
         }
 
@@ -6769,8 +6773,9 @@ function select_rm_info(type, charId, previousCharId = null) {
     importFlashTimeout = setTimeout(function () {
         if (type === 'char_import' || type === 'char_create') {
             // Find the page at which the character is located
+            const avatarFileName = `${charId}.png`;
             const charData = getEntitiesList({ doFilter: true });
-            const charIndex = charData.findIndex((x) => x?.item?.avatar?.startsWith(charId));
+            const charIndex = charData.findIndex((x) => x?.item?.avatar?.startsWith(avatarFileName));
 
             if (charIndex === -1) {
                 console.log(`Could not find character ${charId} in the list`);
@@ -6780,7 +6785,7 @@ function select_rm_info(type, charId, previousCharId = null) {
             try {
                 const perPage = Number(localStorage.getItem('Characters_PerPage')) || per_page_default;
                 const page = Math.floor(charIndex / perPage) + 1;
-                const selector = `#rm_print_characters_block [title^="${charId}"]`;
+                const selector = `#rm_print_characters_block [title*="${avatarFileName}"]`;
                 $('#rm_print_characters_pagination').pagination('go', page);
 
                 waitUntilCondition(() => document.querySelector(selector) !== null).then(() => {

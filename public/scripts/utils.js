@@ -1185,16 +1185,23 @@ export function uuidv4() {
 }
 
 function postProcessText(text, collapse = true) {
+    // Remove carriage returns
+    text = text.replace(/\r/g, '');
+    // Replace tabs with spaces
+    text = text.replace(/\t/g, ' ');
+    // Normalize unicode spaces
+    text = text.replace(/\u00A0/g, ' ');
     // Collapse multiple newlines into one
     if (collapse) {
         text = collapseNewlines(text);
         // Trim leading and trailing whitespace, and remove empty lines
         text = text.split('\n').map(l => l.trim()).filter(Boolean).join('\n');
+    } else {
+        // Replace more than 4 newlines with 4 newlines
+        text = text.replace(/\n{4,}/g, '\n\n\n\n');
+        // Trim lines that contain nothing but whitespace
+        text = text.split('\n').map(l => /^\s+$/.test(l) ? '' : l).join('\n');
     }
-    // Remove carriage returns
-    text = text.replace(/\r/g, '');
-    // Normalize unicode spaces
-    text = text.replace(/\u00A0/g, ' ');
     // Collapse multiple spaces into one (except for newlines)
     text = text.replace(/ {2,}/g, ' ');
     // Remove leading and trailing spaces
@@ -1346,6 +1353,47 @@ export async function extractTextFromEpub(blob) {
     const content = await Promise.all(sectionPromises);
     const text = content.filter(text => text);
     return postProcessText(text.join('\n'), false);
+}
+
+/**
+ * Extracts text from an Office document using the server plugin.
+ * @param {File} blob File to extract text from
+ * @returns {Promise<string>} A promise that resolves to the extracted text.
+ */
+export async function extractTextFromOffice(blob) {
+    async function checkPluginAvailability() {
+        try {
+            const result = await fetch('/api/plugins/office/probe', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+            });
+
+            return result.ok;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    const isPluginAvailable = await checkPluginAvailability();
+
+    if (!isPluginAvailable) {
+        throw new Error('Importing Office documents requires a server plugin. Please refer to the documentation for more information.');
+    }
+
+    const base64 = await getBase64Async(blob);
+
+    const response = await fetch('/api/plugins/office/parse', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ data: base64 }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to parse the Office document');
+    }
+
+    const data = await response.text();
+    return postProcessText(data, false);
 }
 
 /**

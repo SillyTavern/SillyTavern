@@ -78,6 +78,52 @@ export class ScraperManager {
 }
 
 /**
+ * Create a text file from a string.
+ * @implements {Scraper}
+ */
+class Notepad {
+    constructor() {
+        this.id = 'text';
+        this.name = 'Notepad';
+        this.description = 'Create a text file from scratch.';
+        this.iconClass = 'fa-solid fa-note-sticky';
+    }
+
+    /**
+     * Check if the scraper is available.
+     * @returns {Promise<boolean>}
+     */
+    async isAvailable() {
+        return true;
+    }
+
+    /**
+     * Create a text file from a string.
+     * @returns {Promise<File[]>} File attachments scraped from the text
+     */
+    async scrape() {
+        const template = $(await renderExtensionTemplateAsync('attachments', 'notepad', {}));
+        let fileName = `Untitled - ${new Date().toLocaleString()}`;
+        let text = '';
+        template.find('input[name="notepadFileName"]').val(fileName).on('input', function () {
+            fileName = String($(this).val()).trim();
+        });
+        template.find('textarea[name="notepadFileContent"]').on('input', function () {
+            text = String($(this).val());
+        });
+
+        const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: true, large: true, okButton: 'Save', cancelButton: 'Cancel' });
+
+        if (!result || text === '') {
+            return;
+        }
+
+        const file = new File([text], `Notepad - ${fileName}.txt`, { type: 'text/plain' });
+        return [file];
+    }
+}
+
+/**
  * Scrape data from a webpage.
  * @implements {Scraper}
  */
@@ -93,8 +139,8 @@ class WebScraper {
      * Check if the scraper is available.
      * @returns {Promise<boolean>}
      */
-    isAvailable() {
-        return Promise.resolve(true);
+    async isAvailable() {
+        return true;
     }
 
     /**
@@ -167,8 +213,8 @@ class FileScraper {
      * Check if the scraper is available.
      * @returns {Promise<boolean>}
      */
-    isAvailable() {
-        return Promise.resolve(true);
+    async isAvailable() {
+        return true;
     }
 
     /**
@@ -179,7 +225,7 @@ class FileScraper {
         return new Promise(resolve => {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
-            fileInput.accept = '.txt, .md, .pdf, .html, .htm, .epub';
+            fileInput.accept = '*/*';
             fileInput.multiple = true;
             fileInput.onchange = () => resolve(Array.from(fileInput.files));
             fileInput.click();
@@ -199,6 +245,10 @@ class FandomScraper {
         this.iconClass = 'fa-solid fa-fire';
     }
 
+    /**
+     * Check if the scraper is available.
+     * @returns {Promise<boolean>}
+     */
     async isAvailable() {
         try {
             const result = await fetch('/api/plugins/fandom/probe', {
@@ -289,6 +339,78 @@ class FandomScraper {
     }
 }
 
+/**
+ * Scrape transcript from a YouTube video.
+ * @implements {Scraper}
+ */
+class YouTubeScraper {
+    constructor() {
+        this.id = 'youtube';
+        this.name = 'YouTube';
+        this.description = 'Download a transcript from a YouTube video.';
+        this.iconClass = 'fa-solid fa-closed-captioning';
+    }
+
+    /**
+     * Check if the scraper is available.
+     * @returns {Promise<boolean>}
+     */
+    async isAvailable() {
+        return true;
+    }
+
+    /**
+     * Parse the ID of a YouTube video from a URL.
+     * @param {string} url URL of the YouTube video
+     * @returns {string} ID of the YouTube video
+     */
+    parseId(url){
+        const regex = /^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|&v(?:i)?=))([^#&?]*).*/;
+        const match = url.match(regex);
+        return (match?.length && match[1] ? match[1] : url);
+    }
+
+    /**
+     * Scrape transcript from a YouTube video.
+     * @returns {Promise<File[]>} File attachments scraped from the YouTube video
+     */
+    async scrape() {
+        let lang = '';
+        const template = $(await renderExtensionTemplateAsync('attachments', 'youtube-scrape', {}));
+        const videoUrl = await callGenericPopup(template, POPUP_TYPE.INPUT, '', { wide: false, large: false, okButton: 'Scrape', cancelButton: 'Cancel', rows: 2 });
+
+        template.find('input[name="youtubeLanguageCode"]').on('input', function () {
+            lang = String($(this).val()).trim();
+        });
+
+        if (!videoUrl) {
+            return;
+        }
+
+        const id = this.parseId(String(videoUrl).trim());
+        const toast = toastr.info('Working, please wait...');
+
+        const result = await fetch('/api/serpapi/transcript', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ id, lang }),
+        });
+
+        if (!result.ok) {
+            const error = await result.text();
+            throw new Error(error);
+        }
+
+        const transcript = await result.text();
+        toastr.clear(toast);
+
+        const file = new File([transcript], `YouTube - ${id} - ${Date.now()}.txt`, { type: 'text/plain' });
+        return [file];
+    }
+}
+
 ScraperManager.registerDataBankScraper(new FileScraper());
+ScraperManager.registerDataBankScraper(new Notepad());
 ScraperManager.registerDataBankScraper(new WebScraper());
 ScraperManager.registerDataBankScraper(new FandomScraper());
+ScraperManager.registerDataBankScraper(new YouTubeScraper());
