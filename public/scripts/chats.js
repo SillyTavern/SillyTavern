@@ -32,6 +32,7 @@ import {
     getStringHash,
     humanFileSize,
     saveBase64AsFile,
+    extractTextFromOffice,
 } from './utils.js';
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
@@ -46,6 +47,12 @@ import { ScraperManager } from './scrapers.js';
  * @property {string} [text] File text
  */
 
+/**
+ * @typedef {function} ConverterFunction
+ * @param {File} file File object
+ * @returns {Promise<string>} Converted file text
+ */
+
 const fileSizeLimit = 1024 * 1024 * 10; // 10 MB
 const ATTACHMENT_SOURCE = {
     GLOBAL: 'global',
@@ -53,12 +60,42 @@ const ATTACHMENT_SOURCE = {
     CHARACTER: 'character',
 };
 
+/**
+ * @type {Record<string, ConverterFunction>} File converters
+ */
 const converters = {
     'application/pdf': extractTextFromPDF,
     'text/html': extractTextFromHTML,
     'text/markdown': extractTextFromMarkdown,
     'application/epub+zip': extractTextFromEpub,
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': extractTextFromOffice,
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': extractTextFromOffice,
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': extractTextFromOffice,
+    'application/vnd.oasis.opendocument.text': extractTextFromOffice,
+    'application/vnd.oasis.opendocument.presentation': extractTextFromOffice,
+    'application/vnd.oasis.opendocument.spreadsheet': extractTextFromOffice,
 };
+
+/**
+ * Finds a matching key in the converters object.
+ * @param {string} type MIME type
+ * @returns {string} Matching key
+ */
+function findConverterKey(type) {
+    return Object.keys(converters).find((key) => {
+        // Match exact type
+        if (type === key) {
+            return true;
+        }
+
+        // Match wildcards
+        if (key.endsWith('*')) {
+            return type.startsWith(key.substring(0, key.length - 1));
+        }
+
+        return false;
+    });
+}
 
 /**
  * Determines if the file type has a converter function.
@@ -66,7 +103,17 @@ const converters = {
  * @returns {boolean} True if the file type is convertible, false otherwise.
  */
 function isConvertible(type) {
-    return Object.keys(converters).includes(type);
+    return Boolean(findConverterKey(type));
+}
+
+/**
+ * Gets the converter function for a file type.
+ * @param {string} type MIME type
+ * @returns {ConverterFunction} Converter function
+ */
+function getConverter(type) {
+    const key = findConverterKey(type);
+    return key && converters[key];
 }
 
 /**
@@ -152,7 +199,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
 
             if (isConvertible(file.type)) {
                 try {
-                    const converter = converters[file.type];
+                    const converter = getConverter(file.type);
                     const fileText = await converter(file);
                     base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
                 } catch (error) {
@@ -748,7 +795,7 @@ async function openAttachmentManager() {
     }
 
     async function renderAttachments() {
-    /** @type {FileAttachment[]} */
+        /** @type {FileAttachment[]} */
         const globalAttachments = extension_settings.attachments ?? [];
         /** @type {FileAttachment[]} */
         const chatAttachments = chat_metadata.attachments ?? [];
@@ -855,7 +902,7 @@ export async function uploadFileAttachmentToServer(file, target) {
 
     if (isConvertible(file.type)) {
         try {
-            const converter = converters[file.type];
+            const converter = getConverter(file.type);
             const fileText = await converter(file);
             base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
         } catch (error) {
@@ -948,6 +995,26 @@ export function getDataBankAttachmentsForSource(source) {
         case ATTACHMENT_SOURCE.CHARACTER:
             return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
     }
+}
+
+/**
+ * Registers a file converter function.
+ * @param {string} mimeType MIME type
+ * @param {ConverterFunction} converter Function to convert file
+ * @returns {void}
+ */
+export function registerFileConverter(mimeType, converter) {
+    if (typeof mimeType !== 'string' || typeof converter !== 'function') {
+        console.error('Invalid converter registration');
+        return;
+    }
+
+    if (Object.keys(converters).includes(mimeType)) {
+        console.error('Converter already registered');
+        return;
+    }
+
+    converters[mimeType] = converter;
 }
 
 jQuery(function () {

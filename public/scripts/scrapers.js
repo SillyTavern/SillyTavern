@@ -179,7 +179,7 @@ class FileScraper {
         return new Promise(resolve => {
             const fileInput = document.createElement('input');
             fileInput.type = 'file';
-            fileInput.accept = '.txt, .md, .pdf, .html, .htm, .epub';
+            fileInput.accept = '*/*';
             fileInput.multiple = true;
             fileInput.onchange = () => resolve(Array.from(fileInput.files));
             fileInput.click();

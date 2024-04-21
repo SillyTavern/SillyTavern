@@ -1356,6 +1356,47 @@ export async function extractTextFromEpub(blob) {
 }
 
 /**
+ * Extracts text from an Office document using the server plugin.
+ * @param {File} blob File to extract text from
+ * @returns {Promise<string>} A promise that resolves to the extracted text.
+ */
+export async function extractTextFromOffice(blob) {
+    async function checkPluginAvailability() {
+        try {
+            const result = await fetch('/api/plugins/office/probe', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+            });
+
+            return result.ok;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    const isPluginAvailable = await checkPluginAvailability();
+
+    if (!isPluginAvailable) {
+        throw new Error('Importing Office documents requires a server plugin. Please refer to the documentation for more information.');
+    }
+
+    const base64 = await getBase64Async(blob);
+
+    const response = await fetch('/api/plugins/office/parse', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ data: base64 }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to parse the Office document');
+    }
+
+    const data = await response.text();
+    return postProcessText(data, false);
+}
+
+/**
  * Sets a value in an object by a path.
  * @param {object} obj Object to set value in
  * @param {string} path Key path
