@@ -184,7 +184,7 @@ function onMancerModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
 
     const limits = mancerModels.find(x => x.id === modelId)?.limits;
-    setGenerationParamsFromPreset({ max_length: limits.context, genamt: limits.completion });
+    setGenerationParamsFromPreset({ max_length: limits.context, genamt: limits.completion }, true);
 }
 
 function onTogetherModelSelect() {
@@ -461,7 +461,7 @@ jQuery(function () {
             searchInputPlaceholder: 'Search models...',
             searchInputCssClass: 'text_pole',
             width: '100%',
-            templateResult:  getDreamGenModelTemplate,
+            templateResult: getDreamGenModelTemplate,
         });
         $('#openrouter_model').select2({
             placeholder: 'Select a model',

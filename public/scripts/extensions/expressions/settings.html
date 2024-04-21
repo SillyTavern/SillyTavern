@@ -6,9 +6,9 @@
         </div>
 
         <div class="inline-drawer-content">
-            <label class="checkbox_label" for="expression_local" title="Use classification model without the Extras server.">
-                <input id="expression_local" type="checkbox" />
-                <span data-i18n="Local server classification">Local server classification</span>
+            <label class="checkbox_label" for="expression_translate" title="Use the selected API from Chat Translation extension settings.">
+                <input id="expression_translate" type="checkbox">
+                <span>Translate text to English before classification</span>
             </label>
             <label class="checkbox_label" for="expressions_show_default">
                 <input id="expressions_show_default" type="checkbox">
@@ -18,6 +18,30 @@
                 <input id="image_type_toggle" type="checkbox">
                 <span>Image Type - talkinghead (extras)</span>
             </label>
+            <div class="expression_api_block m-b-1 m-t-1">
+                <label for="expression_api">Classifier API</label>
+                <small>Select the API for classifying expressions.</small>
+                <select id="expression_api" class="flex1 margin0" data-i18n="Expression API" placeholder="Expression API">
+                    <option value="0">Local</option>
+                    <option value="1">Extras</option>
+                    <option value="2">LLM</option>
+                </select>
+            </div>
+            <div class="expression_llm_prompt_block m-b-1 m-t-1">
+                <label for="expression_llm_prompt" class="title_restorable">
+                    <span>LLM Prompt</span>
+                    <div id="expression_llm_prompt_restore" title="Restore default value" class="right_menu_button">
+                        <i class="fa-solid fa-clock-rotate-left fa-sm"></i>
+                    </div>
+                </label>
+                <small>Will be used if the API doesn't support JSON schemas.</small>
+                <textarea id="expression_llm_prompt" type="text" class="text_pole textarea_compact" rows="2" placeholder="Use &lcub;&lcub;labels&rcub;&rcub; special macro."></textarea>
+            </div>
+            <div class="expression_fallback_block m-b-1 m-t-1">
+                <label for="expression_fallback">Default / Fallback Expression</label>
+                <small>Set the default and fallback expression being used when no matching expression is found.</small>
+                <select id="expression_fallback" class="flex1 margin0" data-i18n="Fallback Expression" placeholder="Fallback Expression"></select>
+            </div>
             <div class="expression_custom_block m-b-1 m-t-1">
                 <label for="expression_custom">Custom Expressions</label>
                 <small>Can be set manually or with an <tt>/emote</tt> slash command.</small>

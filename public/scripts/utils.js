@@ -690,7 +690,7 @@ export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '
 
     const flatParts = parts.flatMap(p => {
         if (p.length < length) return p;
-        return splitRecursive(input, length, delimiters.slice(1));
+        return splitRecursive(p, length, delimiters.slice(1));
     });
 
     // Merge short chunks

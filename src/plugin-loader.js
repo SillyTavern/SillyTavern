@@ -180,7 +180,8 @@ async function initPlugin(app, plugin, exitHooks) {
         }
     }
 
-    if (typeof plugin.init !== 'function') {
+    const init = plugin.init || plugin.default?.init;
+    if (typeof init !== 'function') {
         console.error('Failed to load plugin module; no init function');
         return false;
     }
@@ -200,7 +201,7 @@ async function initPlugin(app, plugin, exitHooks) {
     // Allow the plugin to register API routes under /api/plugins/[plugin ID] via a router
     const router = express.Router();
 
-    await plugin.init(router);
+    await init(router);
 
     loadedPlugins.set(id, plugin);
 
@@ -209,8 +210,9 @@ async function initPlugin(app, plugin, exitHooks) {
         app.use(`/api/plugins/${id}`, router);
     }
 
-    if (typeof plugin.exit === 'function') {
-        exitHooks.push(plugin.exit);
+    const exit = plugin.exit || plugin.default?.exit;
+    if (typeof exit === 'function') {
+        exitHooks.push(exit);
     }
 
     return true;

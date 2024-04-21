@@ -157,6 +157,7 @@ body {
     border-top: 20px solid transparent;
     min-height: 40px;
 }
+
 ::-webkit-scrollbar-thumb:horizontal {
     background-color: var(--grey7070a);
     box-shadow: inset 0 0 0 1px var(--black50a);
@@ -532,14 +533,14 @@ body.reduced-motion #bg_custom {
     opacity: 1;
 }
 
-.panelControlBar {
+body .panelControlBar {
     position: absolute;
     right: 5px;
     top: 5px;
-    margin-right: 5px;
     z-index: 2000;
     min-width: 55px;
     justify-content: flex-end;
+    gap: 0px;
 }
 
 .panelControlBar .drag-grabber {
@@ -799,7 +800,7 @@ body.reduced-motion #bg_custom {
 .mes {
     display: flex;
     align-items: flex-start;
-    padding: 20px 10px 0 10px;
+    padding: 10px 10px 0 10px;
     margin-top: 0;
     width: 100%;
     color: var(--SmartThemeBodyColor);
@@ -985,9 +986,7 @@ body.reduced-motion #bg_custom {
 }
 
 .avatars_inline .avatar {
-    margin-top: calc(var(--avatar-base-border-radius));
-    margin-left: calc(var(--avatar-base-border-radius));
-    margin-bottom: calc(var(--avatar-base-border-radius));
+    margin: calc(var(--avatar-base-border-radius));
 }
 
 .avatars_inline .avatar:last-of-type {
@@ -1100,8 +1099,8 @@ select {
 
 @media screen and (min-width: 1001px) {
     #description_textarea {
-        height: 30vh;
-        height: 30svh;
+        height: 29vh;
+        height: 29svh;
     }
 
     #firstmessage_textarea {
@@ -1188,7 +1187,7 @@ input[type="file"] {
 #right-nav-panel-tabs {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 5px;
     overflow: hidden;
     width: 100%;
 }
@@ -1198,7 +1197,7 @@ input[type="file"] {
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    padding: 0 5px;
+    padding: 0px 10px 0px 5px;
 }
 
 #right-nav-panel-tabs .right_menu_button,
@@ -1652,6 +1651,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .missing-avatar.inline_avatar {
     padding: unset;
     border-radius: var(--avatar-base-border-radius-round);
+    width: fit-content;
 }
 
 /*applies to char list and mes_text char display name*/
@@ -2000,6 +2000,19 @@ grammarly-extension {
     justify-content: center;
     align-items: center;
     align-self: center !important;
+    width: 100%;
+    height: 100%;
+    /* Avoids cutting off the box shadow on the avatar*/
+    margin: 10px;
+}
+
+#avatar_controls {
+    height: 100%;
+    width: 100%;
+    flex-grow: 1;
+    justify-content: flex-end;
+    flex-flow: column;
+    padding: 5px 5px 10px 0;
 }
 
 #description_div,
@@ -2059,7 +2072,8 @@ grammarly-extension {
 /* Focus */
 
 #bulk_tag_popup,
-#dialogue_popup {
+#dialogue_popup,
+.dialogue_popup {
     width: 500px;
     max-width: 90vw;
     max-width: 90svw;
@@ -2112,7 +2126,8 @@ grammarly-extension {
 }
 
 #bulk_tag_popup_holder,
-#dialogue_popup_holder {
+#dialogue_popup_holder,
+.dialogue_popup_holder {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -2120,13 +2135,15 @@ grammarly-extension {
     padding: 0 10px;
 }
 
-#dialogue_popup_text {
+#dialogue_popup_text,
+.dialogue_popup_text {
     flex-grow: 1;
     overflow-y: auto;
     height: 100%;
 }
 
-#dialogue_popup_controls {
+#dialogue_popup_controls,
+.dialogue_popup_controls {
     display: flex;
     align-self: center;
     gap: 20px;
@@ -2134,14 +2151,16 @@ grammarly-extension {
 
 #bulk_tag_popup_reset,
 #bulk_tag_popup_remove_mutual,
-#dialogue_popup_ok {
+#dialogue_popup_ok,
+.dialogue_popup_ok {
     background-color: var(--crimson70a);
     cursor: pointer;
 }
 
 #bulk_tag_popup_reset:hover,
 #bulk_tag_popup_remove_mutual:hover,
-#dialogue_popup_ok:hover {
+#dialogue_popup_ok:hover,
+.dialogue_popup_ok:hover {
     background-color: var(--crimson-hover);
 }
 
@@ -2149,13 +2168,15 @@ grammarly-extension {
     max-height: 70vh;
 }
 
-#dialogue_popup_input {
+#dialogue_popup_input,
+.dialogue_popup_input {
     margin: 10px 0;
     width: 100%;
 }
 
 #bulk_tag_popup_cancel,
-#dialogue_popup_cancel {
+#dialogue_popup_cancel,
+.dialogue_popup_cancel {
     cursor: pointer;
 }
 
@@ -2202,11 +2223,11 @@ grammarly-extension {
     font-weight: bold;
     padding: 5px;
     margin: 0;
-    height: 26px;
     filter: grayscale(0.5);
     text-align: center;
     font-size: 17px;
     aspect-ratio: 1 / 1;
+    flex: 0.05;
 }
 
 .menu_button:hover,
@@ -2220,7 +2241,8 @@ grammarly-extension {
     margin-right: 25px;
 }
 
-#shadow_popup {
+#shadow_popup,
+.shadow_popup {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     background-color: var(--black30a);
@@ -2232,6 +2254,10 @@ grammarly-extension {
     height: 100svh;
     z-index: 9999;
     top: 0;
+
+    &.shadow_popup {
+        z-index: 9998;
+    }
 }
 
 #bgtest {
@@ -2622,7 +2648,11 @@ input[type="range"]::-webkit-slider-thumb {
     color: var(--SmartThemeBodyColor);
 }
 
-#char-management-dropdown,
+#char-management-dropdown {
+    height: auto;
+    margin-bottom: 0;
+}
+
 #tagInput {
     height: 26px;
     margin-bottom: 0;
@@ -3778,19 +3808,33 @@ body:not(.movingUI) .drawer-content.maximized {
     --leftGapWidth: calc((100vw - var(--sheldWidth)) / 2);
     /* Left position of the avatar (half of the gap minus half of the avatar width) */
     --leftPosition: max(0px, calc((var(--leftGapWidth) - var(--maxWidth)) / 2));
-    aspect-ratio: 2 / 3;
     padding: 0;
     border: 0;
     background-color: transparent;
     max-width: var(--maxWidth);
     left: var(--leftPosition);
+    position: absolute;
+    height: auto;
+    max-height: 90vh !important;
+    align-items: end;
+}
+
+.zoomed_avatar .dragClose {
+    display: none;
+}
+
+.zoomed_avatar_container {
+    width: 100%;
+    margin-inline: 10px;
+    max-height: 90vh;
+    max-width: 90svh;
 }
 
 .zoomed_avatar img {
-    height: 100%;
+    height: unset !important;
     width: 100%;
-    vertical-align: bottom;
-    object-fit: cover;
+    object-fit: contain !important;
+    border-radius: 10px;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

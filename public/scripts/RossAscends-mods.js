@@ -34,7 +34,7 @@ import {
 } from './secrets.js';
 import { debounce, delay, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
-import { getTokenCount } from './tokenizers.js';
+import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
 
 import Bowser from '../lib/bowser.min.js';
@@ -51,6 +51,7 @@ var SelectedCharacterTab = document.getElementById('rm_button_selected_ch');
 
 var connection_made = false;
 var retry_delay = 500;
+let counterNonce = Date.now();
 
 const observerConfig = { childList: true, subtree: true };
 const countTokensDebounced = debounce(RA_CountCharTokens, 1000);
@@ -108,13 +109,22 @@ export function humanizeGenTime(total_gen_time) {
     return time_spent;
 }
 
-let parsedUA = null;
-try {
-    parsedUA = Bowser.parse(navigator.userAgent);
-} catch {
-    // In case the user agent is an empty string or Bowser can't parse it for some other reason
-}
+/**
+ * DON'T OPTIMIZE, don't change this to a const or let, it needs to be a var.
+ */
+var parsedUA = null;
 
+function getParsedUA() {
+    if (!parsedUA) {
+        try {
+            parsedUA = Bowser.parse(navigator.userAgent);
+        } catch {
+            // In case the user agent is an empty string or Bowser can't parse it for some other reason
+        }
+    }
+
+    return parsedUA;
+}
 
 /**
  * Checks if the device is a mobile device.
@@ -123,7 +133,7 @@ try {
 export function isMobile() {
     const mobileTypes = ['mobile', 'tablet'];
 
-    return mobileTypes.includes(parsedUA?.platform?.type);
+    return mobileTypes.includes(getParsedUA()?.platform?.type);
 }
 
 export function shouldSendOnEnter() {
@@ -193,24 +203,32 @@ $('#rm_ch_create_block').on('input', function () { countTokensDebounced(); });
 //when any input is made to the advanced editing popup textareas
 $('#character_popup').on('input', function () { countTokensDebounced(); });
 //function:
-export function RA_CountCharTokens() {
+export async function RA_CountCharTokens() {
+    counterNonce = Date.now();
+    const counterNonceLocal = counterNonce;
     let total_tokens = 0;
     let permanent_tokens = 0;
 
-    $('[data-token-counter]').each(function () {
-        const counter = $(this);
+    const tokenCounters = document.querySelectorAll('[data-token-counter]');
+    for (const tokenCounter of tokenCounters) {
+        if (counterNonceLocal !== counterNonce) {
+            return;
+        }
+
+        const counter = $(tokenCounter);
         const input = $(document.getElementById(counter.data('token-counter')));
         const isPermanent = counter.data('token-permanent') === true;
         const value = String(input.val());
 
         if (input.length === 0) {
             counter.text('Invalid input reference');
-            return;
+            continue;
         }
 
         if (!value) {
+            input.data('last-value-hash', '');
             counter.text(0);
-            return;
+            continue;
         }
 
         const valueHash = getStringHash(value);
@@ -221,13 +239,18 @@ export function RA_CountCharTokens() {
         } else {
             // We substitute macro for existing characters, but not for the character being created
             const valueToCount = menu_type === 'create' ? value : substituteParams(value);
-            const tokens = getTokenCount(valueToCount);
+            const tokens = await getTokenCountAsync(valueToCount);
+
+            if (counterNonceLocal !== counterNonce) {
+                return;
+            }
+
             counter.text(tokens);
             total_tokens += tokens;
             permanent_tokens += isPermanent ? tokens : 0;
             input.data('last-value-hash', valueHash);
         }
-    });
+    }
 
     // Warn if total tokens exceeds the limit of half the max context
     const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
@@ -254,7 +277,7 @@ async function RA_autoloadchat() {
                 await selectCharacterById(String(active_character_id));
 
                 // Do a little tomfoolery to spoof the tag selector
-                const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`)
+                const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`);
                 applyTagsOnCharacterSelect.call(selectedCharElement);
             }
         }
@@ -275,7 +298,7 @@ export async function favsToHotswap() {
 
     //helpful instruction message if no characters are favorited
     if (favs.length == 0) {
-        container.html('<small><span><i class="fa-solid fa-star"></i> <span data-i18n="Favorite characters to add them to HotSwaps">Favorite characters to add them to HotSwaps</span></span></small>');
+        container.html(`<small><span><i class="fa-solid fa-star"></i>${DOMPurify.sanitize(container.attr('no_favs'))}</span></small>`);
         return;
     }
 
@@ -285,7 +308,8 @@ export async function favsToHotswap() {
 //changes input bar and send button display depending on connection status
 function RA_checkOnlineStatus() {
     if (online_status == 'no_connection') {
-        $('#send_textarea').attr('placeholder', 'Not connected to API!'); //Input bar placeholder tells users they are not connected
+        const send_textarea = $('#send_textarea');
+        send_textarea.attr('placeholder', send_textarea.attr('no_connection_text')); //Input bar placeholder tells users they are not connected
         $('#send_form').addClass('no-connection'); //entire input form area is red when not connected
         $('#send_but').addClass('displayNone'); //send button is hidden when not connected;
         $('#mes_continue').addClass('displayNone'); //continue button is hidden when not connected;
@@ -294,7 +318,8 @@ function RA_checkOnlineStatus() {
         connection_made = false;
     } else {
         if (online_status !== undefined && online_status !== 'no_connection') {
-            $('#send_textarea').attr('placeholder', 'Type a message, or /? for help'); //on connect, placeholder tells user to type message
+            const send_textarea = $('#send_textarea');
+            send_textarea.attr('placeholder', send_textarea.attr('connected_text')); //on connect, placeholder tells user to type message
             $('#send_form').removeClass('no-connection');
             $('#API-status-top').removeClass('fa-plug-circle-exclamation redOverlayGlow');
             $('#API-status-top').addClass('fa-plug');
@@ -351,6 +376,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.MAKERSUITE] && oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE)
                     || (secret_state[SECRET_KEYS.MISTRALAI] && oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI)
                     || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
+                    || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                 ) {
                     $('#api_button_openai').trigger('click');
@@ -1176,7 +1202,7 @@ export function initRossMods() {
 
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {
             // This will eventually be to trigger quick replies
-            event.preventDefault();
+            // event.preventDefault();
             console.log('Ctrl +' + event.key + ' pressed!');
         }
     }

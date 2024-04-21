@@ -4,6 +4,8 @@
 <ul>
     <li><tt>&lcub;&lcub;pipe&rcub;&rcub;</tt> – only for slash command batching. Replaced with the returned result of the previous command.</li>
     <li><tt>&lcub;&lcub;newline&rcub;&rcub;</tt> – just inserts a newline.</li>
+    <li><tt>&lcub;&lcub;trim&rcub;&rcub;</tt> – trims newlines surrounding this macro.</li>
+    <li><tt>&lcub;&lcub;noop&rcub;&rcub;</tt> – no operation, just an empty string.</li>
     <li><tt>&lcub;&lcub;original&rcub;&rcub;</tt> – global prompts defined in API settings. Only valid in Advanced Definitions prompt overrides.</li>
     <li><tt>&lcub;&lcub;input&rcub;&rcub;</tt> – the user input</li>
     <li><tt>&lcub;&lcub;charPrompt&rcub;&rcub;</tt> – the Character's Main Prompt override</li>
@@ -49,6 +51,7 @@
     <li><tt>&lcub;&lcub;maxPrompt&rcub;&rcub;</tt> – max allowed prompt length in tokens = (context size - response length)</li>
     <li><tt>&lcub;&lcub;exampleSeparator&rcub;&rcub;</tt> – context template example dialogues separator</li>
     <li><tt>&lcub;&lcub;chatStart&rcub;&rcub;</tt> – context template chat start line</li>
+    <li><tt>&lcub;&lcub;systemPrompt&rcub;&rcub;</tt> – main system prompt (either character prompt override if chosen, or instructSystemPrompt)</li>
     <li><tt>&lcub;&lcub;instructSystemPrompt&rcub;&rcub;</tt> – instruct system prompt</li>
     <li><tt>&lcub;&lcub;instructSystemPromptPrefix&rcub;&rcub;</tt> – instruct system prompt prefix sequence</li>
     <li><tt>&lcub;&lcub;instructSystemPromptSuffix&rcub;&rcub;</tt> – instruct system prompt suffix sequence</li>

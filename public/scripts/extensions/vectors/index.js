@@ -1,5 +1,23 @@
-import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from '../../../script.js';
-import { ModuleWorkerWrapper, extension_settings, getContext, modules, renderExtensionTemplate } from '../../extensions.js';
+import {
+    eventSource,
+    event_types,
+    extension_prompt_types,
+    getCurrentChatId,
+    getRequestHeaders,
+    is_send_press,
+    saveSettingsDebounced,
+    setExtensionPrompt,
+    substituteParams,
+    generateRaw,
+} from '../../../script.js';
+import {
+    ModuleWorkerWrapper,
+    extension_settings,
+    getContext,
+    modules,
+    renderExtensionTemplateAsync,
+    doExtrasFetch, getApiUrl,
+} from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
@@ -14,6 +32,10 @@ const settings = {
     include_wi: false,
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
+    summarize: false,
+    summarize_sent: false,
+    summary_source: 'main',
+    summary_prompt: 'Pause your roleplay. Summarize the most important parts of the message. Limit yourself to 250 words or less. Your response should include nothing but the summary.',
 
     // For chats
     enabled_chats: false,
@@ -113,6 +135,56 @@ function splitByChunks(items) {
     return chunkedItems;
 }
 
+async function summarizeExtra(hashedMessages) {
+    for (const element of hashedMessages) {
+        try {
+            const url = new URL(getApiUrl());
+            url.pathname = '/api/summarize';
+
+            const apiResult = await doExtrasFetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'bypass',
+                },
+                body: JSON.stringify({
+                    text: element.text,
+                    params: {},
+                }),
+            });
+
+            if (apiResult.ok) {
+                const data = await apiResult.json();
+                element.text = data.summary;
+            }
+        }
+        catch (error) {
+            console.log(error);
+        }
+    }
+
+    return hashedMessages;
+}
+
+async function summarizeMain(hashedMessages) {
+    for (const element of hashedMessages) {
+        element.text = await generateRaw(element.text, '', false, false, settings.summary_prompt);
+    }
+
+    return hashedMessages;
+}
+
+async function summarize(hashedMessages, endpoint = 'main') {
+    switch (endpoint) {
+        case 'main':
+            return await summarizeMain(hashedMessages);
+        case 'extras':
+            return await summarizeExtra(hashedMessages);
+        default:
+            console.error('Unsupported endpoint', endpoint);
+    }
+}
+
 async function synchronizeChat(batchSize = 5) {
     if (!settings.enabled_chats) {
         return -1;
@@ -135,14 +207,20 @@ async function synchronizeChat(batchSize = 5) {
             return -1;
         }
 
-        const hashedMessages = context.chat.filter(x => !x.is_system).map(x => ({ text: String(x.mes), hash: getStringHash(x.mes), index: context.chat.indexOf(x) }));
+        let hashedMessages = context.chat.filter(x => !x.is_system).map(x => ({ text: String(substituteParams(x.mes)), hash: getStringHash(substituteParams(x.mes)), index: context.chat.indexOf(x) }));
         const hashesInCollection = await getSavedHashes(chatId);
+
+        if (settings.summarize) {
+            hashedMessages = await summarize(hashedMessages, settings.summary_source);
+        }
 
         const newVectorItems = hashedMessages.filter(x => !hashesInCollection.includes(x.hash));
         const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
 
+
         if (newVectorItems.length > 0) {
             const chunkedBatch = splitByChunks(newVectorItems.slice(0, batchSize));
+
             console.log(`Vectors: Found ${newVectorItems.length} new items. Processing ${batchSize}...`);
             await insertVectorItems(chatId, chunkedBatch);
         }
@@ -244,7 +322,7 @@ async function processFiles(chat) {
                 await vectorizeFile(fileText, fileName, collectionId);
             }
 
-            const queryText = getQueryText(chat);
+            const queryText = await getQueryText(chat);
             const fileChunks = await retrieveFileChunks(queryText, collectionId);
 
             // Wrap it back in a code block
@@ -321,7 +399,7 @@ async function rearrangeChat(chat) {
             return;
         }
 
-        const queryText = getQueryText(chat);
+        const queryText = await getQueryText(chat);
 
         if (queryText.length === 0) {
             console.debug('Vectors: No text to query');
@@ -339,7 +417,7 @@ async function rearrangeChat(chat) {
             if (retainMessages.includes(message) || !message.mes) {
                 continue;
             }
-            const hash = getStringHash(message.mes);
+            const hash = getStringHash(substituteParams(message.mes));
             if (queryHashes.includes(hash) && !insertedHashes.has(hash)) {
                 queriedMessages.push(message);
                 insertedHashes.add(hash);
@@ -348,7 +426,7 @@ async function rearrangeChat(chat) {
 
         // Rearrange queried messages to match query order
         // Order is reversed because more relevant are at the lower indices
-        queriedMessages.sort((a, b) => queryHashes.indexOf(getStringHash(b.mes)) - queryHashes.indexOf(getStringHash(a.mes)));
+        queriedMessages.sort((a, b) => queryHashes.indexOf(getStringHash(substituteParams(b.mes))) - queryHashes.indexOf(getStringHash(substituteParams(a.mes))));
 
         // Remove queried messages from the original chat array
         for (const message of chat) {
@@ -387,15 +465,21 @@ const onChatEvent = debounce(async () => await moduleWorker.update(), 500);
 /**
  * Gets the text to query from the chat
  * @param {object[]} chat Chat messages
- * @returns {string} Text to query
+ * @returns {Promise<string>} Text to query
  */
-function getQueryText(chat) {
+async function getQueryText(chat) {
     let queryText = '';
     let i = 0;
 
-    for (const message of chat.slice().reverse()) {
-        if (message.mes) {
-            queryText += message.mes + '\n';
+    let hashedMessages = chat.map(x => ({ text: String(substituteParams(x.mes)) }));
+
+    if (settings.summarize && settings.summarize_sent) {
+        hashedMessages = await summarize(hashedMessages, settings.summary_source);
+    }
+
+    for (const message of hashedMessages.slice().reverse()) {
+        if (message.text) {
+            queryText += message.text + '\n';
             i++;
         }
 
@@ -636,7 +720,7 @@ async function onViewStatsClick() {
 
     const chat = getContext().chat;
     for (const message of chat) {
-        if (hashesInCollection.includes(getStringHash(message.mes))) {
+        if (hashesInCollection.includes(getStringHash(substituteParams(message.mes)))) {
             const messageElement = $(`.mes[mesid="${chat.indexOf(message)}"]`);
             messageElement.addClass('vectorized');
         }
@@ -658,7 +742,8 @@ jQuery(async () => {
 
     // Migrate from TensorFlow to Transformers
     settings.source = settings.source !== 'local' ? settings.source : 'transformers';
-    $('#extensions_settings2').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
+    const template = await renderExtensionTemplateAsync(MODULE_NAME, 'settings');
+    $('#extensions_settings2').append(template);
     $('#vectors_enabled_chats').prop('checked', settings.enabled_chats).on('input', () => {
         settings.enabled_chats = $('#vectors_enabled_chats').prop('checked');
         Object.assign(extension_settings.vectors, settings);
@@ -752,6 +837,30 @@ jQuery(async () => {
 
     $('#vectors_include_wi').prop('checked', settings.include_wi).on('input', () => {
         settings.include_wi = !!$('#vectors_include_wi').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_summarize').prop('checked', settings.summarize).on('input', () => {
+        settings.summarize = !!$('#vectors_summarize').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_summarize_user').prop('checked', settings.summarize_sent).on('input', () => {
+        settings.summarize_sent = !!$('#vectors_summarize_user').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_summary_source').val(settings.summary_source).on('change', () => {
+        settings.summary_source = String($('#vectors_summary_source').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_summary_prompt').val(settings.summary_prompt).on('input', () => {
+        settings.summary_prompt = String($('#vectors_summary_prompt').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

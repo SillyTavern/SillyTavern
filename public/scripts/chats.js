@@ -44,22 +44,29 @@ function isConvertible(type) {
 }
 
 /**
- * Mark message as hidden (system message).
- * @param {number} messageId Message ID
- * @param {JQuery<Element>} messageBlock Message UI element
- * @returns
+ * Mark a range of messages as hidden ("is_system") or not.
+ * @param {number} start Starting message ID
+ * @param {number} end Ending message ID (inclusive)
+ * @param {boolean} unhide If true, unhide the messages instead.
+ * @returns {Promise<void>}
  */
-export async function hideChatMessage(messageId, messageBlock) {
-    const chatId = getCurrentChatId();
+export async function hideChatMessageRange(start, end, unhide) {
+    if (!getCurrentChatId()) return;
 
-    if (!chatId || isNaN(messageId)) return;
+    if (isNaN(start)) return;
+    if (!end) end = start;
+    const hide = !unhide;
 
-    const message = chat[messageId];
+    for (let messageId = start; messageId <= end; messageId++) {
+        const message = chat[messageId];
+        if (!message) continue;
 
-    if (!message) return;
+        const messageBlock = $(`.mes[mesid="${messageId}"]`);
+        if (!messageBlock.length) continue;
 
-    message.is_system = true;
-    messageBlock.attr('is_system', String(true));
+        message.is_system = hide;
+        messageBlock.attr('is_system', String(hide));
+    }
 
     // Reload swipes. Useful when a last message is hidden.
     hideSwipeButtons();
@@ -69,28 +76,25 @@ export async function hideChatMessage(messageId, messageBlock) {
 }
 
 /**
- * Mark message as visible (non-system message).
+ * Mark message as hidden (system message).
+ * @deprecated Use hideChatMessageRange.
  * @param {number} messageId Message ID
- * @param {JQuery<Element>} messageBlock Message UI element
- * @returns
+ * @param {JQuery<Element>} _messageBlock Unused
+ * @returns {Promise<void>}
  */
-export async function unhideChatMessage(messageId, messageBlock) {
-    const chatId = getCurrentChatId();
+export async function hideChatMessage(messageId, _messageBlock) {
+    return hideChatMessageRange(messageId, messageId, false);
+}
 
-    if (!chatId || isNaN(messageId)) return;
-
-    const message = chat[messageId];
-
-    if (!message) return;
-
-    message.is_system = false;
-    messageBlock.attr('is_system', String(false));
-
-    // Reload swipes. Useful when a last message is hidden.
-    hideSwipeButtons();
-    showSwipeButtons();
-
-    saveChatDebounced();
+/**
+ * Mark message as visible (non-system message).
+ * @deprecated Use hideChatMessageRange.
+ * @param {number} messageId Message ID
+ * @param {JQuery<Element>} _messageBlock Unused
+ * @returns {Promise<void>}
+ */
+export async function unhideChatMessage(messageId, _messageBlock) {
+    return hideChatMessageRange(messageId, messageId, true);
 }
 
 /**
@@ -391,7 +395,8 @@ export function decodeStyleTags(text) {
 
     return text.replaceAll(styleDecodeRegex, (_, style) => {
         try {
-            const ast = css.parse(unescape(style));
+			let styleCleaned = unescape(style).replaceAll(/<br\/>/g, '');
+            const ast = css.parse(styleCleaned);
             const rules = ast?.stylesheet?.rules;
             if (rules) {
                 for (const rule of rules) {
@@ -476,13 +481,13 @@ jQuery(function () {
     $(document).on('click', '.mes_hide', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        await hideChatMessage(messageId, messageBlock);
+        await hideChatMessageRange(messageId, messageId, false);
     });
 
     $(document).on('click', '.mes_unhide', async function () {
         const messageBlock = $(this).closest('.mes');
         const messageId = Number(messageBlock.attr('mesid'));
-        await unhideChatMessage(messageId, messageBlock);
+        await hideChatMessageRange(messageId, messageId, true);
     });
 
     $(document).on('click', '.mes_file_delete', async function () {

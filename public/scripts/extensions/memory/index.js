@@ -1,5 +1,5 @@
 import { getStringHash, debounce, waitUntilCondition, extractAllWords, delay } from '../../utils.js';
-import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from '../../extensions.js';
+import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import {
     activateSendButtons,
     deactivateSendButtons,
@@ -19,7 +19,7 @@ import { is_group_generating, selected_group } from '../../group-chats.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
-import { getTextTokens, getTokenCount, tokenizers } from '../../tokenizers.js';
+import { getTextTokens, getTokenCountAsync, tokenizers } from '../../tokenizers.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -129,7 +129,7 @@ async function onPromptForceWordsAutoClick() {
     const allMessages = chat.filter(m => !m.is_system && m.mes).map(m => m.mes);
     const messagesWordCount = allMessages.map(m => extractAllWords(m)).flat().length;
     const averageMessageWordCount = messagesWordCount / allMessages.length;
-    const tokensPerWord = getTokenCount(allMessages.join('\n')) / messagesWordCount;
+    const tokensPerWord = await getTokenCountAsync(allMessages.join('\n')) / messagesWordCount;
     const wordsPerToken = 1 / tokensPerWord;
     const maxPromptLengthWords = Math.round(maxPromptLength * wordsPerToken);
     // How many words should pass so that messages will start be dropped out of context;
@@ -166,11 +166,11 @@ async function onPromptIntervalAutoClick() {
     const chat = context.chat;
     const allMessages = chat.filter(m => !m.is_system && m.mes).map(m => m.mes);
     const messagesWordCount = allMessages.map(m => extractAllWords(m)).flat().length;
-    const messagesTokenCount = getTokenCount(allMessages.join('\n'));
+    const messagesTokenCount = await getTokenCountAsync(allMessages.join('\n'));
     const tokensPerWord = messagesTokenCount / messagesWordCount;
     const averageMessageTokenCount = messagesTokenCount / allMessages.length;
     const targetSummaryTokens = Math.round(extension_settings.memory.promptWords * tokensPerWord);
-    const promptTokens = getTokenCount(extension_settings.memory.prompt);
+    const promptTokens = await getTokenCountAsync(extension_settings.memory.prompt);
     const promptAllowance = maxPromptLength - promptTokens - targetSummaryTokens;
     const maxMessagesPerSummary = extension_settings.memory.maxMessagesPerRequest || 0;
     const averageMessagesPerPrompt = Math.floor(promptAllowance / averageMessageTokenCount);
@@ -603,8 +603,7 @@ async function getRawSummaryPrompt(context, prompt) {
         const entry = `${message.name}:\n${message.mes}`;
         chatBuffer.push(entry);
 
-        const tokens = getTokenCount(getMemoryString(true), PADDING);
-        await delay(1);
+        const tokens = await getTokenCountAsync(getMemoryString(true), PADDING);
 
         if (tokens > PROMPT_SIZE) {
             chatBuffer.pop();
@@ -847,9 +846,9 @@ function setupListeners() {
     });
 }
 
-jQuery(function () {
-    function addExtensionControls() {
-        const settingsHtml = renderExtensionTemplate('memory', 'settings', { defaultSettings });
+jQuery(async function () {
+    async function addExtensionControls() {
+        const settingsHtml = await renderExtensionTemplateAsync('memory', 'settings', { defaultSettings });
         $('#extensions_settings2').append(settingsHtml);
         setupListeners();
         $('#summaryExtensionPopoutButton').off('click').on('click', function (e) {
@@ -858,7 +857,7 @@ jQuery(function () {
         });
     }
 
-    addExtensionControls();
+    await addExtensionControls();
     loadSettings();
     eventSource.on(event_types.MESSAGE_RECEIVED, onChatEvent);
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);

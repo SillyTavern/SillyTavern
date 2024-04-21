@@ -38,7 +38,7 @@ import {
     this_chid,
 } from '../script.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
-import { hideChatMessage, unhideChatMessage } from './chats.js';
+import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
@@ -46,13 +46,22 @@ import { chat_completion_sources, oai_settings } from './openai.js';
 import { autoSelectPersona } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
-import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
-import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
+import { debounce, delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
-export {
-    executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
-};
+import { background_settings } from './backgrounds.js';
 
+/**
+ * @typedef {object} SlashCommand
+ * @property {function} callback - The callback function to execute
+ * @property {string} helpString - The help string for the command
+ * @property {boolean} interruptsGeneration - Whether the command interrupts message generation
+ * @property {boolean} purgeFromMessage - Whether the command should be purged from the message
+ */
+
+/**
+ * Provides a parser for slash commands.
+ */
 class SlashCommandParser {
     static COMMENT_KEYWORDS = ['#', '/'];
     static RESERVED_KEYWORDS = [
@@ -60,10 +69,26 @@ class SlashCommandParser {
     ];
 
     constructor() {
+        /**
+         * @type {Record<string, SlashCommand>} - Slash commands registered in the parser
+         */
         this.commands = {};
+        /**
+         * @type {Record<string, string>} - Help strings for each command
+         */
         this.helpStrings = {};
     }
 
+    /**
+     * Adds a slash command to the parser.
+     * @param {string} command - The command name
+     * @param {function} callback - The callback function to execute
+     * @param {string[]} aliases - The command aliases
+     * @param {string} helpString - The help string for the command
+     * @param {boolean} [interruptsGeneration] - Whether the command interrupts message generation
+     * @param {boolean} [purgeFromMessage] - Whether the command should be purged from the message
+     * @returns {void}
+     */
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
         const fnObj = { callback, helpString, interruptsGeneration, purgeFromMessage };
 
@@ -95,7 +120,7 @@ class SlashCommandParser {
     /**
      * Parses a slash command to extract the command name, the (named) arguments and the remaining text
      * @param {string} text - Slash command text
-     * @returns {{command: string, args: object, value: string}} - The parsed command, its arguments and the remaining text
+     * @returns {{command: SlashCommand, args: object, value: string, commandName: string}} - The parsed command, its arguments and the remaining text
      */
     parse(text) {
         // Parses a command even when spaces are present in arguments
@@ -115,6 +140,20 @@ class SlashCommandParser {
             command = match[1];
             remainingText = match[2];
             console.debug('command:' + command);
+        }
+
+        if (SlashCommandParser.COMMENT_KEYWORDS.includes(command)) {
+            return {
+                commandName: command,
+                command: {
+                    callback: () => {},
+                    helpString: '',
+                    interruptsGeneration: false,
+                    purgeFromMessage: true,
+                },
+                args: {},
+                value: '',
+            };
         }
 
         // parse the rest of the string to extract named arguments, the remainder is the "unnamedArg" which is usually text, like the prompt to send
@@ -175,7 +214,7 @@ class SlashCommandParser {
 
         // your weird complex command is now transformed into a juicy tiny text or something useful :)
         if (this.commands[command]) {
-            return { command: this.commands[command], args: argObj, value: unnamedArg };
+            return { command: this.commands[command], args: argObj, value: unnamedArg, commandName: command };
         }
 
         return null;
@@ -196,8 +235,13 @@ class SlashCommandParser {
 }
 
 const parser = new SlashCommandParser();
-const registerSlashCommand = parser.addCommand.bind(parser);
-const getSlashCommandsHelp = parser.getHelpString.bind(parser);
+
+/**
+ * Registers a slash command in the parser.
+* @type {(command: string, callback: function, aliases: string[], helpString: string, interruptsGeneration?: boolean, purgeFromMessage?: boolean) => void}
+*/
+export const registerSlashCommand = parser.addCommand.bind(parser);
+export const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
 parser.addCommand('?', helpCommandCallback, ['help'], ' – get help on macros, chat formatting and commands', true, true);
 parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace">(name)</span> – sets user name and persona avatar (if set)', true, true);
@@ -248,7 +292,7 @@ parser.addCommand('trimend', trimEndCallback, [], '<span class="monospace">(text
 parser.addCommand('inject', injectCallback, [], '<span class="monospace">id=injectId (position=before/after/chat depth=number scan=true/false role=system/user/assistant [text])</span> – injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false).', true, true);
 parser.addCommand('listinjects', listInjectsCallback, [], ' – lists all script injections for the current chat.', true, true);
 parser.addCommand('flushinjects', flushInjectsCallback, [], ' – removes all script injections for the current chat.', true, true);
-parser.addCommand('tokens', (_, text) => getTokenCount(text), [], '<span class="monospace">(text)</span> – counts the number of tokens in the text.', true, true);
+parser.addCommand('tokens', (_, text) => getTokenCountAsync(text), [], '<span class="monospace">(text)</span> – counts the number of tokens in the text.', true, true);
 parser.addCommand('model', modelCallback, [], '<span class="monospace">(model name)</span> – sets the model for the current API. Gets the current model name if no argument is provided.', true, true);
 registerVariableCommands();
 
@@ -387,7 +431,7 @@ function trimEndCallback(_, value) {
     return trimToEndSentence(value);
 }
 
-function trimTokensCallback(arg, value) {
+async function trimTokensCallback(arg, value) {
     if (!value) {
         console.warn('WARN: No argument provided for /trimtokens command');
         return '';
@@ -405,7 +449,7 @@ function trimTokensCallback(arg, value) {
     }
 
     const direction = arg.direction || 'end';
-    const tokenCount = getTokenCount(value);
+    const tokenCount = await getTokenCountAsync(value);
 
     // Token count is less than the limit, do nothing
     if (tokenCount <= limit) {
@@ -916,16 +960,7 @@ async function hideMessageCallback(_, arg) {
         return;
     }
 
-    for (let messageId = range.start; messageId <= range.end; messageId++) {
-        const messageBlock = $(`.mes[mesid="${messageId}"]`);
-
-        if (!messageBlock.length) {
-            console.warn(`WARN: No message found with ID ${messageId}`);
-            return;
-        }
-
-        await hideChatMessage(messageId, messageBlock);
-    }
+    await hideChatMessageRange(range.start, range.end, false);
 }
 
 async function unhideMessageCallback(_, arg) {
@@ -941,17 +976,7 @@ async function unhideMessageCallback(_, arg) {
         return '';
     }
 
-    for (let messageId = range.start; messageId <= range.end; messageId++) {
-        const messageBlock = $(`.mes[mesid="${messageId}"]`);
-
-        if (!messageBlock.length) {
-            console.warn(`WARN: No message found with ID ${messageId}`);
-            return '';
-        }
-
-        await unhideChatMessage(messageId, messageBlock);
-    }
-
+    await hideChatMessageRange(range.start, range.end, true);
     return '';
 }
 
@@ -1311,7 +1336,7 @@ export async function generateSystemMessage(_, prompt) {
 
     // Generate and regex the output if applicable
     toastr.info('Please wait', 'Generating...');
-    let message = await generateQuietPrompt(prompt);
+    let message = await generateQuietPrompt(prompt, false, false);
     message = getRegexedString(message, regex_placement.SLASH_COMMAND);
 
     sendNarratorMessage(_, message);
@@ -1503,7 +1528,7 @@ export async function promptQuietForLoudResponse(who, text) {
 
     //text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
 
-    let reply = await generateQuietPrompt(text, true);
+    let reply = await generateQuietPrompt(text, true, false);
     text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
 
     const message = {
@@ -1609,7 +1634,9 @@ $(document).on('click', '[data-displayHelp]', function (e) {
 
 function setBackgroundCallback(_, bg) {
     if (!bg) {
-        return;
+        // allow reporting of the background name if called without args
+        // for use in ST Scripts via pipe
+        return background_settings.name;
     }
 
     console.log('Set background to ' + bg);
@@ -1655,6 +1682,7 @@ function modelCallback(_, model) {
         { id: 'model_mistralai_select', api: 'openai', type: chat_completion_sources.MISTRALAI },
         { id: 'model_custom_select', api: 'openai', type: chat_completion_sources.CUSTOM },
         { id: 'model_cohere_select', api: 'openai', type: chat_completion_sources.COHERE },
+        { id: 'model_perplexity_select', api: 'openai', type: chat_completion_sources.PERPLEXITY },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
@@ -1733,7 +1761,7 @@ function modelCallback(_, model) {
  * @param {boolean} unescape Whether to unescape the batch separator
  * @returns {Promise<{interrupt: boolean, newText: string, pipe: string} | boolean>}
  */
-async function executeSlashCommands(text, unescape = false) {
+export async function executeSlashCommands(text, unescape = false) {
     if (!text) {
         return false;
     }
@@ -1774,7 +1802,8 @@ async function executeSlashCommands(text, unescape = false) {
         }
 
         // Skip comment commands. They don't run macros or interrupt pipes.
-        if (SlashCommandParser.COMMENT_KEYWORDS.includes(result.command)) {
+        if (SlashCommandParser.COMMENT_KEYWORDS.includes(result.commandName)) {
+            result.command.purgeFromMessage && linesToRemove.push(lines[index]);
             continue;
         }
 
@@ -1835,10 +1864,23 @@ async function executeSlashCommands(text, unescape = false) {
     return { interrupt, newText, pipe: pipeResult };
 }
 
+/**
+ * @param {JQuery<HTMLElement>} textarea
+ */
 function setSlashCommandAutocomplete(textarea) {
+    const nativeElement = textarea.get(0);
+    let width = 0;
+
+    function setItemWidth() {
+        width = nativeElement.offsetWidth - 5;
+    }
+
+    const setWidthDebounced = debounce(setItemWidth);
+    $(window).on('resize', () => setWidthDebounced());
+
     textarea.autocomplete({
         source: (input, output) => {
-            // Only show for slash commands and if there's no space
+            // Only show for slash commands (requiring at least 1 letter after the slash) and if there's no space
             if (!input.term.startsWith('/') || input.term.includes(' ')) {
                 output([]);
                 return;
@@ -1849,7 +1891,7 @@ function setSlashCommandAutocomplete(textarea) {
                 .keys(parser.helpStrings) // Get all slash commands
                 .filter(x => x.startsWith(slashCommand)) // Filter by the input
                 .sort((a, b) => a.localeCompare(b)) // Sort alphabetically
-                // .slice(0, 20) // Limit to 20 results
+                .slice(0, 50) // Limit to 50 results
                 .map(x => ({ label: parser.helpStrings[x], value: `/${x} ` })); // Map to the help string
 
             output(result); // Return the results
@@ -1863,10 +1905,11 @@ function setSlashCommandAutocomplete(textarea) {
     });
 
     textarea.autocomplete('instance')._renderItem = function (ul, item) {
-        const width = $(textarea).innerWidth();
         const content = $('<div></div>').html(item.label);
         return $('<li>').width(width).append(content).appendTo(ul);
     };
+
+    setItemWidth();
 }
 
 jQuery(function () {

@@ -1,4 +1,4 @@
-import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced } from '../../../script.js';
+import { callPopup, cancelTtsPlay, eventSource, event_types, name2, saveSettingsDebounced, substituteParams } from '../../../script.js';
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js';
 import { delay, escapeRegex, getBase64Async, getStringHash, onlyUnique } from '../../utils.js';
 import { EdgeTtsProvider } from './edge.js';
@@ -19,8 +19,9 @@ const UPDATE_INTERVAL = 1000;
 
 let voiceMapEntries = [];
 let voiceMap = {}; // {charName:voiceid, charName2:voiceid2}
-let storedvalue = false;
+let talkingHeadState = false;
 let lastChatId = null;
+let lastMessage = null;
 let lastMessageHash = null;
 
 const DEFAULT_VOICE_MARKER = '[Default Voice]';
@@ -67,7 +68,7 @@ export function getPreviewString(lang) {
     return previewStrings[lang] ?? fallbackPreview;
 }
 
-let ttsProviders = {
+const ttsProviders = {
     ElevenLabs: ElevenLabsTtsProvider,
     Silero: SileroTtsProvider,
     XTTSv2: XTTSTtsProvider,
@@ -82,7 +83,6 @@ let ttsProviders = {
 let ttsProvider;
 let ttsProviderName;
 
-let ttsLastMessage = null;
 
 async function onNarrateOneMessage() {
     audioElement.src = '/sounds/silence.mp3';
@@ -130,103 +130,13 @@ async function onNarrateText(args, text) {
 }
 
 async function moduleWorker() {
-    // Primarily determining when to add new chat to the TTS queue
-    const enabled = $('#tts_enabled').is(':checked');
-    $('body').toggleClass('tts', enabled);
-    if (!enabled) {
+    if (!extension_settings.tts.enabled) {
         return;
     }
-
-    const context = getContext();
-    const chat = context.chat;
 
     processTtsQueue();
     processAudioJobQueue();
     updateUiAudioPlayState();
-
-    // Auto generation is disabled
-    if (extension_settings.tts.auto_generation == false) {
-        return;
-    }
-
-    // no characters or group selected
-    if (!context.groupId && context.characterId === undefined) {
-        return;
-    }
-
-    // Chat changed
-    if (
-        context.chatId !== lastChatId
-    ) {
-        currentMessageNumber = context.chat.length ? context.chat.length : 0;
-        saveLastValues();
-
-        // Force to speak on the first message in the new chat
-        if (context.chat.length === 1) {
-            lastMessageHash = -1;
-        }
-
-        return;
-    }
-
-    // take the count of messages
-    let lastMessageNumber = context.chat.length ? context.chat.length : 0;
-
-    // There's no new messages
-    let diff = lastMessageNumber - currentMessageNumber;
-    let hashNew = getStringHash((chat.length && chat[chat.length - 1].mes) ?? '');
-
-    // if messages got deleted, diff will be < 0
-    if (diff < 0) {
-        // necessary actions will be taken by the onChatDeleted() handler
-        return;
-    }
-
-    // if no new messages, or same message, or same message hash, do nothing
-    if (diff == 0 && hashNew === lastMessageHash) {
-        return;
-    }
-
-    // If streaming, wait for streaming to finish before processing new messages
-    if (context.streamingProcessor && !context.streamingProcessor.isFinished) {
-        return;
-    }
-
-    // clone message object, as things go haywire if message object is altered below (it's passed by reference)
-    const message = structuredClone(chat[chat.length - 1]);
-
-    // if last message within current message, message got extended. only send diff to TTS.
-    if (ttsLastMessage !== null && message.mes.indexOf(ttsLastMessage) !== -1) {
-        let tmp = message.mes;
-        message.mes = message.mes.replace(ttsLastMessage, '');
-        ttsLastMessage = tmp;
-    } else {
-        ttsLastMessage = message.mes;
-    }
-
-    // We're currently swiping. Don't generate voice
-    if (!message || message.mes === '...' || message.mes === '') {
-        return;
-    }
-
-    // Don't generate if message doesn't have a display text
-    if (extension_settings.tts.narrate_translated_only && !(message?.extra?.display_text)) {
-        return;
-    }
-
-    // Don't generate if message is a user message and user message narration is disabled
-    if (message.is_user && !extension_settings.tts.narrate_user) {
-        return;
-    }
-
-    // New messages, add new chat to history
-    lastMessageHash = hashNew;
-    currentMessageNumber = lastMessageNumber;
-
-    console.debug(
-        `Adding message from ${message.name} for TTS processing: "${message.mes}"`,
-    );
-    ttsJobQueue.push(message);
 }
 
 function talkingAnimation(switchValue) {
@@ -238,11 +148,11 @@ function talkingAnimation(switchValue) {
     const apiUrl = getApiUrl();
     const animationType = switchValue ? 'start' : 'stop';
 
-    if (switchValue !== storedvalue) {
+    if (switchValue !== talkingHeadState) {
         try {
             console.log(animationType + ' Talking Animation');
             doExtrasFetch(`${apiUrl}/api/talkinghead/${animationType}_talking`);
-            storedvalue = switchValue; // Update the storedvalue to the current switchValue
+            talkingHeadState = switchValue;
         } catch (error) {
             // Handle the error here or simply ignore it to prevent logging
         }
@@ -289,7 +199,6 @@ function debugTtsPlayback() {
         {
             'ttsProviderName': ttsProviderName,
             'voiceMap': voiceMap,
-            'currentMessageNumber': currentMessageNumber,
             'audioPaused': audioPaused,
             'audioJobQueue': audioJobQueue,
             'currentAudioJob': currentAudioJob,
@@ -477,19 +386,10 @@ async function processAudioJobQueue() {
 
 let ttsJobQueue = [];
 let currentTtsJob; // Null if nothing is currently being processed
-let currentMessageNumber = 0;
 
 function completeTtsJob() {
     console.info(`Current TTS job for ${currentTtsJob?.name} completed.`);
     currentTtsJob = null;
-}
-
-function saveLastValues() {
-    const context = getContext();
-    lastChatId = context.chatId;
-    lastMessageHash = getStringHash(
-        (context.chat.length && context.chat[context.chat.length - 1].mes) ?? '',
-    );
 }
 
 async function tts(text, voiceId, char) {
@@ -524,6 +424,9 @@ async function processTtsQueue() {
     console.debug('New message found, running TTS');
     currentTtsJob = ttsJobQueue.shift();
     let text = extension_settings.tts.narrate_translated_only ? (currentTtsJob?.extra?.display_text || currentTtsJob.mes) : currentTtsJob.mes;
+
+    // Substitute macros
+    text = substituteParams(text);
 
     if (extension_settings.tts.skip_codeblocks) {
         text = text.replace(/^\s{4}.*$/gm, '').trim();
@@ -764,26 +667,103 @@ async function onChatChanged() {
     await resetTtsPlayback();
     const voiceMapInit = initVoiceMap();
     await Promise.race([voiceMapInit, delay(1000)]);
-    ttsLastMessage = null;
+    lastMessage = null;
 }
 
-async function onChatDeleted() {
+async function onMessageEvent(messageId) {
+    // If TTS is disabled, do nothing
+    if (!extension_settings.tts.enabled) {
+        return;
+    }
+
+    // Auto generation is disabled
+    if (!extension_settings.tts.auto_generation) {
+        return;
+    }
+
+    const context = getContext();
+
+    // no characters or group selected
+    if (!context.groupId && context.characterId === undefined) {
+        return;
+    }
+
+    // Chat changed
+    if (context.chatId !== lastChatId) {
+        lastChatId = context.chatId;
+        lastMessageHash = getStringHash(context.chat[messageId]?.mes ?? '');
+
+        // Force to speak on the first message in the new chat
+        if (context.chat.length === 1) {
+            lastMessageHash = -1;
+        }
+    }
+
+    // clone message object, as things go haywire if message object is altered below (it's passed by reference)
+    const message = structuredClone(context.chat[messageId]);
+    const hashNew = getStringHash(message?.mes ?? '');
+
+    // if no new messages, or same message, or same message hash, do nothing
+    if (hashNew === lastMessageHash) {
+        return;
+    }
+
+    const isLastMessageInCurrent = () =>
+        lastMessage &&
+        typeof lastMessage === 'object' &&
+        message.swipe_id === lastMessage.swipe_id &&
+        message.name === lastMessage.name  &&
+        message.is_user === lastMessage.is_user  &&
+        message.mes.indexOf(lastMessage.mes) !== -1;
+
+    // if last message within current message, message got extended. only send diff to TTS.
+    if (isLastMessageInCurrent()) {
+        const tmp = structuredClone(message);
+        message.mes = message.mes.replace(lastMessage.mes, '');
+        lastMessage = tmp;
+    } else {
+        lastMessage = structuredClone(message);
+    }
+
+    // We're currently swiping. Don't generate voice
+    if (!message || message.mes === '...' || message.mes === '') {
+        return;
+    }
+
+    // Don't generate if message doesn't have a display text
+    if (extension_settings.tts.narrate_translated_only && !(message?.extra?.display_text)) {
+        return;
+    }
+
+    // Don't generate if message is a user message and user message narration is disabled
+    if (message.is_user && !extension_settings.tts.narrate_user) {
+        return;
+    }
+
+    // New messages, add new chat to history
+    lastMessageHash = hashNew;
+    lastChatId = context.chatId;
+
+    console.debug(`Adding message from ${message.name} for TTS processing: "${message.mes}"`);
+    ttsJobQueue.push(message);
+}
+
+async function onMessageDeleted() {
     const context = getContext();
 
     // update internal references to new last message
     lastChatId = context.chatId;
-    currentMessageNumber = context.chat.length ? context.chat.length : 0;
 
     // compare against lastMessageHash. If it's the same, we did not delete the last chat item, so no need to reset tts queue
-    let messageHash = getStringHash((context.chat.length && context.chat[context.chat.length - 1].mes) ?? '');
+    const messageHash = getStringHash((context.chat.length && context.chat[context.chat.length - 1].mes) ?? '');
     if (messageHash === lastMessageHash) {
         return;
     }
     lastMessageHash = messageHash;
-    ttsLastMessage = (context.chat.length && context.chat[context.chat.length - 1].mes) ?? '';
+    lastMessage = context.chat.length ? structuredClone(context.chat[context.chat.length - 1]) : null;
 
     // stop any tts playback since message might not exist anymore
-    await resetTtsPlayback();
+    resetTtsPlayback();
 }
 
 /**
@@ -1079,8 +1059,10 @@ $(document).ready(function () {
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL); // Init depends on all the things
     eventSource.on(event_types.MESSAGE_SWIPED, resetTtsPlayback);
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
-    eventSource.on(event_types.MESSAGE_DELETED, onChatDeleted);
+    eventSource.on(event_types.MESSAGE_DELETED, onMessageDeleted);
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged);
+    eventSource.on(event_types.MESSAGE_SENT, onMessageEvent);
+    eventSource.on(event_types.MESSAGE_RECEIVED, onMessageEvent);
     registerSlashCommand('speak', onNarrateText, ['narrate', 'tts'], '<span class="monospace">(text)</span>  – narrate any text using currently selected character\'s voice. Use voice="Character Name" argument to set other voice from the voice map, example: <tt>/speak voice="Donald Duck" Quack!</tt>', true, true);
     document.body.appendChild(audioElement);
 });

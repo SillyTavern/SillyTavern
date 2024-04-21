@@ -163,6 +163,7 @@ const CHAT_COMPLETION_SOURCES = {
     MISTRALAI: 'mistralai',
     CUSTOM: 'custom',
     COHERE: 'cohere',
+    PERPLEXITY: 'perplexity',
 };
 
 const UPLOADS_PATH = './uploads';
@@ -243,8 +244,8 @@ const OLLAMA_KEYS = [
     'mirostat_eta',
 ];
 
-const AVATAR_WIDTH = 400;
-const AVATAR_HEIGHT = 600;
+const AVATAR_WIDTH = 512;
+const AVATAR_HEIGHT = 768;
 
 const OPENROUTER_HEADERS = {
     'HTTP-Referer': 'https://sillytavern.app',

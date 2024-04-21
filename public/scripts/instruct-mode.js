@@ -354,7 +354,9 @@ export function formatInstructModeSystemPrompt(systemPrompt) {
     const separator = power_user.instruct.wrap ? '\n' : '';
 
     if (power_user.instruct.system_sequence_prefix) {
-        systemPrompt = power_user.instruct.system_sequence_prefix + separator + systemPrompt;
+        // TODO: Replace with a proper 'System' prompt entity name input
+        const prefix = power_user.instruct.system_sequence_prefix.replace(/{{name}}/gi, 'System');
+        systemPrompt = prefix + separator + systemPrompt;
     }
 
     if (power_user.instruct.system_sequence_suffix) {
@@ -372,7 +374,7 @@ export function formatInstructModeSystemPrompt(systemPrompt) {
  * @returns {string[]} Formatted example messages string.
  */
 export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
-    const blockHeading = power_user.context.example_separator ? power_user.context.example_separator + '\n' : '';
+    const blockHeading = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
 
     if (power_user.instruct.skip_examples) {
         return mesExamplesArray.map(x => x.replace(/<START>\n/i, blockHeading));
@@ -419,10 +421,13 @@ export function formatInstructModeExamples(mesExamplesArray, name1, name2) {
         }
 
         for (const example of blockExamples) {
+            // If force group/persona names is set, we should override the include names for the user placeholder
+            const includeThisName = includeNames || (power_user.instruct.names_force_groups && example.name == 'example_user');
+
             const prefix = example.name == 'example_user' ? inputPrefix : outputPrefix;
             const suffix = example.name == 'example_user' ? inputSuffix : outputSuffix;
             const name = example.name == 'example_user' ? name1 : name2;
-            const messageContent = includeNames ? `${name}: ${example.content}` : example.content;
+            const messageContent = includeThisName ? `${name}: ${example.content}` : example.content;
             const formattedMessage = [prefix, messageContent + suffix].filter(x => x).join(separator);
             formattedExamples.push(formattedMessage);
         }
@@ -515,13 +520,16 @@ function selectMatchingContextTemplate(name) {
 /**
  * Replaces instruct mode macros in the given input string.
  * @param {string} input Input string.
+ * @param {Object<string, *>} env - Map of macro names to the values they'll be substituted with. If the param
+ * values are functions, those functions will be called and their return values are used.
  * @returns {string} String with macros replaced.
  */
-export function replaceInstructMacros(input) {
+export function replaceInstructMacros(input, env) {
     if (!input) {
         return '';
     }
     const instructMacros = {
+        'systemPrompt': (power_user.prefer_character_prompt && env.charPrompt ? env.charPrompt : power_user.instruct.system_prompt),
         'instructSystem|instructSystemPrompt': power_user.instruct.system_prompt,
         'instructSystemPromptPrefix': power_user.instruct.system_sequence_prefix,
         'instructSystemPromptSuffix': power_user.instruct.system_sequence_suffix,

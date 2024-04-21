@@ -3,6 +3,7 @@ import {
     event_types,
     getRequestHeaders,
     getStoppingStrings,
+    main_api,
     max_context,
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
@@ -568,7 +569,7 @@ jQuery(function () {
         const json_schema_string = String($(this).val());
 
         try {
-            settings.json_schema = JSON.parse(json_schema_string ?? '{}');
+            settings.json_schema = JSON.parse(json_schema_string || '{}');
         } catch {
             // Ignore errors from here
         }
@@ -976,6 +977,10 @@ function getModel() {
     }
 
     return undefined;
+}
+
+export function isJsonSchemaSupported() {
+    return settings.type === TABBY && main_api === 'textgenerationwebui';
 }
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {

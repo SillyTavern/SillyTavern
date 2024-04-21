@@ -712,8 +712,47 @@ drawthings.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
+const pollinations = express.Router();
+
+pollinations.post('/generate', jsonParser, async (request, response) => {
+    try {
+        const promptUrl = new URL(`https://image.pollinations.ai/prompt/${encodeURIComponent(request.body.prompt)}`);
+        const params = new URLSearchParams({
+            model: String(request.body.model),
+            negative_prompt: String(request.body.negative_prompt),
+            seed: String(Math.floor(Math.random() * 10_000_000)),
+            enhance: String(request.body.enhance ?? false),
+            refine: String(request.body.refine ?? false),
+            width: String(request.body.width ?? 1024),
+            height: String(request.body.height ?? 1024),
+            nologo: String(true),
+            nofeed: String(true),
+            referer: 'sillytavern',
+        });
+        promptUrl.search = params.toString();
+
+        console.log('Pollinations request URL:', promptUrl.toString());
+
+        const result = await fetch(promptUrl);
+
+        if (!result.ok) {
+            console.log('Pollinations returned an error.', result.status, result.statusText);
+            throw new Error('Pollinations request failed.');
+        }
+
+        const buffer = await result.buffer();
+        const base64 = buffer.toString('base64');
+
+        return response.send({ image: base64 });
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.use('/comfy', comfy);
 router.use('/together', together);
 router.use('/drawthings', drawthings);
+router.use('/pollinations', pollinations);
 
 module.exports = { router };

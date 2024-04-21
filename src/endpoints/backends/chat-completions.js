@@ -14,6 +14,24 @@ const API_OPENAI = 'https://api.openai.com/v1';
 const API_CLAUDE = 'https://api.anthropic.com/v1';
 const API_MISTRAL = 'https://api.mistral.ai/v1';
 const API_COHERE = 'https://api.cohere.ai/v1';
+const API_PERPLEXITY = 'https://api.perplexity.ai';
+
+/**
+ * Applies a post-processing step to the generated messages.
+ * @param {object[]} messages Messages to post-process
+ * @param {string} type Prompt conversion type
+ * @param {string} charName Character name
+ * @param {string} userName User name
+ * @returns
+ */
+function postProcessPrompt(messages, type, charName, userName) {
+    switch (type) {
+        case 'claude':
+            return convertClaudeMessages(messages, '', false, '', charName, userName).messages;
+        default:
+            return messages;
+    }
+}
 
 /**
  * Ollama strikes back. Special boy #2's steaming routine.
@@ -235,17 +253,25 @@ async function sendMakerSuiteRequest(request, response) {
     };
 
     function getGeminiBody() {
-        return {
-            contents: convertGooglePrompt(request.body.messages, model),
+        const should_use_system_prompt = model === 'gemini-1.5-pro-latest' && request.body.use_makersuite_sysprompt;
+        const prompt = convertGooglePrompt(request.body.messages, model, should_use_system_prompt, request.body.char_name, request.body.user_name);
+        let body = {
+            contents: prompt.contents,
             safetySettings: GEMINI_SAFETY,
             generationConfig: generationConfig,
         };
+
+        if (should_use_system_prompt) {
+            body.system_instruction = prompt.system_instruction;
+        }
+
+        return body;
     }
 
     function getBisonBody() {
         const prompt = isText
             ? ({ text: convertTextCompletionPrompt(request.body.messages) })
-            : ({ messages: convertGooglePrompt(request.body.messages, model) });
+            : ({ messages: convertGooglePrompt(request.body.messages, model).contents });
 
         /** @type {any} Shut the lint up */
         const bisonBody = {
@@ -414,7 +440,7 @@ async function sendAI21Request(request, response) {
             } else {
                 console.log(r.completions[0].data.text);
             }
-            const reply = { choices: [{ 'message': { 'content': r.completions[0].data.text } }] };
+            const reply = { choices: [{ 'message': { 'content': r.completions?.[0]?.data?.text } }] };
             return response.send(reply);
         })
         .catch(err => {
@@ -522,6 +548,11 @@ async function sendMistralAIRequest(request, response) {
     }
 }
 
+/**
+ * Sends a request to Cohere API.
+ * @param {express.Request} request Express request
+ * @param {express.Response} response Express response
+ */
 async function sendCohereRequest(request, response) {
     const apiKey = readSecret(SECRET_KEYS.COHERE);
     const controller = new AbortController();
@@ -536,7 +567,7 @@ async function sendCohereRequest(request, response) {
     }
 
     try {
-        const convertedHistory = convertCohereMessages(request.body.messages);
+        const convertedHistory = convertCohereMessages(request.body.messages, request.body.char_name, request.body.user_name);
         const connectors = [];
 
         if (request.body.websearch) {
@@ -855,6 +886,21 @@ router.post('/generate', jsonParser, function (request, response) {
 
         mergeObjectWithYaml(bodyParams, request.body.custom_include_body);
         mergeObjectWithYaml(headers, request.body.custom_include_headers);
+
+        if (request.body.custom_prompt_post_processing) {
+            console.log('Applying custom prompt post-processing of type', request.body.custom_prompt_post_processing);
+            request.body.messages = postProcessPrompt(
+                request.body.messages,
+                request.body.custom_prompt_post_processing,
+                request.body.char_name,
+                request.body.user_name);
+        }
+    } else if (request.body.chat_completion_source === CHAT_COMPLETION_SOURCES.PERPLEXITY) {
+        apiUrl = API_PERPLEXITY;
+        apiKey = readSecret(SECRET_KEYS.PERPLEXITY);
+        headers = {};
+        bodyParams = {};
+        request.body.messages = postProcessPrompt(request.body.messages, 'claude', request.body.char_name, request.body.user_name);
     } else {
         console.log('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });
