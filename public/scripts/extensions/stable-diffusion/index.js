@@ -37,6 +37,8 @@ const p = a => `<p>${a}</p>`;
 
 const MODULE_NAME = 'sd';
 const UPDATE_INTERVAL = 1000;
+// This is a 1x1 transparent PNG
+const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
 const sources = {
     extras: 'extras',
@@ -2650,6 +2652,8 @@ async function generateComfyImage(prompt, negativePrompt) {
             const avatarBlob = await response.blob();
             const avatarBase64 = await getBase64Async(avatarBlob);
             workflow = workflow.replace('"%user_avatar%"', JSON.stringify(avatarBase64));
+        } else {
+            workflow = workflow.replace('"%user_avatar%"', JSON.stringify(PNG_PIXEL));
         }
     }
     if (/%char_avatar%/gi.test(workflow)) {
@@ -2658,6 +2662,8 @@ async function generateComfyImage(prompt, negativePrompt) {
             const avatarBlob = await response.blob();
             const avatarBase64 = await getBase64Async(avatarBlob);
             workflow = workflow.replace('"%char_avatar%"', JSON.stringify(avatarBase64));
+        } else {
+            workflow = workflow.replace('"%char_avatar%"', JSON.stringify(PNG_PIXEL));
         }
     }
     console.log(`{
