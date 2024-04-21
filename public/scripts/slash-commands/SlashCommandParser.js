@@ -495,7 +495,7 @@ export class SlashCommandParser {
         this.take(13); // discard "/parser-flag "
         const [flag, state] = this.parseUnnamedArgument()?.split(/\s+/) ?? [null, null];
         if (Object.keys(PARSER_FLAG).includes(flag)) {
-            this.flags[PARSER_FLAG[flag]] = isTrueBoolean(state);
+            this.flags[PARSER_FLAG[flag]] = isTrueBoolean(state ?? 'on');
         }
         cmd.end = this.index;
     }
