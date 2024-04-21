@@ -1616,9 +1616,10 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
                 <div>${ex.message}</div>
                 <div>Line: ${ex.line} Column: ${ex.column}</div>
                 <pre style="text-align:left;">${ex.hint}</pre>
-            `;
+                `;
+            const clickHint = '<p>Click to see details</p>';
             toastr.error(
-                toast,
+                `${toast}${clickHint}`,
                 'SlashCommandParserError',
                 { escapeHtml:false, timeOut: 10000, onclick:()=>callPopup(toast, 'text') },
             );
