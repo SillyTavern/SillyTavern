@@ -5,6 +5,7 @@
 @import url(css/character-group-overlay.css);
 @import url(css/file-form.css);
 @import url(css/logprobs.css);
+@import url(css/accounts.css);
 
 :root {
     --doc-height: 100%;
@@ -457,7 +458,7 @@ body.reduced-motion #bg_custom {
 }
 
 #bg1 {
-    background-image: url('backgrounds/__transparent.png');
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
     z-index: -3;
 }
 
@@ -709,7 +710,8 @@ body .panelControlBar {
 }
 
 #options,
-#extensionsMenu {
+#extensionsMenu,
+.shadow_popup .popper-modal {
     display: flex;
     z-index: 29999;
     background-color: var(--SmartThemeBlurTintColor);
@@ -3415,7 +3417,7 @@ a {
 }
 
 #ui_language_select {
-    width: 10em;
+    width: 8em;
 }
 
 #extensions_settings .inline-drawer-toggle.inline-drawer-header:hover,

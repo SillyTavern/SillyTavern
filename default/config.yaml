@@ -1,8 +1,12 @@
-# -- NETWORK CONFIGURATION --
+# -- DATA CONFIGURATION --
+# Root directory for user data storage
+dataRoot: ./data
+# -- SERVER CONFIGURATION --
 # Listen for incoming connections
 listen: false
 # Server port
 port: 8000
+# -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
 whitelistMode: true
 # Whitelist of allowed IP addresses
@@ -16,7 +20,15 @@ basicAuthUser:
   password: "password"
 # Enables CORS proxy middleware
 enableCorsProxy: false
-# Disable security checks - NOT RECOMMENDED
+# Enable multi-user mode
+enableUserAccounts: false
+# Enable discreet login mode: hides user list on the login screen
+enableDiscreetLogin: false
+# Used to sign session cookies. Will be auto-generated if not set
+cookieSecret: ''
+# Disable CSRF protection - NOT RECOMMENDED
+disableCsrfProtection: false
+# Disable startup security checks - NOT RECOMMENDED
 securityOverride: false
 # -- ADVANCED CONFIGURATION --
 # Open the browser automatically

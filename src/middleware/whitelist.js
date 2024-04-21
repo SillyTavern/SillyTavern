@@ -1,14 +1,13 @@
 const path = require('path');
 const fs = require('fs');
-const ipaddr = require('ipaddr.js');
 const ipMatching = require('ip-matching');
 
+const { getIpFromRequest } = require('../express-common');
 const { color, getConfigValue } = require('../util');
 
 const whitelistPath = path.join(process.cwd(), './whitelist.txt');
 let whitelist = getConfigValue('whitelist', []);
 let knownIPs = new Set();
-const whitelistMode = getConfigValue('whitelistMode', true);
 
 if (fs.existsSync(whitelistPath)) {
     try {
@@ -19,6 +18,11 @@ if (fs.existsSync(whitelistPath)) {
     }
 }
 
+/**
+ * Get the client IP address from the request headers.
+ * @param {import('express').Request} req Express request object
+ * @returns {string|undefined} The client IP address
+ */
 function getForwardedIp(req) {
     // Check if X-Real-IP is available
     if (req.headers['x-real-ip']) {
@@ -35,26 +39,13 @@ function getForwardedIp(req) {
     return undefined;
 }
 
-function getIpFromRequest(req) {
-    let clientIp = req.connection.remoteAddress;
-    let ip = ipaddr.parse(clientIp);
-    // Check if the IP address is IPv4-mapped IPv6 address
-    if (ip.kind() === 'ipv6' && ip instanceof ipaddr.IPv6 && ip.isIPv4MappedAddress()) {
-        const ipv4 = ip.toIPv4Address().toString();
-        clientIp = ipv4;
-    } else {
-        clientIp = ip;
-        clientIp = clientIp.toString();
-    }
-    return clientIp;
-}
-
 /**
  * Returns a middleware function that checks if the client IP is in the whitelist.
+ * @param {boolean} whitelistMode If whitelist mode is enabled via config or command line
  * @param {boolean} listen If listen mode is enabled via config or command line
  * @returns {import('express').RequestHandler} The middleware function
  */
-function whitelistMiddleware(listen) {
+function whitelistMiddleware(whitelistMode, listen) {
     return function (req, res, next) {
         const clientIp = getIpFromRequest(req);
         const forwardedIp = getForwardedIp(req);

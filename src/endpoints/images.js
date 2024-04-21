@@ -4,7 +4,6 @@ const express = require('express');
 const sanitize = require('sanitize-filename');
 
 const { jsonParser } = require('../express-common');
-const { DIRECTORIES } = require('../constants');
 const { clientRelativePath, removeFileExtension, getImages } = require('../util');
 
 /**
@@ -60,23 +59,23 @@ router.post('/upload', jsonParser, async (request, response) => {
         }
 
         // if character is defined, save to a sub folder for that character
-        let pathToNewFile = path.join(DIRECTORIES.userImages, sanitize(filename));
+        let pathToNewFile = path.join(request.user.directories.userImages, sanitize(filename));
         if (request.body.ch_name) {
-            pathToNewFile = path.join(DIRECTORIES.userImages, sanitize(request.body.ch_name), sanitize(filename));
+            pathToNewFile = path.join(request.user.directories.userImages, sanitize(request.body.ch_name), sanitize(filename));
         }
 
         ensureDirectoryExistence(pathToNewFile);
         const imageBuffer = Buffer.from(base64Data, 'base64');
         await fs.promises.writeFile(pathToNewFile, imageBuffer);
-        response.send({ path: clientRelativePath(pathToNewFile) });
+        response.send({ path: clientRelativePath(request.user.directories.root, pathToNewFile) });
     } catch (error) {
         console.log(error);
         response.status(500).send({ error: 'Failed to save the image' });
     }
 });
 
-router.post('/list/:folder', (req, res) => {
-    const directoryPath = path.join(process.cwd(), DIRECTORIES.userImages, sanitize(req.params.folder));
+router.post('/list/:folder', (request, response) => {
+    const directoryPath = path.join(request.user.directories.userImages, sanitize(request.params.folder));
 
     if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
@@ -84,10 +83,10 @@ router.post('/list/:folder', (req, res) => {
 
     try {
         const images = getImages(directoryPath);
-        return res.send(images);
+        return response.send(images);
     } catch (error) {
         console.error(error);
-        return res.status(500).send({ error: 'Unable to retrieve files' });
+        return response.status(500).send({ error: 'Unable to retrieve files' });
     }
 });
 

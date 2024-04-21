@@ -1083,7 +1083,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         params.dynatemp_mode = params.dynamic_temperature ? 1 : 0;
         params.dynatemp_min = params.dynatemp_low;
         params.dynatemp_max = params.dynatemp_high;
-        delete params.dynatemp_low, params.dynatemp_high;
+        delete params.dynatemp_low;
+        delete params.dynatemp_high;
     }
 
     if (settings.type === APHRODITE) {
