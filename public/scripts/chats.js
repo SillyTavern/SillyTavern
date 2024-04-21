@@ -632,17 +632,58 @@ async function openFilePopup(attachment) {
 }
 
 /**
+ * Edit a file attachment in a notepad-like modal.
+ * @param {FileAttachment} attachment Attachment to edit
+ * @param {string} source Attachment source
+ * @param {function} callback Callback function
+ */
+async function editAttachment(attachment, source, callback) {
+    const originalFileText = attachment.text || (await getFileAttachment(attachment.url));
+    const template = $(await renderExtensionTemplateAsync('attachments', 'notepad'));
+
+    let editedFileText = originalFileText;
+    template.find('[name="notepadFileContent"]').val(editedFileText).on('input', function () {
+        editedFileText = String($(this).val());
+    });
+
+    let editedFileName = attachment.name;
+    template.find('[name="notepadFileName"]').val(editedFileName).on('input', function () {
+        editedFileName = String($(this).val());
+    });
+
+    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: true, large: true, okButton: 'Save', cancelButton: 'Cancel' });
+
+    if (result !== POPUP_RESULT.AFFIRMATIVE) {
+        return;
+    }
+
+    if (editedFileText === originalFileText && editedFileName === attachment.name) {
+        return;
+    }
+
+    const nullCallback = () => { };
+    await deleteAttachment(attachment, source, nullCallback, false);
+    const file = new File([editedFileText], editedFileName, { type: 'text/plain' });
+    await uploadFileAttachmentToServer(file, source);
+
+    callback();
+}
+
+/**
  * Deletes an attachment from the server and the chat.
  * @param {FileAttachment} attachment Attachment to delete
  * @param {string} source Source of the attachment
  * @param {function} callback Callback function
+ * @param {boolean} [confirm=true] If true, show a confirmation dialog
  * @returns {Promise<void>} A promise that resolves when the attachment is deleted.
  */
-async function deleteAttachment(attachment, source, callback) {
-    const confirm = await callGenericPopup('Are you sure you want to delete this attachment?', POPUP_TYPE.CONFIRM);
+async function deleteAttachment(attachment, source, callback, confirm = true) {
+    if (confirm) {
+        const result = await callGenericPopup('Are you sure you want to delete this attachment?', POPUP_TYPE.CONFIRM);
 
-    if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
-        return;
+        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+            return;
+        }
     }
 
     ensureAttachmentsExist();
@@ -719,6 +760,7 @@ async function openAttachmentManager() {
             attachmentTemplate.find('.attachmentListItemSize').text(humanFileSize(attachment.size));
             attachmentTemplate.find('.attachmentListItemCreated').text(new Date(attachment.created).toLocaleString());
             attachmentTemplate.find('.viewAttachmentButton').on('click', () => openFilePopup(attachment));
+            attachmentTemplate.find('.editAttachmentButton').on('click', () => editAttachment(attachment, source, renderAttachments));
             attachmentTemplate.find('.deleteAttachmentButton').on('click', () => deleteAttachment(attachment, source, renderAttachments));
             template.find(sources[source]).append(attachmentTemplate);
         }
