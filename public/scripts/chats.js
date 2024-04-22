@@ -789,7 +789,13 @@ async function openAttachmentManager() {
             }
 
             const buttonTemplate = template.find('.actionButtonTemplate .actionButton').clone();
-            buttonTemplate.find('.actionButtonIcon').addClass(scraper.iconClass);
+            if (scraper.iconAvailable) {
+                buttonTemplate.find('.actionButtonIcon').addClass(scraper.iconClass);
+                buttonTemplate.find('.actionButtonImg').remove();
+            } else {
+                buttonTemplate.find('.actionButtonImg').attr('src', scraper.iconClass);
+                buttonTemplate.find('.actionButtonIcon').remove();
+            }
             buttonTemplate.find('.actionButtonText').text(scraper.name);
             buttonTemplate.attr('title', scraper.description);
             buttonTemplate.on('click', () => {

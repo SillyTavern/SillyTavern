@@ -1,0 +1,27 @@
+<div class="flexFlowColumn flex-container">
+    <div class="range-block-title">
+        <h3 data-i18n="miHoYo/HoYoverse HoYoLAB Scraper">miHoYo/HoYoverse HoYoLAB Scraper</h3>
+    </div>
+    <h4 data-i18n="Select a Wiki to parse through.">Select a Wiki to parse through.</h4>
+    <div class="range-block-range wide100p">
+        <select id="mihoyoScrapeWikiDropdown" name="mihoyoScrapeWikiDropdown" class="wide100p">
+            <option value="">--- None ---</option>
+            <option value="hsr" data-i18n="Honkai: Star Rail (H:SR)">Honkai: Star Rail (H:SR)</option>
+            <option value="genshin" data-i18n="Genshin Impact (GI)">Genshin Impact (GI)</option>
+        </select>
+    </div>
+    <div class="range-block-title">
+        <h4>
+            <span data-i18n="Enter the Wiki Page ID.">Enter the Wiki Page ID.</span>
+        </h4>
+    </div>
+    <div class="range-block-counter justifyCenter flex-container flexFlowColumn margin-bot-10px">
+        <span data-i18n="This is the last digit in the HoYoLAB URL i.e.">This is the last digit in the HoYoLAB URL i.e.</span>
+        <code>https://wiki.hoyolab.com/pc/hsr/entry/X</code>
+        <small>
+            <span data-i18n="Example:">Example:</span>
+            <code>14</code>
+        </small>
+    </div>
+    <input type="text" id="mihoyoScrapeWikiID" name="mihoyoScrapeWikiID" class="text_pole" placeholder="14">
+</div>
