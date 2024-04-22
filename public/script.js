@@ -1840,7 +1840,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     */
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
-        mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), '$1');
+        mes = mes.replace(new RegExp(`(^|\n)${escapeRegex(ch_name)}:`, 'g'), '$1');
     }
 
     /** @type {any} */
