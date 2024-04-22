@@ -1,4 +1,4 @@
-import { chat_metadata, eventSource, event_types, getRequestHeaders } from '../../../script.js';
+import { chat, chat_metadata, eventSource, event_types, getRequestHeaders } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { QuickReplyApi } from './api/QuickReplyApi.js';
 import { AutoExecuteHandler } from './src/AutoExecuteHandler.js';
@@ -238,7 +238,12 @@ const onUserMessage = async () => {
 };
 eventSource.on(event_types.USER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onUserMessage, args));
 
-const onAiMessage = async () => {
+const onAiMessage = async (messageId) => {
+    if (['...'].includes(chat[messageId]?.mes)) {
+        log('QR auto-execution suppressed for swiped message');
+        return;
+    }
+
     await autoExec.handleAi();
 };
 eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onAiMessage, args));
