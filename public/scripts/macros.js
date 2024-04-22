@@ -259,6 +259,8 @@ function diceRollReplace(input, invalidRollPlaceholder = '') {
     });
 }
 
+const MAX_SUBSTITUTION_DEPTH = 5;
+
 /**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
@@ -273,62 +275,66 @@ export function evaluateMacros(content, env) {
 
     const rawContent = content;
 
-    // Legacy non-macro substitutions
-    content = content.replace(/<USER>/gi, typeof env.user === 'function' ? env.user() : env.user);
-    content = content.replace(/<BOT>/gi, typeof env.char === 'function' ? env.char() : env.char);
-    content = content.replace(/<CHARIFNOTGROUP>/gi, typeof env.group === 'function' ? env.group() : env.group);
-    content = content.replace(/<GROUP>/gi, typeof env.group === 'function' ? env.group() : env.group);
+    // If a macro expands to another macro, evaluate it up to a certain depth
+    for (let i = 0; i < MAX_SUBSTITUTION_DEPTH; i++) {
+        // Legacy non-macro substitutions
+        content = content.replace(/<USER>/gi, typeof env.user === 'function' ? env.user() : env.user);
+        content = content.replace(/<BOT>/gi, typeof env.char === 'function' ? env.char() : env.char);
+        content = content.replace(/<CHARIFNOTGROUP>/gi, typeof env.group === 'function' ? env.group() : env.group);
+        content = content.replace(/<GROUP>/gi, typeof env.group === 'function' ? env.group() : env.group);
 
-    // Short circuit if there are no macros
-    if (!content.includes('{{')) {
-        return content;
+        // Short circuit if there are no macros
+        if (!content.includes('{{')) {
+            return content;
+        }
+
+        content = diceRollReplace(content);
+        content = replaceInstructMacros(content, env);
+        content = replaceVariableMacros(content);
+        content = content.replace(/{{newline}}/gi, '\n');
+        content = content.replace(/\n*{{trim}}\n*/gi, '');
+        content = content.replace(/{{noop}}/gi, '');
+        content = content.replace(/{{input}}/gi, () => String($('#send_textarea').val()));
+
+        // Substitute passed-in variables
+        for (const varName in env) {
+            if (!Object.hasOwn(env, varName)) continue;
+
+            const param = env[varName];
+            content = content.replace(new RegExp(`{{${varName}}}`, 'gi'), param);
+        }
+
+        content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
+        content = content.replace(/{{lastMessage}}/gi, () => getLastMessage());
+        content = content.replace(/{{lastMessageId}}/gi, () => String(getLastMessageId() ?? ''));
+        content = content.replace(/{{lastUserMessage}}/gi, () => getLastUserMessage());
+        content = content.replace(/{{lastCharMessage}}/gi, () => getLastCharMessage());
+        content = content.replace(/{{firstIncludedMessageId}}/gi, () => String(getFirstIncludedMessageId() ?? ''));
+        content = content.replace(/{{lastSwipeId}}/gi, () => String(getLastSwipeId() ?? ''));
+        content = content.replace(/{{currentSwipeId}}/gi, () => String(getCurrentSwipeId() ?? ''));
+
+        content = content.replace(/\{\{\/\/([\s\S]*?)\}\}/gm, '');
+
+        content = content.replace(/{{time}}/gi, () => moment().format('LT'));
+        content = content.replace(/{{date}}/gi, () => moment().format('LL'));
+        content = content.replace(/{{weekday}}/gi, () => moment().format('dddd'));
+        content = content.replace(/{{isotime}}/gi, () => moment().format('HH:mm'));
+        content = content.replace(/{{isodate}}/gi, () => moment().format('YYYY-MM-DD'));
+
+        content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
+            const formattedTime = moment().format(format);
+            return formattedTime;
+        });
+        content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
+        content = content.replace(/{{time_UTC([-+]\d+)}}/gi, (_, offset) => {
+            const utcOffset = parseInt(offset, 10);
+            const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
+            return utcTime;
+        });
+        content = bannedWordsReplace(content);
+        content = randomReplace(content);
+        content = pickReplace(content, rawContent);
     }
 
-    content = diceRollReplace(content);
-    content = replaceInstructMacros(content, env);
-    content = replaceVariableMacros(content);
-    content = content.replace(/{{newline}}/gi, '\n');
-    content = content.replace(/\n*{{trim}}\n*/gi, '');
-    content = content.replace(/{{noop}}/gi, '');
-    content = content.replace(/{{input}}/gi, () => String($('#send_textarea').val()));
-
-    // Substitute passed-in variables
-    for (const varName in env) {
-        if (!Object.hasOwn(env, varName)) continue;
-
-        const param = env[varName];
-        content = content.replace(new RegExp(`{{${varName}}}`, 'gi'), param);
-    }
-
-    content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
-    content = content.replace(/{{lastMessage}}/gi, () => getLastMessage());
-    content = content.replace(/{{lastMessageId}}/gi, () => String(getLastMessageId() ?? ''));
-    content = content.replace(/{{lastUserMessage}}/gi, () => getLastUserMessage());
-    content = content.replace(/{{lastCharMessage}}/gi, () => getLastCharMessage());
-    content = content.replace(/{{firstIncludedMessageId}}/gi, () => String(getFirstIncludedMessageId() ?? ''));
-    content = content.replace(/{{lastSwipeId}}/gi, () => String(getLastSwipeId() ?? ''));
-    content = content.replace(/{{currentSwipeId}}/gi, () => String(getCurrentSwipeId() ?? ''));
-
-    content = content.replace(/\{\{\/\/([\s\S]*?)\}\}/gm, '');
-
-    content = content.replace(/{{time}}/gi, () => moment().format('LT'));
-    content = content.replace(/{{date}}/gi, () => moment().format('LL'));
-    content = content.replace(/{{weekday}}/gi, () => moment().format('dddd'));
-    content = content.replace(/{{isotime}}/gi, () => moment().format('HH:mm'));
-    content = content.replace(/{{isodate}}/gi, () => moment().format('YYYY-MM-DD'));
-
-    content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
-        const formattedTime = moment().format(format);
-        return formattedTime;
-    });
-    content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
-    content = content.replace(/{{time_UTC([-+]\d+)}}/gi, (_, offset) => {
-        const utcOffset = parseInt(offset, 10);
-        const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
-        return utcTime;
-    });
-    content = bannedWordsReplace(content);
-    content = randomReplace(content);
-    content = pickReplace(content, rawContent);
     return content;
 }
