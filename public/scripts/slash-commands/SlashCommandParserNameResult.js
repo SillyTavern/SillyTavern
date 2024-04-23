@@ -25,7 +25,7 @@ export class SlashCommandParserNameResult {
      */
     constructor(type, name, start, optionList = []) {
         this.type = type;
-        this.name = name,
+        this.name = name;
         this.start = start;
         this.optionList = optionList;
     }
