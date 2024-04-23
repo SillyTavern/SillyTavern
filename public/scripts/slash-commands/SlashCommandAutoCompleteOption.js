@@ -114,7 +114,7 @@ export class SlashCommandAutoCompleteOption {
         const unnamedArguments = cmd.unnamedArgumentList ?? [];
         const returnType = cmd.returns ?? 'void';
         const helpString = cmd.helpString ?? 'NO DETAILS';
-        const aliasList = cmd.aliases ?? [];
+        const aliasList = [cmd.name, ...(cmd.aliases ?? [])].filter(it=>it != key);
         const specs = document.createElement('div'); {
             specs.classList.add('specs');
             const name = document.createElement('div'); {
