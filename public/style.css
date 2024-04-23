@@ -2262,6 +2262,11 @@ grammarly-extension {
     }
 }
 
+.dialogue_popup.dragover {
+    filter: brightness(1.1) saturate(1.1);
+    outline: 3px dashed var(--SmartThemeBorderColor);
+}
+
 #bgtest {
     display: none;
     width: 100vw;

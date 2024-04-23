@@ -863,6 +863,61 @@ async function openAttachmentManager() {
         template.find('.chatAttachmentsName').text(chatName);
     }
 
+    function addDragAndDrop() {
+        $(document.body).on('dragover', '.dialogue_popup', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            $(event.target).closest('.dialogue_popup').addClass('dragover');
+        });
+
+        $(document.body).on('dragleave', '.dialogue_popup', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            $(event.target).closest('.dialogue_popup').removeClass('dragover');
+        });
+
+        $(document.body).on('drop', '.dialogue_popup', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            $(event.target).closest('.dialogue_popup').removeClass('dragover');
+
+            const files = Array.from(event.originalEvent.dataTransfer.files);
+            const targets = Object.values(ATTACHMENT_SOURCE);
+
+            const isNotCharacter = this_chid === undefined || selected_group;
+            const isNotInChat = getCurrentChatId() === undefined;
+            let selectedTarget = ATTACHMENT_SOURCE.GLOBAL;
+
+            if (isNotCharacter) {
+                targets.splice(targets.indexOf(ATTACHMENT_SOURCE.CHARACTER), 1);
+            }
+
+            if (isNotInChat) {
+                targets.splice(targets.indexOf(ATTACHMENT_SOURCE.CHAT), 1);
+            }
+
+            const targetSelectTemplate = $(await renderExtensionTemplateAsync('attachments', 'files-dropped', { count: files.length, targets: targets }));
+            targetSelectTemplate.find('.droppedFilesTarget').on('input', function () {
+                selectedTarget = String($(this).val());
+            });
+            const result = await callGenericPopup(targetSelectTemplate, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Upload', cancelButton: 'Cancel' });
+            if (result !== POPUP_RESULT.AFFIRMATIVE) {
+                console.log('File upload cancelled');
+                return;
+            }
+            for (const file of files) {
+                await uploadFileAttachmentToServer(file, selectedTarget);
+            }
+            renderAttachments();
+        });
+    }
+
+    function removeDragAndDrop() {
+        $(document.body).off('dragover', '.shadow_popup');
+        $(document.body).off('dragleave', '.shadow_popup');
+        $(document.body).off('drop', '.shadow_popup');
+    }
+
     let sortField = localStorage.getItem('DataBank_sortField') || 'created';
     let sortOrder = localStorage.getItem('DataBank_sortOrder') || 'desc';
     let filterString = '';
@@ -888,9 +943,11 @@ async function openAttachmentManager() {
     const cleanupFn = await renderButtons();
     await verifyAttachments();
     await renderAttachments();
+    addDragAndDrop();
     await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });
 
     cleanupFn();
+    removeDragAndDrop();
 }
 
 /**
