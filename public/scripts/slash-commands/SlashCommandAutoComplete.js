@@ -708,11 +708,14 @@ export class SlashCommandAutoComplete {
             if (left < window.innerWidth / 4) {
                 // if cursor is in left part of screen, show details on right of list
                 this.detailsWrap.classList.add('right');
+                this.detailsWrap.classList.remove('left');
             } else {
                 // if cursor is in right part of screen, show details on left of list
                 this.detailsWrap.classList.remove('right');
+                this.detailsWrap.classList.add('left');
             }
         } else {
+            this.detailsWrap.classList.remove('left');
             this.detailsWrap.classList.remove('right');
             this.detailsWrap.classList.add('full');
         }

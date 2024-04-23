@@ -1160,15 +1160,23 @@ select {
         flex-direction: row;
         left: 0;
         right: 0;
-        &.right:before {
-            flex: 0 0 calc(var(--targetOffset) * 1px + 50vw);
-        }
-        &:before {
-            flex: 0 0 calc(var(--targetOffset) * 1px - 25vw);
-        }
         .slashCommandAutoComplete-details {
             max-height: unset;
             width: 25vw;
+        }
+        &.left {
+            &:before {
+                flex: 0 1 calc(var(--targetOffset) * 1px - 25vw);
+            }
+            &:after {
+                flex: 1 0 auto;
+                width: 50vw;
+            }
+        }
+        &.right {
+            &:before {
+                flex: 0 0 calc(var(--targetOffset) * 1px + 50vw);
+            }
         }
         &.full {
             &:before {
@@ -1224,6 +1232,7 @@ select {
     display: grid;
     grid-template-columns: 0fr auto minmax(50%, 1fr);
     align-items: baseline;
+    max-height: calc(95vh - var(--bottom));
     /* gap: 0.5em; */
     > .item {
         cursor: pointer;
