@@ -829,6 +829,7 @@ export class SlashCommandAutoComplete {
     async handleKeyDown(evt) {
         // autocomplete is shown and cursor at end of current command name (or inside name and typed or forced)
         if (this.isActive && this.isReplaceable) {
+            // actions in the list
             switch (evt.key) {
                 case 'ArrowUp': {
                     // select previous item
@@ -863,7 +864,7 @@ export class SlashCommandAutoComplete {
                 }
             }
         }
-        // autocomplete is shown, cursor can be anywhere
+        // details are shown, cursor can be anywhere
         if (this.isActive) {
             switch (evt.key) {
                 case 'Escape': {
