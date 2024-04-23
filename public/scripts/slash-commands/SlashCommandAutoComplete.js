@@ -90,7 +90,7 @@ export class SlashCommandAutoComplete {
         textarea.addEventListener('keydown', (evt)=>this.handleKeyDown(evt));
         textarea.addEventListener('click', ()=>this.isActive ? this.show() : null);
         textarea.addEventListener('selectionchange', ()=>this.show());
-        // textarea.addEventListener('blur', ()=>this.hide());
+        textarea.addEventListener('blur', ()=>this.hide());
         if (isFloating) {
             textarea.addEventListener('scroll', ()=>this.updateFloatingPositionDebounced());
         }
