@@ -1097,8 +1097,39 @@ select {
     --ac-color-hovered-background: color-mix(in srgb, rgb(128 128 128) 30%, var(--SmartThemeChatTintColor));
     --ac-color-hovered-text: var(--SmartThemeEmColor);
 }
+
+.slashCommandAutoComplete-wrap {
+    --targetOffset: 0;
+    --direction: column;
+    display: flex;
+    flex-direction: var(--direction);
+    position: absolute;
+    z-index: 10000;
+
+
+    &.isFloating {
+        --direction: row;
+        left: 0;
+        right: 0;
+        &:before {
+            content: "";
+            flex: 0 1 calc(var(--targetOffset) * 1px);
+            display: block;
+        }
+        .slashCommandAutoComplete {
+            flex: 0 0 auto;
+            width: 50vw;
+        }
+        &:after {
+            content: "";
+            flex: 1 1 0;
+            display: block;
+        }
+    }
+}
+
 .slashCommandAutoComplete-detailsWrap {
-    --targetTop: 0;
+    --targetOffset: 0;
     display: flex;
     flex-direction: column;
     position: absolute;
@@ -1106,7 +1137,7 @@ select {
 
     &:before {
         content: "";
-        flex: 0 1 calc(var(--targetTop) * 1px - 5vh);
+        flex: 0 1 calc(var(--targetOffset) * 1px - 5vh);
         display: block;
     }
     .slashCommandAutoComplete-details {
@@ -1117,6 +1148,38 @@ select {
         content: "";
         flex: 1 1 0;
         display: block;
+    }
+
+    &.isFloating {
+        flex-direction: row;
+        left: 0;
+        right: 0;
+        &.right:before {
+            flex: 0 0 calc(var(--targetOffset) * 1px + 50vw);
+        }
+        &:before {
+            flex: 0 0 calc(var(--targetOffset) * 1px - 25vw);
+        }
+        .slashCommandAutoComplete-details {
+            max-height: unset;
+            width: 25vw;
+        }
+        &.full {
+            &:before {
+                content: "";
+                flex: 0 1 calc(var(--targetOffset) * 1px);
+                display: block;
+            }
+            .slashCommandAutoComplete-details {
+                flex: 0 0 auto;
+                width: 50vw;
+            }
+            &:after {
+                content: "";
+                flex: 1 1 0;
+                display: block;
+            }
+        }
     }
 }
 .slashCommandAutoComplete, .slashCommandAutoComplete-details {
@@ -1151,7 +1214,7 @@ select {
 }
 .slashCommandAutoComplete {
     padding-bottom: 1px;
-    position: absolute;
+    /* position: absolute; */
     display: grid;
     grid-template-columns: 0fr auto minmax(50%, 1fr);
     align-items: baseline;
@@ -1372,7 +1435,6 @@ select {
             }
             > .returns {
                 font-family: monospace;
-                white-space: nowrap;
                 color: var(--ac-color-text);
                 &:before {
                     content: "=> ";
