@@ -76,6 +76,7 @@
     /*base variable calculated in rems*/
     --fontScale: 1;
     --mainFontSize: calc(var(--fontScale) * 15px);
+    --mainFontFamily: "Noto Sans", "Noto Color Emoji", sans-serif;
 
     /* base variable for blur strength slider calculations */
     --blurStrength: 10;
@@ -133,7 +134,7 @@ body {
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: cover;
-    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    font-family: var(--mainFontFamily);
     font-size: var(--mainFontSize);
     color: var(--SmartThemeBodyColor);
     overflow: hidden;
@@ -1096,16 +1097,45 @@ select {
     --ac-color-hovered-background: color-mix(in srgb, rgb(128 128 128) 30%, var(--SmartThemeChatTintColor));
     --ac-color-hovered-text: var(--SmartThemeEmColor);
 }
-.slashCommandAutoComplete {
-    --ac-color-border: rgb(69, 69, 69);
-    --ac-color-background: rgb(32, 32, 32);
+.slashCommandAutoComplete-detailsWrap {
+    --targetTop: 0;
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    z-index: 10000;
+
+    &:before {
+        content: "";
+        flex: 0 1 calc(var(--targetTop) * 1px - 5vh);
+        display: block;
+    }
+    .slashCommandAutoComplete-details {
+        flex: 0 0 auto;
+        max-height: 80vh;
+    }
+    &:after {
+        content: "";
+        flex: 1 1 0;
+        display: block;
+    }
+}
+.slashCommandAutoComplete, .slashCommandAutoComplete-details {
+    --ac-color-border: rgb(69 69 69);
+    --ac-color-background: rgb(32 32 32);
     --ac-color-text: rgb(204 204 204);
     --ac-color-matched-background: transparent;
-    --ac-color-matched-text: rgb(108, 171, 251);
-    --ac-color-selected-background: rgb(32, 57, 92);
-    --ac-color-selected-text: rgb(255, 255, 255);
+    --ac-color-matched-text: rgb(108 171 251);
+    --ac-color-selected-background: rgb(32 57 92);
+    --ac-color-selected-text: rgb(255 255 255);
     --ac-color-hovered-background: rgb(43 45 46);
     --ac-color-hovered-text: rgb(204 204 204);
+    --ac-color-arg-name: rgb(171 209 239);
+    --ac-color-type: rgb(131 199 177);
+    --ac-color-cmd: rgb(219 219 173);
+    --ac-color-symbol: rgb(115 156 211);
+    --ac-color-string: rgb(190 146 122);
+    --ac-color-variable: rgb(131 193 252);
+    --ac-color-current-parenthesis: rgb(195 118 210);
     --bottom: 50vh;
     background: var(--ac-color-background);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
@@ -1117,34 +1147,238 @@ select {
     margin: 0px;
     overflow: auto;
     padding: 0px;
-    position: absolute;
     z-index: 10000;
-
+}
+.slashCommandAutoComplete {
+    padding-bottom: 1px;
+    position: absolute;
+    display: grid;
+    grid-template-columns: 0fr auto minmax(50%, 1fr);
+    align-items: baseline;
+    /* gap: 0.5em; */
     > .item {
         cursor: pointer;
         padding: 3px;
         text-shadow: none;
-        &:hover {
+        display: flex;
+        gap: 0.5em;
+        font-size: 0.8em;
+        display: contents;
+        &:hover > * {
             background-color: var(--ac-color-hovered-background);
             color: var(--ac-color-hovered-text);
         }
-        &.selected {
+        &.selected > * {
             background-color: var(--ac-color-selected-background);
             color: var(--ac-color-selected-text);
         }
+        > * {
+            height: 100%;
+        }
+        > *+* {
+            padding-left: 0.5em;
+        }
+
         > .type {
+            flex: 0 0 auto;
             display: inline-block;
-            width: 2.75em;
-            font-size: 0.8em;
+            width: 2.25em;
+            /* font-size: 0.8em; */
             text-align: center;
             opacity: 0.6;
+            white-space: nowrap;
+            font-family: monospace;
             &:before { content: "["; }
             &:after { content: "]"; }
         }
-        .matched {
-            background-color: var(--ac-color-matched-background);
-            color: var(--ac-color-matched-text);
+        > .specs {
+            align-items: flex-start;
+            > .name {
+                > .matched {
+                    background-color: var(--ac-color-matched-background);
+                    color: var(--ac-color-matched-text);
+                    font-weight: bold;
+                }
+            }
+            > .body {
+                flex-wrap: wrap;
+                column-gap: 0.5em;
+                > .arguments {
+                    display: contents;
+                    height: 100%;
+                }
+            }
+        }
+        > .help {
+            height: 100%;
+            > .helpContent {
+                &:before { content: "– "; }
+                /* display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 1; */
+                text-overflow: ellipsis;
+                overflow: hidden;
+                font-size: 0.9em;white-space: nowrap;
+                line-height: 1.2;
+                height: 1.2em;
+                display: block;
+                > * {
+                    display: contents;
+                }
+            }
+        }
+    }
+}
+.slashCommandAutoComplete-details {
+    font-size: 0.8em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    > .specs {
+        flex-direction: column;
+        padding: 0.25em 0.25em 0.5em 0.25em;
+        border-bottom: 1px solid var(--ac-color-border);
+        > .name {
             font-weight: bold;
+            color: var(--ac-color-text);
+        }
+        > .body {
+            flex-direction: column;
+            gap: 0.5em;
+            > .arguments {
+                margin: 0;
+                padding-left: 1.25em;
+                > .argumentItem::marker {
+                    color: color-mix(in srgb, var(--ac-color-text), var(--ac-color-background));
+                }
+                .argument.optional + .argument-description:before {
+                    content: "(optional) ";
+                    color: var(--ac-color-text);
+                    opacity: 0.5;
+                    font-size: 0.8em;
+                }
+                .argument-description {
+                    margin-left: 0.5em;
+                    font-family: var(--mainFontFamily);
+                    font-size: 0.9em;
+                }
+            }
+        }
+    }
+    > .help {
+        padding: 0 0.5em 0.5em 0.5em;
+        div {
+            margin-block-start: 1em;
+            margin-block-end: 1em;
+        }
+        ul {
+            margin: 0;
+            padding-left: 1.5em;
+        }
+        pre {
+            margin: 0;
+            > code {
+                display: block;
+            }
+        }
+    }
+}
+
+.slashCommandAutoComplete > .item, .slashCommandAutoComplete-details {
+    > .specs {
+        display: flex;
+        gap: 0.5em;
+        > .name {
+            font-family: monospace;
+            white-space: nowrap;
+            /* color: var(--ac-color-text); */
+        }
+        > .body {
+            display: flex;
+            > .arguments {
+                font-family: monospace;
+                .argument {
+                    white-space: nowrap;
+                    &.namedArgument {
+                        &:before {
+                            content: "[";
+                            color: var(--ac-color-text);
+                        }
+                        &:after {
+                            content: "]";
+                            color: var(--ac-color-text);
+                        }
+                        &.optional:after {
+                            content: "]?";
+                            color: var(--ac-color-text);
+                        }
+                        > .argument-name {
+                            color: var(--ac-color-arg-name);
+                        }
+                    }
+                    &.unnamedArgument {
+                        &:before {
+                            content: "(";
+                            color: var(--ac-color-text);
+                        }
+                        &.multiple:before {
+                            content: "...(";
+                            color: var(--ac-color-text);
+                        }
+                        &:after {
+                            content: ")";
+                            color: var(--ac-color-text);
+                        }
+                        &.optional:after {
+                            content: ")?";
+                            color: var(--ac-color-text);
+                        }
+                    }
+                    > .argument-name + .argument-types:before {
+                        content: "=";
+                        color: var(--ac-color-text);
+                    }
+                    > .argument-types {
+                        word-break: break-all;
+                        white-space: break-spaces;
+                        > .argument-type + .argument-type:before {
+                            content: "|";
+                            color: var(--ac-color-text);
+                        };
+                        > .argument-type {
+                            color: var(--ac-color-type);
+                        }
+                    }
+                    > .argument-types + .argument-enums,
+                    > .argument-name + .argument-enums
+                    {
+                        &:before {
+                            content: "=";
+                            color: var(--ac-color-text);
+                        }
+                    }
+                    > .argument-enums {
+                        word-break: break-all;
+                        white-space: break-spaces;
+                        > .argument-enum + .argument-enum:before {
+                            content: "|";
+                            color: var(--ac-color-text);
+                        };
+                        > .argument-enum {
+                            color: var(--ac-color-string);
+                        }
+                    }
+                }
+            }
+            > .returns {
+                font-family: monospace;
+                white-space: nowrap;
+                color: var(--ac-color-text);
+                &:before {
+                    content: "=> ";
+                    color: var(--ac-color-symbol);
+                }
+            }
         }
     }
 }

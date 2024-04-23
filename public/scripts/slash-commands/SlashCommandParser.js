@@ -1,6 +1,7 @@
 import { power_user } from '../power-user.js';
 import { isTrueBoolean, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './SlashCommandArgument.js';
 import { OPTION_TYPE, SlashCommandAutoCompleteOption } from './SlashCommandAutoCompleteOption.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
@@ -18,7 +19,66 @@ export const PARSER_FLAG = {
 
 export class SlashCommandParser {
     // @ts-ignore
-    /**@type {Object.<string, SlashCommand>}*/ commands = {};
+    /**@type {Object.<string, SlashCommand>}*/ static commands = {};
+    static addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
+        const reserved = ['/', '#', ':', 'parser-flag'];
+        for (const start of reserved) {
+            if (command.toLowerCase().startsWith(start) || (aliases ?? []).find(a=>a.toLowerCase().startsWith(start))) {
+                throw new Error(`Illegal Name. Slash command name cannot begin with "${start}".`);
+            }
+        }
+        this.addCommandUnsafe(command, callback, aliases, helpString, interruptsGeneration, purgeFromMessage);
+    }
+    static addCommandUnsafe(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
+        const fnObj = Object.assign(new SlashCommand(), { name:command, callback, helpString, interruptsGeneration, purgeFromMessage, aliases });
+
+        if ([command, ...aliases].some(x => Object.hasOwn(this.commands, x))) {
+            console.trace('WARN: Duplicate slash command registered!', [command, ...aliases]);
+        }
+
+        this.commands[command] = fnObj;
+
+        if (Array.isArray(aliases)) {
+            aliases.forEach((alias) => {
+                this.commands[alias] = fnObj;
+            });
+        }
+    }
+    /**
+     *
+     * @param {SlashCommand} command
+     */
+    static addCommandObject(command) {
+        const reserved = ['/', '#', ':', 'parser-flag'];
+        for (const start of reserved) {
+            if (command.name.toLowerCase().startsWith(start) || (command.aliases ?? []).find(a=>a.toLowerCase().startsWith(start))) {
+                throw new Error(`Illegal Name. Slash command name cannot begin with "${start}".`);
+            }
+        }
+        this.addCommandObjectUnsafe(command);
+    }
+    /**
+     *
+     * @param {SlashCommand} command
+     */
+    static addCommandObjectUnsafe(command) {
+        if ([command.name, ...command.aliases].some(x => Object.hasOwn(this.commands, x))) {
+            console.trace('WARN: Duplicate slash command registered!', [command.name, ...command.aliases]);
+        }
+
+        this.commands[command.name] = command;
+
+        if (Array.isArray(command.aliases)) {
+            command.aliases.forEach((alias) => {
+                this.commands[alias] = command;
+            });
+        }
+    }
+
+
+    get commands() {
+        return SlashCommandParser.commands;
+    }
     // @ts-ignore
     /**@type {Object.<string, string>}*/ helpStrings = {};
     /**@type {boolean}*/ verifyCommandNames = true;
@@ -54,14 +114,68 @@ export class SlashCommandParser {
 
     constructor() {
         // add dummy commands for help strings / autocomplete
-        this.addDummyCommand('parser-flag',
-            [],
-            `<span class="monospace">(${Object.keys(PARSER_FLAG).join('|')}) (on|off)</span> – Set a parser flag.`,
-        );
-        this.addDummyCommand('/',
-            ['#'],
-            '<span class="monospace">(comment)</span> – Write a comment.',
-        );
+        const parserFlagCmd = new SlashCommand();
+        parserFlagCmd.name = 'parser-flag';
+        parserFlagCmd.unnamedArgumentList.push(new SlashCommandArgument(
+            'flag',
+            'The parser flag to modify.',
+            ARGUMENT_TYPE.STRING,
+            true,
+            false,
+            null,
+            Object.keys(PARSER_FLAG),
+        ));
+        parserFlagCmd.unnamedArgumentList.push(new SlashCommandArgument(
+            'state',
+            'The state of the parser flag to set.',
+            ARGUMENT_TYPE.BOOLEAN,
+            false,
+            false,
+            'on',
+            // ['on', 'off'],
+        ));
+        parserFlagCmd.helpString = 'Set a parser flag.';
+        SlashCommandParser.addCommandObjectUnsafe(parserFlagCmd);
+
+        const commentCmd = new SlashCommand();
+        commentCmd.name = '/';
+        commentCmd.aliases.push('#');
+        commentCmd.unnamedArgumentList.push(new SlashCommandArgument(
+            'comment',
+            'Commentary',
+            ARGUMENT_TYPE.STRING,
+        ));
+        commentCmd.helpString = 'Write a comment.';
+        SlashCommandParser.addCommandObjectUnsafe(commentCmd);
+
+        const dummyCmd = new SlashCommand();
+        dummyCmd.name = 'foo';
+        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
+            'arg1', 'first argument', ARGUMENT_TYPE.STRING, true,
+        ));
+        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
+            'arg2', 'second argument', ARGUMENT_TYPE.STRING, true,
+        ));
+        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
+            'arg3', 'third argument', ARGUMENT_TYPE.STRING, false, false,
+        ));
+        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
+            'arg3', 'third argument', ARGUMENT_TYPE.STRING, false, false,
+        ));
+        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
+            'arg3', 'third argument', ARGUMENT_TYPE.STRING, false, false,
+        ));
+        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
+            'arg3', 'third argument', ARGUMENT_TYPE.STRING, false, false,
+        ));
+        dummyCmd.unnamedArgumentList.push(new SlashCommandArgument(
+            'foo', 'foo argument', [ARGUMENT_TYPE.SUBCOMMAND, ARGUMENT_TYPE.CLOSURE], true, true,
+        ));
+        dummyCmd.callback = ()=>'foo';
+        dummyCmd.returns = 'string';
+        dummyCmd.helpString = 'Just a dummy command that does not do anything but return "foo".';
+        SlashCommandParser.addCommandObjectUnsafe(dummyCmd);
+
         this.registerLanguage();
     }
     registerLanguage() {
@@ -165,31 +279,10 @@ export class SlashCommandParser {
     }
 
     addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
-        const reserved = ['/', '#', ':', 'parser-flag'];
-        for (const start of reserved) {
-            if (command.toLowerCase().startsWith(start) || (aliases ?? []).find(a=>a.toLowerCase().startsWith(reserved))) {
-                throw new Error(`Illegal Name. Slash command name cannot begin with "${start}".`);
-            }
-        }
-        this.addCommandUnsafe(command, callback, aliases, helpString, interruptsGeneration, purgeFromMessage);
-    }
-    addCommandUnsafe(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
-        const fnObj = Object.assign(new SlashCommand(), { name:command, callback, helpString, interruptsGeneration, purgeFromMessage, aliases });
-
-        if ([command, ...aliases].some(x => Object.hasOwn(this.commands, x))) {
-            console.trace('WARN: Duplicate slash command registered!', [command, ...aliases]);
-        }
-
-        this.commands[command] = fnObj;
-
-        if (Array.isArray(aliases)) {
-            aliases.forEach((alias) => {
-                this.commands[alias] = fnObj;
-            });
-        }
+        SlashCommandParser.addCommand(command, callback, aliases, helpString, interruptsGeneration, purgeFromMessage);
     }
     addDummyCommand(command, aliases, helpString) {
-        this.addCommandUnsafe(command, null, aliases, helpString, true, true);
+        SlashCommandParser.addCommandUnsafe(command, null, aliases, helpString, true, true);
     }
 
     getHelpString() {
@@ -469,7 +562,7 @@ export class SlashCommandParser {
         return this.testCommandEnd();
     }
     parseComment() {
-        const start = this.index + 2;
+        const start = this.index + 1;
         const cmd = new SlashCommandExecutor(start);
         this.commandIndex.push(cmd);
         this.scopeIndex.push(this.scope.getCopy());

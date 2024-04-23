@@ -1,10 +1,17 @@
+import { SlashCommandArgument, SlashCommandNamedArgument } from './SlashCommandArgument.js';
+
+
+
 export class SlashCommand {
-    /**@type {String}*/ name;
+    /**@type {string}*/ name;
     /**@type {Function}*/ callback;
-    /**@type {String}*/ helpString;
-    /**@type {Boolean}*/ interruptsGeneration;
-    /**@type {Boolean}*/ purgeFromMessage;
-    /**@type {String[]}*/ aliases;
+    /**@type {string}*/ helpString;
+    /**@type {boolean}*/ interruptsGeneration = true;
+    /**@type {boolean}*/ purgeFromMessage = true;
+    /**@type {string[]}*/ aliases = [];
+    /**@type {string}*/ returns;
+    /**@type {SlashCommandNamedArgument[]}*/ namedArgumentList = [];
+    /**@type {SlashCommandArgument[]}*/ unnamedArgumentList = [];
 
     get helpStringFormatted() {
         let aliases = '';

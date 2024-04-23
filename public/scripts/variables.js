@@ -1,7 +1,10 @@
 import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from '../script.js';
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
 import { executeSlashCommands, registerSlashCommand } from './slash-commands.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { isFalseBoolean } from './utils.js';
 
@@ -753,7 +756,59 @@ export function registerVariableCommands() {
     registerSlashCommand('decvar', (_, value) => decrementLocalVariable(value), [], '<span class="monospace">(key)</span> – decrement a local variable by 1 and pass the result down the pipe, e.g. <tt>/decvar score</tt>', true, true);
     registerSlashCommand('incglobalvar', (_, value) => incrementGlobalVariable(value), [], '<span class="monospace">(key)</span> – increment a global variable by 1 and pass the result down the pipe, e.g. <tt>/incglobalvar score</tt>', true, true);
     registerSlashCommand('decglobalvar', (_, value) => decrementGlobalVariable(value), [], '<span class="monospace">(key)</span> – decrement a global variable by 1 and pass the result down the pipe, e.g. <tt>/decglobalvar score</tt>', true, true);
-    registerSlashCommand('if', ifCallback, [], '<span class="monospace">left=varname1 right=varname2 rule=comparison else="(alt.command)" "(command)"</span> – compare the value of the left operand "a" with the value of the right operand "b", and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the result of the command execution down the pipe. Numeric values and string literals for left and right operands supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/if left=score right=10 rule=gte "/speak You win"</tt> triggers a /speak command if the value of "score" is greater or equals 10.', true, true);
+    // registerSlashCommand('if', ifCallback, [], '<span class="monospace">left=varname1 right=varname2 rule=comparison else="(alt.command)" "(command)"</span> – compare the value of the left operand "a" with the value of the right operand "b", and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the result of the command execution down the pipe. Numeric values and string literals for left and right operands supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/if left=score right=10 rule=gte "/speak You win"</tt> triggers a /speak command if the value of "score" is greater or equals 10.', true, true);
+    const ifCmd = new SlashCommand();
+    ifCmd.name = 'if';
+    ifCmd.callback = ifCallback;
+    ifCmd.namedArgumentList.push(new SlashCommandNamedArgument(
+        'left', 'left operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
+    ));
+    ifCmd.namedArgumentList.push(new SlashCommandNamedArgument(
+        'right', 'right operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
+    ));
+    ifCmd.namedArgumentList.push(new SlashCommandNamedArgument(
+        'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, ['gt',  'gte',  'lt',  'lte',  'eq',  'neq',  'not',  'in', 'nin'],
+    ));
+    ifCmd.namedArgumentList.push(new SlashCommandNamedArgument(
+        'else', 'command to execute if not true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], false,
+    ));
+    ifCmd.unnamedArgumentList.push(new SlashCommandArgument(
+        'then', 'command to execute if true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], true,
+    ));
+    ifCmd.returns = 'result of the executed command ("then" or "else")';
+    ifCmd.helpString = `
+        <p>
+            Compares the value of the left operand <code>a</code> with the value of the right operand <code>b</code>,
+            and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the
+            result of the command execution down the pipe.
+        </p>
+        <p>
+            Numeric values and string literals for left and right operands supported.
+        </p>
+        <div>
+            <strong>Available rules:</strong>
+            <ul>
+                <li>gt => a > b</li>
+                <li>gte => a >= b</li>
+                <li>lt => a < b</li>
+                <li>lte => a <= b</li>
+                <li>eq => a == b</li>
+                <li>neq => a != b</li>
+                <li>not => !a</li>
+                <li>in (strings) => a includes b</li>
+                <li>nin (strings) => a not includes b</li>
+            </ul>
+        </div>
+        <div>
+            <strong>Examples:</strong>
+            <ul>
+                <li>
+                    <pre><code>/if left=score right=10 rule=gte "/speak You win"</code></pre>
+                    triggers a /speak command if the value of "score" is greater or equals 10.
+                </li>
+            </ul>
+        </div>`;
+    SlashCommandParser.addCommandObject(ifCmd);
     registerSlashCommand('while', whileCallback, [], '<span class="monospace">left=varname1 right=varname2 rule=comparison "(command)"</span> – compare the value of the left operand "a" with the value of the right operand "b", and if the condition yields true, then execute any valid slash command enclosed in quotes. Numeric values and string literals for left and right operands supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/setvar key=i 0 | /while left=i right=10 rule=let "/addvar key=i 1"</tt> adds 1 to the value of "i" until it reaches 10. Loops are limited to 100 iterations by default, pass guard=off to disable.', true, true);
     registerSlashCommand('times', (args, value) => timesCallback(args, value), [], '<span class="monospace">(repeats) "(command)"</span> – execute any valid slash command enclosed in quotes <tt>repeats</tt> number of times, e.g. <tt>/setvar key=i 1 | /times 5 "/addvar key=i 1"</tt> adds 1 to the value of "i" 5 times. <tt>{{timesIndex}}</tt> is replaced with the iteration number (zero-based), e.g. <tt>/times 4 "/echo {{timesIndex}}"</tt> echos the numbers 0 through 4. Loops are limited to 100 iterations by default, pass guard=off to disable.', true, true);
     registerSlashCommand('flushvar', (_, value) => deleteLocalVariable(value), [], '<span class="monospace">(key)</span> – delete a local variable, e.g. <tt>/flushvar score</tt>', true, true);

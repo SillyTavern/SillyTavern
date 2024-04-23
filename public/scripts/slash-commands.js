@@ -58,6 +58,7 @@ import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
 import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './slash-commands/SlashCommandParserNameResult.js';
 import { OPTION_TYPE, SlashCommandAutoCompleteOption, SlashCommandFuzzyScore } from './slash-commands/SlashCommandAutoCompleteOption.js';
+import { SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 export {
     executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -1654,11 +1655,20 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     const dom = document.createElement('ul'); {
         dom.classList.add('slashCommandAutoComplete');
     }
+    const detailsWrap = document.createElement('div'); {
+        detailsWrap.classList.add('slashCommandAutoComplete-detailsWrap');
+    }
+    const detailsDom = document.createElement('div'); {
+        detailsDom.classList.add('slashCommandAutoComplete-details');
+        detailsWrap.append(detailsDom);
+    }
     let isReplacable = false;
     /**@type {SlashCommandAutoCompleteOption[]} */
     let result = [];
+    /**@type {SlashCommandAutoCompleteOption} */
     let selectedItem = null;
     let isActive = false;
+    let isShowingDetails = false;
     let text;
     /**@type {SlashCommandParserNameResult}*/
     let parserResult;
@@ -1669,7 +1679,18 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     const items = {};
     let hasCache = false;
     let selectionStart;
-    const makeItem = (key, typeIcon, noSlash, helpString = '', aliasList = []) => {
+    /**
+     *
+     * @param {string} key
+     * @param {string} typeIcon
+     * @param {boolean} noSlash
+     * @param {SlashCommandNamedArgument[]} namedArguments
+     * @param {SlashCommandArgument[]} unnamedArguments
+     * @param {string} helpString
+     * @param {string[]} aliasList
+     * @returns
+     */
+    const makeItem = (key, typeIcon, noSlash, namedArguments = [], unnamedArguments = [], returnType = 'void', helpString = '', aliasList = []) => {
         const li = document.createElement('li'); {
             li.classList.add('item');
             const type = document.createElement('span'); {
@@ -1678,22 +1699,118 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                 type.textContent = typeIcon;
                 li.append(type);
             }
-            const name = document.createElement('span'); {
-                name.classList.add('name');
-                name.classList.add('monospace');
-                name.textContent = noSlash ? '' : '/';
-                key.split('').forEach(char=>{
-                    const span = document.createElement('span'); {
-                        span.textContent = char;
-                        name.append(span);
+            const specs = document.createElement('span'); {
+                specs.classList.add('specs');
+                const name = document.createElement('span'); {
+                    name.classList.add('name');
+                    name.classList.add('monospace');
+                    name.textContent = noSlash ? '' : '/';
+                    key.split('').forEach(char=>{
+                        const span = document.createElement('span'); {
+                            span.textContent = char;
+                            name.append(span);
+                        }
+                    });
+                    specs.append(name);
+                }
+                const body = document.createElement('span'); {
+                    body.classList.add('body');
+                    const args = document.createElement('span'); {
+                        args.classList.add('arguments');
+                        for (const arg of namedArguments) {
+                            const argItem = document.createElement('span'); {
+                                argItem.classList.add('argument');
+                                argItem.classList.add('namedArgument');
+                                if (!arg.isRequired || (arg.defaultValue ?? false)) argItem.classList.add('optional');
+                                if (arg.acceptsMultiple) argItem.classList.add('multiple');
+                                const name = document.createElement('span'); {
+                                    name.classList.add('argument-name');
+                                    name.textContent = arg.name;
+                                    argItem.append(name);
+                                }
+                                if (arg.enumList.length > 0) {
+                                    const enums = document.createElement('span'); {
+                                        enums.classList.add('argument-enums');
+                                        for (const e of arg.enumList) {
+                                            const enumItem = document.createElement('span'); {
+                                                enumItem.classList.add('argument-enum');
+                                                enumItem.textContent = e;
+                                                enums.append(enumItem);
+                                            }
+                                        }
+                                        argItem.append(enums);
+                                    }
+                                } else {
+                                    const types = document.createElement('span'); {
+                                        types.classList.add('argument-types');
+                                        for (const t of arg.typeList) {
+                                            const type = document.createElement('span'); {
+                                                type.classList.add('argument-type');
+                                                type.textContent = t;
+                                                types.append(type);
+                                            }
+                                        }
+                                        argItem.append(types);
+                                    }
+                                }
+                                args.append(argItem);
+                            }
+                        }
+                        for (const arg of unnamedArguments) {
+                            const argItem = document.createElement('span'); {
+                                argItem.classList.add('argument');
+                                argItem.classList.add('unnamedArgument');
+                                if (!arg.isRequired || (arg.defaultValue ?? false)) argItem.classList.add('optional');
+                                if (arg.acceptsMultiple) argItem.classList.add('multiple');
+                                if (arg.enumList.length > 0) {
+                                    const enums = document.createElement('span'); {
+                                        enums.classList.add('argument-enums');
+                                        for (const e of arg.enumList) {
+                                            const enumItem = document.createElement('span'); {
+                                                enumItem.classList.add('argument-enum');
+                                                enumItem.textContent = e;
+                                                enums.append(enumItem);
+                                            }
+                                        }
+                                        argItem.append(enums);
+                                    }
+                                } else {
+                                    const types = document.createElement('span'); {
+                                        types.classList.add('argument-types');
+                                        for (const t of arg.typeList) {
+                                            const type = document.createElement('span'); {
+                                                type.classList.add('argument-type');
+                                                type.textContent = t;
+                                                types.append(type);
+                                            }
+                                        }
+                                        argItem.append(types);
+                                    }
+                                }
+                                args.append(argItem);
+                            }
+                        }
+                        body.append(args);
                     }
-                });
-                li.append(name);
+                    const returns = document.createElement('span'); {
+                        returns.classList.add('returns');
+                        returns.textContent = returnType ?? 'void';
+                        body.append(returns);
+                    }
+                    specs.append(body);
+                }
+                li.append(specs);
             }
-            li.append(' ');
             const help = document.createElement('span'); {
                 help.classList.add('help');
-                help.innerHTML = helpString;
+                const content = document.createElement('span'); {
+                    content.classList.add('helpContent');
+                    content.innerHTML = helpString;
+                    const text = content.textContent;
+                    content.innerHTML = '';
+                    content.textContent = text;
+                    help.append(content);
+                }
                 li.append(help);
             }
             if (aliasList.length > 0) {
@@ -1708,7 +1825,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                         }
                     }
                     aliases.append(')');
-                    li.append(aliases);
+                    // li.append(aliases);
                 }
             }
             // gotta listen to pointerdown (happens before textarea-blur)
@@ -1728,7 +1845,9 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     };
     const hide = () => {
         dom?.remove();
+        detailsWrap?.remove();
         isActive = false;
+        isShowingDetails = false;
     };
     const show = async(isInput = false, isForced = false) => {
         //TODO check if isInput and isForced are both required
@@ -1743,7 +1862,16 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             // init by appending all command options
             Object.keys(parser.commands).forEach(key=>{
                 const cmd = parser.commands[key];
-                items[key] = makeItem(key, '/', false, cmd.helpString, [cmd.name, ...(cmd.aliases ?? [])].filter(it=>it != key));
+                items[key] = makeItem(
+                    key,
+                    '/',
+                    false,
+                    cmd.namedArgumentList,
+                    cmd.unnamedArgumentList,
+                    cmd.returns,
+                    cmd.helpString,
+                    [cmd.name, ...(cmd.aliases ?? [])].filter(it=>it != key),
+                );
             });
         }
 
@@ -1991,6 +2119,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         } else if (result.length == 1 && parserResult && result[0].name == parserResult.name) {
             // only one result that is exactly the current value? just show hint, no autocomplete
             isReplacable = false;
+            isShowingDetails = false;
         } else if (!isReplacable && result.length > 1) {
             return hide();
         }
@@ -2000,39 +2129,58 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
     };
     const render = ()=>{
         // render autocomplete list
-        dom.innerHTML = '';
-        dom.classList.remove('defaultDark');
-        dom.classList.remove('defaultLight');
-        dom.classList.remove('defaultThemed');
-        switch (power_user.stscript.autocomplete_style ?? 'theme') {
-            case 'dark': {
-                dom.classList.add('defaultDark');
-                break;
+        if (isReplacable) {
+            dom.innerHTML = '';
+            dom.classList.remove('defaultDark');
+            dom.classList.remove('defaultLight');
+            dom.classList.remove('defaultThemed');
+            detailsDom.classList.remove('defaultDark');
+            detailsDom.classList.remove('defaultLight');
+            detailsDom.classList.remove('defaultThemed');
+            switch (power_user.stscript.autocomplete_style ?? 'theme') {
+                case 'dark': {
+                    dom.classList.add('defaultDark');
+                    detailsDom.classList.add('defaultDark');
+                    break;
+                }
+                case 'light': {
+                    dom.classList.add('defaultLight');
+                    detailsDom.classList.add('defaultLight');
+                    break;
+                }
+                case 'theme':
+                default: {
+                    dom.classList.add('defaultThemed');
+                    detailsDom.classList.add('defaultThemed');
+                    break;
+                }
             }
-            case 'light': {
-                dom.classList.add('defaultLight');
-                break;
+            const frag = document.createDocumentFragment();
+            for (const item of result) {
+                if (item == selectedItem) {
+                    item.dom.classList.add('selected');
+                } else {
+                    item.dom.classList.remove('selected');
+                }
+                frag.append(item.dom);
             }
-            case 'theme':
-            default: {
-                dom.classList.add('defaultThemed');
-                break;
-            }
+            dom.append(frag);
+            updatePosition();
+            document.body.append(dom);
+        } else {
+            dom.remove();
         }
-        const frag = document.createDocumentFragment();
-        for (const item of result) {
-            if (item == selectedItem) {
-                item.dom.classList.add('selected');
-            } else {
-                item.dom.classList.remove('selected');
-            }
-            frag.append(item.dom);
-        }
-        dom.append(frag);
-        updatePosition();
-        document.body.append(dom);
+        renderDetailsDebounced();
+    };
+    const renderDetails = ()=>{
+        if (!isShowingDetails && isReplacable) return detailsWrap.remove();
+        detailsDom.innerHTML = '';
+        detailsDom.append(selectedItem?.renderDetails() ?? 'NO ITEM');
+        document.body.append(detailsWrap);
+        updateDetailsPositionDebounced();
     };
     const renderDebounced = debounce(render, 10);
+    const renderDetailsDebounced = debounce(renderDetails, 10);
     const updatePosition = () => {
         if (isFloating) {
             updateFloatingPosition();
@@ -2040,10 +2188,35 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             const rect = textarea.getBoundingClientRect();
             dom.style.setProperty('--bottom', `${window.innerHeight - rect.top}px`);
             dom.style.bottom = `${window.innerHeight - rect.top}px`;
-            dom.style.left = `${rect.left}px`;
-            dom.style.right = `${window.innerWidth - rect.right}px`;
+            if (isShowingDetails) {
+                dom.style.left = '1vw';
+            } else {
+                dom.style.left = `${rect.left}px`;
+            }
+            dom.style.right = `calc(1vw + ${isShowingDetails ? 25 : 0}vw)`;
+            updateDetailsPosition();
         }
     };
+    const updateDetailsPosition = () => {
+        if (isShowingDetails || !isReplacable) {
+            const rect = textarea.getBoundingClientRect();
+            if (isReplacable) {
+                const selRect = selectedItem.dom.children[0].getBoundingClientRect();
+                detailsWrap.style.setProperty('--targetTop', `${selRect.top}`);
+                detailsWrap.style.bottom = dom.style.bottom;
+                detailsWrap.style.left = `calc(100vw - ${dom.style.right})`;
+                detailsWrap.style.right = '1vw';
+                detailsWrap.style.top = '5vh';
+            } else {
+                detailsWrap.style.setProperty('--targetTop', `${rect.top}`);
+                detailsWrap.style.bottom = dom.style.bottom;
+                detailsWrap.style.left = `${rect.left}px`;
+                detailsWrap.style.right = `calc(100vw - ${rect.right}px)`;
+                detailsWrap.style.top = '5vh';
+            }
+        }
+    };
+    const updateDetailsPositionDebounced = debounce(updateDetailsPosition, 10);
     const updateFloatingPosition = () => {
         const location = getCursorPosition();
         const rect = textarea.getBoundingClientRect();
@@ -2131,6 +2304,11 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             textarea.selectionDirection = selectionEnd;
         }
     };
+    const toggleDetails = async() => {
+        isShowingDetails = !isShowingDetails;
+        renderDetailsDebounced();
+        updatePosition();
+    };
     const showAutoCompleteDebounced = show;
     textarea.addEventListener('input', ()=>showAutoCompleteDebounced(true));
     textarea.addEventListener('click', ()=>showAutoCompleteDebounced());
@@ -2151,11 +2329,13 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                     selectedItem.dom.classList.remove('selected');
                     selectedItem = result[newIdx];
                     selectedItem.dom.classList.add('selected');
-                    const rect = selectedItem.dom.getBoundingClientRect();
+                    const rect = selectedItem.dom.children[0].getBoundingClientRect();
                     const rectParent = dom.getBoundingClientRect();
                     if (rect.top < rectParent.top || rect.bottom > rectParent.bottom ) {
-                        selectedItem.dom.scrollIntoView();
+                        // selectedItem.dom.children[0].scrollIntoView();
+                        dom.scrollTop += rect.top < rectParent.top ? rect.top - rectParent.top : rect.bottom - rectParent.bottom;
                     }
+                    renderDetailsDebounced();
                     return;
                 }
                 case 'ArrowDown': {
@@ -2168,11 +2348,13 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                     selectedItem.dom.classList.remove('selected');
                     selectedItem = result[newIdx];
                     selectedItem.dom.classList.add('selected');
-                    const rect = selectedItem.dom.getBoundingClientRect();
+                    const rect = selectedItem.dom.children[0].getBoundingClientRect();
                     const rectParent = dom.getBoundingClientRect();
                     if (rect.top < rectParent.top || rect.bottom > rectParent.bottom ) {
-                        selectedItem.dom.scrollIntoView();
+                        // selectedItem.dom.children[0].scrollIntoView();
+                        dom.scrollTop += rect.top < rectParent.top ? rect.top - rectParent.top : rect.bottom - rectParent.bottom;
                     }
+                    renderDetailsDebounced();
                     return;
                 }
                 case 'Enter':
@@ -2211,8 +2393,13 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         switch (evt.key) {
             case ' ': {
                 if (evt.ctrlKey) {
-                    // ctrl-space to force show autocomplete
-                    showAutoCompleteDebounced(true, true);
+                    if (isActive) {
+                        // ctrl-space to toggle details for selected item
+                        toggleDetails();
+                    } else {
+                        // ctrl-space to force show autocomplete
+                        showAutoCompleteDebounced(true, true);
+                    }
                     return;
                 }
                 break;
@@ -2244,7 +2431,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             }
         }
     });
-    textarea.addEventListener('blur', ()=>hide());
+    // textarea.addEventListener('blur', ()=>hide());
     if (isFloating) {
         textarea.addEventListener('scroll', debounce(updateFloatingPosition, 100));
     }
