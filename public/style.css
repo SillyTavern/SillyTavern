@@ -1115,15 +1115,18 @@ select {
             content: "";
             flex: 0 1 calc(var(--targetOffset) * 1px);
             display: block;
+            pointer-events: none;
         }
         .slashCommandAutoComplete {
             flex: 0 0 auto;
             width: 50vw;
+            pointer-events: all;
         }
         &:after {
             content: "";
             flex: 1 1 0;
             display: block;
+            pointer-events: none;
         }
     }
 }
@@ -1139,15 +1142,18 @@ select {
         content: "";
         flex: 0 1 calc(var(--targetOffset) * 1px - 5vh);
         display: block;
+        pointer-events: none;
     }
     .slashCommandAutoComplete-details {
         flex: 0 0 auto;
         max-height: 80vh;
+        pointer-events: all;
     }
     &:after {
         content: "";
         flex: 1 1 0;
         display: block;
+        pointer-events: none;
     }
 
     &.isFloating {
