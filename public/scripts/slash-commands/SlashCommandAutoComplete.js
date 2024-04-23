@@ -389,13 +389,17 @@ export class SlashCommandAutoComplete {
         // only show with textarea in focus
         if (document.activeElement != this.textarea) return this.hide();
         // only show for slash commands
+        //TODO activation-requirements could be provided as a function
         if (this.text[0] != '/') return this.hide();
 
         this.buildCache();
 
         // request parser to get command executor (potentially "incomplete", i.e. not an actual existing command) for
         // cursor position
+        //TODO nameProvider function provided when instantiating?
         this.parserResult = this.parser.getNameAt(this.text, this.textarea.selectionStart);
+
+        //TODO options could be fully provided by the name source
         switch (this.parserResult?.type) {
             case NAME_RESULT_TYPE.CLOSURE: {
                 this.startQuote = this.text[this.parserResult.start - 2] == '"';
@@ -424,6 +428,7 @@ export class SlashCommandAutoComplete {
         this.slashCommand = this.parserResult?.name?.toLowerCase() ?? '';
         // do autocomplete if triggered by a user input and we either don't have an executor or the cursor is at the end
         // of the name part of the command
+        //TODO whether the input is quotable could be an option (given by the parserResult?)
         switch (this.parserResult?.type) {
             case NAME_RESULT_TYPE.CLOSURE: {
                 this.isReplaceable = isInput && (!this.parserResult ? true : this.textarea.selectionStart == this.parserResult.start - 2 + this.parserResult.name.length + (this.startQuote ? 1 : 0));
@@ -438,6 +443,7 @@ export class SlashCommandAutoComplete {
 
         // if [forced (ctrl+space) or user input] and cursor is in the middle of the name part (not at the end)
         if (isForced || isInput) {
+            //TODO input quotable (see above)
             switch (this.parserResult?.type) {
                 case NAME_RESULT_TYPE.CLOSURE: {
                     if (this.textarea.selectionStart >= this.parserResult.start - 2 && this.textarea.selectionStart <= this.parserResult.start - 2 + this.parserResult.name.length + (this.startQuote ? 1 : 0)) {
@@ -480,6 +486,7 @@ export class SlashCommandAutoComplete {
                 .filter((it,idx) => matchingOptions.indexOf(it) == idx)
                 .map(option => {
                     let li;
+                    //TODO makeItem should be handled in the option class
                     switch (option.type) {
                         case OPTION_TYPE.QUICK_REPLY: {
                             li = this.makeItem(option.name, 'QR', true);
@@ -516,6 +523,7 @@ export class SlashCommandAutoComplete {
                 '',
             );
             switch (this.parserResult?.type) {
+                //TODO "no-match" text should be an option (in parserResult?)
                 case NAME_RESULT_TYPE.CLOSURE: {
                     const li = document.createElement('li'); {
                         li.textContent = this.slashCommand.length ?
@@ -857,7 +865,14 @@ export class SlashCommandAutoComplete {
                     this.selectItemAtIndex(newIdx);
                     return;
                 }
-                case 'Enter':
+                case 'Enter': {
+                    if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.type == OPTION_TYPE.BLANK) break;
+                    if (this.selectedItem.name == this.slashCommand) break;
+                    evt.preventDefault();
+                    evt.stopImmediatePropagation();
+                    this.select();
+                    return;
+                }
                 case 'Tab': {
                     // pick the selected item to autocomplete
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.type == OPTION_TYPE.BLANK) break;
