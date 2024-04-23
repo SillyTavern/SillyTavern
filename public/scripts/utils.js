@@ -214,6 +214,49 @@ export function getBase64Async(file) {
     });
 }
 
+
+
+/**
+ * Parse JSON data with optional reviver function.
+ * Converts date strings back to Date objects if found.
+ *
+ * @param {string} json - The JSON data to parse
+ * @param {object} [options] - Optional parameters
+ * @param {Reviver?} [options.reviver=null] - Custom reviver function to customize parsing
+ * @param {boolean} [options.disableDefaultReviver=false] - Flag to disable the default date parsing reviver
+ * @returns {object} - The parsed JSON object
+ */
+export function parseJson(json, { reviver = null, disableDefaultReviver = false } = {}) {
+    /**
+     * @typedef {((this: any, key: string, value: any) => any)} Reviver
+     * @param {object} this -
+     * @param {string} key - The key of the current property being processed
+     * @param {*} value - The value of the current property being processed
+     * @returns {*} - The processed value
+     */
+
+    /** @type {Reviver} The default reviver, that converts Date strings to Date objects */
+    function defaultReviver(key, value) {
+        // Check if the value is a string and can be converted to a Date
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/.test(value)) {
+            return new Date(value);
+        }
+        // Return the original value if it's not a date string
+        return value;
+    }
+
+    // The actual reviver based on the ones given
+    /** @type {Reviver} */
+    function actualReviver(key, value) {
+        if (reviver) value = reviver(key, value);
+        if (!disableDefaultReviver) value = defaultReviver(key, value);
+        return value;
+    };
+
+    // Parse the JSON data using the specified or custom reviver function
+    return JSON.parse(json, actualReviver);
+}
+
 /**
  * Parses a file blob as a JSON object.
  * @param {Blob} file The file to read.
@@ -524,24 +567,44 @@ export function trimToStartSentence(input) {
 }
 
 /**
- * Format bytes as human-readable text.
- *
- * @param bytes Number of bytes.
- * @param si True to use metric (SI) units, aka powers of 1000. False to use
- *           binary (IEC), aka powers of 1024.
- * @param dp Number of decimal places to display.
- *
- * @return Formatted string.
+ * Build a humanized string for a duration
+ * @param {Date|number} start - Start time (as a Date, or in milliseconds)
+ * @param {Date|number|null} end - End time (as a Date, or in milliseconds), if null will be replaced with Date.now()
+ * @param {object} param2 - Optional parameters
+ * @param {string} [param2.fallback='Never'] - Fallback value no duration can be calculated
+ * @param {function(string): string} [param2.wrapper=null] - Optional function to wrap/format the resulting humanized duration
+ * @returns {string} Humanized duration string
  */
-export function humanFileSize(bytes, si = false, dp = 1) {
+export function humanizedDuration(start, end = null, { fallback = 'Never', wrapper = null } = {}) {
+    const startTime = start instanceof Date ? start.getTime() : start;
+    const endTime = end instanceof Date ? end.getTime() : end ?? Date.now();
+    if (!startTime || endTime > endTime) {
+        return fallback;
+    }
+    // @ts-ignore
+    const humanized = moment.duration(endTime - start).humanize();
+    return wrapper ? wrapper(humanized) : humanized;
+}
+
+/**
+ * Format bytes as human-readable text
+ *
+ * @param bytes Number of bytes
+ * @param si True to use metric (SI) units, aka powers of 1000. False to use binary (IEC), aka powers of 1024
+ * @param ibi If `si` is disabled, setting this to True will return unit names as 'KiB', 'MiB' etc. instead of 'KB', 'MB'.
+ * @param dp Number of decimal places to display
+ *
+ * @return Formatted string
+ */
+export function humanFileSize(bytes, si = false, ibi = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
 
     if (Math.abs(bytes) < thresh) {
         return bytes + ' B';
     }
 
-    const units = si
-        ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+    const units = si || !ibi
+        ? ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
         : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
     let u = -1;
     const r = 10 ** dp;
@@ -1418,4 +1481,73 @@ export function setValueByPath(obj, path, value) {
     }
 
     currentObject[keyParts[keyParts.length - 1]] = value;
+}
+
+/**
+ * Rounds a number conditionally in a sensible way, based on thresholds
+ *
+ * @param {number} number - The number to round
+ * @param {object} [options={}] - Optional parameters
+ * @param {{[threshold: number]: number, _: number}} [options.thresholds={ 1: 3, 100: 2, _: 0 }] - Custom rounding thresholds, specified by 'threshold value: rounding decimals'. The default value will be provided with the key '_'.
+ * @returns {number} - The rounded number
+ */
+export function sensibleRound(number, { thresholds = { 1: 3, 100: 2, _: 0 } } = {}) {
+    // Sort thresholds by ascending order of keys
+    const sortedThresholds = Object.keys(thresholds).map(parseFloat).sort((a, b) => a - b);
+
+    // Find the appropriate threshold for rounding
+    let decimalPlaces = thresholds._ ?? 0;
+    for (const threshold of sortedThresholds) {
+        if (number < threshold) {
+            decimalPlaces = thresholds[threshold];
+            break;
+        }
+    }
+
+    return +number.toFixed(decimalPlaces);
+}
+
+/**
+ * Truncates a given text at the end of word boundaries, filling in an ellipsis. The max total length will not exceed the provided value.
+ * If the word boundaries will make this string too short, it'll make a hard truncate instead to preserve contextual information.
+ * @param {string} text - The text to truncate
+ * @param {number} maxLength - max length to truncate to
+ * @param {string} [ellipsis='…'] - Ellipsis to add if the string was truncated
+ * @param {number} [minLength=maxLength/2] - A minimum length below which the word boundary trunaction should not go to. If hit, hard truncation at max length will be used
+ * @returns {string}
+ */
+export function smartTruncate(text, maxLength, ellipsis = '…', minLength = maxLength / 2) {
+    if (text.length <= maxLength) {
+        return text;
+    }
+    if (ellipsis.length > maxLength) {
+        console.warn(`Cannot truncate to length of ${maxLength}, below the length of the ellipsis '${ellipsis}'.`);
+        return text;
+    }
+
+    const isWord = (char) => /^\w$/.test(char);
+    const maxTruncLength = maxLength - ellipsis.length;
+
+    // If the first character beyond the trunc length is non-word, we can cut at the next word char.
+    let cutSoon = !isWord(text[maxTruncLength + 1]);
+
+    let index = maxTruncLength + 1;
+    while (index > 0) {
+        const char = text[index];
+
+        // Look for a non-word character to prepare for a cut
+        if (!isWord(char)) {
+            cutSoon = true;
+        } else if (cutSoon) {
+            break;
+        }
+        index--;
+    }
+
+    // If the cut is too close to start, or no appropriate cut point is found, fall back to hard truncation
+    if (index < minLength) {
+        return text.slice(0, maxLength - ellipsis.length) + ellipsis;
+    }
+
+    return text.slice(0, index + 1) + ellipsis;
 }

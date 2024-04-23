@@ -40,6 +40,7 @@
     flex: 1;
     height: calc(var(--mainFontSize) * 1.33333333333);
     text-align: right;
+    overflow: hidden;
     padding-left: 2px;
     padding-right: 2px;
 }

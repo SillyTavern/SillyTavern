@@ -80,19 +80,21 @@ observer.observe(document.documentElement, observerConfig);
 
 
 /**
- * Converts generation time from milliseconds to a human-readable format.
+ * Converts a timespan from milliseconds to a human-readable format.
  *
- * The function takes total generation time as an input, then converts it to a format
+ * The function takes a total timespan as an input, then converts it to a format
  * of "_ Days, _ Hours, _ Minutes, _ Seconds". If the generation time does not exceed a
  * particular measure (like days or hours), that measure will not be included in the output.
  *
- * @param {number} total_gen_time - The total generation time in milliseconds.
- * @param {boolean} [short=false] - Optional flag indicating whether short form should be used. ('2h' instead of '2 Hours')
- * @returns {string} - A human-readable string that represents the time spent generating characters.
+ * @param {number} timespan - The total timespan in milliseconds.
+ * @param {object} [options] - Optional parameters
+ * @param {boolean} [options.short=false] - Flag indicating whether short form should be used. ('2h' instead of '2 Hours')
+ * @param {number} [options.onlyHighest] - Number of maximum blocks to be returned. (If, and daya is the highest matching unit, only returns days and hours, cutting of minutes and seconds)
+ * @returns {string} - A human-readable string that represents the timespan.
  */
-export function humanizeGenTime(total_gen_time, short = false) {
+export function humanizeTimespan(timespan, { short = false, onlyHighest = 2 } = {}) {
     //convert time_spent to humanized format of "_ Hours, _ Minutes, _ Seconds" from milliseconds
-    let time_spent = total_gen_time || 0;
+    let time_spent = timespan || 0;
     time_spent = Math.floor(time_spent / 1000);
     let seconds = time_spent % 60;
     time_spent = Math.floor(time_spent / 60);
@@ -101,13 +103,36 @@ export function humanizeGenTime(total_gen_time, short = false) {
     let hours = time_spent % 24;
     time_spent = Math.floor(time_spent / 24);
     let days = time_spent;
-    let parts = [];
-    if (days > 0) { parts.push(short ? `${days}d` : `${days} Days`); }
-    if (hours > 0) { parts.push(short ? `${hours}h` : `${hours} Hours`); }
-    if (minutes > 0) { parts.push(short ? `${minutes}m` : `${minutes} Minutes`); }
-    if (seconds > 0) { parts.push(short ? `${seconds}s` : `${seconds} Seconds`); }
-    if (!parts.length) { parts.push(short ? '&lt;1s' : 'Instant') }
-    return parts.join(short ? ' ' : ', ');
+
+    let parts = [
+        { singular: 'Day', plural: 'Days', short: 'd', value: days },
+        { singular: 'Hour', plural: 'Hours', short: 'h', value: hours },
+        { singular: 'Minute', plural: 'Minutes', short: 'm', value: minutes },
+        { singular: 'Second', plural: 'Seconds', short: 's', value: seconds },
+    ];
+
+    // Build the final string based on the highest significant units and respecting zeros
+    let resultParts = [];
+    let count = 0;
+    for (let part of parts) {
+        if (part.value > 0) {
+            resultParts.push(part);
+        }
+
+        // If we got a match, we count from there. Take a maximum of X elements
+        if (resultParts.length) count++;
+        if (count >= onlyHighest) {
+            break;
+        }
+    }
+
+    if (!resultParts.length) {
+        return short ? '&lt;1s' : 'Instant';
+    }
+
+    return resultParts.map(part => {
+        return short ? `${part.value}${part.short}` : `${part.value} ${part.value === 1 ? part.singular : part.plural}`;
+    }).join(short ? ' ' : ', ');
 }
 
 /**

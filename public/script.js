@@ -1,5 +1,5 @@
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter } from './scripts/RossAscends-mods.js';
-import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
+import { initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -228,6 +228,7 @@ export {
     clearChat,
     getChat,
     getCharacters,
+    getCharacter,
     getGeneratingApi,
     callPopup,
     substituteParams,
@@ -1459,6 +1460,23 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
     return entities;
 }
 
+/**
+ * Get one character from the character list via its character key
+ *
+ * To retrieve/refresh it from the API, use `getOneCharacter` to update it first.
+ *
+ * @param {string} characterKey - The character key / avatar url
+ * @returns {object}
+ */
+function getCharacter(characterKey) {
+    return characters.find(x => x.avatar === characterKey);
+}
+
+/**
+ * Gets one character from via API
+ *
+ * @param {string} avatarUrl - The avatar url / character key
+ */
 export async function getOneCharacter(avatarUrl) {
     const response = await fetch('/api/characters/get', {
         method: 'POST',
@@ -4461,7 +4479,7 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     }
 
     await populateFileAttachment(message);
-    statMesProcess(message, 'user', characters, this_chid, '');
+    // statMesProcess(message, 'user', characters, this_chid, '');
 
     if (typeof insertAt === 'number' && insertAt >= 0 && insertAt <= chat.length) {
         chat.splice(insertAt, 0, message);
@@ -10503,10 +10521,6 @@ jQuery(async function () {
                 restoreCaretPosition($(this).get(0), caretPosition);
             }, 2000); */
     //});
-
-    $('.user_stats_button').on('click', function () {
-        userStatsHandler();
-    });
 
     $('#external_import_button').on('click', async () => {
         const html = `<h3>Enter the URL of the content to import</h3>

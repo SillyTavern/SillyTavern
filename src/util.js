@@ -242,6 +242,47 @@ function readAndParseJsonlFile(filepath) {
 }
 
 /**
+ * Parse JSON data with optional reviver function.
+ * Converts date strings back to Date objects if found.
+ *
+ * @param {string} json - The JSON data to parse
+ * @param {object} [options] - Optional parameters
+ * @param {Reviver?} [options.reviver=null] - Custom reviver function to customize parsing
+ * @param {boolean} [options.disableDefaultReviver=false] - Flag to disable the default date parsing reviver
+ * @returns {object} - The parsed JSON object
+ */
+function parseJson(json, { reviver = null, disableDefaultReviver = false } = {}) {
+    /**
+     * @typedef {((this: any, key: string, value: any) => any)} Reviver
+     * @param {object} this -
+     * @param {string} key - The key of the current property being processed
+     * @param {*} value - The value of the current property being processed
+     * @returns {*} - The processed value
+     */
+
+    /** @type {Reviver} The default reviver, that converts Date strings to Date objects */
+    function defaultReviver(key, value) {
+        // Check if the value is a string and can be converted to a Date
+        if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/.test(value)) {
+            return new Date(value);
+        }
+        // Return the original value if it's not a date string
+        return value;
+    }
+
+    // The actual reviver based on the ones given
+    /** @type {Reviver} */
+    function actualReviver(key, value) {
+        if (reviver) value = reviver(key, value);
+        if (!disableDefaultReviver) value = defaultReviver(key, value);
+        return value;
+    };
+
+    // Parse the JSON data using the specified or custom reviver function
+    return JSON.parse(json, actualReviver);
+}
+
+/**
  * Gets all chunks of data from the given readable stream.
  * @param {any} readableStream Readable stream to read from
  * @returns {Promise<Buffer[]>} Array of chunks
@@ -776,6 +817,7 @@ module.exports = {
     extractFileFromZipBuffer,
     getImageBuffers,
     readAndParseJsonlFile,
+    parseJson,
     readAllChunks,
     delay,
     deepMerge,

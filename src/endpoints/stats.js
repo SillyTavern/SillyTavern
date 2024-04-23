@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const sanitize = require('sanitize-filename');
 
 const { jsonParser } = require('../express-common');
-const { readAndParseJsonlFile, timestampToMoment, humanizedToDate, calculateDuration, minDate, maxDate, now } = require('../util');
+const { readAndParseJsonlFile, parseJson, timestampToMoment, humanizedToDate, calculateDuration, minDate, maxDate, now } = require('../util');
 const { getAllUserHandles, getUserDirectories } = require('../users');
 
 const readFile = fs.promises.readFile;
@@ -17,7 +17,7 @@ const MAX_TIMESTAMP = new Date('9999-12-31T23:59:59.999Z').getTime();
 const MIN_DATE = new Date(MIN_TIMESTAMP);
 const MAX_DATE = new Date(MAX_TIMESTAMP);
 const STATS_FILE = 'stats.json';
-const CURRENT_STATS_VERSION = '1.1';
+const CURRENT_STATS_VERSION = '1.2';
 
 /** @type {Map<string, UserStatsCollection>} The stats collections for each user, accessable via their key - gets set/built on init */
 const STATS = new Map();
@@ -44,7 +44,7 @@ async function init() {
             const directories = getUserDirectories(userHandle);
             const statsFilePath = path.join(directories.root, STATS_FILE);
             const statsFileContent = await readFile(statsFilePath, 'utf-8');
-            let userStats = JSON.parse(statsFileContent);
+            let userStats = parseJson(statsFileContent);
 
             // Migrate/recreate stats if the version has changed
             if (userStats.version !== CURRENT_STATS_VERSION) {
@@ -92,7 +92,8 @@ async function onExit() {
 
 /**
  * @typedef {object} CharacterStats
- * @property {string} name -
+ * @property {string} charName -
+ * @property {string} userName -
  * @property {string} characterKey -
  * @property {number} chats - The creation date of the chat.
  * @property {number} chatSize - The size of all chats
@@ -135,6 +136,8 @@ async function onExit() {
  * @typedef {object} ChatStats
  * @property {string} chatName - The unique identifier for the chat.
  * @property {number} chatId - hash
+ * @property {string} charName - Current character name
+ * @property {string} userName - Current user name
  * @property {number} chatSize -
  * @property {Date} createDate - The creation date of the chat. (time in ISO 8601 format)
  * @property {Date} lastInteractionDate - (time in ISO 8601 format)
@@ -193,10 +196,14 @@ class AggregateStat {
     avg = 0;
     /** @type {number[]} All values listed and saved, so the aggregate stats can be updated if needed when elements get removed */
     values = [];
+    /** @type {number?} The number of stats used when this is aggregated over the totals of aggregated stats, meaning based on any amount of sub/inner values */
+    subCount = null;
+
     constructor() { }
 
     reset() {
-        this.count, this.total, this.min, this.max, this.avg = 0;
+        this.count, this.total, this.min, this.max, this.avg = 0, this.subCount = 0;
+        this.values.length = 0;
     }
 
     /**
@@ -213,6 +220,15 @@ class AggregateStat {
         this.values.push(value);
         this.min = Math.min(isNaN(this.min) ? Number.MAX_SAFE_INTEGER : this.min, value);
         this.max = Math.max(this.max, value);
+    }
+
+    /**
+     * Adds the total of the aggregated value as a single value, and also marks the count as sub values for analysis purposes
+     * @param {AggregateStat} aggregatedValue - The aggregate stat
+     */
+    addAggregatedAsOne(aggregatedValue) {
+        this.add(aggregatedValue.total);
+        this.subCount = (this.subCount ?? 0) + aggregatedValue.count;
     }
 
     /**
@@ -257,6 +273,15 @@ class AggregateStat {
     removeAggregated(aggregatedValue) {
         aggregatedValue.values.forEach(x => this.add(x));
     }
+
+    /**
+     * Removes the total of the aggregated value as a single value, and also marks the count as sub values for analysis purposes
+     * @param {AggregateStat} aggregatedValue - The aggregate stat
+     */
+    removeAggregatedAsOne(aggregatedValue) {
+        this.remove(aggregatedValue.total);
+        this.subCount = this.subCount ? this.subCount - aggregatedValue.count : null;
+    }
 }
 
 /**
@@ -288,7 +313,7 @@ async function recreateStats(userHandle) {
     const files = await readdir(directories.characters);
     const charFiles = files.filter((file) => file.endsWith('.png'));
     let processingPromises = charFiles.map((charFileName, _) =>
-        recreateCharacterStats(userHandle, charFileName.replace('.png', '')),
+        recreateCharacterStats(userHandle, charFileName)
     );
     await Promise.all(processingPromises);
 
@@ -321,8 +346,7 @@ function recreateCharacterStats(userHandle, characterKey) {
     }
 
     // Then load chats dir for this character to process
-    const directories = getUserDirectories(userHandle);
-    const charChatsDir = path.join(directories.chats, characterKey);
+    const charChatsDir = getCharChatsDir(userHandle, characterKey);
     if (!fs.existsSync(charChatsDir)) {
         return null;
     }
@@ -336,23 +360,34 @@ function recreateCharacterStats(userHandle, characterKey) {
     return userStats[characterKey];
 };
 
+/**
+ *
+ * @param {string} userHandle - The user handle
+ * @param {string} characterKey - The character key
+ * @returns {string} The chats directory for this specific char
+ */
+function getCharChatsDir(userHandle, characterKey) {
+    const charName = characterKey.replace('.png', '');
+    const directories = getUserDirectories(userHandle);
+    const charChatsDir = path.join(directories.chats, charName);
+    return charChatsDir;
+}
 
 /**
  *
  * @param {string} userHandle - The user handle
  * @param {string} characterKey
  * @param {string} chatName
- * @returns {{chatName: string, charName: string, filePath: string, lines: object[]}}
+ * @returns {{chatName: string, filePath: string, lines: object[]}}
  */
 function loadChatFile(userHandle, characterKey, chatName) {
-    const charName = characterKey.replace('.png', '');
-    const directories = getUserDirectories(userHandle);
-    const charChatsDir = path.join(directories.chats, charName);
+    const charChatsDir = getCharChatsDir(userHandle, characterKey);
 
     const filePath = path.join(charChatsDir, sanitize(chatName));
     const lines = readAndParseJsonlFile(filePath);
-    return { chatName, charName, filePath, lines };
+    return { chatName, filePath, lines };
 }
+
 
 /**
  *
@@ -374,14 +409,16 @@ function triggerChatUpdate(userHandle, characterKey, chatName) {
     const userStats = getUserStats(userHandle);
 
     // Create empty stats if character stats don't exist yet
-    userStats.stats[characterKey] ??= newCharacterStats(characterKey, loadedChat.charName);
+    userStats.stats[characterKey] ??= newCharacterStats(characterKey);
 
     // Update both the char stats and the global user stats with this chat
     updateCharStatsWithChat(userStats.stats[characterKey], chatStats);
     updateCharStatsWithChat(userStats.global, chatStats);
 
-    chatStats._calculated = now();
-    userStats.global._calculated = now()
+    // Update name (if it might have changed)
+    userStats.stats[characterKey].charName = chatStats.charName;
+    userStats.stats[characterKey].userName = chatStats.userName;
+
     userStats._calculated = now();
     return chatStats;
 }
@@ -413,14 +450,14 @@ function updateCharStatsWithChat(stats, chatStats) {
     stats.userMessages.add(chatStats.userMessages);
     stats.charMessages.add(chatStats.charMessages);
 
-    stats.genTime.add(chatStats.genTime.total);
-    stats.genTokenCount.add(chatStats.genTokenCount.total);
-    stats.swipeGenTime.add(chatStats.swipeGenTime.total);
-    stats.swipes.add(chatStats.swipes.total);
-    stats.userResponseTime.add(chatStats.userResponseTime.total);
-    stats.words.add(chatStats.words.total);
-    stats.userWords.add(chatStats.userWords.total);
-    stats.charWords.add(chatStats.charWords.total);
+    stats.genTime.addAggregatedAsOne(chatStats.genTime);
+    stats.genTokenCount.addAggregatedAsOne(chatStats.genTokenCount);
+    stats.swipeGenTime.addAggregatedAsOne(chatStats.swipeGenTime);
+    stats.swipes.addAggregatedAsOne(chatStats.swipes);
+    stats.userResponseTime.addAggregatedAsOne(chatStats.userResponseTime);
+    stats.words.addAggregatedAsOne(chatStats.words);
+    stats.userWords.addAggregatedAsOne(chatStats.userWords);
+    stats.charWords.addAggregatedAsOne(chatStats.charWords);
 
     stats.perMessageGenTime.addAggregated(chatStats.genTime);
     stats.perMessageGenTokenCount.addAggregated(chatStats.genTokenCount);
@@ -434,7 +471,7 @@ function updateCharStatsWithChat(stats, chatStats) {
     Object.entries(chatStats.genModels).forEach(([model, data]) => addModelUsage(stats.genModels, model, data.tokens, data.count));
 
     stats._calculated = now();
-    console.debug(`Successfully updated ${stats.name}'s stats with chat ${chatStats.chatName}`);
+    console.debug(`Successfully updated ${stats.charName}'s stats with chat ${chatStats.chatName}`);
     return true;
 }
 
@@ -465,14 +502,14 @@ function removeChatFromCharStats(stats, chatStats) {
     stats.userMessages.remove(chatStats.userMessages);
     stats.charMessages.remove(chatStats.charMessages);
 
-    stats.genTime.remove(chatStats.genTime.total);
-    stats.genTokenCount.remove(chatStats.genTokenCount.total);
-    stats.swipeGenTime.remove(chatStats.swipeGenTime.total);
-    stats.swipes.remove(chatStats.swipes.total);
-    stats.userResponseTime.remove(chatStats.userResponseTime.total);
-    stats.words.remove(chatStats.words.total);
-    stats.userWords.remove(chatStats.userWords.total);
-    stats.charWords.remove(chatStats.charWords.total);
+    stats.genTime.removeAggregatedAsOne(chatStats.genTime);
+    stats.genTokenCount.removeAggregatedAsOne(chatStats.genTokenCount);
+    stats.swipeGenTime.removeAggregatedAsOne(chatStats.swipeGenTime);
+    stats.swipes.removeAggregatedAsOne(chatStats.swipes);
+    stats.userResponseTime.removeAggregatedAsOne(chatStats.userResponseTime);
+    stats.words.removeAggregatedAsOne(chatStats.words);
+    stats.userWords.removeAggregatedAsOne(chatStats.userWords);
+    stats.charWords.removeAggregatedAsOne(chatStats.charWords);
 
     stats.perMessageGenTime.removeAggregated(chatStats.genTime);
     stats.perMessageGenTokenCount.removeAggregated(chatStats.genTokenCount);
@@ -516,12 +553,17 @@ function processChat(chatName, lines, { chatSize = 0 } = {}) {
         // Check if this is the first message, the "data storage"
         if (message.chat_metadata && message.create_date) {
             stats.createDate = humanizedToDate(message.create_date) ?? stats.createDate;
+            stats.lastInteractionDate = stats.createDate;
             stats.chatId = message.chat_metadata['chat_id_hash'];
             continue;
         }
 
         const messageStats = processMessage(message);
         stats.messagesStats.push(messageStats);
+
+        // Update names to the latest message
+        stats.charName = messageStats.isChar ? message.name : stats.charName;
+        stats.userName = messageStats.isUser ? message.name : stats.userName;
 
         stats.lastInteractionDate = maxDate(stats.lastInteractionDate, messageStats.sendDate, ...messageStats.genEndDates) ?? stats.lastInteractionDate;
 
@@ -557,6 +599,7 @@ function processChat(chatName, lines, { chatSize = 0 } = {}) {
     // Set up the final values for chat
     stats.chattingTime = calculateDuration(stats.createDate, stats.lastInteractionDate);
 
+    stats._calculated = now();
     return stats;
 }
 
@@ -641,14 +684,15 @@ function countWordsInString(str) {
  */
 function newCharacterStats(characterKey = '', charName = '') {
     return {
-        name: charName,
+        charName: charName,
+        userName: 'User',
         characterKey: characterKey,
         chats: 0,
         chatSize: 0,
 
-        firstCreateDate: MIN_DATE,
+        firstCreateDate: MAX_DATE,
         lastCreateDate: MIN_DATE,
-        firstlastInteractionDate: MIN_DATE,
+        firstlastInteractionDate: MAX_DATE,
         lastLastInteractionDate: MIN_DATE,
 
         chattingTime: new AggregateStat(),
@@ -690,8 +734,10 @@ function newChatStats(chatName) {
     return {
         chatName: chatName,
         chatId: 0,
+        charName: '',
+        userName: '',
         chatSize: 0,
-        createDate: MIN_DATE,
+        createDate: MAX_DATE,
         lastInteractionDate: MIN_DATE,
 
         chattingTime: 0,
@@ -777,7 +823,7 @@ const router = express.Router();
  * @returns {void}
  */
 router.post('/get', jsonParser, function (request, response) {
-    const send = (data) => response.send(JSON.stringify(data ?? {}));
+    const send = (data) => response.send(JSON.stringify(data ?? null));
     /** @type {StatsRequestBody} */
     const body = request.body;
 
@@ -788,13 +834,11 @@ router.post('/get', jsonParser, function (request, response) {
         return send(userStats.global);
     }
 
-    const characterKey = String(body.characterKey);
-    const chatName = String(body.characterKey);
-    if (characterKey && chatName) {
-        return send(userStats.stats[characterKey]?.chatsStats.find(x => x.chatName == chatName));
+    if (body.characterKey && body.chatName) {
+        return send(userStats.stats[body.characterKey]?.chatsStats.find(x => x.chatName == body.chatName));
     }
-    if (characterKey) {
-        return send(userStats.stats[characterKey]);
+    if (body.characterKey) {
+        return send(userStats.stats[body.characterKey]);
     }
 
     // If no specific filter was requested, we send all stats back
