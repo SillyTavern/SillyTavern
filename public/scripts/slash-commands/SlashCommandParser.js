@@ -117,7 +117,6 @@ export class SlashCommandParser {
         const parserFlagCmd = new SlashCommand();
         parserFlagCmd.name = 'parser-flag';
         parserFlagCmd.unnamedArgumentList.push(new SlashCommandArgument(
-            'flag',
             'The parser flag to modify.',
             ARGUMENT_TYPE.STRING,
             true,
@@ -126,13 +125,12 @@ export class SlashCommandParser {
             Object.keys(PARSER_FLAG),
         ));
         parserFlagCmd.unnamedArgumentList.push(new SlashCommandArgument(
-            'state',
             'The state of the parser flag to set.',
             ARGUMENT_TYPE.BOOLEAN,
             false,
             false,
             'on',
-            // ['on', 'off'],
+            ['on', 'off'],
         ));
         parserFlagCmd.helpString = 'Set a parser flag.';
         SlashCommandParser.addCommandObjectUnsafe(parserFlagCmd);
@@ -141,40 +139,11 @@ export class SlashCommandParser {
         commentCmd.name = '/';
         commentCmd.aliases.push('#');
         commentCmd.unnamedArgumentList.push(new SlashCommandArgument(
-            'comment',
-            'Commentary',
+            'commentary',
             ARGUMENT_TYPE.STRING,
         ));
         commentCmd.helpString = 'Write a comment.';
         SlashCommandParser.addCommandObjectUnsafe(commentCmd);
-
-        const dummyCmd = new SlashCommand();
-        dummyCmd.name = 'foo';
-        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
-            'arg1', 'first argument', ARGUMENT_TYPE.STRING, true,
-        ));
-        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
-            'arg2', 'second argument', ARGUMENT_TYPE.STRING, true,
-        ));
-        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
-            'arg3', 'third argument', ARGUMENT_TYPE.STRING, false, false,
-        ));
-        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
-            'arg3', 'third argument', ARGUMENT_TYPE.STRING, false, false,
-        ));
-        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
-            'arg3', 'third argument', ARGUMENT_TYPE.STRING, false, false,
-        ));
-        dummyCmd.namedArgumentList.push(new SlashCommandNamedArgument(
-            'arg3', 'third argument', ARGUMENT_TYPE.STRING, false, false,
-        ));
-        dummyCmd.unnamedArgumentList.push(new SlashCommandArgument(
-            'foo', 'foo argument', [ARGUMENT_TYPE.SUBCOMMAND, ARGUMENT_TYPE.CLOSURE], true, true,
-        ));
-        dummyCmd.callback = ()=>'foo';
-        dummyCmd.returns = 'string';
-        dummyCmd.helpString = 'Just a dummy command that does not do anything but return "foo".';
-        SlashCommandParser.addCommandObjectUnsafe(dummyCmd);
 
         this.registerLanguage();
     }
