@@ -90,7 +90,7 @@ export class SlashCommandAutoComplete {
         textarea.addEventListener('keydown', (evt)=>this.handleKeyDown(evt));
         textarea.addEventListener('click', ()=>this.isActive ? this.show() : null);
         textarea.addEventListener('selectionchange', ()=>this.show());
-        textarea.addEventListener('blur', ()=>this.hide());
+        // textarea.addEventListener('blur', ()=>this.hide());
         if (isFloating) {
             textarea.addEventListener('scroll', ()=>this.updateFloatingPositionDebounced());
         }
@@ -866,6 +866,7 @@ export class SlashCommandAutoComplete {
                     return;
                 }
                 case 'Enter': {
+                    // pick the selected item to autocomplete
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.type == OPTION_TYPE.BLANK) break;
                     if (this.selectedItem.name == this.slashCommand) break;
                     evt.preventDefault();

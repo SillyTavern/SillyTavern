@@ -1292,9 +1292,6 @@ select {
             height: 100%;
             > .helpContent {
                 &:before { content: "– "; }
-                /* display: -webkit-box;
-                -webkit-box-orient: vertical;
-                -webkit-line-clamp: 1; */
                 text-overflow: ellipsis;
                 overflow: hidden;
                 font-size: 0.9em;white-space: nowrap;
@@ -1314,12 +1311,17 @@ select {
     flex-direction: column;
     gap: 0.5em;
     > .specs {
+        cursor: default;
         flex-direction: column;
         padding: 0.25em 0.25em 0.5em 0.25em;
         border-bottom: 1px solid var(--ac-color-border);
         > .name {
             font-weight: bold;
             color: var(--ac-color-text);
+            cursor: help;
+            &:hover {
+                text-decoration: 1px dotted underline;
+            }
         }
         > .body {
             flex-direction: column;
@@ -1330,7 +1332,39 @@ select {
                 > .argumentItem::marker {
                     color: color-mix(in srgb, var(--ac-color-text), var(--ac-color-background));
                 }
-                .argument.optional + .argument-description:before {
+
+                .argumentSpec {
+                    display: flex;
+                    gap: 0.5em;
+                    .argument-default {
+                        &:before {
+                            content: " = ";
+                            color: var(--ac-color-text);
+                        }
+                        color: var(--ac-color-string);
+                    }
+                }
+
+                .argument {
+                    cursor: help;
+                    &:hover:not(:has(.argument-name:hover, .argument-types:hover, .argument-enums:hover)) {
+                        text-decoration: 1px dotted underline;
+                    }
+                }
+                .argument-name,
+                .argument-types,
+                .argument-enums,
+                .argument-default
+                {
+                    cursor: help;
+                    &:hover {
+                        text-decoration: 1px dotted underline;
+                    }
+                }
+
+                .argument.optional + .argument-description:before,
+                .argumentSpec:has(.argument.optional) + argument.description:before
+                {
                     content: "(optional) ";
                     color: var(--ac-color-text);
                     opacity: 0.5;
@@ -1340,6 +1374,12 @@ select {
                     margin-left: 0.5em;
                     font-family: var(--mainFontFamily);
                     font-size: 0.9em;
+                }
+            }
+            .returns {
+                cursor: help;
+                &:hover {
+                    text-decoration: 1px dotted underline;
                 }
             }
         }
@@ -1418,15 +1458,13 @@ select {
                         color: var(--ac-color-text);
                     }
                     > .argument-types {
+                        color: var(--ac-color-type);
                         word-break: break-all;
                         white-space: break-spaces;
                         > .argument-type + .argument-type:before {
                             content: "|";
                             color: var(--ac-color-text);
                         };
-                        > .argument-type {
-                            color: var(--ac-color-type);
-                        }
                     }
                     > .argument-types + .argument-enums,
                     > .argument-name + .argument-enums
@@ -1437,15 +1475,13 @@ select {
                         }
                     }
                     > .argument-enums {
+                        color: var(--ac-color-string);
                         word-break: break-all;
                         white-space: break-spaces;
                         > .argument-enum + .argument-enum:before {
                             content: "|";
                             color: var(--ac-color-text);
                         };
-                        > .argument-enum {
-                            color: var(--ac-color-string);
-                        }
                     }
                 }
             }
