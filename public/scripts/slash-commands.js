@@ -58,8 +58,9 @@ import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
 import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './slash-commands/SlashCommandParserNameResult.js';
 import { OPTION_TYPE, SlashCommandAutoCompleteOption, SlashCommandFuzzyScore } from './slash-commands/SlashCommandAutoCompleteOption.js';
-import { SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandAutoComplete } from './slash-commands/SlashCommandAutoComplete.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
 export {
     executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -68,56 +69,1011 @@ export const parser = new SlashCommandParser();
 const registerSlashCommand = parser.addCommand.bind(parser);
 const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
-parser.addCommand('?', helpCommandCallback, ['help'], ' – get help on macros, chat formatting and commands', true, true);
-parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace">(name)</span> – sets user name and persona avatar (if set)', true, true);
-parser.addCommand('sync', syncCallback, [], ' – syncs the user persona in user-attributed messages in the current chat', true, true);
-parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
-parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed', false, true);
-parser.addCommand('sendas', sendMessageAs, [], '<span class="monospace">[name=CharName compact=true/false (text)] – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <tt>/sendas name="Chloe" Hello, guys!</tt>. If "compact" is set to true, the message is sent using a compact layout.', true, true);
-parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">[compact=true/false (text)]</span> – sends message as a system narrator. If "compact" is set to true, the message is sent using a compact layout.', false, true);
-parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
-parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">[compact=true/false (text)]</span> – adds a note/comment message not part of the chat. If "compact" is set to true, the message is sent using a compact layout.', false, true);
-parser.addCommand('single', setStoryModeCallback, ['story'], ' – sets the message style to single document mode without names or avatars visible', true, true);
-parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the message style to bubble chat mode', true, true);
-parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
-parser.addCommand('continue', continueChatCallback, ['cont'], '<span class="monospace">[prompt]</span> – continues the last message in the chat, with an optional additional prompt', true, true);
-parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character or group by its name', true, true);
-parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
-parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</span> – asks a specified character card a prompt', true, true);
-parser.addCommand('delname', deleteMessagesByNameCallback, ['cancel'], '<span class="monospace">(name)</span> – deletes all messages attributed to a specified name', true, true);
-parser.addCommand('send', sendUserMessageCallback, [], '<span class="monospace">[compact=true/false (text)]</span> – adds a user message to the chat log without triggering a generation. If "compact" is set to true, the message is sent using a compact layout.', true, true);
-parser.addCommand('trigger', triggerGenerationCallback, [], ' <span class="monospace">await=true/false</span> – triggers a message generation. If in group, can trigger a message for the specified group member index or name. If <code>await=true</code> named argument passed, the command will await for the triggered generation before continuing.', true, true);
-parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index or range)</span> – hides a chat message from the prompt', true, true);
-parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index or range)</span> – unhides a message from the prompt', true, true);
-parser.addCommand('disable', disableGroupMemberCallback, [], '<span class="monospace">(member index or name)</span> – disables a group member from being drafted for replies', true, true);
-parser.addCommand('enable', enableGroupMemberCallback, [], '<span class="monospace">(member index or name)</span> – enables a group member to be drafted for replies', true, true);
-parser.addCommand('memberadd', addGroupMemberCallback, ['addmember'], '<span class="monospace">(character name)</span> – adds a new group member to the group chat', true, true);
-parser.addCommand('memberremove', removeGroupMemberCallback, ['removemember'], '<span class="monospace">(member index or name)</span> – removes a group member from the group chat', true, true);
-parser.addCommand('memberup', moveGroupMemberUpCallback, ['upmember'], '<span class="monospace">(member index or name)</span> – moves a group member up in the group chat list', true, true);
-parser.addCommand('memberdown', moveGroupMemberDownCallback, ['downmember'], '<span class="monospace">(member index or name)</span> – moves a group member down in the group chat list', true, true);
-parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message index or range)</span> – shows a group member character card without switching chats', true, true);
-parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
-parser.addCommand('echo', echoCallback, [], '<span class="monospace">(title=string severity=info/warning/error/success [text])</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
-parser.addCommand('gen', generateCallback, [], '<span class="monospace">(lock=on/off name="System" length=123 [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating and allowing to configure the in-prompt name for instruct mode (default = "System"). "as" argument controls the role of the output prompt: system (default) or char. If "length" argument is provided as a number in tokens, allows to temporarily override an API response length.', true, true);
-parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(lock=on/off instruct=on/off stop=[] as=system/char system="system prompt" length=123 [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>. "as" argument controls the role of the output prompt: system (default) or char. "system" argument adds an (optional) system prompt at the start. If "length" argument is provided as a number in tokens, allows to temporarily override an API response length.', true, true);
-parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
-parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
-parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] threshold=0.4 (text to search) – performs a fuzzy match of each items of list within the text to search. If any item matches then its name is returned. If no item list matches the text to search then no value is returned. The optional threshold (default is 0.4) allows some control over the matching. A low value (min 0.0) means the match is very strict. At 1.0 (max) the match is very loose and probably matches anything. The returned value passes to the next command through the pipe.', true, true); parser.addCommand('pass', (_, arg) => arg, ['return'], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
-parser.addCommand('delay', delayCallback, ['wait', 'sleep'], '<span class="monospace">(milliseconds)</span> – delays the next command in the pipe by the specified number of milliseconds.', true, true);
-parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(default="string" large=on/off wide=on/off okButton="string" rows=number [text])</span> – Shows a popup with the provided text and an input field. The default argument is the default value of the input field, and the text argument is the text to display.', true, true);
-parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">[key1=value key2=value ...] ([qrSet.]qrLabel)</span> – runs a Quick Reply with the specified name from a currently active preset or from another preset, named arguments can be referenced in a QR with {{arg::key}}.', true, true);
-parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
-parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
-parser.addCommand('popup', popupCallback, [], '<span class="monospace">(large=on/off wide=on/off okButton="string" text)</span> – shows a blocking popup with the specified text and buttons. Returns the input value into the pipe or empty string if canceled.', true, true);
-parser.addCommand('buttons', buttonsCallback, [], '<span class="monospace">labels=["a","b"] (text)</span> – shows a blocking popup with the specified text and buttons. Returns the clicked button label into the pipe or empty string if canceled.', true, true);
-parser.addCommand('trimtokens', trimTokensCallback, [], '<span class="monospace">limit=number (direction=start/end [text])</span> – trims the start or end of text to the specified number of tokens.', true, true);
-parser.addCommand('trimstart', trimStartCallback, [], '<span class="monospace">(text)</span> – trims the text to the start of the first full sentence.', true, true);
-parser.addCommand('trimend', trimEndCallback, [], '<span class="monospace">(text)</span> – trims the text to the end of the last full sentence.', true, true);
-parser.addCommand('inject', injectCallback, [], '<span class="monospace">id=injectId (position=before/after/chat depth=number scan=true/false role=system/user/assistant [text])</span> – injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false).', true, true);
-parser.addCommand('listinjects', listInjectsCallback, [], ' – lists all script injections for the current chat.', true, true);
-parser.addCommand('flushinjects', flushInjectsCallback, [], ' – removes all script injections for the current chat.', true, true);
-parser.addCommand('tokens', (_, text) => getTokenCountAsync(text), [], '<span class="monospace">(text)</span> – counts the number of tokens in the text.', true, true);
-parser.addCommand('model', modelCallback, [], '<span class="monospace">(model name)</span> – sets the model for the current API. Gets the current model name if no argument is provided.', true, true);
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: '?',
+    callback: helpCommandCallback,
+    aliases: ['help'],
+    unnamedArgumentList: [new SlashCommandArgument(
+        'help topic', ARGUMENT_TYPE.STRING, false, false, null, ['slash', 'format', 'hotkeys', 'macros'],
+    )],
+    helpString: 'Get help on macros, chat formatting and commands.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'name',
+    callback: setNameCallback,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'persona', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Sets user name and persona avatar (if set).',
+    aliases: ['persona'],
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sync',
+    callback: syncCallback,
+    helpString: 'Syncs the user persona in user-attributed messages in the current chat.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lock',
+    callback: bindCallback,
+    aliases: ['bind'],
+    helpString: 'Locks/unlocks a persona (name and avatar) to the current chat',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'bg',
+    callback: setBackgroundCallback,
+    aliases: ['background'],
+    returns: 'the current background',
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'filename', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Sets a background according to the provided filename. Partial names allowed.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/bg beach.jpg</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sendas',
+    callback: sendMessageAs,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'name', 'Character name', [ARGUMENT_TYPE.STRING], true,
+        ),
+        new SlashCommandNamedArgument(
+            'compact', 'Use compact layout', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['true', 'false'],
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Sends a message as a specific character. Uses the character avatar if it exists in the characters list.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/sendas name="Chloe" Hello, guys!</code></pre>
+                    will send "Hello, guys!" from "Chloe".
+                </li>
+            </ul>
+        </div>
+        <div>
+            If "compact" is set to true, the message is sent using a compact layout.
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sys',
+    callback: sendNarratorMessage,
+    aliases: ['nar'],
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'compact',
+            'compact layout',
+            [ARGUMENT_TYPE.BOOLEAN],
+            false,
+            false,
+            'false',
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Sends a message as a system narrator.
+        </div>
+        <div>
+            If <code>compact</code> is set to <code>true</code>, the message is sent using a compact layout.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/sys The sun sets in the west.</code></pre>
+                </li>
+                <li>
+                    <pre><code>/sys compact=true A brief note.</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+    interruptsGeneration: false,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sysname',
+    callback: setNarratorName,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'name', [ARGUMENT_TYPE.STRING], false,
+        ),
+    ],
+    helpString: 'Sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'comment',
+    callback: sendCommentMessage,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'compact',
+            'Whether to use a compact layout',
+            [ARGUMENT_TYPE.BOOLEAN],
+            false,
+            false,
+            'false',
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text',
+            [ARGUMENT_TYPE.STRING],
+            true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Adds a note/comment message not part of the chat.
+        </div>
+        <div>
+            If <code>compact</code> is set to <code>true</code>, the message is sent using a compact layout.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/comment This is a comment</code></pre>
+                </li>
+                <li>
+                    <pre><code>/comment compact=true This is a compact comment</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'single',
+    callback: setStoryModeCallback,
+    aliases: ['story'],
+    helpString: 'Sets the message style to single document mode without names or avatars visible.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'bubble',
+    callback: setBubbleModeCallback,
+    aliases: ['bubbles'],
+    helpString: 'Sets the message style to bubble chat mode.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'flat',
+    callback: setFlatModeCallback,
+    aliases: ['default'],
+    helpString: 'Sets the message style to flat chat mode.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'continue',
+    callback: continueChatCallback,
+    aliases: ['cont'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'prompt', [ARGUMENT_TYPE.STRING], false,
+        ),
+    ],
+    helpString: `
+        <div>
+            Continues the last message in the chat, with an optional additional prompt.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/continue</code></pre>
+                    Continues the chat with no additional prompt.
+                </li>
+                <li>
+                    <pre><code>/continue Let's explore this further...</code></pre>
+                    Continues the chat with the provided prompt.
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'go',
+    callback: goToCharacterCallback,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'name', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Opens up a chat with the character or group by its name',
+    aliases: ['char'],
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sysgen',
+    callback: generateSystemMessage,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'prompt', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Generates a system message using a specified prompt.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'ask',
+    callback: askCharacter,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'character name', [ARGUMENT_TYPE.STRING], true,
+        ),
+        new SlashCommandArgument(
+            'prompt', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Asks a specified character card a prompt. Character name and prompt have to be separated by a new line.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delname',
+    callback: deleteMessagesByNameCallback,
+    namedArgumentList: [],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'name', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    aliases: ['cancel'],
+    helpString: `
+        <div>
+            Deletes all messages attributed to a specified name.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/delname John</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'send',
+    callback: sendUserMessageCallback,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'compact',
+            'whether to use a compact layout',
+            [ARGUMENT_TYPE.BOOLEAN],
+            false,
+            false,
+            'false',
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text',
+            [ARGUMENT_TYPE.STRING],
+            true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Adds a user message to the chat log without triggering a generation.
+        </div>
+        <div>
+            If <code>compact</code> is set to <code>true</code>, the message is sent using a compact layout.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/send Hello there!</code></pre>
+                </li>
+                <li>
+                    <pre><code>/send compact=true Hi</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'trigger',
+    callback: triggerGenerationCallback,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'await',
+            'Whether to await for the triggered generation before continuing',
+            [ARGUMENT_TYPE.BOOLEAN],
+            false,
+            false,
+            'false',
+        ),
+    ],
+    helpString: `
+        <div>
+            Triggers a message generation. If in group, can trigger a message for the specified group member index or name.
+        </div>
+        <div>
+            If <code>await=true</code> named argument is passed, the command will await for the triggered generation before continuing.
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'hide',
+    callback: hideMessageCallback,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'message index or range', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE], true,
+        ),
+    ],
+    helpString: 'Hides a chat message from the prompt.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'unhide',
+    callback: unhideMessageCallback,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'message index or range', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE], true,
+        ),
+    ],
+    helpString: 'Unhides a message from the prompt.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'disable',
+    callback: disableGroupMemberCallback,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Disables a group member from being drafted for replies.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'enable',
+    callback: enableGroupMemberCallback,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Enables a group member to be drafted for replies.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberadd',
+    callback: addGroupMemberCallback,
+    aliases: ['addmember'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'character name', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Adds a new group member to the group chat.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/memberadd John Doe</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberremove',
+    callback: removeGroupMemberCallback,
+    aliases: ['removemember'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Removes a group member from the group chat.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/memberremove 2</code></pre>
+                    <pre><code>/memberremove John Doe</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberup',
+    callback: moveGroupMemberUpCallback,
+    aliases: ['upmember'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Moves a group member up in the group chat list.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberdown',
+    callback: moveGroupMemberDownCallback,
+    aliases: ['downmember'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Moves a group member down in the group chat list.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'peek',
+    callback: peekCallback,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'message index or range', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE], false, true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Shows a group member character card without switching chats.
+        </div>
+        <div>
+            <strong>Examples:</strong>
+            <ul>
+                <li>
+                    <pre><code>/peek 5</code></pre>
+                    Shows the character card for the 5th message.
+                </li>
+                <li>
+                    <pre><code>/peek 2-5</code></pre>
+                    Shows the character cards for messages 2 through 5.
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delswipe',
+    callback: deleteSwipeCallback,
+    aliases: ['swipedel'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            '1-based swipe id', [ARGUMENT_TYPE.NUMBER],
+        ),
+    ],
+    helpString: `
+        <div>
+            Deletes a swipe from the last chat message. If swipe id is not provided, it deletes the current swipe.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/delswipe</code></pre>
+                    Deletes the current swipe.
+                </li>
+                <li>
+                    <pre><code>/delswipe 2</code></pre>
+                    Deletes the second swipe from the last chat message.
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'echo',
+    callback: echoCallback,
+    returns: 'the text',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'title', 'title of the toast message', [ARGUMENT_TYPE.STRING], false,
+        ),
+        new SlashCommandNamedArgument(
+            'severity', 'severity level of the toast message', [ARGUMENT_TYPE.STRING], false, false, null, ['info', 'warning', 'error', 'success'],
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Echoes the provided text to a toast message. Useful for pipes debugging.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/echo title="My Message" severity=info This is an info message</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'gen',
+    callback: generateCallback,
+    returns: 'generated text',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, null, ['on', 'off'],
+        ),
+        new SlashCommandNamedArgument(
+            'name', 'in-prompt name for instruct mode', [ARGUMENT_TYPE.STRING], false, false, 'System',
+        ),
+        new SlashCommandNamedArgument(
+            'length', 'API response length in tokens', [ARGUMENT_TYPE.NUMBER], false,
+        ),
+        new SlashCommandNamedArgument(
+            'as', 'role of the output prompt', [ARGUMENT_TYPE.STRING], false, false, 'system', ['system', 'char'],
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'prompt', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating and allowing to configure the in-prompt name for instruct mode (default = "System").
+        </div>
+        <div>
+            "as" argument controls the role of the output prompt: system (default) or char. If "length" argument is provided as a number in tokens, allows to temporarily override an API response length.
+        </div>
+    `,
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'genraw',
+    callback: generateRawCallback,
+    returns: 'generated text',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'lock', 'lock user input during generation', [ARGUMENT_TYPE.BOOLEAN], false, false, null, ['on', 'off'],
+        ),
+        new SlashCommandNamedArgument(
+            'instruct', 'use instruct mode', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', ['on', 'off'],
+        ),
+        new SlashCommandNamedArgument(
+            'stop', 'one-time custom stop strings', [ARGUMENT_TYPE.LIST], false,
+        ),
+        new SlashCommandNamedArgument(
+            'as', 'role of the output prompt', [ARGUMENT_TYPE.STRING], false, false, 'system', ['system', 'char'],
+        ),
+        new SlashCommandNamedArgument(
+            'system', 'system prompt at the start', [ARGUMENT_TYPE.STRING], false,
+        ),
+        new SlashCommandNamedArgument(
+            'length', 'API response length in tokens', [ARGUMENT_TYPE.NUMBER], false,
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'prompt', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card.
+        </div>
+        <div>
+            Use instruct=off to skip instruct formatting, e.g. <pre><code>/genraw instruct=off Why is the sky blue?</code></pre>
+        </div>
+        <div>
+            Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <pre><code>/genraw stop=["\\n"] Say hi</code></pre>
+        </div>
+        <div>
+            "as" argument controls the role of the output prompt: system (default) or char. "system" argument adds an (optional) system prompt at the start.
+        </div>
+        <div>
+            If "length" argument is provided as a number in tokens, allows to temporarily override an API response length.
+        </div>
+    `,
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'addswipe',
+    callback: addSwipeCallback,
+    aliases: ['swipeadd'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Adds a swipe to the last chat message.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'abort',
+    callback: abortCallback,
+    helpString: 'Aborts the slash command batch execution.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'fuzzy',
+    callback: fuzzyCallback,
+    returns: 'first matching item',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'list', 'list of items to match against', [ARGUMENT_TYPE.LIST], true,
+        ),
+        new SlashCommandNamedArgument(
+            'threshold', 'fuzzy match threshold (0.0 to 1.0)', [ARGUMENT_TYPE.NUMBER], false, false, '0.4',
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text to search', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Performs a fuzzy match of each item in the <code>list</code> against the <code>text to search</code>.
+            If any item matches, then its name is returned. If no item matches the text, no value is returned.
+        </div>
+        <div>
+            The optional <code>threshold</code> (default is 0.4) allows control over the match strictness.
+            A low value (min 0.0) means the match is very strict.
+            At 1.0 (max) the match is very loose and will match anything.
+        </div>
+        <div>
+            The returned value passes to the next command through the pipe.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/fuzzy list=["a","b","c"] threshold=0.4 abc</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'pass',
+    callback: (_, arg) => arg,
+    returns: 'the provided value',
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.CLOSURE], true,
+        ),
+    ],
+    aliases: ['return'],
+    helpString: `
+        <div>
+            <pre><span class="monospace">/pass (text)</span> – passes the text to the next command through the pipe.</pre>
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li><pre><code>/pass Hello world</code></pre></li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delay',
+    callback: delayCallback,
+    aliases: ['wait', 'sleep'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'milliseconds', [ARGUMENT_TYPE.NUMBER], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Delays the next command in the pipe by the specified number of milliseconds.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/delay 1000</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'input',
+    aliases: ['prompt'],
+    callback: inputCallback,
+    returns: 'user input',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'default', 'default value of the input field', [ARGUMENT_TYPE.STRING], false, false, '"string"',
+        ),
+        new SlashCommandNamedArgument(
+            'large', 'show large input field', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', ['on', 'off'],
+        ),
+        new SlashCommandNamedArgument(
+            'wide', 'show wide input field', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', ['on', 'off'],
+        ),
+        new SlashCommandNamedArgument(
+            'okButton', 'text for the ok button', [ARGUMENT_TYPE.STRING], false,
+        ),
+        new SlashCommandNamedArgument(
+            'rows', 'number of rows for the input field', [ARGUMENT_TYPE.NUMBER], false,
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text to display', [ARGUMENT_TYPE.STRING], false,
+        ),
+    ],
+    helpString: `
+        <div>
+            Shows a popup with the provided text and an input field.
+            The <code>default</code> argument is the default value of the input field, and the text argument is the text to display.
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'run',
+    aliases: ['call', 'exec'],
+    callback: runCallback,
+    returns: 'result of the executed closure of QR',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'args', 'named arguments', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY], false, true,
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'scoped variable or qr label', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Runs a closure from a scoped variable, or a Quick Reply with the specified name from a currently active preset or from another preset.
+            Named arguments can be referenced in a QR with <code>{{arg::key}}</code>.
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'messages',
+    callback: getMessagesCallback,
+    aliases: ['message'],
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'names', 'show message author names', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', ['off', 'on'],
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'message index or range', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE], false, true,
+        ),
+    ],
+    returns: 'the specified message or range of messages as a string',
+    helpString: `
+        <div>
+            Returns the specified message or range of messages as a string.
+        </div>
+        <div>
+            <strong>Examples:</strong>
+            <ul>
+                <li>
+                    <pre><code>/messages 10</code></pre>
+                    Returns the 10th message.
+                </li>
+                <li>
+                    <pre><code>/messages names=on 5-10</code></pre>
+                    Returns messages 5 through 10 with author names.
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'setinput',
+    callback: setInputCallback,
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Sets the user input to the specified text and passes it to the next command through the pipe.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/setinput Hello world</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'popup',
+    callback: popupCallback,
+    returns: 'popup text',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'large', 'show large popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, ['on', 'off'],
+        ),
+        new SlashCommandNamedArgument(
+            'wide', 'show wide popup', [ARGUMENT_TYPE.BOOLEAN], false, false, null, ['on', 'off'],
+        ),
+        new SlashCommandNamedArgument(
+            'okButton', 'text for the OK button', [ARGUMENT_TYPE.STRING], false,
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Shows a blocking popup with the specified text and buttons.
+            Returns the popup text.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/popup large=on wide=on okButton="Submit" Enter some text:</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'buttons',
+    callback: buttonsCallback,
+    returns: 'clicked button label',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'labels', 'button labels', [ARGUMENT_TYPE.LIST], true,
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Shows a blocking popup with the specified text and buttons.
+            Returns the clicked button label into the pipe or empty string if canceled.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/buttons labels=["Yes","No"] Do you want to continue?</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'trimtokens',
+    callback: trimTokensCallback,
+    returns: 'trimmed text',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'limit', 'number of tokens to keep', [ARGUMENT_TYPE.NUMBER], true,
+        ),
+        new SlashCommandNamedArgument(
+            'direction', 'trim direction', [ARGUMENT_TYPE.STRING], true, false, null, ['start', 'end'],
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], false,
+        ),
+    ],
+    helpString: `
+        <div>
+            Trims the start or end of text to the specified number of tokens.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/trimtokens limit=5 direction=start This is a long sentence with many words</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'trimstart',
+    callback: trimStartCallback,
+    returns: 'trimmed text',
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: `
+        <div>
+            Trims the text to the start of the first full sentence.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/trimstart This is a sentence. And here is another sentence.</code></pre>
+                </li>
+            </ul>
+        </div>
+    `,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'trimend',
+    callback: trimEndCallback,
+    returns: 'trimmed text',
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Trims the text to the end of the last full sentence.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'inject',
+    callback: injectCallback,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'id', 'injection ID', [ARGUMENT_TYPE.STRING], true,
+        ),
+        new SlashCommandNamedArgument(
+            'position', 'injection position', [ARGUMENT_TYPE.STRING], false, false, 'after', ['before', 'after', 'chat'],
+        ),
+        new SlashCommandNamedArgument(
+            'depth', 'injection depth', [ARGUMENT_TYPE.NUMBER], false, false, '4',
+        ),
+        new SlashCommandNamedArgument(
+            'scan', 'include injection content into World Info scans', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
+        ),
+        new SlashCommandNamedArgument(
+            'role', 'role for in-chat injections', [ARGUMENT_TYPE.STRING], false, false, 'system', ['system', 'user', 'assistant'],
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], false,
+        ),
+    ],
+    helpString: 'Injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4). Role: role for in-chat injections (default: system). Scan: include injection content into World Info scans (default: false).',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'listinjects',
+    callback: listInjectsCallback,
+    helpString: 'Lists all script injections for the current chat.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'flushinjects',
+    callback: flushInjectsCallback,
+    helpString: 'Removes all script injections for the current chat.',
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'tokens',
+    callback: (_, text) => getTokenCountAsync(text),
+    returns: 'number of tokens',
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'text', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Counts the number of tokens in the provided text.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'model',
+    callback: modelCallback,
+    returns: 'current model',
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'model name', [ARGUMENT_TYPE.STRING], false,
+        ),
+    ],
+    helpString: 'Sets the model for the current API. Gets the current model name if no argument is provided.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
