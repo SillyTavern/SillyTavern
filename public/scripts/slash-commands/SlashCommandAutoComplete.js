@@ -888,7 +888,7 @@ export class SlashCommandAutoComplete {
         switch (evt.key) {
             case ' ': {
                 if (evt.ctrlKey) {
-                    if (this.isActive) {
+                    if (this.isActive && this.isReplaceable) {
                         // ctrl-space to toggle details for selected item
                         this.toggleDetails();
                     } else {
