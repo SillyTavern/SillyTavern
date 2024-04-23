@@ -449,6 +449,7 @@ export const event_types = {
     CHARACTER_DUPLICATED: 'character_duplicated',
     SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
     FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
+    WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
 };
 
 export const eventSource = new EventEmitter();

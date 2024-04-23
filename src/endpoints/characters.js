@@ -439,6 +439,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 case_sensitive: entry.caseSensitive ?? null,
                 automation_id: entry.automationId ?? '',
                 role: entry.role ?? 0,
+                vectorized: entry.vectorized ?? false,
             },
         };
 
