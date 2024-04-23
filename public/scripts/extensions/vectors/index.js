@@ -287,8 +287,10 @@ async function synchronizeChat(batchSize = 5) {
     }
 }
 
-// Cache object for storing hash values
-const hashCache = {};
+/**
+ * @type {Map<string, number>} Cache object for storing hash values
+ */
+const hashCache = new Map();
 
 /**
  * Gets the hash value for a given string
@@ -297,15 +299,15 @@ const hashCache = {};
  */
 function getStringHash(str) {
     // Check if the hash is already in the cache
-    if (Object.hasOwn(hashCache, str)) {
-        return hashCache[str];
+    if (hashCache.has(str)) {
+        return hashCache.get(str);
     }
 
     // Calculate the hash value
     const hash = calculateHash(str);
 
     // Store the hash in the cache
-    hashCache[str] = hash;
+    hashCache.set(str, hash);
 
     return hash;
 }
