@@ -7,6 +7,7 @@ import { SlashCommandClosure } from './SlashCommandClosure.js';
 export const ARGUMENT_TYPE = {
     'STRING': 'string',
     'NUMBER': 'number',
+    'RANGE': 'range',
     'BOOLEAN': 'bool',
     'VARIABLE_NAME': 'varname',
     'CLOSURE': 'closure',
