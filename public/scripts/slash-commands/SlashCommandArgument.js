@@ -55,7 +55,7 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
      * @param {string|string[]} enums
      */
     constructor(name, description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], aliases = []) {
-        super(name, description, types, isRequired, acceptsMultiple, defaultValue, enums);
+        super(description, types, isRequired, acceptsMultiple, defaultValue, enums);
         this.name = name;
         this.aliasList = aliases ? Array.isArray(aliases) ? aliases : [aliases] : [];
     }

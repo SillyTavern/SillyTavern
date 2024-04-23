@@ -773,7 +773,7 @@ export function registerVariableCommands() {
         'else', 'command to execute if not true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], false,
     ));
     ifCmd.unnamedArgumentList.push(new SlashCommandArgument(
-        'then', 'command to execute if true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], true,
+        'command to execute if true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], true,
     ));
     ifCmd.returns = 'result of the executed command ("then" or "else")';
     ifCmd.helpString = `
