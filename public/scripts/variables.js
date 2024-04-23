@@ -745,90 +745,947 @@ function varCallback(args, value) {
 }
 
 export function registerVariableCommands() {
-    registerSlashCommand('listvar', listVariablesCallback, [], ' – list registered chat variables', true, true);
-    registerSlashCommand('setvar', (args, value) => setLocalVariable(args.key || args.name, value, args), [], '<span class="monospace">key=varname index=listIndex (value)</span> – set a local variable value and pass it down the pipe, index is optional, e.g. <tt>/setvar key=color green</tt>', true, true);
-    registerSlashCommand('getvar', (args, value) => getLocalVariable(value, args), [], '<span class="monospace">index=listIndex (key)</span> – get a local variable value and pass it down the pipe, index is optional, e.g. <tt>/getvar height</tt> or <tt>/getvar index=3 costumes</tt>', true, true);
-    registerSlashCommand('addvar', (args, value) => addLocalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (increment)</span> – add a value to a local variable and pass the result down the pipe, e.g. <tt>/addvar score 10</tt>', true, true);
-    registerSlashCommand('setglobalvar', (args, value) => setGlobalVariable(args.key || args.name, value, args), [], '<span class="monospace">key=varname index=listIndex (value)</span> – set a global variable value and pass it down the pipe, index is optional, e.g. <tt>/setglobalvar key=color green</tt>', true, true);
-    registerSlashCommand('getglobalvar', (args, value) => getGlobalVariable(value, args), [], '<span class="monospace">index=listIndex (key)</span> – get a global variable value and pass it down the pipe, index is optional, e.g. <tt>/getglobalvar height</tt> or <tt>/getglobalvar index=3 costumes</tt>', true, true);
-    registerSlashCommand('addglobalvar', (args, value) => addGlobalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (increment)</span> – add a value to a global variable and pass the result down the pipe, e.g. <tt>/addglobalvar score 10</tt>', true, true);
-    registerSlashCommand('incvar', (_, value) => incrementLocalVariable(value), [], '<span class="monospace">(key)</span> – increment a local variable by 1 and pass the result down the pipe, e.g. <tt>/incvar score</tt>', true, true);
-    registerSlashCommand('decvar', (_, value) => decrementLocalVariable(value), [], '<span class="monospace">(key)</span> – decrement a local variable by 1 and pass the result down the pipe, e.g. <tt>/decvar score</tt>', true, true);
-    registerSlashCommand('incglobalvar', (_, value) => incrementGlobalVariable(value), [], '<span class="monospace">(key)</span> – increment a global variable by 1 and pass the result down the pipe, e.g. <tt>/incglobalvar score</tt>', true, true);
-    registerSlashCommand('decglobalvar', (_, value) => decrementGlobalVariable(value), [], '<span class="monospace">(key)</span> – decrement a global variable by 1 and pass the result down the pipe, e.g. <tt>/decglobalvar score</tt>', true, true);
-    // registerSlashCommand('if', ifCallback, [], '<span class="monospace">left=varname1 right=varname2 rule=comparison else="(alt.command)" "(command)"</span> – compare the value of the left operand "a" with the value of the right operand "b", and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the result of the command execution down the pipe. Numeric values and string literals for left and right operands supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/if left=score right=10 rule=gte "/speak You win"</tt> triggers a /speak command if the value of "score" is greater or equals 10.', true, true);
-    const ifCmd = new SlashCommand();
-    ifCmd.name = 'if';
-    ifCmd.callback = ifCallback;
-    ifCmd.namedArgumentList.push(new SlashCommandNamedArgument(
-        'left', 'left operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
-    ));
-    ifCmd.namedArgumentList.push(new SlashCommandNamedArgument(
-        'right', 'right operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
-    ));
-    ifCmd.namedArgumentList.push(new SlashCommandNamedArgument(
-        'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, ['gt',  'gte',  'lt',  'lte',  'eq',  'neq',  'not',  'in', 'nin'],
-    ));
-    ifCmd.namedArgumentList.push(new SlashCommandNamedArgument(
-        'else', 'command to execute if not true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], false,
-    ));
-    ifCmd.unnamedArgumentList.push(new SlashCommandArgument(
-        'command to execute if true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], true,
-    ));
-    ifCmd.returns = 'result of the executed command ("then" or "else")';
-    ifCmd.helpString = `
-        <p>
-            Compares the value of the left operand <code>a</code> with the value of the right operand <code>b</code>,
-            and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the
-            result of the command execution down the pipe.
-        </p>
-        <p>
-            Numeric values and string literals for left and right operands supported.
-        </p>
-        <div>
-            <strong>Available rules:</strong>
-            <ul>
-                <li>gt => a > b</li>
-                <li>gte => a >= b</li>
-                <li>lt => a < b</li>
-                <li>lte => a <= b</li>
-                <li>eq => a == b</li>
-                <li>neq => a != b</li>
-                <li>not => !a</li>
-                <li>in (strings) => a includes b</li>
-                <li>nin (strings) => a not includes b</li>
-            </ul>
-        </div>
-        <div>
-            <strong>Examples:</strong>
-            <ul>
-                <li>
-                    <pre><code>/if left=score right=10 rule=gte "/speak You win"</code></pre>
-                    triggers a /speak command if the value of "score" is greater or equals 10.
-                </li>
-            </ul>
-        </div>`;
-    SlashCommandParser.addCommandObject(ifCmd);
-    registerSlashCommand('while', whileCallback, [], '<span class="monospace">left=varname1 right=varname2 rule=comparison "(command)"</span> – compare the value of the left operand "a" with the value of the right operand "b", and if the condition yields true, then execute any valid slash command enclosed in quotes. Numeric values and string literals for left and right operands supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/setvar key=i 0 | /while left=i right=10 rule=let "/addvar key=i 1"</tt> adds 1 to the value of "i" until it reaches 10. Loops are limited to 100 iterations by default, pass guard=off to disable.', true, true);
-    registerSlashCommand('times', (args, value) => timesCallback(args, value), [], '<span class="monospace">(repeats) "(command)"</span> – execute any valid slash command enclosed in quotes <tt>repeats</tt> number of times, e.g. <tt>/setvar key=i 1 | /times 5 "/addvar key=i 1"</tt> adds 1 to the value of "i" 5 times. <tt>{{timesIndex}}</tt> is replaced with the iteration number (zero-based), e.g. <tt>/times 4 "/echo {{timesIndex}}"</tt> echos the numbers 0 through 4. Loops are limited to 100 iterations by default, pass guard=off to disable.', true, true);
-    registerSlashCommand('flushvar', (_, value) => deleteLocalVariable(value), [], '<span class="monospace">(key)</span> – delete a local variable, e.g. <tt>/flushvar score</tt>', true, true);
-    registerSlashCommand('flushglobalvar', (_, value) => deleteGlobalVariable(value), [], '<span class="monospace">(key)</span> – delete a global variable, e.g. <tt>/flushglobalvar score</tt>', true, true);
-    registerSlashCommand('add', (args, value) => addValuesCallback(args, value), [], '<span class="monospace">(a b c d)</span> – performs an addition of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/add 10 i 30 j</tt>', true, true);
-    registerSlashCommand('mul', (args, value) => mulValuesCallback(args, value), [], '<span class="monospace">(a b c d)</span> – performs a multiplication of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/mul 10 i 30 j</tt>', true, true);
-    registerSlashCommand('max', (args, value) => maxValuesCallback(args, value), [], '<span class="monospace">(a b c d)</span> – returns the maximum value of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/max 10 i 30 j</tt>', true, true);
-    registerSlashCommand('min', (args, value) => minValuesCallback(args, value), [], '<span class="monospace">(a b c d)</span> – returns the minimum value of the set of values and passes the result down the pipe, can use variable names, e.g. <tt>/min 10 i 30 j</tt>', true, true);
-    registerSlashCommand('sub', (args, value) => subValuesCallback(args, value), [], '<span class="monospace">(a b)</span> – performs a subtraction of two values and passes the result down the pipe, can use variable names, e.g. <tt>/sub i 5</tt>', true, true);
-    registerSlashCommand('div', (args, value) => divValuesCallback(args, value), [], '<span class="monospace">(a b)</span> – performs a division of two values and passes the result down the pipe, can use variable names, e.g. <tt>/div 10 i</tt>', true, true);
-    registerSlashCommand('mod', (args, value) => modValuesCallback(args, value), [], '<span class="monospace">(a b)</span> – performs a modulo operation of two values and passes the result down the pipe, can use variable names, e.g. <tt>/mod i 2</tt>', true, true);
-    registerSlashCommand('pow', (args, value) => powValuesCallback(args, value), [], '<span class="monospace">(a b)</span> – performs a power operation of two values and passes the result down the pipe, can use variable names, e.g. <tt>/pow i 2</tt>', true, true);
-    registerSlashCommand('sin', (args, value) => sinValuesCallback(args, value), [], '<span class="monospace">(a)</span> – performs a sine operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/sin i</tt>', true, true);
-    registerSlashCommand('cos', (args, value) => cosValuesCallback(args, value), [], '<span class="monospace">(a)</span> – performs a cosine operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/cos i</tt>', true, true);
-    registerSlashCommand('log', (args, value) => logValuesCallback(args, value), [], '<span class="monospace">(a)</span> – performs a logarithm operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/log i</tt>', true, true);
-    registerSlashCommand('abs', (args, value) => absValuesCallback(args, value), [], '<span class="monospace">(a)</span> – performs an absolute value operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/abs i</tt>', true, true);
-    registerSlashCommand('sqrt', (args, value) => sqrtValuesCallback(args, value), [], '<span class="monospace">(a)</span> – performs a square root operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/sqrt i</tt>', true, true);
-    registerSlashCommand('round', (args, value) => roundValuesCallback(args, value), [], '<span class="monospace">(a)</span> – rounds a value and passes the result down the pipe, can use variable names, e.g. <tt>/round i</tt>', true, true);
-    registerSlashCommand('len', (_, value) => lenValuesCallback(value), [], '<span class="monospace">(a)</span> – gets the length of a value and passes the result down the pipe, can use variable names, e.g. <tt>/len i</tt>', true, true);
-    registerSlashCommand('rand', (args, value) => randValuesCallback(Number(args.from ?? 0), Number(args.to ?? (value.length ? value : 1)), args), [], '<span class="monospace">(from=number=0 to=number=1 round=round|ceil|floor)</span> – returns a random number between from and to, e.g. <tt>/rand</tt> or <tt>/rand 10</tt> or <tt>/rand from=5 to=10</tt>', true, true);
-    registerSlashCommand('var', (args, value) => varCallback(args, value), [], '<span class="monospace">[optional index] (variableName) (optional variable value)</span> – Get or set a variable. Example: <code>/let x foo | /var x foo bar | /var x | /echo</code>', true, true);
-    registerSlashCommand('let', (args, value) => letCallback(args, value), [], '<span class="monospace">(variableName) (optional variable value)</span> – Declares a new variable in the current scope. Example: <code>/let x foo bar | /echo {{var::x}}</code> or <code>/let y</code>', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'listvar',
+        callback: listVariablesCallback,
+        helpString: 'List registered chat variables.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'setvar',
+        callback: (args, value) => setLocalVariable(args.key || args.name, value, args),
+        returns: 'the set variable value',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+            new SlashCommandNamedArgument(
+                'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Set a local variable value and pass it down the pipe. The <code>index</code> argument is optional.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/setvar key=color green</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getvar',
+        callback: (args, value) => getLocalVariable(value, args),
+        returns: 'the variable value',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Get a local variable value and pass it down the pipe. The <code>index</code> argument is optional.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/getvar height</code></pre>
+                    </li>
+                    <li>
+                        <pre><code>/getvar index=3 costumes</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'addvar',
+        callback: (args, value) => addLocalVariable(args.key || args.name, value),
+        returns: 'the new variable value',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value to add to the variable', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Add a value to a local variable and pass the result down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/addvar key=score 10</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'setglobalvar',
+        callback: (args, value) => setGlobalVariable(args.key || args.name, value, args),
+        returns: 'the set global variable value',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+            new SlashCommandNamedArgument(
+                'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Set a global variable value and pass it down the pipe. The <code>index</code> argument is optional.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/setglobalvar key=color green</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getglobalvar',
+        callback: (args, value) => getGlobalVariable(value, args),
+        returns: 'global variable value',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Get a global variable value and pass it down the pipe. The <code>index</code> argument is optional.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/getglobalvar height</code></pre>
+                    </li>
+                    <li>
+                        <pre><code>/getglobalvar index=3 costumes</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'addglobalvar',
+        callback: (args, value) => addGlobalVariable(args.key || args.name, value),
+        returns: 'the new variable value',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value to add to the variable', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Add a value to a global variable and pass the result down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/addglobalvar key=score 10</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'incvar',
+        callback: (_, value) => incrementLocalVariable(value),
+        returns: 'the new variable value',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Increment a local variable by 1 and pass the result down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/incvar score</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'decvar',
+        callback: (_, value) => decrementLocalVariable(value),
+        returns: 'the new variable value',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Decrement a local variable by 1 and pass the result down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/decvar score</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'incglobalvar',
+        callback: (_, value) => incrementGlobalVariable(value),
+        returns: 'the new variable value',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Increment a global variable by 1 and pass the result down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/incglobalvar score</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'decglobalvar',
+        callback: (_, value) => decrementGlobalVariable(value),
+        returns: 'the new variable value',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Decrement a global variable by 1 and pass the result down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/decglobalvar score</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'if',
+        callback: ifCallback,
+        returns: 'result of the executed command ("then" or "else")',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'left', 'left operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
+            ),
+            new SlashCommandNamedArgument(
+                'right', 'right operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
+            ),
+            new SlashCommandNamedArgument(
+                'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, ['gt',  'gte',  'lt',  'lte',  'eq',  'neq',  'not',  'in', 'nin'],
+            ),
+            new SlashCommandNamedArgument(
+                'else', 'command to execute if not true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'command to execute if true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Compares the value of the left operand <code>a</code> with the value of the right operand <code>b</code>,
+                and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the
+                result of the command execution down the pipe.
+            </div>
+            <div>
+                Numeric values and string literals for left and right operands supported.
+            </div>
+            <div>
+                <strong>Available rules:</strong>
+                <ul>
+                    <li>gt => a > b</li>
+                    <li>gte => a >= b</li>
+                    <li>lt => a < b</li>
+                    <li>lte => a <= b</li>
+                    <li>eq => a == b</li>
+                    <li>neq => a != b</li>
+                    <li>not => !a</li>
+                    <li>in (strings) => a includes b</li>
+                    <li>nin (strings) => a not includes b</li>
+                </ul>
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/if left=score right=10 rule=gte "/speak You win"</code></pre>
+                        triggers a /speak command if the value of "score" is greater or equals 10.
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'while',
+        callback: whileCallback,
+        returns: 'result of the last executed command',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'left', 'left operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
+            ),
+            new SlashCommandNamedArgument(
+                'right', 'right operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
+            ),
+            new SlashCommandNamedArgument(
+                'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, ['gt', 'gte', 'lt', 'lte', 'eq', 'neq', 'not', 'in', 'nin'],
+            ),
+            new SlashCommandNamedArgument(
+                'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, ['off'],
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'command to execute while true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Compares the value of the left operand <code>a</code> with the value of the right operand <code>b</code>,
+                and if the condition yields true, then execute any valid slash command enclosed in quotes.
+            </div>
+            <div>
+                Numeric values and string literals for left and right operands supported.
+            </div>
+            <div>
+                <strong>Available rules:</strong>
+                <ul>
+                    <li>gt => a > b</li>
+                    <li>gte => a >= b</li>
+                    <li>lt => a < b</li>
+                    <li>lte => a <= b</li>
+                    <li>eq => a == b</li>
+                    <li>neq => a != b</li>
+                    <li>not => !a</li>
+                    <li>in (strings) => a includes b</li>
+                    <li>nin (strings) => a not includes b</li>
+                </ul>
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/setvar key=i 0 | /while left=i right=10 rule=let "/addvar key=i 1"</code></pre>
+                        adds 1 to the value of "i" until it reaches 10.
+                    </li>
+                </ul>
+            </div>
+            <div>
+                Loops are limited to 100 iterations by default, pass <code>guard=off</code> to disable.
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'times',
+        callback: timesCallback,
+        returns: 'result of the last executed command',
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'repeats',
+                [ARGUMENT_TYPE.NUMBER],
+                true,
+            ),
+            new SlashCommandArgument(
+                'command',
+                [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND],
+                true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Execute any valid slash command enclosed in quotes <code>repeats</code> number of times.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/setvar key=i 1 | /times 5 "/addvar key=i 1"</code></pre>
+                        adds 1 to the value of "i" 5 times.
+                    </li>
+                    <li>
+                        <pre><code>/times 4 "/echo {{timesIndex}}"</code></pre>
+                        echos the numbers 0 through 4. <code>{{timesIndex}}</code> is replaced with the iteration number (zero-based).
+                    </li>
+                </ul>
+            </div>
+            <div>
+                Loops are limited to 100 iterations by default, pass <code>guard=off</code> to disable.
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'flushvar',
+        callback: (_, value) => deleteLocalVariable(value),
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Delete a local variable.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/flushvar score</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'flushglobalvar',
+        callback: (_, value) => deleteGlobalVariable(value),
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Deletes the specified global variable.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/flushglobalvar score</code></pre>
+                        Deletes the global variable <code>score</code>.
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'add',
+        callback: addValuesCallback,
+        returns: 'sum of the provided values',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'values', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true, true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs an addition of the set of values and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/add 10 i 30 j</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'mul',
+        callback: (args, value) => mulValuesCallback(args, value),
+        result: 'product of the provided values',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'values to multiply',
+                [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                true,
+                true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs a multiplication of the set of values and passes the result down the pipe. Can use variable names.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/mul 10 i 30 j</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'max',
+        callback: maxValuesCallback,
+        returns: 'maximum value of the set of values',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'values',
+                [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+                true,
+                true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Returns the maximum value of the set of values and passes the result down the pipe. Can use variable names.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/max 10 i 30 j</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'min',
+        callback: minValuesCallback,
+        returns: 'minimum value of the set of values',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'values', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true, true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Returns the minimum value of the set of values and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/min 10 i 30 j</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sub',
+        callback: subValuesCallback,
+        returns: 'difference of the provided values',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'values', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true, true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs a subtraction of the set of values and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/sub i 5</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'div',
+        callback: divValuesCallback,
+        returns: 'result of division',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'dividend', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+            new SlashCommandArgument(
+                'divisor', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs a division of two values and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/div 10 i</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'mod',
+        callback: modValuesCallback,
+        returns: 'result of modulo operation',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'dividend', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+            new SlashCommandArgument(
+                'divisor', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs a modulo operation of two values and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/mod i 2</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'pow',
+        callback: powValuesCallback,
+        returns: 'result of power operation',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'base', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+            new SlashCommandArgument(
+                'exponent', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs a power operation of two values and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/pow i 2</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sin',
+        callback: sinValuesCallback,
+        returns: 'sine of the provided value',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs a sine operation of a value and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/sin i</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'cos',
+        callback: cosValuesCallback,
+        returns: 'cosine of the provided value',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs a cosine operation of a value and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/cos i</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'log',
+        callback: logValuesCallback,
+        returns: 'log of the provided value',
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs a logarithm operation of a value and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/log i</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'abs',
+        callback: absValuesCallback,
+        returns: 'absolute value of the provided value',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs an absolute value operation of a value and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/abs i</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sqrt',
+        callback: sqrtValuesCallback,
+        returns: 'square root of the provided value',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Performs a square root operation of a value and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/sqrt i</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'round',
+        callback: roundValuesCallback,
+        returns: 'rounded value',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Rounds a value and passes the result down the pipe.
+                Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/round i</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'len',
+        callback: (_, value) => lenValuesCallback(value),
+        returns: 'length of the provided value',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], true
+            ),
+        ],
+        helpString: `
+            <div>
+                Gets the length of a value and passes the result down the pipe. Can use variable names.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/len i</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'rand',
+        callback: (args, value) => randValuesCallback(Number(args.from ?? 0), Number(args.to ?? (value.length ? value : 1)), args),
+        returns: 'random number',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'from',
+                'starting value for the range (inclusive)',
+                [ARGUMENT_TYPE.NUMBER],
+                false,
+                false,
+                '0',
+            ),
+            new SlashCommandNamedArgument(
+                'to',
+                'ending value for the range (inclusive)',
+                [ARGUMENT_TYPE.NUMBER],
+                false,
+                false,
+                '1',
+            ),
+            new SlashCommandNamedArgument(
+                'round',
+                'rounding method for the result',
+                [ARGUMENT_TYPE.STRING],
+                false,
+                false,
+                null,
+                ['round', 'ceil', 'floor'],
+            ),
+        ],
+        helpString: `
+            <div>
+                Returns a random number between <code>from</code> and <code>to</code> (inclusive).
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/rand</code></pre>
+                        Returns a random number between 0 and 1.
+                    </li>
+                    <li>
+                        <pre><code>/rand 10</code></pre>
+                        Returns a random number between 0 and 10.
+                    </li>
+                    <li>
+                        <pre><code>/rand from=5 to=10</code></pre>
+                        Returns a random number between 5 and 10.
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'var',
+        callback: (args, value) => varCallback(args, value),
+        returns: 'the variable value',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'index',
+                'optional index for list or dictionary',
+                [ARGUMENT_TYPE.NUMBER],
+                false, // isRequired
+                false, // acceptsMultiple
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'variable name',
+                [ARGUMENT_TYPE.VARIABLE_NAME],
+                true, // isRequired
+                false, // acceptsMultiple
+            ),
+            new SlashCommandArgument(
+                'variable value',
+                [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.CLOSURE],
+                false, // isRequired
+                false, // acceptsMultiple
+            ),
+        ],
+        helpString: `
+            <div>
+                Get or set a variable.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/let x foo | /var x foo bar | /var x | /echo</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'let',
+        callback: (args, value) => letCallback(args, value),
+        returns: 'the variable value',
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+            ),
+            new SlashCommandArgument(
+                'variable value', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.CLOSURE],
+            ),
+        ],
+        helpString: `
+            <div>
+                Declares a new variable in the current scope.
+            </div>
+            <div>
+                <strong>Examples:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/let x foo bar | /echo {{var::x}}</code></pre>
+                    </li>
+                    <li>
+                        <pre><code>/let y</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
 }
