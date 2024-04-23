@@ -1170,7 +1170,7 @@ select {
             }
             &:after {
                 flex: 1 0 auto;
-                width: 50vw;
+                max-width: 50vw;
             }
         }
         &.right {
@@ -1186,7 +1186,8 @@ select {
             }
             .slashCommandAutoComplete-details {
                 flex: 0 0 auto;
-                width: 50vw;
+                max-width: 50vw;
+                width: unset;
             }
             &:after {
                 content: "";
