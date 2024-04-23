@@ -918,7 +918,7 @@ export class SlashCommandAutoComplete {
                     });
                     if (this.selectionStart != this.textarea.selectionStart) {
                         this.selectionStart = this.textarea.selectionStart;
-                        this.show(oldText != this.textarea.value);
+                        this.show(this.isReplaceable || oldText != this.textarea.value);
                     }
                 }
             }
