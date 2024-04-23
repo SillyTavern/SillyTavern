@@ -630,6 +630,7 @@ export class SlashCommandAutoComplete {
         } else {
             const rect = this.textarea.getBoundingClientRect();
             this.domWrap.style.setProperty('--bottom', `${window.innerHeight - rect.top}px`);
+            this.dom.style.setProperty('--bottom', `${window.innerHeight - rect.top}px`);
             this.domWrap.style.bottom = `${window.innerHeight - rect.top}px`;
             if (this.isShowingDetails) {
                 this.domWrap.style.left = '1vw';
