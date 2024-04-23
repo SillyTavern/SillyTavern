@@ -2406,7 +2406,7 @@ async function processCommands(message) {
     const currentText = String($('#send_textarea').val());
 
     if (previousText === currentText) {
-        $('#send_textarea').val(result.newText).trigger('input');
+        $('#send_textarea').val(result.newText)[0].dispatchEvent(new Event('input', { bubbles:true }));
     }
 
     // interrupt generation if the input was nothing but a command
@@ -2690,7 +2690,7 @@ class StreamingProcessor {
         let messageId = -1;
 
         if (this.type == 'impersonate') {
-            $('#send_textarea').val('').trigger('input');
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
         }
         else {
             await saveReply(this.type, text, true);
@@ -2726,7 +2726,7 @@ class StreamingProcessor {
         }
 
         if (isImpersonate) {
-            $('#send_textarea').val(processedText).trigger('input');
+            $('#send_textarea').val(processedText)[0].dispatchEvent(new Event('input', { bubbles:true }));
         }
         else {
             let currentTime = new Date();
@@ -3073,7 +3073,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
 
         if (interruptedByCommand) {
-            //$("#send_textarea").val('').trigger('input');
+            //$("#send_textarea").val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
             unblockGeneration(type);
             return Promise.resolve();
         }
@@ -3159,7 +3159,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun) {
         is_send_press = true;
         textareaText = String($('#send_textarea').val());
-        $('#send_textarea').val('').trigger('input');
+        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
     } else {
         textareaText = '';
         if (chat.length && chat[chat.length - 1]['is_user']) {
@@ -4094,7 +4094,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
         if (getMessage.length > 0) {
             if (isImpersonate) {
-                $('#send_textarea').val(getMessage).trigger('input');
+                $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles:true }));
                 generatedPromptCache = '';
                 await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
             }

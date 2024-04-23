@@ -422,7 +422,7 @@ function restoreUserInput() {
 
     const userInput = LoadLocal('userInput');
     if (userInput) {
-        $('#send_textarea').val(userInput).trigger('input');
+        $('#send_textarea').val(userInput)[0].dispatchEvent(new Event('input', { bubbles:true }));
     }
 }
 

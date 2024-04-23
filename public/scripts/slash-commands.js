@@ -236,7 +236,7 @@ export function processChatSlashCommands() {
 }
 
 function setInputCallback(_, value) {
-    $('#send_textarea').val(value || '').trigger('input');
+    $('#send_textarea').val(value || '')[0].dispatchEvent(new Event('input', { bubbles:true }));
     return value;
 }
 
@@ -422,7 +422,7 @@ async function runCallback(args, name) {
 }
 
 function abortCallback() {
-    $('#send_textarea').val('').trigger('input');
+    $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
     throw new Error('/abort command executed');
 }
 
@@ -540,7 +540,7 @@ async function generateRawCallback(args, value) {
     }
 
     // Prevent generate recursion
-    $('#send_textarea').val('').trigger('input');
+    $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
     const lock = isTrueBoolean(args?.lock);
     const as = args?.as || 'system';
     const quietToLoud = as === 'char';
@@ -570,7 +570,7 @@ async function generateCallback(args, value) {
     }
 
     // Prevent generate recursion
-    $('#send_textarea').val('').trigger('input');
+    $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
     const lock = isTrueBoolean(args?.lock);
     const as = args?.as || 'system';
     const quietToLoud = as === 'char';
@@ -706,7 +706,7 @@ async function deleteSwipeCallback(_, arg) {
 
 async function askCharacter(_, text) {
     // Prevent generate recursion
-    $('#send_textarea').val('').trigger('input');
+    $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
 
     // Not supported in group chats
     // TODO: Maybe support group chats?
@@ -1017,7 +1017,7 @@ async function triggerGenerationCallback(args, value) {
         }
 
         // Prevent generate recursion
-        $('#send_textarea').val('').trigger('input');
+        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
 
         let chid = undefined;
 
@@ -1157,7 +1157,7 @@ function continueChatCallback(_, prompt) {
         }
 
         // Prevent infinite recursion
-        $('#send_textarea').val('').trigger('input');
+        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
         $('#option_continue').trigger('click', { fromSlashCommand: true, additionalPrompt: prompt });
     }, 1);
 
@@ -1165,7 +1165,7 @@ function continueChatCallback(_, prompt) {
 }
 
 export async function generateSystemMessage(_, prompt) {
-    $('#send_textarea').val('').trigger('input');
+    $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
 
     if (!prompt) {
         console.warn('WARN: No prompt provided for /sysgen command');
