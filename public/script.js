@@ -216,6 +216,9 @@ import { currentUser, setUserControls } from './scripts/user.js';
 import { callGenericPopup } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
+import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
+import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from './scripts/slash-commands/SlashCommandArgument.js';
 
 //exporting functions and vars for mods
 export {
@@ -8601,19 +8604,137 @@ jQuery(async function () {
         toastr.success('Chat and settings saved.');
     }
 
-    registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
-    registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
-    registerSlashCommand('impersonate', doImpersonate, ['imp'], '<span class="monospace">[prompt]</span> – calls an impersonation response, with an optional additional prompt', true, true);
-    registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
-    registerSlashCommand('getchatname', doGetChatName, [], '– returns the name of the current chat file into the pipe', false, true);
-    registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
-    registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
-    registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
-    registerSlashCommand('instruct', selectInstructCallback, [], '<span class="monospace">(name)</span> – selects instruct mode preset by name. Gets the current instruct if no name is provided', true, true);
-    registerSlashCommand('instruct-on', enableInstructCallback, [], '– enables instruct mode', true, true);
-    registerSlashCommand('instruct-off', disableInstructCallback, [], '– disables instruct mode', true, true);
-    registerSlashCommand('context', selectContextCallback, [], '<span class="monospace">(name)</span> – selects context template by name. Gets the current template if no name is provided', true, true);
-    registerSlashCommand('chat-manager', () => $('#option_select_chat').trigger('click'), ['chat-history', 'manage-chats'], '– opens the chat manager for the current character/group', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'dupe',
+        callback: DupeChar,
+        helpString: 'Duplicates the currently selected character.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'api',
+        callback: connectAPISlash,
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'API to connect to',
+                [ARGUMENT_TYPE.STRING],
+                true,
+                false,
+                null,
+                Object.keys(CONNECT_API_MAP),
+            ),
+        ],
+        helpString: `
+            <div>
+                Connect to an API.
+            </div>
+            <div>
+                <strong>Available APIs:</strong>
+                <pre><code>${Object.keys(CONNECT_API_MAP).join(', ')}</code></pre>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'impersonate',
+        callback: doImpersonate,
+        aliases: ['imp'],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'prompt', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Calls an impersonation response, with an optional additional prompt.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/impersonate What is the meaning of life?</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delchat',
+        callback: doDeleteChat,
+        helpString: 'Deletes the current chat.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatname',
+        callback: doGetChatName,
+        returns: 'chat file name',
+        helpString: 'Returns the name of the current chat file into the pipe.',
+        interruptsGeneration: false,
+        purgeFromMessage: true,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'closechat',
+        callback: doCloseChat,
+        helpString: 'Closes the current chat.',
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'panels',
+        callback: doTogglePanels,
+        aliases: ['togglepanels'],
+        helpString: 'Toggle UI panels on/off',
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'forcesave',
+        callback: doForceSave,
+        helpString: 'Forces a save of the current chat and settings',
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct',
+        callback: selectInstructCallback,
+        returns: 'current preset',
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Selects instruct mode preset by name. Gets the current instruct if no name is provided.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/instruct creative</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct-on',
+        callback: enableInstructCallback,
+        helpString: 'Enables instruct mode.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct-off',
+        callback: disableInstructCallback,
+        helpString: 'Disables instruct mode',
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'context',
+        callback: selectContextCallback,
+        returns: 'template name',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: 'Selects context template by name. Gets the current template if no name is provided',
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'chat-manager',
+        callback: () => $('#option_select_chat').trigger('click'),
+        aliases: ['chat-history', 'manage-chats'],
+        helpString: 'Opens the chat manager for the current character/group.',
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+    }));
 
     setTimeout(function () {
         $('#groupControlsToggle').trigger('click');
