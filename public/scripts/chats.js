@@ -56,8 +56,8 @@ import { ScraperManager } from './scrapers.js';
 const fileSizeLimit = 1024 * 1024 * 100; // 100 MB
 const ATTACHMENT_SOURCE = {
     GLOBAL: 'global',
-    CHAT: 'chat',
     CHARACTER: 'character',
+    CHAT: 'chat',
 };
 
 /**
@@ -671,6 +671,55 @@ async function editAttachment(attachment, source, callback) {
 }
 
 /**
+ * Downloads an attachment to the user's device.
+ * @param {FileAttachment} attachment Attachment to download
+ */
+async function downloadAttachment(attachment) {
+    const fileText = attachment.text || (await getFileAttachment(attachment.url));
+    const blob = new Blob([fileText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = attachment.name;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+/**
+ * Moves a file attachment to a different source.
+ * @param {FileAttachment} attachment Attachment to moves
+ * @param {string} source Source of the attachment
+ * @param {function} callback Success callback
+ * @returns {Promise<void>} A promise that resolves when the attachment is moved.
+ */
+async function moveAttachment(attachment, source, callback) {
+    let selectedTarget = source;
+    const targets = getAvailableTargets();
+    const template = $(await renderExtensionTemplateAsync('attachments', 'move-attachment', { name: attachment.name, targets }));
+    template.find('.moveAttachmentTarget').val(source).on('input', function () {
+        selectedTarget = String($(this).val());
+    });
+
+    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Move', cancelButton: 'Cancel' });
+
+    if (result !== POPUP_RESULT.AFFIRMATIVE) {
+        console.debug('Move attachment cancelled');
+        return;
+    }
+
+    if (selectedTarget === source) {
+        console.debug('Move attachment cancelled: same source and target');
+        return;
+    }
+
+    const content = await getFileAttachment(attachment.url);
+    const file = new File([content], attachment.name, { type: 'text/plain' });
+    await deleteAttachment(attachment, source, () => { }, false);
+    await uploadFileAttachmentToServer(file, selectedTarget);
+    callback();
+}
+
+/**
  * Deletes an attachment from the server and the chat.
  * @param {FileAttachment} attachment Attachment to delete
  * @param {string} source Source of the attachment
@@ -765,6 +814,8 @@ async function openAttachmentManager() {
             attachmentTemplate.find('.viewAttachmentButton').on('click', () => openFilePopup(attachment));
             attachmentTemplate.find('.editAttachmentButton').on('click', () => editAttachment(attachment, source, renderAttachments));
             attachmentTemplate.find('.deleteAttachmentButton').on('click', () => deleteAttachment(attachment, source, renderAttachments));
+            attachmentTemplate.find('.downloadAttachmentButton').on('click', () => downloadAttachment(attachment));
+            attachmentTemplate.find('.moveAttachmentButton').on('click', () => moveAttachment(attachment, source, renderAttachments));
             template.find(sources[source]).append(attachmentTemplate);
         }
     }
@@ -882,19 +933,8 @@ async function openAttachmentManager() {
             $(event.target).closest('.dialogue_popup').removeClass('dragover');
 
             const files = Array.from(event.originalEvent.dataTransfer.files);
-            const targets = Object.values(ATTACHMENT_SOURCE);
-
-            const isNotCharacter = this_chid === undefined || selected_group;
-            const isNotInChat = getCurrentChatId() === undefined;
             let selectedTarget = ATTACHMENT_SOURCE.GLOBAL;
-
-            if (isNotCharacter) {
-                targets.splice(targets.indexOf(ATTACHMENT_SOURCE.CHARACTER), 1);
-            }
-
-            if (isNotInChat) {
-                targets.splice(targets.indexOf(ATTACHMENT_SOURCE.CHAT), 1);
-            }
+            const targets = getAvailableTargets();
 
             const targetSelectTemplate = $(await renderExtensionTemplateAsync('attachments', 'files-dropped', { count: files.length, targets: targets }));
             targetSelectTemplate.find('.droppedFilesTarget').on('input', function () {
@@ -948,6 +988,27 @@ async function openAttachmentManager() {
 
     cleanupFn();
     removeDragAndDrop();
+}
+
+/**
+ * Gets a list of available targets for attachments.
+ * @returns {string[]} List of available targets
+ */
+function getAvailableTargets() {
+    const targets = Object.values(ATTACHMENT_SOURCE);
+
+    const isNotCharacter = this_chid === undefined || selected_group;
+    const isNotInChat = getCurrentChatId() === undefined;
+
+    if (isNotCharacter) {
+        targets.splice(targets.indexOf(ATTACHMENT_SOURCE.CHARACTER), 1);
+    }
+
+    if (isNotInChat) {
+        targets.splice(targets.indexOf(ATTACHMENT_SOURCE.CHAT), 1);
+    }
+
+    return targets;
 }
 
 /**

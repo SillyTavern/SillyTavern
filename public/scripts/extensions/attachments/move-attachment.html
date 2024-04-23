@@ -1,6 +1,6 @@
 <div class="flex-container justifyCenter alignItemsBaseline">
-    <span>Save <span class="droppedFilesCount">{{count}}</span> file(s) to...</span>
-    <select class="droppedFilesTarget">
+    <span>Move <strong class="moveAttachmentName">{{name}}</strong> to...</span>
+    <select class="moveAttachmentTarget">
         {{#each targets}}
             <option value="{{this}}">{{this}}</option>
         {{/each}}
