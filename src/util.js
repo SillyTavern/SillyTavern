@@ -350,7 +350,7 @@ function generateTimestamp() {
  * @param {string} prefix
  */
 function removeOldBackups(prefix) {
-    const MAX_BACKUPS = 25;
+    const MAX_BACKUPS = 50;
 
     let files = fs.readdirSync(PUBLIC_DIRECTORIES.backups).filter(f => f.startsWith(prefix));
     if (files.length > MAX_BACKUPS) {

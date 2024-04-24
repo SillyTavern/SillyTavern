@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const _ = require('lodash');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { PUBLIC_DIRECTORIES, SETTINGS_FILE } = require('../constants');
 const { getConfigValue, generateTimestamp, removeOldBackups } = require('../util');
@@ -9,6 +10,32 @@ const { getAllUserHandles, getUserDirectories } = require('../users');
 
 const ENABLE_EXTENSIONS = getConfigValue('enableExtensions', true);
 const ENABLE_ACCOUNTS = getConfigValue('enableUserAccounts', false);
+
+// 10 minutes
+const AUTOSAVE_INTERVAL = 10 * 60 * 1000;
+
+/**
+ * Map of functions to trigger settings autosave for a user.
+ * @type {Map<string, function>}
+ */
+const AUTOSAVE_FUNCTIONS = new Map();
+
+/**
+ * Triggers autosave for a user every 10 minutes.
+ * @param {string} handle User handle
+ * @returns {void}
+ */
+function triggerAutoSave(handle) {
+    if (!AUTOSAVE_FUNCTIONS.has(handle)) {
+        const throttledAutoSave = _.throttle(() => backupUserSettings(handle), AUTOSAVE_INTERVAL);
+        AUTOSAVE_FUNCTIONS.set(handle, throttledAutoSave);
+    }
+
+    const functionToCall = AUTOSAVE_FUNCTIONS.get(handle);
+    if (functionToCall) {
+        functionToCall();
+    }
+}
 
 /**
  * Reads and parses files from a directory.
@@ -121,6 +148,7 @@ router.post('/save', jsonParser, function (request, response) {
     try {
         const pathToSettings = path.join(request.user.directories.root, SETTINGS_FILE);
         writeFileAtomicSync(pathToSettings, JSON.stringify(request.body, null, 4), 'utf8');
+        triggerAutoSave(request.user.profile.handle);
         response.send({ result: 'ok' });
     } catch (err) {
         console.log(err);
