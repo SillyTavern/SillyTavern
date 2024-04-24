@@ -2810,7 +2810,7 @@
                     <label for="auto-connect-checkbox" class="checkbox_label"><input id="auto-connect-checkbox" type="checkbox" />
                         <span data-i18n="Auto-connect to Last Server">Auto-connect to Last Server</span>
                     </label>
-                    <a id="viewSecrets" href="javascript:void(0);"><span data-i18n="View hidden API keys">View hidden API keys</span></a>
+                    <a id="viewSecrets" href="javascript:void(0);" data-i18n="[missing_key_text]Missing key;[key_saved_text]Key saved" missing_key_text="❌ Missing key" key_saved_text="✔️ Key saved"><span data-i18n="View hidden API keys">View hidden API keys</span></a>
                 </div>
             </div>
         </div>
@@ -3714,7 +3714,7 @@
                                         <span data-i18n="Smooth Streaming">
                                             Smooth Streaming
                                         </span>
-                                        <i class="fa-solid fa-flask" title="Experimental feature. May not work for all backends."></i>
+                                        <i class="fa-solid fa-flask" data-i18n="[title]Experimental feature. May not work for all backends." title="Experimental feature. May not work for all backends."></i>
                                     </div>
                                     <div id="smooth_streaming_speed_control" class="flexBasis100p wide100p">
                                         <small class="flex justifyCenter" data-i18n="Speed">Speed</small>
@@ -4062,7 +4062,7 @@
                         Chat Backgrounds
                     </h3>
                     <div id="bg_chat_hint" class="wide100p textAlignCenter">
-                        Chat backgrounds generated with the <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Image Generation</code> extension will appear here.
+                        <span data-i18n="Chat backgrounds generated with the">Chat backgrounds generated with the</span> <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Image Generation</code> <span data-i18n="extension will appear here.">extension will appear here.</span>
                     </div>
                     <div id="bg_custom_content" class="bg_list">
                     </div>
@@ -4266,7 +4266,7 @@
                             <div id="name_div">
                                 <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" maxlength="100" value="" autocomplete="off">
                                 <div class="extension_token_counter">
-                                    Tokens: <span data-token-counter="character_name_pole" data-token-permanent="true">counting...</span>
+                                    <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="character_name_pole" data-token-permanent="true">counting...</span>
                                 </div>
                             </div>
                             <div class="flex-container flexFlowColumn expander flexNoGap">
@@ -4368,7 +4368,7 @@
                             </div>
                             <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." name="description" placeholder=""></textarea>
                             <div class="extension_token_counter">
-                                Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
+                                <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
                             </div>
                         </div>
                         <div id="firstMessageWrapper" class="flex-container flexFlowColumn flex1">
@@ -4388,7 +4388,7 @@
                             </div>
                             <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." name="first_mes" placeholder=""></textarea>
                             <div class="extension_token_counter">
-                                Tokens: <span data-token-counter="firstmessage_textarea">counting...</span>
+                                <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="firstmessage_textarea">counting...</span>
                             </div>
                         </div>
                         <!-- these divs are invisible and used for server communication purposes -->
@@ -4626,8 +4626,8 @@
         <div id="character_cross" class="fa-solid fa-circle-xmark"></div>
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4 data-i18n="Prompt Overrides (For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)">
-                    Prompt Overrides <small>(For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)</small>
+                <h4 data-i18n="Prompt Overrides (For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)"><!-- This data-i18n attribute on the left is kept for backward compatibility, use the ones below when translating -->
+                    <span data-i18n="Prompt Overrides">Prompt Overrides</span> <small data-i18n="(For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)">(For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)</small>
                 </h4>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
@@ -4637,14 +4637,14 @@
                     <h4 data-i18n="Main Prompt">Main Prompt</h4>
                     <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
                     <div class="extension_token_counter">
-                        Tokens: <span data-token-counter="system_prompt_textarea">counting...</span>
+                        <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="system_prompt_textarea">counting...</span>
                     </div>
                 </div>
                 <div>
                     <h4 data-i18n="Jailbreak">Jailbreak</h4>
                     <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
                     <div class="extension_token_counter">
-                        Tokens: <span data-token-counter="post_history_instructions_textarea">counting...</span>
+                        <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="post_history_instructions_textarea">counting...</span>
                     </div>
                 </div>
             </div>
@@ -4652,9 +4652,9 @@
         <hr>
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4 data-i18n="Creator's Metadata (Not sent with the AI prompt)">
-                    Creator's Metadata
-                    <small>(Not sent with the AI Prompt)</small>
+                <h4 data-i18n="Creator's Metadata (Not sent with the AI prompt)"><!-- This data-i18n attribute on the left is kept for backward compatibility, use the ones below when translating -->
+                    <span data-i18n="Creator's Metadata">Creator's Metadata</span>
+                    <small data-i18n="(Not sent with the AI Prompt)">(Not sent with the AI Prompt)</small>
                 </h4>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
@@ -4690,7 +4690,7 @@
             </h4>
             <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="50000"></textarea>
             <div class="extension_token_counter">
-                Tokens: <span data-token-counter="personality_textarea" data-token-permanent="true">counting...</span>
+                <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="personality_textarea" data-token-permanent="true">counting...</span>
             </div>
         </div>
         <div id="scenario_div">
@@ -4702,7 +4702,7 @@
             </h4>
             <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="50000" value="" autocomplete="off" form="form_create" rows="4"></textarea>
             <div class="extension_token_counter">
-                Tokens: <span data-token-counter="scenario_pole" data-token-permanent="true">counting...</span>
+                <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="scenario_pole" data-token-permanent="true">counting...</span>
             </div>
         </div>
         <div id="depth_prompt_div" class="flex-container">
@@ -4712,7 +4712,7 @@
                         Character's Note
                     </span>
                 </h4>
-                <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="5" maxlength="50000" autocomplete="off" form="form_create" placeholder="(Text to be inserted in-chat @ designated depth and role)"></textarea>
+                <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="5" maxlength="50000" autocomplete="off" form="form_create" data-i18n="[placeholder](Text to be inserted in-chat @ designated depth and role)" placeholder="(Text to be inserted in-chat @ designated depth and role)"></textarea>
             </div>
             <div>
                 <h4>
@@ -4732,13 +4732,14 @@
                     <option value="assistant" data-i18n="Assistant">Assistant</option>
                 </select>
                 <div class="extension_token_counter">
-                    Tokens: <span data-token-counter="depth_prompt_prompt" data-token-permanent="true">counting...</span>
+                    <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="depth_prompt_prompt" data-token-permanent="true">counting...</span>
                 </div>
             </div>
         </div>
         <div id="talkativeness_div">
             <h4><span data-i18n="Talkativeness">Talkativeness</span></h4>
-            <h5 data-i18n="How often the character speaks in group chats!">How often the character speaks in &nbsp;<span class="warning">group chats!</span>
+            <h5 data-i18n="How often the character speaks in group chats!"><!-- This data-i18n attribute on the left is kept for backward compatibility, use the ones below when translating -->
+			<span data-i18n="How often the character speaks in">How often the character speaks in</span>&nbsp;<span class="warning" data-i18n="group chats!">group chats!</span>
             </h5>
             <input id="talkativeness_slider" name="talkativeness" type="range" min="0" max="1" step="0.05" value="0.5" form="form_create">
             <div class="slider_hint">
@@ -4755,7 +4756,7 @@
             </div>
             <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="50000" rows="6"></textarea>
             <div class="extension_token_counter">
-                Tokens: <span data-token-counter="mes_example_textarea">counting...</span>
+                <span data-i18n="extension_token_counter">Tokens:</span> <span data-token-counter="mes_example_textarea">counting...</span>
             </div>
             <!-- PLACEHOLDER CODE FOR NEW EXAMPLE CHAT HANDLING
                 <div name="exampleChatsBlockTemplate" class="flex-container flexFlowColumn">
@@ -4813,7 +4814,7 @@
                     <i class="fa-solid fa-file-import"></i>
                     <span data-i18n="Import Chat">Import Chat</span>
                 </div>
-                <input type="text" id="select_chat_search" class="text_pole flex1" placeholder="Search..." autocomplete="off">
+                <input type="text" id="select_chat_search" class="text_pole flex1" data-i18n="[placeholder]Search..." placeholder="Search..." autocomplete="off">
                 <div id="select_chat_cross" class="opacity50p hoverglow fa-solid fa-circle-xmark fontsize120p" alt="Close Past Chat Popup"></div>
             </div>
             <div id="select_chat_div"></div>
@@ -4854,7 +4855,9 @@
     <div id="chat_world_template" class="template_element">
         <div class="chat_world range-block flexFlowColumn flex-container">
             <div class="range-block-title">
-                <h4 data-i18n="Chat Lorebook">Chat Lorebook for <span class="chat_name"></span></h4>
+                <h4 data-i18n="Chat Lorebook"><!-- This data-i18n attribute is kept for backward compatibility, use the ones below when translating -->
+				<span data-i18n="Chat Lorebook for">Chat Lorebook for</span> <span class="chat_name"></span>
+				</h4>
             </div>
             <div class="range-block-counter justifyLeft flex-container flexFlowColumn margin-bot-10px">
                 <span data-i18n="A selected World Info will be bound to this chat.">
@@ -5074,7 +5077,7 @@
                                                     Content
                                                 </span>
                                                 <span>
-                                                    (Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)&nbsp;
+                                                    (<span data-i18n="extension_token_counter">Tokens:</span>&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)&nbsp;
                                                     <span class="world_entry_form_uid_value" data-first-run="true"></span>
                                                 </span>
                                                 <div>
@@ -5558,17 +5561,17 @@
             <div name="floatingPromptHolder" class="scrollY">
                 <div class="inline-drawer">
                     <div id="ANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
-                        <b>Author's Note</b>
+                        <b data-i18n="Author's Note">Author's Note</b>
                         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                     </div>
                     <div class="inline-drawer-content">
                         <small>
-                            <b>Unique to this chat</b>.<br>
-                            Checkpoints inherit the Note from their parent, and can be changed individually after that.<br>
+                            <b data-i18n="Unique to this chat">Unique to this chat</b>.<br>
+                            <span data-i18n="Checkpoints inherit the Note from their parent, and can be changed individually after that.">Checkpoints inherit the Note from their parent, and can be changed individually after that.</span><br>
                         </small>
                         <textarea id="extension_floating_prompt" class="text_pole textarea_compact" rows="8" maxlength="50000"></textarea>
                         <div class="extension_token_counter">
-                            Tokens: <span id="extension_floating_prompt_token_counter">0</span>
+                            <span data-i18n="extension_token_counter">Tokens:</span> <span id="extension_floating_prompt_token_counter">0</span>
                         </div>
                         <label class="checkbox_label" for="extension_floating_allow_wi_scan">
                             <input id="extension_floating_allow_wi_scan" type="checkbox" />
@@ -5604,7 +5607,7 @@
                             <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999" />
                         </div>
                         <br>
-                        <span>User inputs until next insertion: <span id="extension_floating_counter">(disabled)</span></span>
+                        <span><span data-i18n="User inputs until next insertion:">User inputs until next insertion:</span> <span id="extension_floating_counter">(disabled)</span></span>
                     </div>
                 </div>
                 <hr class="sysHR">
@@ -5621,11 +5624,11 @@
                         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                     </div>
                     <div class="inline-drawer-content">
-                        <small>Will be automatically added as the author's note for this character. Will be used in groups, but
+                        <small data-i18n="Will be automatically added as the author's note for this character. Will be used in groups, but can't be modified when a group chat is open.">Will be automatically added as the author's note for this character. Will be used in groups, but
                             can't be modified when a group chat is open.</small>
                         <textarea id="extension_floating_chara" class="text_pole textarea_compact" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
-                            Tokens: <span id="extension_floating_chara_token_counter">0</span>
+                            <span data-i18n="extension_token_counter">Tokens:</span> <span id="extension_floating_chara_token_counter">0</span>
                         </div>
                         <label class="checkbox_label" for="extension_use_floating_chara">
                             <input id="extension_use_floating_chara" type="checkbox" />
@@ -5634,15 +5637,15 @@
                         <div class="floating_prompt_radio_group">
                             <label>
                                 <input type="radio" name="extension_floating_char_position" value="0" />
-                                Replace Author's Note
+                                <span data-i18n="Replace Author's Note">Replace Author's Note</span>
                             </label>
                             <label>
                                 <input type="radio" name="extension_floating_char_position" value="1" />
-                                Top of Author's Note
+                                <span data-i18n="Top of Author's Note">Top of Author's Note</span>
                             </label>
                             <label>
                                 <input type="radio" name="extension_floating_char_position" value="2" />
-                                Bottom of Author's Note
+                                <span data-i18n="Bottom of Author's Note">Bottom of Author's Note</span>
                             </label>
                         </div>
                     </div>
@@ -5650,14 +5653,14 @@
                 <hr class="sysHR">
                 <div class="inline-drawer">
                     <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
-                        <b>Default Author's Note</b>
+                        <b data-i18n="Default Author's Note">Default Author's Note</b>
                         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                     </div>
                     <div class="inline-drawer-content">
-                        <small>Will be automatically added as the Author's Note for all new chats.</small>
+                        <small data-i18n="Will be automatically added as the Author's Note for all new chats.">Will be automatically added as the Author's Note for all new chats.</small>
                         <textarea id="extension_floating_default" class="text_pole textarea_compact" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
-                            Tokens: <span id="extension_floating_default_token_counter">0</span>
+                            <span data-i18n="extension_token_counter">Tokens:</span> <span id="extension_floating_default_token_counter">0</span>
                         </div>
                         <div class="floating_prompt_radio_group">
                             <label class="checkbox_label" for="extension_default_position_before">
@@ -5703,12 +5706,12 @@
                 <div id="chat_cfg_container">
                     <div class="inline-drawer">
                         <div id="CFGBlockToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <b>Chat CFG</b>
+                            <b data-i18n="Chat CFG">Chat CFG</b>
                             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                         </div>
                         <div class="inline-drawer-content">
                             <small>
-                                <b>Unique to this chat.</b><br>
+                                <b data-i18n="Unique to this chat">Unique to this chat</b><br>
                             </small>
                             <label for="chat_cfg_guidance_scale">
                                 <span data-i18n="Scale">Scale</span>
@@ -5745,11 +5748,11 @@
                     <hr class="sysHR">
                     <div class="inline-drawer">
                         <div id="charaANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <b>Character CFG</b>
+                            <b data-i18n="Character CFG">Character CFG</b>
                             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                         </div>
                         <div class="inline-drawer-content">
-                            <small><b>Will be automatically added as the CFG for this character.</b></small>
+                             <small><b data-i18n="Will be automatically added as the CFG for this character.">Will be automatically added as the CFG for this character.</b></small>
                             <br />
                             <label for="chara_cfg_guidance_scale">
                                 <span data-i18n="Scale">Scale</span>
@@ -5780,11 +5783,11 @@
                     <hr class="sysHR">
                     <div class="inline-drawer">
                         <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <b>Global CFG</b>
+                            <b data-i18n="Global CFG">Global CFG</b>
                             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                         </div>
                         <div class="inline-drawer-content">
-                            <small><b>Will be used as the default CFG options for every chat unless overridden.</b></small>
+                            <small><b data-i18n="Will be used as the default CFG options for every chat unless overridden.">Will be used as the default CFG options for every chat unless overridden.</b></small>
                             <br />
                             <label for="global_cfg_guidance_scale">
                                 <span data-i18n="Scale">Scale</span>
@@ -5815,21 +5818,21 @@
                     <hr class="sysHR">
                     <div class="inline-drawer">
                         <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <b>CFG Prompt Cascading</b>
+                            <b data-i18n="CFG Prompt Cascading">CFG Prompt Cascading</b>
                             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                         </div>
                         <div class="inline-drawer-content">
                             <div class="flex-container flexFlowColumn">
                                 <small>
-                                    <b>Combine positive/negative prompts from other boxes.</b>
+                                    <b data-i18n="Combine positive/negative prompts from other boxes.">Combine positive/negative prompts from other boxes.</b>
                                     <br />
-                                    For example, ticking the chat, global, and character boxes combine all negative prompts into a comma-separated string.
+                                    <span data-i18n="For example, ticking the chat, global, and character boxes combine all negative prompts into a comma-separated string.">For example, ticking the chat, global, and character boxes combine all negative prompts into a comma-separated string.</span>
                                 </small>
                             </div>
                             <br />
                             <div class="flex-container flexFlowColumn">
                                 <label for="cfg_prompt_combine">
-                                    <span data-i18n="Scale">Always Include</span>
+                                    <span data-i18n="Always Include">Always Include</span>
                                 </label>
                                 <label class="checkbox_label">
                                     <input type="checkbox" name="cfg_prompt_combine" value="0" />
@@ -5846,10 +5849,10 @@
                             </div>
                             <div class="flex-container flexFlowColumn">
                                 <label>
-                                    Custom Separator: <input id="cfg_prompt_separator" class="text_pole textarea_compact widthUnset" placeholder="&quot;\n&quot;" type="text" />
+                                    <span data-i18n="Custom Separator:">Custom Separator:</span> <input id="cfg_prompt_separator" class="text_pole textarea_compact widthUnset" placeholder="&quot;\n&quot;" type="text" />
                                 </label>
                                 <label>
-                                    Insertion Depth: <input id="cfg_prompt_insertion_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                                    <span data-i18n="Insertion Depth:">Insertion Depth:</span> <input id="cfg_prompt_insertion_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
                                 </label>
                             </div>
                         </div>
