@@ -54,7 +54,7 @@ export class SlashCommandAutoCompleteOption {
                 /**@type {SlashCommand}*/
                 // @ts-ignore
                 const cmd = this.value;
-                li = cmd.renderHelpItem();
+                li = cmd.renderHelpItem(this.name);
                 break;
             }
             case OPTION_TYPE.QUICK_REPLY: {
