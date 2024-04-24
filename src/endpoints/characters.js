@@ -439,6 +439,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 case_sensitive: entry.caseSensitive ?? null,
                 automation_id: entry.automationId ?? '',
                 role: entry.role ?? 0,
+                vectorized: entry.vectorized ?? false,
             },
         };
 
@@ -1097,7 +1098,7 @@ router.post('/export', jsonParser, async function (request, response) {
                 const fileContent = await fsPromises.readFile(filename);
                 const contentType = mime.lookup(filename) || 'image/png';
                 response.setHeader('Content-Type', contentType);
-                response.setHeader('Content-Disposition', `attachment; filename=${path.basename(filename)}`);
+                response.setHeader('Content-Disposition', `attachment; filename="${encodeURI(path.basename(filename))}"`);
                 return response.send(fileContent);
             }
             case 'json': {

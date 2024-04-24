@@ -98,6 +98,46 @@
             <hr>
 
             <h4>
+                World Info settings
+            </h4>
+
+            <label class="checkbox_label" for="vectors_enabled_world_info" title="Enable activation of World Info entries based on vector similarity.">
+                <input id="vectors_enabled_world_info" type="checkbox" class="checkbox">
+                Enabled for World Info
+            </label>
+
+            <div id="vectors_world_info_settings" class="marginTopBot5">
+                <div class="flex-container">
+                    <label for="vectors_enabled_for_all" class="checkbox_label">
+                        <input id="vectors_enabled_for_all" type="checkbox" />
+                        <span>Enabled for all entries</span>
+                    </label>
+                    <ul class="margin0">
+                        <li>
+                            <small>Checked: all entries except ❌ status can be activated.</small>
+                        </li>
+                        <li>
+                            <small>Unchecked: only entries with 🔗 status can be activated.</small>
+                        </li>
+                    </ul>
+                </div>
+                <div class="flex-container">
+                    <div class="flex1">
+                        <!--  Vacant for future use -->
+                    </div>
+                    <div class="flex1" title="Maximum number of entries to be activated">
+                        <label for="vectors_max_entries" >
+                            <small>Max Entries</small>
+                        </label>
+                        <input id="vectors_max_entries" type="number" class="text_pole widthUnset" min="1" max="9999" />
+                    </div>
+                    <div class="flex1">
+                        <!--  Vacant for future use -->
+                    </div>
+                </div>
+            </div>
+
+            <h4>
                 File vectorization settings
             </h4>
 

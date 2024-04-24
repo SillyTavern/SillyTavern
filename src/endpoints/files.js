@@ -57,4 +57,29 @@ router.post('/delete', jsonParser, async (request, response) => {
     }
 });
 
+router.post('/verify', jsonParser, async (request, response) => {
+    try {
+        if (!Array.isArray(request.body.urls)) {
+            return response.status(400).send('No URLs specified');
+        }
+
+        const verified = {};
+
+        for (const url of request.body.urls) {
+            const pathToVerify = path.join(request.user.directories.root, url);
+            if (!pathToVerify.startsWith(request.user.directories.files)) {
+                console.debug(`File verification: Invalid path: ${pathToVerify}`);
+                continue;
+            }
+            const fileExists = fs.existsSync(pathToVerify);
+            verified[url] = fileExists;
+        }
+
+        return response.send(verified);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 module.exports = { router };

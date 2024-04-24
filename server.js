@@ -263,10 +263,14 @@ app.get('/login', async (request, response) => {
         return response.redirect('/');
     }
 
-    const autoLogin = await userModule.tryAutoLogin(request);
+    try {
+        const autoLogin = await userModule.tryAutoLogin(request);
 
-    if (autoLogin) {
-        return response.redirect('/');
+        if (autoLogin) {
+            return response.redirect('/');
+        }
+    } catch (error) {
+        console.error('Error during auto-login:', error);
     }
 
     return response.sendFile('login.html', { root: path.join(process.cwd(), 'public') });

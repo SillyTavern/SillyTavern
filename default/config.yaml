@@ -9,6 +9,8 @@ port: 8000
 # -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
 whitelistMode: true
+# Whitelist will also verify IP in X-Forwarded-For / X-Real-IP headers
+enableForwardedWhitelist: true
 # Whitelist of allowed IP addresses
 whitelist:
   - 127.0.0.1

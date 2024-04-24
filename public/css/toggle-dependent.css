@@ -433,14 +433,6 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
     display: none !important;
 }
 
-#openai_image_inlining:not(:checked)~#image_inlining_hint {
-    display: none;
-}
-
-#openai_image_inlining:checked~#image_inlining_hint {
-    display: block;
-}
-
 #smooth_streaming:not(:checked)~#smooth_streaming_speed_control {
     display: none;
 }

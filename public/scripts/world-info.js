@@ -83,6 +83,11 @@ class WorldInfoBuffer {
     // End typedef area
 
     /**
+     * @type {object[]} Array of entries that need to be activated no matter what
+     */
+    static externalActivations = [];
+
+    /**
      * @type {string[]} Array of messages sorted by ascending depth
      */
     #depthBuffer = [];
@@ -219,6 +224,23 @@ class WorldInfoBuffer {
      */
     getDepth() {
         return world_info_depth + this.#skew;
+    }
+
+    /**
+     * Check if the current entry is externally activated.
+     * @param {object} entry WI entry to check
+     * @returns {boolean} True if the entry is forcefully activated
+     */
+    isExternallyActivated(entry) {
+        // Entries could be copied with structuredClone, so we need to compare them by string representation
+        return WorldInfoBuffer.externalActivations.some(x => JSON.stringify(x) === JSON.stringify(entry));
+    }
+
+    /**
+     * Clears the force activations buffer.
+     */
+    cleanExternalActivations() {
+        WorldInfoBuffer.externalActivations.splice(0, WorldInfoBuffer.externalActivations.length);
     }
 }
 
@@ -360,6 +382,10 @@ function setWorldInfoSettings(settings, data) {
     eventSource.on(event_types.CHAT_CHANGED, () => {
         const hasWorldInfo = !!chat_metadata[METADATA_KEY] && world_names.includes(chat_metadata[METADATA_KEY]);
         $('.chat_lorebook_button').toggleClass('world_set', hasWorldInfo);
+    });
+
+    eventSource.on(event_types.WORLDINFO_FORCE_ACTIVATE, (entries) => {
+        WorldInfoBuffer.externalActivations.push(...entries);
     });
 
     // Add slash commands
@@ -564,6 +590,7 @@ function registerWorldInfoSlashCommands() {
         return '';
     }
 
+    registerSlashCommand('world', onWorldInfoChange, [], '<span class="monospace">[optional state=off|toggle] [optional silent=true] (optional name)</span> – sets active World, or unsets if no args provided, use <code>state=off</code> and <code>state=toggle</code> to deactivate or toggle a World, use <code>silent=true</code> to suppress toast messages', true, true);
     registerSlashCommand('getchatbook', getChatBookCallback, ['getchatlore', 'getchatwi'], '– get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe', true, true);
     registerSlashCommand('findentry', findBookEntryCallback, ['findlore', 'findwi'], '<span class="monospace">(file=bookName field=field [texts])</span> – find a UID of the record from the specified book using the fuzzy match of a field value (default: key) and pass it down the pipe, e.g. <tt>/findentry file=chatLore field=key Shadowfang</tt>', true, true);
     registerSlashCommand('getentryfield', getEntryFieldCallback, ['getlorefield', 'getwifield'], '<span class="monospace">(file=bookName field=field [UID])</span> – get a field value (default: content) of the record with the UID from the specified book and pass it down the pipe, e.g. <tt>/getentryfield file=chatLore field=content 123</tt>', true, true);
@@ -964,6 +991,7 @@ const originalDataKeyMap = {
     'caseSensitive': 'extensions.case_sensitive',
     'scanDepth': 'extensions.scan_depth',
     'automationId': 'extensions.automation_id',
+    'vectorized': 'extensions.vectorized',
 };
 
 function setOriginalDataValue(data, uid, key, value) {
@@ -1069,6 +1097,16 @@ function getWorldEntry(name, data, entry) {
                     },
                 },
             );
+        }
+
+        // Verify names to exist in the system
+        if (data.entries[uid]?.characterFilter?.names?.length > 0) {
+            for (const name of [...data.entries[uid].characterFilter.names]) {
+                if (!getContext().characters.find(x => x.avatar.replace(/\.[^/.]+$/, '') === name)) {
+                    console.warn(`World Info: Character ${name} not found. Removing from the entry filter.`, entry);
+                    data.entries[uid].characterFilter.names = data.entries[uid].characterFilter.names.filter(x => x !== name);
+                }
+            }
         }
 
         setOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
@@ -1454,22 +1492,37 @@ function getWorldEntry(name, data, entry) {
             case 'constant':
                 data.entries[uid].constant = true;
                 data.entries[uid].disable = false;
+                data.entries[uid].vectorized = false;
                 setOriginalDataValue(data, uid, 'enabled', true);
                 setOriginalDataValue(data, uid, 'constant', true);
+                setOriginalDataValue(data, uid, 'extensions.vectorized', false);
                 template.removeClass('disabledWIEntry');
                 break;
             case 'normal':
                 data.entries[uid].constant = false;
                 data.entries[uid].disable = false;
+                data.entries[uid].vectorized = false;
                 setOriginalDataValue(data, uid, 'enabled', true);
                 setOriginalDataValue(data, uid, 'constant', false);
+                setOriginalDataValue(data, uid, 'extensions.vectorized', false);
+                template.removeClass('disabledWIEntry');
+                break;
+            case 'vectorized':
+                data.entries[uid].constant = false;
+                data.entries[uid].disable = false;
+                data.entries[uid].vectorized = true;
+                setOriginalDataValue(data, uid, 'enabled', true);
+                setOriginalDataValue(data, uid, 'constant', false);
+                setOriginalDataValue(data, uid, 'extensions.vectorized', true);
                 template.removeClass('disabledWIEntry');
                 break;
             case 'disabled':
                 data.entries[uid].constant = false;
                 data.entries[uid].disable = true;
+                data.entries[uid].vectorized = false;
                 setOriginalDataValue(data, uid, 'enabled', false);
                 setOriginalDataValue(data, uid, 'constant', false);
+                setOriginalDataValue(data, uid, 'extensions.vectorized', false);
                 template.addClass('disabledWIEntry');
                 break;
         }
@@ -1480,6 +1533,8 @@ function getWorldEntry(name, data, entry) {
     const entryState = function () {
         if (entry.constant === true) {
             return 'constant';
+        } else if (entry.vectorized === true) {
+            return 'vectorized';
         } else if (entry.disable === true) {
             return 'disabled';
         } else {
@@ -1719,6 +1774,7 @@ const newEntryTemplate = {
     comment: '',
     content: '',
     constant: false,
+    vectorized: false,
     selective: true,
     selectiveLogic: world_info_logic.AND_ANY,
     addMemo: false,
@@ -1925,7 +1981,7 @@ async function getCharacterLore() {
         }
 
         const data = await loadWorldInfoData(worldName);
-        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(x => ({ ...x, world: worldName })) : [];
         entries = entries.concat(newEntries);
     }
 
@@ -1941,7 +1997,7 @@ async function getGlobalLore() {
     let entries = [];
     for (const worldName of selected_world_info) {
         const data = await loadWorldInfoData(worldName);
-        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+        const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(x => ({ ...x, world: worldName })) : [];
         entries = entries.concat(newEntries);
     }
 
@@ -1963,14 +2019,14 @@ async function getChatLore() {
     }
 
     const data = await loadWorldInfoData(chatWorld);
-    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]).map(x => ({ ...x, world: chatWorld })) : [];
 
     console.debug(`Chat lore has ${entries.length} entries`);
 
     return entries;
 }
 
-async function getSortedEntries() {
+export async function getSortedEntries() {
     try {
         const globalLore = await getGlobalLore();
         const characterLore = await getCharacterLore();
@@ -2098,7 +2154,7 @@ async function checkWorldInfo(chat, maxContext) {
                 continue;
             }
 
-            if (entry.constant) {
+            if (entry.constant || buffer.isExternallyActivated(entry)) {
                 entry.content = substituteParams(entry.content);
                 activatedNow.add(entry);
                 continue;
@@ -2295,6 +2351,8 @@ async function checkWorldInfo(chat, maxContext) {
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
+    buffer.cleanExternalActivations();
+
     return { worldInfoBefore, worldInfoAfter, WIDepthEntries, allActivatedEntries };
 }
 
@@ -2381,6 +2439,7 @@ function convertAgnaiMemoryBook(inputObj) {
             content: entry.entry,
             constant: false,
             selective: false,
+            vectorized: false,
             selectiveLogic: world_info_logic.AND_ANY,
             order: entry.weight,
             position: 0,
@@ -2415,6 +2474,7 @@ function convertRisuLorebook(inputObj) {
             content: entry.content,
             constant: entry.alwaysActive,
             selective: entry.selective,
+            vectorized: false,
             selectiveLogic: world_info_logic.AND_ANY,
             order: entry.insertorder,
             position: world_info_position.before,
@@ -2454,6 +2514,7 @@ function convertNovelLorebook(inputObj) {
             content: entry.text,
             constant: false,
             selective: false,
+            vectorized: false,
             selectiveLogic: world_info_logic.AND_ANY,
             order: entry.contextConfig?.budgetPriority ?? 0,
             position: 0,
@@ -2510,6 +2571,7 @@ function convertCharacterBook(characterBook) {
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
             automationId: entry.extensions?.automation_id ?? '',
             role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
+            vectorized: entry.extensions?.vectorized ?? false,
         };
     });
 
@@ -2784,11 +2846,6 @@ function assignLorebookToChat() {
 }
 
 jQuery(() => {
-
-    $(document).ready(function () {
-        registerSlashCommand('world', onWorldInfoChange, [], '<span class="monospace">[optional state=off|toggle] [optional silent=true] (optional name)</span> – sets active World, or unsets if no args provided, use <code>state=off</code> and <code>state=toggle</code> to deactivate or toggle a World, use <code>silent=true</code> to suppress toast messages', true, true);
-    });
-
 
     $('#world_info').on('mousedown change', async function (e) {
         // If there's no world names, don't do anything

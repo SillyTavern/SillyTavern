@@ -511,7 +511,7 @@ async function tryAutoLogin(request) {
     const userHandles = await getAllUserHandles();
     if (userHandles.length === 1) {
         const user = await storage.getItem(toKey(userHandles[0]));
-        if (!user.password) {
+        if (user && !user.password) {
             request.session.handle = userHandles[0];
             return true;
         }
