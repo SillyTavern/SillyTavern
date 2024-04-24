@@ -522,13 +522,13 @@ export class SlashCommandAutoComplete {
                 if (this.isReplaceable) {
                     const selRect = this.selectedItem.dom.children[0].getBoundingClientRect();
                     this.detailsWrap.style.setProperty('--targetOffset', `${selRect.top}`);
-                    this.detailsWrap.style.bottom = this.domWrap.style.bottom;
+                    this.detailsWrap.style.bottom = `${window.innerHeight - rect.top}px`;
                     this.detailsWrap.style.left = `calc(100vw - ${this.domWrap.style.right})`;
                     this.detailsWrap.style.right = '1vw';
                     this.detailsWrap.style.top = '5vh';
                 } else {
                     this.detailsWrap.style.setProperty('--targetOffset', `${rect.top}`);
-                    this.detailsWrap.style.bottom = this.domWrap.style.bottom;
+                    this.detailsWrap.style.bottom = `${window.innerHeight - rect.top}px`;
                     this.detailsWrap.style.left = `${rect.left}px`;
                     this.detailsWrap.style.right = `calc(100vw - ${rect.right}px)`;
                     this.detailsWrap.style.top = '5vh';
