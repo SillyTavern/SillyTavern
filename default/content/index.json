@@ -540,6 +540,10 @@
         "type": "context"
     },
     {
+        "filename": "presets/context/Phi.json",
+        "type": "context"
+    },
+    {
         "filename": "presets/instruct/Adventure.json",
         "type": "instruct"
     },
@@ -629,6 +633,10 @@
     },
     {
         "filename": "presets/instruct/Llama 3 Instruct.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Phi.json",
         "type": "instruct"
     },
     {
