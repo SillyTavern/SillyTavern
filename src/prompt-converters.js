@@ -390,7 +390,7 @@ function convertMistralPrompt(messages, assistantPrefill) {
     } else {
         messages.unshift({
             role: 'user',
-            message: systemPrompt
+            content: systemPrompt
         });
     }
 
@@ -407,7 +407,7 @@ function convertMistralPrompt(messages, assistantPrefill) {
             'assistant': '</s>',
         }[v.role] ?? '';
 
-        if(i % 2 !== 0) {
+        if(v.role === 'user' && i % 2 !== 0) {
             console.log("WARN: msg should be in user/assist/user/assist order.")
         }
 
