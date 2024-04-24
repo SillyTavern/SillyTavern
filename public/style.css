@@ -1197,6 +1197,7 @@ select {
         }
     }
 }
+
 .slashCommandAutoComplete, .slashCommandAutoComplete-details {
     --ac-color-border: rgb(69 69 69);
     --ac-color-background: rgb(32 32 32);
@@ -1225,6 +1226,9 @@ select {
     margin: 0px;
     overflow: auto;
     padding: 0px;
+    padding-bottom: 1px;
+    line-height: 1.2;
+    text-align: left;
     z-index: 10000;
 }
 .slashCommandAutoComplete {
@@ -1232,7 +1236,7 @@ select {
     /* position: absolute; */
     display: grid;
     grid-template-columns: 0fr auto minmax(50%, 1fr);
-    align-items: baseline;
+    align-items: center;
     max-height: calc(95vh - var(--bottom));
     /* gap: 0.5em; */
     > .item {
@@ -1492,6 +1496,60 @@ select {
                     content: "=> ";
                     color: var(--ac-color-symbol);
                 }
+            }
+        }
+    }
+}
+
+.slashCommandBrowser {
+    > .search {
+        display: flex;
+        gap: 1em;
+        align-items: baseline;
+        white-space: nowrap;
+        > .searchLabel {
+            flex: 1 1 auto;
+            display: flex;
+            gap: 0.5em;
+            align-items: baseline;
+            > .searchInput {
+                flex: 1 1 auto;
+            }
+        }
+        > .searchOptions {
+            display: flex;
+            gap: 1em;
+            align-items: baseline;
+        }
+    }
+    > .commandContainer {
+        display: flex;
+        align-items: flex-start;
+        > .slashCommandAutoComplete {
+            flex: 1 1 auto;
+            max-height: unset;
+            > .isFiltered {
+                display: none;
+            }
+            .specs {
+                grid-column: 2 / 4;
+            }
+            .help {
+                grid-column: 2 / 4;
+                padding-left: 1em;
+                opacity: 0.75;
+            }
+        }
+        > .slashCommandAutoComplete-detailsWrap {
+            flex: 0 0 auto;
+            align-self: stretch;
+            width: 30%;
+            position: static;
+            &:before {
+                flex: 0 1 calc(var(--targetOffset) * 1px);
+            }
+            > .slashCommandAutoComplete-details {
+                max-height: 50vh;
             }
         }
     }

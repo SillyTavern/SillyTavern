@@ -219,6 +219,7 @@ import { ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './scripts/slash-commands/SlashCommandArgument.js';
+import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 
 //exporting functions and vars for mods
 export {
@@ -2447,6 +2448,14 @@ function sendSystemMessage(type, text, extra = {}) {
     chat.push(newMessage);
     addOneMessage(newMessage);
     is_send_press = false;
+    if (type == system_message_types.SLASH_COMMANDS) {
+        const browser = new SlashCommandBrowser();
+        const spinner = document.querySelector('#chat .last_mes .custom-slashHelp');
+        const parent = spinner.parentElement;
+        spinner.remove();
+        browser.renderInto(parent);
+        browser.search.focus();
+    }
 }
 
 /**

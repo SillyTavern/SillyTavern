@@ -255,6 +255,9 @@ export class SlashCommandParser {
     }
 
     getHelpString() {
+        return '<div class="slashHelp">Loading...</div>';
+    }
+    getHelpStringX() {
         const listItems = Object
             .keys(this.commands)
             .filter(key=>this.commands[key].name == key)
