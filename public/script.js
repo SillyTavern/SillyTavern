@@ -8647,7 +8647,7 @@ jQuery(async function () {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/impersonate What is the meaning of life?</code></pre>
+                        <pre><code class="language-stscript">/impersonate What is the meaning of life?</code></pre>
                     </li>
                 </ul>
             </div>
@@ -8700,7 +8700,7 @@ jQuery(async function () {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/instruct creative</code></pre>
+                        <pre><code class="language-stscript">/instruct creative</code></pre>
                     </li>
                 </ul>
             </div>

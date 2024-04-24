@@ -115,7 +115,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'bg',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/bg beach.jpg</code></pre>
+                    <pre><code class="language-stscript">/bg beach.jpg</code></pre>
                 </li>
             </ul>
         </div>
@@ -144,7 +144,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sendas',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/sendas name="Chloe" Hello, guys!</code></pre>
+                    <pre><code class="language-stscript">/sendas name="Chloe" Hello, guys!</code></pre>
                     will send "Hello, guys!" from "Chloe".
                 </li>
             </ul>
@@ -183,10 +183,10 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sys',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/sys The sun sets in the west.</code></pre>
+                    <pre><code class="language-stscript">/sys The sun sets in the west.</code></pre>
                 </li>
                 <li>
-                    <pre><code>/sys compact=true A brief note.</code></pre>
+                    <pre><code class="language-stscript">/sys compact=true A brief note.</code></pre>
                 </li>
             </ul>
         </div>
@@ -233,10 +233,10 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'comment',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/comment This is a comment</code></pre>
+                    <pre><code class="language-stscript">/comment This is a comment</code></pre>
                 </li>
                 <li>
-                    <pre><code>/comment compact=true This is a compact comment</code></pre>
+                    <pre><code class="language-stscript">/comment compact=true This is a compact comment</code></pre>
                 </li>
             </ul>
         </div>
@@ -277,11 +277,11 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'continue',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/continue</code></pre>
+                    <pre><code class="language-stscript">/continue</code></pre>
                     Continues the chat with no additional prompt.
                 </li>
                 <li>
-                    <pre><code>/continue Let's explore this further...</code></pre>
+                    <pre><code class="language-stscript">/continue Let's explore this further...</code></pre>
                     Continues the chat with the provided prompt.
                 </li>
             </ul>
@@ -340,7 +340,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delname',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/delname John</code></pre>
+                    <pre><code class="language-stscript">/delname John</code></pre>
                 </li>
             </ul>
         </div>
@@ -376,10 +376,10 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'send',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/send Hello there!</code></pre>
+                    <pre><code class="language-stscript">/send Hello there!</code></pre>
                 </li>
                 <li>
-                    <pre><code>/send compact=true Hi</code></pre>
+                    <pre><code class="language-stscript">/send compact=true Hi</code></pre>
                 </li>
             </ul>
         </div>
@@ -466,7 +466,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberadd',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/memberadd John Doe</code></pre>
+                    <pre><code class="language-stscript">/memberadd John Doe</code></pre>
                 </li>
             </ul>
         </div>
@@ -488,8 +488,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberremove
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/memberremove 2</code></pre>
-                    <pre><code>/memberremove John Doe</code></pre>
+                    <pre><code class="language-stscript">/memberremove 2</code></pre>
+                    <pre><code class="language-stscript">/memberremove John Doe</code></pre>
                 </li>
             </ul>
         </div>
@@ -530,11 +530,11 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'peek',
             <strong>Examples:</strong>
             <ul>
                 <li>
-                    <pre><code>/peek 5</code></pre>
+                    <pre><code class="language-stscript">/peek 5</code></pre>
                     Shows the character card for the 5th message.
                 </li>
                 <li>
-                    <pre><code>/peek 2-5</code></pre>
+                    <pre><code class="language-stscript">/peek 2-5</code></pre>
                     Shows the character cards for messages 2 through 5.
                 </li>
             </ul>
@@ -557,11 +557,11 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delswipe',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/delswipe</code></pre>
+                    <pre><code class="language-stscript">/delswipe</code></pre>
                     Deletes the current swipe.
                 </li>
                 <li>
-                    <pre><code>/delswipe 2</code></pre>
+                    <pre><code class="language-stscript">/delswipe 2</code></pre>
                     Deletes the second swipe from the last chat message.
                 </li>
             </ul>
@@ -592,7 +592,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'echo',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/echo title="My Message" severity=info This is an info message</code></pre>
+                    <pre><code class="language-stscript">/echo title="My Message" severity=info This is an info message</code></pre>
                 </li>
             </ul>
         </div>
@@ -664,10 +664,10 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'genraw',
             Generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card.
         </div>
         <div>
-            Use instruct=off to skip instruct formatting, e.g. <pre><code>/genraw instruct=off Why is the sky blue?</code></pre>
+            Use instruct=off to skip instruct formatting, e.g. <pre><code class="language-stscript">/genraw instruct=off Why is the sky blue?</code></pre>
         </div>
         <div>
-            Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <pre><code>/genraw stop=["\\n"] Say hi</code></pre>
+            Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <pre><code class="language-stscript">/genraw stop=["\\n"] Say hi</code></pre>
         </div>
         <div>
             "as" argument controls the role of the output prompt: system (default) or char. "system" argument adds an (optional) system prompt at the start.
@@ -730,7 +730,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'fuzzy',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/fuzzy list=["a","b","c"] threshold=0.4 abc</code></pre>
+                    <pre><code class="language-stscript">/fuzzy list=["a","b","c"] threshold=0.4 abc</code></pre>
                 </li>
             </ul>
         </div>
@@ -752,7 +752,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'pass',
         <div>
             <strong>Example:</strong>
             <ul>
-                <li><pre><code>/pass Hello world</code></pre></li>
+                <li><pre><code class="language-stscript">/pass Hello world</code></pre></li>
             </ul>
         </div>
     `,
@@ -773,7 +773,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delay',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/delay 1000</code></pre>
+                    <pre><code class="language-stscript">/delay 1000</code></pre>
                 </li>
             </ul>
         </div>
@@ -855,11 +855,11 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'messages',
             <strong>Examples:</strong>
             <ul>
                 <li>
-                    <pre><code>/messages 10</code></pre>
+                    <pre><code class="language-stscript">/messages 10</code></pre>
                     Returns the 10th message.
                 </li>
                 <li>
-                    <pre><code>/messages names=on 5-10</code></pre>
+                    <pre><code class="language-stscript">/messages names=on 5-10</code></pre>
                     Returns messages 5 through 10 with author names.
                 </li>
             </ul>
@@ -881,7 +881,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'setinput',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/setinput Hello world</code></pre>
+                    <pre><code class="language-stscript">/setinput Hello world</code></pre>
                 </li>
             </ul>
         </div>
@@ -915,7 +915,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'popup',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/popup large=on wide=on okButton="Submit" Enter some text:</code></pre>
+                    <pre><code class="language-stscript">/popup large=on wide=on okButton="Submit" Enter some text:</code></pre>
                 </li>
             </ul>
         </div>
@@ -943,7 +943,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'buttons',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/buttons labels=["Yes","No"] Do you want to continue?</code></pre>
+                    <pre><code class="language-stscript">/buttons labels=["Yes","No"] Do you want to continue?</code></pre>
                 </li>
             </ul>
         </div>
@@ -973,7 +973,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'trimtokens',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/trimtokens limit=5 direction=start This is a long sentence with many words</code></pre>
+                    <pre><code class="language-stscript">/trimtokens limit=5 direction=start This is a long sentence with many words</code></pre>
                 </li>
             </ul>
         </div>
@@ -995,7 +995,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'trimstart',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/trimstart This is a sentence. And here is another sentence.</code></pre>
+                    <pre><code class="language-stscript">/trimstart This is a sentence. And here is another sentence.</code></pre>
                 </li>
             </ul>
         </div>

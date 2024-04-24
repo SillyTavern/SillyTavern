@@ -773,7 +773,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/setvar key=color green</code></pre>
+                        <pre><code class="language-stscript">/setvar key=color green</code></pre>
                     </li>
                 </ul>
             </div>
@@ -800,10 +800,10 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code>/getvar height</code></pre>
+                        <pre><code class="language-stscript">/getvar height</code></pre>
                     </li>
                     <li>
-                        <pre><code>/getvar index=3 costumes</code></pre>
+                        <pre><code class="language-stscript">/getvar index=3 costumes</code></pre>
                     </li>
                 </ul>
             </div>
@@ -830,7 +830,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/addvar key=score 10</code></pre>
+                        <pre><code class="language-stscript">/addvar key=score 10</code></pre>
                     </li>
                 </ul>
             </div>
@@ -860,7 +860,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/setglobalvar key=color green</code></pre>
+                        <pre><code class="language-stscript">/setglobalvar key=color green</code></pre>
                     </li>
                 </ul>
             </div>
@@ -887,10 +887,10 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code>/getglobalvar height</code></pre>
+                        <pre><code class="language-stscript">/getglobalvar height</code></pre>
                     </li>
                     <li>
-                        <pre><code>/getglobalvar index=3 costumes</code></pre>
+                        <pre><code class="language-stscript">/getglobalvar index=3 costumes</code></pre>
                     </li>
                 </ul>
             </div>
@@ -917,7 +917,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/addglobalvar key=score 10</code></pre>
+                        <pre><code class="language-stscript">/addglobalvar key=score 10</code></pre>
                     </li>
                 </ul>
             </div>
@@ -939,7 +939,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/incvar score</code></pre>
+                        <pre><code class="language-stscript">/incvar score</code></pre>
                     </li>
                 </ul>
             </div>
@@ -961,7 +961,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/decvar score</code></pre>
+                        <pre><code class="language-stscript">/decvar score</code></pre>
                     </li>
                 </ul>
             </div>
@@ -983,7 +983,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/incglobalvar score</code></pre>
+                        <pre><code class="language-stscript">/incglobalvar score</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1005,7 +1005,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/decglobalvar score</code></pre>
+                        <pre><code class="language-stscript">/decglobalvar score</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1060,7 +1060,7 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code>/if left=score right=10 rule=gte "/speak You win"</code></pre>
+                        <pre><code class="language-stscript">/if left=score right=10 rule=gte "/speak You win"</code></pre>
                         triggers a /speak command if the value of "score" is greater or equals 10.
                     </li>
                 </ul>
@@ -1115,7 +1115,7 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code>/setvar key=i 0 | /while left=i right=10 rule=let "/addvar key=i 1"</code></pre>
+                        <pre><code class="language-stscript">/setvar key=i 0 | /while left=i right=10 rule=let "/addvar key=i 1"</code></pre>
                         adds 1 to the value of "i" until it reaches 10.
                     </li>
                 </ul>
@@ -1149,11 +1149,11 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code>/setvar key=i 1 | /times 5 "/addvar key=i 1"</code></pre>
+                        <pre><code class="language-stscript">/setvar key=i 1 | /times 5 "/addvar key=i 1"</code></pre>
                         adds 1 to the value of "i" 5 times.
                     </li>
                     <li>
-                        <pre><code>/times 4 "/echo {{timesIndex}}"</code></pre>
+                        <pre><code class="language-stscript">/times 4 "/echo {{timesIndex}}"</code></pre>
                         echos the numbers 0 through 4. <code>{{timesIndex}}</code> is replaced with the iteration number (zero-based).
                     </li>
                 </ul>
@@ -1179,7 +1179,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/flushvar score</code></pre>
+                        <pre><code class="language-stscript">/flushvar score</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1201,7 +1201,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/flushglobalvar score</code></pre>
+                        <pre><code class="language-stscript">/flushglobalvar score</code></pre>
                         Deletes the global variable <code>score</code>.
                     </li>
                 </ul>
@@ -1225,7 +1225,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/add 10 i 30 j</code></pre>
+                        <pre><code class="language-stscript">/add 10 i 30 j</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1250,7 +1250,7 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code>/mul 10 i 30 j</code></pre>
+                        <pre><code class="language-stscript">/mul 10 i 30 j</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1275,7 +1275,7 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code>/max 10 i 30 j</code></pre>
+                        <pre><code class="language-stscript">/max 10 i 30 j</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1298,7 +1298,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/min 10 i 30 j</code></pre>
+                        <pre><code class="language-stscript">/min 10 i 30 j</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1321,7 +1321,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/sub i 5</code></pre>
+                        <pre><code class="language-stscript">/sub i 5</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1347,7 +1347,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/div 10 i</code></pre>
+                        <pre><code class="language-stscript">/div 10 i</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1373,7 +1373,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/mod i 2</code></pre>
+                        <pre><code class="language-stscript">/mod i 2</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1399,7 +1399,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/pow i 2</code></pre>
+                        <pre><code class="language-stscript">/pow i 2</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1422,7 +1422,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/sin i</code></pre>
+                        <pre><code class="language-stscript">/sin i</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1445,7 +1445,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/cos i</code></pre>
+                        <pre><code class="language-stscript">/cos i</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1469,7 +1469,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/log i</code></pre>
+                        <pre><code class="language-stscript">/log i</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1492,7 +1492,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/abs i</code></pre>
+                        <pre><code class="language-stscript">/abs i</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1515,7 +1515,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/sqrt i</code></pre>
+                        <pre><code class="language-stscript">/sqrt i</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1538,7 +1538,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/round i</code></pre>
+                        <pre><code class="language-stscript">/round i</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1560,7 +1560,7 @@ export function registerVariableCommands() {
                 <strong>Example:</strong>
                 <ul>
                     <li>
-                        <pre><code>/len i</code></pre>
+                        <pre><code class="language-stscript">/len i</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1604,15 +1604,15 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code>/rand</code></pre>
+                        <pre><code class="language-stscript">/rand</code></pre>
                         Returns a random number between 0 and 1.
                     </li>
                     <li>
-                        <pre><code>/rand 10</code></pre>
+                        <pre><code class="language-stscript">/rand 10</code></pre>
                         Returns a random number between 0 and 10.
                     </li>
                     <li>
-                        <pre><code>/rand from=5 to=10</code></pre>
+                        <pre><code class="language-stscript">/rand from=5 to=10</code></pre>
                         Returns a random number between 5 and 10.
                     </li>
                 </ul>
@@ -1653,7 +1653,7 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code>/let x foo | /var x foo bar | /var x | /echo</code></pre>
+                        <pre><code class="language-stscript">/let x foo | /var x foo bar | /var x | /echo</code></pre>
                     </li>
                 </ul>
             </div>
@@ -1679,10 +1679,10 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code>/let x foo bar | /echo {{var::x}}</code></pre>
+                        <pre><code class="language-stscript">/let x foo bar | /echo {{var::x}}</code></pre>
                     </li>
                     <li>
-                        <pre><code>/let y</code></pre>
+                        <pre><code class="language-stscript">/let y</code></pre>
                     </li>
                 </ul>
             </div>
