@@ -428,6 +428,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'show-gallery
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'list-gallery',
     aliases: ['lg'],
     callback: listGalleryCommand,
+    returns: 'list of images',
     namedArgumentList: [
         new SlashCommandNamedArgument(
             'char', 'character name', [ARGUMENT_TYPE.STRING], false,

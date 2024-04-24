@@ -497,6 +497,7 @@ jQuery(function () {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'caption',
         callback: captionCommandCallback,
+        returns: 'caption',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'quiet', 'suppress sending a captioned message', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['true', 'false'],

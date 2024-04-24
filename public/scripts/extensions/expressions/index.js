@@ -1994,6 +1994,7 @@ function migrateSettings() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lastsprite',
         callback: (_, value) => lastExpression[value.trim()] ?? '',
+        returns: 'sprite'
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'charName', [ARGUMENT_TYPE.STRING], true,

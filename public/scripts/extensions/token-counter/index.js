@@ -135,6 +135,7 @@ jQuery(() => {
     $('#token_counter').on('click', doTokenCounter);
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'count',
         callback: doCount,
+        returns: 'number of tokens',
         helpString: 'Counts the number of tokens in the current chat.',
         interruptsGeneration: true,
         purgeFromMessage: false,

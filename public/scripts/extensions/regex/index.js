@@ -358,6 +358,7 @@ jQuery(async () => {
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'regex',
         callback: runRegexCallback,
+        returns: 'replaced text',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'name', 'script name', [ARGUMENT_TYPE.STRING], true,

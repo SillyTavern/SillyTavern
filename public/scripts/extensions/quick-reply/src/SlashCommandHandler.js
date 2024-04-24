@@ -122,6 +122,7 @@ export class SlashCommandHandler {
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-list',
             callback: (_, value) => this.listSets(value ?? 'all'),
+            returns: 'list of QR sets',
             namedArgumentList: [],
             unnamedArgumentList: [
                 new SlashCommandArgument(
@@ -132,6 +133,7 @@ export class SlashCommandHandler {
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-list',
             callback: (_, value) => this.listQuickReplies(value),
+            returns: 'list of QRs',
             namedArgumentList: [],
             unnamedArgumentList: [
                 new SlashCommandArgument(

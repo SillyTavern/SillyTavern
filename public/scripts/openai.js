@@ -4297,6 +4297,7 @@ function runProxyCallback(_, value) {
 
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'proxy',
     callback: runProxyCallback,
+    returns: 'current proxy',
     namedArgumentList: [],
     unnamedArgumentList: [
         new SlashCommandArgument(

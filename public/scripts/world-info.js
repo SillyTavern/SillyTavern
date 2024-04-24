@@ -619,6 +619,7 @@ function registerWorldInfoSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatbook',
         callback: getChatBookCallback,
+        returns: 'lorebook name',
         helpString: 'Get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe.',
         aliases: ['getchatlore', 'getchatwi'],
         interruptsGeneration: true,
@@ -626,6 +627,7 @@ function registerWorldInfoSlashCommands() {
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'findentry',
         aliases: ['findlore', 'findwi'],
+        returns: 'UID',
         callback: findBookEntryCallback,
         namedArgumentList: [
             new SlashCommandNamedArgument(
@@ -659,6 +661,7 @@ function registerWorldInfoSlashCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getentryfield',
         aliases: ['getlorefield', 'getwifield'],
         callback: getEntryFieldCallback,
+        returns: 'field value',
         namedArgumentList: [
             new SlashCommandNamedArgument(
                 'file', 'bookName', ARGUMENT_TYPE.STRING, true,
