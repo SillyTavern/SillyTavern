@@ -1405,6 +1405,14 @@ select {
             }
         }
     }
+    > .aliases {
+        &:before { content: '(alias: '; }
+        > .alias {
+            font-family: monospace;
+            &+.alias:before { content: ', '; }
+        }
+        &:after { content: ')'; }
+    }
 }
 
 .slashCommandAutoComplete > .item, .slashCommandAutoComplete-details {

@@ -343,15 +343,13 @@ export class SlashCommand {
         if (aliasList.length > 0) {
             const aliases = document.createElement('span'); {
                 aliases.classList.add('aliases');
-                aliases.append(' (alias: ');
                 for (const aliasName of aliasList) {
                     const alias = document.createElement('span'); {
-                        alias.classList.add('monospace');
+                        alias.classList.add('alias');
                         alias.textContent = `/${aliasName}`;
                         aliases.append(alias);
                     }
                 }
-                aliases.append(')');
                 frag.append(aliases);
             }
         }
