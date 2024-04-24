@@ -1066,8 +1066,7 @@ $(document).ready(function () {
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged);
     eventSource.on(event_types.MESSAGE_SENT, onMessageEvent);
     eventSource.on(event_types.MESSAGE_RECEIVED, onMessageEvent);
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'speak',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'speak',
         callback: onNarrateText,
         aliases: ['narrate', 'tts'],
         namedArgumentList: [

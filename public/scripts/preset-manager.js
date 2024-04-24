@@ -473,8 +473,7 @@ async function waitForConnection() {
 export async function initPresetManager() {
     eventSource.on(event_types.CHAT_CHANGED, autoSelectPreset);
     registerPresetManagers();
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'preset',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'preset',
         callback: presetCommandCallback,
         namedArgumentList: [],
         unnamedArgumentList: [
