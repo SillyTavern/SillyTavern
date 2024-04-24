@@ -1101,9 +1101,13 @@ select {
 .slashCommandAutoComplete-wrap {
     --targetOffset: 0;
     --direction: column;
+    --leftOffset: 1vw;
+    --rightOffset: 1vw;
     display: flex;
     flex-direction: var(--direction);
     position: absolute;
+    left: var(--leftOffset);
+    right: var(--rightOffset);
     z-index: 10000;
 
 
@@ -1508,7 +1512,21 @@ select {
         }
     }
 }
-
+@media screen and (max-width: 1000px) {
+    .slashCommandAutoComplete-wrap {
+        left: 1vw;
+        > .slashCommandAutoComplete {
+            .specs {
+                grid-column: 2 / 4;
+            }
+            .help {
+                grid-column: 2 / 4;
+                padding-left: 1em;
+                opacity: 0.75;
+            }
+        }
+    }
+}
 .slashCommandBrowser {
     > .search {
         display: flex;

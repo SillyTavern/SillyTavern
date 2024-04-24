@@ -501,11 +501,11 @@ export class SlashCommandAutoComplete {
             this.dom.style.setProperty('--bottom', `${window.innerHeight - rect.top}px`);
             this.domWrap.style.bottom = `${window.innerHeight - rect.top}px`;
             if (this.isShowingDetails) {
-                this.domWrap.style.left = '1vw';
+                this.domWrap.style.setProperty('--leftOffset', '1vw');
             } else {
-                this.domWrap.style.left = `${rect.left}px`;
+                this.domWrap.style.setProperty('--leftOffset', `${rect.left}px`);
             }
-            this.domWrap.style.right = `calc(1vw + ${this.isShowingDetails ? 25 : 0}vw)`;
+            this.domWrap.style.setProperty('--rightOffset', `calc(1vw + ${this.isShowingDetails ? 25 : 0}vw)`);
             this.updateDetailsPosition();
         }
     }
@@ -523,7 +523,7 @@ export class SlashCommandAutoComplete {
                     const selRect = this.selectedItem.dom.children[0].getBoundingClientRect();
                     this.detailsWrap.style.setProperty('--targetOffset', `${selRect.top}`);
                     this.detailsWrap.style.bottom = `${window.innerHeight - rect.top}px`;
-                    this.detailsWrap.style.left = `calc(100vw - ${this.domWrap.style.right})`;
+                    this.detailsWrap.style.left = `calc(100vw - calc(1vw + ${this.isShowingDetails ? 25 : 0}vw))`;
                     this.detailsWrap.style.right = '1vw';
                     this.detailsWrap.style.top = '5vh';
                 } else {
