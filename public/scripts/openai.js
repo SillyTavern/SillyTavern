@@ -66,6 +66,9 @@ import {
 } from './instruct-mode.js';
 import { isMobile } from './RossAscends-mods.js';
 import { saveLogprobsForActiveMessage } from './logprobs.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 
 export {
     openai_messages_count,
@@ -4292,7 +4295,17 @@ function runProxyCallback(_, value) {
     return foundName;
 }
 
-registerSlashCommand('proxy', runProxyCallback, [], '<span class="monospace">(name)</span> – sets a proxy preset by name');
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'proxy',
+    callback: runProxyCallback,
+    namedArgumentList: [],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'name', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Sets a proxy preset by name.',
+}));
+
 
 $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);

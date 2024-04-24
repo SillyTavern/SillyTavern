@@ -20,6 +20,8 @@ import { registerSlashCommand } from '../../slash-commands.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { getTextTokens, getTokenCountAsync, tokenizers } from '../../tokenizers.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -864,5 +866,10 @@ jQuery(async function () {
     eventSource.on(event_types.MESSAGE_EDITED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
     eventSource.on(event_types.CHAT_CHANGED, onChatEvent);
-    registerSlashCommand('summarize', forceSummarizeChat, [], '– forces the summarization of the current chat using the Main API', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'summarize',
+        callback: forceSummarizeChat,
+        helpString: 'Forces the summarization of the current chat using the Main API.',
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+    }));
 });

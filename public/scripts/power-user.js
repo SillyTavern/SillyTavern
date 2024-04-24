@@ -41,7 +41,9 @@ import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
 import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
-import { PARSER_FLAG } from './slash-commands/SlashCommandParser.js';
+import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 
 export {
     loadPowerUserSettings,
@@ -3622,13 +3624,96 @@ $(document).ready(() => {
         browser_has_focus = false;
     });
 
-    registerSlashCommand('vn', toggleWaifu, [], '– swaps Visual Novel Mode On/Off', false, true);
-    registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
-    registerSlashCommand('random', doRandomChat, [], '<span class="monospace">(optional tag name)</span> – start a new chat with a random character. If an argument is provided, only considers characters that have the specified tag.', true, true);
-    registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes last N messages if numeric argument is provided', true, true);
-    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive! Returns the text of cut messages separated by a newline.', true, true);
-    registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
-    registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
-    registerSlashCommand('theme', setThemeCallback, [], '<span class="monospace">(name)</span> – sets a UI theme by name', true, true);
-    registerSlashCommand('movingui', setmovingUIPreset, [], '<span class="monospace">(name)</span> – activates a movingUI preset by name', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'vn',
+        callback: toggleWaifu,
+        helpString: 'Swaps Visual Novel Mode On/Off',
+        interruptsGeneration: false,
+        purgeFromMessage: true,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'newchat',
+        callback: doNewChat,
+        helpString: 'Start a new chat with the current character',
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'random',
+        callback: doRandomChat,
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'optional tag name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: 'Start a new chat with a random character. If an argument is provided, only considers characters that have the specified tag.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delmode',
+        callback: doDelMode,
+        aliases: ['del'],
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'optional number', [ARGUMENT_TYPE.NUMBER], false,
+            ),
+        ],
+        helpString: 'Enter message deletion mode, and auto-deletes last N messages if numeric argument is provided.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'cut',
+        callback: doMesCut,
+        returns: 'the text of cut messages separated by a newline',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'number or range', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Cuts the specified message or continuous chunk from the chat.
+            </div>
+            <div>
+                Ranges are inclusive!
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/cut 0-10</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+        aliases: [],
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'resetpanels',
+        callback: doResetPanels,
+        helpString: 'resets UI panels to original state',
+        aliases: ['resetui'],
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'bgcol',
+        callback: setAvgBG,
+        helpString: '– WIP test of auto-bg avg coloring',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'theme',
+        callback: setThemeCallback,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: 'sets a UI theme by name',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'movingui',
+        callback: setmovingUIPreset,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: 'activates a movingUI preset by name',
+    }));
 });

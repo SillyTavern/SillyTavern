@@ -9,6 +9,9 @@ import { loadFileToDocument, delay } from '../../utils.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { registerSlashCommand } from '../../slash-commands.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 
 const extensionName = 'gallery';
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
@@ -415,8 +418,29 @@ function viewWithDragbox(items) {
 
 
 // Registers a simple command for opening the char gallery.
-registerSlashCommand('show-gallery', showGalleryCommand, ['sg'], '– shows the gallery', true, true);
-registerSlashCommand('list-gallery', listGalleryCommand, ['lg'], '<span class="monospace">[optional char=charName] [optional group=groupName]</span> – list images in the gallery of the current char / group or a specified char / group', true, true);
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'show-gallery',
+    aliases: ['sg'],
+    callback: showGalleryCommand,
+    helpString: 'Shows the gallery.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'list-gallery',
+    aliases: ['lg'],
+    callback: listGalleryCommand,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'char', 'character name', [ARGUMENT_TYPE.STRING], false,
+        ),
+        new SlashCommandNamedArgument(
+            'group', 'group name', [ARGUMENT_TYPE.STRING], false,
+        ),
+    ],
+    helpString: 'List images in the gallery of the current char / group or a specified char / group.',
+    interruptsGeneration: true,
+    purgeFromMessage: true,
+}));
+
 
 function showGalleryCommand(args) {
     showCharGallery();

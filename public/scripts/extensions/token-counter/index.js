@@ -1,6 +1,8 @@
 import { callPopup, main_api } from '../../../script.js';
 import { getContext } from '../../extensions.js';
 import { registerSlashCommand } from '../../slash-commands.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, tokenizers } from '../../tokenizers.js';
 import { resetScrollHeight, debounce } from '../../utils.js';
 
@@ -131,5 +133,11 @@ jQuery(() => {
         </div>`;
     $('#extensionsMenu').prepend(buttonHtml);
     $('#token_counter').on('click', doTokenCounter);
-    registerSlashCommand('count', doCount, [], '– counts the number of tokens in the current chat', true, false);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'count',
+        callback: doCount,
+        helpString: 'Counts the number of tokens in the current chat.',
+        interruptsGeneration: true,
+        purgeFromMessage: false,
+    }));
+
 });

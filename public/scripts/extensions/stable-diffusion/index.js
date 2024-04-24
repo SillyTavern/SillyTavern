@@ -26,6 +26,9 @@ import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from '../../nai-settings.js';
 import { getMultimodalCaption } from '../shared.js';
 import { registerSlashCommand } from '../../slash-commands.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -3025,8 +3028,42 @@ $('#sd_dropdown [id]').on('click', function () {
 });
 
 jQuery(async () => {
-    registerSlashCommand('imagine', generatePicture, ['sd', 'img', 'image'], helpString, true, true);
-    registerSlashCommand('imagine-comfy-workflow', changeComfyWorkflow, ['icw'], '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <tt>/imagine-comfy-workflow MyWorkflow</tt>');
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'imagine',
+        callback: generatePicture,
+        aliases: ['sd', 'img', 'image'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'quiet', 'whether to post the generated image to chat', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['false', 'true'],
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'argument', [ARGUMENT_TYPE.STRING], false, false, null, Object.values(triggerWords).flat(),
+            ),
+        ],
+        interruptsGeneration: true,
+        purgeFromMessage: true,
+        helpString: `
+            <div>
+                Requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments: <code>${Object.values(triggerWords).flat().join(', ')}</code>.
+            </div>
+            <div>
+                Anything else would trigger a "free mode" to make generate whatever you prompted. Example: <code>/imagine apple tree</code> would generate a picture of an apple tree. Returns a link to the generated image.
+            </div>
+        `,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'imagine-comfy-workflow',
+        callback: changeComfyWorkflow,
+        aliases: ['icw'],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'workflowName', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <pre><code>/imagine-comfy-workflow MyWorkflow</code></pre>',
+    }));
+
 
     const template = await renderExtensionTemplateAsync('stable-diffusion', 'settings', defaultSettings);
     $('#extensions_settings').append(template);
