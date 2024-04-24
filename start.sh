@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Make sure pwd is the directory of the script
+cd "$(dirname "$0")"
+
 if ! command -v npm &> /dev/null
 then
     read -p "npm is not installed. Do you want to install nodejs and npm? (y/n)" choice
