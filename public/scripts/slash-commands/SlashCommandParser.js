@@ -1,14 +1,16 @@
 import { power_user } from '../power-user.js';
 import { isTrueBoolean, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './SlashCommandArgument.js';
-import { OPTION_TYPE, SlashCommandAutoCompleteOption } from './SlashCommandAutoCompleteOption.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from './SlashCommandArgument.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
+import { SlashCommandCommandAutoCompleteOption } from './SlashCommandCommandAutoCompleteOption.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 import { SlashCommandParserError } from './SlashCommandParserError.js';
 import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './SlashCommandParserNameResult.js';
+import { SlashCommandQuickReplyAutoCompleteOption } from './SlashCommandQuickReplyAutoCompleteOption.js';
 // eslint-disable-next-line no-unused-vars
 import { SlashCommandScope } from './SlashCommandScope.js';
+import { SlashCommandVariableAutoCompleteOption } from './SlashCommandVariableAutoCompleteOption.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -345,7 +347,7 @@ export class SlashCommandParser {
      * @param {*} text The text to parse.
      * @param {*} index Index to check for names (cursor position).
      */
-    getNameAt(text, index) {
+    async getNameAt(text, index) {
         if (this.text != `{:${text}:}`) {
             try {
                 this.parse(text, false);
@@ -368,22 +370,43 @@ export class SlashCommandParser {
             ;
             if (childClosure !== null) return null;
             if (executor.name == ':') {
-                return new SlashCommandParserNameResult(
+                const options = this.scopeIndex[this.commandIndex.indexOf(executor)]
+                    ?.allVariableNames
+                    ?.map(it=>new SlashCommandVariableAutoCompleteOption(it))
+                    ?? []
+                ;
+                try {
+                    const qrApi = (await import('../extensions/quick-reply/index.js')).quickReplyApi;
+                    options.push(...qrApi.listSets()
+                        .map(set=>qrApi.listQuickReplies(set).map(qr=>`${set}.${qr}`))
+                        .flat()
+                        .map(qr=>new SlashCommandQuickReplyAutoCompleteOption(qr)),
+                    );
+                } catch { /* empty */ }
+                const result = new SlashCommandParserNameResult(
                     NAME_RESULT_TYPE.CLOSURE,
                     executor.value.toString(),
-                    executor.start,
-                    this.scopeIndex[this.commandIndex.indexOf(executor)]
-                        ?.allVariableNames
-                        ?.map(it=>new SlashCommandAutoCompleteOption(OPTION_TYPE.VARIABLE_NAME, it, it))
-                        ?? []
-                    ,
+                    executor.start - 2,
+                    options,
+                    true,
+                    ()=>`No matching variables in scope and no matching Quick Replies for "${result.name}"`,
+                    ()=>'No variables in scope and no Quick Replies found.',
                 );
+                return result;
             }
-            return new SlashCommandParserNameResult(
+            const result = new SlashCommandParserNameResult(
                 NAME_RESULT_TYPE.COMMAND,
                 executor.name,
-                executor.start,
+                executor.start - 2,
+                Object
+                    .keys(this.commands)
+                    .map(key=>new SlashCommandCommandAutoCompleteOption(this.commands[key], key))
+                ,
+                false,
+                ()=>`No matching slash commands for "/${result.name}"`,
+                ()=>'No slash commands found!',
             );
+            return result;
         }
         return null;
     }

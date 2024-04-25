@@ -1,15 +1,14 @@
 import { power_user } from '../power-user.js';
 import { debounce, escapeRegex } from '../utils.js';
 import { OPTION_TYPE, SlashCommandAutoCompleteOption, SlashCommandFuzzyScore } from './SlashCommandAutoCompleteOption.js';
-import { SlashCommandParser } from './SlashCommandParser.js';
 // eslint-disable-next-line no-unused-vars
-import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './SlashCommandParserNameResult.js';
+import { SlashCommandParserNameResult } from './SlashCommandParserNameResult.js';
 
 export class SlashCommandAutoComplete {
     /**@type {HTMLTextAreaElement}*/ textarea;
     /**@type {boolean}*/ isFloating = false;
-
-    /**@type {SlashCommandParser}*/ parser;
+    /**@type {()=>boolean}*/ checkIfActivate;
+    /**@type {(text:string, index:number) => Promise<SlashCommandParserNameResult>}*/ getNameAt;
 
     /**@type {boolean}*/ isActive = false;
     /**@type {boolean}*/ isReplaceable = false;
@@ -17,7 +16,7 @@ export class SlashCommandAutoComplete {
 
     /**@type {string}*/ text;
     /**@type {SlashCommandParserNameResult}*/ parserResult;
-    /**@type {string}*/ slashCommand;
+    /**@type {string}*/ name;
 
     /**@type {boolean}*/ startQuote;
     /**@type {boolean}*/ endQuote;
@@ -55,13 +54,15 @@ export class SlashCommandAutoComplete {
 
     /**
      * @param {HTMLTextAreaElement} textarea The textarea to receive autocomplete.
+     * @param {() => boolean} checkIfActivate
+     * @param {(text: string, index: number) => Promise<SlashCommandParserNameResult>} getNameAt
      * @param {boolean} isFloating Whether autocomplete should float at the keyboard cursor.
      */
-    constructor(textarea, isFloating = false) {
+    constructor(textarea, checkIfActivate, getNameAt, isFloating = false) {
         this.textarea = textarea;
+        this.checkIfActivate = checkIfActivate;
+        this.getNameAt = getNameAt;
         this.isFloating = isFloating;
-
-        this.parser = new SlashCommandParser();
 
         this.domWrap = document.createElement('div'); {
             this.domWrap.classList.add('slashCommandAutoComplete-wrap');
@@ -95,21 +96,6 @@ export class SlashCommandAutoComplete {
             textarea.addEventListener('scroll', ()=>this.updateFloatingPositionDebounced());
         }
         window.addEventListener('resize', ()=>this.updatePositionDebounced());
-    }
-
-
-    /**
-     * Build a cache of DOM list items for autocomplete of slash commands.
-     */
-    buildCache() {
-        if (!this.hasCache) {
-            this.hasCache = true;
-            // init by appending all command options
-            Object.keys(this.parser.commands).forEach(key=>{
-                const cmd = this.parser.commands[key];
-                this.items[key] = this.makeItem(new SlashCommandAutoCompleteOption(OPTION_TYPE.COMMAND, cmd, key));
-            });
-        }
     }
 
     /**
@@ -154,7 +140,7 @@ export class SlashCommandAutoComplete {
                 break;
             }
             case 'includes': {
-                const start = item.name.toLowerCase().search(this.slashCommand);
+                const start = item.name.toLowerCase().search(this.name);
                 chars.forEach((it, idx)=>{
                     if (idx < start) {
                         it.classList.remove('matched');
@@ -248,128 +234,78 @@ export class SlashCommandAutoComplete {
         this.text = this.textarea.value;
         // only show with textarea in focus
         if (document.activeElement != this.textarea) return this.hide();
-        // only show for slash commands
-        //TODO activation-requirements could be provided as a function
-        if (this.text[0] != '/') return this.hide();
+        // only show if provider wants to
+        if (!this.checkIfActivate()) return this.hide();
 
-        this.buildCache();
-
-        // request parser to get command executor (potentially "incomplete", i.e. not an actual existing command) for
+        // request provider to get name result (potentially "incomplete", i.e. not an actual existing name) for
         // cursor position
-        //TODO nameProvider function provided when instantiating?
-        this.parserResult = this.parser.getNameAt(this.text, this.textarea.selectionStart);
-
-        //TODO options could be fully provided by the name source
-        switch (this.parserResult?.type) {
-            case NAME_RESULT_TYPE.CLOSURE: {
-                this.startQuote = this.text[this.parserResult.start - 2] == '"';
-                this.endQuote = this.startQuote && this.text[this.parserResult.start - 2 + this.parserResult.name.length + 1] == '"';
-                try {
-                    const qrApi = (await import('../extensions/quick-reply/index.js')).quickReplyApi;
-                    this.parserResult.optionList.push(...qrApi.listSets()
-                        .map(set=>qrApi.listQuickReplies(set).map(qr=>`${set}.${qr}`))
-                        .flat()
-                        .map(qr=>new SlashCommandAutoCompleteOption(OPTION_TYPE.QUICK_REPLY, qr, qr)),
-                    );
-                } catch { /* empty */ }
-                break;
-            }
-            case NAME_RESULT_TYPE.COMMAND: {
-                this.parserResult.optionList.push(...Object.keys(this.parser.commands)
-                    .map(key=>new SlashCommandAutoCompleteOption(OPTION_TYPE.COMMAND, this.parser.commands[key], key)),
-                );
-                break;
-            }
-            default: {
-                // no result
-                break;
-            }
-        }
-        this.slashCommand = this.parserResult?.name?.toLowerCase() ?? '';
-        // do autocomplete if triggered by a user input and we either don't have an executor or the cursor is at the end
-        // of the name part of the command
-        //TODO whether the input is quotable could be an option (given by the parserResult?)
-        switch (this.parserResult?.type) {
-            case NAME_RESULT_TYPE.CLOSURE: {
-                this.isReplaceable = isInput && (!this.parserResult ? true : this.textarea.selectionStart == this.parserResult.start - 2 + this.parserResult.name.length + (this.startQuote ? 1 : 0));
-                break;
-            }
-            default: // no result
-            case NAME_RESULT_TYPE.COMMAND: {
-                this.isReplaceable = isInput && (!this.parserResult ? true : this.textarea.selectionStart == this.parserResult.start - 2 + this.parserResult.name.length);
-                break;
-            }
-        }
-
-        // if [forced (ctrl+space) or user input] and cursor is in the middle of the name part (not at the end)
-        if (isForced || isInput) {
-            //TODO input quotable (see above)
-            switch (this.parserResult?.type) {
-                case NAME_RESULT_TYPE.CLOSURE: {
-                    if (this.textarea.selectionStart >= this.parserResult.start - 2 && this.textarea.selectionStart <= this.parserResult.start - 2 + this.parserResult.name.length + (this.startQuote ? 1 : 0)) {
-                        this.slashCommand = this.slashCommand.slice(0, this.textarea.selectionStart - (this.parserResult.start - 2) - (this.startQuote ? 1 : 0));
-                        this.parserResult.name = this.slashCommand;
-                        this.isReplaceable = true;
-                    }
-                    break;
-                }
-                case NAME_RESULT_TYPE.COMMAND: {
-                    if (this.textarea.selectionStart >= this.parserResult.start - 2 && this.textarea.selectionStart <= this.parserResult.start - 2 + this.parserResult.name.length) {
-                        this.slashCommand = this.slashCommand.slice(0, this.textarea.selectionStart - (this.parserResult.start - 2));
-                        this.parserResult.name = this.slashCommand;
-                        this.isReplaceable = true;
-                    }
-                    break;
-                }
-                default: {
-                    // no result
-                    break;
-                }
-            }
-        }
-
-        this.fuzzyRegex = new RegExp(`^(.*?)${this.slashCommand.split('').map(char=>`(${escapeRegex(char)})`).join('(.*?)')}(.*?)$`, 'i');
-        const matchers = {
-            'strict': (name) => name.toLowerCase().startsWith(this.slashCommand),
-            'includes': (name) => name.toLowerCase().includes(this.slashCommand),
-            'fuzzy': (name) => this.fuzzyRegex.test(name),
-        };
+        this.parserResult = await this.getNameAt(this.text, this.textarea.selectionStart);
 
         // don't show if no executor found, i.e. cursor's area is not a command
         if (!this.parserResult) return this.hide();
-        else {
-            let matchingOptions = this.parserResult.optionList
-                .filter(it => this.isReplaceable || it.name == '' ? matchers[this.matchType](it.name) : it.name.toLowerCase() == this.slashCommand) // Filter by the input
-                .filter((it,idx,list) => list.findIndex(opt=>opt.value == it.value) == idx)
-            ;
-            this.result = matchingOptions
-                .filter((it,idx) => matchingOptions.indexOf(it) == idx)
-                .map(option => {
-                    let li;
-                    //TODO makeItem should be handled in the option class
-                    switch (option.type) {
-                        case OPTION_TYPE.QUICK_REPLY: {
-                            li = this.makeItem(option);
-                            break;
-                        }
-                        case OPTION_TYPE.VARIABLE_NAME: {
-                            li = this.makeItem(option);
-                            break;
-                        }
-                        case OPTION_TYPE.COMMAND: {
-                            li = this.items[option.name];
-                            break;
-                        }
-                    }
-                    option.replacer = option.name.includes(' ') || this.startQuote || this.endQuote ? `"${option.name}"` : `${option.name}`;
-                    option.dom = li;
-                    if (this.matchType == 'fuzzy') this.fuzzyScore(option);
-                    this.updateName(option);
-                    return option;
-                }) // Map to the help string and score
-                .toSorted(this.matchType == 'fuzzy' ? this.fuzzyScoreCompare : (a, b) => a.name.localeCompare(b.name)) // sort by score (if fuzzy) or name
-            ;
+
+        // need to know if name *can* be inside quotes, and then check if quotes are already there
+        if (this.parserResult.canBeQuoted) {
+            this.startQuote = this.text[this.parserResult.start] == '"';
+            this.endQuote = this.startQuote && this.text[this.parserResult.start + this.parserResult.name.length + 1] == '"';
+        } else {
+            this.startQuote = false;
+            this.endQuote = false;
         }
+
+        // use lowercase name for matching
+        this.name = this.parserResult?.name?.toLowerCase() ?? '';
+
+        // do autocomplete if triggered by a user input and we either don't have an executor or the cursor is at the end
+        // of the name part of the command
+        this.isReplaceable = isInput && (!this.parserResult ? true : this.textarea.selectionStart == this.parserResult.start + this.parserResult.name.length + (this.startQuote ? 1 : 0));
+
+        // if [forced (ctrl+space) or user input] and cursor is in the middle of the name part (not at the end)
+        if (isForced || isInput) {
+            if (this.textarea.selectionStart >= this.parserResult.start && this.textarea.selectionStart <= this.parserResult.start + this.parserResult.name.length + (this.startQuote ? 1 : 0)) {
+                this.name = this.name.slice(0, this.textarea.selectionStart - (this.parserResult.start) - (this.startQuote ? 1 : 0));
+                this.parserResult.name = this.name;
+                this.isReplaceable = true;
+            }
+        }
+
+        // only build the fuzzy regex if match type is set to fuzzy
+        if (this.matchType == 'fuzzy') {
+            this.fuzzyRegex = new RegExp(`^(.*?)${this.name.split('').map(char=>`(${escapeRegex(char)})`).join('(.*?)')}(.*?)$`, 'i');
+        }
+
+        //TODO maybe move the matchers somewhere else; a single match function? matchType is available as property
+        const matchers = {
+            'strict': (name) => name.toLowerCase().startsWith(this.name),
+            'includes': (name) => name.toLowerCase().includes(this.name),
+            'fuzzy': (name) => this.fuzzyRegex.test(name),
+        };
+
+        this.result = this.parserResult.optionList
+            // filter the list of options by the partial name according to the matching type
+            .filter(it => this.isReplaceable || it.name == '' ? matchers[this.matchType](it.name) : it.name.toLowerCase() == this.name)
+            // remove aliases
+            .filter((it,idx,list) => list.findIndex(opt=>opt.value == it.value) == idx)
+            // update remaining options
+            .map(option => {
+                // build element
+                option.dom = this.makeItem(option);
+                // update replacer and add quotes if necessary
+                if (this.parserResult.canBeQuoted) {
+                    option.replacer = option.name.includes(' ') || this.startQuote || this.endQuote ? `"${option.name}"` : `${option.name}`;
+                } else {
+                    option.replacer = option.name;
+                }
+                // calculate fuzzy score if matching is fuzzy
+                if (this.matchType == 'fuzzy') this.fuzzyScore(option);
+                // update the name to highlight the matched chars
+                this.updateName(option);
+                return option;
+            })
+            // sort by fuzzy score or alphabetical
+            .toSorted(this.matchType == 'fuzzy' ? this.fuzzyScoreCompare : (a, b) => a.name.localeCompare(b.name))
+        ;
+
 
         if (this.result.length == 0) {
             // no result and no input? hide autocomplete
@@ -382,27 +318,13 @@ export class SlashCommandAutoComplete {
                 null,
                 '',
             );
-            switch (this.parserResult?.type) {
-                //TODO "no-match" text should be an option (in parserResult?)
-                case NAME_RESULT_TYPE.CLOSURE: {
-                    const li = document.createElement('li'); {
-                        li.textContent = this.slashCommand.length ?
-                            `No matching variables in scope and no matching Quick Replies for "${this.slashCommand}"`
-                            : 'No variables in scope and no Quick Replies found.';
-                    }
-                    option.dom = li;
-                    this.result.push(option);
-                    break;
-                }
-                case NAME_RESULT_TYPE.COMMAND: {
-                    const li = document.createElement('li'); {
-                        li.textContent = `No matching commands for "/${this.slashCommand}"`;
-                    }
-                    option.dom = li;
-                    this.result.push(option);
-                    break;
-                }
+            const li = document.createElement('li'); {
+                li.textContent = this.name.length ?
+                    this.parserResult.makeNoMatchText()
+                    : this.parserResult.makeNoOptionstext();
             }
+            option.dom = li;
+            this.result.push(option);
         } else if (this.result.length == 1 && this.parserResult && this.result[0].name == this.parserResult.name) {
             // only one result that is exactly the current value? just show hint, no autocomplete
             this.isReplaceable = false;
@@ -637,10 +559,10 @@ export class SlashCommandAutoComplete {
      */
     async select() {
         if (this.isReplaceable && this.selectedItem.value !== null) {
-            this.textarea.value = `${this.text.slice(0, this.parserResult.start - 2)}${this.selectedItem.replacer}${this.text.slice(this.parserResult.start - 2 + this.parserResult.name.length + (this.startQuote ? 1 : 0) + (this.endQuote ? 1 : 0))}`;
+            this.textarea.value = `${this.text.slice(0, this.parserResult.start)}${this.selectedItem.replacer}${this.text.slice(this.parserResult.start + this.parserResult.name.length + (this.startQuote ? 1 : 0) + (this.endQuote ? 1 : 0))}`;
             await this.pointerup;
             this.textarea.focus();
-            this.textarea.selectionStart = this.parserResult.start - 2 + this.selectedItem.replacer.length;
+            this.textarea.selectionStart = this.parserResult.start + this.selectedItem.replacer.length;
             this.textarea.selectionEnd = this.textarea.selectionStart;
             this.show();
         } else {
@@ -704,7 +626,7 @@ export class SlashCommandAutoComplete {
                 case 'Enter': {
                     // pick the selected item to autocomplete
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.type == OPTION_TYPE.BLANK) break;
-                    if (this.selectedItem.name == this.slashCommand) break;
+                    if (this.selectedItem.name == this.name) break;
                     evt.preventDefault();
                     evt.stopImmediatePropagation();
                     this.select();

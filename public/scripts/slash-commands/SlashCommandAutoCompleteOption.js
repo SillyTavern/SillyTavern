@@ -2,15 +2,6 @@ import { SlashCommand } from './SlashCommand.js';
 
 
 
-/**@readonly*/
-/**@enum {Number}*/
-export const OPTION_TYPE = {
-    'COMMAND': 1,
-    'QUICK_REPLY': 2,
-    'VARIABLE_NAME': 3,
-    'BLANK': 4,
-};
-
 export class SlashCommandFuzzyScore {
     /**@type {number}*/ start;
     /**@type {number}*/ longestConsecutive;
@@ -27,7 +18,6 @@ export class SlashCommandFuzzyScore {
 
 
 export class SlashCommandAutoCompleteOption {
-    /**@type {OPTION_TYPE}*/ type;
     /**@type {string|SlashCommand}*/ value;
     /**@type {string}*/ name;
     /**@type {SlashCommandFuzzyScore}*/ score;
@@ -36,39 +26,15 @@ export class SlashCommandAutoCompleteOption {
 
 
     /**
-     * @param {OPTION_TYPE} type
      * @param {string|SlashCommand} value
      * @param {string} name
      */
-    constructor(type, value, name) {
-        this.type = type;
+    constructor(value, name) {
         this.value = value;
         this.name = name;
     }
 
 
-    renderItem() {
-        let li;
-        switch (this.type) {
-            case OPTION_TYPE.COMMAND: {
-                /**@type {SlashCommand}*/
-                // @ts-ignore
-                const cmd = this.value;
-                li = cmd.renderHelpItem(this.name);
-                break;
-            }
-            case OPTION_TYPE.QUICK_REPLY: {
-                li = this.makeItem(this.name, 'QR', true);
-                break;
-            }
-            case OPTION_TYPE.VARIABLE_NAME: {
-                li = this.makeItem(this.name, '𝑥', true);
-                break;
-            }
-        }
-        li.setAttribute('data-name', this.name);
-        return li;
-    }
     makeItem(key, typeIcon, noSlash, namedArguments = [], unnamedArguments = [], returnType = 'void', helpString = '', aliasList = []) {
         const li = document.createElement('li'); {
             li.classList.add('item');
@@ -174,7 +140,7 @@ export class SlashCommandAutoCompleteOption {
                     const returns = document.createElement('span'); {
                         returns.classList.add('returns');
                         returns.textContent = returnType ?? 'void';
-                        body.append(returns);
+                        // body.append(returns);
                     }
                     specs.append(body);
                 }
@@ -207,85 +173,17 @@ export class SlashCommandAutoCompleteOption {
                     // li.append(aliases);
                 }
             }
-            // gotta listen to pointerdown (happens before textarea-blur)
-            li.addEventListener('pointerdown', ()=>{
-                // gotta catch pointerup to restore focus to textarea (blurs after pointerdown)
-                this.pointerup = new Promise(resolve=>{
-                    const resolver = ()=>{
-                        window.removeEventListener('pointerup', resolver);
-                        resolve();
-                    };
-                    window.addEventListener('pointerup', resolver);
-                });
-                this.select();
-            });
         }
         return li;
     }
 
 
+    renderItem() {
+        throw new Error(`${this.constructor.name}.renderItem() is not implemented`);
+    }
+
+
     renderDetails() {
-        switch (this.type) {
-            case OPTION_TYPE.COMMAND: {
-                return this.renderCommandDetails();
-            }
-            case OPTION_TYPE.QUICK_REPLY: {
-                return this.renderQuickReplyDetails();
-            }
-            case OPTION_TYPE.VARIABLE_NAME: {
-                return this.renderVariableDetails();
-            }
-            default: {
-                return this.renderBlankDetails();
-            }
-        }
-    }
-    renderBlankDetails() {
-        return 'BLANK';
-    }
-    renderQuickReplyDetails() {
-        const frag = document.createDocumentFragment();
-        const specs = document.createElement('div'); {
-            specs.classList.add('specs');
-            const name = document.createElement('div'); {
-                name.classList.add('name');
-                name.classList.add('monospace');
-                name.textContent = this.value.toString();
-                specs.append(name);
-            }
-            frag.append(specs);
-        }
-        const help = document.createElement('span'); {
-            help.classList.add('help');
-            help.textContent = 'Quick Reply';
-            frag.append(help);
-        }
-        return frag;
-    }
-    renderVariableDetails() {
-        const frag = document.createDocumentFragment();
-        const specs = document.createElement('div'); {
-            specs.classList.add('specs');
-            const name = document.createElement('div'); {
-                name.classList.add('name');
-                name.classList.add('monospace');
-                name.textContent = this.value.toString();
-                specs.append(name);
-            }
-            frag.append(specs);
-        }
-        const help = document.createElement('span'); {
-            help.classList.add('help');
-            help.textContent = 'scoped variable';
-            frag.append(help);
-        }
-        return frag;
-    }
-    renderCommandDetails() {
-        const key = this.name;
-        /**@type {SlashCommand} */
-        // @ts-ignore
-        const cmd = this.value;
-        return cmd.renderHelpDetails(key);
+        throw new Error(`${this.constructor.name}.renderDetails() is not implemented`);
     }
 }

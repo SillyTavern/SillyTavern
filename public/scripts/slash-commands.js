@@ -2608,7 +2608,13 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
  * @param {Boolean} isFloating Whether to show the auto complete as a floating window (e.g., large QR editor)
  */
 export async function setSlashCommandAutoComplete(textarea, isFloating = false) {
-    const ac = new SlashCommandAutoComplete(textarea, isFloating);
+    const parser = new SlashCommandParser();
+    const ac = new SlashCommandAutoComplete(
+        textarea,
+        () => ac.text[0] == '/',
+        async(text, index) => await parser.getNameAt(text, index),
+        isFloating,
+    );
 }
 /**@type {HTMLTextAreaElement} */
 const sendTextarea = document.querySelector('#send_textarea');
