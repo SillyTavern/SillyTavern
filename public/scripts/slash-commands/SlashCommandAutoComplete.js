@@ -1,6 +1,7 @@
 import { power_user } from '../power-user.js';
 import { debounce, escapeRegex } from '../utils.js';
-import { OPTION_TYPE, SlashCommandAutoCompleteOption, SlashCommandFuzzyScore } from './SlashCommandAutoCompleteOption.js';
+import { SlashCommandAutoCompleteOption, SlashCommandFuzzyScore } from './SlashCommandAutoCompleteOption.js';
+import { SlashCommandBlankAutoCompleteOption } from './SlashCommandBlankAutoCompleteOption.js';
 // eslint-disable-next-line no-unused-vars
 import { SlashCommandParserNameResult } from './SlashCommandParserNameResult.js';
 
@@ -101,7 +102,6 @@ export class SlashCommandAutoComplete {
     /**
      *
      * @param {SlashCommandAutoCompleteOption} option
-     * @returns
      */
     makeItem(option) {
         const li = option.renderItem();
@@ -313,17 +313,12 @@ export class SlashCommandAutoComplete {
                 return this.hide();
             }
             // otherwise add "no match" notice
-            const option = new SlashCommandAutoCompleteOption(
-                OPTION_TYPE.BLANK,
-                null,
-                '',
-            );
-            const li = document.createElement('li'); {
-                li.textContent = this.name.length ?
+            const option = new SlashCommandBlankAutoCompleteOption(
+                this.name.length ?
                     this.parserResult.makeNoMatchText()
-                    : this.parserResult.makeNoOptionstext();
-            }
-            option.dom = li;
+                    : this.parserResult.makeNoOptionstext()
+                ,
+            );
             this.result.push(option);
         } else if (this.result.length == 1 && this.parserResult && this.result[0].name == this.parserResult.name) {
             // only one result that is exactly the current value? just show hint, no autocomplete

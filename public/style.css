@@ -1326,6 +1326,10 @@ body[data-stscript-style] .hljs.language-stscript {
         gap: 0.5em;
         font-size: 0.8em;
         display: contents;
+        &.blank {
+            display: block;
+            grid-column: 1 / 4;
+        }
         &:hover > * {
             background-color: var(--ac-color-hoveredBackground);
             color: var(--ac-color-hoveredText);
