@@ -3805,8 +3805,8 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
         }
 
-        if (cfgPrompt && cfgPrompt?.value) {
-            if (cfgPrompt?.depth === 0) {
+        if (cfgPrompt && cfgPrompt.value) {
+            if (cfgPrompt.depth === 0) {
                 finalMesSend[finalMesSend.length - 1].message +=
                     /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
                         ? cfgPrompt.value
