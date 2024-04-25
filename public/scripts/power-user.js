@@ -1570,10 +1570,13 @@ function loadPowerUserSettings(settings, data) {
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
+
     $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
     $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete_style ?? 'theme');
+    document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete_style);
     $('#stscript_parser_flag_strict_escaping').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] ?? false);
     $('#stscript_parser_flag_replace_getvar').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] ?? false);
+
     $('#restore_user_input').prop('checked', power_user.restore_user_input);
 
     $('#chat_truncation').val(power_user.chat_truncation);
@@ -3531,6 +3534,7 @@ $(document).ready(() => {
     $('#stscript_autocomplete_style').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.stscript.autocomplete_style = String(value);
+        document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete_style);
         saveSettingsDebounced();
     });
 

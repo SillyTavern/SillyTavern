@@ -434,30 +434,6 @@ export class SlashCommandAutoComplete {
         // render autocomplete list
         if (this.isReplaceable) {
             this.dom.innerHTML = '';
-            this.dom.classList.remove('defaultDark');
-            this.dom.classList.remove('defaultLight');
-            this.dom.classList.remove('defaultThemed');
-            this.detailsDom.classList.remove('defaultDark');
-            this.detailsDom.classList.remove('defaultLight');
-            this.detailsDom.classList.remove('defaultThemed');
-            switch (power_user.stscript.autocomplete_style ?? 'theme') {
-                case 'dark': {
-                    this.dom.classList.add('defaultDark');
-                    this.detailsDom.classList.add('defaultDark');
-                    break;
-                }
-                case 'light': {
-                    this.dom.classList.add('defaultLight');
-                    this.detailsDom.classList.add('defaultLight');
-                    break;
-                }
-                case 'theme':
-                default: {
-                    this.dom.classList.add('defaultThemed');
-                    this.detailsDom.classList.add('defaultThemed');
-                    break;
-                }
-            }
             const frag = document.createDocumentFragment();
             for (const item of this.result) {
                 if (item == this.selectedItem) {
