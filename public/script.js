@@ -3800,22 +3800,20 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         // Deep clone
         let finalMesSend = structuredClone(mesSend);
 
-        let cfgPrompt = {};
         if (useCfgPrompt) {
-            cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
-        }
-
-        if (cfgPrompt && cfgPrompt.value) {
-            if (cfgPrompt.depth === 0) {
-                finalMesSend[finalMesSend.length - 1].message +=
-                    /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
-                        ? cfgPrompt.value
-                        : ` ${cfgPrompt.value}`;
-            } else {
-                // TODO: Make all extension prompts use an array/splice method
-                const lengthDiff = mesSend.length - cfgPrompt.depth;
-                const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
-                finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+            const cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
+            if (cfgPrompt.value) {
+                if (cfgPrompt.depth === 0) {
+                    finalMesSend[finalMesSend.length - 1].message +=
+                        /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
+                            ? cfgPrompt.value
+                            : ` ${cfgPrompt.value}`;
+                } else {
+                    // TODO: Make all extension prompts use an array/splice method
+                    const lengthDiff = mesSend.length - cfgPrompt.depth;
+                    const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
+                    finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+                }
             }
         }
 
