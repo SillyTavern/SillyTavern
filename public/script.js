@@ -3906,13 +3906,13 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     let thisPromptBits = [];
 
     // TODO: Make this a switch
-    if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
-        maxLength = Math.min(maxLength, adjustedParams.maxLength);
-        maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
-    }
-
     let generate_data;
     if (main_api == 'koboldhorde' || main_api == 'kobold') {
+        if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
+            maxLength = Math.min(maxLength, adjustedParams.maxLength);
+            maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
+        }
+
         generate_data = {
             prompt: finalPrompt,
             gui_settings: true,
