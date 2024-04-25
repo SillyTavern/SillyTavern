@@ -3896,12 +3896,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         return !data.combinedPrompt ? combine() : data.combinedPrompt;
     }
 
-    // Get the negative prompt first since it has the unmodified mesSend array
-    let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
     let finalPrompt = getCombinedPrompt(false);
-
-    // Include the entire guidance scale object
-    const cfgValues = useCfgPrompt ? { guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt } : null;
 
     let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
     let thisPromptBits = [];
@@ -3930,10 +3925,13 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
                 generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
             }
             break;
-        case 'textgenerationwebui':
+        case 'textgenerationwebui': {
+            const cfgValues = useCfgPrompt ? { guidanceScale: cfgGuidanceScale, negativePrompt: getCombinedPrompt(true) } : null;
             generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
             break;
+        }
         case 'novel': {
+            const cfgValues = useCfgPrompt ? { guidanceScale: cfgGuidanceScale } : null;
             const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
             generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
             break;
