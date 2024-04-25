@@ -175,10 +175,6 @@ export class SlashCommandHandler {
                         </li>
                     </ul>
                 </div>
-                <div>
-                    <strong>Arguments:</strong>
-                    <pre>${qrArgs}</pre>
-                </div>
             `,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-update',
