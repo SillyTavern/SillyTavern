@@ -7,7 +7,7 @@ export class SlashCommand {
      * Creates a SlashCommand from a properties object.
      * @param {Object} props
      * @param {string} [props.name]
-     * @param {Function} [props.callback]
+     * @param {(namedArguments:Object<string, string|SlashCommandClosure>, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>} [props.callback]
      * @param {string} [props.helpString]
      * @param {boolean} [props.interruptsGeneration]
      * @param {boolean} [props.purgeFromMessage]
@@ -25,7 +25,7 @@ export class SlashCommand {
 
 
     /**@type {string}*/ name;
-    /**@type {Function}*/ callback;
+    /**@type {(namedArguments:Object<string, string|SlashCommandClosure>, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>}*/ callback;
     /**@type {string}*/ helpString;
     /**@type {boolean}*/ interruptsGeneration = true;
     /**@type {boolean}*/ purgeFromMessage = true;
