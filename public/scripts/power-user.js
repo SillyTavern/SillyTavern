@@ -468,7 +468,7 @@ function switchMesIDDisplay() {
 
 function switchHideChatAvatars() {
     const value = localStorage.getItem(storage_keys.hideChatAvatars_enabled);
-    power_user.hideChatAvatars_enabled = value === null ? true : value == 'true';
+    power_user.hideChatAvatars_enabled = value === null ? false : value == 'true';
     /*console.log(`
         localstorage value:${value},
         poweruser after:${power_user.hideChatAvatars_enabled}`)
