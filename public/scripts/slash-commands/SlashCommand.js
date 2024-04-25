@@ -338,6 +338,10 @@ export class SlashCommand {
         const help = document.createElement('span'); {
             help.classList.add('help');
             help.innerHTML = helpString;
+            for (const code of help.querySelectorAll('pre > code')) {
+                code.classList.add('language-stscript');
+                hljs.highlightElement(code);
+            }
             frag.append(help);
         }
         if (aliasList.length > 0) {
