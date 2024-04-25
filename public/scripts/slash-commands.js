@@ -39,7 +39,6 @@ import {
 } from '../script.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from './slash-commands/SlashCommandParserError.js';
-import { SlashCommandExecutor } from './slash-commands/SlashCommandExecutor.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { hideChatMessageRange } from './chats.js';
 import { getContext, saveMetadataDebounced } from './extensions.js';
@@ -50,14 +49,14 @@ import { autoSelectPersona } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
-import { debounce, delay, escapeRegex, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
 import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './slash-commands/SlashCommandParserNameResult.js';
-import { OPTION_TYPE, SlashCommandAutoCompleteOption, SlashCommandFuzzyScore } from './slash-commands/SlashCommandAutoCompleteOption.js';
+import { SlashCommandAutoCompleteOption } from './slash-commands/SlashCommandAutoCompleteOption.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandAutoComplete } from './slash-commands/SlashCommandAutoComplete.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -2615,6 +2614,169 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         async(text, index) => await parser.getNameAt(text, index),
         isFloating,
     );
+
+    //TODO remove macro demo
+    {
+        const macroList = [
+            ['pipe', 'only for slash command batching. Replaced with the returned result of the previous command.'],
+            ['newline', 'just inserts a newline.'],
+            ['trim', 'trims newlines surrounding this macro.'],
+            ['noop', 'no operation, just an empty string.'],
+            ['original', 'global prompts defined in API settings. Only valid in Advanced Definitions prompt overrides.'],
+            ['input', 'the user input'],
+            ['charPrompt', 'the Character\'s Main Prompt override'],
+            ['charJailbreak', 'the Character\'s Jailbreak Prompt override'],
+            ['description', 'the Character\'s Description'],
+            ['personality', 'the Character\'s Personality'],
+            ['scenario', 'the Character\'s Scenario'],
+            ['persona', 'your current Persona Description'],
+            ['mesExamples', 'the Character\'s Dialogue Examples'],
+            ['mesExamplesRaw', 'unformatted Dialogue Examples (only for Story String)'],
+            ['user', 'your current Persona username'],
+            ['char', 'the Character\'s name'],
+            ['group', 'a comma-separated list of group member names or the character name in solo chats. Alias: {{charIfNotGroup}}'],
+            ['model', 'a text generation model name for the currently selected API. Can be inaccurate!'],
+            ['lastMessage', 'the text of the latest chat message.'],
+            ['lastMessageId', 'index # of the latest chat message. Useful for slash command batching.'],
+            ['firstIncludedMessageId', 'the ID of the first message included in the context. Requires generation to be ran at least once in the current session.'],
+            ['currentSwipeId', 'the 1-based ID of the current swipe in the last chat message. Empty string if the last message is user or prompt-hidden.'],
+            ['lastSwipeId', 'the number of swipes in the last chat message. Empty string if the last message is user or prompt-hidden.'],
+            ['// (note)', 'you can leave a note here, and the macro will be replaced with blank content. Not visible for the AI.'],
+            ['time', 'the current time'],
+            ['date', 'the current date'],
+            ['weekday', 'the current weekday'],
+            ['isotime', 'the current ISO time (24-hour clock)'],
+            ['isodate', 'the current ISO date (YYYY-MM-DD)'],
+            ['datetimeformat …', 'the current date/time in the specified format, e. g. for German date/time: {{datetimeformat DD.MM.YYYY HH:mm}}'],
+            ['datetimeformat DD.MM.YYYY HH', 'the current date/time in the specified format, e. g. for German date/time: '],
+            ['time_UTC±#', 'the current time in the specified UTC time zone offset, e.g. UTC-4 or UTC+2'],
+            ['idle_duration', 'the time since the last user message was sent'],
+            ['bias "text here"', 'sets a behavioral bias for the AI until the next user input. Quotes around the text are important.'],
+            ['roll', 'rolls a dice. (ex: >{{roll:1d6}} will roll a 6-sided dice and return a number between 1 and 6)'],
+            ['roll', 'rolls a dice. (ex:  will roll a 6-sided dice and return a number between 1 and 6)'],
+            ['random', 'returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.'],
+            ['random', 'returns a random item from the list. (ex:  will return 1 of the 4 numbers at random. Works with text lists too.'],
+            ['random', 'alternative syntax for random that allows to use commas in the list items.'],
+            ['pick', 'picks a random item from the list. Works the same as {{random}}, with the same possible syntax options, but the pick will stay consistent for this chat once picked and won\'t be re-rolled on consecutive messages and prompt processing.'],
+            ['banned "text here"', 'dynamically add text in the quotes to banned words sequences, if Text Generation WebUI backend used. Do nothing for others backends. Can be used anywhere (Character description, WI, AN, etc.) Quotes around the text are important.'],
+            ['maxPrompt', 'max allowed prompt length in tokens = (context size - response length)'],
+            ['exampleSeparator', 'context template example dialogues separator'],
+            ['chatStart', 'context template chat start line'],
+            ['systemPrompt', 'main system prompt (either character prompt override if chosen, or instructSystemPrompt)'],
+            ['instructSystemPrompt', 'instruct system prompt'],
+            ['instructSystemPromptPrefix', 'instruct system prompt prefix sequence'],
+            ['instructSystemPromptSuffix', 'instruct system prompt suffix sequence'],
+            ['instructUserPrefix', 'instruct user prefix sequence'],
+            ['instructUserSuffix', 'instruct user suffix sequence'],
+            ['instructAssistantPrefix', 'instruct assistant prefix sequence'],
+            ['instructAssistantSuffix', 'instruct assistant suffix sequence'],
+            ['instructFirstAssistantPrefix', 'instruct assistant first output sequence'],
+            ['instructLastAssistantPrefix', 'instruct assistant last output sequence'],
+            ['instructSystemPrefix', 'instruct system message prefix sequence'],
+            ['instructSystemSuffix', 'instruct system message suffix sequence'],
+            ['instructSystemInstructionPrefix', 'instruct system instruction prefix'],
+            ['instructUserFiller', 'instruct first user message filler'],
+            ['instructStop', 'instruct stop sequence'],
+            ['getvar', 'replaced with the value of the local variable "name"'],
+            ['setvar', 'replaced with empty string, sets the local variable "name" to "value"'],
+            ['addvar', 'replaced with empty strings, adds a numeric value of "increment" to the local variable "name"'],
+            ['incvar', 'replaced with the result of the increment of value of the variable "name" by 1'],
+            ['decvar', 'replaced with the result of the decrement of value of the variable "name" by 1'],
+            ['getglobalvar', 'replaced with the value of the global variable "name"'],
+            ['setglobalvar', 'replaced with empty string, sets the global variable "name" to "value"'],
+            ['addglobalvar', 'replaced with empty string, adds a numeric value of "increment" to the global variable "name"'],
+            ['incglobalvar', 'replaced with the result of the increment of value of the global variable "name" by 1'],
+            ['decglobalvar', 'replaced with the result of the decrement of value of the global variable "name" by 1'],
+            ['var', 'replaced with the value of the scoped variable "name"'],
+            ['var', 'replaced with the value of item at index (for arrays / lists or objects / dictionaries) of the scoped variable "name"'],
+        ];
+        class MacroOption extends SlashCommandAutoCompleteOption {
+            item;
+            constructor(item) {
+                super(item[0], item[0]);
+                this.item = item;
+            }
+            renderItem() {
+                let li;
+                li = this.makeItem(this.name, '{}', true, [], [], null, this.item[1]);
+                li.setAttribute('data-name', this.name);
+                return li;
+            }
+            renderDetails() {
+                const frag = document.createDocumentFragment();
+                const specs = document.createElement('div'); {
+                    specs.classList.add('specs');
+                    const name = document.createElement('div'); {
+                        name.classList.add('name');
+                        name.classList.add('monospace');
+                        name.textContent = this.value.toString();
+                        specs.append(name);
+                    }
+                    frag.append(specs);
+                }
+                const help = document.createElement('span'); {
+                    help.classList.add('help');
+                    help.textContent = this.item[1];
+                    frag.append(help);
+                }
+                return frag;
+            }
+        }
+        const options = macroList.map(m=>new MacroOption(m));
+        let text;
+        const stack = [];
+        let macroIndex = [];
+        const mac = new SlashCommandAutoComplete(
+            textarea,
+            ()=> mac.text[0] != '/',
+            async(newText, index) => {
+                if (text != newText) {
+                    while (stack.pop());
+                    while (macroIndex.pop());
+                    text = newText;
+                    let remaining = text;
+                    let idx = remaining.search(/{{|}}/);
+                    while (idx > -1) {
+                        const symbol = remaining.slice(idx, idx + 2);
+                        remaining = remaining.slice(idx + 2);
+                        if (symbol == '{{') {
+                            const item = {
+                                name: /\w+/.exec(remaining)?.[0] ?? '',
+                                start: idx + 2,
+                                end: null,
+                            };
+                            macroIndex.push(item);
+                            stack.push(item);
+                        } else {
+                            const item = stack.pop();
+                            if (item) {
+                                item.end = idx;
+                            }
+                        }
+                        idx = remaining.search(/{{|}}/);
+                    }
+                }
+                const executor = macroIndex.filter(it=>it.start <= index && (it.end >= index || it.end == null))
+                    .slice(-1)[0]
+                    ?? null
+                ;
+                if (executor) {
+                    const result = new SlashCommandParserNameResult(
+                        NAME_RESULT_TYPE.CLOSURE,
+                        executor.name,
+                        executor.start,
+                        options,
+                        false,
+                        ()=>`No matching macros for "{{${result.name}}}"`,
+                        ()=>'No macros found!',
+                    );
+                    return result;
+                }
+                return null;
+            },
+            isFloating,
+        );
+    }
 }
 /**@type {HTMLTextAreaElement} */
 const sendTextarea = document.querySelector('#send_textarea');
