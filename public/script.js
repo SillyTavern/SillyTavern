@@ -3780,6 +3780,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     // Fetches the combined prompt for both negative and positive prompts
     const cfgGuidanceScale = getGuidanceScale();
+    const useCfgPrompt = cfgGuidanceScale && cfgGuidanceScale.value !== 1;
 
     // For prompt bit itemization
     let mesSendString = '';
@@ -3787,7 +3788,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     function getCombinedPrompt(isNegative) {
         // Only return if the guidance scale doesn't exist or the value is 1
         // Also don't return if constructing the neutral prompt
-        if (isNegative && (!cfgGuidanceScale || cfgGuidanceScale?.value === 1)) {
+        if (isNegative && !useCfgPrompt) {
             return;
         }
 
@@ -3800,7 +3801,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         let finalMesSend = structuredClone(mesSend);
 
         let cfgPrompt = {};
-        if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
+        if (useCfgPrompt) {
             cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
         }
 
@@ -3900,7 +3901,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     let finalPrompt = getCombinedPrompt(false);
 
     // Include the entire guidance scale object
-    const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
+    const cfgValues = useCfgPrompt ? { guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt } : null;
 
     let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
     let thisPromptBits = [];
