@@ -3800,33 +3800,6 @@
                             </label>
                         </div>
                         <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
-                        <div title="Determines how STscript commands are found for autocomplete." data-i18n="[title]Determines how STscript commands are found for autocomplete.">
-                            <label for="stscript_matching" data-i18n="STscript Matching">STscript Matching</label>
-                            <select id="stscript_matching">
-                                <option data-i18n="Starts with" value="strict">Starts with</option>
-                                <option data-i18n="Includes" value="includes">Includes</option>
-                                <option data-i18n="Fuzzy" value="fuzzy">Fuzzy</option>
-                            </select>
-                        </div>
-                        <div title="Sets the style of the autocomplete for STscript." data-i18n="[title]Sets the style of the autocomplete for STscript.">
-                            <label for="stscript_autocomplete_style" data-i18n="STscript Autocomplete Style">STscript Autocomplete Style</label>
-                            <select id="stscript_autocomplete_style">
-                                <option data-i18n="Follow Theme" value="theme">Follow Theme</option>
-                                <option data-i18n="Dark" value="dark">Dark</option>
-                                <option data-i18n="Light" value="light">Light</option>
-                            </select>
-                        </div>
-                        <div title="Sets default flags for the STscript parser." data-i18n="[title]Sets default flags for the STscript parser.">
-                            <label data-i18n="STscript Parser Flags">STscript Parser Flags</label>
-                            <label class="checkbox_label" title="STRICT_ESCAPING." data-i18n="[title]STRICT_ESCAPING">
-                                <input id="stscript_parser_flag_strict_escaping" type="checkbox" />
-                                <span data-i18n="STRICT_ESCAPING">STRICT_ESCAPING</span>
-                            </label>
-                            <label class="checkbox_label" title="REPLACE_GETVAR." data-i18n="[title]REPLACE_GETVAR">
-                                <input id="stscript_parser_flag_replace_getvar" type="checkbox" />
-                                <span data-i18n="REPLACE_GETVAR">REPLACE_GETVAR</span>
-                            </label>
-                        </div>
                         <div title="If set in the advanced character definitions, this field will be displayed in the characters list." data-i18n="[title]If set in the advanced character definitions, this field will be displayed in the characters list.">
                             <label for="aux_field" data-i18n="Aux List Field">Aux List Field</label>
                             <select id="aux_field">
@@ -4048,12 +4021,48 @@
                                     </div>
                                 </div>
                             </div>
-                            <div data-newbie-hidden class="flex-container">
-                                <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat.">
-                                    <span data-i18n="Reload Chat">Reload Chat</span>
+                            <div name="STscriptToggles">
+                                <h4 data-i18n="STscript Settings">STscript Settings</h4>
+                                <div title="Determines how STscript commands are found for autocomplete." data-i18n="[title]Determines how STscript commands are found for autocomplete.">
+                                    <label for="stscript_matching" data-i18n="Autocomplete Matching">Autocomplete Matching</label>
+                                    <select id="stscript_matching">
+                                        <option data-i18n="Starts with" value="strict">Starts with</option>
+                                        <option data-i18n="Includes" value="includes">Includes</option>
+                                        <option data-i18n="Fuzzy" value="fuzzy">Fuzzy</option>
+                                    </select>
                                 </div>
-                                <div id="debug_menu" class="menu_button whitespacenowrap" data-i18n="Debug Menu">
-                                    Debug Menu
+                                <div title="Sets the style of the autocomplete for STscript." data-i18n="[title]Sets the style of the autocomplete for STscript.">
+                                    <label for="stscript_autocomplete_style" data-i18n="Autocomplete Style">Autocomplete Style</label>
+                                    <div class="flex-container flexFlowRow alignItemsBaseline">
+                                        <select id="stscript_autocomplete_style">
+                                            <option data-i18n="Follow Theme" value="theme">Follow Theme</option>
+                                            <option data-i18n="Dark" value="dark">Dark</option>
+                                            <option data-i18n="Light" value="light">Light</option>
+                                        </select>
+                                        <div class="menu_button fa-solid fa-pen-to-square" title="Customize colors"></div>
+                                    </div>
+                                </div>
+                                <div title="Sets default flags for the STscript parser." data-i18n="[title]Sets default flags for the STscript parser.">
+                                    <label data-i18n="Parser Flags">Parser Flags</label>
+                                    <label class="checkbox_label" title="STRICT_ESCAPING." data-i18n="[title]STRICT_ESCAPING">
+                                        <input id="stscript_parser_flag_strict_escaping" type="checkbox" />
+                                        <span data-i18n="STRICT_ESCAPING">STRICT_ESCAPING</span>
+                                    </label>
+                                    <label class="checkbox_label" title="REPLACE_GETVAR." data-i18n="[title]REPLACE_GETVAR">
+                                        <input id="stscript_parser_flag_replace_getvar" type="checkbox" />
+                                        <span data-i18n="REPLACE_GETVAR">REPLACE_GETVAR</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div name="DebugToggles">
+                                <h4 data-i18n="Debug Options">Debug Options</h4>
+                                <div data-newbie-hidden class="flex-container">
+                                    <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat.">
+                                        <span data-i18n="Reload Chat">Reload Chat</span>
+                                    </div>
+                                    <div id="debug_menu" class="menu_button whitespacenowrap" data-i18n="Debug Menu">
+                                        Debug Menu
+                                    </div>
                                 </div>
                             </div>
                         </div>
