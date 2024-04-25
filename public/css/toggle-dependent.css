@@ -19,7 +19,8 @@ body.no-timer .mes_timer,
 body.no-timestamps .timestamp,
 body.no-tokenCount .tokenCounterDisplay,
 body.no-mesIDDisplay .mesIDDisplay,
-body.no-modelIcons .icon-svg {
+body.no-modelIcons .icon-svg,
+body.hideChatAvatars .mesAvatarWrapper .avatar {
     display: none !important;
 }
 
