@@ -178,35 +178,105 @@ export class SlashCommandParser {
             relevance: 0,
         };
 
+        const COMMENT = {
+            scope: 'comment',
+            begin: /\/[/#]/,
+            end: /\||$|:}/,
+            contains: [],
+        };
+        const LET = {
+            begin: [
+                /\/(let|var)\s+/,
+            ],
+            beginScope: {
+                1: 'variable',
+            },
+            end: /\||$|:}/,
+            contains: [],
+        };
+        const SETVAR = {
+            begin: /\/(setvar|setglobalvar)\s+/,
+            beginScope: 'variable',
+            end: /\||$|:}/,
+            excludeEnd: true,
+            contains: [],
+        };
+        const GETVAR = {
+            begin: /\/(getvar|getglobalvar)\s+/,
+            beginScope: 'variable',
+            end: /\||$|:}/,
+            excludeEnd: true,
+            contains: [],
+        };
+        const RUN = {
+            match: [
+                /\/:/,
+                /(".+?(?<!\\)") |(\S+?) /,
+            ],
+            className: {
+                1: 'variable.language',
+                2: 'title.function.invoke',
+            },
+            contains: [], // defined later
+        };
         const COMMAND = {
             scope: 'command',
             begin: /\/\S+/,
             beginScope: 'title.function',
-            end: /\||$|:}/,
+            end: /\||$|(?=:})/,
+            excludeEnd: true,
             contains: [], // defined later
         };
         const CLOSURE = {
             scope: 'closure',
             begin: /{:/,
-            end: /:}/,
+            end: /:}(\(\))?/,
+            beginScope: 'punctuation',
+            endScope: 'punctuation',
             contains: [], // defined later
         };
-        const CLOSURE_ARGS = {
-            scope: 'params',
-            begin: /:}\(/,
-            end: /\)/,
-            contains: [],
-        };
         const NAMED_ARG = {
-            scope: 'type',
+            scope: 'property',
             begin: /\w+=/,
             end: '',
         };
         const MACRO = {
-            scope: 'operator',
+            scope: 'variable',
             begin: /{{/,
             end: /}}/,
         };
+        RUN.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            hljs.QUOTE_STRING_MODE,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+        );
+        LET.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            hljs.QUOTE_STRING_MODE,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+        );
+        SETVAR.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            hljs.QUOTE_STRING_MODE,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+        );
+        GETVAR.contains.push(
+            hljs.BACKSLASH_ESCAPE,
+            NAMED_ARG,
+            hljs.QUOTE_STRING_MODE,
+            NUMBER,
+            MACRO,
+            CLOSURE,
+        );
         COMMAND.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
@@ -214,25 +284,19 @@ export class SlashCommandParser {
             NUMBER,
             MACRO,
             CLOSURE,
-            CLOSURE_ARGS,
         );
         CLOSURE.contains.push(
             hljs.BACKSLASH_ESCAPE,
+            COMMENT,
             NAMED_ARG,
             hljs.QUOTE_STRING_MODE,
             NUMBER,
             MACRO,
+            RUN,
+            LET,
+            GETVAR,
+            SETVAR,
             COMMAND,
-            'self',
-            CLOSURE_ARGS,
-        );
-        CLOSURE_ARGS.contains.push(
-            hljs.BACKSLASH_ESCAPE,
-            NAMED_ARG,
-            hljs.QUOTE_STRING_MODE,
-            NUMBER,
-            MACRO,
-            CLOSURE,
             'self',
         );
         hljs.registerLanguage('stscript', ()=>({
@@ -240,9 +304,13 @@ export class SlashCommandParser {
             keywords: ['|'],
             contains: [
                 hljs.BACKSLASH_ESCAPE,
+                COMMENT,
+                RUN,
+                LET,
+                GETVAR,
+                SETVAR,
                 COMMAND,
                 CLOSURE,
-                CLOSURE_ARGS,
             ],
         }));
     }
