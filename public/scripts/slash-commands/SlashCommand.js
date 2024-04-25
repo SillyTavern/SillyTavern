@@ -1,4 +1,5 @@
 import { SlashCommandArgument, SlashCommandNamedArgument } from './SlashCommandArgument.js';
+import { SlashCommandClosure } from './SlashCommandClosure.js';
 
 
 
