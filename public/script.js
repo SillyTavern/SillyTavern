@@ -4016,16 +4016,14 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             userPersona: (power_user.persona_description || ''),
         };
 
-        thisPromptBits = additionalPromptStuff;
-
-        //console.log(thisPromptBits);
-        const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === thisPromptBits['mesId']);
+        //console.log(additionalPromptStuff);
+        const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === additionalPromptStuff.mesId);
 
         if (itemizedIndex !== -1) {
-            itemizedPrompts[itemizedIndex] = thisPromptBits;
+            itemizedPrompts[itemizedIndex] = additionalPromptStuff;
         }
         else {
-            itemizedPrompts.push(thisPromptBits);
+            itemizedPrompts.push(additionalPromptStuff);
         }
 
         console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
