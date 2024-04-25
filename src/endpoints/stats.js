@@ -17,7 +17,7 @@ const MAX_TIMESTAMP = new Date('9999-12-31T23:59:59.999Z').getTime();
 const MIN_DATE = new Date(MIN_TIMESTAMP);
 const MAX_DATE = new Date(MAX_TIMESTAMP);
 const STATS_FILE = 'stats.json';
-const CURRENT_STATS_VERSION = '1.2';
+const CURRENT_STATS_VERSION = '1.3';
 
 /** @type {Map<string, UserStatsCollection>} The stats collections for each user, accessable via their key - gets set/built on init */
 const STATS = new Map();
@@ -415,9 +415,8 @@ function triggerChatUpdate(userHandle, characterKey, chatName) {
     updateCharStatsWithChat(userStats.stats[characterKey], chatStats);
     updateCharStatsWithChat(userStats.global, chatStats);
 
-    // Update name (if it might have changed)
-    userStats.stats[characterKey].charName = chatStats.charName;
-    userStats.stats[characterKey].userName = chatStats.userName;
+    // For global chats, we always overwrite the char name with a default one
+    userStats.global.charName = 'Character';
 
     userStats._calculated = now();
     return chatStats;
@@ -470,8 +469,12 @@ function updateCharStatsWithChat(stats, chatStats) {
 
     Object.entries(chatStats.genModels).forEach(([model, data]) => addModelUsage(stats.genModels, model, data.tokens, data.count));
 
+    // Update name (if it might have changed)
+    stats.charName = chatStats.charName || stats.charName;
+    stats.userName = chatStats.userName || stats.userName;
+
     stats._calculated = now();
-    console.debug(`Successfully updated ${stats.charName}'s stats with chat ${chatStats.chatName}`);
+    console.debug(`Successfully updated ${stats.charName}'s stats with chat '${chatStats.chatName}'`);
     return true;
 }
 
@@ -685,7 +688,7 @@ function countWordsInString(str) {
 function newCharacterStats(characterKey = '', charName = '') {
     return {
         charName: charName,
-        userName: 'User',
+        userName: '',
         characterKey: characterKey,
         chats: 0,
         chatSize: 0,

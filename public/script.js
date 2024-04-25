@@ -1359,14 +1359,16 @@ async function printCharacters(fullRefresh = false) {
     favsToHotswap();
 }
 
-/** @typedef {object} Character - A character */
-/** @typedef {object} Group - A group */
+/** @typedef {{name: string, avatar: string, fav: boolean}} Character - A character */
+/** @typedef {{id: string, name: string, avatar: string, fav: boolean}} Group - A group */
+/** @typedef {import('./scripts/tags.js').Tag} Tag */
+/** @typedef {import('./scripts/personas.js').Persona} Persona - A persona */
 
 /**
  * @typedef {object} Entity - Object representing a display entity
- * @property {Character|Group|import('./scripts/tags.js').Tag|*} item - The item
+ * @property {Character|Group|Tag|Persona} item - The item
  * @property {string|number} id - The id
- * @property {string} type - The type of this entity (character, group, tag)
+ * @property {'character'|'group'|'tag'|'persona'} type - The type of this entity (character, group, tag, persona)
  * @property {Entity[]} [entities] - An optional list of entities relevant for this item
  * @property {number} [hidden] - An optional number representing how many hidden entities this entity contains
  */
@@ -1395,11 +1397,21 @@ export function groupToEntity(group) {
 /**
  * Converts the given tag to its entity representation
  *
- * @param {import('./scripts/tags.js').Tag} tag - The tag
+ * @param {Tag} tag - The tag
  * @returns {Entity} The entity for this tag
  */
 export function tagToEntity(tag) {
     return { item: structuredClone(tag), id: tag.id, type: 'tag', entities: [] };
+}
+
+/**
+ * Converts the given persona based to its entity representation
+ *
+ * @param {Persona} persona - The avatar id for the persona
+ * @returns {Entity} The entity for this persona
+ */
+export function personaToEntity(persona) {
+    return { item: persona, id: persona.avatar, type: 'persona' };
 }
 
 /**
@@ -5619,6 +5631,17 @@ function getThumbnailUrl(type, file) {
     return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
 }
 
+/**
+ * Build an avatar list for entities inside a given html block element
+ *
+ * @param {JQuery<HTMLElement>} block - The block to build the avatar list in
+ * @param {Entity[]} entities - A list of entities for which to build the avatar for
+ * @param {object} options - Optional options
+ * @param {string} [options.templateId='inline_avatar_template'] - The template from which the inline avatars are built off
+ * @param {boolean} [options.empty=true] - Whether the block will be emptied before drawing the avatars
+ * @param {boolean} [options.selectable=false] - Whether the avatars should be selectable/clickable. If set, the click handler has to be implemented externally on the classes/items
+ * @param {boolean} [options.highlightFavs=true] - Whether favorites should be highlighted
+ */
 function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, selectable = false, highlightFavs = true } = {}) {
     if (empty) {
         block.empty();
@@ -5626,34 +5649,39 @@ function buildAvatarList(block, entities, { templateId = 'inline_avatar_template
 
     for (const entity of entities) {
         const id = entity.id;
+        const item = entity.item;
 
         // Populate the template
         const avatarTemplate = $(`#${templateId} .avatar`).clone();
-
-        let this_avatar = default_avatar;
-        if (entity.item.avatar !== undefined && entity.item.avatar != 'none') {
-            this_avatar = getThumbnailUrl('avatar', entity.item.avatar);
-        }
-
         avatarTemplate.attr('data-type', entity.type);
-        avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
-        avatarTemplate.find('img').attr('src', this_avatar).attr('alt', entity.item.name);
-        avatarTemplate.attr('title', `[Character] ${entity.item.name}\nFile: ${entity.item.avatar}`);
-        if (highlightFavs) {
-            avatarTemplate.toggleClass('is_fav', entity.item.fav || entity.item.fav == 'true');
-            avatarTemplate.find('.ch_fav').val(entity.item.fav);
+
+        switch (entity.type) {
+            case 'character':
+                avatarTemplate.attr({ 'chid': id, 'id': `CharID${id}` });
+                const charAvatar = item.avatar && item.avatar != 'none' ? getThumbnailUrl('avatar', item.avatar) : default_avatar;
+                avatarTemplate.find('img').attr('src', charAvatar).attr('alt', item.name);
+                avatarTemplate.attr('title', `[Character] ${item.name}\nFile: ${item.avatar}`);
+                break;
+            case 'group':
+                const grpTemplate = getGroupAvatar(item);
+                avatarTemplate.attr({ 'gid': id, 'id': `GroupID${id}` });
+                avatarTemplate.addClass(grpTemplate.attr('class'));
+                avatarTemplate.empty();
+                avatarTemplate.append(grpTemplate.children());
+                avatarTemplate.attr('title', `[Group] ${item.name}`);
+                break;
+            case 'persona':
+                avatarTemplate.attr({ 'pid': id, 'id': `PersonaID${id}` });
+                const personaAvatar = getUserAvatar(item.avatar)
+                avatarTemplate.find('img').attr('src', personaAvatar).attr('alt', item.name);
+                avatarTemplate.attr('title', `[Persona] ${item.name}`);
+                break;
         }
 
-        // If this is a group, we need to hack slightly. We still want to keep most of the css classes and layout, but use a group avatar instead.
-        if (entity.type === 'group') {
-            const grpTemplate = getGroupAvatar(entity.item);
-
-            avatarTemplate.addClass(grpTemplate.attr('class'));
-            avatarTemplate.empty();
-            avatarTemplate.append(grpTemplate.children());
-            avatarTemplate.attr('title', `[Group] ${entity.item.name}`);
+        if (highlightFavs && 'fav' in item) {
+            avatarTemplate.toggleClass('is_fav', item.fav);
+            avatarTemplate.find('.ch_fav').val(item.fav ? 'true' : 'false');
         }
-
         if (selectable) {
             avatarTemplate.addClass('selectable');
             avatarTemplate.toggleClass('character_select', entity.type === 'character');

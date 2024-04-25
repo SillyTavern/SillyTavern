@@ -119,6 +119,8 @@ const TAG_FOLDER_DEFAULT_TYPE = 'NONE';
  * @property {string} [class] - An optional css class added to the control representing this tag when printed. Used for custom tags in the filters.
  * @property {string} [icon] - An optional css class of an icon representing this tag when printed. This will replace the tag name with the icon. Used for custom tags in the filters.
  * @property {string} [title] - An optional title for the tooltip of this tag. If there is no tooltip specified, and "icon" is chosen, the tooltip will be the "name" property.
+ *
+ * @property {string} [avatar=undefined] - For compatibility with other items, tags have an 'avatar' property, which is not used or filled currently
  */
 
 /**

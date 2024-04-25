@@ -1,3 +1,7 @@
+.rm_stat_popup_header {
+    margin-bottom: 0px;
+}
+
 .rm_stats_button {
     cursor: pointer;
 }
@@ -82,10 +86,10 @@
 
 .rm_stat_avatar_block {
     position: absolute;
-    top: calc(1.17em + 7px + 20px);
+    top: calc(10px + 1.17em + 12.5px + 2* 7px);
     right: 0px;
     height: calc(8px + calc(calc(var(--mainFontSize) * 1.33333333333) * 7) + calc(12px * 3));
-    width: 33.33333333333%;
+    width: calc(33.33333333333% - 10px);
     display: flex;
     justify-content: center;
     align-items: center;

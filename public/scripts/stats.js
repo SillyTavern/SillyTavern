@@ -1,6 +1,7 @@
 // statsHelper.js
-import { getRequestHeaders, callPopup, characters, this_chid, buildAvatarList, characterToEntity, getOneCharacter, getCharacter } from '../script.js';
+import { getRequestHeaders, callPopup, characters, this_chid, buildAvatarList, characterToEntity, getOneCharacter, getCharacter, user_avatar, personaToEntity } from '../script.js';
 import { humanizeTimespan } from './RossAscends-mods.js';
+import { getPersona } from './personas.js';
 import { registerDebugFunction } from './power-user.js';
 import { humanFileSize, humanizedDuration, parseJson, sensibleRound, smartTruncate } from './utils.js';
 
@@ -107,18 +108,27 @@ function createStatBlock(name, ...values) {
 }
 
 /**
+ * Show the stats popup for a given stats report
+ * @param {string} html - The html report that should be shown in the popup
+ */
+function showStatsPopup(html) {
+    callPopup(html, 'text', '', { wider: true, allowVerticalScrolling: true });
+}
+
+/**
  * Generates an HTML report of stats.
  *
  * This function creates an HTML report from the provided stats, including chat age,
  * chat time, number of user messages and character messages, word count, and swipe count.
  * The stat blocks are tailored depending on the stats type ("User" or "Character").
  *
- * @param {'User'|'Character'} statsType - The type of stats (e.g., "User", "Character")
+ * @param {'user'|'character'} statsType - The type of stats (e.g., "User", "Character")
  * @param {CharacterStats} stats - The stats data
+ * @returns {string} The html
  */
-function createHtml(statsType, stats) {
+function createCharStatsHtml(statsType, stats) {
     const NOW = Date.now();
-    const character = getCharacter(stats.characterKey);
+    const isChar = statsType === 'character';
 
     const HMTL_STAT_SPACER = '<div class="rm_stat_spacer"></div>';
     const VAL_RIGHT_SPACING = { value: null, classes: ['rm_stat_right_spacing'] };
@@ -128,11 +138,21 @@ function createHtml(statsType, stats) {
 
     // some pre calculations
     const mostUsedModel = findHighestModel(stats.genModels);
+    const charactersCount = !isChar ? (new Set(stats.chatsStats.map(x => x.charName))).size : null;
+
+    let subHeader = (() => {
+        switch (statsType) {
+            case 'character': return `Overall character stats based on all chats for ${stats.charName}`;
+            case 'user': return `Global stats based on all chats of ${charactersCount} characters`;
+            default: return '';
+        };
+    })();
 
     // Create popup HTML with stats
-    let html = `<h3>${statsType} Stats - ${stats.charName}</h3>`;
+    let html = `<h3 class="rm_stat_popup_header">${isChar ? 'Character' : 'User'} Stats - ${isChar ? stats.charName : stats.userName}</h3>`;
+    html += `<small>${subHeader}</small>`;
     html += HMTL_STAT_SPACER;
-    html += createStatBlock({ value: 'Character Overview', isHeader: true });
+    html += createStatBlock({ value: isChar ? 'Character Overview' : 'Overview', isHeader: true });
     html += createStatBlock({ value: 'Chats', info: `The number of existing chats with ${stats.charName}.\nFor the sake of statistics, Branches count as chats and all their messages will be included.` },
         stats.chats, VAL_RIGHT_SPACING);
     html += createStatBlock({ value: 'File Size', info: 'The chat file sizes on disk calculated and summed.\nThis value might not represent the exact same value your operating system uses.' },
@@ -222,17 +242,25 @@ function createHtml(statsType, stats) {
     html += HMTL_STAT_SPACER;
 
     // Hijack avatar list function to draw the user avatar
-    if (character) {
+    let entity = null;
+    switch (statsType) {
+        case 'character':
+            const character = getCharacter(stats.characterKey);
+            const cid = characters.indexOf(x => x === character);
+            entity = characterToEntity(character, cid);
+            break;
+        case 'user':
+            const persona = getPersona(user_avatar);
+            entity = personaToEntity(persona);
+            break;
+    }
+    if (entity) {
         const placeHolder = $('<div class="rm_stat_avatar_block"></div>');
-        const cid = characters.indexOf(x => x === character);
-        const entity = characterToEntity(character, cid);
         buildAvatarList(placeHolder, [entity]);
         html = placeHolder.prop('outerHTML') + html;
     }
 
-    callPopup(html, 'text', '', { wider: true, allowVerticalScrolling: true });
-
-    return;
+    return html;
 
     /** @param {AggregateStat} agg1 @param {AggregateStat} agg2 @param {AggBuildOptions} options @returns {StatField[]}  */
     function buildBarsFromAggregates(agg1, agg2, options = DEFAULT_AGG_BUILD_OPTIONS) {
@@ -285,7 +313,8 @@ async function showUserStatsPopup() {
     const globalStats = await getGlobalStats();
 
     // Create HTML with stats
-    createHtml('User', globalStats);
+    const html = createCharStatsHtml('user', globalStats);
+    showStatsPopup(html);
 }
 
 /**
@@ -302,7 +331,8 @@ async function showCharacterStatsPopup(characterKey) {
     }
 
     // Create HTML with stats
-    createHtml('Character', charStats);
+    const html = createCharStatsHtml('character', charStats);
+    showStatsPopup(html);
 }
 
 
