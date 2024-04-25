@@ -19,12 +19,37 @@ export const ARGUMENT_TYPE = {
 
 
 export class SlashCommandArgument {
+    /**
+     * Creates an unnamed argument from a poperties object.
+     * @param {Object} props
+     * @param {string} props.description description of the argument
+     * @param {ARGUMENT_TYPE|ARGUMENT_TYPE[]} props.typeList default: ARGUMENT_TYPE.STRING - list of accepted types (from ARGUMENT_TYPE)
+     * @param {boolean} [props.isRequired] default: false - whether the argument is required (false = optional argument)
+     * @param {boolean} [props.acceptsMultiple] default: false - whether argument accepts multiple values
+     * @param {string|SlashCommandClosure} [props.defaultValue] default value if no value is provided
+     * @param {string|string[]} [props.enumList] list of accepted values
+     */
+    static fromProps(props) {
+        return new SlashCommandArgument(
+            props.description,
+            props.typeList ?? [ARGUMENT_TYPE.STRING],
+            props.isRequired ?? false,
+            props.acceptsMultiple ?? false,
+            props.defaultValue ?? null,
+            props.enumList ?? [],
+        );
+    }
+
+
+
+
     /**@type {string}*/ description;
     /**@type {ARGUMENT_TYPE[]}*/ typeList = [];
     /**@type {boolean}*/ isRequired = false;
     /**@type {boolean}*/ acceptsMultiple = false;
     /**@type {string|SlashCommandClosure}*/ defaultValue;
     /**@type {string[]}*/ enumList = [];
+
 
     /**
      * @param {string} description
@@ -45,8 +70,37 @@ export class SlashCommandArgument {
 
 
 export class SlashCommandNamedArgument extends SlashCommandArgument {
+    /**
+     * Creates an unnamed argument from a poperties object.
+     * @param {Object} props
+     * @param {string} props.name the argument's name
+     * @param {string[]} [props.aliasList] list of aliases
+     * @param {string} props.description description of the argument
+     * @param {ARGUMENT_TYPE|ARGUMENT_TYPE[]} props.typeList default: ARGUMENT_TYPE.STRING - list of accepted types (from ARGUMENT_TYPE)
+     * @param {boolean} [props.isRequired] default: false - whether the argument is required (false = optional argument)
+     * @param {boolean} [props.acceptsMultiple] default: false - whether argument accepts multiple values
+     * @param {string|SlashCommandClosure} [props.defaultValue] default value if no value is provided
+     * @param {string|string[]} [props.enumList] list of accepted values
+     */
+    static fromProps(props) {
+        return new SlashCommandNamedArgument(
+            props.name,
+            props.description,
+            props.typeList ?? [ARGUMENT_TYPE.STRING],
+            props.isRequired ?? false,
+            props.acceptsMultiple ?? false,
+            props.defaultValue ?? null,
+            props.enumList ?? [],
+            props.aliasList ?? [],
+        );
+    }
+
+
+
+
     /**@type {string}*/ name;
     /**@type {string[]}*/ aliasList = [];
+
 
     /**
      * @param {string} name
