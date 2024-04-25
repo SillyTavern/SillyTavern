@@ -178,11 +178,17 @@ export class SlashCommandAutoCompleteOption {
     }
 
 
+    /**
+     * @returns {HTMLElement}
+     */
     renderItem() {
         throw new Error(`${this.constructor.name}.renderItem() is not implemented`);
     }
 
 
+    /**
+     * @returns {DocumentFragment}
+     */
     renderDetails() {
         throw new Error(`${this.constructor.name}.renderDetails() is not implemented`);
     }
