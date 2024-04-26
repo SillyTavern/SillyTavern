@@ -113,6 +113,16 @@ async function ensurePublicDirectoriesExist() {
 }
 
 /**
+ * Gets a list of all user directories.
+ * @returns {Promise<import('./users').UserDirectoryList[]>} - The list of user directories
+ */
+async function getUserDirectoriesList() {
+    const userHandles = await getAllUserHandles();
+    const directoriesList = userHandles.map(handle => getUserDirectories(handle));
+    return directoriesList;
+}
+
+/**
  * Perform migration from the old user data format to the new one.
  */
 async function migrateUserData() {
@@ -707,6 +717,7 @@ module.exports = {
     toAvatarKey,
     initUserStorage,
     ensurePublicDirectoriesExist,
+    getUserDirectoriesList,
     getAllUserHandles,
     getUserDirectories,
     setUserDataMiddleware,
