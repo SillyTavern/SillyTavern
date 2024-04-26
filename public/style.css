@@ -1000,6 +1000,7 @@ body .panelControlBar {
     padding-left: 10px;
     width: 100%;
     overflow-x: hidden;
+    overflow-y: clip;
 }
 
 .mes_text {
