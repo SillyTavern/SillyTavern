@@ -384,7 +384,7 @@ function getTagKey() {
         return selected_group;
     }
 
-    if (this_chid && menu_type === 'character_edit') {
+    if (this_chid !== undefined && menu_type === 'character_edit') {
         return characters[this_chid].avatar;
     }
 
