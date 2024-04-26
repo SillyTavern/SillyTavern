@@ -3780,6 +3780,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     // Fetches the combined prompt for both negative and positive prompts
     const cfgGuidanceScale = getGuidanceScale();
+    const useCfgPrompt = cfgGuidanceScale && cfgGuidanceScale.value !== 1;
 
     // For prompt bit itemization
     let mesSendString = '';
@@ -3787,7 +3788,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     function getCombinedPrompt(isNegative) {
         // Only return if the guidance scale doesn't exist or the value is 1
         // Also don't return if constructing the neutral prompt
-        if (isNegative && (!cfgGuidanceScale || cfgGuidanceScale?.value === 1)) {
+        if (isNegative && !useCfgPrompt) {
             return;
         }
 
@@ -3799,22 +3800,20 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         // Deep clone
         let finalMesSend = structuredClone(mesSend);
 
-        let cfgPrompt = {};
-        if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
-            cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
-        }
-
-        if (cfgPrompt && cfgPrompt?.value) {
-            if (cfgPrompt?.depth === 0) {
-                finalMesSend[finalMesSend.length - 1].message +=
-                    /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
-                        ? cfgPrompt.value
-                        : ` ${cfgPrompt.value}`;
-            } else {
-                // TODO: Make all extension prompts use an array/splice method
-                const lengthDiff = mesSend.length - cfgPrompt.depth;
-                const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
-                finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+        if (useCfgPrompt) {
+            const cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
+            if (cfgPrompt.value) {
+                if (cfgPrompt.depth === 0) {
+                    finalMesSend[finalMesSend.length - 1].message +=
+                        /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
+                            ? cfgPrompt.value
+                            : ` ${cfgPrompt.value}`;
+                } else {
+                    // TODO: Make all extension prompts use an array/splice method
+                    const lengthDiff = mesSend.length - cfgPrompt.depth;
+                    const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
+                    finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+                }
             }
         }
 
@@ -3895,75 +3894,78 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         return !data.combinedPrompt ? combine() : data.combinedPrompt;
     }
 
-    // Get the negative prompt first since it has the unmodified mesSend array
-    let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
     let finalPrompt = getCombinedPrompt(false);
-
-    // Include the entire guidance scale object
-    const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
 
     let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
     let thisPromptBits = [];
 
-    // TODO: Make this a switch
-    if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
-        maxLength = Math.min(maxLength, adjustedParams.maxLength);
-        maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
-    }
-
     let generate_data;
-    if (main_api == 'koboldhorde' || main_api == 'kobold') {
-        generate_data = {
-            prompt: finalPrompt,
-            gui_settings: true,
-            max_length: maxLength,
-            max_context_length: max_context,
-            api_server,
-        };
+    switch (main_api) {
+        case 'koboldhorde':
+        case 'kobold':
+            if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
+                maxLength = Math.min(maxLength, adjustedParams.maxLength);
+                maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
+            }
 
-        if (preset_settings != 'gui') {
-            const isHorde = main_api == 'koboldhorde';
-            const presetSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
-            const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
-            generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
+            generate_data = {
+                prompt: finalPrompt,
+                gui_settings: true,
+                max_length: maxLength,
+                max_context_length: max_context,
+                api_server,
+            };
+
+            if (preset_settings != 'gui') {
+                const isHorde = main_api == 'koboldhorde';
+                const presetSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
+                const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
+                generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
+            }
+            break;
+        case 'textgenerationwebui': {
+            const cfgValues = useCfgPrompt ? { guidanceScale: cfgGuidanceScale, negativePrompt: getCombinedPrompt(true) } : null;
+            generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
+            break;
         }
-    }
-    else if (main_api == 'textgenerationwebui') {
-        generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
-    }
-    else if (main_api == 'novel') {
-        const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-        generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
-    }
-    else if (main_api == 'openai') {
-        let [prompt, counts] = await prepareOpenAIMessages({
-            name2: name2,
-            charDescription: description,
-            charPersonality: personality,
-            Scenario: scenario,
-            worldInfoBefore: worldInfoBefore,
-            worldInfoAfter: worldInfoAfter,
-            extensionPrompts: extension_prompts,
-            bias: promptBias,
-            type: type,
-            quietPrompt: quiet_prompt,
-            quietImage: quietImage,
-            cyclePrompt: cyclePrompt,
-            systemPromptOverride: system,
-            jailbreakPromptOverride: jailbreak,
-            personaDescription: persona,
-            messages: oaiMessages,
-            messageExamples: oaiMessageExamples,
-        }, dryRun);
-        generate_data = { prompt: prompt };
-
-        // counts will return false if the user has not enabled the token breakdown feature
-        if (counts) {
-            parseTokenCounts(counts, thisPromptBits);
+        case 'novel': {
+            const cfgValues = useCfgPrompt ? { guidanceScale: cfgGuidanceScale } : null;
+            const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
+            generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
+            break;
         }
+        case 'openai': {
+            let [prompt, counts] = await prepareOpenAIMessages({
+                name2: name2,
+                charDescription: description,
+                charPersonality: personality,
+                Scenario: scenario,
+                worldInfoBefore: worldInfoBefore,
+                worldInfoAfter: worldInfoAfter,
+                extensionPrompts: extension_prompts,
+                bias: promptBias,
+                type: type,
+                quietPrompt: quiet_prompt,
+                quietImage: quietImage,
+                cyclePrompt: cyclePrompt,
+                systemPromptOverride: system,
+                jailbreakPromptOverride: jailbreak,
+                personaDescription: persona,
+                messages: oaiMessages,
+                messageExamples: oaiMessageExamples,
+            }, dryRun);
+            generate_data = { prompt: prompt };
 
-        if (!dryRun) {
-            setInContextMessages(openai_messages_count, type);
+            // TODO: move these side-effects somewhere else, so this switch-case solely sets generate_data
+            // counts will return false if the user has not enabled the token breakdown feature
+            if (counts) {
+                parseTokenCounts(counts, thisPromptBits);
+            }
+
+            if (!dryRun) {
+                setInContextMessages(openai_messages_count, type);
+            }
+            break;
         }
     }
 
@@ -4011,16 +4013,14 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             userPersona: (power_user.persona_description || ''),
         };
 
-        thisPromptBits = additionalPromptStuff;
-
-        //console.log(thisPromptBits);
-        const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === thisPromptBits['mesId']);
+        //console.log(additionalPromptStuff);
+        const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === additionalPromptStuff.mesId);
 
         if (itemizedIndex !== -1) {
-            itemizedPrompts[itemizedIndex] = thisPromptBits;
+            itemizedPrompts[itemizedIndex] = additionalPromptStuff;
         }
         else {
-            itemizedPrompts.push(thisPromptBits);
+            itemizedPrompts.push(additionalPromptStuff);
         }
 
         console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
