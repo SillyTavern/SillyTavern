@@ -29,4 +29,4 @@ export NODE_ENV=production
 npm i --no-audit --no-fund --quiet --omit=dev
 
 echo "Entering SillyTavern..."
-node "$(dirname "$0")/server.js" "$@"
+node "server.js" "$@"
