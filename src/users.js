@@ -299,7 +299,7 @@ async function migrateUserData() {
                 fs.cpSync(
                     migration.old,
                     path.join(backupDirectory, path.basename(migration.old)),
-                    { recursive: true, force: true }
+                    { recursive: true, force: true },
                 );
                 fs.rmSync(migration.old, { recursive: true, force: true });
             } else {
@@ -309,7 +309,7 @@ async function migrateUserData() {
                 fs.cpSync(
                     migration.old,
                     path.join(backupDirectory, path.basename(migration.old)),
-                    { recursive: true, force: true }
+                    { recursive: true, force: true },
                 );
                 fs.rmSync(migration.old, { recursive: true, force: true });
             }

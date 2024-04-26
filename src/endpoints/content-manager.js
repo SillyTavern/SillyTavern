@@ -402,7 +402,7 @@ async function downloadAICCCharacter(id) {
         return {
             buffer: buffer,
             fileName: fileName,
-            fileType: contentType
+            fileType: contentType,
         };
     } catch (error) {
         console.error('Error downloading character:', error);
@@ -410,8 +410,13 @@ async function downloadAICCCharacter(id) {
     }
 }
 
+/**
+ * Parses an aicharactercards URL to extract the path.
+ * @param {string} url URL to parse
+ * @returns {string | null} AICC path
+ */
 function parseAICC(url) {
-    const pattern = /^https?:\/\/aicharactercards\.com\/character-cards\/([^\/]+)\/([^\/]+)\/?$|([^\/]+)\/([^\/]+)$/;
+    const pattern = /^https?:\/\/aicharactercards\.com\/character-cards\/([^/]+)\/([^/]+)\/?$|([^/]+)\/([^/]+)$/;
     const match = url.match(pattern);
     if (match) {
         // Match group 1 & 2 for full URL, 3 & 4 for relative path
