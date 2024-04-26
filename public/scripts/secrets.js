@@ -65,8 +65,8 @@ async function clearSecret() {
 export function updateSecretDisplay() {
     for (const [secret_key, input_selector] of Object.entries(INPUT_MAP)) {
         const validSecret = !!secret_state[secret_key];
-		
-		const placeholder = $('#viewSecrets').attr(validSecret ? 'key_saved_text' : 'missing_key_text');
+
+        const placeholder = $('#viewSecrets').attr(validSecret ? 'key_saved_text' : 'missing_key_text');
         $(input_selector).attr('placeholder', placeholder);
     }
 }

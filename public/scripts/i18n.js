@@ -1,5 +1,5 @@
 import { registerDebugFunction } from './power-user.js';
-import { updateSecretDisplay } from './secrets.js'
+import { updateSecretDisplay } from './secrets.js';
 
 const storageKey = 'language';
 const overrideLanguage = localStorage.getItem(storageKey);
@@ -14,9 +14,9 @@ const localeData = await getLocaleData(localeFile);
  */
 async function getLocaleData(language) {
     let supportedLang = findLang(language);
-	if (!supportedLang) {
-		return {};
-	}
+    if (!supportedLang) {
+        return {};
+    }
 
     const data = await fetch(`./locales/${language}.json`).then(response => {
         console.log(`Loading locale data from ./locales/${language}.json`);
@@ -30,20 +30,21 @@ async function getLocaleData(language) {
 }
 
 function findLang(language) {
-	var supportedLang = langs.find(x => x.lang === language);
+    var supportedLang = langs.find(x => x.lang === language);
 
     if (!supportedLang) {
         console.warn(`Unsupported language: ${language}`);
     }
-	return supportedLang;
+    return supportedLang;
 }
 
 async function getMissingTranslations() {
     const missingData = [];
-	
-	// Determine locales to search for untranslated strings
-	const langsToProcess = localeFile == 'en' ? langs : [findLang(localeFile)];
-	
+
+    // Determine locales to search for untranslated strings
+    const isNotSupported = !findLang(localeFile);
+    const langsToProcess = (isNotSupported || localeFile == 'en') ? langs : [findLang(localeFile)];
+
     for (const language of langsToProcess) {
         const localeData = await getLocaleData(language.lang);
         $(document).find('[data-i18n]').each(function () {
@@ -141,7 +142,7 @@ function addLanguagesToDropdown() {
 export function initLocales() {
     applyLocale();
     addLanguagesToDropdown();
-	updateSecretDisplay();
+    updateSecretDisplay();
 
     $('#ui_language_select').on('change', async function () {
         const language = String($(this).val());
