@@ -94,7 +94,7 @@ async function loadRegexScripts() {
             await onRegexEditorOpenClick(scriptHtml.attr('id'));
         });
         scriptHtml.find('.export_regex').on('click', async function () {
-            const fileName = `${script.scriptName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+            const fileName = `${script.scriptName.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()}.json`;
             const fileData = JSON.stringify(script, null, 4);
             download(fileData, fileName, 'application/json');
         });
