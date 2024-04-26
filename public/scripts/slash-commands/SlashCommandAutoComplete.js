@@ -620,7 +620,7 @@ export class SlashCommandAutoComplete {
                 }
                 case 'Enter': {
                     // pick the selected item to autocomplete
-                    if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.type == OPTION_TYPE.BLANK) break;
+                    if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.value == '') break;
                     if (this.selectedItem.name == this.name) break;
                     evt.preventDefault();
                     evt.stopImmediatePropagation();
@@ -629,7 +629,7 @@ export class SlashCommandAutoComplete {
                 }
                 case 'Tab': {
                     // pick the selected item to autocomplete
-                    if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.type == OPTION_TYPE.BLANK) break;
+                    if (evt.ctrlKey || evt.altKey || evt.shiftKey || this.selectedItem.value == '') break;
                     evt.preventDefault();
                     evt.stopImmediatePropagation();
                     this.select();
