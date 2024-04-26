@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Make sure pwd is the directory of the script
+cd "$(dirname "$0")"
+
 if ! command -v npm &> /dev/null
 then
     read -p "npm is not installed. Do you want to install nodejs and npm? (y/n)" choice
@@ -26,4 +29,4 @@ export NODE_ENV=production
 npm i --no-audit --no-fund --quiet --omit=dev
 
 echo "Entering SillyTavern..."
-node "$(dirname "$0")/server.js" "$@"
+node "server.js" "$@"
