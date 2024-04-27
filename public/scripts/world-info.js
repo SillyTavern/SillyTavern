@@ -795,20 +795,20 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         callback: function (/** @type {object[]} */ page) {
             $('#world_popup_entries_list').empty();
             const keywordHeaders = `
-            <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 2.5em;">
+            <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 4.5em;">
             <small class="flex1">
             Title/Memo
         </small>
-                <small style="width: calc(3.5em + 5px)">
+                <small style="width: calc(3.5em + 15px)">
                     Status
                 </small>
-                <small style="width: calc(3.5em + 20px)">
+                <small style="width: calc(3.5em + 30px)">
                     Position
                 </small>
-                <small style="width: calc(3.5em + 15px)">
+                <small style="width: calc(3.5em + 20px)">
                     Depth
                 </small>
-                <small style="width: calc(3.5em + 15px)">
+                <small style="width: calc(3.5em + 20px)">
                     Order
                 </small>
                 <small style="width: calc(3.5em + 15px)">
