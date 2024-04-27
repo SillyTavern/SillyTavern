@@ -2405,7 +2405,9 @@ async function processCommands(message, abortController) {
     deactivateSendButtons();
     is_send_press = true;
 
-    document.querySelector('#send_textarea').value = '';
+    const ta = document.querySelector('#send_textarea');
+    ta.value = '';
+    ta.dispatchEvent(new Event('input', { bubbles:true }));
 
     await executeSlashCommandsWithOptions(message, {
         abortController: abortController,
