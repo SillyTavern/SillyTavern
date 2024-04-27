@@ -32,11 +32,12 @@ export class Scraper {
 }
 
 export class ScraperInfo {
-    constructor(id, name, description, iconClass) {
+    constructor(id, name, description, iconClass, iconAvailable) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.iconClass = iconClass;
+        this.iconAvailable = iconAvailable;
     }
 }
 
