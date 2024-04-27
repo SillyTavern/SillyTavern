@@ -420,5 +420,4 @@ ScraperManager.registerDataBankScraper(new FileScraper());
 ScraperManager.registerDataBankScraper(new Notepad());
 ScraperManager.registerDataBankScraper(new WebScraper());
 ScraperManager.registerDataBankScraper(new FandomScraper());
-ScraperManager.registerDataBankScraper(new miHoYoScraper());
 ScraperManager.registerDataBankScraper(new YouTubeScraper());
