@@ -152,6 +152,7 @@ import {
     Stopwatch,
     isValidUrl,
     ensureImageFormatSupported,
+    flashHighlight,
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
@@ -6799,10 +6800,7 @@ function select_rm_info(type, charId, previousCharId = null) {
 
                     const scrollOffset = element.offset().top - element.parent().offset().top;
                     element.parent().scrollTop(scrollOffset);
-                    element.addClass('flash animated');
-                    setTimeout(function () {
-                        element.removeClass('flash animated');
-                    }, 5000);
+                    flashHighlight(element, 5000);
                 });
             } catch (e) {
                 console.error(e);
@@ -6828,10 +6826,7 @@ function select_rm_info(type, charId, previousCharId = null) {
                     const element = $(selector);
                     const scrollOffset = element.offset().top - element.parent().offset().top;
                     element.parent().scrollTop(scrollOffset);
-                    $(element).addClass('flash animated');
-                    setTimeout(function () {
-                        $(element).removeClass('flash animated');
-                    }, 5000);
+                    flashHighlight(element, 5000);
                 });
             } catch (e) {
                 console.error(e);
