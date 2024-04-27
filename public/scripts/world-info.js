@@ -992,6 +992,7 @@ const originalDataKeyMap = {
     'scanDepth': 'extensions.scan_depth',
     'automationId': 'extensions.automation_id',
     'vectorized': 'extensions.vectorized',
+    'groupOverride': 'extensions.group_override',
 };
 
 function setOriginalDataValue(data, uid, key, value) {
@@ -1339,7 +1340,7 @@ function getWorldEntry(name, data, entry) {
     setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data)), 1);
 
     // inclusion priority
-    const groupOverrideInput = template.find('input[name="groupPrio"]');
+    const groupOverrideInput = template.find('input[name="groupOverride"]');
     groupOverrideInput.data('uid', entry.uid);
     groupOverrideInput.on('input', function () {
         const uid = $(this).data('uid');
@@ -2431,7 +2432,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
             }
 
             if (logging) console.debug(`Removing loser from inclusion group '${entry.group}' entry '${entry.uid}'`, entry);
-            removeEntry(entry)
+            removeEntry(entry);
         }
     }
 
@@ -2627,7 +2628,7 @@ function convertCharacterBook(characterBook) {
             depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
             selectiveLogic: entry.extensions?.selectiveLogic ?? world_info_logic.AND_ANY,
             group: entry.extensions?.group ?? '',
-            groupOverride: entry.extensions?.groupOverride ?? false,
+            groupOverride: entry.extensions?.group_override ?? false,
             scanDepth: entry.extensions?.scan_depth ?? null,
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
