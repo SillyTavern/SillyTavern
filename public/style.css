@@ -3165,6 +3165,15 @@ body.big-avatars .missing-avatar {
     text-align: center;
 }
 
+
+.userSettingsInnerExpandable {
+    border: 1px solid;
+    border-color: var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 2px 5px !important;
+    margin: 5px 0;
+}
+
 @keyframes ellipsis {
     0% {
         content: ""
