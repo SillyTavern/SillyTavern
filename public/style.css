@@ -1062,6 +1062,13 @@ select {
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     flex: 1;
     order: 3;
+
+    --progColor: rgba(0, 128, 0, 0.839);
+    --progWidth: 3px;
+    --prog: 0%;
+    border-top: var(--progWidth) solid var(--progColor);
+    clip-path: polygon(0% 0%, var(--prog) 0%, var(--prog) 5px, 100% 5px, 100% 100%, 0% 100%);
+    transition: clip-path 200ms;
 }
 
 .slashCommandAutoComplete-wrap {

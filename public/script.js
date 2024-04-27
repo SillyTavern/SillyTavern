@@ -2405,19 +2405,27 @@ async function processCommands(message, abortController) {
     deactivateSendButtons();
     is_send_press = true;
 
+    /**@type {HTMLTextAreaElement}*/
     const ta = document.querySelector('#send_textarea');
     ta.value = '';
     ta.dispatchEvent(new Event('input', { bubbles:true }));
 
     await executeSlashCommandsWithOptions(message, {
         abortController: abortController,
+        onProgress: (done, total)=>ta.style.setProperty('--prog', `${done / total * 100}%`),
     });
+    delay(1000).then(()=>clearCommandProgressDebounced());
 
     is_send_press = false;
     activateSendButtons();
 
     return true;
 }
+function clearCommandProgress() {
+    if (is_send_press) return;
+    document.querySelector('#send_textarea').style.setProperty('--prog', '0%');
+}
+const clearCommandProgressDebounced = debounce(clearCommandProgress);
 
 function sendSystemMessage(type, text, extra = {}) {
     const systemMessage = system_messages[type];

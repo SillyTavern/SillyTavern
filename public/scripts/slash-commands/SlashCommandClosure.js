@@ -15,6 +15,7 @@ export class SlashCommandClosure {
     /**@type {SlashCommandExecutor[]}*/ executorList = [];
     /**@type {string}*/ keptText;
     /**@type {AbortController}*/ abortController;
+    /**@type {(done:number, total:number)=>void}*/ onProgress;
 
     constructor(parent) {
         this.scope = new SlashCommandScope(parent);
@@ -79,6 +80,7 @@ export class SlashCommandClosure {
         closure.executorList = this.executorList;
         closure.keptText = this.keptText;
         closure.abortController = this.abortController;
+        closure.onProgress = this.onProgress;
         return closure;
     }
 
@@ -142,7 +144,10 @@ export class SlashCommandClosure {
             this.scope.setVariable(key, v);
         }
 
+        let done = 0;
         for (const executor of this.executorList) {
+            done += 0.5;
+            this.onProgress?.(done, this.executorList.length);
             if (executor instanceof SlashCommandClosureExecutor) {
                 const closure = this.scope.getVariable(executor.name);
                 if (!closure || !(closure instanceof SlashCommandClosure)) throw new Error(`${executor.name} is not a closure.`);
@@ -233,6 +238,8 @@ export class SlashCommandClosure {
                     return abortResult;
                 }
                 this.scope.pipe = await executor.command.callback(args, value ?? '');
+                done += 0.5;
+                this.onProgress?.(done, this.executorList.length);
                 // eslint-disable-next-line no-cond-assign
                 if (abortResult = this.testAbortController()) {
                     return abortResult;

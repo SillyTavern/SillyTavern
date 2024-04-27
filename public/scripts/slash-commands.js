@@ -2557,6 +2557,7 @@ function modelCallback(_, model) {
  * @param {boolean} [options.handleExecutionErrors]
  * @param {PARSER_FLAG[]} [options.parserFlags]
  * @param {AbortController} [options.abortController]
+ * @param {(done:number, total:number)=>void} [options.onProgress]
  * @returns {Promise<SlashCommandClosureResult>}
  */
 async function executeSlashCommandsWithOptions(text, options = {}) {
@@ -2567,6 +2568,7 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         options.handleExecutionErrors ?? false,
         options.parserFlags ?? null,
         options.abortController ?? null,
+        options.onProgress ?? null,
     );
 }
 /**
@@ -2579,7 +2581,7 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
  * @param {AbortController} abortController
  * @returns {Promise<SlashCommandClosureResult>}
  */
-async function executeSlashCommands(text, handleParserErrors = true, scope = null, handleExecutionErrors = false, parserFlags = null, abortController = null) {
+async function executeSlashCommands(text, handleParserErrors = true, scope = null, handleExecutionErrors = false, parserFlags = null, abortController = null, onProgress = null) {
     if (!text) {
         return null;
     }
@@ -2588,6 +2590,7 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
     try {
         closure = parser.parse(text, true, parserFlags, abortController);
         closure.scope.parent = scope;
+        closure.onProgress = onProgress;
     } catch (e) {
         if (handleParserErrors && e instanceof SlashCommandParserError) {
             /**@type {SlashCommandParserError}*/
