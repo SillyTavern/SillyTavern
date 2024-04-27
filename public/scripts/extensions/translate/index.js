@@ -425,10 +425,21 @@ function createEventHandler(translateFunction, shouldTranslateFunction) {
 }
 
 async function onTranslateInputMessageClick() {
-    const ta = document.querySelector('#send_textarea');
-    toastr.info('Input Message is translating', 'Please wait...');
-    const translatedText = await translate(ta.value, extension_settings.translate.internal_language);
-    $('#send_textarea').val(translatedText);
+    const textarea = document.getElementById('send_textarea');
+
+    if (!(textarea instanceof HTMLTextAreaElement)) {
+        return;
+    }
+
+    if (!textarea.value) {
+        toastr.warning('Enter a message first');
+        return;
+    }
+
+    const toast = toastr.info('Input Message is translating', 'Please wait...');
+    const translatedText = await translate(textarea.value, extension_settings.translate.internal_language);
+    textarea.value = translatedText;
+    toastr.clear(toast);
 }
 
 // Prevents the chat from being translated in parallel
@@ -564,8 +575,8 @@ jQuery(() => {
             Translate Chat
         </div>
         <div id="translate_input_message" class="list-group-item flex-container flexGap5">
-            <div class="fa-solid fa-language extensionsMenuExtensionButton" /></div>
-            Translate Input Message
+            <div class="fa-solid fa-keyboard extensionsMenuExtensionButton" /></div>
+            Translate Input
         </div>
         `;
     $('#extensionsMenu').append(buttonHtml);
