@@ -1037,17 +1037,13 @@ function onViewTagsListClick() {
     const tagContainer = $('<div class="tag_view_list_tags ui-sortable"></div>');
     html.append(tagContainer);
 
-
-    // Hacking event subscriptions to be after popup call...
-    setTimeout(function () {
-        printViewTagList();
-        makeTagListDraggable(tagContainer);
-
-        $('#dialogue_popup  .tag-color').on('change', (evt) => onTagColorize(evt));
-        $('#dialogue_popup  .tag-color2').on('change', (evt) => onTagColorize2(evt));
-    }, 100);
-
     callPopup(html, 'text', null, { allowVerticalScrolling: true });
+
+    printViewTagList();
+    makeTagListDraggable(tagContainer);
+
+    $('#dialogue_popup  .tag-color').on('change', (evt) => onTagColorize(evt));
+    $('#dialogue_popup  .tag-color2').on('change', (evt) => onTagColorize2(evt));
 }
 
 function toggleAutoSortTags(toggle) {
