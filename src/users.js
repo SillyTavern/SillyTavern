@@ -612,9 +612,13 @@ function createRouteHandler(directoryFn) {
         try {
             const directory = directoryFn(req);
             const filePath = decodeURIComponent(req.params[0]);
+            const exists = fs.existsSync(path.join(directory, filePath));
+            if (!exists) {
+                return res.sendStatus(404);
+            }
             return res.sendFile(filePath, { root: directory });
         } catch (error) {
-            return res.sendStatus(404);
+            return res.sendStatus(500);
         }
     };
 }
