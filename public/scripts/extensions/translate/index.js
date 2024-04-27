@@ -1,210 +1,219 @@
-export { translate };
+import {callPopup, event_types, eventSource, getRequestHeaders, reloadCurrentChat, saveSettingsDebounced, substituteParams, updateMessageBlock,} from '../../../script.js';
+import {extension_settings, getContext} from '../../extensions.js';
+import {findSecret, secret_state, writeSecret} from '../../secrets.js';
+import {splitRecursive} from '../../utils.js';
 
-import {
-    callPopup,
-    eventSource,
-    event_types,
-    getRequestHeaders,
-    reloadCurrentChat,
-    saveSettingsDebounced,
-    substituteParams,
-    updateMessageBlock,
-} from '../../../script.js';
-import { extension_settings, getContext } from '../../extensions.js';
-import { findSecret, secret_state, writeSecret } from '../../secrets.js';
-import { splitRecursive } from '../../utils.js';
+export {translate};
 
 export const autoModeOptions = {
-    NONE: 'none',
-    RESPONSES: 'responses',
-    INPUT: 'inputs',
-    BOTH: 'both',
+  NONE: 'none',
+  RESPONSES: 'responses',
+  INPUT: 'inputs',
+  BOTH: 'both',
 };
 
 const incomingTypes = [autoModeOptions.RESPONSES, autoModeOptions.BOTH];
 const outgoingTypes = [autoModeOptions.INPUT, autoModeOptions.BOTH];
 
 const defaultSettings = {
-    target_language: 'en',
-    internal_language: 'en',
-    provider: 'google',
-    auto_mode: autoModeOptions.NONE,
+  target_language: 'en',
+  internal_language: 'en',
+  provider: 'google',
+  auto_mode: autoModeOptions.NONE,
 };
 
 const languageCodes = {
-    'Afrikaans': 'af',
-    'Albanian': 'sq',
-    'Amharic': 'am',
-    'Arabic': 'ar',
-    'Armenian': 'hy',
-    'Azerbaijani': 'az',
-    'Basque': 'eu',
-    'Belarusian': 'be',
-    'Bengali': 'bn',
-    'Bosnian': 'bs',
-    'Bulgarian': 'bg',
-    'Catalan': 'ca',
-    'Cebuano': 'ceb',
-    'Chinese (Simplified)': 'zh-CN',
-    'Chinese (Traditional)': 'zh-TW',
-    'Corsican': 'co',
-    'Croatian': 'hr',
-    'Czech': 'cs',
-    'Danish': 'da',
-    'Dutch': 'nl',
-    'English': 'en',
-    'Esperanto': 'eo',
-    'Estonian': 'et',
-    'Finnish': 'fi',
-    'French': 'fr',
-    'Frisian': 'fy',
-    'Galician': 'gl',
-    'Georgian': 'ka',
-    'German': 'de',
-    'Greek': 'el',
-    'Gujarati': 'gu',
-    'Haitian Creole': 'ht',
-    'Hausa': 'ha',
-    'Hawaiian': 'haw',
-    'Hebrew': 'iw',
-    'Hindi': 'hi',
-    'Hmong': 'hmn',
-    'Hungarian': 'hu',
-    'Icelandic': 'is',
-    'Igbo': 'ig',
-    'Indonesian': 'id',
-    'Irish': 'ga',
-    'Italian': 'it',
-    'Japanese': 'ja',
-    'Javanese': 'jw',
-    'Kannada': 'kn',
-    'Kazakh': 'kk',
-    'Khmer': 'km',
-    'Korean': 'ko',
-    'Kurdish': 'ku',
-    'Kyrgyz': 'ky',
-    'Lao': 'lo',
-    'Latin': 'la',
-    'Latvian': 'lv',
-    'Lithuanian': 'lt',
-    'Luxembourgish': 'lb',
-    'Macedonian': 'mk',
-    'Malagasy': 'mg',
-    'Malay': 'ms',
-    'Malayalam': 'ml',
-    'Maltese': 'mt',
-    'Maori': 'mi',
-    'Marathi': 'mr',
-    'Mongolian': 'mn',
-    'Myanmar (Burmese)': 'my',
-    'Nepali': 'ne',
-    'Norwegian': 'no',
-    'Nyanja (Chichewa)': 'ny',
-    'Pashto': 'ps',
-    'Persian': 'fa',
-    'Polish': 'pl',
-    'Portuguese (Portugal, Brazil)': 'pt',
-    'Punjabi': 'pa',
-    'Romanian': 'ro',
-    'Russian': 'ru',
-    'Samoan': 'sm',
-    'Scots Gaelic': 'gd',
-    'Serbian': 'sr',
-    'Sesotho': 'st',
-    'Shona': 'sn',
-    'Sindhi': 'sd',
-    'Sinhala (Sinhalese)': 'si',
-    'Slovak': 'sk',
-    'Slovenian': 'sl',
-    'Somali': 'so',
-    'Spanish': 'es',
-    'Sundanese': 'su',
-    'Swahili': 'sw',
-    'Swedish': 'sv',
-    'Tagalog (Filipino)': 'tl',
-    'Tajik': 'tg',
-    'Tamil': 'ta',
-    'Telugu': 'te',
-    'Thai': 'th',
-    'Turkish': 'tr',
-    'Ukrainian': 'uk',
-    'Urdu': 'ur',
-    'Uzbek': 'uz',
-    'Vietnamese': 'vi',
-    'Welsh': 'cy',
-    'Xhosa': 'xh',
-    'Yiddish': 'yi',
-    'Yoruba': 'yo',
-    'Zulu': 'zu',
+  'Afrikaans': 'af',
+  'Albanian': 'sq',
+  'Amharic': 'am',
+  'Arabic': 'ar',
+  'Armenian': 'hy',
+  'Azerbaijani': 'az',
+  'Basque': 'eu',
+  'Belarusian': 'be',
+  'Bengali': 'bn',
+  'Bosnian': 'bs',
+  'Bulgarian': 'bg',
+  'Catalan': 'ca',
+  'Cebuano': 'ceb',
+  'Chinese (Simplified)': 'zh-CN',
+  'Chinese (Traditional)': 'zh-TW',
+  'Corsican': 'co',
+  'Croatian': 'hr',
+  'Czech': 'cs',
+  'Danish': 'da',
+  'Dutch': 'nl',
+  'English': 'en',
+  'Esperanto': 'eo',
+  'Estonian': 'et',
+  'Finnish': 'fi',
+  'French': 'fr',
+  'Frisian': 'fy',
+  'Galician': 'gl',
+  'Georgian': 'ka',
+  'German': 'de',
+  'Greek': 'el',
+  'Gujarati': 'gu',
+  'Haitian Creole': 'ht',
+  'Hausa': 'ha',
+  'Hawaiian': 'haw',
+  'Hebrew': 'iw',
+  'Hindi': 'hi',
+  'Hmong': 'hmn',
+  'Hungarian': 'hu',
+  'Icelandic': 'is',
+  'Igbo': 'ig',
+  'Indonesian': 'id',
+  'Irish': 'ga',
+  'Italian': 'it',
+  'Japanese': 'ja',
+  'Javanese': 'jw',
+  'Kannada': 'kn',
+  'Kazakh': 'kk',
+  'Khmer': 'km',
+  'Korean': 'ko',
+  'Kurdish': 'ku',
+  'Kyrgyz': 'ky',
+  'Lao': 'lo',
+  'Latin': 'la',
+  'Latvian': 'lv',
+  'Lithuanian': 'lt',
+  'Luxembourgish': 'lb',
+  'Macedonian': 'mk',
+  'Malagasy': 'mg',
+  'Malay': 'ms',
+  'Malayalam': 'ml',
+  'Maltese': 'mt',
+  'Maori': 'mi',
+  'Marathi': 'mr',
+  'Mongolian': 'mn',
+  'Myanmar (Burmese)': 'my',
+  'Nepali': 'ne',
+  'Norwegian': 'no',
+  'Nyanja (Chichewa)': 'ny',
+  'Pashto': 'ps',
+  'Persian': 'fa',
+  'Polish': 'pl',
+  'Portuguese (Portugal, Brazil)': 'pt',
+  'Punjabi': 'pa',
+  'Romanian': 'ro',
+  'Russian': 'ru',
+  'Samoan': 'sm',
+  'Scots Gaelic': 'gd',
+  'Serbian': 'sr',
+  'Sesotho': 'st',
+  'Shona': 'sn',
+  'Sindhi': 'sd',
+  'Sinhala (Sinhalese)': 'si',
+  'Slovak': 'sk',
+  'Slovenian': 'sl',
+  'Somali': 'so',
+  'Spanish': 'es',
+  'Sundanese': 'su',
+  'Swahili': 'sw',
+  'Swedish': 'sv',
+  'Tagalog (Filipino)': 'tl',
+  'Tajik': 'tg',
+  'Tamil': 'ta',
+  'Telugu': 'te',
+  'Thai': 'th',
+  'Turkish': 'tr',
+  'Ukrainian': 'uk',
+  'Urdu': 'ur',
+  'Uzbek': 'uz',
+  'Vietnamese': 'vi',
+  'Welsh': 'cy',
+  'Xhosa': 'xh',
+  'Yiddish': 'yi',
+  'Yoruba': 'yo',
+  'Zulu': 'zu',
 };
 
 const KEY_REQUIRED = ['deepl', 'libre'];
 const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx', 'lingva'];
 
 function showKeysButton() {
-    const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
-    const providerOptionalUrl = LOCAL_URL.includes(extension_settings.translate.provider);
-    $('#translate_key_button').toggle(providerRequiresKey);
-    $('#translate_key_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
-    $('#translate_url_button').toggle(providerOptionalUrl);
-    $('#translate_url_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + '_url']));
+  const providerRequiresKey =
+      KEY_REQUIRED.includes(extension_settings.translate.provider);
+  const providerOptionalUrl =
+      LOCAL_URL.includes(extension_settings.translate.provider);
+  $('#translate_key_button').toggle(providerRequiresKey);
+  $('#translate_key_button')
+      .toggleClass(
+          'success',
+          Boolean(secret_state[extension_settings.translate.provider]));
+  $('#translate_url_button').toggle(providerOptionalUrl);
+  $('#translate_url_button')
+      .toggleClass(
+          'success',
+          Boolean(
+              secret_state[extension_settings.translate.provider + '_url']));
 }
 
 function loadSettings() {
-    for (const key in defaultSettings) {
-        if (!Object.hasOwn(extension_settings.translate, key)) {
-            extension_settings.translate[key] = defaultSettings[key];
-        }
+  for (const key in defaultSettings) {
+    if (!Object.hasOwn(extension_settings.translate, key)) {
+      extension_settings.translate[key] = defaultSettings[key];
     }
+  }
 
-    $(`#translation_provider option[value="${extension_settings.translate.provider}"]`).attr('selected', true);
-    $(`#translation_target_language option[value="${extension_settings.translate.target_language}"]`).attr('selected', true);
-    $(`#translation_auto_mode option[value="${extension_settings.translate.auto_mode}"]`).attr('selected', true);
-    showKeysButton();
+  $(`#translation_provider option[value="${
+        extension_settings.translate.provider}"]`)
+      .attr('selected', true);
+  $(`#translation_target_language option[value="${
+        extension_settings.translate.target_language}"]`)
+      .attr('selected', true);
+  $(`#translation_auto_mode option[value="${
+        extension_settings.translate.auto_mode}"]`)
+      .attr('selected', true);
+  showKeysButton();
 }
 
 async function translateImpersonate(text) {
-    const translatedText = await translate(text, extension_settings.translate.target_language);
-    $('#send_textarea').val(translatedText);
+  const translatedText =
+      await translate(text, extension_settings.translate.target_language);
+  $('#send_textarea').val(translatedText);
 }
 
 async function translateIncomingMessage(messageId) {
-    const context = getContext();
-    const message = context.chat[messageId];
+  const context = getContext();
+  const message = context.chat[messageId];
 
-    if (typeof message.extra !== 'object') {
-        message.extra = {};
-    }
+  if (typeof message.extra !== 'object') {
+    message.extra = {};
+  }
 
-    // New swipe is being generated. Don't translate that
-    if ($(`#chat .mes[mesid="${messageId}"] .mes_text`).text() == '...') {
-        return;
-    }
+  // New swipe is being generated. Don't translate that
+  if ($(`#chat .mes[mesid="${messageId}"] .mes_text`).text() == '...') {
+    return;
+  }
 
-    const textToTranslate = substituteParams(message.mes, context.name1, message.name);
-    const translation = await translate(textToTranslate, extension_settings.translate.target_language);
-    message.extra.display_text = translation;
+  const textToTranslate =
+      substituteParams(message.mes, context.name1, message.name);
+  const translation = await translate(
+      textToTranslate, extension_settings.translate.target_language);
+  message.extra.display_text = translation;
 
-    updateMessageBlock(messageId, message);
+  updateMessageBlock(messageId, message);
 }
 
 async function translateProviderOneRing(text, lang) {
-    let from_lang = lang == extension_settings.translate.internal_language
-        ? extension_settings.translate.target_language
-        : extension_settings.translate.internal_language;
+  let from_lang = lang == extension_settings.translate.internal_language ?
+      extension_settings.translate.target_language :
+      extension_settings.translate.internal_language;
 
-    const response = await fetch('/api/translate/onering', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ text: text, from_lang: from_lang, to_lang: lang }),
-    });
+  const response = await fetch('/api/translate/onering', {
+    method: 'POST',
+    headers: getRequestHeaders(),
+    body: JSON.stringify({text: text, from_lang: from_lang, to_lang: lang}),
+  });
 
-    if (response.ok) {
-        const result = await response.text();
-        return result;
-    }
+  if (response.ok) {
+    const result = await response.text();
+    return result;
+  }
 
-    throw new Error(response.statusText);
+  throw new Error(response.statusText);
 }
 
 /**
@@ -214,18 +223,18 @@ async function translateProviderOneRing(text, lang) {
  * @returns {Promise<string>} Translated text
  */
 async function translateProviderLibre(text, lang) {
-    const response = await fetch('/api/translate/libre', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ text: text, lang: lang }),
-    });
+  const response = await fetch('/api/translate/libre', {
+    method: 'POST',
+    headers: getRequestHeaders(),
+    body: JSON.stringify({text: text, lang: lang}),
+  });
 
-    if (response.ok) {
-        const result = await response.text();
-        return result;
-    }
+  if (response.ok) {
+    const result = await response.text();
+    return result;
+  }
 
-    throw new Error(response.statusText);
+  throw new Error(response.statusText);
 }
 
 /**
@@ -235,18 +244,18 @@ async function translateProviderLibre(text, lang) {
  * @returns {Promise<string>} Translated text
  */
 async function translateProviderGoogle(text, lang) {
-    const response = await fetch('/api/translate/google', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ text: text, lang: lang }),
-    });
+  const response = await fetch('/api/translate/google', {
+    method: 'POST',
+    headers: getRequestHeaders(),
+    body: JSON.stringify({text: text, lang: lang}),
+  });
 
-    if (response.ok) {
-        const result = await response.text();
-        return result;
-    }
+  if (response.ok) {
+    const result = await response.text();
+    return result;
+  }
 
-    throw new Error(response.statusText);
+  throw new Error(response.statusText);
 }
 
 /**
@@ -256,18 +265,18 @@ async function translateProviderGoogle(text, lang) {
  * @returns {Promise<string>} Translated text
  */
 async function translateProviderLingva(text, lang) {
-    const response = await fetch('/api/translate/lingva', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ text: text, lang: lang }),
-    });
+  const response = await fetch('/api/translate/lingva', {
+    method: 'POST',
+    headers: getRequestHeaders(),
+    body: JSON.stringify({text: text, lang: lang}),
+  });
 
-    if (response.ok) {
-        const result = await response.text();
-        return result;
-    }
+  if (response.ok) {
+    const result = await response.text();
+    return result;
+  }
 
-    throw new Error(response.statusText);
+  throw new Error(response.statusText);
 }
 
 /**
@@ -277,22 +286,22 @@ async function translateProviderLingva(text, lang) {
  * @returns {Promise<string>} Translated text
  */
 async function translateProviderDeepl(text, lang) {
-    if (!secret_state.deepl) {
-        throw new Error('No DeepL API key');
-    }
+  if (!secret_state.deepl) {
+    throw new Error('No DeepL API key');
+  }
 
-    const response = await fetch('/api/translate/deepl', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ text: text, lang: lang }),
-    });
+  const response = await fetch('/api/translate/deepl', {
+    method: 'POST',
+    headers: getRequestHeaders(),
+    body: JSON.stringify({text: text, lang: lang}),
+  });
 
-    if (response.ok) {
-        const result = await response.text();
-        return result;
-    }
+  if (response.ok) {
+    const result = await response.text();
+    return result;
+  }
 
-    throw new Error(response.statusText);
+  throw new Error(response.statusText);
 }
 
 /**
@@ -302,18 +311,18 @@ async function translateProviderDeepl(text, lang) {
  * @returns {Promise<string>} Translated text
  */
 async function translateProviderDeepLX(text, lang) {
-    const response = await fetch('/api/translate/deeplx', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ text: text, lang: lang }),
-    });
+  const response = await fetch('/api/translate/deeplx', {
+    method: 'POST',
+    headers: getRequestHeaders(),
+    body: JSON.stringify({text: text, lang: lang}),
+  });
 
-    if (response.ok) {
-        const result = await response.text();
-        return result;
-    }
+  if (response.ok) {
+    const result = await response.text();
+    return result;
+  }
 
-    throw new Error(response.statusText);
+  throw new Error(response.statusText);
 }
 
 /**
@@ -323,40 +332,41 @@ async function translateProviderDeepLX(text, lang) {
  * @returns {Promise<string>} Translated text
  */
 async function translateProviderBing(text, lang) {
-    const response = await fetch('/api/translate/bing', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify({ text: text, lang: lang }),
-    });
+  const response = await fetch('/api/translate/bing', {
+    method: 'POST',
+    headers: getRequestHeaders(),
+    body: JSON.stringify({text: text, lang: lang}),
+  });
 
-    if (response.ok) {
-        const result = await response.text();
-        return result;
-    }
+  if (response.ok) {
+    const result = await response.text();
+    return result;
+  }
 
-    throw new Error(response.statusText);
+  throw new Error(response.statusText);
 }
 
 /**
  * Splits text into chunks and translates each chunk separately
  * @param {string} text Text to translate
  * @param {string} lang Target language code
- * @param {(text: string, lang: string) => Promise<string>} translateFn Function to translate a single chunk (must return a Promise)
+ * @param {(text: string, lang: string) => Promise<string>} translateFn Function
+ *     to translate a single chunk (must return a Promise)
  * @param {number} chunkSize Maximum chunk size
  * @returns {Promise<string>} Translated text
  */
 async function chunkedTranslate(text, lang, translateFn, chunkSize = 5000) {
-    if (text.length <= chunkSize) {
-        return await translateFn(text, lang);
-    }
+  if (text.length <= chunkSize) {
+    return await translateFn(text, lang);
+  }
 
-    const chunks = splitRecursive(text, chunkSize);
+  const chunks = splitRecursive(text, chunkSize);
 
-    let result = '';
-    for (const chunk of chunks) {
-        result += await translateFn(chunk, lang);
-    }
-    return result;
+  let result = '';
+  for (const chunk of chunks) {
+    result += await translateFn(chunk, lang);
+  }
+  return result;
 }
 
 /**
@@ -366,153 +376,174 @@ async function chunkedTranslate(text, lang, translateFn, chunkSize = 5000) {
  * @returns {Promise<string>} Translated text
  */
 async function translate(text, lang) {
-    try {
-        if (text == '') {
-            return '';
-        }
-
-        switch (extension_settings.translate.provider) {
-            case 'libre':
-                return await translateProviderLibre(text, lang);
-            case 'google':
-                return await chunkedTranslate(text, lang, translateProviderGoogle, 5000);
-            case 'lingva':
-                return await chunkedTranslate(text, lang, translateProviderLingva, 5000);
-            case 'deepl':
-                return await translateProviderDeepl(text, lang);
-            case 'deeplx':
-                return await chunkedTranslate(text, lang, translateProviderDeepLX, 1500);
-            case 'oneringtranslator':
-                return await translateProviderOneRing(text, lang);
-            case 'bing':
-                return await chunkedTranslate(text, lang, translateProviderBing, 1000);
-            default:
-                console.error('Unknown translation provider', extension_settings.translate.provider);
-                return text;
-        }
-    } catch (error) {
-        console.log(error);
-        toastr.error(String(error), 'Failed to translate message');
+  try {
+    if (text == '') {
+      return '';
     }
+
+    switch (extension_settings.translate.provider) {
+      case 'libre':
+        return await translateProviderLibre(text, lang);
+      case 'google':
+        return await chunkedTranslate(
+            text, lang, translateProviderGoogle, 5000);
+      case 'lingva':
+        return await chunkedTranslate(
+            text, lang, translateProviderLingva, 5000);
+      case 'deepl':
+        return await translateProviderDeepl(text, lang);
+      case 'deeplx':
+        return await chunkedTranslate(
+            text, lang, translateProviderDeepLX, 1500);
+      case 'oneringtranslator':
+        return await translateProviderOneRing(text, lang);
+      case 'bing':
+        return await chunkedTranslate(text, lang, translateProviderBing, 1000);
+      default:
+        console.error(
+            'Unknown translation provider',
+            extension_settings.translate.provider);
+        return text;
+    }
+  } catch (error) {
+    console.log(error);
+    toastr.error(String(error), 'Failed to translate message');
+  }
 }
 
 async function translateOutgoingMessage(messageId) {
-    const context = getContext();
-    const message = context.chat[messageId];
+  const context = getContext();
+  const message = context.chat[messageId];
 
-    if (typeof message.extra !== 'object') {
-        message.extra = {};
-    }
+  if (typeof message.extra !== 'object') {
+    message.extra = {};
+  }
 
-    const originalText = message.mes;
-    message.extra.display_text = originalText;
-    message.mes = await translate(originalText, extension_settings.translate.internal_language);
-    updateMessageBlock(messageId, message);
+  const originalText = message.mes;
+  message.extra.display_text = originalText;
+  message.mes = await translate(
+      originalText, extension_settings.translate.internal_language);
+  updateMessageBlock(messageId, message);
 
-    console.log('translateOutgoingMessage', messageId);
+  console.log('translateOutgoingMessage', messageId);
 }
 
 function shouldTranslate(types) {
-    return types.includes(extension_settings.translate.auto_mode);
+  return types.includes(extension_settings.translate.auto_mode);
 }
 
 function createEventHandler(translateFunction, shouldTranslateFunction) {
-    return async (data) => {
-        if (shouldTranslateFunction()) {
-            await translateFunction(data);
-        }
-    };
+  return async (data) => {
+    if (shouldTranslateFunction()) {
+      await translateFunction(data);
+    }
+  };
 }
 
+async function onTranslateInputMessageClick() {
+  const ta = document.querySelector('#send_textarea');
+  toastr.info(`Input Message is translating`, 'Please wait...');
+  const translatedText =
+      await translate(ta.value, extension_settings.translate.internal_language);
+  $('#send_textarea').val(translatedText);
+}
 // Prevents the chat from being translated in parallel
 let translateChatExecuting = false;
 
 async function onTranslateChatClick() {
-    if (translateChatExecuting) {
-        return;
+  if (translateChatExecuting) {
+    return;
+  }
+
+  try {
+    translateChatExecuting = true;
+    const context = getContext();
+    const chat = context.chat;
+
+    toastr.info(
+        `${chat.length} message(s) queued for translation.`, 'Please wait...');
+
+    for (let i = 0; i < chat.length; i++) {
+      await translateIncomingMessage(i);
     }
 
-    try {
-        translateChatExecuting = true;
-        const context = getContext();
-        const chat = context.chat;
-
-        toastr.info(`${chat.length} message(s) queued for translation.`, 'Please wait...');
-
-        for (let i = 0; i < chat.length; i++) {
-            await translateIncomingMessage(i);
-        }
-
-        await context.saveChat();
-    } catch (error) {
-        console.log(error);
-        toastr.error('Failed to translate chat');
-    } finally {
-        translateChatExecuting = false;
-    }
+    await context.saveChat();
+  } catch (error) {
+    console.log(error);
+    toastr.error('Failed to translate chat');
+  } finally {
+    translateChatExecuting = false;
+  }
 }
 
 async function onTranslationsClearClick() {
-    const confirm = await callPopup('<h3>Are you sure?</h3>This will remove translated text from all messages in the current chat. This action cannot be undone.', 'confirm');
+  const confirm = await callPopup(
+      '<h3>Are you sure?</h3>This will remove translated text from all messages in the current chat. This action cannot be undone.',
+      'confirm');
 
-    if (!confirm) {
-        return;
+  if (!confirm) {
+    return;
+  }
+
+  const context = getContext();
+  const chat = context.chat;
+
+  for (const mes of chat) {
+    if (mes.extra) {
+      delete mes.extra.display_text;
     }
+  }
 
-    const context = getContext();
-    const chat = context.chat;
-
-    for (const mes of chat) {
-        if (mes.extra) {
-            delete mes.extra.display_text;
-        }
-    }
-
-    await context.saveChat();
-    await reloadCurrentChat();
+  await context.saveChat();
+  await reloadCurrentChat();
 }
 
 async function translateMessageEdit(messageId) {
-    const context = getContext();
-    const chat = context.chat;
-    const message = chat[messageId];
+  const context = getContext();
+  const chat = context.chat;
+  const message = chat[messageId];
 
-    if (message.is_system || extension_settings.translate.auto_mode == autoModeOptions.NONE) {
-        return;
-    }
+  if (message.is_system ||
+      extension_settings.translate.auto_mode == autoModeOptions.NONE) {
+    return;
+  }
 
-    if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
-        await translateIncomingMessage(messageId);
-    }
+  if ((message.is_user && shouldTranslate(outgoingTypes)) ||
+      (!message.is_user && shouldTranslate(incomingTypes))) {
+    await translateIncomingMessage(messageId);
+  }
 }
 
 async function onMessageTranslateClick() {
-    const context = getContext();
-    const messageId = $(this).closest('.mes').attr('mesid');
-    const message = context.chat[messageId];
+  const context = getContext();
+  const messageId = $(this).closest('.mes').attr('mesid');
+  const message = context.chat[messageId];
 
-    // If the message is already translated, revert it back to the original text
-    if (message?.extra?.display_text) {
-        delete message.extra.display_text;
-        updateMessageBlock(messageId, message);
-    }
-    // If the message is not translated, translate it
-    else {
-        await translateIncomingMessage(messageId);
-    }
+  // If the message is already translated, revert it back to the original text
+  if (message?.extra?.display_text) {
+    delete message.extra.display_text;
+    updateMessageBlock(messageId, message);
+  }
+  // If the message is not translated, translate it
+  else {
+    await translateIncomingMessage(messageId);
+  }
 
-    await context.saveChat();
+  await context.saveChat();
 }
 
-const handleIncomingMessage = createEventHandler(translateIncomingMessage, () => shouldTranslate(incomingTypes));
-const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
-const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
+const handleIncomingMessage = createEventHandler(
+    translateIncomingMessage, () => shouldTranslate(incomingTypes));
+const handleOutgoingMessage = createEventHandler(
+    translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
+const handleImpersonateReady = createEventHandler(
+    translateImpersonate, () => shouldTranslate(incomingTypes));
 const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
 
 window['translate'] = translate;
 
 jQuery(() => {
-    const html = `
+  const html = `
     <div class="translation_settings">
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
@@ -551,78 +582,86 @@ jQuery(() => {
         </div>
     </div>`;
 
-    const buttonHtml = `
+  const buttonHtml = `
         <div id="translate_chat" class="list-group-item flex-container flexGap5">
             <div class="fa-solid fa-language extensionsMenuExtensionButton" /></div>
             Translate Chat
-        </div>`;
-    $('#extensionsMenu').append(buttonHtml);
-    $('#extensions_settings2').append(html);
-    $('#translate_chat').on('click', onTranslateChatClick);
-    $('#translation_clear').on('click', onTranslationsClearClick);
+        </div>
+        <div id="translate_input_message" class="list-group-item flex-container flexGap5">
+            <div class="fa-solid fa-language extensionsMenuExtensionButton" /></div>
+            Translate Input Message
+        </div>
+        `;
+  $('#extensionsMenu').append(buttonHtml);
+  $('#extensions_settings2').append(html);
+  $('#translate_chat').on('click', onTranslateChatClick);
+  $('#translate_input_message').on('click', onTranslateInputMessageClick);
+  $('#translation_clear').on('click', onTranslationsClearClick);
 
-    for (const [key, value] of Object.entries(languageCodes)) {
-        $('#translation_target_language').append(`<option value="${value}">${key}</option>`);
+  for (const [key, value] of Object.entries(languageCodes)) {
+    $('#translation_target_language')
+        .append(`<option value="${value}">${key}</option>`);
+  }
+
+  $('#translation_auto_mode').on('change', (event) => {
+    extension_settings.translate.auto_mode = event.target.value;
+    saveSettingsDebounced();
+  });
+  $('#translation_provider').on('change', (event) => {
+    extension_settings.translate.provider = event.target.value;
+    showKeysButton();
+    saveSettingsDebounced();
+  });
+  $('#translation_target_language').on('change', (event) => {
+    extension_settings.translate.target_language = event.target.value;
+    saveSettingsDebounced();
+  });
+  $(document).on('click', '.mes_translate', onMessageTranslateClick);
+  $('#translate_key_button').on('click', async () => {
+    const optionText = $('#translation_provider option:selected').text();
+    const key = await callPopup(`<h3>${optionText} API Key</h3>`, 'input');
+
+    if (key == false) {
+      return;
     }
 
-    $('#translation_auto_mode').on('change', (event) => {
-        extension_settings.translate.auto_mode = event.target.value;
-        saveSettingsDebounced();
-    });
-    $('#translation_provider').on('change', (event) => {
-        extension_settings.translate.provider = event.target.value;
-        showKeysButton();
-        saveSettingsDebounced();
-    });
-    $('#translation_target_language').on('change', (event) => {
-        extension_settings.translate.target_language = event.target.value;
-        saveSettingsDebounced();
-    });
-    $(document).on('click', '.mes_translate', onMessageTranslateClick);
-    $('#translate_key_button').on('click', async () => {
-        const optionText = $('#translation_provider option:selected').text();
-        const key = await callPopup(`<h3>${optionText} API Key</h3>`, 'input');
+    await writeSecret(extension_settings.translate.provider, key);
+    toastr.success('API Key saved');
+    $('#translate_key_button').addClass('success');
+  });
+  $('#translate_url_button').on('click', async () => {
+    const optionText = $('#translation_provider option:selected').text();
+    const exampleURLs = {
+      'libre': 'http://127.0.0.1:5000/translate',
+      'lingva': 'https://lingva.ml/api/v1',
+      'oneringtranslator': 'http://127.0.0.1:4990/translate',
+      'deeplx': 'http://127.0.0.1:1188/translate',
+    };
+    const popupText = `<h3>${optionText} API URL</h3><i>Example: <tt>${
+        String(exampleURLs[extension_settings.translate.provider])}</tt></i>`;
 
-        if (key == false) {
-            return;
-        }
+    const secretKey = extension_settings.translate.provider + '_url';
+    const savedUrl = secret_state[secretKey] ? await findSecret(secretKey) : '';
 
-        await writeSecret(extension_settings.translate.provider, key);
-        toastr.success('API Key saved');
-        $('#translate_key_button').addClass('success');
-    });
-    $('#translate_url_button').on('click', async () => {
-        const optionText = $('#translation_provider option:selected').text();
-        const exampleURLs = {
-            'libre': 'http://127.0.0.1:5000/translate',
-            'lingva': 'https://lingva.ml/api/v1',
-            'oneringtranslator': 'http://127.0.0.1:4990/translate',
-            'deeplx': 'http://127.0.0.1:1188/translate',
-        };
-        const popupText = `<h3>${optionText} API URL</h3><i>Example: <tt>${String(exampleURLs[extension_settings.translate.provider])}</tt></i>`;
+    const url = await callPopup(popupText, 'input', savedUrl);
 
-        const secretKey = extension_settings.translate.provider + '_url';
-        const savedUrl = secret_state[secretKey] ? await findSecret(secretKey) : '';
+    if (url == false || url == '') {
+      return;
+    }
 
-        const url = await callPopup(popupText, 'input', savedUrl);
+    await writeSecret(secretKey, url);
 
-        if (url == false || url == '') {
-            return;
-        }
+    toastr.success('API URL saved');
+    $('#translate_url_button').addClass('success');
+  });
 
-        await writeSecret(secretKey, url);
+  loadSettings();
 
-        toastr.success('API URL saved');
-        $('#translate_url_button').addClass('success');
-    });
+  eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleIncomingMessage);
+  eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
+  eventSource.on(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
+  eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
+  eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdit);
 
-    loadSettings();
-
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleIncomingMessage);
-    eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
-    eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
-    eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdit);
-
-    document.body.classList.add('translate');
+  document.body.classList.add('translate');
 });
