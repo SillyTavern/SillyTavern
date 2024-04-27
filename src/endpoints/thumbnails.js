@@ -10,6 +10,10 @@ const { getAllUserHandles, getUserDirectories } = require('../users');
 const { getConfigValue } = require('../util');
 const { jsonParser } = require('../express-common');
 
+const thumbnailsDisabled = getConfigValue('disableThumbnails', false);
+const quality = getConfigValue('thumbnailsQuality', 95);
+const pngFormat = getConfigValue('avatarThumbnailsPng', false);
+
 /**
  * Gets a path to thumbnail folder based on the type.
  * @param {import('../users').UserDirectoryList} directories User directories
@@ -115,9 +119,8 @@ async function generateThumbnail(directories, type, file) {
         let buffer;
 
         try {
-            const quality = getConfigValue('thumbnailsQuality', 95);
             const image = await jimp.read(pathToOriginalFile);
-            const imgType = type == 'avatar' && getConfigValue('avatarThumbnailsPng', false) ? 'image/png' : 'image/jpeg';
+            const imgType = type == 'avatar' && pngFormat ? 'image/png' : 'image/jpeg';
             buffer = await image.cover(mySize[0], mySize[1]).quality(quality).getBufferAsync(imgType);
         }
         catch (inner) {
@@ -188,7 +191,6 @@ router.get('/', jsonParser, async function (request, response) {
             return response.sendStatus(403);
         }
 
-        const thumbnailsDisabled = getConfigValue('disableThumbnails', false);
         if (thumbnailsDisabled) {
             const folder = getOriginalFolder(request.user.directories, type);
 

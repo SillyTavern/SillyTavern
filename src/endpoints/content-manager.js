@@ -5,6 +5,7 @@ const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
 const { getConfigValue } = require('../util');
 const { jsonParser } = require('../express-common');
+const writeFileAtomicSync = require('write-file-atomic').sync;
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 const characterCardParser = require('../character-card-parser.js');
@@ -133,7 +134,7 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
         console.log(`Content file ${contentItem.filename} copied to ${contentTarget}`);
     }
 
-    fs.writeFileSync(contentLogPath, contentLog.join('\n'));
+    writeFileAtomicSync(contentLogPath, contentLog.join('\n'));
 }
 
 /**
@@ -386,6 +387,45 @@ async function downloadJannyCharacter(uuid) {
     throw new Error('Failed to download character');
 }
 
+//Download Character Cards from AICharactersCards.com (AICC) API.
+async function downloadAICCCharacter(id) {
+    const apiURL = `https://aicharactercards.com/wp-json/pngapi/v1/image/${id}`;
+    try {
+        const response = await fetch(apiURL);
+        if (!response.ok) {
+            throw new Error(`Failed to download character: ${response.statusText}`);
+        }
+
+        const contentType = response.headers.get('content-type') || 'image/png'; // Default to 'image/png' if header is missing
+        const buffer = await response.buffer();
+        const fileName = `${sanitize(id)}.png`; // Assuming PNG, but adjust based on actual content or headers
+
+        return {
+            buffer: buffer,
+            fileName: fileName,
+            fileType: contentType,
+        };
+    } catch (error) {
+        console.error('Error downloading character:', error);
+        throw error;
+    }
+}
+
+/**
+ * Parses an aicharactercards URL to extract the path.
+ * @param {string} url URL to parse
+ * @returns {string | null} AICC path
+ */
+function parseAICC(url) {
+    const pattern = /^https?:\/\/aicharactercards\.com\/character-cards\/([^/]+)\/([^/]+)\/?$|([^/]+)\/([^/]+)$/;
+    const match = url.match(pattern);
+    if (match) {
+        // Match group 1 & 2 for full URL, 3 & 4 for relative path
+        return match[1] && match[2] ? `${match[1]}/${match[2]}` : `${match[3]}/${match[4]}`;
+    }
+    return null;
+}
+
 /**
 * @param {String} url
 * @returns {String | null } UUID of the character
@@ -414,6 +454,7 @@ router.post('/importURL', jsonParser, async (request, response) => {
 
         const isJannnyContent = url.includes('janitorai');
         const isPygmalionContent = url.includes('pygmalion.chat');
+        const isAICharacterCardsContent = url.includes('aicharactercards.com');
 
         if (isPygmalionContent) {
             const uuid = getUuidFromUrl(url);
@@ -431,6 +472,13 @@ router.post('/importURL', jsonParser, async (request, response) => {
 
             type = 'character';
             result = await downloadJannyCharacter(uuid);
+        } else if (isAICharacterCardsContent) {
+            const AICCParsed = parseAICC(url);
+            if (!AICCParsed) {
+                return response.sendStatus(404);
+            }
+            type = 'character';
+            result = await downloadAICCCharacter(AICCParsed);
         } else {
             const chubParsed = parseChubUrl(url);
             type = chubParsed?.type;
@@ -469,6 +517,7 @@ router.post('/importUUID', jsonParser, async (request, response) => {
 
         const isJannny = uuid.includes('_character');
         const isPygmalion = (!isJannny && uuid.length == 36);
+        const isAICC = uuid.startsWith('AICC/');
         const uuidType = uuid.includes('lorebook') ? 'lorebook' : 'character';
 
         if (isPygmalion) {
@@ -477,6 +526,10 @@ router.post('/importUUID', jsonParser, async (request, response) => {
         } else if (isJannny) {
             console.log('Downloading Janitor character:', uuid.split('_')[0]);
             result = await downloadJannyCharacter(uuid.split('_')[0]);
+        } else if (isAICC) {
+            const [, author, card] = uuid.split('/');
+            console.log('Downloading AICC character:', `${author}/${card}`);
+            result = await downloadAICCCharacter(`${author}/${card}`);
         } else {
             if (uuidType === 'character') {
                 console.log('Downloading chub character:', uuid);

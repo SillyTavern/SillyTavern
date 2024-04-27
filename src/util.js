@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const commandExistsSync = require('command-exists').sync;
+const writeFileAtomicSync = require('write-file-atomic').sync;
 const _ = require('lodash');
 const yauzl = require('yauzl');
 const mime = require('mime-types');
@@ -11,10 +12,19 @@ const { Readable } = require('stream');
 const { PUBLIC_DIRECTORIES } = require('./constants');
 
 /**
+ * Parsed config object.
+ */
+let CACHED_CONFIG = null;
+
+/**
  * Returns the config object from the config.yaml file.
  * @returns {object} Config object
  */
 function getConfig() {
+    if (CACHED_CONFIG) {
+        return CACHED_CONFIG;
+    }
+
     if (!fs.existsSync('./config.yaml')) {
         console.error(color.red('No config file found. Please create a config.yaml file. The default config file can be found in the /default folder.'));
         console.error(color.red('The program will now exit.'));
@@ -23,6 +33,7 @@ function getConfig() {
 
     try {
         const config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
+        CACHED_CONFIG = config;
         return config;
     } catch (error) {
         console.warn('Failed to read config.yaml');
@@ -47,9 +58,11 @@ function getConfigValue(key, defaultValue = null) {
  * @param {any} value Value to set
  */
 function setConfigValue(key, value) {
+    // Reset cache so that the next getConfig call will read the updated config file
+    CACHED_CONFIG = null;
     const config = getConfig();
     _.set(config, key, value);
-    fs.writeFileSync('./config.yaml', yaml.stringify(config));
+    writeFileAtomicSync('./config.yaml', yaml.stringify(config));
 }
 
 /**
@@ -350,7 +363,7 @@ function generateTimestamp() {
  * @param {string} prefix
  */
 function removeOldBackups(prefix) {
-    const MAX_BACKUPS = 25;
+    const MAX_BACKUPS = 50;
 
     let files = fs.readdirSync(PUBLIC_DIRECTORIES.backups).filter(f => f.startsWith(prefix));
     if (files.length > MAX_BACKUPS) {

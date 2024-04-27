@@ -146,7 +146,7 @@ class SlashCommandParser {
             return {
                 commandName: command,
                 command: {
-                    callback: () => {},
+                    callback: () => { },
                     helpString: '',
                     interruptsGeneration: false,
                     purgeFromMessage: true,
@@ -203,13 +203,10 @@ class SlashCommandParser {
 
         // Excluded commands format in their own function
         if (!excludedFromRegex.includes(command)) {
-            console.debug(`parse: !excludedFromRegex.includes(${command}`);
-            console.debug(`   parse: unnamedArg before: ${unnamedArg}`);
             unnamedArg = getRegexedString(
                 unnamedArg,
                 regex_placement.SLASH_COMMAND,
             );
-            console.debug(`   parse: unnamedArg after: ${unnamedArg}`);
         }
 
         // your weird complex command is now transformed into a juicy tiny text or something useful :)
@@ -338,13 +335,12 @@ function injectCallback(args, value) {
         chat_metadata.script_injects = {};
     }
 
-    chat_metadata.script_injects[id] = {
-        value,
-        position,
-        depth,
-        scan,
-        role,
-    };
+    if (value) {
+        const inject = { value, position, depth, scan, role };
+        chat_metadata.script_injects[id] = inject;
+    } else {
+        delete chat_metadata.script_injects[id];
+    }
 
     setExtensionPrompt(prefixedId, value, position, depth, scan, role);
     saveMetadataDebounced();
