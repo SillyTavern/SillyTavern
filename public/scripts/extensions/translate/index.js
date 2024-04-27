@@ -2,8 +2,8 @@ export { translate };
 
 import {
     callPopup,
-    event_types,
     eventSource,
+    event_types,
     getRequestHeaders,
     reloadCurrentChat,
     saveSettingsDebounced,
@@ -142,21 +142,12 @@ const KEY_REQUIRED = ['deepl', 'libre'];
 const LOCAL_URL = ['libre', 'oneringtranslator', 'deeplx', 'lingva'];
 
 function showKeysButton() {
-    const providerRequiresKey =
-        KEY_REQUIRED.includes(extension_settings.translate.provider);
-    const providerOptionalUrl =
-        LOCAL_URL.includes(extension_settings.translate.provider);
+    const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
+    const providerOptionalUrl = LOCAL_URL.includes(extension_settings.translate.provider);
     $('#translate_key_button').toggle(providerRequiresKey);
-    $('#translate_key_button')
-        .toggleClass(
-            'success',
-            Boolean(secret_state[extension_settings.translate.provider]));
+    $('#translate_key_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
     $('#translate_url_button').toggle(providerOptionalUrl);
-    $('#translate_url_button')
-        .toggleClass(
-            'success',
-            Boolean(
-                secret_state[extension_settings.translate.provider + '_url']));
+    $('#translate_url_button').toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + '_url']));
 }
 
 function loadSettings() {
@@ -166,18 +157,14 @@ function loadSettings() {
         }
     }
 
-    $(`#translation_provider option[value="${extension_settings.translate.provider}"]`)
-        .attr('selected', true);
-    $(`#translation_target_language option[value="${extension_settings.translate.target_language}"]`)
-        .attr('selected', true);
-    $(`#translation_auto_mode option[value="${extension_settings.translate.auto_mode}"]`)
-        .attr('selected', true);
+    $(`#translation_provider option[value="${extension_settings.translate.provider}"]`).attr('selected', true);
+    $(`#translation_target_language option[value="${extension_settings.translate.target_language}"]`).attr('selected', true);
+    $(`#translation_auto_mode option[value="${extension_settings.translate.auto_mode}"]`).attr('selected', true);
     showKeysButton();
 }
 
 async function translateImpersonate(text) {
-    const translatedText =
-        await translate(text, extension_settings.translate.target_language);
+    const translatedText = await translate(text, extension_settings.translate.target_language);
     $('#send_textarea').val(translatedText);
 }
 
@@ -194,19 +181,17 @@ async function translateIncomingMessage(messageId) {
         return;
     }
 
-    const textToTranslate =
-        substituteParams(message.mes, context.name1, message.name);
-    const translation = await translate(
-        textToTranslate, extension_settings.translate.target_language);
+    const textToTranslate = substituteParams(message.mes, context.name1, message.name);
+    const translation = await translate(textToTranslate, extension_settings.translate.target_language);
     message.extra.display_text = translation;
 
     updateMessageBlock(messageId, message);
 }
 
 async function translateProviderOneRing(text, lang) {
-    let from_lang = lang == extension_settings.translate.internal_language ?
-        extension_settings.translate.target_language :
-        extension_settings.translate.internal_language;
+    let from_lang = lang == extension_settings.translate.internal_language
+        ? extension_settings.translate.target_language
+        : extension_settings.translate.internal_language;
 
     const response = await fetch('/api/translate/onering', {
         method: 'POST',
@@ -356,8 +341,7 @@ async function translateProviderBing(text, lang) {
  * Splits text into chunks and translates each chunk separately
  * @param {string} text Text to translate
  * @param {string} lang Target language code
- * @param {(text: string, lang: string) => Promise<string>} translateFn Function
- *     to translate a single chunk (must return a Promise)
+ * @param {(text: string, lang: string) => Promise<string>} translateFn Function to translate a single chunk (must return a Promise)
  * @param {number} chunkSize Maximum chunk size
  * @returns {Promise<string>} Translated text
  */
@@ -391,24 +375,19 @@ async function translate(text, lang) {
             case 'libre':
                 return await translateProviderLibre(text, lang);
             case 'google':
-                return await chunkedTranslate(
-                    text, lang, translateProviderGoogle, 5000);
+                return await chunkedTranslate(text, lang, translateProviderGoogle, 5000);
             case 'lingva':
-                return await chunkedTranslate(
-                    text, lang, translateProviderLingva, 5000);
+                return await chunkedTranslate(text, lang, translateProviderLingva, 5000);
             case 'deepl':
                 return await translateProviderDeepl(text, lang);
             case 'deeplx':
-                return await chunkedTranslate(
-                    text, lang, translateProviderDeepLX, 1500);
+                return await chunkedTranslate(text, lang, translateProviderDeepLX, 1500);
             case 'oneringtranslator':
                 return await translateProviderOneRing(text, lang);
             case 'bing':
                 return await chunkedTranslate(text, lang, translateProviderBing, 1000);
             default:
-                console.error(
-                    'Unknown translation provider',
-                    extension_settings.translate.provider);
+                console.error('Unknown translation provider', extension_settings.translate.provider);
                 return text;
         }
     } catch (error) {
@@ -427,8 +406,7 @@ async function translateOutgoingMessage(messageId) {
 
     const originalText = message.mes;
     message.extra.display_text = originalText;
-    message.mes = await translate(
-        originalText, extension_settings.translate.internal_language);
+    message.mes = await translate(originalText, extension_settings.translate.internal_language);
     updateMessageBlock(messageId, message);
 
     console.log('translateOutgoingMessage', messageId);
@@ -449,10 +427,10 @@ function createEventHandler(translateFunction, shouldTranslateFunction) {
 async function onTranslateInputMessageClick() {
     const ta = document.querySelector('#send_textarea');
     toastr.info('Input Message is translating', 'Please wait...');
-    const translatedText =
-        await translate(ta.value, extension_settings.translate.internal_language);
+    const translatedText = await translate(ta.value, extension_settings.translate.internal_language);
     $('#send_textarea').val(translatedText);
 }
+
 // Prevents the chat from being translated in parallel
 let translateChatExecuting = false;
 
@@ -466,8 +444,7 @@ async function onTranslateChatClick() {
         const context = getContext();
         const chat = context.chat;
 
-        toastr.info(
-            `${chat.length} message(s) queued for translation.`, 'Please wait...');
+        toastr.info(`${chat.length} message(s) queued for translation.`, 'Please wait...');
 
         for (let i = 0; i < chat.length; i++) {
             await translateIncomingMessage(i);
@@ -483,9 +460,7 @@ async function onTranslateChatClick() {
 }
 
 async function onTranslationsClearClick() {
-    const confirm = await callPopup(
-        '<h3>Are you sure?</h3>This will remove translated text from all messages in the current chat. This action cannot be undone.',
-        'confirm');
+    const confirm = await callPopup('<h3>Are you sure?</h3>This will remove translated text from all messages in the current chat. This action cannot be undone.', 'confirm');
 
     if (!confirm) {
         return;
@@ -509,13 +484,11 @@ async function translateMessageEdit(messageId) {
     const chat = context.chat;
     const message = chat[messageId];
 
-    if (message.is_system ||
-        extension_settings.translate.auto_mode == autoModeOptions.NONE) {
+    if (message.is_system || extension_settings.translate.auto_mode == autoModeOptions.NONE) {
         return;
     }
 
-    if ((message.is_user && shouldTranslate(outgoingTypes)) ||
-        (!message.is_user && shouldTranslate(incomingTypes))) {
+    if ((message.is_user && shouldTranslate(outgoingTypes)) || (!message.is_user && shouldTranslate(incomingTypes))) {
         await translateIncomingMessage(messageId);
     }
 }
@@ -538,12 +511,9 @@ async function onMessageTranslateClick() {
     await context.saveChat();
 }
 
-const handleIncomingMessage = createEventHandler(
-    translateIncomingMessage, () => shouldTranslate(incomingTypes));
-const handleOutgoingMessage = createEventHandler(
-    translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
-const handleImpersonateReady = createEventHandler(
-    translateImpersonate, () => shouldTranslate(incomingTypes));
+const handleIncomingMessage = createEventHandler(translateIncomingMessage, () => shouldTranslate(incomingTypes));
+const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () => shouldTranslate(outgoingTypes));
+const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
 const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
 
 window['translate'] = translate;
@@ -605,8 +575,7 @@ jQuery(() => {
     $('#translation_clear').on('click', onTranslationsClearClick);
 
     for (const [key, value] of Object.entries(languageCodes)) {
-        $('#translation_target_language')
-            .append(`<option value="${value}">${key}</option>`);
+        $('#translation_target_language').append(`<option value="${value}">${key}</option>`);
     }
 
     $('#translation_auto_mode').on('change', (event) => {
