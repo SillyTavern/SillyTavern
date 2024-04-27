@@ -37,7 +37,7 @@ import {
     system_message_types,
     this_chid,
 } from '../script.js';
-import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandParserError } from './slash-commands/SlashCommandParserError.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
 import { hideChatMessageRange } from './chats.js';
@@ -61,7 +61,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { SlashCommandAutoComplete } from './slash-commands/SlashCommandAutoComplete.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 export {
-    executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
+    executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
 
 export const parser = new SlashCommandParser();
@@ -2549,20 +2549,44 @@ function modelCallback(_, model) {
 }
 
 /**
+ *
+ * @param {string} text Slash command txt
+ * @param {object} [options]
+ * @param {boolean} [options.handleParserErrors]
+ * @param {SlashCommandScope} [options.scope]
+ * @param {boolean} [options.handleExecutionErrors]
+ * @param {PARSER_FLAG[]} [options.parserFlags]
+ * @param {AbortController} [options.abortController]
+ * @returns {Promise<SlashCommandClosureResult>}
+ */
+async function executeSlashCommandsWithOptions(text, options = {}) {
+    return await executeSlashCommands(
+        text,
+        options.handleParserErrors ?? true,
+        options.scope ?? null,
+        options.handleExecutionErrors ?? false,
+        options.parserFlags ?? null,
+        options.abortController ?? null,
+    );
+}
+/**
  * Executes slash commands in the provided text
  * @param {string} text Slash command text
  * @param {boolean} handleParserErrors Whether to handle parser errors (show toast on error) or throw
  * @param {SlashCommandScope} scope The scope to be used when executing the commands.
+ * @param {boolean} handleExecutionErrors
+ * @param {PARSER_FLAG[]} parserFlags
+ * @param {AbortController} abortController
  * @returns {Promise<SlashCommandClosureResult>}
  */
-async function executeSlashCommands(text, handleParserErrors = true, scope = null, handleExecutionErrors = false, parserFlags = null) {
+async function executeSlashCommands(text, handleParserErrors = true, scope = null, handleExecutionErrors = false, parserFlags = null, abortController = null) {
     if (!text) {
         return null;
     }
 
     let closure;
     try {
-        closure = parser.parse(text, true, parserFlags);
+        closure = parser.parse(text, true, parserFlags, abortController);
         closure.scope.parent = scope;
     } catch (e) {
         if (handleParserErrors && e instanceof SlashCommandParserError) {
@@ -2588,7 +2612,10 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
     }
 
     try {
-        return await closure.execute();
+        const result = await closure.execute();
+        if (result.isAborted) {
+            toastr.warning(result.abortReason, 'Command execution aborted');
+        }
     } catch (e) {
         if (handleExecutionErrors) {
             toastr.error(e.message);

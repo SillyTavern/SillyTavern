@@ -7,13 +7,14 @@ import { SlashCommandScope } from './SlashCommandScope.js';
 
 export class SlashCommandClosure {
     /**@type {SlashCommandScope}*/ scope;
-    /**@type {Boolean}*/ executeNow = false;
+    /**@type {boolean}*/ executeNow = false;
     // @ts-ignore
     /**@type {Object.<string,string|SlashCommandClosure>}*/ arguments = {};
     // @ts-ignore
     /**@type {Object.<string,string|SlashCommandClosure>}*/ providedArguments = {};
     /**@type {SlashCommandExecutor[]}*/ executorList = [];
-    /**@type {String}*/ keptText;
+    /**@type {string}*/ keptText;
+    /**@type {AbortController}*/ abortController;
 
     constructor(parent) {
         this.scope = new SlashCommandScope(parent);
@@ -77,6 +78,7 @@ export class SlashCommandClosure {
         closure.providedArguments = this.providedArguments;
         closure.executorList = this.executorList;
         closure.keptText = this.keptText;
+        closure.abortController = this.abortController;
         return closure;
     }
 
@@ -225,11 +227,29 @@ export class SlashCommandClosure {
                     ;
                 }
 
+                let abortResult;
+                // eslint-disable-next-line no-cond-assign
+                if (abortResult = this.testAbortController()) {
+                    return abortResult;
+                }
                 this.scope.pipe = await executor.command.callback(args, value ?? '');
+                // eslint-disable-next-line no-cond-assign
+                if (abortResult = this.testAbortController()) {
+                    return abortResult;
+                }
             }
         }
         /**@type {SlashCommandClosureResult} */
         const result = Object.assign(new SlashCommandClosureResult(), { interrupt, newText: this.keptText, pipe: this.scope.pipe });
         return result;
+    }
+
+    testAbortController() {
+        if (this.abortController?.signal?.aborted) {
+            const result = new SlashCommandClosureResult();
+            result.isAborted = true;
+            result.abortReason = this.abortController.signal.reason.toString();
+            return result;
+        }
     }
 }

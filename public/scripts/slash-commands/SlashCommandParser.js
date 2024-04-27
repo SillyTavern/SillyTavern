@@ -87,6 +87,7 @@ export class SlashCommandParser {
     /**@type {string}*/ text;
     /**@type {string}*/ keptText;
     /**@type {number}*/ index;
+    /**@type {AbortController}*/ abortController;
     /**@type {SlashCommandScope}*/ scope;
     /**@type {SlashCommandClosure}*/ closure;
 
@@ -539,11 +540,12 @@ export class SlashCommandParser {
     }
 
 
-    parse(text, verifyCommandNames = true, flags = null) {
+    parse(text, verifyCommandNames = true, flags = null, abortController = null) {
         this.verifyCommandNames = verifyCommandNames;
         for (const key of Object.keys(PARSER_FLAG)) {
             this.flags[PARSER_FLAG[key]] = flags?.[PARSER_FLAG[key]] ?? power_user.stscript.parser.flags[PARSER_FLAG[key]] ?? false;
         }
+        this.abortController = abortController;
         this.text = `{:${text}:}`;
         this.keptText = '';
         this.index = 0;
@@ -569,6 +571,7 @@ export class SlashCommandParser {
         let injectPipe = true;
         this.take(2); // discard opening {:
         let closure = new SlashCommandClosure(this.scope);
+        closure.abortController = this.abortController;
         this.scope = closure.scope;
         this.closure = closure;
         this.discardWhitespace();

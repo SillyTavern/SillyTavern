@@ -155,7 +155,7 @@ import {
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from './scripts/slash-commands.js';
+import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from './scripts/slash-commands.js';
 import {
     tag_map,
     tags,
@@ -2395,31 +2395,26 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
  * Executes slash commands and returns the new text and whether the generation was interrupted.
  * @param {string} message Text to be sent
  * @returns {Promise<boolean>} Whether the message sending was interrupted
+ * @param {AbortController} abortController
  */
-async function processCommands(message) {
+async function processCommands(message, abortController) {
     if (!message || !message.trim().startsWith('/')) {
         return false;
     }
 
-    const previousText = String($('#send_textarea').val());
-    const result = await executeSlashCommands(message, true, null, true);
+    deactivateSendButtons();
+    is_send_press = true;
 
-    if (!result || typeof result !== 'object') {
-        return false;
-    }
+    document.querySelector('#send_textarea').value = '';
 
-    const currentText = String($('#send_textarea').val());
+    await executeSlashCommandsWithOptions(message, {
+        abortController: abortController,
+    });
 
-    if (previousText === currentText) {
-        $('#send_textarea').val(result.newText)[0].dispatchEvent(new Event('input', { bubbles:true }));
-    }
+    is_send_press = false;
+    activateSendButtons();
 
-    // interrupt generation if the input was nothing but a command
-    if (message.length > 0 && result?.newText.length === 0) {
-        return true;
-    }
-
-    return result?.interrupt;
+    return true;
 }
 
 function sendSystemMessage(type, text, extra = {}) {
@@ -3083,7 +3078,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     let message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     if (!(dryRun || type == 'regenerate' || type == 'swipe' || type == 'quiet')) {
-        const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
+        const interruptedByCommand = await processCommands(String($('#send_textarea').val()), abortController);
 
         if (interruptedByCommand) {
             //$("#send_textarea").val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
@@ -10177,11 +10172,10 @@ jQuery(async function () {
             streamingProcessor = null;
         }
         if (abortController) {
-            abortController.abort();
+            abortController.abort('Clicked stop button');
             hideStopButton();
         }
         eventSource.emit(event_types.GENERATION_STOPPED);
-        activateSendButtons();
     });
 
     $('.drawer-toggle').on('click', function () {
