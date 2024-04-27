@@ -5111,7 +5111,7 @@
                                     <small for="characterFilter" data-i18n="Filter to Character(s)">
                                         Filter to Character(s)
                                     </small>
-                                    <label class="checkbox_label flexNoGap">
+                                    <label class="checkbox_label flexNoGap margin-r5" for="character_exclusion">
                                         <input type="checkbox" name="character_exclusion" />
                                         <span>
                                             <small data-i18n="Character Exclusion">Character Exclusion</small>
@@ -5127,12 +5127,27 @@
                                 </div>
                             </div>
                             <div class="flex1 flex-container flexFlowColumn flexNoGap">
-                                <label for="group">
-                                    <small data-i18n="Inclusion Group">
+                                <div class="flex-container justifySpaceBetween">
+                                    <small for="group" data-i18n="Inclusion Group">
                                         Inclusion Group
+                                        <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#inclusion-group" class="notes-link" target="_blank"
+                                            title="Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group" data-i18n="[title]Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group">
+                                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                                        </a>
                                     </small>
-                                </label>
-                                <input type="text" class="text_pole" name="group" rows="1" data-i18n="[placeholder]Only one entry with the same label will be activated" placeholder="Only one entry with the same label will be activated">
+                                    <label class="checkbox_label flexNoGap margin-r5" for="groupPrio">
+                                        <input type="checkbox" name="groupPrio" />
+                                        <span>
+                                            <small data-i18n="Prioritize Inclusion"  title="Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.&#13;" data-i18n="[title]Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.">
+                                                Prioritize Inclusion
+                                                <div class="fa-solid fa-circle-info opacity50p"></div>
+                                            </small>
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="range-block-range">
+                                    <input type="text" class="text_pole margin0" name="group" rows="1" data-i18n="[placeholder]Only one entry with the same label will be activated" placeholder="Only one entry with the same label will be activated">
+                                </div>
                             </div>
                         </div>
                         <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">

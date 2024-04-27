@@ -1338,6 +1338,18 @@ function getWorldEntry(name, data, entry) {
     groupInput.val(entry.group ?? '').trigger('input');
     setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data)), 1);
 
+    // inclusion priority
+    const groupPrioInput = template.find('input[name="groupPrio"]');
+    groupPrioInput.data('uid', entry.uid);
+    groupPrioInput.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = $(this).prop('checked');
+        data.entries[uid].groupPrio = value;
+        setOriginalDataValue(data, uid, 'extensions.groupPrio', data.entries[uid].groupPrio);
+        saveWorldInfo(name, data);
+    });
+    groupPrioInput.prop('checked', entry.groupPrio).trigger('input');
+
     // probability
     if (entry.probability === undefined) {
         entry.probability = null;
@@ -2376,20 +2388,38 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
         return;
     }
 
+    const removeEntry = (entry) => newEntries.splice(newEntries.indexOf(entry), 1);
+    function removeAllBut(group, chosen, logging = true) {
+        for (const entry of group) {
+            if (entry === chosen) {
+                continue;
+            }
+
+            if (logging) console.debug(`Removing loser from inclusion group '${entry.group}' entry '${entry.uid}'`, entry);
+            removeEntry(entry)
+        }
+    }
+
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`Checking inclusion group '${key}' with ${group.length} entries`, group);
 
         if (Array.from(allActivatedEntries).some(x => x.group === key)) {
             console.debug(`Skipping inclusion group check, group already activated '${key}'`);
             // We need to forcefully deactivate all other entries in the group
-            for (const entry of group) {
-                newEntries.splice(newEntries.indexOf(entry), 1);
-            }
+            removeAllBut(group, null, false);
             continue;
         }
 
         if (!Array.isArray(group) || group.length <= 1) {
             console.debug('Skipping inclusion group check, only one entry');
+            continue;
+        }
+
+        // Check for group prio
+        const prios = group.filter(x => x.groupPrio).sort(sortFn);
+        if (prios.length) {
+            console.debug(`Activated inclusion group '${key}' with by prio winner entry '${prios[0].uid}'`, prios[0]);
+            removeAllBut(group, prios[0]);
             continue;
         }
 
@@ -2403,7 +2433,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
             currentWeight += entry.probability;
 
             if (rollValue <= currentWeight) {
-                console.debug(`Activated inclusion group '${key}' with entry '${entry.uid}'`, entry);
+                console.debug(`Activated inclusion group '${key}' with roll winner entry '${entry.uid}'`, entry);
                 winner = entry;
                 break;
             }
@@ -2415,14 +2445,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
         }
 
         // Remove every group item from newEntries but the winner
-        for (const entry of group) {
-            if (entry === winner) {
-                continue;
-            }
-
-            console.debug(`Removing loser from inclusion group '${key}' entry '${entry.uid}'`, entry);
-            newEntries.splice(newEntries.indexOf(entry), 1);
-        }
+        removeAllBut(group, winner);
     }
 }
 
