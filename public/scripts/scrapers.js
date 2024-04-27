@@ -3,25 +3,42 @@ import { renderExtensionTemplateAsync } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { isValidUrl } from './utils.js';
 
-/**
- * @typedef {Object} Scraper
- * @property {string} id
- * @property {string} name
- * @property {string} description
- * @property {string} iconClass
- * @property {boolean} iconAvailable
- * @property {() => Promise<boolean>} isAvailable
- * @property {() => Promise<File[]>} scrape
- */
+export class Scraper {
+    constructor(id, name, description, iconClass, iconAvailable) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.iconClass = iconClass;
+        this.iconAvailable = iconAvailable;
+    }
 
-/**
- * @typedef {Object} ScraperInfo
- * @property {string} id
- * @property {string} name
- * @property {string} description
- * @property {string} iconClass
- * @property {boolean} iconAvailable
- */
+    /**
+     * Check if the scraper is available.
+     * @returns {Promise<boolean>}
+     */
+    async isAvailable() {
+        // Implement in subclass
+        return false;
+    }
+
+    /**
+     * Create a text file from a string.
+     * @returns {Promise<File[]>} File attachments scraped from the text
+     */
+    async scrape() {
+        // Implement in subclass
+        return [];
+    }
+}
+
+export class ScraperInfo {
+    constructor(id, name, description, iconClass) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.iconClass = iconClass;
+    }
+}
 
 export class ScraperManager {
     /**
