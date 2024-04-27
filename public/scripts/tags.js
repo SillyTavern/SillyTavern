@@ -1023,7 +1023,7 @@ function onViewTagsListClick() {
             Drag handle to reorder. Click name to rename. Click color to change display.<br>
             ${(power_user.bogus_folders ? 'Click on the folder icon to use this tag as a folder.<br>' : '')}
             <label class="checkbox flex-container alignitemscenter flexNoGap m-t-1" for="auto_sort_tags">
-                <input type="checkbox" name="auto_sort_tags"${power_user.auto_sort_tags ? ' checked' : ''} />
+                <input type="checkbox" id="auto_sort_tags" name="auto_sort_tags" ${power_user.auto_sort_tags ? ' checked' : ''} />
                 <span data-i18n="Use alphabetical sorting">
                     Use alphabetical sorting
                     <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]If enabled, tags will automatically be sorted alphabetically on creation or rename.\nIf disabled, new tags will be appended at the end.\n\nIf a tag is manually reordered by dragging, automatic sorting will be disabled."
@@ -1046,11 +1046,19 @@ function onViewTagsListClick() {
     $('#dialogue_popup  .tag-color2').on('change', (evt) => onTagColorize2(evt));
 }
 
-function toggleAutoSortTags(toggle) {
+/**
+ * Print the list of tags in the tag management view
+ * @param {Event} event Event that triggered the color change
+ * @param {boolean} toggle State of the toggle
+ */
+function toggleAutoSortTags(event, toggle) {
     if (toggle === power_user.auto_sort_tags) return;
 
     // Ask user to confirm if enabling and it was manually sorted before
     if (toggle && isManuallySorted() && !confirm('Are you sure you want to automatically sort alphabetically?')) {
+        if (event.target instanceof HTMLInputElement) {
+            event.target.checked = false;
+        }
         return;
     }
 
@@ -1456,7 +1464,7 @@ export function initTags() {
 
     $(document).on('input', '#dialogue_popup input[name="auto_sort_tags"]', (evt) => {
         const toggle = $(evt.target).is(':checked');
-        toggleAutoSortTags(toggle);
+        toggleAutoSortTags(evt.originalEvent, toggle);
         printViewTagList();
     });
     $(document).on('focusout', `#dialogue_popup .tag_view_name`, (evt) => {
