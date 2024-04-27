@@ -776,7 +776,7 @@ class PromptManager {
         const promptOrder = this.getPromptOrderForCharacter(character);
         const index = promptOrder.findIndex(entry => entry.identifier === prompt.identifier);
 
-        if (-1 === index) promptOrder.push({ identifier: prompt.identifier, enabled: false });
+        if (-1 === index) promptOrder.unshift({ identifier: prompt.identifier, enabled: false });
     }
 
     /**
