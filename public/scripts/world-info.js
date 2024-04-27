@@ -522,7 +522,7 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        const entry = createWorldInfoEntry(file, data, true);
+        const entry = createWorldInfoEntry(file, data);
 
         if (key) {
             entry.key.push(key);
@@ -860,7 +860,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     }
 
     $('#world_popup_new').off('click').on('click', () => {
-        createWorldInfoEntry(name, data);
+        const entry = createWorldInfoEntry(name, data);
+        if (entry) updateEditor(entry.uid);
     });
 
     $('#world_popup_name_button').off('click').on('click', async () => {
@@ -1572,6 +1573,18 @@ function getWorldEntry(name, data, entry) {
     });
     preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
 
+    // duplicate button
+    const duplicateButton = template.find('.duplicate_entry_button');
+    duplicateButton.data('uid', entry.uid);
+    duplicateButton.on('click', function () {
+        const uid = $(this).data('uid');
+        const entry = duplicateWorldInfoEntry(data, uid);
+        if (entry) {
+            saveWorldInfo(name, data);
+            updateEditor(entry.uid);
+        }
+    });
+
     // delete button
     const deleteButton = template.find('.delete_entry_button');
     deleteButton.data('uid', entry.uid);
@@ -1756,7 +1769,33 @@ function createEntryInputAutocomplete(input, callback) {
     });
 }
 
-async function deleteWorldInfoEntry(data, uid) {
+/**
+ * Duplicated a WI entry by copying all of its properties and assigning a new uid
+ * @param {*} data - The data of the book
+ * @param {number} uid - The uid of the entry to copy in this book
+ * @returns {*} The new WI duplicated entry
+ */
+function duplicateWorldInfoEntry(data, uid) {
+    if (!data || !('entries' in data) || !data.entries[uid]) {
+        return;
+    }
+
+    // Exclude uid and gather the rest of the properties
+    const { uid: _, ...originalData } = data.entries[uid];
+
+    // Create new entry and copy over data
+    const entry = createWorldInfoEntry(data.name, data);
+    Object.assign(entry, originalData);
+
+    return entry;
+}
+
+/**
+ * Deletes a WI entry, with a user confirmation dialog
+ * @param {*[]} data - The data of the book
+ * @param {number} uid - The uid of the entry to copy in this book
+ */
+function deleteWorldInfoEntry(data, uid) {
     if (!data || !('entries' in data)) {
         return;
     }
@@ -1793,7 +1832,7 @@ const newEntryTemplate = {
     role: 0,
 };
 
-function createWorldInfoEntry(name, data, fromSlashCommand = false) {
+function createWorldInfoEntry(name, data) {
     const newUid = getFreeWorldEntryUid(data);
 
     if (!Number.isInteger(newUid)) {
@@ -1803,10 +1842,6 @@ function createWorldInfoEntry(name, data, fromSlashCommand = false) {
 
     const newEntry = { uid: newUid, ...structuredClone(newEntryTemplate) };
     data.entries[newUid] = newEntry;
-
-    if (!fromSlashCommand) {
-        updateEditor(newUid);
-    }
 
     return newEntry;
 }
