@@ -354,6 +354,8 @@ export class SlashCommand {
             }
             this.helpDetailsCache[key] = frag;
         }
-        return this.helpDetailsCache[key].cloneNode(true);
+        const frag = document.createDocumentFragment();
+        frag.append(this.helpDetailsCache[key].cloneNode(true));
+        return frag;
     }
 }
