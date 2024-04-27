@@ -2254,7 +2254,7 @@ async function checkWorldInfo(chat, maxContext) {
         for (const entry of newEntries) {
             const rollValue = Math.random() * 100;
 
-            if (entry.useProbability && rollValue > entry.probability) {
+            if (!entry.group && entry.useProbability && rollValue > entry.probability) {
                 console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
                 failedProbabilityChecks.add(entry);
                 continue;
