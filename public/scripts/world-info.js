@@ -1339,16 +1339,16 @@ function getWorldEntry(name, data, entry) {
     setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data)), 1);
 
     // inclusion priority
-    const groupPrioInput = template.find('input[name="groupPrio"]');
-    groupPrioInput.data('uid', entry.uid);
-    groupPrioInput.on('input', function () {
+    const groupOverrideInput = template.find('input[name="groupPrio"]');
+    groupOverrideInput.data('uid', entry.uid);
+    groupOverrideInput.on('input', function () {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
-        data.entries[uid].groupPrio = value;
-        setOriginalDataValue(data, uid, 'extensions.groupPrio', data.entries[uid].groupPrio);
+        data.entries[uid].groupOverride = value;
+        setOriginalDataValue(data, uid, 'extensions.groupOverride', data.entries[uid].groupOverride);
         saveWorldInfo(name, data);
     });
-    groupPrioInput.prop('checked', entry.groupPrio).trigger('input');
+    groupOverrideInput.prop('checked', entry.groupOverride).trigger('input');
 
     // probability
     if (entry.probability === undefined) {
@@ -1798,6 +1798,7 @@ const newEntryTemplate = {
     useProbability: true,
     depth: DEFAULT_DEPTH,
     group: '',
+    groupOverride: false,
     scanDepth: null,
     caseSensitive: null,
     matchWholeWords: null,
@@ -2416,7 +2417,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
         }
 
         // Check for group prio
-        const prios = group.filter(x => x.groupPrio).sort(sortFn);
+        const prios = group.filter(x => x.groupOverride).sort(sortFn);
         if (prios.length) {
             console.debug(`Activated inclusion group '${key}' with by prio winner entry '${prios[0].uid}'`, prios[0]);
             removeAllBut(group, prios[0]);
@@ -2473,6 +2474,7 @@ function convertAgnaiMemoryBook(inputObj) {
             probability: null,
             useProbability: false,
             group: '',
+            groupOverride: false,
             scanDepth: entry.extensions?.scan_depth ?? null,
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
@@ -2508,6 +2510,7 @@ function convertRisuLorebook(inputObj) {
             probability: entry.activationPercent ?? null,
             useProbability: entry.activationPercent ?? false,
             group: '',
+            groupOverride: false,
             scanDepth: entry.extensions?.scan_depth ?? null,
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
@@ -2548,6 +2551,7 @@ function convertNovelLorebook(inputObj) {
             probability: null,
             useProbability: false,
             group: '',
+            groupOverride: false,
             scanDepth: entry.extensions?.scan_depth ?? null,
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
@@ -2589,6 +2593,7 @@ function convertCharacterBook(characterBook) {
             depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
             selectiveLogic: entry.extensions?.selectiveLogic ?? world_info_logic.AND_ANY,
             group: entry.extensions?.group ?? '',
+            groupOverride: entry.extensions?.groupOverride ?? false,
             scanDepth: entry.extensions?.scan_depth ?? null,
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
