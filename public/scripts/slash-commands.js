@@ -203,13 +203,10 @@ class SlashCommandParser {
 
         // Excluded commands format in their own function
         if (!excludedFromRegex.includes(command)) {
-            console.debug(`parse: !excludedFromRegex.includes(${command}`);
-            console.debug(`   parse: unnamedArg before: ${unnamedArg}`);
             unnamedArg = getRegexedString(
                 unnamedArg,
                 regex_placement.SLASH_COMMAND,
             );
-            console.debug(`   parse: unnamedArg after: ${unnamedArg}`);
         }
 
         // your weird complex command is now transformed into a juicy tiny text or something useful :)
