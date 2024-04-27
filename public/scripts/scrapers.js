@@ -348,7 +348,7 @@ class YouTubeScraper {
         this.id = 'youtube';
         this.name = 'YouTube';
         this.description = 'Download a transcript from a YouTube video.';
-        this.iconClass = 'fa-solid fa-closed-captioning';
+        this.iconClass = 'fa-brands fa-youtube';
     }
 
     /**
