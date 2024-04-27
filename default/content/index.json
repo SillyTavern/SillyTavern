@@ -650,7 +650,7 @@
     {
         "filename": "presets/quick-replies/Default.json",
         "type": "quick_replies"
-    }
+    },
     {
         "filename": "presets/instruct/Llama-3-Instruct-Names.json",
         "type": "instruct"
@@ -666,5 +666,5 @@
     {
         "filename": "presets/context/ChatML-Names.json",
         "type": "context"
-    },
+    }
 ]
