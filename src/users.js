@@ -113,6 +113,16 @@ async function ensurePublicDirectoriesExist() {
 }
 
 /**
+ * Gets a list of all user directories.
+ * @returns {Promise<import('./users').UserDirectoryList[]>} - The list of user directories
+ */
+async function getUserDirectoriesList() {
+    const userHandles = await getAllUserHandles();
+    const directoriesList = userHandles.map(handle => getUserDirectories(handle));
+    return directoriesList;
+}
+
+/**
  * Perform migration from the old user data format to the new one.
  */
 async function migrateUserData() {
@@ -289,7 +299,7 @@ async function migrateUserData() {
                 fs.cpSync(
                     migration.old,
                     path.join(backupDirectory, path.basename(migration.old)),
-                    { recursive: true, force: true }
+                    { recursive: true, force: true },
                 );
                 fs.rmSync(migration.old, { recursive: true, force: true });
             } else {
@@ -299,7 +309,7 @@ async function migrateUserData() {
                 fs.cpSync(
                     migration.old,
                     path.join(backupDirectory, path.basename(migration.old)),
-                    { recursive: true, force: true }
+                    { recursive: true, force: true },
                 );
                 fs.rmSync(migration.old, { recursive: true, force: true });
             }
@@ -707,6 +717,7 @@ module.exports = {
     toAvatarKey,
     initUserStorage,
     ensurePublicDirectoriesExist,
+    getUserDirectoriesList,
     getAllUserHandles,
     getUserDirectories,
     setUserDataMiddleware,

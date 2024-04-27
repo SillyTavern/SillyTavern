@@ -45,7 +45,6 @@ const {
     forwardFetchResponse,
 } = require('./src/util');
 const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
-const { loadTokenizers } = require('./src/endpoints/tokenizers');
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
 // https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
@@ -543,22 +542,12 @@ const setupTasks = async function () {
     }
     console.log();
 
-    // TODO: do endpoint init functions depend on certain directories existing or not existing? They should be callable
-    // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
-    await userModule.initUserStorage(dataRoot);
-
-    if (listen && !basicAuthMode && enableAccounts) {
-        await userModule.checkAccountsProtection();
-    }
-
-    await settingsEndpoint.init();
-    const directories = await userModule.ensurePublicDirectoriesExist();
-    await userModule.migrateUserData();
+    const directories = await userModule.getUserDirectoriesList();
     await contentManager.checkForNewContent(directories);
     await ensureThumbnailCache();
     cleanUploads();
 
-    await loadTokenizers();
+    await settingsEndpoint.init();
     await statsEndpoint.init();
 
     const cleanupPlugins = await loadPlugins();
@@ -581,7 +570,6 @@ const setupTasks = async function () {
         exitProcess();
     });
 
-
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
@@ -601,6 +589,9 @@ const setupTasks = async function () {
         }
     }
 
+    if (listen && !basicAuthMode && enableAccounts) {
+        await userModule.checkAccountsProtection();
+    }
 };
 
 /**
@@ -642,21 +633,27 @@ function setWindowTitle(title) {
     }
 }
 
-if (cliArguments.ssl) {
-    https.createServer(
-        {
-            cert: fs.readFileSync(cliArguments.certPath),
-            key: fs.readFileSync(cliArguments.keyPath),
-        }, app)
-        .listen(
-            Number(tavernUrl.port) || 443,
-            tavernUrl.hostname,
-            setupTasks,
-        );
-} else {
-    http.createServer(app).listen(
-        Number(tavernUrl.port) || 80,
-        tavernUrl.hostname,
-        setupTasks,
-    );
-}
+// User storage module needs to be initialized before starting the server
+userModule.initUserStorage(dataRoot)
+    .then(userModule.ensurePublicDirectoriesExist)
+    .then(userModule.migrateUserData)
+    .finally(() => {
+        if (cliArguments.ssl) {
+            https.createServer(
+                {
+                    cert: fs.readFileSync(cliArguments.certPath),
+                    key: fs.readFileSync(cliArguments.keyPath),
+                }, app)
+                .listen(
+                    Number(tavernUrl.port) || 443,
+                    tavernUrl.hostname,
+                    setupTasks,
+                );
+        } else {
+            http.createServer(app).listen(
+                Number(tavernUrl.port) || 80,
+                tavernUrl.hostname,
+                setupTasks,
+            );
+        }
+    });

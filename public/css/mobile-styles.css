@@ -309,6 +309,10 @@
         object-fit: cover;
     }
 
+    body.waifuMode .zoomed_avatar_container {
+        height: 100%;
+    }
+
     body.waifuMode .zoomed_avatar {
         width: fit-content;
         max-height: calc(60vh - 60px);

@@ -1419,3 +1419,13 @@ export function setValueByPath(obj, path, value) {
 
     currentObject[keyParts[keyParts.length - 1]] = value;
 }
+
+/**
+ * Flashes the given HTML element via CSS flash animation for a defined period
+ * @param {JQuery<HTMLElement>} element - The element to flash
+ * @param {number} timespan - A numer in milliseconds how the flash should last
+ */
+export function flashHighlight(element, timespan = 2000) {
+    element.addClass('flash animated');
+    setTimeout(() => element.removeClass('flash animated'), timespan);
+}

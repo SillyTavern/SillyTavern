@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { registerSlashCommand } from './slash-commands.js';
@@ -522,7 +522,7 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        const entry = createWorldInfoEntry(file, data, true);
+        const entry = createWorldInfoEntry(file, data);
 
         if (key) {
             entry.key.push(key);
@@ -795,20 +795,20 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         callback: function (/** @type {object[]} */ page) {
             $('#world_popup_entries_list').empty();
             const keywordHeaders = `
-            <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 2.5em;">
+            <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 4.5em;">
             <small class="flex1">
             Title/Memo
         </small>
-                <small style="width: calc(3.5em + 5px)">
+                <small style="width: calc(3.5em + 15px)">
                     Status
                 </small>
-                <small style="width: calc(3.5em + 20px)">
+                <small style="width: calc(3.5em + 30px)">
                     Position
                 </small>
-                <small style="width: calc(3.5em + 15px)">
+                <small style="width: calc(3.5em + 20px)">
                     Depth
                 </small>
-                <small style="width: calc(3.5em + 15px)">
+                <small style="width: calc(3.5em + 20px)">
                     Order
                 </small>
                 <small style="width: calc(3.5em + 15px)">
@@ -854,13 +854,13 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             const parentOffset = element.parent().offset();
             const scrollOffset = elementOffset.top - parentOffset.top;
             $('#WorldInfo').scrollTop(scrollOffset);
-            element.addClass('flash animated');
-            setTimeout(() => element.removeClass('flash animated'), 2000);
+            flashHighlight(element);
         });
     }
 
     $('#world_popup_new').off('click').on('click', () => {
-        createWorldInfoEntry(name, data);
+        const entry = createWorldInfoEntry(name, data);
+        if (entry) updateEditor(entry.uid);
     });
 
     $('#world_popup_name_button').off('click').on('click', async () => {
@@ -1584,6 +1584,18 @@ function getWorldEntry(name, data, entry) {
     });
     preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
 
+    // duplicate button
+    const duplicateButton = template.find('.duplicate_entry_button');
+    duplicateButton.data('uid', entry.uid);
+    duplicateButton.on('click', function () {
+        const uid = $(this).data('uid');
+        const entry = duplicateWorldInfoEntry(data, uid);
+        if (entry) {
+            saveWorldInfo(name, data);
+            updateEditor(entry.uid);
+        }
+    });
+
     // delete button
     const deleteButton = template.find('.delete_entry_button');
     deleteButton.data('uid', entry.uid);
@@ -1768,7 +1780,33 @@ function createEntryInputAutocomplete(input, callback) {
     });
 }
 
-async function deleteWorldInfoEntry(data, uid) {
+/**
+ * Duplicated a WI entry by copying all of its properties and assigning a new uid
+ * @param {*} data - The data of the book
+ * @param {number} uid - The uid of the entry to copy in this book
+ * @returns {*} The new WI duplicated entry
+ */
+function duplicateWorldInfoEntry(data, uid) {
+    if (!data || !('entries' in data) || !data.entries[uid]) {
+        return;
+    }
+
+    // Exclude uid and gather the rest of the properties
+    const { uid: _, ...originalData } = data.entries[uid];
+
+    // Create new entry and copy over data
+    const entry = createWorldInfoEntry(data.name, data);
+    Object.assign(entry, originalData);
+
+    return entry;
+}
+
+/**
+ * Deletes a WI entry, with a user confirmation dialog
+ * @param {*[]} data - The data of the book
+ * @param {number} uid - The uid of the entry to copy in this book
+ */
+function deleteWorldInfoEntry(data, uid) {
     if (!data || !('entries' in data)) {
         return;
     }
@@ -1806,7 +1844,7 @@ const newEntryTemplate = {
     role: 0,
 };
 
-function createWorldInfoEntry(name, data, fromSlashCommand = false) {
+function createWorldInfoEntry(name, data) {
     const newUid = getFreeWorldEntryUid(data);
 
     if (!Number.isInteger(newUid)) {
@@ -1816,10 +1854,6 @@ function createWorldInfoEntry(name, data, fromSlashCommand = false) {
 
     const newEntry = { uid: newUid, ...structuredClone(newEntryTemplate) };
     data.entries[newUid] = newEntry;
-
-    if (!fromSlashCommand) {
-        updateEditor(newUid);
-    }
 
     return newEntry;
 }
