@@ -237,8 +237,12 @@ const parser = new SlashCommandParser();
  * Registers a slash command in the parser.
 * @type {(command: string, callback: function, aliases: string[], helpString: string, interruptsGeneration?: boolean, purgeFromMessage?: boolean) => void}
 */
-export const registerSlashCommand = parser.addCommand.bind(parser);
+export let registerSlashCommand = parser.addCommand.bind(parser);
 export const getSlashCommandsHelp = parser.getHelpString.bind(parser);
+// https://stackoverflow.com/questions/48168601/change-the-value-of-imported-variable-in-es6
+export function setRegisterSlashCommand(fn) {
+    registerSlashCommand = fn;
+}
 
 parser.addCommand('?', helpCommandCallback, ['help'], ' – get help on macros, chat formatting and commands', true, true);
 parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace">(name)</span> – sets user name and persona avatar (if set)', true, true);

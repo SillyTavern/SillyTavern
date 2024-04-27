@@ -292,6 +292,9 @@ export {
     isOdd,
     countOccurrences,
     renderTemplate,
+    itemizedPrompts,
+    findItemizedPromptSet,
+    itemizedParams,
 };
 
 /**
@@ -4599,29 +4602,7 @@ async function DupeChar() {
     }
 }
 
-async function promptItemize(itemizedPrompts, requestedMesId) {
-    console.log('PROMPT ITEMIZE ENTERED');
-    var incomingMesId = Number(requestedMesId);
-    console.debug(`looking for MesId ${incomingMesId}`);
-    var thisPromptSet = undefined;
-
-    for (var i = 0; i < itemizedPrompts.length; i++) {
-        console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`);
-        if (itemizedPrompts[i].mesId === incomingMesId) {
-            console.log(`found matching mesID ${i}`);
-            thisPromptSet = i;
-            PromptArrayItemForRawPromptDisplay = i;
-            console.log(`wanting to raw display of ArrayItem: ${PromptArrayItemForRawPromptDisplay} which is mesID ${incomingMesId}`);
-            console.log(itemizedPrompts[thisPromptSet]);
-        }
-    }
-
-    if (thisPromptSet === undefined) {
-        console.log(`couldnt find the right mesId. looked for ${incomingMesId}`);
-        console.log(itemizedPrompts);
-        return null;
-    }
-
+async function itemizedParams(itemizedPrompts, thisPromptSet) {
     const params = {
         charDescriptionTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].charDescription),
         charPersonalityTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].charPersonality),
@@ -4720,6 +4701,38 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         params.allAnchorsTokensPercentage = ((params.allAnchorsTokens / (params.totalTokensInPrompt)) * 100).toFixed(2);
         params.selectedTokenizer = getFriendlyTokenizerName(params.this_main_api).tokenizerName;
     }
+    return params;
+}
+
+function findItemizedPromptSet(itemizedPrompts, incomingMesId) {
+    var thisPromptSet = undefined;
+
+    for (var i = 0; i < itemizedPrompts.length; i++) {
+        console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`);
+        if (itemizedPrompts[i].mesId === incomingMesId) {
+            console.log(`found matching mesID ${i}`);
+            thisPromptSet = i;
+            PromptArrayItemForRawPromptDisplay = i;
+            console.log(`wanting to raw display of ArrayItem: ${PromptArrayItemForRawPromptDisplay} which is mesID ${incomingMesId}`);
+            console.log(itemizedPrompts[thisPromptSet]);
+        }
+    }
+    return thisPromptSet;
+}
+
+async function promptItemize(itemizedPrompts, requestedMesId) {
+    console.log('PROMPT ITEMIZE ENTERED');
+    var incomingMesId = Number(requestedMesId);
+    console.debug(`looking for MesId ${incomingMesId}`);
+    var thisPromptSet = findItemizedPromptSet(itemizedPrompts, incomingMesId);
+
+    if (thisPromptSet === undefined) {
+        console.log(`couldnt find the right mesId. looked for ${incomingMesId}`);
+        console.log(itemizedPrompts);
+        return null;
+    }
+
+    const params = await itemizedParams(itemizedPrompts, thisPromptSet);
 
     if (params.this_main_api == 'openai') {
         const template = await renderTemplateAsync('itemizationChat', params);
