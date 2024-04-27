@@ -529,7 +529,10 @@ const autorunUrl = new URL(
     (':' + server_port),
 );
 
-const setupTasks = async function () {
+/**
+ * Tasks that need to be run before the server starts listening.
+ */
+const preSetupTasks = async function () {
     const version = await getVersion();
 
     // Print formatted header
@@ -553,7 +556,10 @@ const setupTasks = async function () {
     const cleanupPlugins = await loadPlugins();
     const consoleTitle = process.title;
 
+    let isExiting = false;
     const exitProcess = async () => {
+        if (isExiting) return;
+        isExiting = true;
         statsEndpoint.onExit();
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
@@ -569,7 +575,12 @@ const setupTasks = async function () {
         console.error('Uncaught exception:', err);
         exitProcess();
     });
+};
 
+/**
+ * Tasks that need to be run after the server starts listening.
+ */
+const postSetupTasks = async function () {
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
@@ -637,6 +648,7 @@ function setWindowTitle(title) {
 userModule.initUserStorage(dataRoot)
     .then(userModule.ensurePublicDirectoriesExist)
     .then(userModule.migrateUserData)
+    .then(preSetupTasks)
     .finally(() => {
         if (cliArguments.ssl) {
             https.createServer(
@@ -647,13 +659,13 @@ userModule.initUserStorage(dataRoot)
                 .listen(
                     Number(tavernUrl.port) || 443,
                     tavernUrl.hostname,
-                    setupTasks,
+                    postSetupTasks,
                 );
         } else {
             http.createServer(app).listen(
                 Number(tavernUrl.port) || 80,
                 tavernUrl.hostname,
-                setupTasks,
+                postSetupTasks,
             );
         }
     });
