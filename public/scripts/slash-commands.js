@@ -231,7 +231,7 @@ class SlashCommandParser {
     }
 }
 
-const parser = new SlashCommandParser();
+export const parser = new SlashCommandParser();
 
 /**
  * Registers a slash command in the parser.
