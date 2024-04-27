@@ -3663,7 +3663,7 @@
 
                                 <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                     <small>
-                                        <span data-i18n="Text Shadow Width">Text Shadow Width</span>
+                                        <span data-i18n="Text Shadow Width">Shadow Width</span>
                                         <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Strength of the text shadows" title="Strength of the text shadows"></div>
                                     </small>
                                     <input class="neo-range-slider" type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
@@ -3901,7 +3901,6 @@
                                     <i class="fa-solid fa-flask" data-i18n="[title]Experimental feature. May not work for all backends." title="Experimental feature. May not work for all backends."></i>
                                 </div>
                                 <div id="smooth_streaming_speed_control" class="flexBasis100p wide100p">
-                                    <small class="flex justifyCenter" data-i18n="Speed">Speed</small>
                                     <input type="range" id="smooth_streaming_speed" name="smooth_streaming_speed" min="0" max="100" step="10" value="50">
                                     <div class="slider_hint">
                                         <span data-i18n="Slow">Slow</span>
@@ -3955,8 +3954,9 @@
                                 </div>
                             </div>
                             <div data-newbie-hidden id="CustomCSS-block" class="flex-container flexFlowColumn">
-                                <h4 title="Apply a custom CSS style to all of the ST GUI." data-i18n="[title]Apply a custom CSS style to all of the ST GUI">
+                                <h4 class="title_restorable" title="Apply a custom CSS style to all of the ST GUI." data-i18n="[title]Apply a custom CSS style to all of the ST GUI">
                                     <span data-i18n="Custom CSS">Custom CSS</span>
+                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="customCSS" title="Expand the editor"></i>
                                 </h4>
                                 <div class="flex-container flexnowrap alignitemscenter">
                                     <textarea id="customCSS" class="text_pole margin0 margin-r5 textarea_compact monospace"></textarea>
@@ -3972,7 +3972,7 @@
                                 <div class="flex-container">
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small>
-                                            <span data-i18n="# Messages to Load"># Messages to Load</span>
+                                            <span data-i18n="# Messages to Load"># Msg. to Load</span>
 
                                             <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]The number of chat history messages to load before pagination." title="The number of chat history messages to load before pagination."></div>
                                         </small>

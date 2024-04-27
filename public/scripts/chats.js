@@ -1280,6 +1280,7 @@ jQuery(function () {
         const textarea = document.createElement('textarea');
         textarea.value = String(bro.val());
         textarea.classList.add('height100p', 'wide100p');
+        bro.hasClass('monospace') && textarea.classList.add('monospace');
         textarea.addEventListener('input', function () {
             bro.val(textarea.value).trigger('input');
         });
