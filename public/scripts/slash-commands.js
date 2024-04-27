@@ -146,7 +146,7 @@ class SlashCommandParser {
             return {
                 commandName: command,
                 command: {
-                    callback: () => {},
+                    callback: () => { },
                     helpString: '',
                     interruptsGeneration: false,
                     purgeFromMessage: true,
@@ -338,13 +338,12 @@ function injectCallback(args, value) {
         chat_metadata.script_injects = {};
     }
 
-    chat_metadata.script_injects[id] = {
-        value,
-        position,
-        depth,
-        scan,
-        role,
-    };
+    if (value) {
+        const inject = { value, position, depth, scan, role };
+        chat_metadata.script_injects[id] = inject;
+    } else {
+        delete chat_metadata.script_injects[id];
+    }
 
     setExtensionPrompt(prefixedId, value, position, depth, scan, role);
     saveMetadataDebounced();
