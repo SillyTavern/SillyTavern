@@ -294,6 +294,17 @@ export {
     renderTemplate,
 };
 
+/**
+ * Wait for page to load before continuing the app initialization.
+ */
+await new Promise((resolve) => {
+    if (document.readyState === 'complete') {
+        resolve();
+    } else {
+        window.addEventListener('load', resolve);
+    }
+});
+
 showLoader();
 // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
 document.getElementById('preloader').remove();

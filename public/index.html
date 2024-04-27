@@ -2,6 +2,7 @@
 <html>
 
 <head>
+    <title>SillyTavern</title>
     <base href="/">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, viewport-fit=cover, initial-scale=1, maximum-scale=1.0, user-scalable=no">
@@ -10,7 +11,6 @@
     <meta name="robots" content="noindex, nofollow" />
     <link rel="manifest" crossorigin="use-credentials" href="manifest.json">
     <link href="webfonts/NotoSans/stylesheet.css" rel="stylesheet">
-    <!-- fontawesome webfonts-->
     <link href="css/fontawesome.min.css" rel="stylesheet">
     <link href="css/solid.min.css" rel="stylesheet">
     <link href="css/brands.min.css" rel="stylesheet">
@@ -23,38 +23,6 @@
     <link rel="apple-touch-icon" sizes="72x72" href="img/apple-icon-72x72.png" />
     <link rel="apple-touch-icon" sizes="114x114" href="img/apple-icon-114x114.png" />
     <link rel="apple-touch-icon" sizes="144x144" href="img/apple-icon-144x144.png" />
-    <script src="lib/object-hasown.js"></script>
-    <script src="lib/jquery-3.5.1.min.js"></script>
-    <script src="lib/jquery-ui.min.js"></script>
-    <script src="lib/jquery.transit.min.js"></script>
-    <script src="lib/jquery-cookie-1.4.1.min.js"></script>
-    <script src="lib/jquery.ui.touch-punch.min.js"></script>
-    <script src="lib/showdown.min.js"></script>
-    <script src="lib/showdown-katex.min.js"></script>
-    <script src="lib/popper.js"></script>
-    <script src="lib/purify.min.js"></script>
-    <script src="lib/highlight.min.js"></script>
-    <script src="lib/moment.min.js"></script>
-    <script src="lib/cropper.min.js"></script>
-    <script src="lib/jquery-cropper.min.js"></script>
-    <script src="lib/toastr.min.js"></script>
-    <script src="lib/fuse.js"></script>
-    <script src="lib/select2.min.js"></script>
-    <script src="lib/select2-search-placeholder.js"></script>
-    <script src="lib/seedrandom.min.js"></script>
-    <script src="lib/droll.js"></script>
-    <script src="lib/localforage.min.js"></script>
-    <script src="lib/handlebars.js"></script>
-    <script src="lib/pagination.js"></script>
-    <script src="lib/toolcool-color-picker.js"></script>
-    <script src="lib/svg-inject.js"></script>
-    <script src="lib/Readability.js"></script>
-    <script src="lib/Readability-readerable.js"></script>
-    <script src="lib/jquery.izoomify.js"></script>
-    <script type="module" src="lib/structured-clone/monkey-patch.js"></script>
-    <script type="module" src="lib/swiped-events.js"></script>
-    <script type="module" src="lib/eventemitter.js"></script>
-    <script type="module" src="scripts/power-user.js"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="stylesheet" type="text/css" href="css/st-tailwind.css">
     <link rel="stylesheet" type="text/css" href="css/tags.css">
@@ -67,31 +35,7 @@
     <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
     <link rel="stylesheet" type="text/css" href="css/user.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <script type="module" src="scripts/i18n.js"></script>
-    <script type="module" src="script.js"></script>
-    <script type="module" src="scripts/world-info.js"></script>
-    <script type="module" src="scripts/group-chats.js"></script>
-    <script type="module" src="scripts/kai-settings.js"></script>
-    <script type="module" src="scripts/textgen-settings.js"></script>
-    <script type="module" src="scripts/textgen-models.js"></script>
-    <script type="module" src="scripts/bookmarks.js"></script>
-    <script type="module" src="scripts/horde.js"></script>
-    <script type="module" src="scripts/RossAscends-mods.js"></script>
-    <script type="module" src="scripts/slash-commands.js"></script>
-    <script type="module" src="scripts/tags.js"></script>
-    <script type="module" src="scripts/secrets.js"></script>
-    <script type="module" src="scripts/extensions.js"></script>
-    <script type="module" src="scripts/authors-note.js"></script>
-    <script type="module" src="scripts/preset-manager.js"></script>
-    <script type="module" src="scripts/filters.js"></script>
-    <script type="module" src="scripts/personas.js"></script>
-    <script type="module" src="scripts/server-history.js"></script>
-    <script type="module" src="scripts/setting-search.js"></script>
-    <script type="module" src="scripts/bulk-edit.js"></script>
-    <script type="module" src="scripts/cfg-scale.js"></script>
-    <script type="module" src="scripts/chats.js"></script>
-    <script type="module" src="scripts/user.js"></script>
-    <title>SillyTavern</title>
+    <!-- Scripts are loaded at the end of the body to improve page load speed -->
 </head>
 
 <body class="no-blur">
@@ -6146,6 +6090,63 @@
             </div>
         </div>
     </div>
+    <!-- Script includes -->
+    <script src="lib/object-hasown.js"></script>
+    <script src="lib/jquery-3.5.1.min.js"></script>
+    <script src="lib/jquery-ui.min.js"></script>
+    <script src="lib/jquery.transit.min.js"></script>
+    <script src="lib/jquery-cookie-1.4.1.min.js"></script>
+    <script src="lib/jquery.ui.touch-punch.min.js"></script>
+    <script src="lib/showdown.min.js"></script>
+    <script src="lib/showdown-katex.min.js"></script>
+    <script src="lib/popper.js"></script>
+    <script src="lib/purify.min.js"></script>
+    <script src="lib/highlight.min.js"></script>
+    <script src="lib/moment.min.js"></script>
+    <script src="lib/cropper.min.js"></script>
+    <script src="lib/jquery-cropper.min.js"></script>
+    <script src="lib/toastr.min.js"></script>
+    <script src="lib/fuse.js"></script>
+    <script src="lib/select2.min.js"></script>
+    <script src="lib/select2-search-placeholder.js"></script>
+    <script src="lib/seedrandom.min.js"></script>
+    <script src="lib/droll.js"></script>
+    <script src="lib/localforage.min.js"></script>
+    <script src="lib/handlebars.js"></script>
+    <script src="lib/pagination.js"></script>
+    <script src="lib/toolcool-color-picker.js"></script>
+    <script src="lib/svg-inject.js"></script>
+    <script src="lib/Readability.js"></script>
+    <script src="lib/Readability-readerable.js"></script>
+    <script src="lib/jquery.izoomify.js"></script>
+    <script type="module" src="lib/structured-clone/monkey-patch.js"></script>
+    <script type="module" src="lib/swiped-events.js"></script>
+    <script type="module" src="lib/eventemitter.js"></script>
+    <script type="module" src="scripts/power-user.js"></script>
+    <script type="module" src="scripts/i18n.js"></script>
+    <script type="module" src="script.js"></script>
+    <script type="module" src="scripts/world-info.js"></script>
+    <script type="module" src="scripts/group-chats.js"></script>
+    <script type="module" src="scripts/kai-settings.js"></script>
+    <script type="module" src="scripts/textgen-settings.js"></script>
+    <script type="module" src="scripts/textgen-models.js"></script>
+    <script type="module" src="scripts/bookmarks.js"></script>
+    <script type="module" src="scripts/horde.js"></script>
+    <script type="module" src="scripts/RossAscends-mods.js"></script>
+    <script type="module" src="scripts/slash-commands.js"></script>
+    <script type="module" src="scripts/tags.js"></script>
+    <script type="module" src="scripts/secrets.js"></script>
+    <script type="module" src="scripts/extensions.js"></script>
+    <script type="module" src="scripts/authors-note.js"></script>
+    <script type="module" src="scripts/preset-manager.js"></script>
+    <script type="module" src="scripts/filters.js"></script>
+    <script type="module" src="scripts/personas.js"></script>
+    <script type="module" src="scripts/server-history.js"></script>
+    <script type="module" src="scripts/setting-search.js"></script>
+    <script type="module" src="scripts/bulk-edit.js"></script>
+    <script type="module" src="scripts/cfg-scale.js"></script>
+    <script type="module" src="scripts/chats.js"></script>
+    <script type="module" src="scripts/user.js"></script>
     <script>
         // Configure toast library:
         toastr.options.escapeHtml = true; // Prevent raw HTML inserts
