@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const commandExistsSync = require('command-exists').sync;
+const writeFileAtomicSync = require('write-file-atomic').sync;
 const _ = require('lodash');
 const yauzl = require('yauzl');
 const mime = require('mime-types');
@@ -61,7 +62,7 @@ function setConfigValue(key, value) {
     CACHED_CONFIG = null;
     const config = getConfig();
     _.set(config, key, value);
-    fs.writeFileSync('./config.yaml', yaml.stringify(config));
+    writeFileAtomicSync('./config.yaml', yaml.stringify(config));
 }
 
 /**

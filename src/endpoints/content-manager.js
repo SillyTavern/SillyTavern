@@ -5,6 +5,7 @@ const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
 const { getConfigValue } = require('../util');
 const { jsonParser } = require('../express-common');
+const writeFileAtomicSync = require('write-file-atomic').sync;
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 const characterCardParser = require('../character-card-parser.js');
@@ -133,7 +134,7 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
         console.log(`Content file ${contentItem.filename} copied to ${contentTarget}`);
     }
 
-    fs.writeFileSync(contentLogPath, contentLog.join('\n'));
+    writeFileAtomicSync(contentLogPath, contentLog.join('\n'));
 }
 
 /**
