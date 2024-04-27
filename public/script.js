@@ -152,6 +152,7 @@ import {
     Stopwatch,
     isValidUrl,
     ensureImageFormatSupported,
+    flashHighlight,
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
@@ -6799,10 +6800,7 @@ function select_rm_info(type, charId, previousCharId = null) {
 
                     const scrollOffset = element.offset().top - element.parent().offset().top;
                     element.parent().scrollTop(scrollOffset);
-                    element.addClass('flash animated');
-                    setTimeout(function () {
-                        element.removeClass('flash animated');
-                    }, 5000);
+                    flashHighlight(element, 5000);
                 });
             } catch (e) {
                 console.error(e);
@@ -6828,10 +6826,7 @@ function select_rm_info(type, charId, previousCharId = null) {
                     const element = $(selector);
                     const scrollOffset = element.offset().top - element.parent().offset().top;
                     element.parent().scrollTop(scrollOffset);
-                    $(element).addClass('flash animated');
-                    setTimeout(function () {
-                        $(element).removeClass('flash animated');
-                    }, 5000);
+                    flashHighlight(element, 5000);
                 });
             } catch (e) {
                 console.error(e);
@@ -7100,57 +7095,49 @@ function onScenarioOverrideRemoveClick() {
  * @returns
  */
 function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
+    function getOkButtonText() {
+        if (['avatarToCrop'].includes(popup_type)) {
+            return okButton ?? 'Accept';
+        } else if (['text', 'alternate_greeting', 'char_not_selected'].includes(popup_type)) {
+            $dialoguePopupCancel.css('display', 'none');
+            return okButton ?? 'Ok';
+        } else if (['delete_extension'].includes(popup_type)) {
+            return okButton ?? 'Ok';
+        } else if (['new_chat', 'confirm'].includes(popup_type)) {
+            return okButton ?? 'Yes';
+        } else if (['input'].includes(popup_type)) {
+            return okButton ?? 'Save';
+        }
+        return okButton ?? 'Delete';
+    }
+
     dialogueCloseStop = true;
     if (type) {
         popup_type = type;
     }
 
-    $('#dialogue_popup').toggleClass('wide_dialogue_popup', !!wide);
-    $('#dialogue_popup').toggleClass('large_dialogue_popup', !!large);
-    $('#dialogue_popup').toggleClass('horizontal_scrolling_dialogue_popup', !!allowHorizontalScrolling);
-    $('#dialogue_popup').toggleClass('vertical_scrolling_dialogue_popup', !!allowVerticalScrolling);
+    const $dialoguePopup = $('#dialogue_popup');
+    const $dialoguePopupCancel = $('#dialogue_popup_cancel');
+    const $dialoguePopupOk = $('#dialogue_popup_ok');
+    const $dialoguePopupInput = $('#dialogue_popup_input');
+    const $dialoguePopupText = $('#dialogue_popup_text');
+    const $shadowPopup = $('#shadow_popup');
 
-    $('#dialogue_popup_cancel').css('display', 'inline-block');
-    switch (popup_type) {
-        case 'avatarToCrop':
-            $('#dialogue_popup_ok').text(okButton ?? 'Accept');
-            break;
-        case 'text':
-        case 'alternate_greeting':
-        case 'char_not_selected':
-            $('#dialogue_popup_ok').text(okButton ?? 'Ok');
-            $('#dialogue_popup_cancel').css('display', 'none');
-            break;
-        case 'delete_extension':
-            $('#dialogue_popup_ok').text(okButton ?? 'Ok');
-            break;
-        case 'new_chat':
-        case 'confirm':
-            $('#dialogue_popup_ok').text(okButton ?? 'Yes');
-            break;
-        case 'del_group':
-        case 'rename_chat':
-        case 'del_chat':
-        default:
-            $('#dialogue_popup_ok').text(okButton ?? 'Delete');
-    }
+    $dialoguePopup.toggleClass('wide_dialogue_popup', !!wide)
+        .toggleClass('large_dialogue_popup', !!large)
+        .toggleClass('horizontal_scrolling_dialogue_popup', !!allowHorizontalScrolling)
+        .toggleClass('vertical_scrolling_dialogue_popup', !!allowVerticalScrolling);
 
-    $('#dialogue_popup_input').val(inputValue);
-    $('#dialogue_popup_input').attr('rows', rows ?? 1);
+    $dialoguePopupCancel.css('display', 'inline-block');
+    $dialoguePopupOk.text(getOkButtonText());
+    $dialoguePopupInput.toggle(popup_type === 'input').val(inputValue).attr('rows', rows ?? 1);
+    $dialoguePopupText.empty().append(text);
+    $shadowPopup.css('display', 'block');
 
     if (popup_type == 'input') {
-        $('#dialogue_popup_input').css('display', 'block');
-        $('#dialogue_popup_ok').text(okButton ?? 'Save');
-    }
-    else {
-        $('#dialogue_popup_input').css('display', 'none');
+        $dialoguePopupInput.trigger('focus');
     }
 
-    $('#dialogue_popup_text').empty().append(text);
-    $('#shadow_popup').css('display', 'block');
-    if (popup_type == 'input') {
-        $('#dialogue_popup_input').focus();
-    }
     if (popup_type == 'avatarToCrop') {
         // unset existing data
         crop_data = undefined;
@@ -7166,7 +7153,8 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large, a
             },
         });
     }
-    $('#shadow_popup').transition({
+
+    $shadowPopup.transition({
         opacity: 1,
         duration: animation_duration,
         easing: animation_easing,
