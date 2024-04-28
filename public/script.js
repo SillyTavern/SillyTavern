@@ -724,6 +724,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
             underline: true,
             tables: true,
             parseImgDimensions: true,
+            simpleLineBreaks: true,
             extensions: [
                 showdownKatex(
                     {
@@ -742,6 +743,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
             parseImgDimensions: true,
             tables: true,
             underline: true,
+            simpleLineBreaks: true,
             extensions: [markdownUnderscoreExt()],
         });
     }
@@ -1807,9 +1809,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     if (this_chid === undefined && !selected_group) {
-        mes = mes
-            .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-            .replace(/\n/g, '<br/>');
+        mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     } else if (!isSystem) {
         // Save double quotes in tags as a special character to prevent them from being encoded
         if (!power_user.encode_tags) {
@@ -1841,7 +1841,6 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
             // Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
             return match.replace(/\n/gm, '\u0000');
         });
-        mes = mes.replace(/\n/g, '<br/>');
         mes = mes.replace(/\u0000/g, '\n'); // Restore converted newlines
         mes = mes.trim();
 
