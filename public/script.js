@@ -6488,6 +6488,8 @@ async function messageEditDone(div) {
         text = substituteParams(text);
     }
 
+    await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
+    text = chat[this_edit_mes_id]?.mes ?? text;
     mesBlock.find('.mes_text').empty();
     mesBlock.find('.mes_edit_buttons').css('display', 'none');
     mesBlock.find('.mes_buttons').css('display', '');
@@ -6504,7 +6506,6 @@ async function messageEditDone(div) {
     mesBlock.find('.mes_bias').append(messageFormatting(bias, '', false, false, -1));
     appendMediaToMessage(mes, div.closest('.mes'));
     addCopyToCodeBlocks(div.closest('.mes'));
-    await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
 
     this_edit_mes_id = undefined;
     await saveChatConditional();
