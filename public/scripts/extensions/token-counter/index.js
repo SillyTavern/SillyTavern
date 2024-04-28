@@ -2,7 +2,8 @@ import { callPopup, main_api } from '../../../script.js';
 import { getContext } from '../../extensions.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, tokenizers } from '../../tokenizers.js';
-import { resetScrollHeight, debounce, debounce_timeout } from '../../utils.js';
+import { resetScrollHeight, debounce } from '../../utils.js';
+import { debounce_timeout } from '../../constants.js';
 
 function rgb2hex(rgb) {
     rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);

@@ -2,6 +2,7 @@ import { getContext } from './extensions.js';
 import { getRequestHeaders } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines } from './power-user.js';
+import { debounce_timeout } from './constants.js';
 
 /**
  * Pagination status string template.
@@ -16,21 +17,6 @@ export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> of <%= tot
 export const navigation_option = {
     none: -2000,
     previous: -1000,
-};
-
-/**
- * Common debounce timeout values to use with `debounce` calls.
- * @enum {number}
- */
-export const debounce_timeout = {
-    /** [100 ms] For ultra-fast responses, typically for keypresses or executions that might happen multiple times in a loop or recursion. */
-    quick: 100,
-    /** [300 ms] Default time for general use, good balance between responsiveness and performance. */
-    standard: 300,
-    /** [1.000 ms] For situations where the function triggers more intensive tasks. */
-    relaxed: 1000,
-    /** [5 sec] For delayed tasks, like auto-saving or completing batch operations that need a significant pause. */
-    extended: 5000,
 };
 
 export function escapeHtml(str) {

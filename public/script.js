@@ -153,8 +153,8 @@ import {
     isValidUrl,
     ensureImageFormatSupported,
     flashHighlight,
-    debounce_timeout,
 } from './scripts/utils.js';
+import { debounce_timeout } from './scripts/constants.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from './scripts/slash-commands.js';

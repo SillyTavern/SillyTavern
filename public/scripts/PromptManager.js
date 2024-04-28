@@ -4,7 +4,8 @@ import { callPopup, event_types, eventSource, is_send_press, main_api, substitut
 import { is_group_generating } from './group-chats.js';
 import { Message, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
-import { debounce, waitUntilCondition, escapeHtml, debounce_timeout } from './utils.js';
+import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
+import { debounce_timeout } from './constants.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;

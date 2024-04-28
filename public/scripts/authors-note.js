@@ -10,8 +10,9 @@ import {
 import { selected_group } from './group-chats.js';
 import { extension_settings, getContext, saveMetadataDebounced } from './extensions.js';
 import { registerSlashCommand } from './slash-commands.js';
-import { getCharaFilename, debounce, delay, debounce_timeout } from './utils.js';
+import { getCharaFilename, debounce, delay } from './utils.js';
 import { getTokenCountAsync } from './tokenizers.js';
+import { debounce_timeout } from './constants.js';
 export { MODULE_NAME as NOTE_MODULE_NAME };
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory

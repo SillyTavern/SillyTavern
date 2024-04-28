@@ -32,10 +32,11 @@ import {
     SECRET_KEYS,
     secret_state,
 } from './secrets.js';
-import { debounce, debounce_timeout, getStringHash, isValidUrl } from './utils.js';
+import { debounce, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
+import { debounce_timeout } from './constants.js';
 
 import Bowser from '../lib/bowser.min.js';
 

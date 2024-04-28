@@ -11,10 +11,10 @@ import {
     getBase64Async,
     resetScrollHeight,
     initScrollHeight,
-    debounce_timeout,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
+import { debounce_timeout } from './constants.js';
 
 import {
     chat,

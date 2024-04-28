@@ -3,9 +3,10 @@ import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, power_user } from '../../power-user.js';
 import { registerSlashCommand } from '../../slash-commands.js';
-import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence, debounce_timeout } from '../../utils.js';
+import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from '../../utils.js';
 import { hideMutedSprites } from '../../group-chats.js';
 import { isJsonSchemaSupported } from '../../textgen-settings.js';
+import { debounce_timeout } from '../../constants.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';

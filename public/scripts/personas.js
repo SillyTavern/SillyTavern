@@ -18,7 +18,8 @@ import {
 } from '../script.js';
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCountAsync } from './tokenizers.js';
-import { debounce, debounce_timeout, delay, download, parseJsonFile } from './utils.js';
+import { debounce, delay, download, parseJsonFile } from './utils.js';
+import { debounce_timeout } from './constants.js';
 
 const GRID_STORAGE_KEY = 'Personas_GridView';
 

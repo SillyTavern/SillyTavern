@@ -22,7 +22,8 @@ import {
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getDataBankAttachments, getFileAttachment } from '../../chats.js';
-import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, debounce_timeout } from '../../utils.js';
+import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
+import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
 
 const MODULE_NAME = 'vectors';
