@@ -259,6 +259,7 @@ table.responsiveTable {
 .mes_text table {
     border-spacing: 0;
     border-collapse: collapse;
+    margin-bottom: 10px;
 }
 
 .mes_text td,
