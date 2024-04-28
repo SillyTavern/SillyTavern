@@ -22,7 +22,7 @@ import {
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getDataBankAttachments, getFileAttachment } from '../../chats.js';
-import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
+import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, debounce_timeout } from '../../utils.js';
 import { getSortedEntries } from '../../world-info.js';
 
 const MODULE_NAME = 'vectors';
@@ -561,7 +561,7 @@ function getPromptText(queriedMessages) {
 
 window['vectors_rearrangeChat'] = rearrangeChat;
 
-const onChatEvent = debounce(async () => await moduleWorker.update(), 500);
+const onChatEvent = debounce(async () => await moduleWorker.update());
 
 /**
  * Gets the text to query from the chat

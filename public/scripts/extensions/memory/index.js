@@ -1,4 +1,4 @@
-import { getStringHash, debounce, waitUntilCondition, extractAllWords } from '../../utils.js';
+import { getStringHash, debounce, waitUntilCondition, extractAllWords, debounce_timeout } from '../../utils.js';
 import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules, renderExtensionTemplateAsync } from '../../extensions.js';
 import {
     activateSendButtons,
@@ -46,7 +46,7 @@ const formatMemoryValue = function (value) {
     }
 };
 
-const saveChatDebounced = debounce(() => getContext().saveChat(), 2000);
+const saveChatDebounced = debounce(() => getContext().saveChat(), debounce_timeout.relaxed);
 
 const summary_sources = {
     'extras': 'extras',

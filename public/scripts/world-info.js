@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, debounce_timeout } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { registerSlashCommand } from './slash-commands.js';
@@ -58,11 +58,11 @@ let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
 let world_info_character_strategy = world_info_insertion_strategy.character_first;
 let world_info_budget_cap = 0;
-const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), 1000);
+const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), debounce_timeout.relaxed);
 const saveSettingsDebounced = debounce(() => {
     Object.assign(world_info, { globalSelect: selected_world_info });
     saveSettings();
-}, 1000);
+}, debounce_timeout.relaxed);
 const sortFn = (a, b) => b.order - a.order;
 let updateEditor = (navigation) => { console.debug('Triggered WI navigation', navigation); };
 
@@ -1231,7 +1231,7 @@ function getWorldEntry(name, data, entry) {
     const countTokensDebounced = debounce(async function (counter, value) {
         const numberOfTokens = await getTokenCountAsync(value);
         $(counter).text(numberOfTokens);
-    }, 1000);
+    }, debounce_timeout.relaxed);
 
     const contentInput = template.find('textarea[name="content"]');
     contentInput.data('uid', entry.uid);
@@ -3040,7 +3040,7 @@ jQuery(() => {
 
     const debouncedWISearch = debounce((searchQuery) => {
         worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, searchQuery);
-    }, 300);
+    });
     $('#world_info_search').on('input', function () {
         const searchQuery = $(this).val();
         debouncedWISearch(searchQuery);
