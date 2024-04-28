@@ -4,7 +4,7 @@ import { callPopup, event_types, eventSource, is_send_press, main_api, substitut
 import { is_group_generating } from './group-chats.js';
 import { Message, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
-import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
+import { debounce, waitUntilCondition, escapeHtml, debounce_timeout } from './utils.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -294,7 +294,7 @@ class PromptManager {
         this.handleCharacterReset = () => { };
 
         /** Debounced version of render */
-        this.renderDebounced = debounce(this.render.bind(this), 1000);
+        this.renderDebounced = debounce(this.render.bind(this), debounce_timeout.relaxed);
     }
 
 

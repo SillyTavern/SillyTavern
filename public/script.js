@@ -153,6 +153,7 @@ import {
     isValidUrl,
     ensureImageFormatSupported,
     flashHighlight,
+    debounce_timeout,
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
@@ -541,7 +542,8 @@ let fav_ch_checked = false;
 let scrollLock = false;
 export let abortStatusCheck = new AbortController();
 
-const durationSaveEdit = 1000;
+/** @type {number} The debounce timeout used for chat/settings save. debounce_timeout.long: 1.000 ms */
+const durationSaveEdit = debounce_timeout.relaxed;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), durationSaveEdit);
 
@@ -551,7 +553,7 @@ export const saveCharacterDebounced = debounce(() => $('#create_button').trigger
  *
  * The printing will also always reprint all filter options of the global list, to keep them up to date.
  */
-const printCharactersDebounced = debounce(() => { printCharacters(false); }, 100);
+const printCharactersDebounced = debounce(() => { printCharacters(false); }, debounce_timeout.quick);
 
 /**
  * @enum {string} System message types
@@ -849,7 +851,7 @@ export let active_character = '';
 export let active_group = '';
 
 export const entitiesFilter = new FilterHelper(printCharactersDebounced);
-export const personasFilter = new FilterHelper(debounce(getUserAvatars, 100));
+export const personasFilter = new FilterHelper(debounce(getUserAvatars, debounce_timeout.quick));
 
 export function getRequestHeaders() {
     return {
@@ -6712,7 +6714,7 @@ export async function displayPastChats() {
 
     const debouncedDisplay = debounce((searchQuery) => {
         displayChats(searchQuery);
-    }, 300);
+    });
 
     // Define the search input listener
     $('#select_chat_search').on('input', function () {
@@ -8666,14 +8668,20 @@ jQuery(async function () {
 
     $(document).on('click', '.swipe_left', swipe_left);
 
+    const debouncedCharacterSearch = debounce((searchQuery) => {
+        entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchQuery);
+    });
     $('#character_search_bar').on('input', function () {
-        const searchValue = String($(this).val()).toLowerCase();
-        entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
+        const searchQuery = String($(this).val()).toLowerCase();
+        debouncedCharacterSearch(searchQuery);
     });
 
+    const debouncedPersonaSearch = debounce((searchQuery) => {
+        personasFilter.setFilterData(FILTER_TYPES.PERSONA_SEARCH, searchQuery);
+    });
     $('#persona_search_bar').on('input', function () {
-        const searchValue = String($(this).val()).toLowerCase();
-        personasFilter.setFilterData(FILTER_TYPES.PERSONA_SEARCH, searchValue);
+        const searchQuery = String($(this).val()).toLowerCase();
+        debouncedPersonaSearch(searchQuery);
     });
 
     $('#mes_continue').on('click', function () {

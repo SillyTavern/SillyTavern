@@ -18,6 +18,21 @@ export const navigation_option = {
     previous: -1000,
 };
 
+/**
+ * Common debounce timeout values to use with `debounce` calls.
+ * @enum {number}
+ */
+export const debounce_timeout = {
+    /** [100 ms] For ultra-fast responses, typically for keypresses or executions that might happen multiple times in a loop or recursion. */
+    quick: 100,
+    /** [300 ms] Default time for general use, good balance between responsiveness and performance. */
+    standard: 300,
+    /** [1.000 ms] For situations where the function triggers more intensive tasks. */
+    relaxed: 1000,
+    /** [5 sec] For delayed tasks, like auto-saving or completing batch operations that need a significant pause. */
+    extended: 5000,
+}
+
 export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -256,10 +271,10 @@ export function getStringHash(str, seed = 0) {
 /**
  * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
  * @param {function} func The function to debounce.
- * @param {number} [timeout=300] The timeout in milliseconds.
+ * @param {debounce_timeout|number} [timeout=debounce_timeout.default] The timeout based on the common enum values, or in milliseconds.
  * @returns {function} The debounced function.
  */
-export function debounce(func, timeout = 300) {
+export function debounce(func, timeout = debounce_timeout.standard) {
     let timer;
     return (...args) => {
         clearTimeout(timer);
