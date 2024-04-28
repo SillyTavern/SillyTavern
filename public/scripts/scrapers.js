@@ -47,7 +47,7 @@ export class ScraperManager {
      * @returns {ScraperInfo[]} List of scrapers available for the Data Bank
      */
     static getDataBankScrapers() {
-        return ScraperManager.#scrapers.map(s => ({ id: s.id, name: s.name, description: s.description, iconClass: s.iconClass, iconAvailable: s.iconAvailable}));
+        return ScraperManager.#scrapers.map(s => ({ id: s.id, name: s.name, description: s.description, iconClass: s.iconClass, iconAvailable: s.iconAvailable }));
     }
 
     /**

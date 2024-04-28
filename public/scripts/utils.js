@@ -31,7 +31,7 @@ export const debounce_timeout = {
     relaxed: 1000,
     /** [5 sec] For delayed tasks, like auto-saving or completing batch operations that need a significant pause. */
     extended: 5000,
-}
+};
 
 export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

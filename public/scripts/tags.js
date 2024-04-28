@@ -1477,14 +1477,14 @@ export function initTags() {
         toggleAutoSortTags(evt.originalEvent, toggle);
         printViewTagList();
     });
-    $(document).on('focusout', `#dialogue_popup .tag_view_name`, (evt) => {
+    $(document).on('focusout', '#dialogue_popup .tag_view_name', (evt) => {
         // Remember the order, so we can flash highlight if it changed after reprinting
         const tagId = $(evt.target).parent('.tag_view_item').attr('id');
-        const oldOrder = $(`#dialogue_popup .tag_view_item`).map((_, el) => el.id).get();
+        const oldOrder = $('#dialogue_popup .tag_view_item').map((_, el) => el.id).get();
 
         printViewTagList();
 
-        const newOrder = $(`#dialogue_popup .tag_view_item`).map((_, el) => el.id).get();
+        const newOrder = $('#dialogue_popup .tag_view_item').map((_, el) => el.id).get();
         const orderChanged = !oldOrder.every((id, index) => id === newOrder[index]);
         if (orderChanged) {
             flashHighlight($(`#dialogue_popup .tag_view_item[id="${tagId}"]`));
