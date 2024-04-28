@@ -3038,9 +3038,12 @@ jQuery(() => {
         }
     });
 
+    const debouncedWISearch = debounce((searchQuery) => {
+        worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, searchQuery);
+    }, 300);
     $('#world_info_search').on('input', function () {
-        const term = $(this).val();
-        worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, term);
+        const searchQuery = $(this).val();
+        debouncedWISearch(searchQuery);
     });
 
     $('#world_refresh').on('click', () => {
