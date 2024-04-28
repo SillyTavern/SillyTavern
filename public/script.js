@@ -392,6 +392,11 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
                 mediaBlocked = true;
                 node.remove();
             }
+
+            if (mediaBlocked && (node instanceof HTMLMediaElement)) {
+                node.autoplay = false;
+                node.pause();
+            }
         }
             break;
     }
