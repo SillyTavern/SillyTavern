@@ -65,6 +65,9 @@ export {
 };
 
 export const parser = new SlashCommandParser();
+/**
+ * @deprecated Use SlashCommandParser.addCommandObject() instead
+ */
 const registerSlashCommand = parser.addCommand.bind(parser);
 const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
