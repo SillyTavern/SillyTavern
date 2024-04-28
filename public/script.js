@@ -8668,14 +8668,20 @@ jQuery(async function () {
 
     $(document).on('click', '.swipe_left', swipe_left);
 
+    const debouncedCharacterSearch = debounce((searchQuery) => {
+        entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchQuery);
+    });
     $('#character_search_bar').on('input', function () {
-        const searchValue = String($(this).val()).toLowerCase();
-        entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
+        const searchQuery = String($(this).val()).toLowerCase();
+        debouncedCharacterSearch(searchQuery);
     });
 
+    const debouncedPersonaSearch = debounce((searchQuery) => {
+        personasFilter.setFilterData(FILTER_TYPES.PERSONA_SEARCH, searchQuery);
+    });
     $('#persona_search_bar').on('input', function () {
-        const searchValue = String($(this).val()).toLowerCase();
-        personasFilter.setFilterData(FILTER_TYPES.PERSONA_SEARCH, searchValue);
+        const searchQuery = String($(this).val()).toLowerCase();
+        debouncedPersonaSearch(searchQuery);
     });
 
     $('#mes_continue').on('click', function () {
