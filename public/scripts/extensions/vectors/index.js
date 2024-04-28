@@ -561,7 +561,7 @@ function getPromptText(queriedMessages) {
 
 window['vectors_rearrangeChat'] = rearrangeChat;
 
-const onChatEvent = debounce(async () => await moduleWorker.update());
+const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_timeout.relaxed);
 
 /**
  * Gets the text to query from the chat
