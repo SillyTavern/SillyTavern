@@ -2619,6 +2619,7 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
         if (result.isAborted) {
             toastr.warning(result.abortReason, 'Command execution aborted');
         }
+        return result;
     } catch (e) {
         if (handleExecutionErrors) {
             toastr.error(e.message);
