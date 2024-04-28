@@ -232,9 +232,8 @@ export class SlashCommandClosure {
                     ;
                 }
 
-                let abortResult;
-                // eslint-disable-next-line no-cond-assign
-                if (abortResult = this.testAbortController()) {
+                let abortResult = this.testAbortController();
+                if (abortResult) {
                     return abortResult;
                 }
                 this.scope.pipe = await executor.command.callback(args, value ?? '');
