@@ -2511,11 +2511,11 @@ function convertAgnaiMemoryBook(inputObj) {
             useProbability: false,
             group: '',
             groupOverride: false,
-            scanDepth: entry.extensions?.scan_depth ?? null,
-            caseSensitive: entry.extensions?.case_sensitive ?? null,
-            matchWholeWords: entry.extensions?.match_whole_words ?? null,
-            automationId: entry.extensions?.automation_id ?? '',
-            role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
+            scanDepth: null,
+            caseSensitive: null,
+            matchWholeWords: null,
+            automationId: '',
+            role: extension_prompt_roles.SYSTEM,
         };
     });
 
@@ -2547,11 +2547,11 @@ function convertRisuLorebook(inputObj) {
             useProbability: entry.activationPercent ?? false,
             group: '',
             groupOverride: false,
-            scanDepth: entry.extensions?.scan_depth ?? null,
-            caseSensitive: entry.extensions?.case_sensitive ?? null,
-            matchWholeWords: entry.extensions?.match_whole_words ?? null,
-            automationId: entry.extensions?.automation_id ?? '',
-            role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
+            scanDepth: null,
+            caseSensitive: null,
+            matchWholeWords: null,
+            automationId: '',
+            role: extension_prompt_roles.SYSTEM,
         };
     });
 
@@ -2588,11 +2588,11 @@ function convertNovelLorebook(inputObj) {
             useProbability: false,
             group: '',
             groupOverride: false,
-            scanDepth: entry.extensions?.scan_depth ?? null,
-            caseSensitive: entry.extensions?.case_sensitive ?? null,
-            matchWholeWords: entry.extensions?.match_whole_words ?? null,
-            automationId: entry.extensions?.automation_id ?? '',
-            role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
+            scanDepth: null,
+            caseSensitive: null,
+            matchWholeWords: null,
+            automationId: '',
+            role: extension_prompt_roles.SYSTEM,
         };
     });
 
