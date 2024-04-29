@@ -1861,6 +1861,7 @@ function highlightDefaultContext() {
 }
 
 export function fuzzySearchCharacters(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(characters, {
         keys: [
             { name: 'data.name', weight: 8 },
@@ -1885,7 +1886,14 @@ export function fuzzySearchCharacters(searchValue) {
     return indices;
 }
 
+/**
+ * Fuzzy search world info entries by a search term
+ * @param {*[]} data - WI items data array
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchWorldInfo(data, searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
             { name: 'key', weight: 3 },
@@ -1901,11 +1909,12 @@ export function fuzzySearchWorldInfo(data, searchValue) {
 
     const results = fuse.search(searchValue);
     console.debug('World Info fuzzy search results for ' + searchValue, results);
-    return results.map(x => x.item?.uid);
+    return results;
 }
 
 export function fuzzySearchPersonas(data, searchValue) {
     data = data.map(x => ({ key: x, description: power_user.persona_descriptions[x]?.description ?? '', name: power_user.personas[x] ?? '' }));
+    // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
             { name: 'name', weight: 4 },
@@ -1922,6 +1931,7 @@ export function fuzzySearchPersonas(data, searchValue) {
 }
 
 export function fuzzySearchTags(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(tags, {
         keys: [
             { name: 'name', weight: 1 },
@@ -1938,6 +1948,7 @@ export function fuzzySearchTags(searchValue) {
 }
 
 export function fuzzySearchGroups(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(groups, {
         keys: [
             { name: 'name', weight: 3 },
@@ -2745,6 +2756,7 @@ function setAvgBG() {
 }
 
 async function setThemeCallback(_, text) {
+    // @ts-ignore
     const fuse = new Fuse(themes, {
         keys: [
             { name: 'name', weight: 1 },
@@ -2767,6 +2779,7 @@ async function setThemeCallback(_, text) {
 }
 
 async function setmovingUIPreset(_, text) {
+    // @ts-ignore
     const fuse = new Fuse(movingUIPresets, {
         keys: [
             { name: 'name', weight: 1 },

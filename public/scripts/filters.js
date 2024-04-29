@@ -1,9 +1,15 @@
 import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchPersonas, fuzzySearchTags, fuzzySearchWorldInfo, power_user } from './power-user.js';
 import { tag_map } from './tags.js';
 
+
+/**
+ * @typedef FilterType The filter type possible for this filter helper
+ * @type {'search'|'tag'|'folder'|'fav'|'group'|'world_info_search'|'persona_search'}
+ */
+
 /**
  * The filter types
- * @type {{ SEARCH: string, TAG: string, FOLDER: string, FAV: string, GROUP: string, WORLD_INFO_SEARCH: string, PERSONA_SEARCH: string, [key: string]: string }}
+ * @type {{ SEARCH: 'search', TAG: 'tag', FOLDER: 'folder', FAV: 'fav', GROUP: 'group', WORLD_INFO_SEARCH: 'world_info_search', PERSONA_SEARCH: 'persona_search'}}
  */
 export const FILTER_TYPES = {
     SEARCH: 'search',
@@ -56,12 +62,22 @@ export function isFilterState(a, b) {
  * data = filterHelper.applyFilters(data);
  */
 export class FilterHelper {
+
+    /**
+     * Cache fuzzy search weighting scores for re-usability, sorting and stuff
+     *
+     * Contains maps of weighting numbers assigned to their uid/id, for each of the different `FILTER_TYPES`
+     * @type {Map<FilterType, Map<string|number,number>>}
+     */
+    scoreCache;
+
     /**
      * Creates a new FilterHelper
      * @param {Function} onDataChanged Callback to trigger when the filter data changes
      */
     constructor(onDataChanged) {
         this.onDataChanged = onDataChanged;
+        this.scoreCache = new Map();
     }
 
     /**
@@ -135,7 +151,12 @@ export class FilterHelper {
         }
 
         const fuzzySearchResults = fuzzySearchWorldInfo(data, term);
-        return data.filter(entity => fuzzySearchResults.includes(entity.uid));
+
+        var wiScoreMap = new Map(fuzzySearchResults.map(i => [i.item?.uid, i.score]));
+        this.cacheScores(FILTER_TYPES.WORLD_INFO_SEARCH, wiScoreMap);
+
+        const filteredData = data.filter(entity => fuzzySearchResults.find(x => x.item === entity));
+        return filteredData;
     }
 
     /**
@@ -310,7 +331,7 @@ export class FilterHelper {
 
     /**
      * Gets the filter data for the given filter type.
-     * @param {string} filterType The filter type to get data for.
+     * @param {FilterType} filterType The filter type to get data for.
      */
     getFilterData(filterType) {
         return this.filterData[filterType];
@@ -318,11 +339,51 @@ export class FilterHelper {
 
     /**
      * Applies all filters to the given data.
-     * @param {any[]} data The data to filter.
+     * @param {any[]} data - The data to filter.
+     * @param {object} options - Optional call parameters
+     * @param {boolean|FilterType} [options.clearScoreCache=true] - Whether the score
      * @returns {any[]} The filtered data.
      */
-    applyFilters(data) {
+    applyFilters(data, { clearScoreCache = true } = {}) {
+        if (clearScoreCache) this.clearScoreCache();
         return Object.values(this.filterFunctions)
             .reduce((data, fn) => fn(data), data);
+    }
+
+    /**
+     * Cache scores for a specific filter type
+     * @param {FilterType} type - The type of data being cached
+     * @param {Map<string|number, number>} results - The search results containing mapped item identifiers and their scores
+     */
+    cacheScores(type, results) {
+        /** @type {Map<string|number, number>} */
+        const typeScores = this.scoreCache.get(type) || new Map();
+        for (const [uid, score] of results) {
+            typeScores.set(uid, score);
+        }
+        this.scoreCache.set(type, typeScores);
+        console.debug('scores chached', type, typeScores);
+    }
+
+    /**
+     * Get the cached score for an item by type and its identifier
+     * @param {FilterType} type The type of data
+     * @param {string|number} uid The unique identifier for an item
+     * @returns {number|undefined} The cached score, or undefined if no score is present
+     */
+    getScore(type, uid) {
+        return this.scoreCache.get(type)?.get(uid) ?? undefined;
+    }
+
+    /**
+     * Clear the score cache for a specific type, or completely if no type is specified
+     * @param {FilterType} [type] The type of data to clear scores for. Clears all if unspecified.
+     */
+    clearScoreCache(type) {
+        if (type) {
+            this.scoreCache.set(type, new Map());
+        } else {
+            this.scoreCache = new Map();
+        }
     }
 }

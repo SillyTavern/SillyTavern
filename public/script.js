@@ -1465,7 +1465,7 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
             const subCount = subEntities.length;
             subEntities = filterByTagState(entities, { subForEntity: entity });
             if (doFilter) {
-                subEntities = entitiesFilter.applyFilters(subEntities);
+                subEntities = entitiesFilter.applyFilters(subEntities, { clearScoreCache: false });
             }
             entity.entities = subEntities;
             entity.hidden = subCount - subEntities.length;
