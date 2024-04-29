@@ -686,6 +686,30 @@ async function downloadAttachment(attachment) {
 }
 
 /**
+ * Removes an attachment from the disabled list.
+ * @param {FileAttachment} attachment Attachment to enable
+ * @param {function} callback Success callback
+ */
+function enableAttachment(attachment, callback) {
+    ensureAttachmentsExist();
+    extension_settings.disabled_attachments = extension_settings.disabled_attachments.filter(url => url !== attachment.url);
+    saveSettingsDebounced();
+    callback();
+}
+
+/**
+ * Adds an attachment to the disabled list.
+ * @param {FileAttachment} attachment Attachment to disable
+ * @param {function} callback Success callback
+ */
+function disableAttachment(attachment, callback) {
+    ensureAttachmentsExist();
+    extension_settings.disabled_attachments.push(attachment.url);
+    saveSettingsDebounced();
+    callback();
+}
+
+/**
  * Moves a file attachment to a different source.
  * @param {FileAttachment} attachment Attachment to moves
  * @param {string} source Source of the attachment
@@ -752,9 +776,23 @@ async function deleteAttachment(attachment, source, callback, confirm = true) {
             break;
     }
 
+    if (Array.isArray(extension_settings.disabled_attachments) && extension_settings.disabled_attachments.includes(attachment.url)) {
+        extension_settings.disabled_attachments = extension_settings.disabled_attachments.filter(url => url !== attachment.url);
+        saveSettingsDebounced();
+    }
+
     const silent = confirm === false;
     await deleteFileFromServer(attachment.url, silent);
     callback();
+}
+
+/**
+ * Determines if the attachment is disabled.
+ * @param {FileAttachment} attachment Attachment to check
+ * @returns {boolean} True if attachment is disabled, false otherwise.
+ */
+function isAttachmentDisabled(attachment) {
+    return extension_settings.disabled_attachments.some(url => url === attachment?.url);
 }
 
 /**
@@ -806,7 +844,9 @@ async function openAttachmentManager() {
         const sortedAttachmentList = attachments.slice().filter(filterFn).sort(sortFn);
 
         for (const attachment of sortedAttachmentList) {
+            const isDisabled = isAttachmentDisabled(attachment);
             const attachmentTemplate = template.find('.attachmentListItemTemplate .attachmentListItem').clone();
+            attachmentTemplate.toggleClass('disabled', isDisabled);
             attachmentTemplate.find('.attachmentFileIcon').attr('title', attachment.url);
             attachmentTemplate.find('.attachmentListItemName').text(attachment.name);
             attachmentTemplate.find('.attachmentListItemSize').text(humanFileSize(attachment.size));
@@ -816,6 +856,8 @@ async function openAttachmentManager() {
             attachmentTemplate.find('.deleteAttachmentButton').on('click', () => deleteAttachment(attachment, source, renderAttachments));
             attachmentTemplate.find('.downloadAttachmentButton').on('click', () => downloadAttachment(attachment));
             attachmentTemplate.find('.moveAttachmentButton').on('click', () => moveAttachment(attachment, source, renderAttachments));
+            attachmentTemplate.find('.enableAttachmentButton').toggle(isDisabled).on('click', () => enableAttachment(attachment, renderAttachments));
+            attachmentTemplate.find('.disableAttachmentButton').toggle(!isDisabled).on('click', () => disableAttachment(attachment, renderAttachments));
             template.find(sources[source]).append(attachmentTemplate);
         }
     }
@@ -1117,6 +1159,10 @@ export async function uploadFileAttachmentToServer(file, target) {
 }
 
 function ensureAttachmentsExist() {
+    if (!Array.isArray(extension_settings.disabled_attachments)) {
+        extension_settings.disabled_attachments = [];
+    }
+
     if (!Array.isArray(extension_settings.attachments)) {
         extension_settings.attachments = [];
     }
@@ -1137,7 +1183,7 @@ function ensureAttachmentsExist() {
 }
 
 /**
- * Gets all currently available attachments.
+ * Gets all currently available attachments. Ignores disabled attachments.
  * @returns {FileAttachment[]} List of attachments
  */
 export function getDataBankAttachments() {
@@ -1146,11 +1192,11 @@ export function getDataBankAttachments() {
     const chatAttachments = chat_metadata.attachments ?? [];
     const characterAttachments = extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
 
-    return [...globalAttachments, ...chatAttachments, ...characterAttachments];
+    return [...globalAttachments, ...chatAttachments, ...characterAttachments].filter(x => !isAttachmentDisabled(x));
 }
 
 /**
- * Gets all attachments for a specific source.
+ * Gets all attachments for a specific source. Includes disabled attachments.
  * @param {string} source Attachment source
  * @returns {FileAttachment[]} List of attachments
  */
@@ -1165,6 +1211,8 @@ export function getDataBankAttachmentsForSource(source) {
         case ATTACHMENT_SOURCE.CHARACTER:
             return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
     }
+
+    return [];
 }
 
 /**
