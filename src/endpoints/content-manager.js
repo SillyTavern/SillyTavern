@@ -427,6 +427,32 @@ function parseAICC(url) {
 }
 
 /**
+ * Download character card from generic url.
+ * @param {String} url
+ */
+async function downloadGenericPng(url) {
+    try {
+        const result = await fetch(url);
+
+        if(result.ok) {
+            const buffer = await result.buffer();
+            const fileName = sanitize(result.url.split('?')[0].split('/').reverse()[0]);
+            const contentType = result.headers.get('content-type') || 'image/png'; //yoink it from AICC function lol
+
+            return {
+                buffer: buffer,
+                fileName: fileName,
+                fileType:contentType,
+            };
+        }
+    } catch (error) {
+        console.error('Error downloading file: ', error);
+        throw error;
+    }
+    return null;
+}
+
+/**
 * @param {String} url
 * @returns {String | null } UUID of the character
 */
@@ -440,6 +466,41 @@ function getUuidFromUrl(url) {
     return uuid;
 }
 
+/**
+ * Filter to get the domain host of a url instead of a blanket string
+ * search.
+    * @param {String} url URL to strip
+    * @result {String} Domain name
+ */
+function getHostFromUrl(url) {
+    //dirty way to do it, but if someone wants to bash their head on the regex
+    //go ahead
+    return url.replace('http://','').replace('https://','').split('/')[0];
+}
+
+/**
+ * List of generic domains that are trusted to hold character cards.
+ * Some additional providers may be added later on.
+ */
+const WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES = [
+    'discordapp.com',
+    'catbox.moe',
+]; //TODO: move this to config.yaml?
+
+/**
+ * Checks if url is part of generic download source whitelist.
+ * @param {String} url
+ * @returns {bool} if the url is on the whitelist.
+ */
+function isUrlWhitelisted(url) {
+    for(const k of WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES) {
+        if(url.includes(k)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 const router = express.Router();
 
 router.post('/importURL', jsonParser, async (request, response) => {
@@ -449,12 +510,15 @@ router.post('/importURL', jsonParser, async (request, response) => {
 
     try {
         const url = request.body.url;
+        const host = getHostFromUrl(url);
         let result;
         let type;
 
-        const isJannnyContent = url.includes('janitorai');
-        const isPygmalionContent = url.includes('pygmalion.chat');
-        const isAICharacterCardsContent = url.includes('aicharactercards.com');
+        const isChub = host.includes('chub.ai');
+        const isJannnyContent = host.includes('janitorai');
+        const isPygmalionContent = host.includes('pygmalion.chat');
+        const isAICharacterCardsContent = host.includes('aicharactercards.com');
+        const isGeneric = isUrlWhitelisted(host);
 
         if (isPygmalionContent) {
             const uuid = getUuidFromUrl(url);
@@ -479,7 +543,7 @@ router.post('/importURL', jsonParser, async (request, response) => {
             }
             type = 'character';
             result = await downloadAICCCharacter(AICCParsed);
-        } else {
+        } else if (isChub) {
             const chubParsed = parseChubUrl(url);
             type = chubParsed?.type;
 
@@ -494,6 +558,12 @@ router.post('/importURL', jsonParser, async (request, response) => {
             else {
                 return response.sendStatus(404);
             }
+        } else if (isGeneric) {
+            console.log('Downloading from generic url.');
+            type = 'character';
+            result = await downloadGenericPng(url);
+        } else {
+            return response.sendStatus(404);
         }
 
         if (result.fileType) response.set('Content-Type', result.fileType);
