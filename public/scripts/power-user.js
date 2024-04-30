@@ -1885,6 +1885,7 @@ export function fuzzySearchCharacters(searchValue) {
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
@@ -1913,6 +1914,7 @@ export function fuzzySearchWorldInfo(data, searchValue) {
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
@@ -1937,6 +1939,7 @@ export function fuzzySearchPersonas(data, searchValue) {
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
@@ -1958,6 +1961,7 @@ export function fuzzySearchTags(searchValue) {
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
@@ -1982,6 +1986,7 @@ export function fuzzySearchGroups(searchValue) {
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
