@@ -5,6 +5,14 @@ import { SlashCommandBlankAutoCompleteOption } from './SlashCommandBlankAutoComp
 // eslint-disable-next-line no-unused-vars
 import { SlashCommandParserNameResult } from './SlashCommandParserNameResult.js';
 
+/**@readonly*/
+/**@enum {Number}*/
+export const AUTOCOMPLETE_WIDTH = {
+    'INPUT': 0,
+    'CHAT': 1,
+    'FULL': 2,
+};
+
 export class SlashCommandAutoComplete {
     /**@type {HTMLTextAreaElement}*/ textarea;
     /**@type {boolean}*/ isFloating = false;
@@ -92,7 +100,7 @@ export class SlashCommandAutoComplete {
         textarea.addEventListener('keydown', (evt)=>this.handleKeyDown(evt));
         textarea.addEventListener('click', ()=>this.isActive ? this.show() : null);
         textarea.addEventListener('selectionchange', ()=>this.show());
-        textarea.addEventListener('blur', ()=>this.hide());
+        // textarea.addEventListener('blur', ()=>this.hide());
         if (isFloating) {
             textarea.addEventListener('scroll', ()=>this.updateFloatingPositionDebounced());
         }
@@ -389,16 +397,21 @@ export class SlashCommandAutoComplete {
         if (this.isFloating) {
             this.updateFloatingPosition();
         } else {
-            const rect = this.textarea.getBoundingClientRect();
-            this.domWrap.style.setProperty('--bottom', `${window.innerHeight - rect.top}px`);
-            this.dom.style.setProperty('--bottom', `${window.innerHeight - rect.top}px`);
-            this.domWrap.style.bottom = `${window.innerHeight - rect.top}px`;
+            const rect = {};
+            rect[AUTOCOMPLETE_WIDTH.INPUT] = this.textarea.getBoundingClientRect();
+            rect[AUTOCOMPLETE_WIDTH.CHAT] = document.querySelector('#sheld').getBoundingClientRect();
+            rect[AUTOCOMPLETE_WIDTH.FULL] = document.body.getBoundingClientRect();
+            this.domWrap.style.setProperty('--bottom', `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`);
+            this.dom.style.setProperty('--bottom', `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`);
+            this.domWrap.style.bottom = `${window.innerHeight - rect[AUTOCOMPLETE_WIDTH.INPUT].top}px`;
             if (this.isShowingDetails) {
                 this.domWrap.style.setProperty('--leftOffset', '1vw');
+                this.domWrap.style.setProperty('--leftOffset', `max(1vw, ${rect[power_user.stscript.autocomplete.width.left].left}px)`);
+                this.domWrap.style.setProperty('--rightOffset', `calc(100vw - min(${rect[power_user.stscript.autocomplete.width.right].right}px, ${this.isShowingDetails ? 74 : 0}vw)`);
             } else {
-                this.domWrap.style.setProperty('--leftOffset', `${rect.left}px`);
+                this.domWrap.style.setProperty('--leftOffset', `max(1vw, ${rect[power_user.stscript.autocomplete.width.left].left}px)`);
+                this.domWrap.style.setProperty('--rightOffset', `calc(100vw - min(99vw, ${rect[power_user.stscript.autocomplete.width.right].right}px)`);
             }
-            this.domWrap.style.setProperty('--rightOffset', `calc(1vw + ${this.isShowingDetails ? 25 : 0}vw)`);
             this.updateDetailsPosition();
         }
     }
@@ -411,19 +424,24 @@ export class SlashCommandAutoComplete {
             if (this.isFloating) {
                 this.updateFloatingDetailsPosition();
             } else {
-                const rect = this.textarea.getBoundingClientRect();
+                const rect = {};
+                rect[AUTOCOMPLETE_WIDTH.INPUT] = this.textarea.getBoundingClientRect();
+                rect[AUTOCOMPLETE_WIDTH.CHAT] = document.querySelector('#sheld').getBoundingClientRect();
+                rect[AUTOCOMPLETE_WIDTH.FULL] = document.body.getBoundingClientRect();
                 if (this.isReplaceable) {
+                    this.detailsWrap.classList.remove('full');
                     const selRect = this.selectedItem.dom.children[0].getBoundingClientRect();
                     this.detailsWrap.style.setProperty('--targetOffset', `${selRect.top}`);
-                    this.detailsWrap.style.bottom = `${window.innerHeight - rect.top}px`;
-                    this.detailsWrap.style.left = `calc(100vw - calc(1vw + ${this.isShowingDetails ? 25 : 0}vw))`;
+                    this.detailsWrap.style.bottom = `calc(100vh - ${rect[AUTOCOMPLETE_WIDTH.INPUT]}px)`;
+                    this.detailsWrap.style.left = `calc(100vw - ${this.domWrap.style.getPropertyValue('--rightOffset')}`;
                     this.detailsWrap.style.right = '1vw';
                     this.detailsWrap.style.top = '5vh';
                 } else {
-                    this.detailsWrap.style.setProperty('--targetOffset', `${rect.top}`);
-                    this.detailsWrap.style.bottom = `${window.innerHeight - rect.top}px`;
-                    this.detailsWrap.style.left = `${rect.left}px`;
-                    this.detailsWrap.style.right = `calc(100vw - ${rect.right}px)`;
+                    this.detailsWrap.classList.add('full');
+                    this.detailsWrap.style.setProperty('--targetOffset', `${rect[AUTOCOMPLETE_WIDTH.INPUT].top}`);
+                    this.detailsWrap.style.bottom = `calc(100vh - ${rect[AUTOCOMPLETE_WIDTH.INPUT].top}px)`;
+                    this.detailsWrap.style.left = `${rect[power_user.stscript.autocomplete.width.left].left}px`;
+                    this.detailsWrap.style.right = `calc(100vw - ${rect[power_user.stscript.autocomplete.width.right].right}px)`;
                     this.detailsWrap.style.top = '5vh';
                 }
             }

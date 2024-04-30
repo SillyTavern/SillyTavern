@@ -34,7 +34,6 @@ import {
     selectInstructPreset,
 } from './instruct-mode.js';
 
-import { registerSlashCommand } from './slash-commands.js';
 import { tag_map, tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
@@ -44,6 +43,7 @@ import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetS
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
+import { AUTOCOMPLETE_WIDTH } from './slash-commands/SlashCommandAutoComplete.js';
 
 export {
     loadPowerUserSettings,
@@ -256,7 +256,13 @@ let power_user = {
     aux_field: 'character_version',
     stscript: {
         matching: 'fuzzy',
-        autocomplete_style: 'theme',
+        autocomplete: {
+            style: 'theme',
+            width: {
+                left: AUTOCOMPLETE_WIDTH.CHAT,
+                right: AUTOCOMPLETE_WIDTH.CHAT,
+            },
+        },
         parser: {
             /**@type {Object.<PARSER_FLAG,boolean>} */
             flags: {},
@@ -1447,10 +1453,17 @@ function loadPowerUserSettings(settings, data) {
 
     if (power_user.stscript === undefined) {
         power_user.stscript = defaultStscript;
-    } else if (power_user.stscript.parser === undefined) {
-        power_user.stscript.parser = defaultStscript.parser;
-    } else if (power_user.stscript.parser.flags === undefined) {
-        power_user.stscript.parser.flags = defaultStscript.parser.flags;
+    } else {
+        if (power_user.stscript.autocomplete === undefined) {
+            power_user.stscript.autocomplete = defaultStscript.autocomplete;
+        } else if (power_user.stscript.autocomplete.width === undefined) {
+            power_user.stscript.autocomplete.width = defaultStscript.autocomplete.width;
+        }
+        if (power_user.stscript.parser === undefined) {
+            power_user.stscript.parser = defaultStscript.parser;
+        } else if (power_user.stscript.parser.flags === undefined) {
+            power_user.stscript.parser.flags = defaultStscript.parser.flags;
+        }
     }
 
     if (data.themes !== undefined) {
@@ -1600,6 +1613,10 @@ function loadPowerUserSettings(settings, data) {
     document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete_style);
     $('#stscript_parser_flag_strict_escaping').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] ?? false);
     $('#stscript_parser_flag_replace_getvar').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] ?? false);
+    $('#stscript_autocomplete_width_left').val(power_user.stscript.autocomplete.width.left ?? AUTOCOMPLETE_WIDTH.CHAT);
+    document.querySelector('#stscript_autocomplete_width_left').dispatchEvent(new Event('input', { bubbles:true }));
+    $('#stscript_autocomplete_width_right').val(power_user.stscript.autocomplete.width.right ?? AUTOCOMPLETE_WIDTH.CHAT);
+    document.querySelector('#stscript_autocomplete_width_right').dispatchEvent(new Event('input', { bubbles:true }));
 
     $('#restore_user_input').prop('checked', power_user.restore_user_input);
 
@@ -3567,6 +3584,20 @@ $(document).ready(() => {
         const value = $(this).find(':selected').val();
         power_user.stscript.autocomplete_style = String(value);
         document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete_style);
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_autocomplete_width_left').on('input', function () {
+        const value = $(this).val();
+        power_user.stscript.autocomplete.width.left = String(value);
+        this.closest('.doubleRangeInputContainer').style.setProperty('--value', value);
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_autocomplete_width_right').on('input', function () {
+        const value = $(this).val();
+        power_user.stscript.autocomplete.width.right = String(value);
+        this.closest('.doubleRangeInputContainer').style.setProperty('--value', value);
         saveSettingsDebounced();
     });
 

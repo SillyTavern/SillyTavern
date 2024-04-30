@@ -623,7 +623,6 @@ body .panelControlBar {
     flex-direction: row;
     column-gap: 5px;
     font-size: var(--bottomFormIconSize);
-    overflow: hidden;
     order: 25;
     width: 100%;
 }
@@ -675,6 +674,20 @@ body .panelControlBar {
     order: 1;
 }
 
+@keyframes mes_stop_pulse {
+    0%, 100% {
+        border-width: 0em;
+        box-shadow:
+            0 0 0 var(--progColor),
+            0 0 0 var(--progColor)
+    }
+    50% {
+        border-width: 1em;
+        box-shadow:
+            0 0 1em var(--progColor),
+            0 0 1em var(--progColor)
+    }
+}
 #send_form .mes_stop {
     display: none;
     order: 2;
@@ -683,6 +696,31 @@ body .panelControlBar {
     cursor: pointer;
     transition: 0.3s;
     opacity: 0.7;
+    > .fa-solid {
+        --toastInfoColor: #2F96B4;
+        --progColor: rgba(0, 128, 0, 0.839);
+        border-radius: 50%;
+        border: 0 solid var(--progColor);
+        aspect-ratio: 1 / 1;
+        display: flex;
+        background: var(--SmartThemeBodyColor);
+        font-size: 0.5em;
+        height: var(--bottomFormIconSize);
+        justify-content: center;
+        align-items: center;
+        color: black;
+        box-shadow:
+            0 0 0 var(--progColor),
+            0 0 0 var(--progColor)
+        ;
+        body & {
+            animation-name: mes_stop_pulse;
+            animation-duration: 1500ms;
+            animation-timing-function: ease-in-out;
+            animation-delay: 0s;
+            animation-iteration-count: infinite;
+        }
+    }
 }
 
 
@@ -1415,12 +1453,11 @@ body[data-stscript-style] .hljs.language-stscript {
 
 .slashCommandAutoComplete {
     padding-bottom: 1px;
-    /* position: absolute; */
     display: grid;
     grid-template-columns: 0fr auto minmax(50%, 1fr);
     align-items: center;
     max-height: calc(95vh - var(--bottom));
-    /* gap: 0.5em; */
+    container-type: inline-size;
     > .item {
         cursor: pointer;
         padding: 3px;
@@ -1429,6 +1466,16 @@ body[data-stscript-style] .hljs.language-stscript {
         gap: 0.5em;
         font-size: 0.8em;
         display: contents;
+        @container (max-width: 1000px) {
+            .specs {
+                grid-column: 2 / 4;
+            }
+            .help {
+                grid-column: 2 / 4;
+                padding-left: 1em;
+                opacity: 0.75;
+            }
+        }
         &.blank {
             display: block;
             grid-column: 1 / 4;
@@ -1698,16 +1745,10 @@ body[data-stscript-style] .hljs.language-stscript {
 @media screen and (max-width: 1000px) {
     .slashCommandAutoComplete-wrap {
         left: 1vw;
-        > .slashCommandAutoComplete {
-            .specs {
-                grid-column: 2 / 4;
-            }
-            .help {
-                grid-column: 2 / 4;
-                padding-left: 1em;
-                opacity: 0.75;
-            }
-        }
+        right: 1vw;
+    }
+    .slashCommandAutoComplete-detailsWrap:not(.full) {
+        display: none;
     }
 }
 .slashCommandBrowser {
@@ -3313,6 +3354,72 @@ input[type="range"]::-webkit-slider-thumb {
     width: 15px;
     border-radius: 50%;
     background: var(--white100);
+}
+
+.doubleRangeContainer {
+    display: flex;
+    --markerWidth: 15px;
+    > .doubleRangeInputContainer {
+        flex: 0 0 50%;
+        overflow: hidden;
+        position: relative;
+        > datalist {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            font-size: x-small;
+            > option {
+                flex: 0 0 0;
+                width: 0;
+                display: flex;
+                justify-content: center;
+            }
+        }
+        > input::-webkit-slider-thumb {
+            z-index: 2;
+        }
+        &:after {
+            content: '';
+            position: absolute;
+            top: 11px;
+            width: calc(var(--value) * (100% - 1em - max(20px, 20%)) / 2 + max(20px, 20%));
+            height: 5px;
+            background-color: var(--SmartThemeQuoteColor);
+            box-shadow: inset 0 0 2px black;
+        }
+        &:nth-child(1) {
+            --value: 0;
+            padding-left: 1em;
+            > input {
+                direction: rtl;
+                position: relative;
+                padding-right: max(20px, 20%);
+            }
+            > datalist {
+                direction: rtl;
+                padding-right: calc(var(--markerWidth)/2 + max(20px, 20%));
+                padding-left: calc(var(--markerWidth)/2 - 2px);
+            }
+            &:after {
+                right: -2px;
+            }
+        }
+        &:nth-child(2) {
+            --value: 0;
+            padding-right: 1em;
+            > input {
+                position: relative;
+                padding-left: max(20px, 20%);
+            }
+            > datalist {
+                padding-left: calc(var(--markerWidth)/2 + max(20px, 20%));
+                padding-right: calc(var(--markerWidth)/2 - 2px);
+            }
+            &:after {
+                left: -2px;
+            }
+        }
+    }
 }
 
 /*Notes '?' links*/

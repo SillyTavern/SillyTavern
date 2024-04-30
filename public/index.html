@@ -4046,6 +4046,27 @@
                                         <div class="menu_button fa-solid fa-pen-to-square" title="Customize colors"></div>
                                     </div>
                                 </div>
+                                <div title="Sets the width of the autocomplete for STscript." data-i18n="[title]Sets the width of the autocomplete for STscript.">
+                                    <label for="stscript_autocomplete_width" data-i18n="Autocomplete Width">Autocomplete Width</label>
+                                    <div class="doubleRangeContainer">
+                                        <div class="doubleRangeInputContainer">
+                                            <input type="range" id="stscript_autocomplete_width_left" min="0" max="2" step="1">
+                                            <datalist id="stscript_autocomplete_width_left_values">
+                                                <option value="0" label="input"></option>
+                                                <option value="1" label="chat"></option>
+                                                <option value="2" label="full"></option>
+                                            </datalist>
+                                        </div>
+                                        <div class="doubleRangeInputContainer">
+                                            <input type="range" id="stscript_autocomplete_width_right" min="0" max="2" step="1">
+                                            <datalist id="stscript_autocomplete_width_right_values">
+                                                <option value="0" label="input"></option>
+                                                <option value="1" label="chat"></option>
+                                                <option value="2" label="full"></option>
+                                            </datalist>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div title="Sets default flags for the STscript parser." data-i18n="[title]Sets default flags for the STscript parser.">
                                     <label data-i18n="Parser Flags">Parser Flags</label>
                                     <label class="checkbox_label" title="STRICT_ESCAPING." data-i18n="[title]STRICT_ESCAPING">
@@ -5954,8 +5975,17 @@
                     </div>
                     <textarea id="send_textarea" name="text" data-i18n="[no_connection_text]Not connected to API!;[connected_text]Type a message, or /? for help" placeholder="Not connected to API!" no_connection_text="Not connected to API!" connected_text="Type a message, or /? for help"></textarea>
                     <div id="rightSendForm" class="alignContentCenter">
+                        <div id="stscript_continue" title="Continue script execution" class="stscript_btn stscript_continue" data-i18n="[title]Continue script execution">
+                            <i class="fa-solid fa-play"></i>
+                        </div>
+                        <div id="stscript_pause" title="Pause script execution" class="stscript_btn stscript_pause" data-i18n="[title]Pause script execution">
+                            <i class="fa-solid fa-pause"></i>
+                        </div>
+                        <div id="stscript_stop" title="Abort script execution" class="stscript_btn stscript_stop" data-i18n="[title]Abort script execution">
+                            <i class="fa-solid fa-stop"></i>
+                        </div>
                         <div id="mes_stop" title="Abort request" class="mes_stop" data-i18n="[title]Abort request">
-                            <i class="fa-solid fa-circle-stop"></i>
+                            <i class="fa-solid fa-stop"></i>
                         </div>
                         <div id="mes_continue" class="fa-fw fa-solid fa-arrow-right displayNone" title="Continue the last message" data-i18n="[title]Continue the last message"></div>
                         <div id="send_but" class="fa-solid fa-paper-plane displayNone" title="Send a message" data-i18n="[title]Send a message"></div>

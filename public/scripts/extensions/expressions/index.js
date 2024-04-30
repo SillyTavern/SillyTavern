@@ -908,8 +908,10 @@ async function setSpriteSetCommand(_, folder) {
 
     $('#expression_override').val(folder.trim());
     onClickExpressionOverrideButton();
-    removeExpression();
-    moduleWorker();
+    // removeExpression();
+    // moduleWorker();
+    const vnMode = isVisualNovelMode();
+    await sendExpressionCall(folder, lastExpression, true, vnMode);
 }
 
 async function classifyCommand(_, text) {
