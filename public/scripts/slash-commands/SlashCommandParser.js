@@ -118,6 +118,7 @@ export class SlashCommandParser {
 
 
     constructor() {
+        //TODO should not be re-registered from every instance
         // add dummy commands for help strings / autocomplete
         const parserFlagCmd = new SlashCommand();
         parserFlagCmd.name = 'parser-flag';
@@ -140,6 +141,7 @@ export class SlashCommandParser {
         parserFlagCmd.helpString = 'Set a parser flag.';
         SlashCommandParser.addCommandObjectUnsafe(parserFlagCmd);
 
+        //TODO should not be re-registered from every instance
         const commentCmd = new SlashCommand();
         commentCmd.name = '/';
         commentCmd.aliases.push('#');
@@ -150,6 +152,7 @@ export class SlashCommandParser {
         commentCmd.helpString = 'Write a comment.';
         SlashCommandParser.addCommandObjectUnsafe(commentCmd);
 
+        //TODO should not be re-registered from every instance
         this.registerLanguage();
     }
     registerLanguage() {
