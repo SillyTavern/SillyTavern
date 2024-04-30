@@ -70,7 +70,7 @@ export const parser = new SlashCommandParser();
 /**
  * @deprecated Use SlashCommandParser.addCommandObject() instead
  */
-const registerSlashCommand = parser.addCommand.bind(parser);
+const registerSlashCommand = SlashCommandParser.addCommand.bind(SlashCommandParser);
 const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: '?',

@@ -24,29 +24,23 @@ export const PARSER_FLAG = {
 export class SlashCommandParser {
     // @ts-ignore
     /**@type {Object.<string, SlashCommand>}*/ static commands = {};
+
+    /**
+     * @deprecated Use SlashCommandParser.addCommandObject() instead.
+     * @param {string} command Command name
+     * @param {(namedArguments:Object.<string,string|SlashCommandClosure>, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|void|Promise<string|SlashCommandClosure|void>} callback The function to execute when the command is called
+     * @param {string[]} aliases List of alternative command names
+     * @param {string} helpString Help text shown in autocomplete and command browser
+     * @param {boolean} interruptsGeneration (deprecated) Has no effect
+     * @param {boolean} purgeFromMessage (deprecated) Has no effect
+     */
     static addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
-        const reserved = ['/', '#', ':', 'parser-flag'];
-        for (const start of reserved) {
-            if (command.toLowerCase().startsWith(start) || (aliases ?? []).find(a=>a.toLowerCase().startsWith(start))) {
-                throw new Error(`Illegal Name. Slash command name cannot begin with "${start}".`);
-            }
-        }
-        this.addCommandUnsafe(command, callback, aliases, helpString, interruptsGeneration, purgeFromMessage);
-    }
-    static addCommandUnsafe(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
-        const fnObj = Object.assign(new SlashCommand(), { name:command, callback, helpString, interruptsGeneration, purgeFromMessage, aliases });
-
-        if ([command, ...aliases].some(x => Object.hasOwn(this.commands, x))) {
-            console.trace('WARN: Duplicate slash command registered!', [command, ...aliases]);
-        }
-
-        this.commands[command] = fnObj;
-
-        if (Array.isArray(aliases)) {
-            aliases.forEach((alias) => {
-                this.commands[alias] = fnObj;
-            });
-        }
+        this.addCommandObject(SlashCommand.fromProps({
+            name: command,
+            callback,
+            aliases,
+            helpString,
+        }));
     }
     /**
      *
@@ -321,13 +315,6 @@ export class SlashCommandParser {
                 CLOSURE,
             ],
         }));
-    }
-
-    addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
-        SlashCommandParser.addCommand(command, callback, aliases, helpString, interruptsGeneration, purgeFromMessage);
-    }
-    addDummyCommand(command, aliases, helpString) {
-        SlashCommandParser.addCommandUnsafe(command, null, aliases, helpString, true, true);
     }
 
     getHelpString() {
