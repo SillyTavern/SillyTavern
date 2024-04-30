@@ -19,6 +19,7 @@ import {
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { debounce, delay, download, parseJsonFile } from './utils.js';
+import { debounce_timeout } from './constants.js';
 
 const GRID_STORAGE_KEY = 'Personas_GridView';
 
@@ -175,7 +176,7 @@ const countPersonaDescriptionTokens = debounce(async () => {
     const description = String($('#persona_description').val());
     const count = await getTokenCountAsync(description);
     $('#persona_description_token_count').text(String(count));
-}, 1000);
+}, debounce_timeout.relaxed);
 
 export function setPersonaDescription() {
     if (power_user.persona_description_position === persona_description_positions.AFTER_CHAR) {

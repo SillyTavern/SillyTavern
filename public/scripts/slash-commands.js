@@ -20,6 +20,7 @@ import {
     is_send_press,
     main_api,
     name1,
+    name2,
     reloadCurrentChat,
     removeMacros,
     retriggerFirstMessageOnEmptyChat,
@@ -1121,13 +1122,12 @@ function injectCallback(args, value) {
         chat_metadata.script_injects = {};
     }
 
-    chat_metadata.script_injects[id] = {
-        value,
-        position,
-        depth,
-        scan,
-        role,
-    };
+    if (value) {
+        const inject = { value, position, depth, scan, role };
+        chat_metadata.script_injects[id] = inject;
+    } else {
+        delete chat_metadata.script_injects[id];
+    }
 
     setExtensionPrompt(prefixedId, value, position, depth, scan, role);
     saveMetadataDebounced();
@@ -2205,14 +2205,12 @@ export async function sendMessageAs(args, text) {
             return;
         }
     } else {
-        const parts = text.split('\n');
-        if (parts.length <= 1) {
-            toastr.warning('Both character name and message are required. Separate them with a new line.');
-            return;
+        const namelessWarningKey = 'sendAsNamelessWarningShown';
+        if (localStorage.getItem(namelessWarningKey) !== 'true') {
+            toastr.warning('To avoid confusion, please use /sendas name="Character Name"', 'Name defaulted to {{char}}', { timeOut: 10000 });
+            localStorage.setItem(namelessWarningKey, 'true');
         }
-
-        name = parts.shift().trim();
-        mesText = parts.join('\n').trim();
+        name = name2;
     }
 
     // Requires a regex check after the slash command is pushed to output

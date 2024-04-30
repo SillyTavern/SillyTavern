@@ -260,6 +260,7 @@ table.responsiveTable {
 .mes_text table {
     border-spacing: 0;
     border-collapse: collapse;
+    margin-bottom: 10px;
 }
 
 .mes_text td,
@@ -1097,6 +1098,7 @@ body .panelControlBar {
     padding-left: 10px;
     width: 100%;
     overflow-x: hidden;
+    overflow-y: clip;
 }
 
 .mes_text {
@@ -3970,6 +3972,15 @@ body.big-avatars .missing-avatar {
     width: var(--avatar-base-width);
     height: var(--avatar-base-height);
     text-align: center;
+}
+
+
+.userSettingsInnerExpandable {
+    border: 1px solid;
+    border-color: var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    padding: 2px 5px !important;
+    margin: 5px 0;
 }
 
 @keyframes ellipsis {

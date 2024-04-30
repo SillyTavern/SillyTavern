@@ -3,7 +3,7 @@ import { saveMetadataDebounced } from './extensions.js';
 import { registerSlashCommand } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
-import { stringFormat } from './utils.js';
+import { flashHighlight, stringFormat } from './utils.js';
 
 const BG_METADATA_KEY = 'custom_background';
 const LIST_METADATA_KEY = 'chat_backgrounds';
@@ -455,8 +455,7 @@ function highlightNewBackground(bg) {
     const newBg = $(`.bg_example[bgfile="${bg}"]`);
     const scrollOffset = newBg.offset().top - newBg.parent().offset().top;
     $('#Backgrounds').scrollTop(scrollOffset);
-    newBg.addClass('flash animated');
-    setTimeout(() => newBg.removeClass('flash animated'), 2000);
+    flashHighlight(newBg);
 }
 
 function onBackgroundFilterInput() {

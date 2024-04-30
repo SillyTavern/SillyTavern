@@ -65,6 +65,36 @@ export class FilterHelper {
     }
 
     /**
+     * Checks if the filter data has any values.
+     * @returns {boolean} Whether the filter data has any values
+     */
+    hasAnyFilter() {
+        /**
+         * Checks if the object has any values.
+         * @param {object} obj The object to check for values
+         * @returns {boolean} Whether the object has any values
+         */
+        function checkRecursive(obj) {
+            if (typeof obj === 'string' && obj.length > 0 && obj !== 'UNDEFINED') {
+                return true;
+            } else if (typeof obj === 'boolean' && obj) {
+                return true;
+            } else if (Array.isArray(obj) && obj.length > 0) {
+                return true;
+            } else if (typeof obj === 'object' && obj !== null && Object.keys(obj.length > 0)) {
+                for (const key in obj) {
+                    if (checkRecursive(obj[key])) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        return checkRecursive(this.filterData);
+    }
+
+    /**
      * The filter functions.
      * @type {Object.<string, Function>}
      */

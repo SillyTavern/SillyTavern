@@ -36,6 +36,7 @@ import { debounce, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
+import { debounce_timeout } from './constants.js';
 
 import Bowser from '../lib/bowser.min.js';
 
@@ -54,7 +55,7 @@ var retry_delay = 500;
 let counterNonce = Date.now();
 
 const observerConfig = { childList: true, subtree: true };
-const countTokensDebounced = debounce(RA_CountCharTokens, 1000);
+const countTokensDebounced = debounce(RA_CountCharTokens, debounce_timeout.relaxed);
 
 const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {

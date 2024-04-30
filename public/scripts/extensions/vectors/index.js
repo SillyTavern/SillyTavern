@@ -23,6 +23,7 @@ import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getDataBankAttachments, getFileAttachment } from '../../chats.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
+import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
 
 const MODULE_NAME = 'vectors';
@@ -280,7 +281,7 @@ async function synchronizeChat(batchSize = 5) {
         console.error('Vectors: Failed to synchronize chat', error);
 
         const message = getErrorMessage(error.cause);
-        toastr.error(message, 'Vectorization failed');
+        toastr.error(message, 'Vectorization failed', { preventDuplicates: true });
         return -1;
     } finally {
         syncBlocked = false;
@@ -443,6 +444,7 @@ async function retrieveFileChunks(queryText, collectionId) {
  * @param {string} fileName File name
  * @param {string} collectionId File collection ID
  * @param {number} chunkSize Chunk size
+ * @returns {Promise<boolean>} True if successful, false if not
  */
 async function vectorizeFile(fileText, fileName, collectionId, chunkSize) {
     try {
@@ -461,8 +463,11 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize) {
 
         toastr.clear(toast);
         console.log(`Vectors: Inserted ${chunks.length} vector items for file ${fileName} into ${collectionId}`);
+        return true;
     } catch (error) {
+        toastr.error(String(error), 'Failed to vectorize file', { preventDuplicates: true });
         console.error('Vectors: Failed to vectorize file', error);
+        return false;
     }
 }
 
@@ -545,6 +550,7 @@ async function rearrangeChat(chat) {
         const insertedText = getPromptText(queriedMessages);
         setExtensionPrompt(EXTENSION_PROMPT_TAG, insertedText, settings.position, settings.depth, settings.include_wi);
     } catch (error) {
+        toastr.error('Generation interceptor aborted. Check browser console for more details.', 'Vector Storage');
         console.error('Vectors: Failed to rearrange chat', error);
     }
 }
@@ -561,7 +567,7 @@ function getPromptText(queriedMessages) {
 
 window['vectors_rearrangeChat'] = rearrangeChat;
 
-const onChatEvent = debounce(async () => await moduleWorker.update(), 500);
+const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_timeout.relaxed);
 
 /**
  * Gets the text to query from the chat
@@ -910,6 +916,8 @@ async function onVectorizeAllFilesClick() {
         const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
         const allFiles = [...dataBank, ...chatAttachments];
 
+        let allSuccess = true;
+
         for (const file of allFiles) {
             const text = await getFileAttachment(file.url);
             const collectionId = getFileCollectionId(file.url);
@@ -920,10 +928,18 @@ async function onVectorizeAllFilesClick() {
                 continue;
             }
 
-            await vectorizeFile(text, file.name, collectionId, settings.chunk_size);
+            const result = await vectorizeFile(text, file.name, collectionId, settings.chunk_size);
+
+            if (!result) {
+                allSuccess = false;
+            }
         }
 
-        toastr.success('All files vectorized', 'Vectorization successful');
+        if (allSuccess) {
+            toastr.success('All files vectorized', 'Vectorization successful');
+        } else {
+            toastr.warning('Some files failed to vectorize. Check browser console for more details.', 'Vector Storage');
+        }
     } catch (error) {
         console.error('Vectors: Failed to vectorize all files', error);
         toastr.error('Failed to vectorize all files', 'Vectorization failed');
