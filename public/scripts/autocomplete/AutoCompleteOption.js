@@ -1,36 +1,28 @@
-import { SlashCommand } from './SlashCommand.js';
+import { SlashCommand } from '../slash-commands/SlashCommand.js';
+import { AutoCompleteFuzzyScore } from './AutoCompleteFuzzyScore.js';
 
 
 
-export class SlashCommandFuzzyScore {
-    /**@type {number}*/ start;
-    /**@type {number}*/ longestConsecutive;
-
-    /**
-     * @param {number} start
-     * @param {number} longestConsecutive
-     */
-    constructor(start, longestConsecutive) {
-        this.start = start;
-        this.longestConsecutive = longestConsecutive;
-    }
-}
-
-
-export class SlashCommandAutoCompleteOption {
-    /**@type {string|SlashCommand}*/ value;
+export class AutoCompleteOption {
     /**@type {string}*/ name;
-    /**@type {SlashCommandFuzzyScore}*/ score;
+    /**@type {AutoCompleteFuzzyScore}*/ score;
     /**@type {string}*/ replacer;
     /**@type {HTMLElement}*/ dom;
 
 
     /**
-     * @param {string|SlashCommand} value
+     * Used as a comparison value when removing duplicates (e.g., when a SlashCommand has aliases).
+     * @type {any}
+     * */
+    get value() {
+        return this.name;
+    }
+
+
+    /**
      * @param {string} name
      */
-    constructor(value, name) {
-        this.value = value;
+    constructor(name) {
         this.name = name;
     }
 

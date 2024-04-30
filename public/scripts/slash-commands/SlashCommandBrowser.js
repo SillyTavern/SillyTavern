@@ -75,7 +75,7 @@ export class SlashCommandBrowser {
                 const container = document.createElement('div'); {
                     container.classList.add('commandContainer');
                     const list = document.createElement('div'); {
-                        list.classList.add('slashCommandAutoComplete');
+                        list.classList.add('autoComplete');
                         this.cmdList = Object
                             .keys(SlashCommandParser.commands)
                             .filter(key => SlashCommandParser.commands[key].name == key) // exclude aliases
@@ -89,9 +89,9 @@ export class SlashCommandBrowser {
                             item.addEventListener('click', ()=>{
                                 if (!details) {
                                     details = document.createElement('div'); {
-                                        details.classList.add('slashCommandAutoComplete-detailsWrap');
+                                        details.classList.add('autoComplete-detailsWrap');
                                         const inner = document.createElement('div'); {
-                                            inner.classList.add('slashCommandAutoComplete-details');
+                                            inner.classList.add('autoComplete-details');
                                             inner.append(cmd.renderHelpDetails());
                                             details.append(inner);
                                         }

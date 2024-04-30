@@ -43,7 +43,7 @@ import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetS
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
-import { AUTOCOMPLETE_WIDTH } from './slash-commands/SlashCommandAutoComplete.js';
+import { AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
 
 export {
     loadPowerUserSettings,

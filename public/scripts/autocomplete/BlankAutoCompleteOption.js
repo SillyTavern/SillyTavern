@@ -1,6 +1,6 @@
-import { SlashCommandAutoCompleteOption } from './SlashCommandAutoCompleteOption.js';
+import { AutoCompleteOption } from './AutoCompleteOption.js';
 
-export class SlashCommandBlankAutoCompleteOption extends SlashCommandAutoCompleteOption {
+export class BlankAutoCompleteOption extends AutoCompleteOption {
     /**
      * @param {string} value
      */

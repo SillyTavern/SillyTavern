@@ -6,7 +6,7 @@ import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { SlashCommandCommandAutoCompleteOption } from './SlashCommandCommandAutoCompleteOption.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 import { SlashCommandParserError } from './SlashCommandParserError.js';
-import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './SlashCommandParserNameResult.js';
+import { AutoCompleteNameResult } from '../autocomplete/AutoCompleteNameResult.js';
 import { SlashCommandQuickReplyAutoCompleteOption } from './SlashCommandQuickReplyAutoCompleteOption.js';
 // eslint-disable-next-line no-unused-vars
 import { SlashCommandScope } from './SlashCommandScope.js';
@@ -328,20 +328,6 @@ export class SlashCommandParser {
     getHelpString() {
         return '<div class="slashHelp">Loading...</div>';
     }
-    getHelpStringX() {
-        const listItems = Object
-            .keys(this.commands)
-            .filter(key=>this.commands[key].name == key)
-            .map(key=>this.commands[key])
-            .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
-            .map(x => x.helpStringFormatted)
-            .map(x => `<li>${x}</li>`)
-            .join('\n');
-        return `<p>Slash commands:</p><ol>${listItems}</ol>
-        <small>Slash commands can be batched into a single input by adding a pipe character | at the end, and then writing a new slash command.</small>
-        <ul><li><small>Example:</small><code>/cut 1 | /sys Hello, | /continue</code></li>
-        <li>This will remove the first message in chat, send a system message that starts with 'Hello,', and then ask the AI to continue the message.</li></ul>`;
-    }
 
     /**
      *
@@ -384,8 +370,7 @@ export class SlashCommandParser {
                         .map(qr=>new SlashCommandQuickReplyAutoCompleteOption(qr)),
                     );
                 } catch { /* empty */ }
-                const result = new SlashCommandParserNameResult(
-                    NAME_RESULT_TYPE.CLOSURE,
+                const result = new AutoCompleteNameResult(
                     executor.value.toString(),
                     executor.start - 2,
                     options,
@@ -395,8 +380,7 @@ export class SlashCommandParser {
                 );
                 return result;
             }
-            const result = new SlashCommandParserNameResult(
-                NAME_RESULT_TYPE.COMMAND,
+            const result = new AutoCompleteNameResult(
                 executor.name,
                 executor.start - 2,
                 Object

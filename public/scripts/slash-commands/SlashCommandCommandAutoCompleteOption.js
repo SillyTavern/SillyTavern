@@ -1,30 +1,36 @@
 import { SlashCommand } from './SlashCommand.js';
-import { SlashCommandAutoCompleteOption } from './SlashCommandAutoCompleteOption.js';
+import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
 
-export class SlashCommandCommandAutoCompleteOption extends SlashCommandAutoCompleteOption {
-    /**@type {SlashCommand} */
-    get cmd() {
-        // @ts-ignore
-        return this.value;
+export class SlashCommandCommandAutoCompleteOption extends AutoCompleteOption {
+    /**@type {SlashCommand}*/ command;
+
+
+    get value() {
+        return this.command;
     }
+
+
+
+
     /**
-     * @param {SlashCommand} value
+     * @param {SlashCommand} command
      * @param {string} name
      */
-    constructor(value, name) {
-        super(value, name);
+    constructor(command, name) {
+        super(name);
+        this.command = command;
     }
 
 
     renderItem() {
         let li;
-        li = this.cmd.renderHelpItem(this.name);
+        li = this.command.renderHelpItem(this.name);
         li.setAttribute('data-name', this.name);
         return li;
     }
 
 
     renderDetails() {
-        return this.cmd.renderHelpDetails(this.name);
+        return this.command.renderHelpDetails(this.name);
     }
 }

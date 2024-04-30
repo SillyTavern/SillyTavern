@@ -56,10 +56,10 @@ import { background_settings } from './backgrounds.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
 import { SlashCommandClosureResult } from './slash-commands/SlashCommandClosureResult.js';
-import { NAME_RESULT_TYPE, SlashCommandParserNameResult } from './slash-commands/SlashCommandParserNameResult.js';
-import { SlashCommandAutoCompleteOption } from './slash-commands/SlashCommandAutoCompleteOption.js';
+import { AutoCompleteNameResult } from './autocomplete/AutoCompleteNameResult.js';
+import { AutoCompleteOption } from './autocomplete/AutoCompleteOption.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
-import { SlashCommandAutoComplete } from './slash-commands/SlashCommandAutoComplete.js';
+import { AutoComplete } from './autocomplete/AutoComplete.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
 export {
@@ -2790,7 +2790,7 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
  */
 export async function setSlashCommandAutoComplete(textarea, isFloating = false) {
     const parser = new SlashCommandParser();
-    const ac = new SlashCommandAutoComplete(
+    const ac = new AutoComplete(
         textarea,
         () => ac.text[0] == '/',
         async(text, index) => await parser.getNameAt(text, index),
@@ -2872,7 +2872,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
             ['var', 'replaced with the value of the scoped variable "name"'],
             ['var', 'replaced with the value of item at index (for arrays / lists or objects / dictionaries) of the scoped variable "name"'],
         ];
-        class MacroOption extends SlashCommandAutoCompleteOption {
+        class MacroOption extends AutoCompleteOption {
             item;
             constructor(item) {
                 super(item[0], item[0]);
@@ -2908,7 +2908,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
         let text;
         const stack = [];
         let macroIndex = [];
-        const mac = new SlashCommandAutoComplete(
+        const mac = new AutoComplete(
             textarea,
             ()=> mac.text[0] != '/',
             async(newText, index) => {
@@ -2943,8 +2943,7 @@ export async function setSlashCommandAutoComplete(textarea, isFloating = false) 
                     ?? null
                 ;
                 if (executor) {
-                    const result = new SlashCommandParserNameResult(
-                        NAME_RESULT_TYPE.CLOSURE,
+                    const result = new AutoCompleteNameResult(
                         executor.name,
                         executor.start,
                         options,

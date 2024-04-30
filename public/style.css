@@ -1168,7 +1168,7 @@ select {
     border-top-color: var(--progAbortedColor);
 }
 
-.slashCommandAutoComplete-wrap {
+.autoComplete-wrap {
     --targetOffset: 0;
     --direction: column;
     --leftOffset: 1vw;
@@ -1191,7 +1191,7 @@ select {
             display: block;
             pointer-events: none;
         }
-        .slashCommandAutoComplete {
+        .autoComplete {
             flex: 0 0 auto;
             width: 50vw;
             pointer-events: all;
@@ -1205,7 +1205,7 @@ select {
     }
 }
 
-.slashCommandAutoComplete-detailsWrap {
+.autoComplete-detailsWrap {
     --targetOffset: 0;
     display: flex;
     flex-direction: column;
@@ -1218,7 +1218,7 @@ select {
         display: block;
         pointer-events: none;
     }
-    .slashCommandAutoComplete-details {
+    .autoComplete-details {
         flex: 0 0 auto;
         max-height: 80vh;
         pointer-events: all;
@@ -1234,7 +1234,7 @@ select {
         flex-direction: row;
         left: 0;
         right: 0;
-        .slashCommandAutoComplete-details {
+        .autoComplete-details {
             max-height: unset;
             width: 25vw;
         }
@@ -1258,7 +1258,7 @@ select {
                 flex: 0 1 calc(var(--targetOffset) * 1px);
                 display: block;
             }
-            .slashCommandAutoComplete-details {
+            .autoComplete-details {
                 flex: 0 0 auto;
                 max-width: 50vw;
                 width: unset;
@@ -1336,7 +1336,7 @@ body[data-stscript-style="theme"] {
     --ac-style-color-currentParenthesis: rgba(195 118 210 / 1);
     --ac-style-color-comment: rgba(122 151 90 / 1);
 }
-.slashCommandAutoComplete, .slashCommandAutoComplete-details {
+.autoComplete, .autoComplete-details {
     --ac-color-border: var(--ac-style-color-border, rgba(69 69 69 / 1));
     --ac-color-background: var(--ac-style-color-background, rgba(32 32 32 / 1));
     --ac-color-text: var(--ac-style-color-text, rgba(204 204 204 / 1));
@@ -1414,7 +1414,7 @@ body[data-stscript-style] .hljs.language-stscript {
     }
 }
 
-.slashCommandAutoComplete {
+.autoComplete {
     padding-bottom: 1px;
     display: grid;
     grid-template-columns: 0fr auto minmax(50%, 1fr);
@@ -1505,7 +1505,7 @@ body[data-stscript-style] .hljs.language-stscript {
         }
     }
 }
-.slashCommandAutoComplete-details {
+.autoComplete-details {
     font-size: 0.8em;
     display: flex;
     flex-direction: column;
@@ -1612,7 +1612,7 @@ body[data-stscript-style] .hljs.language-stscript {
     }
 }
 
-.slashCommandAutoComplete > .item, .slashCommandAutoComplete-details {
+.autoComplete > .item, .autoComplete-details {
     > .specs {
         display: flex;
         gap: 0.5em;
@@ -1706,11 +1706,11 @@ body[data-stscript-style] .hljs.language-stscript {
     }
 }
 @media screen and (max-width: 1000px) {
-    .slashCommandAutoComplete-wrap {
+    .autoComplete-wrap {
         left: 1vw;
         right: 1vw;
     }
-    .slashCommandAutoComplete-detailsWrap:not(.full) {
+    .autoComplete-detailsWrap:not(.full) {
         display: none;
     }
 }
@@ -1738,7 +1738,7 @@ body[data-stscript-style] .hljs.language-stscript {
     > .commandContainer {
         display: flex;
         align-items: flex-start;
-        > .slashCommandAutoComplete {
+        > .autoComplete {
             flex: 1 1 auto;
             max-height: unset;
             > .isFiltered {
@@ -1753,7 +1753,7 @@ body[data-stscript-style] .hljs.language-stscript {
                 opacity: 0.75;
             }
         }
-        > .slashCommandAutoComplete-detailsWrap {
+        > .autoComplete-detailsWrap {
             flex: 0 0 auto;
             align-self: stretch;
             width: 30%;
@@ -1761,7 +1761,7 @@ body[data-stscript-style] .hljs.language-stscript {
             &:before {
                 flex: 0 1 calc(var(--targetOffset) * 1px);
             }
-            > .slashCommandAutoComplete-details {
+            > .autoComplete-details {
                 max-height: 50vh;
             }
         }

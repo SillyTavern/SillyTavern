@@ -1,11 +1,11 @@
-import { SlashCommandAutoCompleteOption } from './SlashCommandAutoCompleteOption.js';
+import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
 
-export class SlashCommandQuickReplyAutoCompleteOption extends SlashCommandAutoCompleteOption {
+export class SlashCommandQuickReplyAutoCompleteOption extends AutoCompleteOption {
     /**
-     * @param {string} value
+     * @param {string} name
      */
-    constructor(value) {
-        super(value, value);
+    constructor(name) {
+        super(name);
     }
 
 
@@ -24,7 +24,7 @@ export class SlashCommandQuickReplyAutoCompleteOption extends SlashCommandAutoCo
             const name = document.createElement('div'); {
                 name.classList.add('name');
                 name.classList.add('monospace');
-                name.textContent = this.value.toString();
+                name.textContent = this.name;
                 specs.append(name);
             }
             frag.append(specs);

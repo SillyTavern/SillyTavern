@@ -1,9 +1,10 @@
 import { power_user } from '../power-user.js';
 import { debounce, escapeRegex } from '../utils.js';
-import { SlashCommandAutoCompleteOption, SlashCommandFuzzyScore } from './SlashCommandAutoCompleteOption.js';
-import { SlashCommandBlankAutoCompleteOption } from './SlashCommandBlankAutoCompleteOption.js';
+import { AutoCompleteOption } from './AutoCompleteOption.js';
+import { AutoCompleteFuzzyScore } from './AutoCompleteFuzzyScore.js';
+import { BlankAutoCompleteOption } from './BlankAutoCompleteOption.js';
 // eslint-disable-next-line no-unused-vars
-import { SlashCommandParserNameResult } from './SlashCommandParserNameResult.js';
+import { AutoCompleteNameResult } from './AutoCompleteNameResult.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -13,18 +14,18 @@ export const AUTOCOMPLETE_WIDTH = {
     'FULL': 2,
 };
 
-export class SlashCommandAutoComplete {
+export class AutoComplete {
     /**@type {HTMLTextAreaElement}*/ textarea;
     /**@type {boolean}*/ isFloating = false;
     /**@type {()=>boolean}*/ checkIfActivate;
-    /**@type {(text:string, index:number) => Promise<SlashCommandParserNameResult>}*/ getNameAt;
+    /**@type {(text:string, index:number) => Promise<AutoCompleteNameResult>}*/ getNameAt;
 
     /**@type {boolean}*/ isActive = false;
     /**@type {boolean}*/ isReplaceable = false;
     /**@type {boolean}*/ isShowingDetails = false;
 
     /**@type {string}*/ text;
-    /**@type {SlashCommandParserNameResult}*/ parserResult;
+    /**@type {AutoCompleteNameResult}*/ parserResult;
     /**@type {string}*/ name;
 
     /**@type {boolean}*/ startQuote;
@@ -33,12 +34,8 @@ export class SlashCommandAutoComplete {
 
     /**@type {RegExp}*/ fuzzyRegex;
 
-
-    /**@type {Object.<string,HTMLElement>}*/ items = {};
-    /**@type {boolean}*/ hasCache = false;
-
-    /**@type {SlashCommandAutoCompleteOption[]}*/ result = [];
-    /**@type {SlashCommandAutoCompleteOption}*/ selectedItem = null;
+    /**@type {AutoCompleteOption[]}*/ result = [];
+    /**@type {AutoCompleteOption}*/ selectedItem = null;
 
     /**@type {Promise}*/ pointerup = Promise.resolve();
 
@@ -63,8 +60,8 @@ export class SlashCommandAutoComplete {
 
     /**
      * @param {HTMLTextAreaElement} textarea The textarea to receive autocomplete.
-     * @param {() => boolean} checkIfActivate
-     * @param {(text: string, index: number) => Promise<SlashCommandParserNameResult>} getNameAt
+     * @param {() => boolean} checkIfActivate Function should return true only if under the current conditions, autocomplete should display (e.g., for slash commands: autoComplete.text[0] == '/')
+     * @param {(text: string, index: number) => Promise<AutoCompleteNameResult>} getNameAt Function should return (unfiltered, matching against input is done in AutoComplete) information about name options at index in text.
      * @param {boolean} isFloating Whether autocomplete should float at the keyboard cursor.
      */
     constructor(textarea, checkIfActivate, getNameAt, isFloating = false) {
@@ -74,19 +71,19 @@ export class SlashCommandAutoComplete {
         this.isFloating = isFloating;
 
         this.domWrap = document.createElement('div'); {
-            this.domWrap.classList.add('slashCommandAutoComplete-wrap');
+            this.domWrap.classList.add('autoComplete-wrap');
             if (isFloating) this.domWrap.classList.add('isFloating');
         }
         this.dom = document.createElement('ul'); {
-            this.dom.classList.add('slashCommandAutoComplete');
+            this.dom.classList.add('autoComplete');
             this.domWrap.append(this.dom);
         }
         this.detailsWrap = document.createElement('div'); {
-            this.detailsWrap.classList.add('slashCommandAutoComplete-detailsWrap');
+            this.detailsWrap.classList.add('autoComplete-detailsWrap');
             if (isFloating) this.detailsWrap.classList.add('isFloating');
         }
         this.detailsDom = document.createElement('div'); {
-            this.detailsDom.classList.add('slashCommandAutoComplete-details');
+            this.detailsDom.classList.add('autoComplete-details');
             this.detailsWrap.append(this.detailsDom);
         }
 
@@ -109,7 +106,7 @@ export class SlashCommandAutoComplete {
 
     /**
      *
-     * @param {SlashCommandAutoCompleteOption} option
+     * @param {AutoCompleteOption} option
      */
     makeItem(option) {
         const li = option.renderItem();
@@ -132,7 +129,7 @@ export class SlashCommandAutoComplete {
 
     /**
      *
-     * @param {SlashCommandAutoCompleteOption} item
+     * @param {AutoCompleteOption} item
      */
     updateName(item) {
         const chars = Array.from(item.dom.querySelector('.name').children);
@@ -186,7 +183,7 @@ export class SlashCommandAutoComplete {
 
     /**
      * Calculate score for the fuzzy match.
-     * @param {SlashCommandAutoCompleteOption} option
+     * @param {AutoCompleteOption} option
      * @returns The option.
      */
     fuzzyScore(option) {
@@ -215,14 +212,14 @@ export class SlashCommandAutoComplete {
             consecutive.push(current);
         }
         consecutive.sort((a,b)=>b.length - a.length);
-        option.score = new SlashCommandFuzzyScore(start, consecutive[0]?.length ?? 0);
+        option.score = new AutoCompleteFuzzyScore(start, consecutive[0]?.length ?? 0);
         return option;
     }
 
     /**
      * Compare two auto complete options by their fuzzy score.
-     * @param {SlashCommandAutoCompleteOption} a
-     * @param {SlashCommandAutoCompleteOption} b
+     * @param {AutoCompleteOption} a
+     * @param {AutoCompleteOption} b
      */
     fuzzyScoreCompare(a, b) {
         if (a.score.start < b.score.start) return -1;
@@ -252,7 +249,7 @@ export class SlashCommandAutoComplete {
         // don't show if no executor found, i.e. cursor's area is not a command
         if (!this.parserResult) return this.hide();
 
-        // need to know if name *can* be inside quotes, and then check if quotes are already there
+        // need to know if name can be inside quotes, and then check if quotes are already there
         if (this.parserResult.canBeQuoted) {
             this.startQuote = this.text[this.parserResult.start] == '"';
             this.endQuote = this.startQuote && this.text[this.parserResult.start + this.parserResult.name.length + 1] == '"';
@@ -321,7 +318,7 @@ export class SlashCommandAutoComplete {
                 return this.hide();
             }
             // otherwise add "no match" notice
-            const option = new SlashCommandBlankAutoCompleteOption(
+            const option = new BlankAutoCompleteOption(
                 this.name.length ?
                     this.parserResult.makeNoMatchText()
                     : this.parserResult.makeNoOptionstext()
