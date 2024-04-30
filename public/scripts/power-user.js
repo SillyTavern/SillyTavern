@@ -1903,11 +1903,13 @@ export function fuzzySearchWorldInfo(data, searchValue) {
     // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'key', weight: 3 },
+            { name: 'key', weight: 8 },
+            { name: 'group', weight: 6 },
+            { name: 'comment', weight: 5 },
+            { name: 'keysecondary', weight: 5 },
             { name: 'content', weight: 3 },
-            { name: 'comment', weight: 2 },
-            { name: 'keysecondary', weight: 2 },
             { name: 'uid', weight: 1 },
+            { name: 'automationId', weight: 0.25 },
         ],
         includeScore: true,
         ignoreLocation: true,
