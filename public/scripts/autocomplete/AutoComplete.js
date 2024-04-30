@@ -246,7 +246,7 @@ export class AutoComplete {
         // cursor position
         this.parserResult = await this.getNameAt(this.text, this.textarea.selectionStart);
 
-        // don't show if no executor found, i.e. cursor's area is not a command
+        // don't show if no name result found, e.g., cursor's area is not a command
         if (!this.parserResult) return this.hide();
 
         // need to know if name can be inside quotes, and then check if quotes are already there
@@ -259,23 +259,27 @@ export class AutoComplete {
         }
 
         // use lowercase name for matching
-        this.name = this.parserResult?.name?.toLowerCase() ?? '';
+        this.name = this.parserResult.name.toLowerCase() ?? '';
 
-        // do autocomplete if triggered by a user input and we either don't have an executor or the cursor is at the end
-        // of the name part of the command
-        this.isReplaceable = isInput && (!this.parserResult ? true : this.textarea.selectionStart == this.parserResult.start + this.parserResult.name.length + (this.startQuote ? 1 : 0));
-
-        // if [forced (ctrl+space) or user input] and cursor is in the middle of the name part (not at the end)
         if (isForced || isInput) {
+            // if forced (ctrl+space) or user input...
             if (this.textarea.selectionStart >= this.parserResult.start && this.textarea.selectionStart <= this.parserResult.start + this.parserResult.name.length + (this.startQuote ? 1 : 0)) {
+                // ...and cursor is somewhere in the name part (including right behind the final char)
+                // -> show autocomplete for the (partial if cursor in the middle) name
                 this.name = this.name.slice(0, this.textarea.selectionStart - (this.parserResult.start) - (this.startQuote ? 1 : 0));
                 this.parserResult.name = this.name;
                 this.isReplaceable = true;
+            } else {
+                //TODO check for secondary options (e.g., named arguments)
+                this.isReplaceable = false;
             }
+        } else {
+            // if not forced and no user input -> just show details
+            this.isReplaceable = false;
         }
 
-        // only build the fuzzy regex if match type is set to fuzzy
         if (this.matchType == 'fuzzy') {
+            // only build the fuzzy regex if match type is set to fuzzy
             this.fuzzyRegex = new RegExp(`^(.*?)${this.name.split('').map(char=>`(${escapeRegex(char)})`).join('(.*?)')}(.*?)$`, 'i');
         }
 
@@ -313,8 +317,8 @@ export class AutoComplete {
 
 
         if (this.result.length == 0) {
-            // no result and no input? hide autocomplete
             if (!isInput) {
+                // no result and no input? hide autocomplete
                 return this.hide();
             }
             // otherwise add "no match" notice
@@ -682,7 +686,7 @@ export class AutoComplete {
                         this.toggleDetails();
                     } else {
                         // ctrl-space to force show autocomplete
-                        this.show(true, true);
+                        this.show(false, true);
                     }
                     return;
                 }
