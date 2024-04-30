@@ -3591,6 +3591,7 @@ $(document).ready(() => {
         const value = $(this).val();
         power_user.stscript.autocomplete.width.left = String(value);
         this.closest('.doubleRangeInputContainer').style.setProperty('--value', value);
+        window.dispatchEvent(new Event('resize', { bubbles:true }));
         saveSettingsDebounced();
     });
 
@@ -3598,6 +3599,7 @@ $(document).ready(() => {
         const value = $(this).val();
         power_user.stscript.autocomplete.width.right = String(value);
         this.closest('.doubleRangeInputContainer').style.setProperty('--value', value);
+        window.dispatchEvent(new Event('resize', { bubbles:true }));
         saveSettingsDebounced();
     });
 
