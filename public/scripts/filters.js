@@ -1,5 +1,6 @@
 import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchPersonas, fuzzySearchTags, fuzzySearchWorldInfo, power_user } from './power-user.js';
 import { tag_map } from './tags.js';
+import { includesIgnoreCaseAndAccents } from './utils.js';
 
 
 /**
@@ -306,7 +307,7 @@ export class FilterHelper {
             }
             else {
                 // Compare insensitive and without accents
-                return entity.item?.name?.localeCompare(searchValue, undefined, { sensitivity: 'base' }) === 0;
+                return includesIgnoreCaseAndAccents(entity.item?.name, searchValue);
             }
         }
 
