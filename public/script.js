@@ -1310,7 +1310,6 @@ function getCharacterBlock(item, id) {
 async function printCharacters(fullRefresh = false) {
     const storageKey = 'Characters_PerPage';
     const listId = '#rm_print_characters_block';
-    const entities = getEntitiesList({ doFilter: true });
 
     let currentScrollTop = $(listId).scrollTop();
 
@@ -1320,9 +1319,14 @@ async function printCharacters(fullRefresh = false) {
         await delay(1);
     }
 
+    // Before printing the personas, we check if we should enable/disable search sorting
+    verifyCharactersSearchSortRule();
+
     // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
+
+    const entities = getEntitiesList({ doFilter: true });
 
     $('#rm_print_characters_pagination').pagination({
         dataSource: entities,
@@ -1381,6 +1385,26 @@ async function printCharacters(fullRefresh = false) {
     });
 
     favsToHotswap();
+}
+
+/** Checks the state of the current search, and adds/removes the search sorting option accordingly */
+function verifyCharactersSearchSortRule() {
+    const searchTerm = entitiesFilter.getFilterData(FILTER_TYPES.SEARCH);
+    const searchOption = $('#character_sort_order option[data-field="search"]');
+    const selector = $('#character_sort_order');
+    const isHidden = searchOption.attr('hidden') !== undefined;
+
+    // If we have a search term, we are displaying the sorting option for it
+    if (searchTerm && isHidden) {
+        searchOption.removeAttr('hidden');
+        searchOption.prop('selected', true);
+        flashHighlight(selector);
+    }
+    // If search got cleared, we make sure to hide the option and go back to the one before
+    if (!searchTerm && !isHidden) {
+        searchOption.attr('hidden', '');
+        $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop('selected', true);
+    }
 }
 
 /** @typedef {object} Character - A character */
@@ -8733,7 +8757,7 @@ jQuery(async function () {
         entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchQuery);
     });
     $('#character_search_bar').on('input', function () {
-        const searchQuery = String($(this).val()).toLowerCase();
+        const searchQuery = String($(this).val());
         debouncedCharacterSearch(searchQuery);
     });
 

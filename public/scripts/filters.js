@@ -285,29 +285,28 @@ export class FilterHelper {
             return data;
         }
 
-        const searchValue = this.filterData[FILTER_TYPES.SEARCH].trim().toLowerCase();
-        const fuzzySearchCharactersResults = power_user.fuzzy_search ? fuzzySearchCharacters(searchValue) : [];
-        const fuzzySearchGroupsResults = power_user.fuzzy_search ? fuzzySearchGroups(searchValue) : [];
-        const fuzzySearchTagsResult = power_user.fuzzy_search ? fuzzySearchTags(searchValue) : [];
+        const searchValue = this.filterData[FILTER_TYPES.SEARCH];
 
+        // Save fuzzy search results and scores if enabled
+        if (power_user.fuzzy_search) {
+            const fuzzySearchCharactersResults = fuzzySearchCharacters(searchValue);
+            const fuzzySearchGroupsResults = fuzzySearchGroups(searchValue);
+            const fuzzySearchTagsResult = fuzzySearchTags(searchValue);
+            this.cacheScores(FILTER_TYPES.SEARCH, new Map(fuzzySearchCharactersResults.map(i => [`character.${i.refIndex}`, i.score])));
+            this.cacheScores(FILTER_TYPES.SEARCH, new Map(fuzzySearchGroupsResults.map(i => [`group.${i.item.id}`, i.score])));
+            this.cacheScores(FILTER_TYPES.SEARCH, new Map(fuzzySearchTagsResult.map(i => [`tag.${i.item.id}`, i.score])));
+        }
+
+        const _this = this;
         function getIsValidSearch(entity) {
-            const isGroup = entity.type === 'group';
-            const isCharacter = entity.type === 'character';
-            const isTag = entity.type === 'tag';
-
             if (power_user.fuzzy_search) {
-                if (isCharacter) {
-                    return fuzzySearchCharactersResults.includes(parseInt(entity.id));
-                } else if (isGroup) {
-                    return fuzzySearchGroupsResults.includes(String(entity.id));
-                } else if (isTag) {
-                    return fuzzySearchTagsResult.includes(String(entity.id));
-                } else {
-                    return false;
-                }
+                // We can filter easily by checking if we have saved a score
+                const score = _this.getScore(FILTER_TYPES.SEARCH, `${entity.type}.${entity.id}`);
+                return score !== undefined;
             }
             else {
-                return entity.item?.name?.toLowerCase()?.includes(searchValue) || false;
+                // Compare insensitive and without accents
+                return entity.item?.name?.localeCompare(searchValue, undefined, { sensitivity: 'base' }) === 0;
             }
         }
 
@@ -370,7 +369,7 @@ export class FilterHelper {
      * Get the cached score for an item by type and its identifier
      * @param {FilterType} type The type of data
      * @param {string|number} uid The unique identifier for an item
-     * @returns {number|undefined} The cached score, or undefined if no score is present
+     * @returns {number|undefined} The cached score, or `undefined` if no score is present
      */
     getScore(type, uid) {
         return this.scoreCache.get(type)?.get(uid) ?? undefined;

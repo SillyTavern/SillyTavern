@@ -22,6 +22,7 @@ import {
     ANIMATION_DURATION_DEFAULT,
     setActiveGroup,
     setActiveCharacter,
+    entitiesFilter,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -41,6 +42,7 @@ import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
 import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { FILTER_TYPES } from './filters.js';
 
 export {
     loadPowerUserSettings,
@@ -1860,6 +1862,11 @@ function highlightDefaultContext() {
     $('#context_delete_preset').toggleClass('disabled', power_user.default_context === power_user.context.preset);
 }
 
+/**
+ * Fuzzy search characters by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchCharacters(searchValue) {
     // @ts-ignore
     const fuse = new Fuse(characters, {
@@ -1882,8 +1889,7 @@ export function fuzzySearchCharacters(searchValue) {
 
     const results = fuse.search(searchValue);
     console.debug('Characters fuzzy search results for ' + searchValue, results);
-    const indices = results.map(x => x.refIndex);
-    return indices;
+    return results;
 }
 
 /**
@@ -1936,6 +1942,11 @@ export function fuzzySearchPersonas(data, searchValue) {
     return results;
 }
 
+/**
+ * Fuzzy search tags by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchTags(searchValue) {
     // @ts-ignore
     const fuse = new Fuse(tags, {
@@ -1949,10 +1960,14 @@ export function fuzzySearchTags(searchValue) {
 
     const results = fuse.search(searchValue);
     console.debug('Tags fuzzy search results for ' + searchValue, results);
-    const ids = results.map(x => String(x.item?.id)).filter(x => x);
-    return ids;
+    return results;
 }
 
+/**
+ * Fuzzy search groups by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchGroups(searchValue) {
     // @ts-ignore
     const fuse = new Fuse(groups, {
@@ -1967,8 +1982,7 @@ export function fuzzySearchGroups(searchValue) {
 
     const results = fuse.search(searchValue);
     console.debug('Groups fuzzy search results for ' + searchValue, results);
-    const ids = results.map(x => String(x.item?.id)).filter(x => x);
-    return ids;
+    return results;
 }
 
 /**
@@ -2043,13 +2057,22 @@ function sortEntitiesList(entities) {
         return;
     }
 
+    const isSearch = $('#character_sort_order option[data-field="search"]').is(':selected');
+
     entities.sort((a, b) => {
+        // Sort tags/folders will always be at the top
         if (a.type === 'tag' && b.type !== 'tag') {
             return -1;
         }
-
         if (a.type !== 'tag' && b.type === 'tag') {
             return 1;
+        }
+
+        // If we have search sorting, we take scores and use those
+        if (isSearch) {
+            const aScore = entitiesFilter.getScore(FILTER_TYPES.SEARCH, `${a.type}.${a.id}`);
+            const bScore = entitiesFilter.getScore(FILTER_TYPES.SEARCH, `${b.type}.${b.id}`);
+            return (aScore - bScore);
         }
 
         return sortFunc(a.item, b.item);
@@ -3227,9 +3250,13 @@ $(document).ready(() => {
     });
 
     $('#character_sort_order').on('change', function () {
-        power_user.sort_field = $(this).find(':selected').data('field');
-        power_user.sort_order = $(this).find(':selected').data('order');
-        power_user.sort_rule = $(this).find(':selected').data('rule');
+        const field = String($(this).find(':selected').data('field'));
+        // Save sort order, but do not save search sorting, as this is a temporary sorting option
+        if (field !== 'search') {
+            power_user.sort_field = field;
+            power_user.sort_order = $(this).find(':selected').data('order');
+            power_user.sort_rule = $(this).find(':selected').data('rule');
+        }
         printCharactersDebounced();
         saveSettingsDebounced();
     });
