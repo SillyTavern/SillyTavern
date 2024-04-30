@@ -93,7 +93,7 @@ export class AutoComplete {
         this.updateDetailsPositionDebounced = debounce(this.updateDetailsPosition.bind(this), 10);
         this.updateFloatingPositionDebounced = debounce(this.updateFloatingPosition.bind(this), 10);
 
-        textarea.addEventListener('input', ()=>this.show(true));
+        textarea.addEventListener('input', ()=>this.text != this.textarea.value && this.show(true));
         textarea.addEventListener('keydown', (evt)=>this.handleKeyDown(evt));
         textarea.addEventListener('click', ()=>this.isActive ? this.show() : null);
         textarea.addEventListener('selectionchange', ()=>this.show());
@@ -711,7 +711,7 @@ export class AutoComplete {
                     });
                     if (this.selectionStart != this.textarea.selectionStart) {
                         this.selectionStart = this.textarea.selectionStart;
-                        this.show(this.isReplaceable || oldText != this.textarea.value);
+                        this.text != this.textarea.value && this.show(this.isReplaceable || oldText != this.textarea.value);
                     }
                 }
             }
