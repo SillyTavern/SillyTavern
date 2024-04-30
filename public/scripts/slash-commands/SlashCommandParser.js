@@ -725,10 +725,11 @@ export class SlashCommandParser {
         return /^(\w+)=/.test(`${this.char}${this.ahead}`);
     }
     parseNamedArgument() {
+        let assignment = new SlashCommandNamedArgumentAssignment();
+        assignment.start = this.index;
         let key = '';
         while (/\w/.test(this.char)) key += this.take(); // take chars
         this.take(); // discard "="
-        let assignment = new SlashCommandNamedArgumentAssignment();
         assignment.name = key;
         if (this.testClosure()) {
             assignment.value = this.parseClosure();
@@ -739,6 +740,7 @@ export class SlashCommandParser {
         } else if (this.testValue()) {
             assignment.value = this.parseValue();
         }
+        assignment.end = this.index;
         return assignment;
     }
 
