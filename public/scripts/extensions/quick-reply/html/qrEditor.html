@@ -94,14 +94,27 @@
 
 
 		<h3>Testing</h3>
-		<div id="qr--modal-execute" class="menu_button" title="Execute the quick reply now">
-			<i class="fa-solid fa-play"></i>
-			Execute
+		<div id="qr--modal-executeButtons">
+			<div id="qr--modal-execute" class="qr--modal-executeButton menu_button" title="Execute the quick reply now">
+				<i class="fa-solid fa-play"></i>
+				Execute
+			</div>
+			<div id="qr--modal-pause" class="qr--modal-executeButton menu_button" title="Pause / continue execution">
+				<span class="qr--modal-executeComboIcon">
+					<i class="fa-solid fa-play"></i>
+					<i class="fa-solid fa-pause"></i>
+				</span>
+			</div>
+			<div id="qr--modal-stop" class="qr--modal-executeButton menu_button" title="Abort execution">
+				<i class="fa-solid fa-stop"></i>
+			</div>
 		</div>
+		<div id="qr--modal-executeProgress"></div>
 		<label class="checkbox_label">
 			<input type="checkbox" id="qr--modal-executeHide">
 			<span> Hide editor while executing</span>
 		</label>
 		<div id="qr--modal-executeErrors"></div>
+		<div id="qr--modal-executeResult"></div>
 	</div>
 </div>

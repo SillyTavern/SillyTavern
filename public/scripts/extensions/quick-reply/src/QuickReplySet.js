@@ -144,6 +144,8 @@ export class QuickReplySet {
                 result = await executeSlashCommandsWithOptions(input, {
                     handleParserErrors: false,
                     scope: options.scope,
+                    abortController: qr.abortController,
+                    onProgress: (done, total) => qr.updateEditorProgress(done, total),
                 });
             } else {
                 result = await executeSlashCommandsOnChatInput(input, {
