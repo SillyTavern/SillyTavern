@@ -237,17 +237,24 @@ export class AutoComplete {
     async show(isInput = false, isForced = false) {
         //TODO check if isInput and isForced are both required
         this.text = this.textarea.value;
-        // only show with textarea in focus
-        if (document.activeElement != this.textarea) return this.hide();
-        // only show if provider wants to
-        if (!this.checkIfActivate()) return this.hide();
+
+        if (document.activeElement != this.textarea) {
+            // only show with textarea in focus
+            return this.hide();
+        }
+        if (!this.checkIfActivate()) {
+            // only show if provider wants to
+            return this.hide();
+        }
 
         // request provider to get name result (potentially "incomplete", i.e. not an actual existing name) for
         // cursor position
         this.parserResult = await this.getNameAt(this.text, this.textarea.selectionStart);
 
-        // don't show if no name result found, e.g., cursor's area is not a command
-        if (!this.parserResult) return this.hide();
+        if (!this.parserResult) {
+            // don't show if no name result found, e.g., cursor's area is not a command
+            return this.hide();
+        }
 
         // need to know if name can be inside quotes, and then check if quotes are already there
         if (this.parserResult.canBeQuoted) {
