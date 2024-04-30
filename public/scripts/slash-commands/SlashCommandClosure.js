@@ -4,15 +4,16 @@ import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandClosureExecutor } from './SlashCommandClosureExecutor.js';
 import { SlashCommandClosureResult } from './SlashCommandClosureResult.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
+import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
 import { SlashCommandScope } from './SlashCommandScope.js';
 
 export class SlashCommandClosure {
     /**@type {SlashCommandScope}*/ scope;
     /**@type {boolean}*/ executeNow = false;
     // @ts-ignore
-    /**@type {Object.<string,string|SlashCommandClosure>}*/ arguments = {};
+    /**@type {SlashCommandNamedArgumentAssignment[]}*/ argumentList = [];
     // @ts-ignore
-    /**@type {Object.<string,string|SlashCommandClosure>}*/ providedArguments = {};
+    /**@type {SlashCommandNamedArgumentAssignment[]}*/ providedArgumentList = [];
     /**@type {SlashCommandExecutor[]}*/ executorList = [];
     /**@type {string}*/ keptText;
     /**@type {SlashCommandAbortController}*/ abortController;
@@ -76,8 +77,8 @@ export class SlashCommandClosure {
         const closure = new SlashCommandClosure();
         closure.scope = this.scope.getCopy();
         closure.executeNow = this.executeNow;
-        closure.arguments = this.arguments;
-        closure.providedArguments = this.providedArguments;
+        closure.argumentList = this.argumentList;
+        closure.providedArgumentList = this.providedArgumentList;
         closure.executorList = this.executorList;
         closure.keptText = this.keptText;
         closure.abortController = this.abortController;
@@ -98,8 +99,8 @@ export class SlashCommandClosure {
         let interrupt = false;
 
         // closure arguments
-        for (const key of Object.keys(this.arguments)) {
-            let v = this.arguments[key];
+        for (const arg of this.argumentList) {
+            let v = arg.value;
             if (v instanceof SlashCommandClosure) {
                 /**@type {SlashCommandClosure}*/
                 const closure = v;
@@ -119,10 +120,10 @@ export class SlashCommandClosure {
                     ?.replace(/\\\}/g, '}')
                 ;
             }
-            this.scope.letVariable(key, v);
+            this.scope.letVariable(arg.name, v);
         }
-        for (const key of Object.keys(this.providedArguments)) {
-            let v = this.providedArguments[key];
+        for (const arg of this.providedArgumentList) {
+            let v = arg.value;
             if (v instanceof SlashCommandClosure) {
                 /**@type {SlashCommandClosure}*/
                 const closure = v;
@@ -142,7 +143,7 @@ export class SlashCommandClosure {
                     ?.replace(/\\\}/g, '}')
                 ;
             }
-            this.scope.setVariable(key, v);
+            this.scope.setVariable(arg.name, v);
         }
 
         let done = 0;
@@ -153,7 +154,7 @@ export class SlashCommandClosure {
                 const closure = this.scope.getVariable(executor.name);
                 if (!closure || !(closure instanceof SlashCommandClosure)) throw new Error(`${executor.name} is not a closure.`);
                 closure.scope.parent = this.scope;
-                closure.providedArguments = executor.providedArguments;
+                closure.providedArgumentList = executor.providedArgumentList;
                 const result = await closure.execute();
                 this.scope.pipe = result.pipe;
                 interrupt = result.interrupt;
@@ -165,22 +166,22 @@ export class SlashCommandClosure {
                 };
                 let value;
                 // substitute named arguments
-                for (const key of Object.keys(executor.args)) {
-                    if (executor.args[key] instanceof SlashCommandClosure) {
+                for (const arg of executor.namedArgumentList) {
+                    if (arg.value instanceof SlashCommandClosure) {
                         /**@type {SlashCommandClosure}*/
-                        const closure = executor.args[key];
+                        const closure = arg.value;
                         closure.scope.parent = this.scope;
                         if (closure.executeNow) {
-                            args[key] = (await closure.execute())?.pipe;
+                            args[arg.name] = (await closure.execute())?.pipe;
                         } else {
-                            args[key] = closure;
+                            args[arg.name] = closure;
                         }
                     } else {
-                        args[key] = this.substituteParams(executor.args[key]);
+                        args[arg.name] = this.substituteParams(arg.value);
                     }
                     // unescape named argument
-                    if (typeof args[key] == 'string') {
-                        args[key] = args[key]
+                    if (typeof args[arg.name] == 'string') {
+                        args[arg.name] = args[arg.name]
                             ?.replace(/\\\{/g, '{')
                             ?.replace(/\\\}/g, '}')
                         ;

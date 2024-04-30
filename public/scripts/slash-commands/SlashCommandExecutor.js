@@ -2,16 +2,22 @@
 import { SlashCommand } from './SlashCommand.js';
 // eslint-disable-next-line no-unused-vars
 import { SlashCommandClosure } from './SlashCommandClosure.js';
+import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
+// eslint-disable-next-line no-unused-vars
 import { PARSER_FLAG } from './SlashCommandParser.js';
 
 export class SlashCommandExecutor {
     /**@type {Boolean}*/ injectPipe = true;
     /**@type {Number}*/ start;
     /**@type {Number}*/ end;
+    /**@type {Number}*/ startNamedArgs;
+    /**@type {Number}*/ endNamedArgs;
+    /**@type {Number}*/ startUnnamedArgs;
+    /**@type {Number}*/ endUnnamedArgs;
     /**@type {String}*/ name = '';
     /**@type {SlashCommand}*/ command;
     // @ts-ignore
-    /**@type {Object.<string,String|SlashCommandClosure>}*/ args = {};
+    /**@type {SlashCommandNamedArgumentAssignment[]}*/ namedArgumentList = [];
     /**@type {String|SlashCommandClosure|(String|SlashCommandClosure)[]}*/ value;
     /**@type {Object<PARSER_FLAG,boolean>} */ parserFlags;
 

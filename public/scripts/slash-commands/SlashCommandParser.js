@@ -11,6 +11,8 @@ import { SlashCommandQuickReplyAutoCompleteOption } from './SlashCommandQuickRep
 // eslint-disable-next-line no-unused-vars
 import { SlashCommandScope } from './SlashCommandScope.js';
 import { SlashCommandVariableAutoCompleteOption } from './SlashCommandVariableAutoCompleteOption.js';
+import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
+import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -87,7 +89,7 @@ export class SlashCommandParser {
     /**@type {string}*/ text;
     /**@type {string}*/ keptText;
     /**@type {number}*/ index;
-    /**@type {AbortController}*/ abortController;
+    /**@type {SlashCommandAbortController}*/ abortController;
     /**@type {SlashCommandScope}*/ scope;
     /**@type {SlashCommandClosure}*/ closure;
 
@@ -561,8 +563,8 @@ export class SlashCommandParser {
         this.discardWhitespace();
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
-            closure.arguments[arg.key] = arg.value;
-            this.scope.variableNames.push(arg.key);
+            closure.argumentList.push(arg.value);
+            this.scope.variableNames.push(arg.name);
             this.discardWhitespace();
         }
         while (!this.testClosureEnd()) {
@@ -663,7 +665,7 @@ export class SlashCommandParser {
         this.discardWhitespace();
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
-            cmd.args[arg.key] = arg.value;
+            cmd.namedArgumentList.push(arg);
             this.discardWhitespace();
         }
         this.discardWhitespace();
@@ -695,14 +697,20 @@ export class SlashCommandParser {
         this.discardWhitespace();
         if (this.verifyCommandNames && !this.commands[cmd.name]) throw new SlashCommandParserError(`Unknown command at position ${this.index - cmd.name.length - 2}: "/${cmd.name}"`, this.text, this.index - cmd.name.length);
         cmd.command = this.commands[cmd.name];
+        cmd.startNamedArgs = this.index;
+        cmd.endNamedArgs = this.index;
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
-            cmd.args[arg.key] = arg.value;
+            cmd.namedArgumentList.push(arg);
+            cmd.endNamedArgs = this.index;
             this.discardWhitespace();
         }
         this.discardWhitespace();
+        cmd.startUnnamedArgs = this.index;
+        cmd.endUnnamedArgs = this.index;
         if (this.testUnnamedArgument()) {
             cmd.value = this.parseUnnamedArgument();
+            cmd.endUnnamedArgs = this.index;
             if (cmd.name == 'let') {
                 if (Array.isArray(cmd.value)) {
                     if (typeof cmd.value[0] == 'string') {
@@ -730,17 +738,18 @@ export class SlashCommandParser {
         let key = '';
         while (/\w/.test(this.char)) key += this.take(); // take chars
         this.take(); // discard "="
-        let value;
+        let assignment = new SlashCommandNamedArgumentAssignment();
+        assignment.name = key;
         if (this.testClosure()) {
-            value = this.parseClosure();
+            assignment.value = this.parseClosure();
         } else if (this.testQuotedValue()) {
-            value = this.parseQuotedValue();
+            assignment.value = this.parseQuotedValue();
         } else if (this.testListValue()) {
-            value = this.parseListValue();
+            assignment.value = this.parseListValue();
         } else if (this.testValue()) {
-            value = this.parseValue();
+            assignment.value = this.parseValue();
         }
-        return { key, value };
+        return assignment;
     }
 
     testUnnamedArgument() {

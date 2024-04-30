@@ -1358,9 +1358,9 @@ async function runCallback(args, name) {
             throw new Error(`"${name}" is not callable.`);
         }
         closure.scope.parent = scope;
-        Object.keys(closure.arguments).forEach(key=>{
+        Object.keys(closure.argumentList).forEach(key=>{
             if (Object.keys(args).includes(key)) {
-                closure.providedArguments[key] = args[key];
+                closure.providedArgumentList[key] = args[key];
             }
         });
         const result = await closure.execute();
