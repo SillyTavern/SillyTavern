@@ -192,7 +192,8 @@ class WorldInfoBuffer {
                 return haystack.includes(transformedString);
             }
             else {
-                const regex = new RegExp(`\\b${escapeRegex(transformedString)}\\b`);
+                // Use custom boundaries to include punctuation and other non-alphanumeric characters
+                const regex = new RegExp(`(?:^|\\W)(${escapeRegex(transformedString)})(?:$|\\W)`);
                 if (regex.test(haystack)) {
                     return true;
                 }
