@@ -1872,7 +1872,7 @@ export function fuzzySearchCharacters(searchValue) {
     const fuse = new Fuse(characters, {
         keys: [
             { name: 'data.name', weight: 8 },
-            { name: '#tags.name', weight: 5, getFn: (character) => getTagsList(character.avatar).map(x => x.name).join('||') },
+            { name: '#tags', weight: 5, getFn: (character) => getTagsList(character.avatar).map(x => x.name).join('||') },
             { name: 'data.description', weight: 3 },
             { name: 'data.mes_example', weight: 3 },
             { name: 'data.scenario', weight: 2 },
@@ -1975,8 +1975,10 @@ export function fuzzySearchGroups(searchValue) {
     // @ts-ignore
     const fuse = new Fuse(groups, {
         keys: [
-            { name: 'name', weight: 3 },
-            { name: 'members', weight: 1 },
+            { name: 'name', weight: 8 },
+            { name: 'members', weight: 5 },
+            { name: '#tags', weight: 5, getFn: (group) => getTagsList(group.id).map(x => x.name).join('||') },
+            { name: 'id', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
