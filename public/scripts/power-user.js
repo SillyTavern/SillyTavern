@@ -36,7 +36,7 @@ import {
 } from './instruct-mode.js';
 
 import { registerSlashCommand } from './slash-commands.js';
-import { tag_map, tags } from './tags.js';
+import { getTagsList, tag_map, tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
@@ -1872,6 +1872,7 @@ export function fuzzySearchCharacters(searchValue) {
     const fuse = new Fuse(characters, {
         keys: [
             { name: 'data.name', weight: 8 },
+            { name: '#tags.name', weight: 5, getFn: (character) => getTagsList(character.avatar).map(x => x.name).join('||') },
             { name: 'data.description', weight: 3 },
             { name: 'data.mes_example', weight: 3 },
             { name: 'data.scenario', weight: 2 },
