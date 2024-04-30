@@ -778,13 +778,6 @@ export class SlashCommandParser {
                     value = '';
                 }
                 listValues.push(this.parseClosure());
-            } else if (this.testQuotedValue()) {
-                isList = true;
-                if (value.length > 0) {
-                    listValues.push(value.trim());
-                    value = '';
-                }
-                listValues.push(this.parseQuotedValue());
             } else {
                 value += this.take();
             }
