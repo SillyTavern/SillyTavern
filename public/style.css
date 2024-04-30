@@ -675,20 +675,6 @@ body .panelControlBar {
     order: 1;
 }
 
-@keyframes mes_stop_pulse {
-    0%, 100% {
-        border-width: 0em;
-        box-shadow:
-            0 0 0 var(--progColor),
-            0 0 0 var(--progColor)
-    }
-    50% {
-        border-width: 1em;
-        box-shadow:
-            0 0 1em var(--progColor),
-            0 0 1em var(--progColor)
-    }
-}
 #send_form .mes_stop {
     display: none;
     order: 2;
@@ -697,31 +683,6 @@ body .panelControlBar {
     cursor: pointer;
     transition: 0.3s;
     opacity: 0.7;
-    > .fa-solid {
-        --toastInfoColor: #2F96B4;
-        --progColor: rgba(0, 128, 0, 0.839);
-        border-radius: 50%;
-        border: 0 solid var(--progColor);
-        aspect-ratio: 1 / 1;
-        display: flex;
-        background: var(--SmartThemeBodyColor);
-        font-size: 0.5em;
-        height: var(--bottomFormIconSize);
-        justify-content: center;
-        align-items: center;
-        color: black;
-        box-shadow:
-            0 0 0 var(--progColor),
-            0 0 0 var(--progColor)
-        ;
-        body & {
-            animation-name: mes_stop_pulse;
-            animation-duration: 1500ms;
-            animation-timing-function: ease-in-out;
-            animation-delay: 0s;
-            animation-iteration-count: infinite;
-        }
-    }
 }
 
 
