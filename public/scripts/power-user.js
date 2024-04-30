@@ -1871,8 +1871,8 @@ export function fuzzySearchCharacters(searchValue) {
     // @ts-ignore
     const fuse = new Fuse(characters, {
         keys: [
-            { name: 'data.name', weight: 8 },
-            { name: '#tags', weight: 5, getFn: (character) => getTagsList(character.avatar).map(x => x.name).join('||') },
+            { name: 'data.name', weight: 20 },
+            { name: '#tags', weight: 10, getFn: (character) => getTagsList(character.avatar).map(x => x.name).join('||') },
             { name: 'data.description', weight: 3 },
             { name: 'data.mes_example', weight: 3 },
             { name: 'data.scenario', weight: 2 },
@@ -1903,13 +1903,13 @@ export function fuzzySearchWorldInfo(data, searchValue) {
     // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'key', weight: 8 },
-            { name: 'group', weight: 6 },
-            { name: 'comment', weight: 5 },
-            { name: 'keysecondary', weight: 5 },
+            { name: 'key', weight: 20 },
+            { name: 'group', weight: 15 },
+            { name: 'comment', weight: 10 },
+            { name: 'keysecondary', weight: 10 },
             { name: 'content', weight: 3 },
             { name: 'uid', weight: 1 },
-            { name: 'automationId', weight: 0.25 },
+            { name: 'automationId', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
@@ -1932,8 +1932,8 @@ export function fuzzySearchPersonas(data, searchValue) {
     // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'name', weight: 4 },
-            { name: 'description', weight: 1 },
+            { name: 'name', weight: 20 },
+            { name: 'description', weight: 3 },
         ],
         includeScore: true,
         ignoreLocation: true,
@@ -1975,9 +1975,9 @@ export function fuzzySearchGroups(searchValue) {
     // @ts-ignore
     const fuse = new Fuse(groups, {
         keys: [
-            { name: 'name', weight: 8 },
-            { name: 'members', weight: 5 },
-            { name: '#tags', weight: 5, getFn: (group) => getTagsList(group.id).map(x => x.name).join('||') },
+            { name: 'name', weight: 20 },
+            { name: 'members', weight: 15 },
+            { name: '#tags', weight: 10, getFn: (group) => getTagsList(group.id).map(x => x.name).join('||') },
             { name: 'id', weight: 1 },
         ],
         includeScore: true,
