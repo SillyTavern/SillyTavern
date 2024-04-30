@@ -155,7 +155,7 @@ import {
 } from './scripts/utils.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from './scripts/slash-commands.js';
+import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsOnChatInput, getSlashCommandsHelp, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, registerSlashCommand, stopScriptExecution } from './scripts/slash-commands.js';
 import {
     tag_map,
     tags,
@@ -1704,6 +1704,7 @@ export async function reloadCurrentChat() {
  */
 export function sendTextareaMessage() {
     if (is_send_press) return;
+    if (isExecutingCommandsFromChatInput) return;
 
     let generateType;
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
@@ -2395,37 +2396,16 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
  * Executes slash commands and returns the new text and whether the generation was interrupted.
  * @param {string} message Text to be sent
  * @returns {Promise<boolean>} Whether the message sending was interrupted
- * @param {AbortController} abortController
  */
-async function processCommands(message, abortController) {
+export async function processCommands(message) {
     if (!message || !message.trim().startsWith('/')) {
         return false;
     }
-
-    deactivateSendButtons();
-    is_send_press = true;
-
-    /**@type {HTMLTextAreaElement}*/
-    const ta = document.querySelector('#send_textarea');
-    ta.value = '';
-    ta.dispatchEvent(new Event('input', { bubbles:true }));
-
-    await executeSlashCommandsWithOptions(message, {
-        abortController: abortController,
-        onProgress: (done, total)=>ta.style.setProperty('--prog', `${done / total * 100}%`),
+    await executeSlashCommandsOnChatInput(message, {
+        clearChatInput: true,
     });
-    delay(1000).then(()=>clearCommandProgressDebounced());
-
-    is_send_press = false;
-    activateSendButtons();
-
     return true;
 }
-function clearCommandProgress() {
-    if (is_send_press) return;
-    document.querySelector('#send_textarea').style.setProperty('--prog', '0%');
-}
-const clearCommandProgressDebounced = debounce(clearCommandProgress);
 
 function sendSystemMessage(type, text, extra = {}) {
     const systemMessage = system_messages[type];
@@ -3088,7 +3068,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     let message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
     if (!(dryRun || type == 'regenerate' || type == 'swipe' || type == 'quiet')) {
-        const interruptedByCommand = await processCommands(String($('#send_textarea').val()), abortController);
+        const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
 
         if (interruptedByCommand) {
             //$("#send_textarea").val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
@@ -10186,6 +10166,18 @@ jQuery(async function () {
             hideStopButton();
         }
         eventSource.emit(event_types.GENERATION_STOPPED);
+    });
+
+    $(document).on('click', '#form_sheld .stscript_continue', function () {
+        pauseScriptExecution();
+    });
+
+    $(document).on('click', '#form_sheld .stscript_pause', function () {
+        pauseScriptExecution();
+    });
+
+    $(document).on('click', '#form_sheld .stscript_stop', function () {
+        stopScriptExecution();
     });
 
     $('.drawer-toggle').on('click', function () {

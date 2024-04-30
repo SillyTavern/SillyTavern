@@ -49,7 +49,7 @@ import { autoSelectPersona } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
-import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { debounce, delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
 import { background_settings } from './backgrounds.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
@@ -60,6 +60,7 @@ import { SlashCommandAutoCompleteOption } from './slash-commands/SlashCommandAut
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandAutoComplete } from './slash-commands/SlashCommandAutoComplete.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -2551,51 +2552,176 @@ function modelCallback(_, model) {
     }
 }
 
+
+export let isExecutingCommandsFromChatInput = false;
+export let commandsFromChatInputAbortController;
+
+/**
+ * Show command execution pause/stop buttons next to chat input.
+ */
+export function activateScriptButtons() {
+    document.querySelector('#form_sheld').classList.add('isExecutingCommandsFromChatInput');
+}
+
+/**
+ * Hide command execution pause/stop buttons next to chat input.
+ */
+export function deactivateScriptButtons() {
+    document.querySelector('#form_sheld').classList.remove('isExecutingCommandsFromChatInput');
+}
+
+/**
+ * Toggle pause/continue command execution. Only for commands executed via chat input.
+ */
+export function pauseScriptExecution() {
+    if (commandsFromChatInputAbortController) {
+        if (commandsFromChatInputAbortController.signal.paused) {
+            commandsFromChatInputAbortController.continue('Clicked pause button');
+            document.querySelector('#form_sheld').classList.remove('script_paused');
+        } else {
+            commandsFromChatInputAbortController.pause('Clicked pause button');
+            document.querySelector('#form_sheld').classList.add('script_paused');
+        }
+    }
+}
+
+/**
+ * Stop command execution. Only for commands executed via chat input.
+ */
+export function stopScriptExecution() {
+    commandsFromChatInputAbortController?.abort('Clicked stop button');
+}
+
+/**
+ * Clear up command execution progress bar above chat input.
+ * @returns Promise<void>
+ */
+async function clearCommandProgress() {
+    if (isExecutingCommandsFromChatInput) return;
+    document.querySelector('#send_textarea').style.setProperty('--progDone', '1');
+    await delay(250);
+    if (isExecutingCommandsFromChatInput) return;
+    document.querySelector('#send_textarea').style.transition = 'none';
+    await delay(1);
+    document.querySelector('#send_textarea').style.setProperty('--prog', '0%');
+    document.querySelector('#send_textarea').style.setProperty('--progDone', '0');
+    document.querySelector('#form_sheld').classList.remove('script_success');
+    document.querySelector('#form_sheld').classList.remove('script_error');
+    document.querySelector('#form_sheld').classList.remove('script_aborted');
+    await delay(1);
+    document.querySelector('#send_textarea').style.transition = null;
+}
+/**
+ * Debounced version of clearCommandProgress.
+ */
+const clearCommandProgressDebounced = debounce(clearCommandProgress);
+
+/**
+ * @typedef ExecuteSlashCommandsOptions
+ * @prop {boolean} [handleParserErrors] (true) Whether to handle parser errors (show toast on error) or throw.
+ * @prop {SlashCommandScope} [scope] (null) The scope to be used when executing the commands.
+ * @prop {boolean} [handleExecutionErrors] (false) Whether to handle execution errors (show toast on error) or throw
+ * @prop {PARSER_FLAG[]} [parserFlags] (null) Parser flags to apply
+ * @prop {SlashCommandAbortController} [abortController] (null) Controller used to abort or pause command execution
+ * @prop {(done:number, total:number)=>void} [onProgress] (null) Callback to handle progress events
+ */
+
+/**
+ * @typedef ExecuteSlashCommandsOnChatInputOptions
+ * @prop {SlashCommandScope} [scope] (null) The scope to be used when executing the commands.
+ * @prop {PARSER_FLAG[]} [parserFlags] (null) Parser flags to apply
+ * @prop {boolean} [clearChatInput] (false) Whether to clear the chat input textarea
+ */
+
+/**
+ * Execute slash commands while showing progress indicator and pause/stop buttons on
+ * chat input.
+ * @param {string} text Slash command text
+ * @param {ExecuteSlashCommandsOnChatInputOptions} options
+ */
+export async function executeSlashCommandsOnChatInput(text, options = {}) {
+    if (isExecutingCommandsFromChatInput) return null;
+
+    options = Object.assign({
+        scope: null,
+        parserFlags: null,
+        clearChatInput: false,
+    }, options);
+
+    isExecutingCommandsFromChatInput = true;
+    commandsFromChatInputAbortController?.abort('processCommands was called');
+    activateScriptButtons();
+
+    /**@type {HTMLTextAreaElement}*/
+    const ta = document.querySelector('#send_textarea');
+
+    if (options.clearChatInput) {
+        ta.value = '';
+        ta.dispatchEvent(new Event('input', { bubbles:true }));
+    }
+
+    document.querySelector('#send_textarea').style.setProperty('--prog', '0%');
+    document.querySelector('#send_textarea').style.setProperty('--progDone', '0');
+    document.querySelector('#form_sheld').classList.remove('script_success');
+    document.querySelector('#form_sheld').classList.remove('script_error');
+    document.querySelector('#form_sheld').classList.remove('script_aborted');
+
+    /**@type {SlashCommandClosureResult} */
+    let result = null;
+    try {
+        commandsFromChatInputAbortController = new SlashCommandAbortController();
+        result = await executeSlashCommandsWithOptions(text, {
+            abortController: commandsFromChatInputAbortController,
+            onProgress: (done, total)=>ta.style.setProperty('--prog', `${done / total * 100}%`),
+        });
+        if (commandsFromChatInputAbortController.signal.aborted) {
+            document.querySelector('#form_sheld').classList.add('script_aborted');
+        } else {
+            document.querySelector('#form_sheld').classList.add('script_success');
+        }
+    } catch (e) {
+        document.querySelector('#form_sheld').classList.add('script_error');
+        toastr.error(e.message);
+        result = new SlashCommandClosureResult();
+        result.interrupt = true;
+        result.isError = true;
+        result.errorMessage = e.message;
+    } finally {
+        delay(1000).then(()=>clearCommandProgressDebounced());
+
+        commandsFromChatInputAbortController = null;
+        deactivateScriptButtons();
+        isExecutingCommandsFromChatInput = false;
+    }
+    return result;
+}
+
 /**
  *
- * @param {string} text Slash command txt
- * @param {object} [options]
- * @param {boolean} [options.handleParserErrors]
- * @param {SlashCommandScope} [options.scope]
- * @param {boolean} [options.handleExecutionErrors]
- * @param {PARSER_FLAG[]} [options.parserFlags]
- * @param {AbortController} [options.abortController]
- * @param {(done:number, total:number)=>void} [options.onProgress]
+ * @param {string} text Slash command text
+ * @param {ExecuteSlashCommandsOptions} [options]
  * @returns {Promise<SlashCommandClosureResult>}
  */
 async function executeSlashCommandsWithOptions(text, options = {}) {
-    return await executeSlashCommands(
-        text,
-        options.handleParserErrors ?? true,
-        options.scope ?? null,
-        options.handleExecutionErrors ?? false,
-        options.parserFlags ?? null,
-        options.abortController ?? null,
-        options.onProgress ?? null,
-    );
-}
-/**
- * Executes slash commands in the provided text
- * @param {string} text Slash command text
- * @param {boolean} handleParserErrors Whether to handle parser errors (show toast on error) or throw
- * @param {SlashCommandScope} scope The scope to be used when executing the commands.
- * @param {boolean} handleExecutionErrors
- * @param {PARSER_FLAG[]} parserFlags
- * @param {AbortController} abortController
- * @returns {Promise<SlashCommandClosureResult>}
- */
-async function executeSlashCommands(text, handleParserErrors = true, scope = null, handleExecutionErrors = false, parserFlags = null, abortController = null, onProgress = null) {
     if (!text) {
         return null;
     }
+    options = Object.assign({
+        handleParserErrors: true,
+        scope: null,
+        handleExecutionErrors: false,
+        parserFlags: null,
+        abortController: null,
+        onProgress: null,
+    }, options);
 
     let closure;
     try {
-        closure = parser.parse(text, true, parserFlags, abortController);
-        closure.scope.parent = scope;
-        closure.onProgress = onProgress;
+        closure = parser.parse(text, true, options.parserFlags, options.abortController);
+        closure.scope.parent = options.scope;
+        closure.onProgress = options.onProgress;
     } catch (e) {
-        if (handleParserErrors && e instanceof SlashCommandParserError) {
+        if (options.handleParserErrors && e instanceof SlashCommandParserError) {
             /**@type {SlashCommandParserError}*/
             const ex = e;
             const toast = `
@@ -2624,15 +2750,39 @@ async function executeSlashCommands(text, handleParserErrors = true, scope = nul
         }
         return result;
     } catch (e) {
-        if (handleExecutionErrors) {
+        if (options.handleExecutionErrors) {
             toastr.error(e.message);
             const result = new SlashCommandClosureResult();
             result.interrupt = true;
+            result.isError = true;
+            result.errorMessage = e.message;
             return result;
         } else {
             throw e;
         }
     }
+}
+/**
+ * Executes slash commands in the provided text
+ * @deprecated Use executeSlashCommandWithOptions instead
+ * @param {string} text Slash command text
+ * @param {boolean} handleParserErrors Whether to handle parser errors (show toast on error) or throw
+ * @param {SlashCommandScope} scope The scope to be used when executing the commands.
+ * @param {boolean} handleExecutionErrors Whether to handle execution errors (show toast on error) or throw
+ * @param {PARSER_FLAG[]} parserFlags Parser flags to apply
+ * @param {SlashCommandAbortController} abortController Controller used to abort or pause command execution
+ * @param {(done:number, total:number)=>void} onProgress Callback to handle progress events
+ * @returns {Promise<SlashCommandClosureResult>}
+ */
+async function executeSlashCommands(text, handleParserErrors = true, scope = null, handleExecutionErrors = false, parserFlags = null, abortController = null, onProgress = null) {
+    return executeSlashCommandsWithOptions(text, {
+        handleParserErrors,
+        scope,
+        handleExecutionErrors,
+        parserFlags,
+        abortController,
+        onProgress,
+    });
 }
 
 /**

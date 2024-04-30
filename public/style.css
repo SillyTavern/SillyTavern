@@ -685,6 +685,64 @@ body .panelControlBar {
     opacity: 0.7;
 }
 
+
+#form_sheld.isExecutingCommandsFromChatInput {
+    #send_but {
+        visibility: hidden;
+    }
+    #rightSendForm > div:not(.mes_send).stscript_btn {
+        &.stscript_pause, &.stscript_stop {
+            display: flex;
+        }
+    }
+    &.paused {
+        #rightSendForm > div:not(.mes_send).stscript_btn {
+            &.stscript_pause {
+                display: none;
+            }
+            &.stscript_continue {
+                display: flex;
+            }
+        }
+    }
+}
+#rightSendForm > div:not(.mes_send) {
+    &.stscript_btn {
+        padding-right: 2px;
+        place-self: center;
+        cursor: pointer;
+        transition: 0.3s;
+        opacity: 1;
+        display: none;
+        &.stscript_pause > .fa-solid {
+            background-color: rgb(146, 190, 252);
+        }
+        &.stscript_continue > .fa-solid {
+            background-color: rgb(146, 190, 252);
+        }
+        &.stscript_stop > .fa-solid {
+            background-color: rgb(215, 136, 114);
+        }
+        > .fa-solid {
+            --toastInfoColor: #2F96B4;
+            --progColor: rgba(0, 128, 0, 0.839);
+            border-radius: 35%;
+            border: 0 solid var(--progColor);
+            aspect-ratio: 1 / 1;
+            display: flex;
+            color: rgb(24 24 24);
+            font-size: 0.5em;
+            height: var(--bottomFormIconSize);
+            justify-content: center;
+            align-items: center;
+            box-shadow:
+                0 0 0 var(--progColor),
+                0 0 0 var(--progColor)
+            ;
+        }
+    }
+}
+
 #options_button {
     width: var(--bottomFormBlockSize);
     height: var(--bottomFormBlockSize);
@@ -1063,12 +1121,50 @@ select {
     flex: 1;
     order: 3;
 
-    --progColor: rgba(0, 128, 0, 0.839);
+    --progColor: rgb(146, 190, 252);
+    --progFlashColor: rgb(215, 136, 114);
+    --progSuccessColor: rgb(81, 163, 81);
+    --progErrorColor: rgb(189, 54, 47);
+    --progAbortedColor: rgb(215, 136, 114);
     --progWidth: 3px;
+    --progWidthClip: calc(var(--progWidth) + 2px);
     --prog: 0%;
+    --progDone: 0;
     border-top: var(--progWidth) solid var(--progColor);
-    clip-path: polygon(0% 0%, var(--prog) 0%, var(--prog) 5px, 100% 5px, 100% 100%, 0% 100%);
+    clip-path: polygon(
+        0% calc(var(--progDone) * var(--progWidthClip)),
+        var(--prog) calc(var(--progDone) * var(--progWidthClip)),
+        var(--prog) var(--progWidthClip),
+        100% var(--progWidthClip),
+        100% 100%,
+        0% 100%
+    );
     transition: clip-path 200ms;
+}
+@keyframes script_progress_pulse {
+    0%, 100% {
+        border-top-color: var(--progColor);
+    }
+    50% {
+        border-top-color: var(--progFlashColor);
+    }
+}
+#form_sheld.isExecutingCommandsFromChatInput.script_paused #send_textarea {
+    animation-name: script_progress_pulse;
+    animation-duration: 1500ms;
+    animation-timing-function: ease-in-out;
+    animation-delay: 0s;
+    animation-iteration-count: infinite;
+}
+
+#form_sheld.script_success #send_textarea {
+    border-top-color: var(--progSuccessColor);
+}
+#form_sheld.script_error #send_textarea {
+    border-top-color: var(--progErrorColor);
+}
+#form_sheld.script_aborted #send_textarea {
+    border-top-color: var(--progAbortedColor);
 }
 
 .slashCommandAutoComplete-wrap {

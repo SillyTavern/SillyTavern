@@ -30,12 +30,15 @@ export class SlashCommandParserError extends Error {
         let hint  = [];
         let lines = this.text.slice(start + 1, end - 1).split('\n');
         let lineNum = this.line - lines.length + 1;
+        let tabOffset = 0;
         for (const line of lines) {
             const num = `${' '.repeat(lineOffset - lineNum.toString().length)}${lineNum}`;
             lineNum++;
-            hint.push(`${num}:  ${line}`);
+            const untabbedLine = line.replace(/\t/g, ' '.repeat(4));
+            tabOffset = untabbedLine.length - line.length;
+            hint.push(`${num}:  ${untabbedLine}`);
         }
-        hint.push(`${' '.repeat(this.index - lineStart + lineOffset + 1)}^^^^^`);
+        hint.push(`${' '.repeat(this.index - 2 - lineStart + lineOffset + 1 + tabOffset)}^^^^^`);
         return hint.join('\n');
     }
 

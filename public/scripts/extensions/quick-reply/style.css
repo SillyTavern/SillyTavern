@@ -295,6 +295,20 @@
   opacity: 0.5;
   cursor: wait;
 }
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeErrors {
+  display: none;
+  text-align: left;
+  font-size: smaller;
+  background-color: #bd362f;
+  color: white;
+  padding: 0.5em;
+  overflow: auto;
+  min-width: 100%;
+  width: 0;
+}
+.dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor #qr--modal-executeErrors.qr--hasErrors {
+  display: block;
+}
 .shadow_popup.qr--hide {
   opacity: 0 !important;
 }

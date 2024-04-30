@@ -1,5 +1,6 @@
 import { POPUP_TYPE, Popup } from '../../../popup.js';
 import { setSlashCommandAutoComplete } from '../../../slash-commands.js';
+import { SlashCommandParserError } from '../../../slash-commands/SlashCommandParserError.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { getSortableDelay } from '../../../utils.js';
 import { log, warn } from '../index.js';
@@ -452,10 +453,23 @@ export class QuickReply {
             this.editorPopup.dom.classList.add('qr--hide');
         }
         try {
-            this.editorExecutePromise = this.execute();
+            this.editorExecutePromise = this.execute({}, true);
             await this.editorExecutePromise;
+            this.editorExecuteErrors.classList.remove('qr--hasErrors');
+            this.editorExecuteErrors.innerHTML = '';
         } catch (ex) {
-            this.editorExecuteErrors.textContent = ex.message;
+            this.editorExecuteErrors.classList.add('qr--hasErrors');
+            if (ex instanceof SlashCommandParserError) {
+                this.editorExecuteErrors.innerHTML = `
+                    <div>${ex.message}</div>
+                    <div>Line: ${ex.line} Column: ${ex.column}</div>
+                    <pre style="text-align:left;">${ex.hint}</pre>
+                `;
+            } else {
+                this.editorExecuteErrors.innerHTML = `
+                    <div>${ex.message}</div>
+                `;
+            }
         }
         this.editorExecutePromise = null;
         this.editorExecuteBtn.classList.remove('qr--busy');
@@ -537,13 +551,19 @@ export class QuickReply {
     }
 
 
-    async execute(args = {}) {
+    async execute(args = {}, isEditor = false, isRun = false) {
         if (this.message?.length > 0 && this.onExecute) {
             const scope = new SlashCommandScope();
             for (const key of Object.keys(args)) {
                 scope.setMacro(`arg::${key}`, args[key]);
             }
-            return await this.onExecute(this, this.message, args.isAutoExecute ?? false, scope);
+            return await this.onExecute(this, {
+                message:this.message,
+                isAutoExecute: args.isAutoExecute ?? false,
+                isEditor,
+                isRun,
+                scope,
+            });
         }
     }
 

@@ -322,6 +322,20 @@
 					cursor: wait;
 				}
 			}
+			#qr--modal-executeErrors {
+				display: none;
+				&.qr--hasErrors {
+					display: block;
+				}
+				text-align: left;
+				font-size: smaller;
+				background-color: rgb(189, 54, 47);
+				color: white;
+				padding: 0.5em;
+				overflow: auto;
+				min-width: 100%;
+				width: 0;
+			}
 		}
 	}
 }

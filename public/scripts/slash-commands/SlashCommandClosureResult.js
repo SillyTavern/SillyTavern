@@ -4,4 +4,6 @@ export class SlashCommandClosureResult {
     /**@type {string}*/ pipe;
     /**@type {boolean}*/ isAborted = false;
     /**@type {string}*/ abortReason;
+    /**@type {boolean}*/ isError = false;
+    /**@type {string}*/ errorMessage;
 }

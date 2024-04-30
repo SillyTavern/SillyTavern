@@ -1,5 +1,6 @@
 import { substituteParams } from '../../script.js';
-import { escapeRegex } from '../utils.js';
+import { delay, escapeRegex } from '../utils.js';
+import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandClosureExecutor } from './SlashCommandClosureExecutor.js';
 import { SlashCommandClosureResult } from './SlashCommandClosureResult.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
@@ -14,7 +15,7 @@ export class SlashCommandClosure {
     /**@type {Object.<string,string|SlashCommandClosure>}*/ providedArguments = {};
     /**@type {SlashCommandExecutor[]}*/ executorList = [];
     /**@type {string}*/ keptText;
-    /**@type {AbortController}*/ abortController;
+    /**@type {SlashCommandAbortController}*/ abortController;
     /**@type {(done:number, total:number)=>void}*/ onProgress;
 
     constructor(parent) {
@@ -232,15 +233,15 @@ export class SlashCommandClosure {
                     ;
                 }
 
-                let abortResult = this.testAbortController();
+                let abortResult = await this.testAbortController();
                 if (abortResult) {
                     return abortResult;
                 }
                 this.scope.pipe = await executor.command.callback(args, value ?? '');
                 done += 0.5;
                 this.onProgress?.(done, this.executorList.length);
-                // eslint-disable-next-line no-cond-assign
-                if (abortResult = this.testAbortController()) {
+                abortResult = await this.testAbortController();
+                if (abortResult) {
                     return abortResult;
                 }
             }
@@ -250,7 +251,13 @@ export class SlashCommandClosure {
         return result;
     }
 
-    testAbortController() {
+    async testPaused() {
+        while (!this.abortController?.signal?.aborted && this.abortController?.signal?.paused) {
+            await delay(200);
+        }
+    }
+    async testAbortController() {
+        await this.testPaused();
         if (this.abortController?.signal?.aborted) {
             const result = new SlashCommandClosureResult();
             result.isAborted = true;

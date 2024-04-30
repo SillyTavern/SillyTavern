@@ -190,7 +190,7 @@ const init = async () => {
             }
         }
         if (qr && qr.onExecute) {
-            return await qr.execute(args);
+            return await qr.execute(args, false, true);
         } else {
             throw new Error(`No Quick Reply found for "${name}".`);
         }
