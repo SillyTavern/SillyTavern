@@ -1,6 +1,6 @@
 import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from '../script.js';
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
-import { executeSlashCommands, registerSlashCommand } from './slash-commands.js';
+import { executeSlashCommands } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
@@ -15,7 +15,7 @@ function getLocalVariable(name, args = {}) {
         chat_metadata.variables = {};
     }
 
-    let localVariable = chat_metadata?.variables[name];
+    let localVariable = chat_metadata?.variables[args.key ?? name];
     if (args.index !== undefined) {
         try {
             localVariable = JSON.parse(localVariable);
@@ -68,7 +68,7 @@ function setLocalVariable(name, value, args = {}) {
 }
 
 function getGlobalVariable(name, args = {}) {
-    let globalVariable = extension_settings.variables.global[name];
+    let globalVariable = extension_settings.variables.global[args.key ?? name];
     if (args.index !== undefined) {
         try {
             globalVariable = JSON.parse(globalVariable);
@@ -706,7 +706,7 @@ function randValuesCallback(from, to, args) {
 
 /**
  * Declare a new variable in the current scope.
- * @param {{_scope:SlashCommandScope}} args Named arguments.
+ * @param {{_scope:SlashCommandScope, key?:string}} args Named arguments.
  * @param {String|[String, SlashCommandClosure]} value Name and optional value for the variable.
  * @returns The variable's value
  */
@@ -715,7 +715,12 @@ function letCallback(args, value) {
         args._scope.letVariable(value[0], value[1]);
         return value[1];
     }
-    if (value.includes(' ')) {
+    if (args.key !== undefined) {
+        const key = args.key;
+        const val = value;
+        args._scope.letVariable(key, val);
+        return val;
+    } else if (value.includes(' ')) {
         const key = value.split(' ')[0];
         const val = value.split(' ').slice(1).join(' ');
         args._scope.letVariable(key, val);
@@ -726,22 +731,27 @@ function letCallback(args, value) {
 
 /**
  * Set or retrieve a variable in the current scope or nearest ancestor scope.
- * @param {{_scope:SlashCommandScope, index:(String|Number)?}} args Named arguments.
+ * @param {{_scope:SlashCommandScope, key?:string, index?:String|Number}} args Named arguments.
  * @param {String|[String, SlashCommandClosure]} value Name and optional value for the variable.
  * @returns The variable's value
  */
 function varCallback(args, value) {
     if (Array.isArray(value)) {
-        args._scope.setVariable(value[0], value[1]);
+        args._scope.setVariable(value[0], value[1], args.index);
         return value[1];
     }
-    if (value.includes(' ')) {
+    if (args.key !== undefined) {
+        const key = args.key;
+        const val = value;
+        args._scope.setVariable(key, val, args.index);
+        return val;
+    } else if (value.includes(' ')) {
         const key = value.split(' ')[0];
         const val = value.split(' ').slice(1).join(' ');
         args._scope.setVariable(key, val, args.index);
         return val;
     }
-    return args._scope.getVariable(value, args.index);
+    return args._scope.getVariable(args.key ?? value, args.index);
 }
 
 export function registerVariableCommands() {
@@ -784,12 +794,15 @@ export function registerVariableCommands() {
         returns: 'the variable value',
         namedArgumentList: [
             new SlashCommandNamedArgument(
+                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], false,
+            ),
+            new SlashCommandNamedArgument(
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+                'key', [ARGUMENT_TYPE.VARIABLE_NAME], false,
             ),
         ],
         helpString: `
@@ -801,6 +814,9 @@ export function registerVariableCommands() {
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/getvar height</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/getvar key=height</code></pre>
                     </li>
                     <li>
                         <pre><code class="language-stscript">/getvar index=3 costumes</code></pre>
@@ -871,12 +887,15 @@ export function registerVariableCommands() {
         returns: 'global variable value',
         namedArgumentList: [
             new SlashCommandNamedArgument(
+                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], false,
+            ),
+            new SlashCommandNamedArgument(
                 'index', 'list index', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], false,
             ),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'key', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+                'key', [ARGUMENT_TYPE.VARIABLE_NAME], false,
             ),
         ],
         helpString: `
@@ -888,6 +907,9 @@ export function registerVariableCommands() {
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/getglobalvar height</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/getglobalvar key=height</code></pre>
                     </li>
                     <li>
                         <pre><code class="language-stscript">/getglobalvar index=3 costumes</code></pre>
@@ -1624,6 +1646,9 @@ export function registerVariableCommands() {
         returns: 'the variable value',
         namedArgumentList: [
             new SlashCommandNamedArgument(
+                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], false,
+            ),
+            new SlashCommandNamedArgument(
                 'index',
                 'optional index for list or dictionary',
                 [ARGUMENT_TYPE.NUMBER],
@@ -1635,7 +1660,7 @@ export function registerVariableCommands() {
             new SlashCommandArgument(
                 'variable name',
                 [ARGUMENT_TYPE.VARIABLE_NAME],
-                true, // isRequired
+                false, // isRequired
                 false, // acceptsMultiple
             ),
             new SlashCommandArgument(
@@ -1655,6 +1680,9 @@ export function registerVariableCommands() {
                     <li>
                         <pre><code class="language-stscript">/let x foo | /var x foo bar | /var x | /echo</code></pre>
                     </li>
+                    <li>
+                        <pre><code class="language-stscript">/let x foo | /var key=x foo bar | /var key=x | /echo</code></pre>
+                    </li>
                 </ul>
             </div>
         `,
@@ -1662,10 +1690,14 @@ export function registerVariableCommands() {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'let',
         callback: (args, value) => letCallback(args, value),
         returns: 'the variable value',
-        namedArgumentList: [],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], false,
+            ),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], true,
+                'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], false,
             ),
             new SlashCommandArgument(
                 'variable value', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.CLOSURE],
@@ -1680,6 +1712,9 @@ export function registerVariableCommands() {
                 <ul>
                     <li>
                         <pre><code class="language-stscript">/let x foo bar | /echo {{var::x}}</code></pre>
+                    </li>
+                    <li>
+                        <pre><code class="language-stscript">/let key=x foo bar | /echo {{var::x}}</code></pre>
                     </li>
                     <li>
                         <pre><code class="language-stscript">/let y</code></pre>
