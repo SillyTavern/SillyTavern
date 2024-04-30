@@ -5914,17 +5914,16 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
             return [];
         }
 
-        allEntities.sort((a, b) => {
-            const aName = String(power_user.personas[a] || a);
-            const bName = String(power_user.personas[b] || b);
-            return power_user.persona_sort_order === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
-        });
-
         if (!doRender) {
             return allEntities;
         }
 
-        const entities = personasFilter.applyFilters(allEntities);
+        // Before printing the personas, we check if we should enable/disable search sorting
+        verifyPersonaSearchSortRule();
+
+        let entities = personasFilter.applyFilters(allEntities);
+        entities = sortPersonas(entities);
+
         const storageKey = 'Personas_PerPage';
         const listId = '#user_avatar_block';
         const perPage = Number(localStorage.getItem(storageKey)) || 5;
@@ -5976,6 +5975,50 @@ export async function getUserAvatars(doRender = true, openPageAt = '') {
 function highlightSelectedAvatar() {
     $('#user_avatar_block .avatar-container').removeClass('selected');
     $(`#user_avatar_block .avatar-container[imgfile="${user_avatar}"]`).addClass('selected');
+}
+
+/**
+ * Sort the given personas
+ * @param {string[]} personas - The persona names to sort
+ * @returns {string[]} The sorted persona names arrray, same reference as passed in
+ */
+function sortPersonas(personas) {
+    const option = $('#persona_sort_order').find(':selected');
+    if (option.attr('value') === 'search') {
+        personas.sort((a, b) => {
+            const aScore = personasFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, a);
+            const bScore = personasFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, b);
+            return (aScore - bScore);
+        });
+    } else {
+        personas.sort((a, b) => {
+            const aName = String(power_user.personas[a] || a);
+            const bName = String(power_user.personas[b] || b);
+            return power_user.persona_sort_order === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
+        });
+    }
+
+    return personas;
+}
+
+/** Checks the state of the current search, and adds/removes the search sorting option accordingly */
+function verifyPersonaSearchSortRule() {
+    const searchTerm = personasFilter.getFilterData(FILTER_TYPES.PERSONA_SEARCH);
+    const searchOption = $('#persona_sort_order option[value="search"]');
+    const selector = $('#persona_sort_order');
+    const isHidden = searchOption.attr('hidden') !== undefined;
+
+    // If we have a search term, we are displaying the sorting option for it
+    if (searchTerm && isHidden) {
+        searchOption.removeAttr('hidden');
+        selector.val(searchOption.attr('value'));
+        flashHighlight(selector);
+    }
+    // If search got cleared, we make sure to hide the option and go back to the one before
+    if (!searchTerm && !isHidden) {
+        searchOption.attr('hidden', '');
+        selector.val(power_user.persona_sort_order);
+    }
 }
 
 /**
@@ -8698,7 +8741,7 @@ jQuery(async function () {
         personasFilter.setFilterData(FILTER_TYPES.PERSONA_SEARCH, searchQuery);
     });
     $('#persona_search_bar').on('input', function () {
-        const searchQuery = String($(this).val()).toLowerCase();
+        const searchQuery = String($(this).val());
         debouncedPersonaSearch(searchQuery);
     });
 

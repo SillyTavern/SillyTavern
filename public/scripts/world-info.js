@@ -681,7 +681,7 @@ function sortEntries(data) {
     if (!data.length) return data;
 
     // If we have a search term for WI, we are sorting by weighting scores
-    if ('search') {
+    if (sortRule === 'search') {
         data.sort((a, b) => {
             const aScore = worldInfoFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, a.uid);
             const bScore = worldInfoFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, b.uid);
@@ -767,7 +767,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     }
 
     // Before printing the WI, we check if we should enable/disable search sorting
-    verifySearchSortRule();
+    verifyWorldInfoSearchSortRule();
 
     function getDataArray(callback) {
         // Convert the data.entries object into an array
@@ -1011,13 +1011,13 @@ const originalDataKeyMap = {
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
-function verifySearchSortRule() {
+function verifyWorldInfoSearchSortRule() {
     const searchTerm = worldInfoFilter.getFilterData(FILTER_TYPES.WORLD_INFO_SEARCH);
     const searchOption = $('#world_info_sort_order option[data-rule="search"]');
     const selector = $('#world_info_sort_order');
     const isHidden = searchOption.attr('hidden') !== undefined;
 
-    // If we have a search term for WI, we are displaying the sorting option for it
+    // If we have a search term, we are displaying the sorting option for it
     if (searchTerm && isHidden) {
         searchOption.removeAttr('hidden');
         selector.val(searchOption.attr('value') || '0');
@@ -3088,9 +3088,7 @@ jQuery(() => {
     $('#world_info_sort_order').on('change', function () {
         const value = String($(this).find(':selected').val());
         // Save sort order, but do not save search sorting, as this is a temporary sorting option
-        if (value !== 'search') {
-            localStorage.setItem(SORT_ORDER_KEY, value);
-        }
+        if (value !== 'search') localStorage.setItem(SORT_ORDER_KEY, value);
         updateEditor(navigation_option.none);
     });
 

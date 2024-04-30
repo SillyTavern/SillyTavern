@@ -151,9 +151,7 @@ export class FilterHelper {
         }
 
         const fuzzySearchResults = fuzzySearchWorldInfo(data, term);
-
-        var wiScoreMap = new Map(fuzzySearchResults.map(i => [i.item?.uid, i.score]));
-        this.cacheScores(FILTER_TYPES.WORLD_INFO_SEARCH, wiScoreMap);
+        this.cacheScores(FILTER_TYPES.WORLD_INFO_SEARCH, new Map(fuzzySearchResults.map(i => [i.item?.uid, i.score])));
 
         const filteredData = data.filter(entity => fuzzySearchResults.find(x => x.item === entity));
         return filteredData;
@@ -172,7 +170,10 @@ export class FilterHelper {
         }
 
         const fuzzySearchResults = fuzzySearchPersonas(data, term);
-        return data.filter(entity => fuzzySearchResults.includes(entity));
+        this.cacheScores(FILTER_TYPES.PERSONA_SEARCH, new Map(fuzzySearchResults.map(i => [i.item.key, i.score])));
+
+        const filteredData = data.filter(name => fuzzySearchResults.find(x => x.item.key === name));
+        return filteredData;
     }
 
     /**
@@ -362,7 +363,7 @@ export class FilterHelper {
             typeScores.set(uid, score);
         }
         this.scoreCache.set(type, typeScores);
-        console.debug('scores chached', type, typeScores);
+        console.debug('search scores chached', type, typeScores);
     }
 
     /**

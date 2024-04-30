@@ -1912,8 +1912,14 @@ export function fuzzySearchWorldInfo(data, searchValue) {
     return results;
 }
 
+/**
+ * Fuzzy search persona entries by a search term
+ * @param {*[]} data - persona data array
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchPersonas(data, searchValue) {
-    data = data.map(x => ({ key: x, description: power_user.persona_descriptions[x]?.description ?? '', name: power_user.personas[x] ?? '' }));
+    data = data.map(x => ({ key: x, name: power_user.personas[x] ?? '', description: power_user.persona_descriptions[x]?.description ?? '' }));
     // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
@@ -1927,7 +1933,7 @@ export function fuzzySearchPersonas(data, searchValue) {
 
     const results = fuse.search(searchValue);
     console.debug('Personas fuzzy search results for ' + searchValue, results);
-    return results.map(x => x.item?.key);
+    return results;
 }
 
 export function fuzzySearchTags(searchValue) {
