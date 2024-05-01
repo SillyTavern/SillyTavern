@@ -1801,6 +1801,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
     word-break: break-word;
     background-color: var(--black50a);
     font-size: calc(var(--fontScale) * 0.9em);
+    max-height: 50%;
+    overflow-y: clip;
 }
 
 .bg_example[custom="true"] .BGSampleTitle {
