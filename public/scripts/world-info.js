@@ -679,7 +679,17 @@ function sortEntries(data) {
     const sortRule = option.data('rule');
     const orderSign = sortOrder === 'asc' ? 1 : -1;
 
-    if (sortRule === 'custom') {
+    if (!data.length) return data;
+
+    // If we have a search term for WI, we are sorting by weighting scores
+    if (sortRule === 'search') {
+        data.sort((a, b) => {
+            const aScore = worldInfoFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, a.uid);
+            const bScore = worldInfoFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, b.uid);
+            return (aScore - bScore);
+        });
+    }
+    else if (sortRule === 'custom') {
         // First by display index, then by order, then by uid
         data.sort((a, b) => {
             const aValue = a.displayIndex;
@@ -762,6 +772,9 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         return;
     }
 
+    // Before printing the WI, we check if we should enable/disable search sorting
+    verifyWorldInfoSearchSortRule();
+
     function getDataArray(callback) {
         // Convert the data.entries object into an array
         let entriesArray = Object.keys(data.entries).map(uid => {
@@ -770,10 +783,11 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             return entry;
         });
 
-        // Sort the entries array by displayIndex and uid
-        entriesArray.sort((a, b) => a.displayIndex - b.displayIndex || a.uid - b.uid);
-        entriesArray = sortEntries(entriesArray);
+        // Apply the filter and do the chosen sorting
         entriesArray = worldInfoFilter.applyFilters(entriesArray);
+        entriesArray = sortEntries(entriesArray)
+
+        // Run the callback for printing this
         typeof callback === 'function' && callback(entriesArray);
         return entriesArray;
     }
@@ -1007,6 +1021,26 @@ const originalDataKeyMap = {
     'vectorized': 'extensions.vectorized',
     'groupOverride': 'extensions.group_override',
 };
+
+/** Checks the state of the current search, and adds/removes the search sorting option accordingly */
+function verifyWorldInfoSearchSortRule() {
+    const searchTerm = worldInfoFilter.getFilterData(FILTER_TYPES.WORLD_INFO_SEARCH);
+    const searchOption = $('#world_info_sort_order option[data-rule="search"]');
+    const selector = $('#world_info_sort_order');
+    const isHidden = searchOption.attr('hidden') !== undefined;
+
+    // If we have a search term, we are displaying the sorting option for it
+    if (searchTerm && isHidden) {
+        searchOption.removeAttr('hidden');
+        selector.val(searchOption.attr('value') || '0');
+        flashHighlight(selector);
+    }
+    // If search got cleared, we make sure to hide the option and go back to the one before
+    if (!searchTerm && !isHidden) {
+        searchOption.attr('hidden', '');
+        selector.val(localStorage.getItem(SORT_ORDER_KEY) || '0');
+    }
+}
 
 function setOriginalDataValue(data, uid, key, value) {
     if (data.originalData && Array.isArray(data.originalData.entries)) {
@@ -3065,7 +3099,8 @@ jQuery(() => {
 
     $('#world_info_sort_order').on('change', function () {
         const value = String($(this).find(':selected').val());
-        localStorage.setItem(SORT_ORDER_KEY, value);
+        // Save sort order, but do not save search sorting, as this is a temporary sorting option
+        if (value !== 'search') localStorage.setItem(SORT_ORDER_KEY, value);
         updateEditor(navigation_option.none);
     });
 

@@ -635,7 +635,9 @@ export function initPersonas() {
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);
     $('#persona_sort_order').val(power_user.persona_sort_order).on('input', function () {
-        power_user.persona_sort_order = String($(this).val());
+        const value = String($(this).val());
+        // Save sort order, but do not save search sorting, as this is a temporary sorting option
+        if (value !== 'search') power_user.persona_sort_order = value;
         getUserAvatars(true, user_avatar);
         saveSettingsDebounced();
     });
