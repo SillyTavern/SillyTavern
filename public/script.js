@@ -6010,8 +6010,8 @@ function sortPersonas(personas) {
     const option = $('#persona_sort_order').find(':selected');
     if (option.attr('value') === 'search') {
         personas.sort((a, b) => {
-            const aScore = personasFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, a);
-            const bScore = personasFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, b);
+            const aScore = personasFilter.getScore(FILTER_TYPES.PERSONA_SEARCH, a);
+            const bScore = personasFilter.getScore(FILTER_TYPES.PERSONA_SEARCH, b);
             return (aScore - bScore);
         });
     } else {
