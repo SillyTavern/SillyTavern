@@ -1607,7 +1607,7 @@ export async function printMessages() {
 
     for (let i = startIndex; i < chat.length; i++) {
         const item = chat[i];
-        addOneMessage(item, { scroll: i === chat.length - 1, forceId: i, showSwipes: false });
+        addOneMessage(item, { scroll: false, forceId: i, showSwipes: false });
     }
 
     // Scroll to bottom when all images are loaded
@@ -1629,6 +1629,7 @@ export async function printMessages() {
     $('#chat .mes').last().addClass('last_mes');
     hideSwipeButtons();
     showSwipeButtons();
+    scrollChatToBottom();
 
     function incrementAndCheck() {
         imagesLoaded++;
