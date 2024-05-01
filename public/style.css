@@ -3552,7 +3552,6 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     border-radius: 10px;
     padding: 5px;
     border: 1px solid var(--SmartThemeBorderColor);
-    box-shadow: 0 0 20px black;
     min-width: 450px;
     width: var(--sheldWidth);
     overflow-y: auto;
