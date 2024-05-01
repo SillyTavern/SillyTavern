@@ -10,6 +10,8 @@ const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 const characterCardParser = require('../character-card-parser.js');
 
+const WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES = getConfigValue('whitelistImportDomains', []);
+
 /**
  * @typedef {Object} ContentItem
  * @property {string} filename
@@ -434,7 +436,7 @@ async function downloadGenericPng(url) {
     try {
         const result = await fetch(url);
 
-        if(result.ok) {
+        if (result.ok) {
             const buffer = await result.buffer();
             const fileName = sanitize(result.url.split('?')[0].split('/').reverse()[0]);
             const contentType = result.headers.get('content-type') || 'image/png'; //yoink it from AICC function lol
@@ -442,7 +444,7 @@ async function downloadGenericPng(url) {
             return {
                 buffer: buffer,
                 fileName: fileName,
-                fileType:contentType,
+                fileType: contentType,
             };
         }
     } catch (error) {
@@ -467,38 +469,26 @@ function getUuidFromUrl(url) {
 }
 
 /**
- * Filter to get the domain host of a url instead of a blanket string
- * search.
-    * @param {String} url URL to strip
-    * @result {String} Domain name
+ * Filter to get the domain host of a url instead of a blanket string search.
+ * @param {String} url URL to strip
+ * @returns {String} Domain name
  */
 function getHostFromUrl(url) {
-    //dirty way to do it, but if someone wants to bash their head on the regex
-    //go ahead
-    return url.replace('http://','').replace('https://','').split('/')[0];
+    try {
+        const urlObj = new URL(url);
+        return urlObj.hostname;
+    } catch {
+        return '';
+    }
 }
 
 /**
- * List of generic domains that are trusted to hold character cards.
- * Some additional providers may be added later on.
+ * Checks if host is part of generic download source whitelist.
+ * @param {String} host Host to check
+ * @returns {boolean} If the host is on the whitelist.
  */
-const WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES = [
-    'discordapp.com',
-    'catbox.moe',
-]; //TODO: move this to config.yaml?
-
-/**
- * Checks if url is part of generic download source whitelist.
- * @param {String} url
- * @returns {bool} if the url is on the whitelist.
- */
-function isUrlWhitelisted(url) {
-    for(const k of WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES) {
-        if(url.includes(k)) {
-            return true;
-        }
-    }
-    return false;
+function isHostWhitelisted(host) {
+    return WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES.includes(host);
 }
 
 const router = express.Router();
@@ -518,7 +508,7 @@ router.post('/importURL', jsonParser, async (request, response) => {
         const isJannnyContent = host.includes('janitorai');
         const isPygmalionContent = host.includes('pygmalion.chat');
         const isAICharacterCardsContent = host.includes('aicharactercards.com');
-        const isGeneric = isUrlWhitelisted(host);
+        const isGeneric = isHostWhitelisted(host);
 
         if (isPygmalionContent) {
             const uuid = getUuidFromUrl(url);
@@ -566,8 +556,12 @@ router.post('/importURL', jsonParser, async (request, response) => {
             return response.sendStatus(404);
         }
 
+        if (!result) {
+            return response.sendStatus(404);
+        }
+
         if (result.fileType) response.set('Content-Type', result.fileType);
-        response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
+        response.set('Content-Disposition', `attachment; filename="${encodeURI(result.fileName)}"`);
         response.set('X-Custom-Content-Type', type);
         return response.send(result.buffer);
     } catch (error) {
