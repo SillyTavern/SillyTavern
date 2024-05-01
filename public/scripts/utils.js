@@ -1443,8 +1443,8 @@ export function includesIgnoreCaseAndAccents(text, searchTerm) {
     if (!text || !searchTerm) return false; // Return false if either string is empty
 
     // Normalize and remove diacritics, then convert to lower case
-    const normalizedText = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    const normalizedSearchTerm = searchTerm.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const normalizedText = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normalizedSearchTerm = searchTerm.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
     // Check if the normalized text includes the normalized search term
     return normalizedText.includes(normalizedSearchTerm);

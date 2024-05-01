@@ -23,7 +23,6 @@ import {
     name2,
     reloadCurrentChat,
     removeMacros,
-    retriggerFirstMessageOnEmptyChat,
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
@@ -44,7 +43,7 @@ import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
-import { autoSelectPersona } from './personas.js';
+import { autoSelectPersona, retriggerFirstMessageOnEmptyChat } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
