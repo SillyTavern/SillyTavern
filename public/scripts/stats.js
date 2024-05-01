@@ -132,7 +132,7 @@ function createCharStatsHtml(statsType, stats) {
 
     const HMTL_STAT_SPACER = '<div class="rm_stat_spacer"></div>';
     const VAL_RIGHT_SPACING = { value: null, classes: ['rm_stat_right_spacing'] };
-    const BASED_ON_MES_AND_SWIPE = { singular: 'message or swipe', plural: 'messages and swipes' };
+    const BASED_ON_MES_PLUS_SWIPE = { singular: 'message and its swipes', plural: 'messages and their swipes' };
     const HOVER_TOOLTIP_SUFFIX = '\n\nHover over any value to see what it is based on.';
     const GEN_TOKEN_WARNING = '(Token count is only correct, if setting \'Message Token Count\' was turned on during generation)';
 
@@ -151,6 +151,8 @@ function createCharStatsHtml(statsType, stats) {
     // Create popup HTML with stats
     let html = `<h3 class="rm_stat_popup_header">${isChar ? 'Character' : 'User'} Stats - ${isChar ? stats.charName : stats.userName}</h3>`;
     html += `<small>${subHeader}</small>`;
+
+    // Overview
     html += HMTL_STAT_SPACER;
     html += createStatBlock({ value: isChar ? 'Character Overview' : 'Overview', isHeader: true });
     html += createStatBlock({ value: 'Chats', info: `The number of existing chats with ${stats.charName}.\nFor the sake of statistics, Branches count as chats and all their messages will be included.` },
@@ -158,11 +160,12 @@ function createCharStatsHtml(statsType, stats) {
     html += createStatBlock({ value: 'File Size', info: 'The chat file sizes on disk calculated and summed.\nThis value might not represent the exact same value your operating system uses.' },
         humanFileSize(stats.chatSize), VAL_RIGHT_SPACING);
     html += createStatBlock({ value: 'Most Used Model', info: 'Most used model for generations, both messages and swipes.\n(Does not include internal generation commands like /gen or /impersonate)\n\nHover over the value to see the numbers behind.' },
-        { value: smartTruncate(mostUsedModel.model, 32), title: 'info', info: `${mostUsedModel.model}\nUsed ${mostUsedModel.count} times to generate ${mostUsedModel.tokens} tokens\n\n${GEN_TOKEN_WARNING}.` }, VAL_RIGHT_SPACING);
+        { value: smartTruncate(mostUsedModel.model, 32), title: 'info', info: `${mostUsedModel.model}\nUsed ${mostUsedModel.count} times to generate ${mostUsedModel.tokens} tokens\n\n${GEN_TOKEN_WARNING}` }, VAL_RIGHT_SPACING);
+
     html += HMTL_STAT_SPACER;
     html += createStatBlock('',
-        { value: 'First', isHeader: true, info: `Data corresponding to the first chat with ${stats.charName}` },
-        { value: 'Last', isHeader: true, info: `Data corresponding to the last chat with ${stats.charName}` },
+        { value: 'First', isHeader: true, info: `Data corresponding to the first chat with ${stats.charName}`, title: 'info' },
+        { value: 'Last', isHeader: true, info: `Data corresponding to the last chat with ${stats.charName}`, title: 'info' },
         VAL_RIGHT_SPACING,
     );
     html += createStatBlock({ value: 'New Chat', info: 'The first/last time when a new chat was started.' },
@@ -176,65 +179,74 @@ function createCharStatsHtml(statsType, stats) {
         VAL_RIGHT_SPACING,
     );
 
+    // Aggregated Stats
     html += HMTL_STAT_SPACER;
     html += HMTL_STAT_SPACER;
     html += createStatBlock({ value: 'Aggregated Stats', isHeader: true, info: 'Values per chat, aggregated over all chats\n\n • Total: Total summed value over all chats\n • Min: Minium value for any chat\n • Avg: Average value over all chats\n • Max: Maximum value for any chat' });
     html += createStatBlock(null,
-        { value: 'Total', isHeader: true, info: 'Total summed value over all chats' },
-        { value: 'Min', isHeader: true, info: 'Minium value for any chat' },
-        { value: 'Avg', isHeader: true, info: 'Average value over all chats' },
-        { value: 'Max', isHeader: true, info: 'Maximum value for any chat' }
+        { value: 'Total', isHeader: true, info: 'Total summed value over all chats', title: 'info' },
+        { value: 'Min', isHeader: true, info: 'Minium value for any chat', title: 'info' },
+        { value: 'Avg', isHeader: true, info: 'Average value over all chats', title: 'info' },
+        { value: 'Max', isHeader: true, info: 'Maximum value for any chat', title: 'info' }
     );
     html += createStatBlock({ value: 'Chatting Time', info: 'Chatting time per chat\nCalculated based on chat creation and the last interaction in that chat.' + HOVER_TOOLTIP_SUFFIX },
         ...aggregateFields(stats.chattingTime, { transform: time => humanizeTimespan(time, { short: true }) }));
     html += createStatBlock({ value: 'Generation Time', info: 'Generation time per chat\nSummed generation times of all messages and swipes.' + HOVER_TOOLTIP_SUFFIX },
-        ...aggregateFields(stats.genTime, { transform: time => humanizeTimespan(time, { short: true }) }));
+        ...aggregateFields(stats.genTime, { basedOnSub: BASED_ON_MES_PLUS_SWIPE, transform: time => humanizeTimespan(time, { short: true }) }));
     html += createStatBlock({ value: 'Generated Tokens', info: `Generated tokens per chat\nSummed token counts of all messages and swipes.\n${GEN_TOKEN_WARNING}` + HOVER_TOOLTIP_SUFFIX },
-        ...aggregateFields(stats.genTokenCount));
+        ...aggregateFields(stats.genTokenCount, { basedOnSub: BASED_ON_MES_PLUS_SWIPE }));
     html += HMTL_STAT_SPACER;
     html += createStatBlock({ value: 'Swiping Time', info: 'Swiping time per chat\nSummed time spend on generation alternative swipes. Excludes the final message that was chosen to continue the chat.' + HOVER_TOOLTIP_SUFFIX },
-        ...aggregateFields(stats.swipeGenTime, { transform: time => humanizeTimespan(time, { short: true }) }));
+        ...aggregateFields(stats.swipeGenTime, { basedOnSub: BASED_ON_MES_PLUS_SWIPE, transform: time => humanizeTimespan(time, { short: true }) }));
     html += createStatBlock({ value: 'Swipes', info: 'Swipes per chat\nCounts all generated messages/swipes that were not chosen to continue the chat.' + HOVER_TOOLTIP_SUFFIX },
-        ...aggregateFields(stats.swipes));
+        ...aggregateFields(stats.swipes, { basedOnSub: BASED_ON_MES_PLUS_SWIPE }));
     html += HMTL_STAT_SPACER;
     html += createStatBlock({ value: 'User Response Time', info: 'User response time per chat\nCalculated based on the time between the last action of the message before and the next user message.\nAs \'action\' counts both the message send time and when the last generation of it ended, even if that swipe wasn\'t chosen.' + HOVER_TOOLTIP_SUFFIX },
         ...aggregateFields(stats.userResponseTime, { transform: time => humanizeTimespan(time, { short: true }) }));
     html += HMTL_STAT_SPACER;
-    html += createStatBlock({ value: 'Messages', info: 'Total messages over all chats (excluding swipes), and min/avg/max messages per chat' },
+    html += createStatBlock({ value: 'Messages', info: 'Messages per chat (excluding swipes)' + HOVER_TOOLTIP_SUFFIX },
         ...aggregateFields(stats.messages));
-    html += createStatBlock('System Messages', ...aggregateFields(stats.systemMessages));
-    html += createStatBlock({ value: 'Messages (User / Char)', classes: ['rm_stat_field_smaller'] }, ...buildBarDescsFromAggregates(stats.userMessages, stats.charMessages));
+    html += createStatBlock({ value: 'System Messages', info: 'Sytem messages per chat' + HOVER_TOOLTIP_SUFFIX },
+        ...aggregateFields(stats.systemMessages));
+    html += createStatBlock({ value: 'Messages (User / Char)', classes: ['rm_stat_field_smaller'], info: 'Messages per chat (excluding swipes)\nSplit into user and character, and showing a bar graph with percentages.' + HOVER_TOOLTIP_SUFFIX },
+        ...buildBarDescsFromAggregates(stats.userMessages, stats.charMessages));
     html += createStatBlock({ value: '', info: '' },
         ...buildBarsFromAggregates(stats.userMessages, stats.charMessages));
     html += HMTL_STAT_SPACER;
-    html += createStatBlock({ value: 'Words', info: 'Total words over all chats, and min/avg/max words per chat' },
+    html += createStatBlock({ value: 'Words', info: 'Word count per chat (excluding swipes)' + HOVER_TOOLTIP_SUFFIX },
         ...aggregateFields(stats.words));
-    html += createStatBlock({ value: 'Words (User / Char)', classes: ['rm_stat_field_smaller'] }, ...buildBarDescsFromAggregates(stats.userWords, stats.charWords));
+    html += createStatBlock({ value: 'Words (User / Char)', classes: ['rm_stat_field_smaller'], info: 'Word count per chat (excluding swipes)\nSplit into user and character, and showing a bar graph with percentages.' + HOVER_TOOLTIP_SUFFIX },
+        ...buildBarDescsFromAggregates(stats.userWords, stats.charWords));
     html += createStatBlock({ value: '', info: '' },
         ...buildBarsFromAggregates(stats.userWords, stats.charWords));
 
+    // Per Message Stats
     html += HMTL_STAT_SPACER;
     html += HMTL_STAT_SPACER;
-    html += createStatBlock({ value: 'Per Message Stats', isHeader: true, info: 'Values per message, aggregated over all chats' });
+    html += createStatBlock({ value: 'Per Message Stats', isHeader: true, info: 'Values per message, aggregated over all chats\n\n • Min: Minium value for any message\n • Avg: Average value over all messages\n • Max: Maximum value for any message' });
     html += createStatBlock('',
         null,
-        { value: 'Min', isHeader: true, info: 'Minium ' },
-        { value: 'Avg', isHeader: true },
-        { value: 'Max', isHeader: true }
+        { value: 'Min', isHeader: true, info: 'Minium value for any message', title: 'info' },
+        { value: 'Avg', isHeader: true, info: 'Average value over all messages', title: 'info' },
+        { value: 'Max', isHeader: true, info: 'Maximum value for any message', title: 'info' }
     );
-    html += createStatBlock({ value: 'Generation Time', info: 'min/avg/max generation time per message' },
-        ...aggregateFields(stats.perMessageGenTime, { basedOn: 'message', excludeTotal: true, transform: time => humanizeTimespan(time, { short: true }) }));
-    html += createStatBlock('Generated Tokens', ...aggregateFields(stats.perMessageGenTokenCount, { basedOn: 'message', excludeTotal: true }));
+    html += createStatBlock({ value: 'Generation Time', info: 'Generation time per message\nSummed generation times of the message and all swipes.' + HOVER_TOOLTIP_SUFFIX },
+        ...aggregateFields(stats.perMessageGenTime, { basedOn: BASED_ON_MES_PLUS_SWIPE, excludeTotal: true, transform: time => humanizeTimespan(time, { short: true }) }));
+    html += createStatBlock({ value: 'Generated Tokens', info: `Generated tokens per message\nSummed token counts of the message and all swipes.\n${GEN_TOKEN_WARNING}` + HOVER_TOOLTIP_SUFFIX },
+        ...aggregateFields(stats.perMessageGenTokenCount, { basedOn: BASED_ON_MES_PLUS_SWIPE, excludeTotal: true }));
     html += HMTL_STAT_SPACER;
-    html += createStatBlock('Swiping Time', ...aggregateFields(stats.perMessageSwipeGenTime, { basedOn: 'message', excludeTotal: true, transform: time => humanizeTimespan(time, { short: true }) }));
-    html += createStatBlock({ value: 'Swipes', info: 'min/avg/max swipes per <b>non-user</b> message' },
-        ...aggregateFields(stats.perMessageSwipeCount, { basedOn: 'message', excludeTotal: true }));
+    html += createStatBlock({ value: 'Swiping Time', info: 'Swiping time per message\nSummed time spend on generation alternative swipes. Excludes the final message that was chosen to continue the chat.' + HOVER_TOOLTIP_SUFFIX },
+        ...aggregateFields(stats.perMessageSwipeGenTime, { basedOn: BASED_ON_MES_PLUS_SWIPE, excludeTotal: true, transform: time => humanizeTimespan(time, { short: true }) }));
+    html += createStatBlock({ value: 'Swipes', info: 'Swipes per message\nCounts all generated messages/swipes that were not chosen to continue the chat.' + HOVER_TOOLTIP_SUFFIX },
+        ...aggregateFields(stats.perMessageSwipeCount, { basedOn: BASED_ON_MES_PLUS_SWIPE, excludeTotal: true }));
     html += HMTL_STAT_SPACER;
-    html += createStatBlock('User Response Time', ...aggregateFields(stats.perMessageUserResponseTime, { basedOn: 'message', excludeTotal: true, transform: time => humanizeTimespan(time, { short: true }) }));
+    html += createStatBlock({ value: 'User Response Time', info: 'User response time per message\nCalculated based on the time between the last action of the message before and the next user message.\nAs \'action\' counts both the message send time and when the last generation of it ended, even if that swipe wasn\'t chosen.' + HOVER_TOOLTIP_SUFFIX },
+        ...aggregateFields(stats.perMessageUserResponseTime, { basedOn: 'message', excludeTotal: true, transform: time => humanizeTimespan(time, { short: true }) }));
     html += HMTL_STAT_SPACER;
-    html += createStatBlock({ value: 'Words', info: 'min/avg/max words per message' },
+    html += createStatBlock({ value: 'Words', info: 'Word count per message (excluding swipes)' + HOVER_TOOLTIP_SUFFIX },
         ...aggregateFields(stats.perMessageWords, { basedOn: 'message', excludeTotal: true }));
-    html += createStatBlock({ value: 'Words (User / Char)', classes: ['rm_stat_field_smaller'] }, ...buildBarDescsFromAggregates(stats.perMessageUserWords, stats.perMessageCharWords, { basedOn: 'message', excludeTotal: true }));
+    html += createStatBlock({ value: 'Words (User / Char)', classes: ['rm_stat_field_smaller'], info: 'Word count per message (excluding swipes)\nSplit into user and character, and showing a bar graph with percentages.' + HOVER_TOOLTIP_SUFFIX },
+        ...buildBarDescsFromAggregates(stats.perMessageUserWords, stats.perMessageCharWords, { basedOn: 'message', excludeTotal: true }));
     html += createStatBlock({ value: '', info: '' },
         ...buildBarsFromAggregates(stats.perMessageUserWords, stats.perMessageCharWords, { basedOn: 'message', excludeTotal: true }));
 
@@ -308,7 +320,7 @@ function findHighestModel(genModels) {
 /**
  * Handles the user stats by getting them from the server, calculating the total and generating the HTML report.
  */
-async function showUserStatsPopup() {
+export async function showUserStatsPopup() {
     // Get stats from server
     const globalStats = await getGlobalStats();
 
@@ -322,7 +334,7 @@ async function showUserStatsPopup() {
  *
  * @param {string} characterKey - The character key.
  */
-async function showCharacterStatsPopup(characterKey) {
+export async function showCharacterStatsPopup(characterKey) {
     // Get stats from server
     const charStats = await getCharStats(characterKey);
     if (charStats === null) {
@@ -413,7 +425,7 @@ async function recreateStats() {
     }
 }
 
-function initStats() {
+export function initStats() {
     $('.rm_stats_button').on('click', async function () {
         await showCharacterStatsPopup(characters[this_chid].avatar);
     });
@@ -423,5 +435,3 @@ function initStats() {
     // Wait for debug functions to load, then add the refresh stats function
     registerDebugFunction('refreshStats', 'Refresh Stat File', 'Recreates the stats file based on existing chat files', recreateStats);
 }
-
-export { initStats, showUserStatsPopup, showCharacterStatsPopup, callGetStats };

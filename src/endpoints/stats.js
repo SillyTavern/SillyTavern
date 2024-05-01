@@ -17,7 +17,7 @@ const MAX_TIMESTAMP = new Date('9999-12-31T23:59:59.999Z').getTime();
 const MIN_DATE = new Date(MIN_TIMESTAMP);
 const MAX_DATE = new Date(MAX_TIMESTAMP);
 const STATS_FILE = 'stats.json';
-const CURRENT_STATS_VERSION = '1.3';
+const CURRENT_STATS_VERSION = '1.1';
 
 /** @type {Map<string, UserStatsCollection>} The stats collections for each user, accessable via their key - gets set/built on init */
 const STATS = new Map();
