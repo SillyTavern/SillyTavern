@@ -1658,6 +1658,10 @@ async function loadNovelModels() {
             text: 'NAI Diffusion Anime V1 (Curated)',
         },
         {
+            value: 'nai-diffusion-furry-3',
+            text: 'NAI Diffusion Furry V3',
+        },
+        {
             value: 'nai-diffusion-furry',
             text: 'NAI Diffusion Furry',
         },
@@ -2185,11 +2189,11 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
         ? extension_settings.sd.prompt_prefix
         : combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix());
 
-    const prefixedPrompt = combinePrefixes(prefix, prompt, '{prompt}');
+    const prefixedPrompt = substituteParams(combinePrefixes(prefix, prompt, '{prompt}'));
 
-    const negativePrompt = noCharPrefix.includes(generationType)
+    const negativePrompt = substituteParams(noCharPrefix.includes(generationType)
         ? extension_settings.sd.negative_prompt
-        : combinePrefixes(extension_settings.sd.negative_prompt, getCharacterNegativePrefix());
+        : combinePrefixes(extension_settings.sd.negative_prompt, getCharacterNegativePrefix()));
 
     let result = { format: '', data: '' };
     const currentChatId = getCurrentChatId();

@@ -5,6 +5,7 @@ import { is_group_generating } from './group-chats.js';
 import { Message, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
 import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
+import { debounce_timeout } from './constants.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -294,7 +295,7 @@ class PromptManager {
         this.handleCharacterReset = () => { };
 
         /** Debounced version of render */
-        this.renderDebounced = debounce(this.render.bind(this), 1000);
+        this.renderDebounced = debounce(this.render.bind(this), debounce_timeout.relaxed);
     }
 
 
@@ -776,7 +777,7 @@ class PromptManager {
         const promptOrder = this.getPromptOrderForCharacter(character);
         const index = promptOrder.findIndex(entry => entry.identifier === prompt.identifier);
 
-        if (-1 === index) promptOrder.push({ identifier: prompt.identifier, enabled: false });
+        if (-1 === index) promptOrder.unshift({ identifier: prompt.identifier, enabled: false });
     }
 
     /**
@@ -1286,7 +1287,7 @@ class PromptManager {
             } else if (!entry.enabled && entry.identifier === 'main') {
                 // Some extensions require main prompt to be present for relative inserts.
                 // So we make a GMO-free vegan replacement.
-                const prompt = this.getPromptById(entry.identifier);
+                const prompt = structuredClone(this.getPromptById(entry.identifier));
                 prompt.content = '';
                 if (prompt) promptCollection.add(this.preparePrompt(prompt));
             }

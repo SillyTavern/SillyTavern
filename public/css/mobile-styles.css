@@ -231,9 +231,11 @@
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     }
 
+    /*
     #right-nav-panel {
         padding-right: 15px;
     }
+    */
 
     #floatingPrompt,
     #cfgConfig,
@@ -305,6 +307,10 @@
 
     body.waifuMode img.expression {
         object-fit: cover;
+    }
+
+    body.waifuMode .zoomed_avatar_container {
+        height: 100%;
     }
 
     body.waifuMode .zoomed_avatar {

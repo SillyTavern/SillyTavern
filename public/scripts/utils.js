@@ -2,6 +2,7 @@ import { getContext } from './extensions.js';
 import { getRequestHeaders } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines } from './power-user.js';
+import { debounce_timeout } from './constants.js';
 
 /**
  * Pagination status string template.
@@ -299,10 +300,10 @@ export function getStringHash(str, seed = 0) {
 /**
  * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
  * @param {function} func The function to debounce.
- * @param {number} [timeout=300] The timeout in milliseconds.
+ * @param {debounce_timeout|number} [timeout=debounce_timeout.default] The timeout based on the common enum values, or in milliseconds.
  * @returns {function} The debounced function.
  */
-export function debounce(func, timeout = 300) {
+export function debounce(func, timeout = debounce_timeout.standard) {
     let timer;
     return (...args) => {
         clearTimeout(timer);
@@ -1481,6 +1482,35 @@ export function setValueByPath(obj, path, value) {
     }
 
     currentObject[keyParts[keyParts.length - 1]] = value;
+}
+
+/**
+ * Flashes the given HTML element via CSS flash animation for a defined period
+ * @param {JQuery<HTMLElement>} element - The element to flash
+ * @param {number} timespan - A numer in milliseconds how the flash should last
+ */
+export function flashHighlight(element, timespan = 2000) {
+    element.addClass('flash animated');
+    setTimeout(() => element.removeClass('flash animated'), timespan);
+}
+
+/**
+ * Performs a case-insensitive and accent-insensitive substring search.
+ * This function normalizes the strings to remove diacritical marks and converts them to lowercase to ensure the search is insensitive to case and accents.
+ *
+ * @param {string} text - The text in which to search for the substring.
+ * @param {string} searchTerm - The substring to search for in the text.
+ * @returns {boolean} - Returns true if the searchTerm is found within the text, otherwise returns false.
+ */
+export function includesIgnoreCaseAndAccents(text, searchTerm) {
+    if (!text || !searchTerm) return false; // Return false if either string is empty
+
+    // Normalize and remove diacritics, then convert to lower case
+    const normalizedText = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normalizedSearchTerm = searchTerm.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+    // Check if the normalized text includes the normalized search term
+    return normalizedText.includes(normalizedSearchTerm);
 }
 
 /**

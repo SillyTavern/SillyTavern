@@ -45,7 +45,6 @@ const {
     forwardFetchResponse,
 } = require('./src/util');
 const { ensureThumbnailCache } = require('./src/endpoints/thumbnails');
-const { loadTokenizers } = require('./src/endpoints/tokenizers');
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
 // https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
@@ -263,10 +262,14 @@ app.get('/login', async (request, response) => {
         return response.redirect('/');
     }
 
-    const autoLogin = await userModule.tryAutoLogin(request);
+    try {
+        const autoLogin = await userModule.tryAutoLogin(request);
 
-    if (autoLogin) {
-        return response.redirect('/');
+        if (autoLogin) {
+            return response.redirect('/');
+        }
+    } catch (error) {
+        console.error('Error during auto-login:', error);
     }
 
     return response.sendFile('login.html', { root: path.join(process.cwd(), 'public') });
@@ -283,6 +286,7 @@ app.use(userModule.requireLoginMiddleware);
 
 // File uploads
 app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
+app.use(require('./src/middleware/multerMonkeyPatch'));
 
 // User data mount
 app.use('/', userModule.router);
@@ -526,7 +530,10 @@ const autorunUrl = new URL(
     (':' + server_port),
 );
 
-const setupTasks = async function () {
+/**
+ * Tasks that need to be run before the server starts listening.
+ */
+const preSetupTasks = async function () {
     const version = await getVersion();
 
     // Print formatted header
@@ -539,28 +546,21 @@ const setupTasks = async function () {
     }
     console.log();
 
-    // TODO: do endpoint init functions depend on certain directories existing or not existing? They should be callable
-    // in any order for encapsulation reasons, but right now it's unknown if that would break anything.
-    await userModule.initUserStorage(dataRoot);
-
-    if (listen && !basicAuthMode && enableAccounts) {
-        await userModule.checkAccountsProtection();
-    }
-
-    await settingsEndpoint.init();
-    const directories = await userModule.ensurePublicDirectoriesExist();
-    await userModule.migrateUserData();
+    const directories = await userModule.getUserDirectoriesList();
     await contentManager.checkForNewContent(directories);
     await ensureThumbnailCache();
     cleanUploads();
 
-    await loadTokenizers();
+    await settingsEndpoint.init();
     await statsEndpoint.init();
 
     const cleanupPlugins = await loadPlugins();
     const consoleTitle = process.title;
 
+    let isExiting = false;
     const exitProcess = async () => {
+        if (isExiting) return;
+        isExiting = true;
         statsEndpoint.onExit();
         if (typeof cleanupPlugins === 'function') {
             await cleanupPlugins();
@@ -576,8 +576,12 @@ const setupTasks = async function () {
         console.error('Uncaught exception:', err);
         exitProcess();
     });
+};
 
-
+/**
+ * Tasks that need to be run after the server starts listening.
+ */
+const postSetupTasks = async function () {
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
@@ -597,6 +601,9 @@ const setupTasks = async function () {
         }
     }
 
+    if (listen && !basicAuthMode && enableAccounts) {
+        await userModule.checkAccountsProtection();
+    }
 };
 
 /**
@@ -638,21 +645,28 @@ function setWindowTitle(title) {
     }
 }
 
-if (cliArguments.ssl) {
-    https.createServer(
-        {
-            cert: fs.readFileSync(cliArguments.certPath),
-            key: fs.readFileSync(cliArguments.keyPath),
-        }, app)
-        .listen(
-            Number(tavernUrl.port) || 443,
-            tavernUrl.hostname,
-            setupTasks,
-        );
-} else {
-    http.createServer(app).listen(
-        Number(tavernUrl.port) || 80,
-        tavernUrl.hostname,
-        setupTasks,
-    );
-}
+// User storage module needs to be initialized before starting the server
+userModule.initUserStorage(dataRoot)
+    .then(userModule.ensurePublicDirectoriesExist)
+    .then(userModule.migrateUserData)
+    .then(preSetupTasks)
+    .finally(() => {
+        if (cliArguments.ssl) {
+            https.createServer(
+                {
+                    cert: fs.readFileSync(cliArguments.certPath),
+                    key: fs.readFileSync(cliArguments.keyPath),
+                }, app)
+                .listen(
+                    Number(tavernUrl.port) || 443,
+                    tavernUrl.hostname,
+                    postSetupTasks,
+                );
+        } else {
+            http.createServer(app).listen(
+                Number(tavernUrl.port) || 80,
+                tavernUrl.hostname,
+                postSetupTasks,
+            );
+        }
+    });

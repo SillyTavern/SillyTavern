@@ -5,9 +5,12 @@ const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
 const { getConfigValue } = require('../util');
 const { jsonParser } = require('../express-common');
+const writeFileAtomicSync = require('write-file-atomic').sync;
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 const characterCardParser = require('../character-card-parser.js');
+
+const WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES = getConfigValue('whitelistImportDomains', []);
 
 /**
  * @typedef {Object} ContentItem
@@ -133,7 +136,7 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
         console.log(`Content file ${contentItem.filename} copied to ${contentTarget}`);
     }
 
-    fs.writeFileSync(contentLogPath, contentLog.join('\n'));
+    writeFileAtomicSync(contentLogPath, contentLog.join('\n'));
 }
 
 /**
@@ -386,6 +389,71 @@ async function downloadJannyCharacter(uuid) {
     throw new Error('Failed to download character');
 }
 
+//Download Character Cards from AICharactersCards.com (AICC) API.
+async function downloadAICCCharacter(id) {
+    const apiURL = `https://aicharactercards.com/wp-json/pngapi/v1/image/${id}`;
+    try {
+        const response = await fetch(apiURL);
+        if (!response.ok) {
+            throw new Error(`Failed to download character: ${response.statusText}`);
+        }
+
+        const contentType = response.headers.get('content-type') || 'image/png'; // Default to 'image/png' if header is missing
+        const buffer = await response.buffer();
+        const fileName = `${sanitize(id)}.png`; // Assuming PNG, but adjust based on actual content or headers
+
+        return {
+            buffer: buffer,
+            fileName: fileName,
+            fileType: contentType,
+        };
+    } catch (error) {
+        console.error('Error downloading character:', error);
+        throw error;
+    }
+}
+
+/**
+ * Parses an aicharactercards URL to extract the path.
+ * @param {string} url URL to parse
+ * @returns {string | null} AICC path
+ */
+function parseAICC(url) {
+    const pattern = /^https?:\/\/aicharactercards\.com\/character-cards\/([^/]+)\/([^/]+)\/?$|([^/]+)\/([^/]+)$/;
+    const match = url.match(pattern);
+    if (match) {
+        // Match group 1 & 2 for full URL, 3 & 4 for relative path
+        return match[1] && match[2] ? `${match[1]}/${match[2]}` : `${match[3]}/${match[4]}`;
+    }
+    return null;
+}
+
+/**
+ * Download character card from generic url.
+ * @param {String} url
+ */
+async function downloadGenericPng(url) {
+    try {
+        const result = await fetch(url);
+
+        if (result.ok) {
+            const buffer = await result.buffer();
+            const fileName = sanitize(result.url.split('?')[0].split('/').reverse()[0]);
+            const contentType = result.headers.get('content-type') || 'image/png'; //yoink it from AICC function lol
+
+            return {
+                buffer: buffer,
+                fileName: fileName,
+                fileType: contentType,
+            };
+        }
+    } catch (error) {
+        console.error('Error downloading file: ', error);
+        throw error;
+    }
+    return null;
+}
+
 /**
 * @param {String} url
 * @returns {String | null } UUID of the character
@@ -400,6 +468,29 @@ function getUuidFromUrl(url) {
     return uuid;
 }
 
+/**
+ * Filter to get the domain host of a url instead of a blanket string search.
+ * @param {String} url URL to strip
+ * @returns {String} Domain name
+ */
+function getHostFromUrl(url) {
+    try {
+        const urlObj = new URL(url);
+        return urlObj.hostname;
+    } catch {
+        return '';
+    }
+}
+
+/**
+ * Checks if host is part of generic download source whitelist.
+ * @param {String} host Host to check
+ * @returns {boolean} If the host is on the whitelist.
+ */
+function isHostWhitelisted(host) {
+    return WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES.includes(host);
+}
+
 const router = express.Router();
 
 router.post('/importURL', jsonParser, async (request, response) => {
@@ -409,11 +500,15 @@ router.post('/importURL', jsonParser, async (request, response) => {
 
     try {
         const url = request.body.url;
+        const host = getHostFromUrl(url);
         let result;
         let type;
 
-        const isJannnyContent = url.includes('janitorai');
-        const isPygmalionContent = url.includes('pygmalion.chat');
+        const isChub = host.includes('chub.ai');
+        const isJannnyContent = host.includes('janitorai');
+        const isPygmalionContent = host.includes('pygmalion.chat');
+        const isAICharacterCardsContent = host.includes('aicharactercards.com');
+        const isGeneric = isHostWhitelisted(host);
 
         if (isPygmalionContent) {
             const uuid = getUuidFromUrl(url);
@@ -431,7 +526,14 @@ router.post('/importURL', jsonParser, async (request, response) => {
 
             type = 'character';
             result = await downloadJannyCharacter(uuid);
-        } else {
+        } else if (isAICharacterCardsContent) {
+            const AICCParsed = parseAICC(url);
+            if (!AICCParsed) {
+                return response.sendStatus(404);
+            }
+            type = 'character';
+            result = await downloadAICCCharacter(AICCParsed);
+        } else if (isChub) {
             const chubParsed = parseChubUrl(url);
             type = chubParsed?.type;
 
@@ -446,10 +548,20 @@ router.post('/importURL', jsonParser, async (request, response) => {
             else {
                 return response.sendStatus(404);
             }
+        } else if (isGeneric) {
+            console.log('Downloading from generic url.');
+            type = 'character';
+            result = await downloadGenericPng(url);
+        } else {
+            return response.sendStatus(404);
+        }
+
+        if (!result) {
+            return response.sendStatus(404);
         }
 
         if (result.fileType) response.set('Content-Type', result.fileType);
-        response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
+        response.set('Content-Disposition', `attachment; filename="${encodeURI(result.fileName)}"`);
         response.set('X-Custom-Content-Type', type);
         return response.send(result.buffer);
     } catch (error) {
@@ -469,6 +581,7 @@ router.post('/importUUID', jsonParser, async (request, response) => {
 
         const isJannny = uuid.includes('_character');
         const isPygmalion = (!isJannny && uuid.length == 36);
+        const isAICC = uuid.startsWith('AICC/');
         const uuidType = uuid.includes('lorebook') ? 'lorebook' : 'character';
 
         if (isPygmalion) {
@@ -477,6 +590,10 @@ router.post('/importUUID', jsonParser, async (request, response) => {
         } else if (isJannny) {
             console.log('Downloading Janitor character:', uuid.split('_')[0]);
             result = await downloadJannyCharacter(uuid.split('_')[0]);
+        } else if (isAICC) {
+            const [, author, card] = uuid.split('/');
+            console.log('Downloading AICC character:', `${author}/${card}`);
+            result = await downloadAICCCharacter(`${author}/${card}`);
         } else {
             if (uuidType === 'character') {
                 console.log('Downloading chub character:', uuid);

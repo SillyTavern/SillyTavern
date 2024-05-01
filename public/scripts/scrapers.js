@@ -9,6 +9,7 @@ import { isValidUrl } from './utils.js';
  * @property {string} name
  * @property {string} description
  * @property {string} iconClass
+ * @property {boolean} iconAvailable
  * @property {() => Promise<boolean>} isAvailable
  * @property {() => Promise<File[]>} scrape
  */
@@ -19,6 +20,7 @@ import { isValidUrl } from './utils.js';
  * @property {string} name
  * @property {string} description
  * @property {string} iconClass
+ * @property {boolean} iconAvailable
  */
 
 export class ScraperManager {
@@ -45,7 +47,7 @@ export class ScraperManager {
      * @returns {ScraperInfo[]} List of scrapers available for the Data Bank
      */
     static getDataBankScrapers() {
-        return ScraperManager.#scrapers.map(s => ({ id: s.id, name: s.name, description: s.description, iconClass: s.iconClass }));
+        return ScraperManager.#scrapers.map(s => ({ id: s.id, name: s.name, description: s.description, iconClass: s.iconClass, iconAvailable: s.iconAvailable }));
     }
 
     /**
@@ -87,6 +89,7 @@ class Notepad {
         this.name = 'Notepad';
         this.description = 'Create a text file from scratch.';
         this.iconClass = 'fa-solid fa-note-sticky';
+        this.iconAvailable = true;
     }
 
     /**
@@ -133,6 +136,7 @@ class WebScraper {
         this.name = 'Web';
         this.description = 'Download a page from the web.';
         this.iconClass = 'fa-solid fa-globe';
+        this.iconAvailable = true;
     }
 
     /**
@@ -207,6 +211,7 @@ class FileScraper {
         this.name = 'File';
         this.description = 'Upload a file from your computer.';
         this.iconClass = 'fa-solid fa-upload';
+        this.iconAvailable = true;
     }
 
     /**
@@ -243,6 +248,7 @@ class FandomScraper {
         this.name = 'Fandom';
         this.description = 'Download a page from the Fandom wiki.';
         this.iconClass = 'fa-solid fa-fire';
+        this.iconAvailable = true;
     }
 
     /**
@@ -348,7 +354,8 @@ class YouTubeScraper {
         this.id = 'youtube';
         this.name = 'YouTube';
         this.description = 'Download a transcript from a YouTube video.';
-        this.iconClass = 'fa-solid fa-closed-captioning';
+        this.iconClass = 'fa-brands fa-youtube';
+        this.iconAvailable = true;
     }
 
     /**

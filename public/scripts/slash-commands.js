@@ -20,9 +20,9 @@ import {
     is_send_press,
     main_api,
     name1,
+    name2,
     reloadCurrentChat,
     removeMacros,
-    retriggerFirstMessageOnEmptyChat,
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
@@ -43,7 +43,7 @@ import { getContext, saveMetadataDebounced } from './extensions.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 import { findGroupMemberId, groups, is_group_generating, openGroupById, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
-import { autoSelectPersona } from './personas.js';
+import { autoSelectPersona, retriggerFirstMessageOnEmptyChat } from './personas.js';
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
 import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCountAsync } from './tokenizers.js';
@@ -146,7 +146,7 @@ class SlashCommandParser {
             return {
                 commandName: command,
                 command: {
-                    callback: () => {},
+                    callback: () => { },
                     helpString: '',
                     interruptsGeneration: false,
                     purgeFromMessage: true,
@@ -203,13 +203,10 @@ class SlashCommandParser {
 
         // Excluded commands format in their own function
         if (!excludedFromRegex.includes(command)) {
-            console.debug(`parse: !excludedFromRegex.includes(${command}`);
-            console.debug(`   parse: unnamedArg before: ${unnamedArg}`);
             unnamedArg = getRegexedString(
                 unnamedArg,
                 regex_placement.SLASH_COMMAND,
             );
-            console.debug(`   parse: unnamedArg after: ${unnamedArg}`);
         }
 
         // your weird complex command is now transformed into a juicy tiny text or something useful :)
@@ -338,13 +335,12 @@ function injectCallback(args, value) {
         chat_metadata.script_injects = {};
     }
 
-    chat_metadata.script_injects[id] = {
-        value,
-        position,
-        depth,
-        scan,
-        role,
-    };
+    if (value) {
+        const inject = { value, position, depth, scan, role };
+        chat_metadata.script_injects[id] = inject;
+    } else {
+        delete chat_metadata.script_injects[id];
+    }
 
     setExtensionPrompt(prefixedId, value, position, depth, scan, role);
     saveMetadataDebounced();
@@ -1408,14 +1404,12 @@ export async function sendMessageAs(args, text) {
             return;
         }
     } else {
-        const parts = text.split('\n');
-        if (parts.length <= 1) {
-            toastr.warning('Both character name and message are required. Separate them with a new line.');
-            return;
+        const namelessWarningKey = 'sendAsNamelessWarningShown';
+        if (localStorage.getItem(namelessWarningKey) !== 'true') {
+            toastr.warning('To avoid confusion, please use /sendas name="Character Name"', 'Name defaulted to {{char}}', { timeOut: 10000 });
+            localStorage.setItem(namelessWarningKey, 'true');
         }
-
-        name = parts.shift().trim();
-        mesText = parts.join('\n').trim();
+        name = name2;
     }
 
     // Requires a regex check after the slash command is pushed to output

@@ -152,7 +152,9 @@ import {
     Stopwatch,
     isValidUrl,
     ensureImageFormatSupported,
+    flashHighlight,
 } from './scripts/utils.js';
+import { debounce_timeout } from './scripts/constants.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from './scripts/slash-commands.js';
@@ -204,7 +206,15 @@ import {
 } from './scripts/instruct-mode.js';
 import { initLocales } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
-import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription, updatePersonaNameIfExists } from './scripts/personas.js';
+import {
+    user_avatar,
+    getUserAvatars,
+    getUserAvatar,
+    setUserAvatar,
+    initPersonas,
+    setPersonaDescription,
+    initUserAvatar,
+} from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
@@ -219,80 +229,26 @@ import { ScraperManager } from './scripts/scrapers.js';
 
 //exporting functions and vars for mods
 export {
-    Generate,
-    cleanUpMessage,
-    getSettings,
-    saveSettings,
-    saveSettingsDebounced,
-    printMessages,
-    clearChat,
-    getChat,
-    getCharacters,
-    getCharacter,
-    getGeneratingApi,
-    callPopup,
-    substituteParams,
-    sendSystemMessage,
-    addOneMessage,
-    deleteLastMessage,
-    resetChatState,
-    select_rm_info,
-    setCharacterId,
-    setCharacterName,
-    replaceCurrentChat,
-    setOnlineStatus,
-    displayOnlineStatus,
-    setEditedMessageId,
-    setSendButtonState,
-    selectRightMenuWithAnimation,
-    openCharacterChat,
-    saveChat,
-    messageFormatting,
-    getExtensionPrompt,
-    getExtensionPromptByName,
-    showSwipeButtons,
-    hideSwipeButtons,
-    changeMainAPI,
-    setGenerationProgress,
-    updateChatMetadata,
-    scrollChatToBottom,
-    isStreamingEnabled,
-    getThumbnailUrl,
-    buildAvatarList,
-    getStoppingStrings,
-    reloadMarkdownProcessor,
-    getCurrentChatId,
-    chat,
-    this_chid,
-    selected_button,
-    menu_type,
-    settings,
-    characters,
-    online_status,
-    main_api,
-    api_server,
-    system_messages,
+    user_avatar,
+    setUserAvatar,
+    getUserAvatars,
+    getUserAvatar,
     nai_settings,
-    token,
-    name1,
-    name2,
-    is_send_press,
-    max_context,
-    chat_metadata,
-    streamingProcessor,
-    default_avatar,
-    system_message_types,
-    talkativeness_default,
-    default_ch_mes,
-    extension_prompt_types,
-    mesForShowdownParse,
-    characterGroupOverlay,
-    printCharacters,
-    printCharactersDebounced,
     isOdd,
     countOccurrences,
     renderTemplate,
 };
+
+/**
+ * Wait for page to load before continuing the app initialization.
+ */
+await new Promise((resolve) => {
+    if (document.readyState === 'complete') {
+        resolve();
+    } else {
+        window.addEventListener('load', resolve);
+    }
+});
 
 showLoader();
 // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
@@ -377,6 +333,11 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
                 mediaBlocked = true;
                 node.remove();
             }
+
+            if (mediaBlocked && (node instanceof HTMLMediaElement)) {
+                node.autoplay = false;
+                node.pause();
+            }
         }
             break;
     }
@@ -450,13 +411,14 @@ export const event_types = {
     CHARACTER_DUPLICATED: 'character_duplicated',
     SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
     FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
+    WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
 };
 
 export const eventSource = new EventEmitter();
 
 eventSource.on(event_types.CHAT_CHANGED, processChatSlashCommands);
 
-const characterGroupOverlay = new BulkEditOverlay();
+export const characterGroupOverlay = new BulkEditOverlay();
 const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
 eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
 console.debug('Character context menu initialized', characterContextMenu);
@@ -464,20 +426,20 @@ console.debug('Character context menu initialized', characterContextMenu);
 hljs.addPlugin({ 'before:highlightElement': ({ el }) => { el.textContent = el.innerText; } });
 
 // Markdown converter
-let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
+export let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
 let converter;
 reloadMarkdownProcessor();
 
 // array for prompt token calculations
 console.debug('initializing Prompt Itemization Array on Startup');
 const promptStorage = new localforage.createInstance({ name: 'SillyTavern_Prompts' });
-let itemizedPrompts = [];
+export let itemizedPrompts = [];
 
 export const systemUserName = 'SillyTavern System';
 let default_user_name = 'User';
-let name1 = default_user_name;
-let name2 = 'SillyTavern System';
-let chat = [];
+export let name1 = default_user_name;
+export let name2 = 'SillyTavern System';
+export let chat = [];
 let safetychat = [
     {
         name: systemUserName,
@@ -494,14 +456,13 @@ let firstRun = false;
 let settingsReady = false;
 let currentVersion = '0.0.0';
 
-const default_ch_mes = 'Hello';
+export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
 let generation_started = new Date();
-let characters = [];
-let this_chid;
+export let characters = [];
+export let this_chid;
 let saveCharactersPage = 0;
-let savePersonasPage = 0;
-const default_avatar = 'img/ai4.png';
+export const default_avatar = 'img/ai4.png';
 export const system_avatar = 'img/five.png';
 export const comment_avatar = 'img/quill.png';
 export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
@@ -521,16 +482,17 @@ const chatElement = $('#chat');
 
 let dialogueResolve = null;
 let dialogueCloseStop = false;
-let chat_metadata = {};
-let streamingProcessor = null;
-let crop_data = undefined;
+export let chat_metadata = {};
+export let streamingProcessor = null;
+export let crop_data = undefined;
 let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
 export let abortStatusCheck = new AbortController();
 
-const durationSaveEdit = 1000;
-const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
+/** @type {number} The debounce timeout used for chat/settings save. debounce_timeout.long: 1.000 ms */
+const durationSaveEdit = debounce_timeout.relaxed;
+export const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), durationSaveEdit);
 
 /**
@@ -539,12 +501,12 @@ export const saveCharacterDebounced = debounce(() => $('#create_button').trigger
  *
  * The printing will also always reprint all filter options of the global list, to keep them up to date.
  */
-const printCharactersDebounced = debounce(() => { printCharacters(false); }, 100);
+export const printCharactersDebounced = debounce(() => { printCharacters(false); }, debounce_timeout.quick);
 
 /**
  * @enum {string} System message types
  */
-const system_message_types = {
+export const system_message_types = {
     HELP: 'help',
     WELCOME: 'welcome',
     GROUP: 'group',
@@ -563,7 +525,7 @@ const system_message_types = {
 /**
  * @enum {number} Extension prompt types
  */
-const extension_prompt_types = {
+export const extension_prompt_types = {
     IN_PROMPT: 0,
     IN_CHAT: 1,
     BEFORE_PROMPT: 2,
@@ -580,7 +542,7 @@ export const extension_prompt_roles = {
 
 export const MAX_INJECTION_DEPTH = 1000;
 
-let system_messages = {};
+export let system_messages = {};
 
 async function getSystemMessages() {
     system_messages = {
@@ -700,13 +662,14 @@ async function getClientVersion() {
     }
 }
 
-function reloadMarkdownProcessor(render_formulas = false) {
+export function reloadMarkdownProcessor(render_formulas = false) {
     if (render_formulas) {
         converter = new showdown.Converter({
             emoji: true,
             underline: true,
             tables: true,
             parseImgDimensions: true,
+            simpleLineBreaks: true,
             extensions: [
                 showdownKatex(
                     {
@@ -725,6 +688,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
             parseImgDimensions: true,
             tables: true,
             underline: true,
+            simpleLineBreaks: true,
             extensions: [markdownUnderscoreExt()],
         });
     }
@@ -740,7 +704,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
     return converter;
 }
 
-function getCurrentChatId() {
+export function getCurrentChatId() {
     if (selected_group) {
         return groups.find(x => x.id == selected_group)?.chat_id;
     }
@@ -749,15 +713,15 @@ function getCurrentChatId() {
     }
 }
 
-const talkativeness_default = 0.5;
+export const talkativeness_default = 0.5;
 export const depth_prompt_depth_default = 4;
 export const depth_prompt_role_default = 'system';
 const per_page_default = 50;
 
 var is_advanced_char_open = false;
 
-var menu_type = ''; //what is selected in the menu
-var selected_button = ''; //which button pressed
+export let menu_type = ''; //what is selected in the menu
+export let selected_button = ''; //which button pressed
 //create pole save
 let create_save = {
     name: '',
@@ -788,11 +752,11 @@ export let animation_duration = ANIMATION_DURATION_DEFAULT;
 export let animation_easing = 'ease-in-out';
 let popup_type = '';
 let chat_file_for_del = '';
-let online_status = 'no_connection';
+export let online_status = 'no_connection';
 
-let api_server = '';
+export let api_server = '';
 
-let is_send_press = false; //Send generation
+export let is_send_press = false; //Send generation
 
 let this_del_mes = -1;
 
@@ -803,18 +767,17 @@ var scroll_holder = 0;
 var is_use_scroll_holder = false;
 
 //settings
-var settings;
+export let settings;
 export let koboldai_settings;
 export let koboldai_setting_names;
 var preset_settings = 'gui';
-export let user_avatar = 'you.png';
-export var amount_gen = 80; //default max length of AI generated responses
-var max_context = 2048;
+export let amount_gen = 80; //default max length of AI generated responses
+export let max_context = 2048;
 
 var swipes = true;
 let extension_prompts = {};
 
-var main_api;// = "kobold";
+export let main_api;// = "kobold";
 //novel settings
 export let novelai_settings;
 export let novelai_setting_names;
@@ -827,7 +790,7 @@ const MAX_GENERATION_LOOPS = 5;
 
 var kobold_horde_model = '';
 
-let token;
+export let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
@@ -837,7 +800,6 @@ export let active_character = '';
 export let active_group = '';
 
 export const entitiesFilter = new FilterHelper(printCharactersDebounced);
-export const personasFilter = new FilterHelper(debounce(getUserAvatars, 100));
 
 export function getRequestHeaders() {
     return {
@@ -891,7 +853,7 @@ function cancelStatusCheck() {
     setOnlineStatus('no_connection');
 }
 
-function displayOnlineStatus() {
+export function displayOnlineStatus() {
     if (online_status == 'no_connection') {
         $('.online_status_indicator').removeClass('success');
         $('.online_status_text').text('No connection...');
@@ -1283,10 +1245,9 @@ function getCharacterBlock(item, id) {
  *
  * @param {boolean} fullRefresh - If true, the list is fully refreshed and the navigation is being reset
  */
-async function printCharacters(fullRefresh = false) {
+export async function printCharacters(fullRefresh = false) {
     const storageKey = 'Characters_PerPage';
     const listId = '#rm_print_characters_block';
-    const entities = getEntitiesList({ doFilter: true });
 
     let currentScrollTop = $(listId).scrollTop();
 
@@ -1296,9 +1257,14 @@ async function printCharacters(fullRefresh = false) {
         await delay(1);
     }
 
+    // Before printing the personas, we check if we should enable/disable search sorting
+    verifyCharactersSearchSortRule();
+
     // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
+
+    const entities = getEntitiesList({ doFilter: true });
 
     $('#rm_print_characters_pagination').pagination({
         dataSource: entities,
@@ -1339,7 +1305,7 @@ async function printCharacters(fullRefresh = false) {
             }
 
             const hidden = (characters.length + groups.length) - displayCount;
-            if (hidden > 0) {
+            if (hidden > 0 && entitiesFilter.hasAnyFilter()) {
                 $(listId).append(getHiddenBlock(hidden));
             }
 
@@ -1357,6 +1323,26 @@ async function printCharacters(fullRefresh = false) {
     });
 
     favsToHotswap();
+}
+
+/** Checks the state of the current search, and adds/removes the search sorting option accordingly */
+function verifyCharactersSearchSortRule() {
+    const searchTerm = entitiesFilter.getFilterData(FILTER_TYPES.SEARCH);
+    const searchOption = $('#character_sort_order option[data-field="search"]');
+    const selector = $('#character_sort_order');
+    const isHidden = searchOption.attr('hidden') !== undefined;
+
+    // If we have a search term, we are displaying the sorting option for it
+    if (searchTerm && isHidden) {
+        searchOption.removeAttr('hidden');
+        searchOption.prop('selected', true);
+        flashHighlight(selector);
+    }
+    // If search got cleared, we make sure to hide the option and go back to the one before
+    if (!searchTerm && !isHidden) {
+        searchOption.attr('hidden', '');
+        $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop('selected', true);
+    }
 }
 
 /** @typedef {{name: string, avatar: string, fav: boolean}} Character - A character */
@@ -1453,7 +1439,7 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
             const subCount = subEntities.length;
             subEntities = filterByTagState(entities, { subForEntity: entity });
             if (doFilter) {
-                subEntities = entitiesFilter.applyFilters(subEntities);
+                subEntities = entitiesFilter.applyFilters(subEntities, { clearScoreCache: false });
             }
             entity.entities = subEntities;
             entity.hidden = subCount - subEntities.length;
@@ -1480,7 +1466,7 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
  * @param {string} characterKey - The character key / avatar url
  * @returns {object}
  */
-function getCharacter(characterKey) {
+export function getCharacter(characterKey) {
     return characters.find(x => x.avatar === characterKey);
 }
 
@@ -1535,7 +1521,7 @@ function getCharacterSource(chId = this_chid) {
     return '';
 }
 
-async function getCharacters() {
+export async function getCharacters() {
     const response = await fetch('/api/characters/all', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -1586,7 +1572,7 @@ async function delChat(chatfile) {
     }
 }
 
-async function replaceCurrentChat() {
+export async function replaceCurrentChat() {
     await clearChat();
     chat.length = 0;
 
@@ -1639,7 +1625,7 @@ export function showMoreMessages() {
     $('#chat').scrollTop(newHeight - prevHeight);
 }
 
-async function printMessages() {
+export async function printMessages() {
     let startIndex = 0;
     let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
 
@@ -1650,7 +1636,7 @@ async function printMessages() {
 
     for (let i = startIndex; i < chat.length; i++) {
         const item = chat[i];
-        addOneMessage(item, { scroll: i === chat.length - 1, forceId: i, showSwipes: false });
+        addOneMessage(item, { scroll: false, forceId: i, showSwipes: false });
     }
 
     // Scroll to bottom when all images are loaded
@@ -1672,6 +1658,7 @@ async function printMessages() {
     $('#chat .mes').last().addClass('last_mes');
     hideSwipeButtons();
     showSwipeButtons();
+    scrollChatToBottom();
 
     function incrementAndCheck() {
         imagesLoaded++;
@@ -1681,7 +1668,7 @@ async function printMessages() {
     }
 }
 
-async function clearChat() {
+export async function clearChat() {
     closeMessageEditor();
     extension_prompts = {};
     if (is_delete_mode) {
@@ -1697,7 +1684,7 @@ async function clearChat() {
     itemizedPrompts = [];
 }
 
-async function deleteLastMessage() {
+export async function deleteLastMessage() {
     chat.length = chat.length - 1;
     $('#chat').children('.mes').last().remove();
     await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
@@ -1756,7 +1743,7 @@ export function sendTextareaMessage() {
  * @param {number} messageId Message index in chat array
  * @returns {string} HTML string
  */
-function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
+export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     if (!mes) {
         return '';
     }
@@ -1819,9 +1806,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     if (this_chid === undefined && !selected_group) {
-        mes = mes
-            .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-            .replace(/\n/g, '<br/>');
+        mes = mes.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     } else if (!isSystem) {
         // Save double quotes in tags as a special character to prevent them from being encoded
         if (!power_user.encode_tags) {
@@ -1853,7 +1838,6 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
             // Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
             return match.replace(/\n/gm, '\u0000');
         });
-        mes = mes.replace(/\n/g, '<br/>');
         mes = mes.replace(/\u0000/g, '\n'); // Restore converted newlines
         mes = mes.trim();
 
@@ -1870,7 +1854,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     */
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
-        mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), '$1');
+        mes = mes.replace(new RegExp(`(^|\n)${escapeRegex(ch_name)}:`, 'g'), '$1');
     }
 
     /** @type {any} */
@@ -2050,7 +2034,7 @@ export function addCopyToCodeBlocks(messageElement) {
 }
 
 
-function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
+export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true, insertBefore = null, forceId = null, showSwipes = true } = {}) {
     let messageText = mes['mes'];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
@@ -2201,15 +2185,6 @@ function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll = true
 }
 
 /**
- * Returns the URL of the avatar for the given user avatar Id.
- * @param {string} avatarImg User avatar Id
- * @returns {string} User avatar URL
- */
-export function getUserAvatar(avatarImg) {
-    return `User Avatars/${avatarImg}`;
-}
-
-/**
  * Returns the URL of the avatar for the given character Id.
  * @param {number} characterId Character Id
  * @returns {string} Avatar URL
@@ -2264,7 +2239,7 @@ function formatGenerationTimer(gen_started, gen_finished, tokenCount) {
     return { timerValue, timerTitle };
 }
 
-function scrollChatToBottom() {
+export function scrollChatToBottom() {
     if (power_user.auto_scroll_chat_to_bottom) {
         let position = chatElement[0].scrollHeight;
 
@@ -2290,7 +2265,7 @@ function scrollChatToBottom() {
  * @param {boolean} [_replaceCharacterCard] - Whether to replace character card macros.
  * @returns {string} The string with substituted parameters.
  */
-function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
+export function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
     const environment = {};
 
     if (typeof _original === 'string') {
@@ -2348,7 +2323,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
  * @param {boolean} isContinue A request is made to continue the message
  * @returns {string[]} Array of stopping strings
  */
-function getStoppingStrings(isImpersonate, isContinue) {
+export function getStoppingStrings(isImpersonate, isContinue) {
     const charString = `\n${name2}:`;
     const userString = `\n${name1}:`;
     const result = isImpersonate ? [charString] : [userString];
@@ -2447,7 +2422,7 @@ async function processCommands(message) {
     return result?.interrupt;
 }
 
-function sendSystemMessage(type, text, extra = {}) {
+export function sendSystemMessage(type, text, extra = {}) {
     const systemMessage = system_messages[type];
 
     if (!systemMessage) {
@@ -2572,7 +2547,7 @@ function getAllExtensionPrompts() {
 }
 
 // Wrapper to fetch extension prompts by module name
-function getExtensionPromptByName(moduleName) {
+export function getExtensionPromptByName(moduleName) {
     if (moduleName) {
         return substituteParams(extension_prompts[moduleName]?.value);
     } else {
@@ -2590,7 +2565,7 @@ function getExtensionPromptByName(moduleName) {
  * @param {boolean} [wrap] Wrap start and end with a separator
  * @returns {string} Extension prompt
  */
-function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n', role = undefined, wrap = true) {
+export function getExtensionPrompt(position = extension_prompt_types.IN_PROMPT, depth = undefined, separator = '\n', role = undefined, wrap = true) {
     let extension_prompt = Object.keys(extension_prompts)
         .sort()
         .map((x) => extension_prompts[x])
@@ -2660,7 +2635,7 @@ export function getCharacterCardFields() {
     return result;
 }
 
-function isStreamingEnabled() {
+export function isStreamingEnabled() {
     const noStreamSources = [chat_completion_sources.SCALE, chat_completion_sources.AI21];
     return ((main_api == 'openai' && oai_settings.stream_openai && !noStreamSources.includes(oai_settings.chat_completion_source) && !(oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE && oai_settings.google_model.includes('bison')))
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
@@ -3082,7 +3057,7 @@ function restoreResponseLength(api, responseLength) {
  * @returns {Promise<any>} Returns a promise that resolves when the text is done generating.
  * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, maxLoops?: number, quietName?: string }} GenerateOptions
  */
-async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName } = {}, dryRun = false) {
+export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName } = {}, dryRun = false) {
     console.log('Generate entered');
     eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops }, dryRun);
     setGenerationProgress(0);
@@ -3809,6 +3784,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
 
     // Fetches the combined prompt for both negative and positive prompts
     const cfgGuidanceScale = getGuidanceScale();
+    const useCfgPrompt = cfgGuidanceScale && cfgGuidanceScale.value !== 1;
 
     // For prompt bit itemization
     let mesSendString = '';
@@ -3816,7 +3792,7 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
     function getCombinedPrompt(isNegative) {
         // Only return if the guidance scale doesn't exist or the value is 1
         // Also don't return if constructing the neutral prompt
-        if (isNegative && (!cfgGuidanceScale || cfgGuidanceScale?.value === 1)) {
+        if (isNegative && !useCfgPrompt) {
             return;
         }
 
@@ -3828,22 +3804,20 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         // Deep clone
         let finalMesSend = structuredClone(mesSend);
 
-        let cfgPrompt = {};
-        if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
-            cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
-        }
-
-        if (cfgPrompt && cfgPrompt?.value) {
-            if (cfgPrompt?.depth === 0) {
-                finalMesSend[finalMesSend.length - 1].message +=
-                    /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
-                        ? cfgPrompt.value
-                        : ` ${cfgPrompt.value}`;
-            } else {
-                // TODO: Make all extension prompts use an array/splice method
-                const lengthDiff = mesSend.length - cfgPrompt.depth;
-                const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
-                finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+        if (useCfgPrompt) {
+            const cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
+            if (cfgPrompt.value) {
+                if (cfgPrompt.depth === 0) {
+                    finalMesSend[finalMesSend.length - 1].message +=
+                        /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
+                            ? cfgPrompt.value
+                            : ` ${cfgPrompt.value}`;
+                } else {
+                    // TODO: Make all extension prompts use an array/splice method
+                    const lengthDiff = mesSend.length - cfgPrompt.depth;
+                    const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
+                    finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+                }
             }
         }
 
@@ -3924,75 +3898,78 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
         return !data.combinedPrompt ? combine() : data.combinedPrompt;
     }
 
-    // Get the negative prompt first since it has the unmodified mesSend array
-    let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
     let finalPrompt = getCombinedPrompt(false);
-
-    // Include the entire guidance scale object
-    const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
 
     let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
     let thisPromptBits = [];
 
-    // TODO: Make this a switch
-    if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
-        maxLength = Math.min(maxLength, adjustedParams.maxLength);
-        maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
-    }
-
     let generate_data;
-    if (main_api == 'koboldhorde' || main_api == 'kobold') {
-        generate_data = {
-            prompt: finalPrompt,
-            gui_settings: true,
-            max_length: maxLength,
-            max_context_length: max_context,
-            api_server,
-        };
+    switch (main_api) {
+        case 'koboldhorde':
+        case 'kobold':
+            if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
+                maxLength = Math.min(maxLength, adjustedParams.maxLength);
+                maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
+            }
 
-        if (preset_settings != 'gui') {
-            const isHorde = main_api == 'koboldhorde';
-            const presetSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
-            const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
-            generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
+            generate_data = {
+                prompt: finalPrompt,
+                gui_settings: true,
+                max_length: maxLength,
+                max_context_length: max_context,
+                api_server,
+            };
+
+            if (preset_settings != 'gui') {
+                const isHorde = main_api == 'koboldhorde';
+                const presetSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
+                const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
+                generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
+            }
+            break;
+        case 'textgenerationwebui': {
+            const cfgValues = useCfgPrompt ? { guidanceScale: cfgGuidanceScale, negativePrompt: getCombinedPrompt(true) } : null;
+            generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
+            break;
         }
-    }
-    else if (main_api == 'textgenerationwebui') {
-        generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
-    }
-    else if (main_api == 'novel') {
-        const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-        generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
-    }
-    else if (main_api == 'openai') {
-        let [prompt, counts] = await prepareOpenAIMessages({
-            name2: name2,
-            charDescription: description,
-            charPersonality: personality,
-            Scenario: scenario,
-            worldInfoBefore: worldInfoBefore,
-            worldInfoAfter: worldInfoAfter,
-            extensionPrompts: extension_prompts,
-            bias: promptBias,
-            type: type,
-            quietPrompt: quiet_prompt,
-            quietImage: quietImage,
-            cyclePrompt: cyclePrompt,
-            systemPromptOverride: system,
-            jailbreakPromptOverride: jailbreak,
-            personaDescription: persona,
-            messages: oaiMessages,
-            messageExamples: oaiMessageExamples,
-        }, dryRun);
-        generate_data = { prompt: prompt };
-
-        // counts will return false if the user has not enabled the token breakdown feature
-        if (counts) {
-            parseTokenCounts(counts, thisPromptBits);
+        case 'novel': {
+            const cfgValues = useCfgPrompt ? { guidanceScale: cfgGuidanceScale } : null;
+            const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
+            generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
+            break;
         }
+        case 'openai': {
+            let [prompt, counts] = await prepareOpenAIMessages({
+                name2: name2,
+                charDescription: description,
+                charPersonality: personality,
+                Scenario: scenario,
+                worldInfoBefore: worldInfoBefore,
+                worldInfoAfter: worldInfoAfter,
+                extensionPrompts: extension_prompts,
+                bias: promptBias,
+                type: type,
+                quietPrompt: quiet_prompt,
+                quietImage: quietImage,
+                cyclePrompt: cyclePrompt,
+                systemPromptOverride: system,
+                jailbreakPromptOverride: jailbreak,
+                personaDescription: persona,
+                messages: oaiMessages,
+                messageExamples: oaiMessageExamples,
+            }, dryRun);
+            generate_data = { prompt: prompt };
 
-        if (!dryRun) {
-            setInContextMessages(openai_messages_count, type);
+            // TODO: move these side-effects somewhere else, so this switch-case solely sets generate_data
+            // counts will return false if the user has not enabled the token breakdown feature
+            if (counts) {
+                parseTokenCounts(counts, thisPromptBits);
+            }
+
+            if (!dryRun) {
+                setInContextMessages(openai_messages_count, type);
+            }
+            break;
         }
     }
 
@@ -4040,16 +4017,14 @@ async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, qu
             userPersona: (power_user.persona_description || ''),
         };
 
-        thisPromptBits = additionalPromptStuff;
-
-        //console.log(thisPromptBits);
-        const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === thisPromptBits['mesId']);
+        //console.log(additionalPromptStuff);
+        const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === additionalPromptStuff.mesId);
 
         if (itemizedIndex !== -1) {
-            itemizedPrompts[itemizedIndex] = thisPromptBits;
+            itemizedPrompts[itemizedIndex] = additionalPromptStuff;
         }
         else {
-            itemizedPrompts.push(thisPromptBits);
+            itemizedPrompts.push(additionalPromptStuff);
         }
 
         console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
@@ -4616,29 +4591,7 @@ async function DupeChar() {
     }
 }
 
-async function promptItemize(itemizedPrompts, requestedMesId) {
-    console.log('PROMPT ITEMIZE ENTERED');
-    var incomingMesId = Number(requestedMesId);
-    console.debug(`looking for MesId ${incomingMesId}`);
-    var thisPromptSet = undefined;
-
-    for (var i = 0; i < itemizedPrompts.length; i++) {
-        console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`);
-        if (itemizedPrompts[i].mesId === incomingMesId) {
-            console.log(`found matching mesID ${i}`);
-            thisPromptSet = i;
-            PromptArrayItemForRawPromptDisplay = i;
-            console.log(`wanting to raw display of ArrayItem: ${PromptArrayItemForRawPromptDisplay} which is mesID ${incomingMesId}`);
-            console.log(itemizedPrompts[thisPromptSet]);
-        }
-    }
-
-    if (thisPromptSet === undefined) {
-        console.log(`couldnt find the right mesId. looked for ${incomingMesId}`);
-        console.log(itemizedPrompts);
-        return null;
-    }
-
+export async function itemizedParams(itemizedPrompts, thisPromptSet) {
     const params = {
         charDescriptionTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].charDescription),
         charPersonalityTokens: await getTokenCountAsync(itemizedPrompts[thisPromptSet].charPersonality),
@@ -4737,6 +4690,38 @@ async function promptItemize(itemizedPrompts, requestedMesId) {
         params.allAnchorsTokensPercentage = ((params.allAnchorsTokens / (params.totalTokensInPrompt)) * 100).toFixed(2);
         params.selectedTokenizer = getFriendlyTokenizerName(params.this_main_api).tokenizerName;
     }
+    return params;
+}
+
+export function findItemizedPromptSet(itemizedPrompts, incomingMesId) {
+    var thisPromptSet = undefined;
+
+    for (var i = 0; i < itemizedPrompts.length; i++) {
+        console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`);
+        if (itemizedPrompts[i].mesId === incomingMesId) {
+            console.log(`found matching mesID ${i}`);
+            thisPromptSet = i;
+            PromptArrayItemForRawPromptDisplay = i;
+            console.log(`wanting to raw display of ArrayItem: ${PromptArrayItemForRawPromptDisplay} which is mesID ${incomingMesId}`);
+            console.log(itemizedPrompts[thisPromptSet]);
+        }
+    }
+    return thisPromptSet;
+}
+
+async function promptItemize(itemizedPrompts, requestedMesId) {
+    console.log('PROMPT ITEMIZE ENTERED');
+    var incomingMesId = Number(requestedMesId);
+    console.debug(`looking for MesId ${incomingMesId}`);
+    var thisPromptSet = findItemizedPromptSet(itemizedPrompts, incomingMesId);
+
+    if (thisPromptSet === undefined) {
+        console.log(`couldnt find the right mesId. looked for ${incomingMesId}`);
+        console.log(itemizedPrompts);
+        return null;
+    }
+
+    const params = await itemizedParams(itemizedPrompts, thisPromptSet);
 
     if (params.this_main_api == 'openai') {
         const template = await renderTemplateAsync('itemizationChat', params);
@@ -4953,7 +4938,7 @@ function extractMultiSwipes(data, type) {
     return swipes;
 }
 
-function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncompleteSentences = false, stoppingStrings = null) {
+export function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncompleteSentences = false, stoppingStrings = null) {
     if (!getMessage) {
         return '';
     }
@@ -5254,7 +5239,7 @@ function saveImageToMessage(img, mes) {
     }
 }
 
-function getGeneratingApi() {
+export function getGeneratingApi() {
     switch (main_api) {
         case 'openai':
             return oai_settings.chat_completion_source || 'openai';
@@ -5311,7 +5296,7 @@ export function deactivateSendButtons() {
     showStopButton();
 }
 
-function resetChatState() {
+export function resetChatState() {
     //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
     this_chid = undefined;
     // replaces deleted charcter name with system user since it will be displayed next.
@@ -5332,24 +5317,24 @@ export function setExternalAbortController(controller) {
     abortController = controller;
 }
 
-function setCharacterId(value) {
+export function setCharacterId(value) {
     this_chid = value;
 }
 
-function setCharacterName(value) {
+export function setCharacterName(value) {
     name2 = value;
 }
 
-function setOnlineStatus(value) {
+export function setOnlineStatus(value) {
     online_status = value;
     displayOnlineStatus();
 }
 
-function setEditedMessageId(value) {
+export function setEditedMessageId(value) {
     this_edit_mes_id = value;
 }
 
-function setSendButtonState(value) {
+export function setSendButtonState(value) {
     is_send_press = value;
 }
 
@@ -5498,7 +5483,7 @@ export function saveChatDebounced() {
     }, 1000);
 }
 
-async function saveChat(chat_name, withMetadata, mesId) {
+export async function saveChat(chat_name, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid]?.chat;
 
@@ -5627,7 +5612,7 @@ export function getCropPopup(src) {
             </div>`;
 }
 
-function getThumbnailUrl(type, file) {
+export function getThumbnailUrl(type, file) {
     return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
 }
 
@@ -5642,7 +5627,7 @@ function getThumbnailUrl(type, file) {
  * @param {boolean} [options.selectable=false] - Whether the avatars should be selectable/clickable. If set, the click handler has to be implemented externally on the classes/items
  * @param {boolean} [options.highlightFavs=true] - Whether favorites should be highlighted
  */
-function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, selectable = false, highlightFavs = true } = {}) {
+export function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, selectable = false, highlightFavs = true } = {}) {
     if (empty) {
         block.empty();
     }
@@ -5692,7 +5677,7 @@ function buildAvatarList(block, entities, { templateId = 'inline_avatar_template
     }
 }
 
-async function getChat() {
+export async function getChat() {
     //console.log('/api/chats/get -- entered for -- ' + characters[this_chid].name);
     try {
         const response = await $.ajax({
@@ -5773,7 +5758,7 @@ function getFirstMessage() {
     return message;
 }
 
-async function openCharacterChat(file_name) {
+export async function openCharacterChat(file_name) {
     await clearChat();
     characters[this_chid]['chat'] = file_name;
     chat.length = 0;
@@ -5785,7 +5770,7 @@ async function openCharacterChat(file_name) {
 
 ////////// OPTIMZED MAIN API CHANGE FUNCTION ////////////
 
-function changeMainAPI() {
+export function changeMainAPI() {
     const selectedVal = $('#main_api').val();
     //console.log(selectedVal);
     const apiElements = {
@@ -5908,127 +5893,6 @@ function changeMainAPI() {
     forceCharacterEditorTokenize();
 }
 
-////////////////////////////////////////////////////
-
-/**
- * Gets a list of user avatars.
- * @param {boolean} doRender Whether to render the list
- * @param {string} openPageAt Item to be opened at
- * @returns {Promise<string[]>} List of avatar file names
- */
-export async function getUserAvatars(doRender = true, openPageAt = '') {
-    const response = await fetch('/api/avatars/get', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-    });
-    if (response.ok) {
-        const allEntities = await response.json();
-
-        if (!Array.isArray(allEntities)) {
-            return [];
-        }
-
-        allEntities.sort((a, b) => {
-            const aName = String(power_user.personas[a] || a);
-            const bName = String(power_user.personas[b] || b);
-            return power_user.persona_sort_order === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
-        });
-
-        if (!doRender) {
-            return allEntities;
-        }
-
-        const entities = personasFilter.applyFilters(allEntities);
-        const storageKey = 'Personas_PerPage';
-        const listId = '#user_avatar_block';
-        const perPage = Number(localStorage.getItem(storageKey)) || 5;
-
-        $('#persona_pagination_container').pagination({
-            dataSource: entities,
-            pageSize: perPage,
-            sizeChangerOptions: [5, 10, 25, 50, 100, 250, 500, 1000],
-            pageRange: 1,
-            pageNumber: savePersonasPage || 1,
-            position: 'top',
-            showPageNumbers: false,
-            showSizeChanger: true,
-            prevText: '<',
-            nextText: '>',
-            formatNavigator: PAGINATION_TEMPLATE,
-            showNavigator: true,
-            callback: function (data) {
-                $(listId).empty();
-                for (const item of data) {
-                    $(listId).append(getUserAvatarBlock(item));
-                }
-                highlightSelectedAvatar();
-            },
-            afterSizeSelectorChange: function (e) {
-                localStorage.setItem(storageKey, e.target.value);
-            },
-            afterPaging: function (e) {
-                savePersonasPage = e;
-            },
-            afterRender: function () {
-                $(listId).scrollTop(0);
-            },
-        });
-
-        if (openPageAt) {
-            const avatarIndex = entities.indexOf(openPageAt);
-            const page = Math.floor(avatarIndex / perPage) + 1;
-
-            if (avatarIndex !== -1) {
-                $('#persona_pagination_container').pagination('go', page);
-            }
-        }
-
-        return allEntities;
-    }
-}
-
-function highlightSelectedAvatar() {
-    $('#user_avatar_block .avatar-container').removeClass('selected');
-    $(`#user_avatar_block .avatar-container[imgfile="${user_avatar}"]`).addClass('selected');
-}
-
-/**
- * Gets a rendered avatar block.
- * @param {string} name Avatar file name
- * @returns {JQuery<HTMLElement>} Avatar block
- */
-function getUserAvatarBlock(name) {
-    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-    const template = $('#user_avatar_template .avatar-container').clone();
-    const personaName = power_user.personas[name];
-    const personaDescription = power_user.persona_descriptions[name]?.description;
-    template.find('.ch_name').text(personaName || '[Unnamed Persona]');
-    template.find('.ch_description').text(personaDescription || $('#user_avatar_block').attr('no_desc_text')).toggleClass('text_muted', !personaDescription);
-    template.attr('imgfile', name);
-    template.find('.avatar').attr('imgfile', name).attr('title', name);
-    template.toggleClass('default_persona', name === power_user.default_persona);
-    let avatarUrl = getUserAvatar(name);
-    if (isFirefox) {
-        avatarUrl += '?t=' + Date.now();
-    }
-    template.find('img').attr('src', avatarUrl);
-    $('#user_avatar_block').append(template);
-    return template;
-}
-
-function reloadUserAvatar(force = false) {
-    $('.mes').each(function () {
-        const avatarImg = $(this).find('.avatar img');
-        if (force) {
-            avatarImg.attr('src', avatarImg.attr('src'));
-        }
-
-        if ($(this).attr('is_user') == 'true' && $(this).attr('force_avatar') == 'false') {
-            avatarImg.attr('src', getUserAvatar(user_avatar));
-        }
-    });
-}
-
 export function setUserName(value) {
     name1 = value;
     if (name1 === undefined || name1 == '')
@@ -6039,87 +5903,6 @@ export function setUserName(value) {
         toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
     }
     saveSettingsDebounced();
-}
-
-/**
- * Sets a user avatar file
- * @param {string} imgfile Link to an image file
- */
-export function setUserAvatar(imgfile) {
-    user_avatar = imgfile && typeof imgfile === 'string' ? imgfile : $(this).attr('imgfile');
-    reloadUserAvatar();
-    highlightSelectedAvatar();
-    selectCurrentPersona();
-    saveSettingsDebounced();
-    $('.zoomed_avatar[forchar]').remove();
-}
-
-export function retriggerFirstMessageOnEmptyChat() {
-    if (this_chid >= 0 && !selected_group && chat.length === 1) {
-        $('#firstmessage_textarea').trigger('input');
-    }
-}
-
-async function uploadUserAvatar(e) {
-    const file = e.target.files[0];
-
-    if (!file) {
-        $('#form_upload_avatar').trigger('reset');
-        return;
-    }
-
-    const formData = new FormData($('#form_upload_avatar').get(0));
-    const dataUrl = await getBase64Async(file);
-    let url = '/api/avatars/upload';
-
-    if (!power_user.never_resize_avatars) {
-        $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
-        const confirmation = await callPopup(getCropPopup(dataUrl), 'avatarToCrop');
-        if (!confirmation) {
-            return;
-        }
-
-        if (crop_data !== undefined) {
-            url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
-        }
-    }
-
-    const rawFile = formData.get('avatar');
-    if (rawFile instanceof File) {
-        const convertedFile = await ensureImageFormatSupported(rawFile);
-        formData.set('avatar', convertedFile);
-    }
-
-    jQuery.ajax({
-        type: 'POST',
-        url: url,
-        data: formData,
-        beforeSend: () => { },
-        cache: false,
-        contentType: false,
-        processData: false,
-        success: async function (data) {
-            // If the user uploaded a new avatar, we want to make sure it's not cached
-            const name = formData.get('overwrite_name');
-            if (name) {
-                await fetch(getUserAvatar(name), { cache: 'no-cache' });
-                reloadUserAvatar(true);
-            }
-
-            if (!name && data.path) {
-                await getUserAvatars();
-                await delay(500);
-                await createPersona(data.path);
-            }
-
-            crop_data = undefined;
-            await getUserAvatars(true, name || data.path);
-        },
-        error: (jqXHR, exception) => { },
-    });
-
-    // Will allow to select the same file twice in a row
-    $('#form_upload_avatar').trigger('reset');
 }
 
 async function doOnboarding(avatarId) {
@@ -6160,7 +5943,7 @@ function reloadLoop() {
 
 //***************SETTINGS****************//
 ///////////////////////////////////////////
-async function getSettings() {
+export async function getSettings() {
     const response = await fetch('/api/settings/get', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -6305,8 +6088,8 @@ async function getSettings() {
         changeMainAPI();
 
         //Load User's Name and Avatar
+        initUserAvatar(settings.user_avatar);
 
-        user_avatar = settings.user_avatar;
         firstRun = !!settings.firstRun;
 
         if (firstRun) {
@@ -6315,8 +6098,6 @@ async function getSettings() {
             firstRun = false;
         }
 
-        reloadUserAvatar();
-        highlightSelectedAvatar();
         setPersonaDescription();
 
         //Load the active character and group
@@ -6348,7 +6129,7 @@ function selectKoboldGuiPreset() {
         .trigger('change');
 }
 
-async function saveSettings(type) {
+export async function saveSettings(type) {
     if (!settingsReady) {
         console.warn('Settings not ready, aborting save');
         return;
@@ -6519,6 +6300,8 @@ async function messageEditDone(div) {
         text = substituteParams(text);
     }
 
+    await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
+    text = chat[this_edit_mes_id]?.mes ?? text;
     mesBlock.find('.mes_text').empty();
     mesBlock.find('.mes_edit_buttons').css('display', 'none');
     mesBlock.find('.mes_buttons').css('display', '');
@@ -6535,7 +6318,6 @@ async function messageEditDone(div) {
     mesBlock.find('.mes_bias').append(messageFormatting(bias, '', false, false, -1));
     appendMediaToMessage(mes, div.closest('.mes'));
     addCopyToCodeBlocks(div.closest('.mes'));
-    await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
 
     this_edit_mes_id = undefined;
     await saveChatConditional();
@@ -6745,7 +6527,7 @@ export async function displayPastChats() {
 
     const debouncedDisplay = debounce((searchQuery) => {
         displayChats(searchQuery);
-    }, 300);
+    });
 
     // Define the search input listener
     $('#select_chat_search').on('input', function () {
@@ -6762,7 +6544,7 @@ export async function displayPastChats() {
     }, 200);
 }
 
-function selectRightMenuWithAnimation(selectedMenuId) {
+export function selectRightMenuWithAnimation(selectedMenuId) {
     const displayModes = {
         'rm_group_chats_block': 'flex',
         'rm_api_block': 'grid',
@@ -6786,7 +6568,7 @@ function selectRightMenuWithAnimation(selectedMenuId) {
     });
 }
 
-function select_rm_info(type, charId, previousCharId = null) {
+export function select_rm_info(type, charId, previousCharId = null) {
     if (!type) {
         toastr.error('Invalid process (no \'type\')');
         return;
@@ -6844,10 +6626,7 @@ function select_rm_info(type, charId, previousCharId = null) {
 
                     const scrollOffset = element.offset().top - element.parent().offset().top;
                     element.parent().scrollTop(scrollOffset);
-                    element.addClass('flash animated');
-                    setTimeout(function () {
-                        element.removeClass('flash animated');
-                    }, 5000);
+                    flashHighlight(element, 5000);
                 });
             } catch (e) {
                 console.error(e);
@@ -6873,10 +6652,7 @@ function select_rm_info(type, charId, previousCharId = null) {
                     const element = $(selector);
                     const scrollOffset = element.offset().top - element.parent().offset().top;
                     element.parent().scrollTop(scrollOffset);
-                    $(element).addClass('flash animated');
-                    setTimeout(function () {
-                        $(element).removeClass('flash animated');
-                    }, 5000);
+                    flashHighlight(element, 5000);
                 });
             } catch (e) {
                 console.error(e);
@@ -7098,7 +6874,7 @@ export function removeDepthPrompts() {
  * @param {Object} newValues An object with collection of new values to be added into the metadata.
  * @param {boolean} reset Should a metadata be reset by this call.
  */
-function updateChatMetadata(newValues, reset) {
+export function updateChatMetadata(newValues, reset) {
     chat_metadata = reset ? { ...newValues } : { ...chat_metadata, ...newValues };
 }
 
@@ -7144,59 +6920,51 @@ function onScenarioOverrideRemoveClick() {
  * @typedef {{okButton?: string, rows?: number, wide?: boolean, wider?: boolean, large?: boolean, allowHorizontalScrolling?: boolean, allowVerticalScrolling?: boolean, cropAspect?: number }} PopupOptions - Options for the popup.
  * @returns
  */
-function callPopup(text, type, inputValue = '', { okButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
+export function callPopup(text, type, inputValue = '', { okButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling, cropAspect } = {}) {
+    function getOkButtonText() {
+        if (['avatarToCrop'].includes(popup_type)) {
+            return okButton ?? 'Accept';
+        } else if (['text', 'alternate_greeting', 'char_not_selected'].includes(popup_type)) {
+            $dialoguePopupCancel.css('display', 'none');
+            return okButton ?? 'Ok';
+        } else if (['delete_extension'].includes(popup_type)) {
+            return okButton ?? 'Ok';
+        } else if (['new_chat', 'confirm'].includes(popup_type)) {
+            return okButton ?? 'Yes';
+        } else if (['input'].includes(popup_type)) {
+            return okButton ?? 'Save';
+        }
+        return okButton ?? 'Delete';
+    }
+
     dialogueCloseStop = true;
     if (type) {
         popup_type = type;
     }
 
-    $('#dialogue_popup').toggleClass('wide_dialogue_popup', !!wide);
-    $('#dialogue_popup').toggleClass('wider_dialogue_popup', !!wider);
-    $('#dialogue_popup').toggleClass('large_dialogue_popup', !!large);
-    $('#dialogue_popup').toggleClass('horizontal_scrolling_dialogue_popup', !!allowHorizontalScrolling);
-    $('#dialogue_popup').toggleClass('vertical_scrolling_dialogue_popup', !!allowVerticalScrolling);
+    const $dialoguePopup = $('#dialogue_popup');
+    const $dialoguePopupCancel = $('#dialogue_popup_cancel');
+    const $dialoguePopupOk = $('#dialogue_popup_ok');
+    const $dialoguePopupInput = $('#dialogue_popup_input');
+    const $dialoguePopupText = $('#dialogue_popup_text');
+    const $shadowPopup = $('#shadow_popup');
 
-    $('#dialogue_popup_cancel').css('display', 'inline-block');
-    switch (popup_type) {
-        case 'avatarToCrop':
-            $('#dialogue_popup_ok').text(okButton ?? 'Accept');
-            break;
-        case 'text':
-        case 'alternate_greeting':
-        case 'char_not_selected':
-            $('#dialogue_popup_ok').text(okButton ?? 'Ok');
-            $('#dialogue_popup_cancel').css('display', 'none');
-            break;
-        case 'delete_extension':
-            $('#dialogue_popup_ok').text(okButton ?? 'Ok');
-            break;
-        case 'new_chat':
-        case 'confirm':
-            $('#dialogue_popup_ok').text(okButton ?? 'Yes');
-            break;
-        case 'del_group':
-        case 'rename_chat':
-        case 'del_chat':
-        default:
-            $('#dialogue_popup_ok').text(okButton ?? 'Delete');
-    }
+    $dialoguePopup.toggleClass('wide_dialogue_popup', !!wide)
+        .toggleClass('wider_dialogue_popup', !!wider)
+        .toggleClass('large_dialogue_popup', !!large)
+        .toggleClass('horizontal_scrolling_dialogue_popup', !!allowHorizontalScrolling)
+        .toggleClass('vertical_scrolling_dialogue_popup', !!allowVerticalScrolling);
 
-    $('#dialogue_popup_input').val(inputValue);
-    $('#dialogue_popup_input').attr('rows', rows ?? 1);
+    $dialoguePopupCancel.css('display', 'inline-block');
+    $dialoguePopupOk.text(getOkButtonText());
+    $dialoguePopupInput.toggle(popup_type === 'input').val(inputValue).attr('rows', rows ?? 1);
+    $dialoguePopupText.empty().append(text);
+    $shadowPopup.css('display', 'block');
 
     if (popup_type == 'input') {
-        $('#dialogue_popup_input').css('display', 'block');
-        $('#dialogue_popup_ok').text(okButton ?? 'Save');
-    }
-    else {
-        $('#dialogue_popup_input').css('display', 'none');
+        $dialoguePopupInput.trigger('focus');
     }
 
-    $('#dialogue_popup_text').empty().append(text);
-    $('#shadow_popup').css('display', 'block');
-    if (popup_type == 'input') {
-        $('#dialogue_popup_input').focus();
-    }
     if (popup_type == 'avatarToCrop') {
         // unset existing data
         crop_data = undefined;
@@ -7212,7 +6980,8 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, wider, l
             },
         });
     }
-    $('#shadow_popup').transition({
+
+    $shadowPopup.transition({
         opacity: 1,
         duration: animation_duration,
         easing: animation_easing,
@@ -7223,7 +6992,7 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, wider, l
     });
 }
 
-function showSwipeButtons() {
+export function showSwipeButtons() {
     if (chat.length === 0) {
         return;
     }
@@ -7277,7 +7046,7 @@ function showSwipeButtons() {
     //console.log(chat[chat.length - 1].swipes.length);
 }
 
-function hideSwipeButtons() {
+export function hideSwipeButtons() {
     //console.log('hideswipebuttons entered');
     $('#chat').find('.swipe_right').css('display', 'none');
     $('#chat').find('.swipe_left').css('display', 'none');
@@ -7387,7 +7156,7 @@ function closeMessageEditor() {
     }
 }
 
-function setGenerationProgress(progress) {
+export function setGenerationProgress(progress) {
     if (!progress) {
         $('#send_textarea').css({ 'background': '', 'transition': '' });
     }
@@ -8713,15 +8482,14 @@ jQuery(async function () {
 
     $(document).on('click', '.swipe_left', swipe_left);
 
+    const debouncedCharacterSearch = debounce((searchQuery) => {
+        entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchQuery);
+    });
     $('#character_search_bar').on('input', function () {
-        const searchValue = String($(this).val()).toLowerCase();
-        entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
+        const searchQuery = String($(this).val());
+        debouncedCharacterSearch(searchQuery);
     });
 
-    $('#persona_search_bar').on('input', function () {
-        const searchValue = String($(this).val()).toLowerCase();
-        personasFilter.setFilterData(FILTER_TYPES.PERSONA_SEARCH, searchValue);
-    });
 
     $('#mes_continue').on('click', function () {
         $('#option_continue').trigger('click');
@@ -8806,31 +8574,6 @@ jQuery(async function () {
             //console.log(i);
         }
     });
-
-    $(document).on('click', '#user_avatar_block .avatar-container', function () {
-        const imgfile = $(this).attr('imgfile');
-        setUserAvatar(imgfile);
-
-        // force firstMes {{user}} update on persona switch
-        retriggerFirstMessageOnEmptyChat();
-    });
-    $(document).on('click', '#user_avatar_block .avatar_upload', function () {
-        $('#avatar_upload_overwrite').val('');
-        $('#avatar_upload_file').trigger('click');
-    });
-    $(document).on('click', '#user_avatar_block .set_persona_image', function (e) {
-        e.stopPropagation();
-        const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
-
-        if (!avatarId) {
-            console.log('no imgfile');
-            return;
-        }
-
-        $('#avatar_upload_overwrite').val(avatarId);
-        $('#avatar_upload_file').trigger('click');
-    });
-    $('#avatar_upload_file').on('change', uploadUserAvatar);
 
     $(document).on('click', '.PastChat_cross', function (e) {
         e.stopPropagation();
@@ -9917,30 +9660,6 @@ jQuery(async function () {
         await messageEditDone($(this));
     });
 
-    $('#your_name_button').click(async function () {
-        const userName = String($('#your_name').val()).trim();
-        setUserName(userName);
-        await updatePersonaNameIfExists(user_avatar, userName);
-        retriggerFirstMessageOnEmptyChat();
-    });
-
-    $('#sync_name_button').on('click', async function () {
-        const confirmation = await callPopup(`<h3>Are you sure?</h3>All user-sent messages in this chat will be attributed to ${name1}.`, 'confirm');
-
-        if (!confirmation) {
-            return;
-        }
-
-        for (const mes of chat) {
-            if (mes.is_user) {
-                mes.name = name1;
-                mes.force_avatar = getUserAvatar(user_avatar);
-            }
-        }
-
-        await saveChatConditional();
-        await reloadCurrentChat();
-    });
     //Select chat
 
     //**************************CHARACTER IMPORT EXPORT*************************//
@@ -10478,77 +10197,6 @@ jQuery(async function () {
             }
             isManualInput = false;
         });
-    /*
-        let manualInputTimeout;
-             .on('input', '.range-block-counter input, .neo-range-input', function () {
-            clearTimeout(manualInputTimeout);
-            manualInputTimeout = setTimeout(() => {
-                const caretPosition = saveCaretPosition($(this).get(0));
-                const myText = $(this).val().trim();
-                $(this).val(myText); // trim line breaks and spaces
-                const masterSelector = $(this).data('for');
-                const masterElement = document.getElementById(masterSelector);
-
-                if (masterElement == null) {
-                    console.error('Master input element not found for the editable label', masterSelector);
-                    return;
-                }
-
-                const myValue = Number(myText);
-                const masterStep = Number(masterElement.getAttribute('step'))
-                const masterMin = Number($(masterElement).attr('min'));
-                const masterMax = Number($(masterElement).attr('max'));
-                const rawStepCompare = myValue / masterStep
-                const closestStep = Math.round(rawStepCompare)
-                const closestStepRaw = (closestStep) * masterStep
-
-                //yolo anything for Lab Mode
-                if (power_user.enableLabMode) {
-                    //console.log($(masterElement).attr('id'), myValue)
-                    $(masterElement).val(myValue).trigger('input')
-                    return
-                }
-
-                //if text box val is not a number, reset slider val to its previous and wait for better input
-                if (Number.isNaN(myValue)) {
-                    console.warn('Label input is not a valid number. Resetting the value to match slider', myText);
-                    $(masterElement).trigger('input');
-                    restoreCaretPosition($(this).get(0), caretPosition);
-                    return;
-                }
-
-                //if textbox val is less than min, set slider to min
-                //PROBLEM: the moment slider gets set to min, textbox also auto-sets to min.
-                //if min = 0, this prevents further typing and locks input at 0 unless users pastes
-                //a multi-character number which is between min and max. adding delay was necessary.
-                if (myValue < masterMin) {
-                    console.warn('Label input is less than minimum.', myText, '<', masterMin);
-                    $(masterElement).val(masterMin).trigger('input').trigger('mouseup');
-                    $(masterElement).val(myValue)
-                    restoreCaretPosition($(this).get(0), caretPosition);
-                    return;
-                }
-                //Same as above but in reverse. Not a problem because max value has multiple
-                //characters which can be edited.
-                if (myValue > masterMax) {
-                    console.warn('Label input is more than maximum.', myText, '>', masterMax);
-                    $(masterElement).val(masterMax).trigger('input').trigger('mouseup');
-                    $(masterElement).val(myValue)
-                    restoreCaretPosition($(this).get(0), caretPosition);
-                    return;
-                }
-
-                //round input value to nearest step if between min and max
-                if (!(myValue < masterMin) && !(myValue > masterMax)) {
-                    console.debug(`Label value ${myText} is OK, setting slider to closest step (${closestStepRaw})`);
-                    $(masterElement).val(closestStepRaw).trigger('input').trigger('mouseup');
-                    restoreCaretPosition($(this).get(0), caretPosition);
-                    return;
-                }
-
-                restoreCaretPosition($(this).get(0), caretPosition);
-            }, 2000); */
-    //});
 
     $('#external_import_button').on('click', async () => {
         const html = `<h3>Enter the URL of the content to import</h3>
@@ -10558,7 +10206,8 @@ jQuery(async function () {
             <li>Chub Lorebook (Direct Link or ID)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
             <li>JanitorAI Character (Direct Link or UUID)<br>Example: <tt>ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
             <li>Pygmalion.chat Character (Direct Link or UUID)<br>Example: <tt>a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
-            <li>More coming soon...</li>
+            <li>AICharacterCard.com Character (Direct Link or ID)<br>Example: <tt>AICC/aicharcards/the-game-master</tt></li>
+            <li>Direct PNG Link (refer to <code>config.yaml</code> for allowed hosts)<br>Example: <tt>https://files.catbox.moe/notarealfile.png</tt></li>
         <ul>`;
         const input = await callPopup(html, 'input', '', { okButton: 'Import', rows: 4 });
 

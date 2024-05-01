@@ -1,0 +1,28 @@
+# Based on a label applied to an issue, the bot will add a comment with some additional info
+
+name: 🎯 Auto-Reply to Labeled Tickets
+on:
+  issues:
+    types:
+      - labeled
+      - unlabeled
+  pull_request_target:
+    types:
+      - labeled
+      - unlabeled
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2     
+      - name: Label Commenter
+        uses: peaceiris/actions-label-commenter@v1
+        with:
+          config_file: .github/issue-auto-comments.yml
+          github_token: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}

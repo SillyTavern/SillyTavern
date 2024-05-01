@@ -475,7 +475,7 @@ function convertTokenIdLogprobsToText(input) {
 }
 
 export function initLogprobs() {
-    const debouncedRender = debounce(renderAlternativeTokensView, 500);
+    const debouncedRender = debounce(renderAlternativeTokensView);
     $('#logprobsViewerClose').click(onToggleLogprobsPanel);
     $('#option_toggle_logprobs').click(onToggleLogprobsPanel);
     eventSource.on(event_types.CHAT_CHANGED, debouncedRender);

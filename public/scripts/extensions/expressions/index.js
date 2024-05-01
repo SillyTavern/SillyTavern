@@ -6,6 +6,7 @@ import { registerSlashCommand } from '../../slash-commands.js';
 import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from '../../utils.js';
 import { hideMutedSprites } from '../../group-chats.js';
 import { isJsonSchemaSupported } from '../../textgen-settings.js';
+import { debounce_timeout } from '../../constants.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -94,7 +95,7 @@ async function forceUpdateVisualNovelMode() {
     }
 }
 
-const updateVisualNovelModeDebounced = debounce(forceUpdateVisualNovelMode, 100);
+const updateVisualNovelModeDebounced = debounce(forceUpdateVisualNovelMode, debounce_timeout.quick);
 
 async function updateVisualNovelMode(name, expression) {
     const container = $('#visual-novel-wrapper');
@@ -1270,13 +1271,10 @@ async function getExpressionsList() {
      * @returns {Promise<string[]>}
      */
     async function resolveExpressionsList() {
-        // get something for offline mode (default images)
-        if (!modules.includes('classify') && extension_settings.expressions.api == EXPRESSION_API.extras) {
-            return DEFAULT_EXPRESSIONS;
-        }
-
+        // See if we can retrieve a specific expression list from the API
         try {
-            if (extension_settings.expressions.api == EXPRESSION_API.extras) {
+            // Check Extras api first, if enabled and that module active
+            if (extension_settings.expressions.api == EXPRESSION_API.extras && modules.includes('classify')) {
                 const url = new URL(getApiUrl());
                 url.pathname = '/api/classify/labels';
 
@@ -1291,7 +1289,10 @@ async function getExpressionsList() {
                     expressionsList = data.labels;
                     return expressionsList;
                 }
-            } else {
+            }
+
+            // If running the local classify model (not using the LLM), we ask that one
+            if (extension_settings.expressions.api == EXPRESSION_API.local) {
                 const apiResult = await fetch('/api/extra/classify/labels', {
                     method: 'POST',
                     headers: getRequestHeaders(),
@@ -1303,11 +1304,12 @@ async function getExpressionsList() {
                     return expressionsList;
                 }
             }
-        }
-        catch (error) {
+        } catch (error) {
             console.log(error);
-            return [];
         }
+
+        // If there was no specific list, or an error, just return the default expressions
+        return DEFAULT_EXPRESSIONS;
     }
 
     const result = await resolveExpressionsList();

@@ -23,6 +23,8 @@ import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getDataBankAttachments, getFileAttachment } from '../../chats.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
+import { debounce_timeout } from '../../constants.js';
+import { getSortedEntries } from '../../world-info.js';
 
 const MODULE_NAME = 'vectors';
 
@@ -66,6 +68,11 @@ const settings = {
     file_position_db: extension_prompt_types.IN_PROMPT,
     file_depth_db: 4,
     file_depth_role_db: extension_prompt_roles.SYSTEM,
+
+    // For World Info
+    enabled_world_info: false,
+    enabled_for_all: false,
+    max_entries: 5,
 };
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
@@ -274,15 +281,17 @@ async function synchronizeChat(batchSize = 5) {
         console.error('Vectors: Failed to synchronize chat', error);
 
         const message = getErrorMessage(error.cause);
-        toastr.error(message, 'Vectorization failed');
+        toastr.error(message, 'Vectorization failed', { preventDuplicates: true });
         return -1;
     } finally {
         syncBlocked = false;
     }
 }
 
-// Cache object for storing hash values
-const hashCache = {};
+/**
+ * @type {Map<string, number>} Cache object for storing hash values
+ */
+const hashCache = new Map();
 
 /**
  * Gets the hash value for a given string
@@ -291,15 +300,15 @@ const hashCache = {};
  */
 function getStringHash(str) {
     // Check if the hash is already in the cache
-    if (Object.hasOwn(hashCache, str)) {
-        return hashCache[str];
+    if (hashCache.has(str)) {
+        return hashCache.get(str);
     }
 
     // Calculate the hash value
     const hash = calculateHash(str);
 
     // Store the hash in the cache
-    hashCache[str] = hash;
+    hashCache.set(str, hash);
 
     return hash;
 }
@@ -435,6 +444,7 @@ async function retrieveFileChunks(queryText, collectionId) {
  * @param {string} fileName File name
  * @param {string} collectionId File collection ID
  * @param {number} chunkSize Chunk size
+ * @returns {Promise<boolean>} True if successful, false if not
  */
 async function vectorizeFile(fileText, fileName, collectionId, chunkSize) {
     try {
@@ -453,8 +463,11 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize) {
 
         toastr.clear(toast);
         console.log(`Vectors: Inserted ${chunks.length} vector items for file ${fileName} into ${collectionId}`);
+        return true;
     } catch (error) {
+        toastr.error(String(error), 'Failed to vectorize file', { preventDuplicates: true });
         console.error('Vectors: Failed to vectorize file', error);
+        return false;
     }
 }
 
@@ -470,6 +483,10 @@ async function rearrangeChat(chat) {
 
         if (settings.enabled_files) {
             await processFiles(chat);
+        }
+
+        if (settings.enabled_world_info) {
+            await activateWorldInfo(chat);
         }
 
         if (!settings.enabled_chats) {
@@ -533,6 +550,7 @@ async function rearrangeChat(chat) {
         const insertedText = getPromptText(queriedMessages);
         setExtensionPrompt(EXTENSION_PROMPT_TAG, insertedText, settings.position, settings.depth, settings.include_wi);
     } catch (error) {
+        toastr.error('Generation interceptor aborted. Check browser console for more details.', 'Vector Storage');
         console.error('Vectors: Failed to rearrange chat', error);
     }
 }
@@ -549,7 +567,7 @@ function getPromptText(queriedMessages) {
 
 window['vectors_rearrangeChat'] = rearrangeChat;
 
-const onChatEvent = debounce(async () => await moduleWorker.update(), 500);
+const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_timeout.relaxed);
 
 /**
  * Gets the text to query from the chat
@@ -845,6 +863,7 @@ async function purgeVectorIndex(collectionId) {
 function toggleSettings() {
     $('#vectors_files_settings').toggle(!!settings.enabled_files);
     $('#vectors_chats_settings').toggle(!!settings.enabled_chats);
+    $('#vectors_world_info_settings').toggle(!!settings.enabled_world_info);
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
@@ -897,6 +916,8 @@ async function onVectorizeAllFilesClick() {
         const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
         const allFiles = [...dataBank, ...chatAttachments];
 
+        let allSuccess = true;
+
         for (const file of allFiles) {
             const text = await getFileAttachment(file.url);
             const collectionId = getFileCollectionId(file.url);
@@ -907,10 +928,18 @@ async function onVectorizeAllFilesClick() {
                 continue;
             }
 
-            await vectorizeFile(text, file.name, collectionId, settings.chunk_size);
+            const result = await vectorizeFile(text, file.name, collectionId, settings.chunk_size);
+
+            if (!result) {
+                allSuccess = false;
+            }
         }
 
-        toastr.success('All files vectorized', 'Vectorization successful');
+        if (allSuccess) {
+            toastr.success('All files vectorized', 'Vectorization successful');
+        } else {
+            toastr.warning('Some files failed to vectorize. Check browser console for more details.', 'Vector Storage');
+        }
     } catch (error) {
         console.error('Vectors: Failed to vectorize all files', error);
         toastr.error('Failed to vectorize all files', 'Vectorization failed');
@@ -932,6 +961,111 @@ async function onPurgeFilesClick() {
         console.error('Vectors: Failed to purge all files', error);
         toastr.error('Failed to purge all files', 'Purge failed');
     }
+}
+
+async function activateWorldInfo(chat) {
+    if (!settings.enabled_world_info) {
+        console.debug('Vectors: Disabled for World Info');
+        return;
+    }
+
+    const entries = await getSortedEntries();
+
+    if (!Array.isArray(entries) || entries.length === 0) {
+        console.debug('Vectors: No WI entries found');
+        return;
+    }
+
+    // Group entries by "world" field
+    const groupedEntries = {};
+
+    for (const entry of entries) {
+        // Skip orphaned entries. Is it even possible?
+        if (!entry.world) {
+            console.debug('Vectors: Skipped orphaned WI entry', entry);
+            continue;
+        }
+
+        // Skip disabled entries
+        if (entry.disable) {
+            console.debug('Vectors: Skipped disabled WI entry', entry);
+            continue;
+        }
+
+        // Skip entries without content
+        if (!entry.content) {
+            console.debug('Vectors: Skipped WI entry without content', entry);
+            continue;
+        }
+
+        // Skip non-vectorized entries
+        if (!entry.vectorized && !settings.enabled_for_all) {
+            console.debug('Vectors: Skipped non-vectorized WI entry', entry);
+            continue;
+        }
+
+        if (!Object.hasOwn(groupedEntries, entry.world)) {
+            groupedEntries[entry.world] = [];
+        }
+
+        groupedEntries[entry.world].push(entry);
+    }
+
+    const collectionIds = [];
+
+    if (Object.keys(groupedEntries).length === 0) {
+        console.debug('Vectors: No WI entries to synchronize');
+        return;
+    }
+
+    // Synchronize collections
+    for (const world in groupedEntries) {
+        const collectionId = `world_${getStringHash(world)}`;
+        const hashesInCollection = await getSavedHashes(collectionId);
+        const newEntries = groupedEntries[world].filter(x => !hashesInCollection.includes(getStringHash(x.content)));
+        const deletedHashes = hashesInCollection.filter(x => !groupedEntries[world].some(y => getStringHash(y.content) === x));
+
+        if (newEntries.length > 0) {
+            console.log(`Vectors: Found ${newEntries.length} new WI entries for world ${world}`);
+            await insertVectorItems(collectionId, newEntries.map(x => ({ hash: getStringHash(x.content), text: x.content, index: x.uid })));
+        }
+
+        if (deletedHashes.length > 0) {
+            console.log(`Vectors: Deleted ${deletedHashes.length} old hashes for world ${world}`);
+            await deleteVectorItems(collectionId, deletedHashes);
+        }
+
+        collectionIds.push(collectionId);
+    }
+
+    // Perform a multi-query
+    const queryText = await getQueryText(chat);
+
+    if (queryText.length === 0) {
+        console.debug('Vectors: No text to query for WI');
+        return;
+    }
+
+    const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.max_entries);
+    const activatedHashes = Object.values(queryResults).flatMap(x => x.hashes).filter(onlyUnique);
+    const activatedEntries = [];
+
+    // Activate entries found in the query results
+    for (const entry of entries) {
+        const hash = getStringHash(entry.content);
+
+        if (activatedHashes.includes(hash)) {
+            activatedEntries.push(entry);
+        }
+    }
+
+    if (activatedEntries.length === 0) {
+        console.debug('Vectors: No activated WI entries found');
+        return;
+    }
+
+    console.log(`Vectors: Activated ${activatedEntries.length} WI entries`, activatedEntries);
+    await eventSource.emit(event_types.WORLDINFO_FORCE_ACTIVATE, activatedEntries);
 }
 
 jQuery(async () => {
@@ -1130,6 +1264,25 @@ jQuery(async () => {
 
     $('#vectors_translate_files').prop('checked', settings.translate_files).on('input', () => {
         settings.translate_files = !!$('#vectors_translate_files').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_enabled_world_info').prop('checked', settings.enabled_world_info).on('input', () => {
+        settings.enabled_world_info = !!$('#vectors_enabled_world_info').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+        toggleSettings();
+    });
+
+    $('#vectors_enabled_for_all').prop('checked', settings.enabled_for_all).on('input', () => {
+        settings.enabled_for_all = !!$('#vectors_enabled_for_all').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_max_entries').val(settings.max_entries).on('input', () => {
+        settings.max_entries = Number($('#vectors_max_entries').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

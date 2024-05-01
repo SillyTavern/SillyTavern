@@ -22,6 +22,7 @@ import {
     ANIMATION_DURATION_DEFAULT,
     setActiveGroup,
     setActiveCharacter,
+    entitiesFilter,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -35,12 +36,13 @@ import {
 } from './instruct-mode.js';
 
 import { registerSlashCommand } from './slash-commands.js';
-import { tag_map, tags } from './tags.js';
+import { getTagsList, tag_map, tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
 import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { FILTER_TYPES } from './filters.js';
 
 export {
     loadPowerUserSettings,
@@ -178,6 +180,7 @@ let power_user = {
     timestamps_enabled: true,
     timestamp_model_icon: false,
     mesIDDisplay_enabled: false,
+    hideChatAvatars_enabled: false,
     max_context_unlocked: false,
     message_token_count_enabled: false,
     expand_message_actions: false,
@@ -295,6 +298,7 @@ const storage_keys = {
     timestamps_enabled: 'TimestampsEnabled',
     timestamp_model_icon: 'TimestampModelIcon',
     mesIDDisplay_enabled: 'mesIDDisplayEnabled',
+    hideChatAvatars_enabled: 'hideChatAvatarsEnabled',
     message_token_count_enabled: 'MessageTokenCountEnabled',
     expand_message_actions: 'ExpandMessageActions',
     enableZenSliders: 'enableZenSliders',
@@ -323,7 +327,7 @@ const contextControls = [
 let browser_has_focus = true;
 const debug_functions = [];
 
-const setHotswapsDebounced = debounce(favsToHotswap, 500);
+const setHotswapsDebounced = debounce(favsToHotswap);
 
 export function switchSimpleMode() {
     $('[data-newbie-hidden]').each(function () {
@@ -462,6 +466,17 @@ function switchMesIDDisplay() {
         poweruser after:${power_user.mesIDDisplay_enabled}`) */
     $('body').toggleClass('no-mesIDDisplay', !power_user.mesIDDisplay_enabled);
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
+}
+
+function switchHideChatAvatars() {
+    const value = localStorage.getItem(storage_keys.hideChatAvatars_enabled);
+    power_user.hideChatAvatars_enabled = value === null ? false : value == 'true';
+    /*console.log(`
+        localstorage value:${value},
+        poweruser after:${power_user.hideChatAvatars_enabled}`)
+    */
+    $('body').toggleClass('hideChatAvatars', power_user.hideChatAvatars_enabled);
+    $('#hideChatAvatarsEnabled').prop('checked', power_user.hideChatAvatars_enabled);
 }
 
 function switchMessageActions() {
@@ -1270,6 +1285,13 @@ async function applyTheme(name) {
             },
         },
         {
+            key: 'hideChatAvatars_enabled',
+            action: async () => {
+                localStorage.setItem(storage_keys.hideChatAvatars_enabled, Boolean(power_user.hideChatAvatars_enabled));
+                switchHideChatAvatars();
+            },
+        },
+        {
             key: 'expand_message_actions',
             action: async () => {
                 localStorage.setItem(storage_keys.expand_message_actions, Boolean(power_user.expand_message_actions));
@@ -1391,6 +1413,7 @@ switchTimer();
 switchTimestamps();
 switchIcons();
 switchMesIDDisplay();
+switchHideChatAvatars();
 switchTokenCount();
 switchMessageActions();
 
@@ -1433,6 +1456,7 @@ function loadPowerUserSettings(settings, data) {
     const timer = localStorage.getItem(storage_keys.timer_enabled);
     const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
     const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
+    const hideChatAvatars = localStorage.getItem(storage_keys.hideChatAvatars_enabled);
     const expandMessageActions = localStorage.getItem(storage_keys.expand_message_actions);
     const enableZenSliders = localStorage.getItem(storage_keys.enableZenSliders);
     const enableLabMode = localStorage.getItem(storage_keys.enableLabMode);
@@ -1456,6 +1480,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.timer_enabled = timer === null ? true : timer == 'true';
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == 'true';
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == 'true';
+    power_user.hideChatAvatars_enabled = hideChatAvatars === null ? true : hideChatAvatars == 'true';
     power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == 'true';
     power_user.enableZenSliders = enableZenSliders === null ? false : enableZenSliders == 'true';
     power_user.enableLabMode = enableLabMode === null ? false : enableLabMode == 'true';
@@ -1541,6 +1566,7 @@ function loadPowerUserSettings(settings, data) {
     $('#messageTimestampsEnabled').prop('checked', power_user.timestamps_enabled);
     $('#messageModelIconEnabled').prop('checked', power_user.timestamp_model_icon);
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
+    $('#hideChatAvatarsEndabled').prop('checked', power_user.hideChatAvatars_enabled);
     $('#prefer_character_prompt').prop('checked', power_user.prefer_character_prompt);
     $('#prefer_character_jailbreak').prop('checked', power_user.prefer_character_jailbreak);
     $('#enableZenSliders').prop('checked', power_user.enableZenSliders).trigger('input');
@@ -1836,10 +1862,17 @@ function highlightDefaultContext() {
     $('#context_delete_preset').toggleClass('disabled', power_user.default_context === power_user.context.preset);
 }
 
+/**
+ * Fuzzy search characters by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchCharacters(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(characters, {
         keys: [
-            { name: 'data.name', weight: 8 },
+            { name: 'data.name', weight: 20 },
+            { name: '#tags', weight: 10, getFn: (character) => getTagsList(character.avatar).map(x => x.name).join('||') },
             { name: 'data.description', weight: 3 },
             { name: 'data.mes_example', weight: 3 },
             { name: 'data.scenario', weight: 2 },
@@ -1852,82 +1885,114 @@ export function fuzzySearchCharacters(searchValue) {
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Characters fuzzy search results for ' + searchValue, results);
-    const indices = results.map(x => x.refIndex);
-    return indices;
+    return results;
 }
 
+/**
+ * Fuzzy search world info entries by a search term
+ * @param {*[]} data - WI items data array
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchWorldInfo(data, searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'key', weight: 3 },
+            { name: 'key', weight: 20 },
+            { name: 'group', weight: 15 },
+            { name: 'comment', weight: 10 },
+            { name: 'keysecondary', weight: 10 },
             { name: 'content', weight: 3 },
-            { name: 'comment', weight: 2 },
-            { name: 'keysecondary', weight: 2 },
             { name: 'uid', weight: 1 },
+            { name: 'automationId', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('World Info fuzzy search results for ' + searchValue, results);
-    return results.map(x => x.item?.uid);
+    return results;
 }
 
+/**
+ * Fuzzy search persona entries by a search term
+ * @param {*[]} data - persona data array
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchPersonas(data, searchValue) {
-    data = data.map(x => ({ key: x, description: power_user.persona_descriptions[x]?.description ?? '', name: power_user.personas[x] ?? '' }));
+    data = data.map(x => ({ key: x, name: power_user.personas[x] ?? '', description: power_user.persona_descriptions[x]?.description ?? '' }));
+    // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'name', weight: 4 },
-            { name: 'description', weight: 1 },
+            { name: 'name', weight: 20 },
+            { name: 'description', weight: 3 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Personas fuzzy search results for ' + searchValue, results);
-    return results.map(x => x.item?.key);
+    return results;
 }
 
+/**
+ * Fuzzy search tags by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchTags(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(tags, {
         keys: [
             { name: 'name', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Tags fuzzy search results for ' + searchValue, results);
-    const ids = results.map(x => String(x.item?.id)).filter(x => x);
-    return ids;
+    return results;
 }
 
+/**
+ * Fuzzy search groups by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchGroups(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(groups, {
         keys: [
-            { name: 'name', weight: 3 },
-            { name: 'members', weight: 1 },
+            { name: 'name', weight: 20 },
+            { name: 'members', weight: 15 },
+            { name: '#tags', weight: 10, getFn: (group) => getTagsList(group.id).map(x => x.name).join('||') },
+            { name: 'id', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Groups fuzzy search results for ' + searchValue, results);
-    const ids = results.map(x => String(x.item?.id)).filter(x => x);
-    return ids;
+    return results;
 }
 
 /**
@@ -2002,13 +2067,22 @@ function sortEntitiesList(entities) {
         return;
     }
 
+    const isSearch = $('#character_sort_order option[data-field="search"]').is(':selected');
+
     entities.sort((a, b) => {
+        // Sort tags/folders will always be at the top
         if (a.type === 'tag' && b.type !== 'tag') {
             return -1;
         }
-
         if (a.type !== 'tag' && b.type === 'tag') {
             return 1;
+        }
+
+        // If we have search sorting, we take scores and use those
+        if (isSearch) {
+            const aScore = entitiesFilter.getScore(FILTER_TYPES.SEARCH, `${a.type}.${a.id}`);
+            const bScore = entitiesFilter.getScore(FILTER_TYPES.SEARCH, `${b.type}.${b.id}`);
+            return (aScore - bScore);
         }
 
         return sortFunc(a.item, b.item);
@@ -2150,6 +2224,7 @@ async function saveTheme(name = undefined) {
         timestamp_model_icon: power_user.timestamp_model_icon,
 
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
+        hideChatAvatars_enabled: power_user.hideChatAvatars_enabled,
         message_token_count_enabled: power_user.message_token_count_enabled,
         expand_message_actions: power_user.expand_message_actions,
         enableZenSliders: power_user.enableZenSliders,
@@ -2373,7 +2448,7 @@ async function doRandomChat(_, tagName) {
             .map(x => x[0]) // Map the character avatar
             .filter(x => characters.find(y => y.avatar === x)); // Filter out characters that don't exist
         const randomCharacter = taggedCharacters[Math.floor(Math.random() * taggedCharacters.length)];
-        const randomIndex =  characters.findIndex(x => x.avatar === randomCharacter);
+        const randomIndex = characters.findIndex(x => x.avatar === randomCharacter);
         if (randomIndex === -1) {
             return;
         }
@@ -2720,6 +2795,7 @@ function setAvgBG() {
 }
 
 async function setThemeCallback(_, text) {
+    // @ts-ignore
     const fuse = new Fuse(themes, {
         keys: [
             { name: 'name', weight: 1 },
@@ -2742,6 +2818,7 @@ async function setThemeCallback(_, text) {
 }
 
 async function setmovingUIPreset(_, text) {
+    // @ts-ignore
     const fuse = new Fuse(movingUIPresets, {
         keys: [
             { name: 'name', weight: 1 },
@@ -3183,9 +3260,13 @@ $(document).ready(() => {
     });
 
     $('#character_sort_order').on('change', function () {
-        power_user.sort_field = $(this).find(':selected').data('field');
-        power_user.sort_order = $(this).find(':selected').data('order');
-        power_user.sort_rule = $(this).find(':selected').data('rule');
+        const field = String($(this).find(':selected').data('field'));
+        // Save sort order, but do not save search sorting, as this is a temporary sorting option
+        if (field !== 'search') {
+            power_user.sort_field = field;
+            power_user.sort_order = $(this).find(':selected').data('order');
+            power_user.sort_rule = $(this).find(':selected').data('rule');
+        }
         printCharactersDebounced();
         saveSettingsDebounced();
     });
@@ -3374,6 +3455,13 @@ $(document).ready(() => {
         power_user.mesIDDisplay_enabled = value;
         localStorage.setItem(storage_keys.mesIDDisplay_enabled, Boolean(power_user.mesIDDisplay_enabled));
         switchMesIDDisplay();
+    });
+
+    $('#hideChatAvatarsEnabled').on('input', function () {
+        const value = !!$(this).prop('checked');
+        power_user.hideChatAvatars_enabled = value;
+        localStorage.setItem(storage_keys.hideChatAvatars_enabled, Boolean(power_user.hideChatAvatars_enabled));
+        switchHideChatAvatars();
     });
 
     $('#hotswapEnabled').on('input', function () {

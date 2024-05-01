@@ -56,6 +56,8 @@ function validateAssetFileName(inputFilename) {
  * @returns {string[]} - The array of files
  */
 function getFiles(dir, files = []) {
+    if (!fs.existsSync(dir)) return files;
+
     // Get an array of all files and directories in the passed directory using fs.readdirSync
     const fileList = fs.readdirSync(dir, { withFileTypes: true });
     // Create the full path of the file/directory by concatenating the passed directory and file/directory name

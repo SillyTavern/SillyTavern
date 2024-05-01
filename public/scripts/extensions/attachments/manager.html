@@ -7,8 +7,13 @@
     <div data-i18n="These files will be available for extensions that support attachments (e.g. Vector Storage).">
         These files will be available for extensions that support attachments (e.g. Vector Storage).
     </div>
-    <div data-i18n="Supported file types: Plain Text, PDF, Markdown, HTML, EPUB." class="marginTopBot5">
-        Supported file types: Plain Text, PDF, Markdown, HTML, EPUB.
+    <div class="marginTopBot5">
+        <span data-i18n="Supported file types: Plain Text, PDF, Markdown, HTML, EPUB." >
+            Supported file types: Plain Text, PDF, Markdown, HTML, EPUB.
+        </span>
+        <span data-i18n="Drag and drop files here to upload.">
+            Drag and drop files here to upload.
+        </span>
     </div>
     <div class="flex-container marginTopBot5">
         <input type="search" id="attachmentSearch" class="attachmentSearch text_pole margin0 flex1" placeholder="Search...">
@@ -101,15 +106,20 @@
             <div class="attachmentListItemName flex1"></div>
             <small class="attachmentListItemCreated"></small>
             <small class="attachmentListItemSize"></small>
-            <div class="viewAttachmentButton right_menu_button fa-solid fa-magnifying-glass" title="View attachment content"></div>
-            <div class="editAttachmentButton right_menu_button fa-solid fa-pencil" title="Edit attachment"></div>
-            <div class="deleteAttachmentButton right_menu_button fa-solid fa-trash" title="Delete attachment"></div>
+            <div class="viewAttachmentButton right_menu_button fa-fw fa-solid fa-magnifying-glass" title="View attachment content"></div>
+            <div class="disableAttachmentButton right_menu_button fa-fw fa-solid fa-comment" title="Disable attachment"></div>
+            <div class="enableAttachmentButton right_menu_button fa-fw fa-solid fa-comment-slash" title="Enable attachment"></div>
+            <div class="moveAttachmentButton right_menu_button fa-fw fa-solid fa-arrows-alt" title="Move attachment"></div>
+            <div class="editAttachmentButton right_menu_button fa-fw fa-solid fa-pencil" title="Edit attachment"></div>
+            <div class="downloadAttachmentButton right_menu_button fa-fw fa-solid fa-download" title="Download attachment"></div>
+            <div class="deleteAttachmentButton right_menu_button fa-fw fa-solid fa-trash" title="Delete attachment"></div>
         </div>
     </div>
 
     <div class="actionButtonTemplate">
-        <div class="actionButton list-group-item flex-container flexGap5" title="">
+        <div class="actionButton list-group-item flex-container flexGap5" style="align-items: center;" title="">
             <i class="actionButtonIcon"></i>
+            <img class="actionButtonImg"/>
             <span class="actionButtonText"></span>
         </div>
     </div>

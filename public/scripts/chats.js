@@ -53,11 +53,11 @@ import { ScraperManager } from './scrapers.js';
  * @returns {Promise<string>} Converted file text
  */
 
-const fileSizeLimit = 1024 * 1024 * 10; // 10 MB
+const fileSizeLimit = 1024 * 1024 * 100; // 100 MB
 const ATTACHMENT_SOURCE = {
     GLOBAL: 'global',
-    CHAT: 'chat',
     CHARACTER: 'character',
+    CHAT: 'chat',
 };
 
 /**
@@ -592,9 +592,10 @@ async function deleteMessageImage() {
 /**
  * Deletes file from the server.
  * @param {string} url Path to the file on the server
+ * @param {boolean} [silent=false] If true, do not show error messages
  * @returns {Promise<boolean>} True if file was deleted, false otherwise.
  */
-async function deleteFileFromServer(url) {
+async function deleteFileFromServer(url, silent = false) {
     try {
         const result = await fetch('/api/files/delete', {
             method: 'POST',
@@ -602,7 +603,7 @@ async function deleteFileFromServer(url) {
             body: JSON.stringify({ path: url }),
         });
 
-        if (!result.ok) {
+        if (!result.ok && !silent) {
             const error = await result.text();
             throw new Error(error);
         }
@@ -670,6 +671,79 @@ async function editAttachment(attachment, source, callback) {
 }
 
 /**
+ * Downloads an attachment to the user's device.
+ * @param {FileAttachment} attachment Attachment to download
+ */
+async function downloadAttachment(attachment) {
+    const fileText = attachment.text || (await getFileAttachment(attachment.url));
+    const blob = new Blob([fileText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = attachment.name;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+/**
+ * Removes an attachment from the disabled list.
+ * @param {FileAttachment} attachment Attachment to enable
+ * @param {function} callback Success callback
+ */
+function enableAttachment(attachment, callback) {
+    ensureAttachmentsExist();
+    extension_settings.disabled_attachments = extension_settings.disabled_attachments.filter(url => url !== attachment.url);
+    saveSettingsDebounced();
+    callback();
+}
+
+/**
+ * Adds an attachment to the disabled list.
+ * @param {FileAttachment} attachment Attachment to disable
+ * @param {function} callback Success callback
+ */
+function disableAttachment(attachment, callback) {
+    ensureAttachmentsExist();
+    extension_settings.disabled_attachments.push(attachment.url);
+    saveSettingsDebounced();
+    callback();
+}
+
+/**
+ * Moves a file attachment to a different source.
+ * @param {FileAttachment} attachment Attachment to moves
+ * @param {string} source Source of the attachment
+ * @param {function} callback Success callback
+ * @returns {Promise<void>} A promise that resolves when the attachment is moved.
+ */
+async function moveAttachment(attachment, source, callback) {
+    let selectedTarget = source;
+    const targets = getAvailableTargets();
+    const template = $(await renderExtensionTemplateAsync('attachments', 'move-attachment', { name: attachment.name, targets }));
+    template.find('.moveAttachmentTarget').val(source).on('input', function () {
+        selectedTarget = String($(this).val());
+    });
+
+    const result = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Move', cancelButton: 'Cancel' });
+
+    if (result !== POPUP_RESULT.AFFIRMATIVE) {
+        console.debug('Move attachment cancelled');
+        return;
+    }
+
+    if (selectedTarget === source) {
+        console.debug('Move attachment cancelled: same source and target');
+        return;
+    }
+
+    const content = await getFileAttachment(attachment.url);
+    const file = new File([content], attachment.name, { type: 'text/plain' });
+    await deleteAttachment(attachment, source, () => { }, false);
+    await uploadFileAttachmentToServer(file, selectedTarget);
+    callback();
+}
+
+/**
  * Deletes an attachment from the server and the chat.
  * @param {FileAttachment} attachment Attachment to delete
  * @param {string} source Source of the attachment
@@ -702,8 +776,23 @@ async function deleteAttachment(attachment, source, callback, confirm = true) {
             break;
     }
 
-    await deleteFileFromServer(attachment.url);
+    if (Array.isArray(extension_settings.disabled_attachments) && extension_settings.disabled_attachments.includes(attachment.url)) {
+        extension_settings.disabled_attachments = extension_settings.disabled_attachments.filter(url => url !== attachment.url);
+        saveSettingsDebounced();
+    }
+
+    const silent = confirm === false;
+    await deleteFileFromServer(attachment.url, silent);
     callback();
+}
+
+/**
+ * Determines if the attachment is disabled.
+ * @param {FileAttachment} attachment Attachment to check
+ * @returns {boolean} True if attachment is disabled, false otherwise.
+ */
+function isAttachmentDisabled(attachment) {
+    return extension_settings.disabled_attachments.some(url => url === attachment?.url);
 }
 
 /**
@@ -755,13 +844,20 @@ async function openAttachmentManager() {
         const sortedAttachmentList = attachments.slice().filter(filterFn).sort(sortFn);
 
         for (const attachment of sortedAttachmentList) {
+            const isDisabled = isAttachmentDisabled(attachment);
             const attachmentTemplate = template.find('.attachmentListItemTemplate .attachmentListItem').clone();
+            attachmentTemplate.toggleClass('disabled', isDisabled);
+            attachmentTemplate.find('.attachmentFileIcon').attr('title', attachment.url);
             attachmentTemplate.find('.attachmentListItemName').text(attachment.name);
             attachmentTemplate.find('.attachmentListItemSize').text(humanFileSize(attachment.size));
             attachmentTemplate.find('.attachmentListItemCreated').text(new Date(attachment.created).toLocaleString());
             attachmentTemplate.find('.viewAttachmentButton').on('click', () => openFilePopup(attachment));
             attachmentTemplate.find('.editAttachmentButton').on('click', () => editAttachment(attachment, source, renderAttachments));
             attachmentTemplate.find('.deleteAttachmentButton').on('click', () => deleteAttachment(attachment, source, renderAttachments));
+            attachmentTemplate.find('.downloadAttachmentButton').on('click', () => downloadAttachment(attachment));
+            attachmentTemplate.find('.moveAttachmentButton').on('click', () => moveAttachment(attachment, source, renderAttachments));
+            attachmentTemplate.find('.enableAttachmentButton').toggle(isDisabled).on('click', () => enableAttachment(attachment, renderAttachments));
+            attachmentTemplate.find('.disableAttachmentButton').toggle(!isDisabled).on('click', () => disableAttachment(attachment, renderAttachments));
             template.find(sources[source]).append(attachmentTemplate);
         }
     }
@@ -786,7 +882,13 @@ async function openAttachmentManager() {
             }
 
             const buttonTemplate = template.find('.actionButtonTemplate .actionButton').clone();
-            buttonTemplate.find('.actionButtonIcon').addClass(scraper.iconClass);
+            if (scraper.iconAvailable) {
+                buttonTemplate.find('.actionButtonIcon').addClass(scraper.iconClass);
+                buttonTemplate.find('.actionButtonImg').remove();
+            } else {
+                buttonTemplate.find('.actionButtonImg').attr('src', scraper.iconClass);
+                buttonTemplate.find('.actionButtonIcon').remove();
+            }
             buttonTemplate.find('.actionButtonText').text(scraper.name);
             buttonTemplate.attr('title', scraper.description);
             buttonTemplate.on('click', () => {
@@ -860,6 +962,50 @@ async function openAttachmentManager() {
         template.find('.chatAttachmentsName').text(chatName);
     }
 
+    function addDragAndDrop() {
+        $(document.body).on('dragover', '.dialogue_popup', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            $(event.target).closest('.dialogue_popup').addClass('dragover');
+        });
+
+        $(document.body).on('dragleave', '.dialogue_popup', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            $(event.target).closest('.dialogue_popup').removeClass('dragover');
+        });
+
+        $(document.body).on('drop', '.dialogue_popup', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            $(event.target).closest('.dialogue_popup').removeClass('dragover');
+
+            const files = Array.from(event.originalEvent.dataTransfer.files);
+            let selectedTarget = ATTACHMENT_SOURCE.GLOBAL;
+            const targets = getAvailableTargets();
+
+            const targetSelectTemplate = $(await renderExtensionTemplateAsync('attachments', 'files-dropped', { count: files.length, targets: targets }));
+            targetSelectTemplate.find('.droppedFilesTarget').on('input', function () {
+                selectedTarget = String($(this).val());
+            });
+            const result = await callGenericPopup(targetSelectTemplate, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Upload', cancelButton: 'Cancel' });
+            if (result !== POPUP_RESULT.AFFIRMATIVE) {
+                console.log('File upload cancelled');
+                return;
+            }
+            for (const file of files) {
+                await uploadFileAttachmentToServer(file, selectedTarget);
+            }
+            renderAttachments();
+        });
+    }
+
+    function removeDragAndDrop() {
+        $(document.body).off('dragover', '.shadow_popup');
+        $(document.body).off('dragleave', '.shadow_popup');
+        $(document.body).off('drop', '.shadow_popup');
+    }
+
     let sortField = localStorage.getItem('DataBank_sortField') || 'created';
     let sortOrder = localStorage.getItem('DataBank_sortOrder') || 'desc';
     let filterString = '';
@@ -883,10 +1029,34 @@ async function openAttachmentManager() {
     });
 
     const cleanupFn = await renderButtons();
+    await verifyAttachments();
     await renderAttachments();
+    addDragAndDrop();
     await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });
 
     cleanupFn();
+    removeDragAndDrop();
+}
+
+/**
+ * Gets a list of available targets for attachments.
+ * @returns {string[]} List of available targets
+ */
+function getAvailableTargets() {
+    const targets = Object.values(ATTACHMENT_SOURCE);
+
+    const isNotCharacter = this_chid === undefined || selected_group;
+    const isNotInChat = getCurrentChatId() === undefined;
+
+    if (isNotCharacter) {
+        targets.splice(targets.indexOf(ATTACHMENT_SOURCE.CHARACTER), 1);
+    }
+
+    if (isNotInChat) {
+        targets.splice(targets.indexOf(ATTACHMENT_SOURCE.CHAT), 1);
+    }
+
+    return targets;
 }
 
 /**
@@ -989,6 +1159,10 @@ export async function uploadFileAttachmentToServer(file, target) {
 }
 
 function ensureAttachmentsExist() {
+    if (!Array.isArray(extension_settings.disabled_attachments)) {
+        extension_settings.disabled_attachments = [];
+    }
+
     if (!Array.isArray(extension_settings.attachments)) {
         extension_settings.attachments = [];
     }
@@ -1009,7 +1183,7 @@ function ensureAttachmentsExist() {
 }
 
 /**
- * Gets all currently available attachments.
+ * Gets all currently available attachments. Ignores disabled attachments.
  * @returns {FileAttachment[]} List of attachments
  */
 export function getDataBankAttachments() {
@@ -1018,11 +1192,11 @@ export function getDataBankAttachments() {
     const chatAttachments = chat_metadata.attachments ?? [];
     const characterAttachments = extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
 
-    return [...globalAttachments, ...chatAttachments, ...characterAttachments];
+    return [...globalAttachments, ...chatAttachments, ...characterAttachments].filter(x => !isAttachmentDisabled(x));
 }
 
 /**
- * Gets all attachments for a specific source.
+ * Gets all attachments for a specific source. Includes disabled attachments.
  * @param {string} source Attachment source
  * @returns {FileAttachment[]} List of attachments
  */
@@ -1036,6 +1210,50 @@ export function getDataBankAttachmentsForSource(source) {
             return chat_metadata.attachments ?? [];
         case ATTACHMENT_SOURCE.CHARACTER:
             return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+    }
+
+    return [];
+}
+
+/**
+ * Verifies all attachments in the Data Bank.
+ * @returns {Promise<void>} A promise that resolves when attachments are verified.
+ */
+async function verifyAttachments() {
+    for (const source of Object.values(ATTACHMENT_SOURCE)) {
+        await verifyAttachmentsForSource(source);
+    }
+}
+
+/**
+ * Verifies all attachments for a specific source.
+ * @param {string} source Attachment source
+ * @returns {Promise<void>} A promise that resolves when attachments are verified.
+ */
+async function verifyAttachmentsForSource(source) {
+    try {
+        const attachments = getDataBankAttachmentsForSource(source);
+        const urls = attachments.map(a => a.url);
+        const response = await fetch('/api/files/verify', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ urls }),
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error);
+        }
+
+        const verifiedUrls = await response.json();
+        for (const attachment of attachments) {
+            if (verifiedUrls[attachment.url] === false) {
+                console.log('Deleting orphaned attachment', attachment);
+                await deleteAttachment(attachment, source, () => { }, false);
+            }
+        }
+    } catch (error) {
+        console.error('Attachment verification failed', error);
     }
 }
 
@@ -1116,6 +1334,7 @@ jQuery(function () {
         const textarea = document.createElement('textarea');
         textarea.value = String(bro.val());
         textarea.classList.add('height100p', 'wide100p');
+        bro.hasClass('monospace') && textarea.classList.add('monospace');
         textarea.addEventListener('input', function () {
             bro.val(textarea.value).trigger('input');
         });

@@ -6,6 +6,7 @@ const { getIpFromRequest } = require('../express-common');
 const { color, getConfigValue } = require('../util');
 
 const whitelistPath = path.join(process.cwd(), './whitelist.txt');
+const enableForwardedWhitelist = getConfigValue('enableForwardedWhitelist', false);
 let whitelist = getConfigValue('whitelist', []);
 let knownIPs = new Set();
 
@@ -24,14 +25,18 @@ if (fs.existsSync(whitelistPath)) {
  * @returns {string|undefined} The client IP address
  */
 function getForwardedIp(req) {
+    if (!enableForwardedWhitelist) {
+        return undefined;
+    }
+
     // Check if X-Real-IP is available
     if (req.headers['x-real-ip']) {
-        return req.headers['x-real-ip'];
+        return req.headers['x-real-ip'].toString();
     }
 
     // Check for X-Forwarded-For and parse if available
     if (req.headers['x-forwarded-for']) {
-        const ipList = req.headers['x-forwarded-for'].split(',').map(ip => ip.trim());
+        const ipList = req.headers['x-forwarded-for'].toString().split(',').map(ip => ip.trim());
         return ipList[0];
     }
 
