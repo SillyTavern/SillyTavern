@@ -162,6 +162,7 @@
     min-width: 10em;
     flex-grow: 1;
 }
+
 #world_info_sort_order {
     width: 7em;
 }
