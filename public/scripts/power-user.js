@@ -41,7 +41,7 @@ import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, isOdd, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
 import { FILTER_TYPES } from './filters.js';
 
 export {
@@ -2339,12 +2339,14 @@ async function resetMovablePanels(type) {
         'cfgConfig',
     ];
 
+    /**
+     * @type {HTMLElement[]} Generic panels that don't have a known ID
+     */
+    const draggedElements = Array.from(document.querySelectorAll('[data-dragged]'));
+    const allDraggable = panelIds.map(id => document.getElementById(id)).concat(draggedElements).filter(onlyUnique);
+
     const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin'];
-
-    panelIds.forEach((id) => {
-        console.log(id);
-        const panel = document.getElementById(id);
-
+    allDraggable.forEach((panel) => {
         if (panel) {
             $(panel).addClass('resizing');
             panelStyles.forEach((style) => {
@@ -2353,7 +2355,10 @@ async function resetMovablePanels(type) {
         }
     });
 
-    const zoomedAvatars = document.querySelectorAll('.zoomed_avatar');
+    /**
+     * @type {HTMLElement[]} Zoomed avatars that are currently being resized
+     */
+    const zoomedAvatars = Array.from(document.querySelectorAll('.zoomed_avatar'));
     if (zoomedAvatars.length > 0) {
         zoomedAvatars.forEach((avatar) => {
             avatar.classList.add('resizing');
