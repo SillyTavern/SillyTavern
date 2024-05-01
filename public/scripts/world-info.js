@@ -743,7 +743,12 @@ function nullWorldInfo() {
 function displayWorldEntries(name, data, navigation = navigation_option.none) {
     updateEditor = (navigation) => displayWorldEntries(name, data, navigation);
 
-    $('#world_popup_entries_list').empty().show();
+    const worldEntriesList = $('#world_popup_entries_list');
+
+    // We save costly performance by removing all events before emptying. Because we know there are no relevant event handlers reacting on removing elements
+    // This prevents jQuery from actually going through all registered events on the controls for each entry when removing it
+    worldEntriesList.find('*').off();
+    worldEntriesList.empty().show();
 
     if (!data || !('entries' in data)) {
         $('#world_popup_new').off('click').on('click', nullWorldInfo);
@@ -751,7 +756,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         $('#world_popup_export').off('click').on('click', nullWorldInfo);
         $('#world_popup_delete').off('click').on('click', nullWorldInfo);
         $('#world_duplicate').off('click').on('click', nullWorldInfo);
-        $('#world_popup_entries_list').hide();
+        worldEntriesList.hide();
         $('#world_info_pagination').html('');
         return;
     }
@@ -794,7 +799,11 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         callback: function (/** @type {object[]} */ page) {
-            $('#world_popup_entries_list').empty();
+            // We save costly performance by removing all events before emptying. Because we know there are no relevant event handlers reacting on removing elements
+            // This prevents jQuery from actually going through all registered events on the controls for each entry when removing it
+            worldEntriesList.find('*').off();
+            worldEntriesList.empty();
+
             const keywordHeaders = `
             <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 4.5em;">
             <small class="flex1">
@@ -823,8 +832,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
                     block.find('.drag-handle').remove();
                 });
             }
-            $('#world_popup_entries_list').append(keywordHeaders);
-            $('#world_popup_entries_list').append(blocks);
+            worldEntriesList.append(keywordHeaders);
+            worldEntriesList.append(blocks);
         },
         afterSizeSelectorChange: function (e) {
             localStorage.setItem(storageKey, e.target.value);
@@ -835,6 +844,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             });
         },
     });
+
+
 
     if (typeof navigation === 'number' && Number(navigation) >= 0) {
         const selector = `#world_popup_entries_list [uid="${navigation}"]`;
@@ -937,12 +948,12 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     });
 
     // Check if a sortable instance exists
-    if ($('#world_popup_entries_list').sortable('instance') !== undefined) {
+    if (worldEntriesList.sortable('instance') !== undefined) {
         // Destroy the instance
-        $('#world_popup_entries_list').sortable('destroy');
+        worldEntriesList.sortable('destroy');
     }
 
-    $('#world_popup_entries_list').sortable({
+    worldEntriesList.sortable({
         delay: getSortableDelay(),
         handle: '.drag-handle',
         stop: async function (event, ui) {
