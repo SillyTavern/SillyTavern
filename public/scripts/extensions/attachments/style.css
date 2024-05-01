@@ -19,6 +19,16 @@
     padding: 10px;
 }
 
+.attachmentListItem.disabled .attachmentListItemName {
+    text-decoration: line-through;
+    opacity: 0.75;
+}
+
+.attachmentListItem.disabled .attachmentFileIcon {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
 .attachmentListItemSize {
     min-width: 4em;
     text-align: right;
