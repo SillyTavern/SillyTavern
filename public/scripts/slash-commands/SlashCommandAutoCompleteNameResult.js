@@ -33,11 +33,21 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
 
     getSecondaryNameAt(text, index, isSelect) {
         text = `{:${text}:}`;
-        let result = this.getNamedArgumentAt(text, index, isSelect);
-        if (!result) {
-            result = this.getUnnamedArgumentAt(text, index, isSelect);
+        const namedResult = this.getNamedArgumentAt(text, index, isSelect);
+        if (!namedResult || namedResult.optionList.length == 0 || !namedResult.isRequired) {
+            const unnamedResult = this.getUnnamedArgumentAt(text, index, isSelect);
+            if (!namedResult) return unnamedResult;
+            if (namedResult && unnamedResult) {
+                const combinedResult = new AutoCompleteSecondaryNameResult(
+                    namedResult.name,
+                    namedResult.start,
+                    [...namedResult.optionList, ...unnamedResult.optionList],
+                );
+                combinedResult.isRequired = namedResult.isRequired || unnamedResult.isRequired;
+                return combinedResult;
+            }
         }
-        return result;
+        return namedResult;
     }
 
     getNamedArgumentAt(text, index, isSelect) {
@@ -49,7 +59,8 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         let argAssign;
         index = index + 2;
         const unamedArgLength = this.executor.endUnnamedArgs - this.executor.startUnnamedArgs;
-        if (this.executor.startNamedArgs <= index && this.executor.endNamedArgs + 1 >= index) {
+        const namedArgsFollowedBySpace = text[this.executor.endNamedArgs + 1] == ' ';
+        if (this.executor.startNamedArgs <= index && this.executor.endNamedArgs + (namedArgsFollowedBySpace ? 1 : 0) >= index) {
             // cursor is somewhere within the named arguments (including final space)
             argAssign = this.executor.namedArgumentList.find(it=>it.start <= index && it.end >= index);
             if (argAssign) {
@@ -65,29 +76,16 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             }
         } else if (unamedArgLength > 0 && index >= this.executor.startUnnamedArgs && index <= this.executor.endUnnamedArgs) {
             // cursor is somewhere within the unnamed arguments
-            if (Array.isArray(this.executor.unnamedArgumentList)) {
-                //TODO if index is in first array item and that is a string, treat it as an unfinished named arg
-                if (typeof this.executor.unnamedArgumentList[0] == 'string') {
-                    if (index <= this.executor.startUnnamedArgs + this.executor.unnamedArgumentList[0].length) {
-                        name = this.executor.unnamedArgumentList[0].slice(0, index - this.executor.startUnnamedArgs);
-                        start = this.executor.startUnnamedArgs;
-                    } else {
-                        return null;
-                    }
+            //TODO if index is in first array item and that is a string, treat it as an unfinished named arg
+            if (typeof this.executor.unnamedArgumentList[0].value == 'string') {
+                if (index <= this.executor.startUnnamedArgs + this.executor.unnamedArgumentList[0].value.length) {
+                    name = this.executor.unnamedArgumentList[0].value.slice(0, index - this.executor.startUnnamedArgs);
+                    start = this.executor.startUnnamedArgs;
                 } else {
                     return null;
                 }
-            } else if (this.executor.unnamedArgumentList instanceof SlashCommandClosure) {
-                // can't do anything with closures, shouldn't ever reach this
-                return null;
             } else {
-                const text = this.executor.unnamedArgumentList.slice(0, index - this.executor.startUnnamedArgs);
-                if (/\s/.test(text)) {
-                    // if the text up to index includes whitespace it can't be the name of a named arg
-                    return null;
-                }
-                name = text;
-                start = this.executor.startUnnamedArgs;
+                return null;
             }
         } else {
             return null;
@@ -122,6 +120,43 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
     }
 
     getUnnamedArgumentAt(text, index, isSelect) {
+        const notProvidedArguments = this.executor.command.unnamedArgumentList.slice(this.executor.unnamedArgumentList.length);
+        let value;
+        let start;
+        let cmdArg;
+        let argAssign;
+        index = index + 2;
+        if (this.executor.startUnnamedArgs <= index && this.executor.endUnnamedArgs + 1 >= index) {
+            // cursor is somwehere in the unnamed args
+            const idx = this.executor.unnamedArgumentList.findIndex(it=>it.start <= index && it.end >= index);
+            if (idx > -1) {
+                argAssign = this.executor.unnamedArgumentList[idx];
+                cmdArg = this.executor.command.unnamedArgumentList[idx];
+                if (cmdArg.enumList.length > 0) {
+                    value = argAssign.value.toString().slice(0, index - argAssign.start);
+                    start = argAssign.start;
+                } else {
+                    return null;
+                }
+            } else {
+                value = '';
+                start = index;
+                cmdArg = notProvidedArguments[0];
+            }
+        } else {
+            return null;
+        }
 
+        if (cmdArg == null || cmdArg.enumList.length == 0) return null;
+
+        const result = new AutoCompleteSecondaryNameResult(
+            value,
+            start - 2,
+            cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(it)),
+            false,
+        );
+        const isSelectedValue = isSelect && cmdArg.enumList.find(it=>it.value == value);
+        result.isRequired = cmdArg.isRequired && !isSelectedValue;
+        return result;
     }
 }
