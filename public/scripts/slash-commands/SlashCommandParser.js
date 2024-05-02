@@ -369,7 +369,7 @@ export class SlashCommandParser {
                     );
                 } catch { /* empty */ }
                 const result = new AutoCompleteNameResult(
-                    executor.unnamedArgumentList.toString(),
+                    executor.unnamedArgumentList[0]?.value.toString(),
                     executor.start - 2,
                     options,
                     true,
