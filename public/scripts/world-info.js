@@ -379,6 +379,7 @@ function setWorldInfoSettings(settings, data) {
     });
 
     $('#world_info_sort_order').val(localStorage.getItem(SORT_ORDER_KEY) || '0');
+    $('#world_info').trigger('change');
     $('#world_editor_select').trigger('change');
 
     eventSource.on(event_types.CHAT_CHANGED, () => {
@@ -3113,6 +3114,23 @@ jQuery(() => {
             placeholder: 'No Worlds active. Click here to select.',
             allowClear: true,
             closeOnSelect: false,
+        });
+
+        // Subscribe world loading to the select2 multiselect items (We need to target the specific select2 control)
+        $('#world_info + span.select2-container').on('click', function (event) {
+            if ($(event.target).hasClass('select2-selection__choice__display')) {
+                event.preventDefault();
+
+                // select2 still bubbles the event to open the dropdown. So we close it here
+                $('#world_info').select2('close');
+
+                const name = $(event.target).text();
+                const selectedIndex = world_names.indexOf(name);
+                if (selectedIndex !== -1) {
+                    $('#world_editor_select').val(selectedIndex).trigger('change');
+                    console.log('Quick selection of world', name);
+                }
+            }
         });
     }
 

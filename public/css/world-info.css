@@ -196,3 +196,14 @@
 .WIEntryHeaderTitleMobile {
     display: none;
 }
+
+#world_info+span.select2-container .select2-selection__choice__display {
+    cursor: pointer;
+    margin-left: 1px; /* Fix weird alignment on the left side */
+}
+
+#world_info+span.select2-container .select2-selection__choice__display:hover {
+    background-color: #f1f1f1;
+    color: #333;
+    outline: none;
+ }
