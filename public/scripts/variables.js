@@ -1111,7 +1111,17 @@ export function registerVariableCommands() {
                 'right', 'right operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
             ),
             new SlashCommandNamedArgument(
-                'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, ['gt', 'gte', 'lt', 'lte', 'eq', 'neq', 'not', 'in', 'nin'],
+                'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
+                    new SlashCommandEnumValue('gt',  'a > b'),
+                    new SlashCommandEnumValue('gte', 'a >= b'),
+                    new SlashCommandEnumValue('lt',  'a < b'),
+                    new SlashCommandEnumValue('lte', 'a <= b'),
+                    new SlashCommandEnumValue('eq',  'a == b'),
+                    new SlashCommandEnumValue('neq', 'a !== b'),
+                    new SlashCommandEnumValue('not', '!a'),
+                    new SlashCommandEnumValue('in',  'a includes b'),
+                    new SlashCommandEnumValue('nin', 'a not includes b'),
+                ],
             ),
             new SlashCommandNamedArgument(
                 'guard', 'disable loop iteration limit', [ARGUMENT_TYPE.STRING], false, false, null, ['off'],
