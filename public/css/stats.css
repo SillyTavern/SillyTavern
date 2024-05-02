@@ -25,6 +25,10 @@
     align-items: center;
 }
 
+.rm_stat_block.rm_stat_right_spacing .rm_stat_values {
+    flex: 1;
+}
+
 .rm_stat_name .rm_stat_header {
     height: calc(var(--mainFontSize) * 1.33333333333 + 3px);
     padding-bottom: 3px;
@@ -98,4 +102,11 @@
 .rm_stat_avatar_block .avatar {
     scale: 2;
     flex: unset;
+}
+
+.rm_stat_footer {
+    justify-content: right;
+    color: var(--grey70);
+    font-size: smaller;
+    font-style: italic;
 }

@@ -93,9 +93,9 @@ async function onExit() {
 
 /**
  * @typedef {object} CharacterStats
+ * @property {string} characterKey -
  * @property {string} charName -
  * @property {string} userName -
- * @property {string} characterKey -
  * @property {number} chats - The creation date of the chat.
  * @property {number} chatSize - The size of all chats
  *
@@ -135,6 +135,7 @@ async function onExit() {
 
 /**
  * @typedef {object} ChatStats
+ * @property {string} characterKey -
  * @property {string} chatName - The unique identifier for the chat.
  * @property {number} chatId - hash
  * @property {string} charName - Current character name
@@ -353,7 +354,8 @@ function recreateCharacterStats(userHandle, characterKey) {
     }
 
     const chatFiles = fs.readdirSync(charChatsDir);
-    chatFiles.forEach(chatName => {
+    chatFiles.forEach(chatFile => {
+        const chatName = chatFile.replace(/\.jsonl$/i, '');
         triggerChatUpdate(userHandle, characterKey, chatName);
     });
 
@@ -384,7 +386,7 @@ function getCharChatsDir(userHandle, characterKey) {
 function loadChatFile(userHandle, characterKey, chatName) {
     const charChatsDir = getCharChatsDir(userHandle, characterKey);
 
-    const filePath = path.join(charChatsDir, sanitize(chatName));
+    const filePath = path.join(charChatsDir, `${sanitize(chatName)}.jsonl`);
     const lines = readAndParseJsonlFile(filePath);
     return { chatName, filePath, lines };
 }
@@ -402,7 +404,7 @@ function triggerChatUpdate(userHandle, characterKey, chatName) {
     const loadedChat = loadChatFile(userHandle, characterKey, chatName);
     const fsStats = fs.statSync(loadedChat.filePath);
 
-    const chatStats = processChat(chatName, loadedChat.lines, { chatSize: fsStats.size });
+    const chatStats = processChat(characterKey, chatName, loadedChat.lines, { chatSize: fsStats.size });
     if (chatStats === null) {
         return null;
     }
@@ -532,19 +534,20 @@ function removeChatFromCharStats(stats, chatStats) {
 
 /**
  *
+ * @param {string} characterKey
  * @param {string} chatName
  * @param {object[]} lines
  * @param {{chatSize?: number}} [param0={}] - optional parameter that can be set when processing the chat
  * @return {ChatStats?}
  */
-function processChat(chatName, lines, { chatSize = 0 } = {}) {
+function processChat(characterKey, chatName, lines, { chatSize = 0 } = {}) {
     if (!lines.length) {
         console.warn('Processing chat file failed.');
         return null;
     }
 
     /** @type {ChatStats} build the stats object first, then fill */
-    const stats = newChatStats(chatName);
+    const stats = newChatStats(characterKey, chatName);
 
     // Fill stats that we already can
     stats.chatSize = chatSize;
@@ -690,9 +693,9 @@ function countWordsInString(str) {
  */
 function newCharacterStats(characterKey = '', charName = '') {
     return {
+        characterKey: characterKey,
         charName: charName,
         userName: '',
-        characterKey: characterKey,
         chats: 0,
         chatSize: 0,
 
@@ -733,11 +736,13 @@ function newCharacterStats(characterKey = '', charName = '') {
 
 /**
  * Creates a new, empty chat stats object
+ * @param {string} characterKey - The character key
  * @param {string} chatName - The chats' name
  * @returns {ChatStats}
  */
-function newChatStats(chatName) {
+function newChatStats(characterKey, chatName) {
     return {
+        characterKey: characterKey,
         chatName: chatName,
         chatId: 0,
         charName: '',
@@ -867,10 +872,9 @@ router.post('/recreate', jsonParser, async function (request, response) {
     const userHandle = request.user.profile.handle;
 
     try {
-        const characterKey = String(body.characterKey);
-        if (characterKey) {
-            recreateCharacterStats(userHandle, characterKey);
-            return send(getUserStats(userHandle).stats[characterKey]);
+        if (body.characterKey) {
+            recreateCharacterStats(userHandle, body.characterKey);
+            return send(getUserStats(userHandle).stats[body.characterKey]);
         }
         await recreateStats(userHandle);
         return send(getUserStats(userHandle));
