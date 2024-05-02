@@ -155,8 +155,11 @@ body {
     border-radius: 10px;
     background-clip: content-box;
     border: 2px solid transparent;
-    border-top: 20px solid transparent;
     min-height: 40px;
+}
+
+body.movingUI ::-webkit-scrollbar-thumb:vertical {
+    border-top: 20px solid transparent;
 }
 
 ::-webkit-scrollbar-thumb:horizontal {
@@ -165,7 +168,6 @@ body {
     border-radius: 10px;
     background-clip: content-box;
     border: 2px solid transparent;
-    border-left: 20px solid transparent;
     min-width: 40px;
 }
 
