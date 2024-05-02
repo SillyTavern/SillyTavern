@@ -323,6 +323,7 @@ export class QuickReply {
             });
             message.style.color = 'transparent';
             message.style.background = 'transparent';
+            message.style.setProperty('text-shadow', 'none', 'important');
             /**@type {HTMLElement}*/
             const messageSyntaxInner = dom.querySelector('#qr--modal-messageSyntaxInner');
             const style = window.getComputedStyle(message);
