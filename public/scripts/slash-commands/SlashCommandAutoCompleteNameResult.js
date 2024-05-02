@@ -120,7 +120,8 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
     }
 
     getUnnamedArgumentAt(text, index, isSelect) {
-        const notProvidedArguments = this.executor.command.unnamedArgumentList.slice(this.executor.unnamedArgumentList.length);
+        const lastArgIsBlank = this.executor.unnamedArgumentList.slice(-1)[0]?.value == '';
+        const notProvidedArguments = this.executor.command.unnamedArgumentList.slice(this.executor.unnamedArgumentList.length - (lastArgIsBlank ? 1 : 0));
         let value;
         let start;
         let cmdArg;
@@ -155,8 +156,9 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(it)),
             false,
         );
-        const isSelectedValue = isSelect && cmdArg.enumList.find(it=>it.value == value);
-        result.isRequired = cmdArg.isRequired && !isSelectedValue;
+        const isCompleteValue = cmdArg.enumList.find(it=>it.value == value);
+        const isSelectedValue = isSelect && isCompleteValue;
+        result.isRequired = cmdArg.isRequired && !isSelectedValue && !isCompleteValue;
         return result;
     }
 }

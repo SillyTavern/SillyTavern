@@ -800,7 +800,8 @@ export class SlashCommandParser {
             }
         }
         if (isList && value.trim().length > 0) {
-            listValues.push(value.trim());
+            assignment.value = value.trim();
+            listValues.push(assignment);
         }
         if (isList) {
             return listValues;
