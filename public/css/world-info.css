@@ -196,3 +196,21 @@
 .WIEntryHeaderTitleMobile {
     display: none;
 }
+
+#world_info+span.select2-container .select2-selection__choice__remove,
+#world_info+span.select2-container .select2-selection__choice__display {
+    cursor: pointer;
+    transition: background-color 0.3s;
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--black50a);
+}
+
+#world_info+span.select2-container .select2-selection__choice__display {
+    /* Fix weird alignment on the left side */
+    margin-left: 1px;
+}
+
+#world_info+span.select2-container .select2-selection__choice__remove:hover,
+#world_info+span.select2-container .select2-selection__choice__display:hover {
+    background-color: var(--white30a);
+}
