@@ -3,7 +3,7 @@ import { setSlashCommandAutoComplete } from '../../../slash-commands.js';
 import { SlashCommandAbortController } from '../../../slash-commands/SlashCommandAbortController.js';
 import { SlashCommandParserError } from '../../../slash-commands/SlashCommandParserError.js';
 import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
-import { getSortableDelay } from '../../../utils.js';
+import { debounce, getSortableDelay } from '../../../utils.js';
 import { log, warn } from '../index.js';
 import { QuickReplyContextLink } from './QuickReplyContextLink.js';
 import { QuickReplySet } from './QuickReplySet.js';
@@ -234,15 +234,25 @@ export class QuickReply {
             const updateWrap = () => {
                 if (wrap.checked) {
                     message.style.whiteSpace = 'pre-wrap';
+                    messageSyntaxInner.style.whiteSpace = 'pre-wrap';
                 } else {
                     message.style.whiteSpace = 'pre';
+                    messageSyntaxInner.style.whiteSpace = 'pre';
                 }
+                updateScrollDebounced();
             };
+            const updateScroll = () => {
+                messageSyntaxInner.scrollTop = message.scrollTop;
+                messageSyntaxInner.scrollLeft = message.scrollLeft;
+            };
+            const updateScrollDebounced = debounce(()=>updateScroll(), 1);
             /**@type {HTMLInputElement}*/
             const tabSize = dom.querySelector('#qr--modal-tabSize');
             tabSize.value = JSON.parse(localStorage.getItem('qr--tabSize') ?? '4');
             const updateTabSize = () => {
                 message.style.tabSize = tabSize.value;
+                messageSyntaxInner.style.tabSize = tabSize.value;
+                updateScrollDebounced();
             };
             tabSize.addEventListener('change', () => {
                 localStorage.setItem('qr--tabSize', JSON.stringify(Number(tabSize.value)));
@@ -256,11 +266,11 @@ export class QuickReply {
             });
             /**@type {HTMLTextAreaElement}*/
             const message = dom.querySelector('#qr--modal-message');
-            updateWrap();
-            updateTabSize();
             message.value = this.message;
             message.addEventListener('input', () => {
+                messageSyntaxInner.innerHTML = hljs.highlight(message.value, { language:'stscript', ignoreIllegals:true })?.value;
                 this.updateMessage(message.value);
+                updateScrollDebounced();
             });
             setSlashCommandAutoComplete(message, true);
             //TODO move tab support for textarea into its own helper(?) and use for both this and .editor_maximize
@@ -308,6 +318,17 @@ export class QuickReply {
                     }
                 }
             });
+            message.addEventListener('scroll', ()=>{
+                updateScrollDebounced();
+            });
+            message.style.color = 'transparent';
+            message.style.background = 'transparent';
+            /**@type {HTMLElement}*/
+            const messageSyntaxInner = dom.querySelector('#qr--modal-messageSyntaxInner');
+            const style = window.getComputedStyle(message);
+            messageSyntaxInner.innerHTML = hljs.highlight(message.value, { language:'stscript', ignoreIllegals:true })?.value;
+            updateWrap();
+            updateTabSize();
 
             // context menu
             /**@type {HTMLTemplateElement}*/

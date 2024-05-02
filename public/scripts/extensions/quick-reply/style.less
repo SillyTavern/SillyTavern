@@ -264,11 +264,13 @@
 			display: flex;
 			flex-direction: row;
 			gap: 1em;
+			overflow: hidden;
 
 			> #qr--main {
 				flex: 1 1 auto;
 				display: flex;
 				flex-direction: column;
+				overflow: hidden;
 				> .qr--labels {
 					flex: 0 0 auto;
 					display: flex;
@@ -293,6 +295,7 @@
 					flex: 1 1 auto;
 					display: flex;
 					flex-direction: column;
+					overflow: hidden;
 					> .qr--modal-editorSettings {
 						display: flex;
 						flex-direction: row;
@@ -307,8 +310,34 @@
 							}
 						}
 					}
-					> #qr--modal-message {
+					> #qr--modal-messageHolder {
 						flex: 1 1 auto;
+						display: grid;
+						text-align: left;
+						overflow: hidden;
+						> #qr--modal-messageSyntax {
+							grid-column: 1;
+							grid-row: 1;
+							padding: 0;
+							margin: 0;
+							border: none;
+							overflow: hidden;
+							> #qr--modal-messageSyntaxInner {
+								height: 100%;
+							}
+						}
+						> #qr--modal-message {
+							grid-column: 1;
+							grid-row: 1;
+							caret-color: var(--SmartThemeBodyColor);
+						}
+						#qr--modal-message, #qr--modal-messageSyntaxInner {
+							padding: 0.75em;
+							margin: 0;
+							border: none;
+							resize: none;
+							line-height: 1.2;
+						}
 					}
 				}
 			}
