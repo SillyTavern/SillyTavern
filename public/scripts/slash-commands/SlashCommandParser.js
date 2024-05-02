@@ -696,7 +696,10 @@ export class SlashCommandParser {
                 cmd.endUnnamedArgs = cmd.startUnnamedArgs + cmd.value.length;
             }
             if (cmd.name == 'let') {
-                if (Array.isArray(cmd.value)) {
+                const keyArg = cmd.namedArgumentList.find(it=>it.name == 'key');
+                if (keyArg) {
+                    this.scope.variableNames.push(keyArg.value.toString());
+                } else if (Array.isArray(cmd.value)) {
                     if (typeof cmd.value[0] == 'string') {
                         this.scope.variableNames.push(cmd.value[0]);
                     }
