@@ -165,7 +165,7 @@ body {
     border-radius: 10px;
     background-clip: content-box;
     border: 2px solid transparent;
-    border-left: 20px solid transparent;
+    /* border-left: 20px solid transparent; */
     min-width: 40px;
 }
 
@@ -920,8 +920,14 @@ body .panelControlBar {
     justify-content: space-evenly;
 }
 
+.hotswap-scroll {
+    overflow-x: scroll !important;
+    max-height: max-content !important;
+}
+
 #HotSwapWrapper {
     justify-content: space-evenly;
+    overflow-x: auto;
 }
 
 .avatar.selectable {
@@ -1584,10 +1590,11 @@ select option:not(:checked) {
 
 #form_character_search_form {
     display: flex;
+    flex-wrap: wrap;
     flex-direction: row;
     align-items: stretch;
     margin: 5px;
-    column-gap: 5px;
+    gap: 5px;
 }
 
 #form_character_search_form .menu_button,
@@ -1598,6 +1605,12 @@ select option:not(:checked) {
     padding: 5px;
     border-radius: 5px;
     aspect-ratio: 1 / 1;
+}
+
+.form_character_search_container {
+    flex-basis: 100%;
+    display: flex;
+    gap: 5px;
 }
 
 #character_sort_order {

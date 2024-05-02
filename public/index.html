@@ -4259,8 +4259,8 @@
                         </div>
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters" data-i18n="[title]Select/Create Characters"></div>
                     </div>
-                    <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto wide100p">
-                        <div class="hotswap avatars_inline flex-container expander" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps"></div>
+                    <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto wide100p flexNoWrap">
+                        <div class="hotswap avatars_inline flex-container expander flexNoWrap hotswap-scroll" data-i18n="[no_favs]Favorite characters to add them to HotSwaps" no_favs="Favorite characters to add them to HotSwaps"></div>
                     </div>
                 </div>
                 <hr>
@@ -4580,7 +4580,6 @@
                             <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import faSmallFontSquareFix"></div>
                             <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
-                            <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100" />
                             <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
                                 <option data-field="search" data-order="desc" data-i18n="Search" hidden>Search</option>
                                 <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
@@ -4595,6 +4594,9 @@
                                 <option data-field="data_size" data-order="asc" data-i18n="Least tokens">Least tokens</option>
                                 <option data-field="name" data-order="random" data-i18n="Random">Random</option>
                             </select>
+                            <div class="form_character_search_container">
+                                <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100" />
+                            </div>
                         </form>
                         <div class="rm_tag_controls">
                             <div class="tags rm_tag_filter"></div>
