@@ -1440,10 +1440,11 @@ body[data-stscript-style] .hljs.language-stscript {
             .specs {
                 grid-column: 2 / 4;
             }
-            .help {
+            > .help {
                 grid-column: 2 / 4;
                 padding-left: 1em;
                 opacity: 0.75;
+                height: auto;
             }
         }
         &.blank {
@@ -1469,6 +1470,7 @@ body[data-stscript-style] .hljs.language-stscript {
             flex: 0 0 auto;
             display: inline-flex;
             justify-content: center;
+            align-items: center;
             width: 2.25em;
             font-size: 0.8em;
             text-align: center;
@@ -1503,7 +1505,7 @@ body[data-stscript-style] .hljs.language-stscript {
                 overflow: hidden;
                 font-size: 0.9em;white-space: nowrap;
                 line-height: 1.2;
-                height: 1.2em;
+                max-height: 1.2em;
                 display: block;
                 > * {
                     display: contents;
