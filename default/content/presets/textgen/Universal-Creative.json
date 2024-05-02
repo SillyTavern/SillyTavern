@@ -33,8 +33,8 @@
     "negative_prompt": "",
     "grammar_string": "",
     "banned_tokens": "",
-    "ignore_eos_token_aphrodite": false,
-    "spaces_between_special_tokens_aphrodite": true,
+    "ignore_eos_token": false,
+    "spaces_between_special_tokens": true,
     "type": "ooba",
     "legacy_api": false,
     "sampler_order": [
