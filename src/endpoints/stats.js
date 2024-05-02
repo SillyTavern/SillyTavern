@@ -16,8 +16,9 @@ const MIN_TIMESTAMP = 0;
 const MAX_TIMESTAMP = new Date('9999-12-31T23:59:59.999Z').getTime();
 const MIN_DATE = new Date(MIN_TIMESTAMP);
 const MAX_DATE = new Date(MAX_TIMESTAMP);
+const STATS_LANGUAGE = 'en';
 const STATS_FILE = 'stats.json';
-const CURRENT_STATS_VERSION = '1.1';
+const CURRENT_STATS_VERSION = '1.2';
 
 /** @type {Map<string, UserStatsCollection>} The stats collections for each user, accessable via their key - gets set/built on init */
 const STATS = new Map();
@@ -676,7 +677,9 @@ function removeModelUsage(obj, model, tokens, count = 1) {
  * @returns {number} - The number of words in the string.
  */
 function countWordsInString(str) {
-    return str.match(/\b\w+\b/g)?.length ?? 0;
+    const words = Array.from(new Intl.Segmenter(STATS_LANGUAGE ?? 'en', { granularity: 'word' }).segment(str))
+        .filter(it => it.isWordLike);
+    return words.length;
 }
 
 /**
