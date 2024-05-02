@@ -1376,6 +1376,13 @@ body[data-stscript-style="theme"] {
     text-align: left;
     z-index: 10000;
 }
+body[data-stscript-style] .autoComplete [data-option-type] {
+    &[data-option-type="enum"] .type { color: var(--ac-color-string); }
+    &[data-option-type="command"] .type { color: var(--ac-color-cmd); }
+    &[data-option-type="namedArgument"] .type { color: var(--ac-color-argName); }
+    &[data-option-type="variable"] .type { color: var(--ac-color-punctuationL1); }
+    &[data-option-type="qr"] .type { color: var(--ac-color-variable); }
+}
 body[data-stscript-style] .hljs.language-stscript {
     * { text-shadow: none !important; }
     text-shadow: none !important;
@@ -1460,15 +1467,16 @@ body[data-stscript-style] .hljs.language-stscript {
 
         > .type {
             flex: 0 0 auto;
-            display: inline-block;
+            display: inline-flex;
+            justify-content: center;
             width: 2.25em;
-            /* font-size: 0.8em; */
+            font-size: 0.8em;
             text-align: center;
-            opacity: 0.6;
+            /* opacity: 0.6; */
             white-space: nowrap;
             font-family: monospace;
-            &:before { content: "["; }
-            &:after { content: "]"; }
+            /* &:before { content: "["; }
+            &:after { content: "]"; } */
         }
         > .specs {
             align-items: flex-start;

@@ -19,6 +19,7 @@ export class SlashCommandEnumAutoCompleteOption extends AutoCompleteOption {
         let li;
         li = this.makeItem(this.name, '◊', true, [], [], null, this.enumValue.description);
         li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'enum');
         return li;
     }
 

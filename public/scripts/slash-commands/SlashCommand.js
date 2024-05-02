@@ -39,7 +39,7 @@ export class SlashCommand {
     renderHelpItem(key = null) {
         key = key ?? this.name;
         if (!this.helpCache[key]) {
-            const typeIcon = '/';
+            const typeIcon = '[/]';
             const li = document.createElement('li'); {
                 li.classList.add('item');
                 const type = document.createElement('span'); {

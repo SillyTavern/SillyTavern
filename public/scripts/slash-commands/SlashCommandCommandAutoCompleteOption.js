@@ -26,6 +26,7 @@ export class SlashCommandCommandAutoCompleteOption extends AutoCompleteOption {
         let li;
         li = this.command.renderHelpItem(this.name);
         li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'command');
         return li;
     }
 

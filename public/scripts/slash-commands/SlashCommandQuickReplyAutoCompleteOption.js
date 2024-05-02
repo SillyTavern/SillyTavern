@@ -13,6 +13,7 @@ export class SlashCommandQuickReplyAutoCompleteOption extends AutoCompleteOption
         let li;
         li = this.makeItem(this.name, 'QR', true);
         li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'qr');
         return li;
     }
 

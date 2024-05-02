@@ -11,8 +11,9 @@ export class SlashCommandVariableAutoCompleteOption extends AutoCompleteOption {
 
     renderItem() {
         let li;
-        li = this.makeItem(this.name, '𝑥', true);
+        li = this.makeItem(this.name, '[𝑥]', true);
         li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'variable');
         return li;
     }
 

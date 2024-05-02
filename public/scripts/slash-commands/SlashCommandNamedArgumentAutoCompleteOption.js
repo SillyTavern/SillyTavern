@@ -21,6 +21,7 @@ export class SlashCommandNamedArgumentAutoCompleteOption extends AutoCompleteOpt
         let li;
         li = this.makeItem(this.name, '⌗', true, [], [], null, this.arg.description);
         li.setAttribute('data-name', this.name);
+        li.setAttribute('data-option-type', 'namedArgument');
         return li;
     }
 
