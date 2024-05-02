@@ -116,27 +116,24 @@ export class SlashCommandParser {
     constructor() {
         //TODO should not be re-registered from every instance
         // add dummy commands for help strings / autocomplete
-        const parserFlagCmd = new SlashCommand();
-        parserFlagCmd.name = 'parser-flag';
-        parserFlagCmd.unnamedArgumentList.push(new SlashCommandArgument(
-            'The parser flag to modify.',
-            ARGUMENT_TYPE.STRING,
-            true,
-            false,
-            null,
-            Object.keys(PARSER_FLAG),
-        ));
-        parserFlagCmd.splitUnnamedArgument = true;
-        parserFlagCmd.unnamedArgumentList.push(new SlashCommandArgument(
-            'The state of the parser flag to set.',
-            ARGUMENT_TYPE.BOOLEAN,
-            false,
-            false,
-            'on',
-            ['on', 'off'],
-        ));
-        parserFlagCmd.helpString = 'Set a parser flag.';
-        SlashCommandParser.addCommandObjectUnsafe(parserFlagCmd);
+        SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'parser-flag',
+            unnamedArgumentList: [
+                SlashCommandArgument.fromProps({
+                    description: 'The parser flag to modify.',
+                    typeList: [ARGUMENT_TYPE.STRING],
+                    isRequired: true,
+                    enumList: Object.keys(PARSER_FLAG),
+                }),
+                SlashCommandArgument.fromProps({
+                    description: 'The state of the parser flag to set.',
+                    typeList: [ARGUMENT_TYPE.BOOLEAN],
+                    defaultValue: 'on',
+                    enumList: ['on', 'off'],
+                }),
+            ],
+            splitUnnamedArgument: true,
+            helpString: 'Set a parser flag.',
+        }));
 
         //TODO should not be re-registered from every instance
         const commentCmd = new SlashCommand();
@@ -618,12 +615,18 @@ export class SlashCommandParser {
         const cmd = new SlashCommandExecutor(start);
         cmd.name = 'parser-flag';
         cmd.unnamedArgumentList = [];
+        cmd.command = this.commands[cmd.name];
         this.commandIndex.push(cmd);
         this.scopeIndex.push(this.scope.getCopy());
         this.take(13); // discard "/parser-flag "
-        const [flag, state] = this.parseUnnamedArgument()?.split(/\s+/) ?? [null, null];
-        if (Object.keys(PARSER_FLAG).includes(flag)) {
-            this.flags[PARSER_FLAG[flag]] = isTrueBoolean(state ?? 'on');
+        cmd.startNamedArgs = -1;
+        cmd.endNamedArgs = -1;
+        cmd.startUnnamedArgs = this.index;
+        cmd.unnamedArgumentList = this.parseUnnamedArgument(true);
+        const [flag, state] = cmd.unnamedArgumentList ?? [null, null];
+        cmd.endUnnamedArgs = this.index;
+        if (Object.keys(PARSER_FLAG).includes(flag.value.toString())) {
+            this.flags[PARSER_FLAG[flag.value.toString()]] = isTrueBoolean(state?.value.toString() ?? 'on');
         }
         cmd.end = this.index;
     }
