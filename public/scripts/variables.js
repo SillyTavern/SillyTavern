@@ -1691,6 +1691,7 @@ export function registerVariableCommands() {
                 false, // acceptsMultiple
             ),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Get or set a variable.
@@ -1724,6 +1725,7 @@ export function registerVariableCommands() {
                 'variable value', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.BOOLEAN, ARGUMENT_TYPE.LIST, ARGUMENT_TYPE.DICTIONARY, ARGUMENT_TYPE.CLOSURE],
             ),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Declares a new variable in the current scope.

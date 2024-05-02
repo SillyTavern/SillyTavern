@@ -10,8 +10,7 @@ export class SlashCommand {
      * @param {string} [props.name]
      * @param {(namedArguments:Object.<string,string|SlashCommandClosure>, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|void|Promise<string|SlashCommandClosure|void>} [props.callback]
      * @param {string} [props.helpString]
-     * @param {boolean} [props.interruptsGeneration]
-     * @param {boolean} [props.purgeFromMessage]
+     * @param {boolean} [props.splitUnnamedArgument]
      * @param {string[]} [props.aliases]
      * @param {string} [props.returns]
      * @param {SlashCommandNamedArgument[]} [props.namedArgumentList]
@@ -28,8 +27,7 @@ export class SlashCommand {
     /**@type {string}*/ name;
     /**@type {(namedArguments:Object<string, string|SlashCommandClosure>, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>}*/ callback;
     /**@type {string}*/ helpString;
-    /**@type {boolean}*/ interruptsGeneration = true;
-    /**@type {boolean}*/ purgeFromMessage = true;
+    /**@type {boolean}*/ splitUnnamedArgument = false;
     /**@type {string[]}*/ aliases = [];
     /**@type {string}*/ returns;
     /**@type {SlashCommandNamedArgument[]}*/ namedArgumentList = [];

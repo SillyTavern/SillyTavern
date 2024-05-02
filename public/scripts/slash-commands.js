@@ -62,6 +62,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { AutoComplete } from './autocomplete/AutoComplete.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { SlashCommandAbortController } from './slash-commands/SlashCommandAbortController.js';
+import { SlashCommandNamedArgumentAssignment } from './slash-commands/SlashCommandNamedArgumentAssignment.js';
 export {
     executeSlashCommands, executeSlashCommandsWithOptions, getSlashCommandsHelp, registerSlashCommand,
 };
@@ -1358,9 +1359,12 @@ async function runCallback(args, name) {
             throw new Error(`"${name}" is not callable.`);
         }
         closure.scope.parent = scope;
-        Object.keys(closure.argumentList).forEach(key=>{
-            if (Object.keys(args).includes(key)) {
-                closure.providedArgumentList[key] = args[key];
+        closure.argumentList.forEach(arg=>{
+            if (Object.keys(args).includes(arg.name)) {
+                const providedArg = new SlashCommandNamedArgumentAssignment();
+                providedArg.name = arg.name;
+                providedArg.value = args[arg.name];
+                closure.providedArgumentList.push(providedArg);
             }
         });
         const result = await closure.execute();
@@ -2681,7 +2685,6 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         document.querySelector('#form_sheld').classList.add('script_error');
         toastr.error(e.message);
         result = new SlashCommandClosureResult();
-        result.interrupt = true;
         result.isError = true;
         result.errorMessage = e.message;
     } finally {
@@ -2734,7 +2737,6 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
                 { escapeHtml:false, timeOut: 10000, onclick:()=>callPopup(toast, 'text') },
             );
             const result = new SlashCommandClosureResult();
-            result.interrupt = true;
             return result;
         } else {
             throw e;
@@ -2751,7 +2753,6 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         if (options.handleExecutionErrors) {
             toastr.error(e.message);
             const result = new SlashCommandClosureResult();
-            result.interrupt = true;
             result.isError = true;
             result.errorMessage = e.message;
             return result;

@@ -14,6 +14,7 @@ import { SlashCommandVariableAutoCompleteOption } from './SlashCommandVariableAu
 import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
+import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -125,6 +126,7 @@ export class SlashCommandParser {
             null,
             Object.keys(PARSER_FLAG),
         ));
+        parserFlagCmd.splitUnnamedArgument = true;
         parserFlagCmd.unnamedArgumentList.push(new SlashCommandArgument(
             'The state of the parser flag to set.',
             ARGUMENT_TYPE.BOOLEAN,
@@ -364,7 +366,7 @@ export class SlashCommandParser {
                     );
                 } catch { /* empty */ }
                 const result = new AutoCompleteNameResult(
-                    executor.value.toString(),
+                    executor.unnamedArgumentList.toString(),
                     executor.start - 2,
                     options,
                     true,
@@ -481,26 +483,26 @@ export class SlashCommandParser {
             const storePipe = new SlashCommandExecutor(null);
             storePipe.command = this.commands['let'];
             storePipe.name = 'let';
-            storePipe.value = `${pipeName} {{pipe}}`;
+            storePipe.unnamedArgumentList = `${pipeName} {{pipe}}`;
             this.closure.executorList.push(storePipe);
             // getvar / getglobalvar
             const getvar = new SlashCommandExecutor(null);
             getvar.command = this.commands[cmd];
             getvar.name = 'cmd';
-            getvar.value = name;
+            getvar.unnamedArgumentList = name;
             this.closure.executorList.push(getvar);
             // set to temp scoped var
             const varName = `_PARSER_${uuidv4()}`;
             const setvar = new SlashCommandExecutor(null);
             setvar.command = this.commands['let'];
             setvar.name = 'let';
-            setvar.value = `${varName} {{pipe}}`;
+            setvar.unnamedArgumentList = `${varName} {{pipe}}`;
             this.closure.executorList.push(setvar);
             // return pipe
             const returnPipe = new SlashCommandExecutor(null);
             returnPipe.command = this.commands['return'];
             returnPipe.name = 'return';
-            returnPipe.value = `{{var::${pipeName}}}`;
+            returnPipe.unnamedArgumentList = `{{var::${pipeName}}}`;
             this.closure.executorList.push(returnPipe);
             return `{{var::${varName}}}`;
         });
@@ -544,7 +546,7 @@ export class SlashCommandParser {
         this.discardWhitespace();
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
-            closure.argumentList.push(arg.value);
+            closure.argumentList.push(arg);
             this.scope.variableNames.push(arg.name);
             this.discardWhitespace();
         }
@@ -615,7 +617,7 @@ export class SlashCommandParser {
         const start = this.index + 1;
         const cmd = new SlashCommandExecutor(start);
         cmd.name = 'parser-flag';
-        cmd.value = '';
+        cmd.unnamedArgumentList = [];
         this.commandIndex.push(cmd);
         this.scopeIndex.push(this.scope.getCopy());
         this.take(13); // discard "/parser-flag "
@@ -636,13 +638,15 @@ export class SlashCommandParser {
         const start = this.index + 2;
         const cmd = new SlashCommandExecutor(start);
         cmd.name = ':';
-        cmd.value = '';
+        cmd.unnamedArgumentList = [];
         cmd.command = this.commands['run'];
         this.commandIndex.push(cmd);
         this.scopeIndex.push(this.scope.getCopy());
         this.take(2); //discard "/:"
-        if (this.testQuotedValue()) cmd.value = this.parseQuotedValue();
-        else cmd.value = this.parseValue();
+        const assignment = new SlashCommandUnnamedArgumentAssignment();
+        if (this.testQuotedValue()) assignment.value = this.parseQuotedValue();
+        else assignment.value = this.parseValue();
+        cmd.unnamedArgumentList = [assignment];
         this.discardWhitespace();
         while (this.testNamedArgument()) {
             const arg = this.parseNamedArgument();
@@ -690,21 +694,17 @@ export class SlashCommandParser {
         cmd.startUnnamedArgs = this.index;
         cmd.endUnnamedArgs = this.index;
         if (this.testUnnamedArgument()) {
-            cmd.value = this.parseUnnamedArgument();
+            cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument);
             cmd.endUnnamedArgs = this.index;
-            if (typeof cmd.value == 'string') {
-                cmd.endUnnamedArgs = cmd.startUnnamedArgs + cmd.value.length;
+            if (typeof cmd.unnamedArgumentList == 'string') {
+                cmd.endUnnamedArgs = cmd.startUnnamedArgs + cmd.unnamedArgumentList.length;
             }
             if (cmd.name == 'let') {
                 const keyArg = cmd.namedArgumentList.find(it=>it.name == 'key');
                 if (keyArg) {
                     this.scope.variableNames.push(keyArg.value.toString());
-                } else if (Array.isArray(cmd.value)) {
-                    if (typeof cmd.value[0] == 'string') {
-                        this.scope.variableNames.push(cmd.value[0]);
-                    }
-                } else if (typeof cmd.value == 'string') {
-                    this.scope.variableNames.push(cmd.value.split(/\s+/)[0]);
+                } else if (typeof cmd.unnamedArgumentList[0]?.value == 'string') {
+                    this.scope.variableNames.push(cmd.unnamedArgumentList[0].value);
                 }
             }
         }
@@ -747,35 +747,70 @@ export class SlashCommandParser {
     testUnnamedArgumentEnd() {
         return this.testCommandEnd();
     }
-    parseUnnamedArgument() {
+    parseUnnamedArgument(split) {
         /**@type {SlashCommandClosure|String}*/
         let value = this.jumpedEscapeSequence ? this.take() : ''; // take the first, already tested, char if it is an escaped one
-        let isList = false;
+        let isList = split;
         let listValues = [];
+        /**@type {SlashCommandUnnamedArgumentAssignment}*/
+        let assignment = new SlashCommandUnnamedArgumentAssignment();
+        assignment.start = this.index;
         while (!this.testUnnamedArgumentEnd()) {
             if (this.testClosure()) {
                 isList = true;
                 if (value.length > 0) {
-                    listValues.push(value.trim());
+                    assignment.end = assignment.end - (value.length - value.trim().length);
+                    assignment.value = value.trim();
+                    listValues.push(assignment);
+                    assignment = new SlashCommandUnnamedArgumentAssignment();
+                    assignment.start = this.index;
                     value = '';
                 }
-                listValues.push(this.parseClosure());
+                assignment.value = this.parseClosure();
+                assignment.end = this.index;
+                listValues.push(assignment);
+                assignment = new SlashCommandUnnamedArgumentAssignment();
+                assignment.start = this.index;
+            } else if (split) {
+                if (this.testQuotedValue()) {
+                    assignment.start = this.index;
+                    assignment.value = this.parseQuotedValue();
+                    assignment.end = this.index;
+                    listValues.push(assignment);
+                    assignment = new SlashCommandUnnamedArgumentAssignment();
+                } else if (this.testListValue()) {
+                    assignment.start = this.index;
+                    assignment.value = this.parseListValue();
+                    assignment.end = this.index;
+                    listValues.push(assignment);
+                    assignment = new SlashCommandUnnamedArgumentAssignment();
+                } else if (this.testValue()) {
+                    assignment.start = this.index;
+                    assignment.value = this.parseValue();
+                    assignment.end = this.index;
+                    listValues.push(assignment);
+                    assignment = new SlashCommandUnnamedArgumentAssignment();
+                } else {
+                    throw new SlashCommandParserError(`Unexpected end of unnamed argument at index ${this.userIndex}.`);
+                }
+                this.discardWhitespace();
             } else {
                 value += this.take();
+                assignment.end = this.index;
             }
         }
         if (isList && value.trim().length > 0) {
             listValues.push(value.trim());
         }
         if (isList) {
-            if (listValues.length == 1) return listValues[0];
             return listValues;
         }
         value = value.trim();
         if (this.flags[PARSER_FLAG.REPLACE_GETVAR]) {
             value = this.replaceGetvar(value);
         }
-        return value;
+        assignment.value = value;
+        return [assignment];
     }
 
     testQuotedValue() {

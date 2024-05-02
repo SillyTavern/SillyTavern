@@ -34,6 +34,9 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
     getSecondaryNameAt(text, index, isSelect) {
         text = `{:${text}:}`;
         let result = this.getNamedArgumentAt(text, index, isSelect);
+        if (!result) {
+            result = this.getUnnamedArgumentAt(text, index, isSelect);
+        }
         return result;
     }
 
@@ -62,14 +65,23 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             }
         } else if (unamedArgLength > 0 && index >= this.executor.startUnnamedArgs && index <= this.executor.endUnnamedArgs) {
             // cursor is somewhere within the unnamed arguments
-            if (Array.isArray(this.executor.value)) {
+            if (Array.isArray(this.executor.unnamedArgumentList)) {
                 //TODO if index is in first array item and that is a string, treat it as an unfinished named arg
-                return null;
-            } else if (this.executor.value instanceof SlashCommandClosure) {
+                if (typeof this.executor.unnamedArgumentList[0] == 'string') {
+                    if (index <= this.executor.startUnnamedArgs + this.executor.unnamedArgumentList[0].length) {
+                        name = this.executor.unnamedArgumentList[0].slice(0, index - this.executor.startUnnamedArgs);
+                        start = this.executor.startUnnamedArgs;
+                    } else {
+                        return null;
+                    }
+                } else {
+                    return null;
+                }
+            } else if (this.executor.unnamedArgumentList instanceof SlashCommandClosure) {
                 // can't do anything with closures, shouldn't ever reach this
                 return null;
             } else {
-                const text = this.executor.value.slice(0, index - this.executor.startUnnamedArgs);
+                const text = this.executor.unnamedArgumentList.slice(0, index - this.executor.startUnnamedArgs);
                 if (/\s/.test(text)) {
                     // if the text up to index includes whitespace it can't be the name of a named arg
                     return null;
@@ -109,8 +121,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         return result;
     }
 
-    getEnumAt(index) {
-        //TODO named arg enum
-        //TODO unnamed arg enum
+    getUnnamedArgumentAt(text, index, isSelect) {
+
     }
 }

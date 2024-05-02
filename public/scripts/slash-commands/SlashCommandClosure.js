@@ -96,8 +96,6 @@ export class SlashCommandClosure {
     }
 
     async executeDirect() {
-        let interrupt = false;
-
         // closure arguments
         for (const arg of this.argumentList) {
             let v = arg.value;
@@ -157,9 +155,7 @@ export class SlashCommandClosure {
                 closure.providedArgumentList = executor.providedArgumentList;
                 const result = await closure.execute();
                 this.scope.pipe = result.pipe;
-                interrupt = result.interrupt;
             } else {
-                interrupt = executor.command.interruptsGeneration;
                 let args = {
                     _scope: this.scope,
                     _parserFlags: executor.parserFlags,
@@ -189,23 +185,14 @@ export class SlashCommandClosure {
                 }
 
                 // substitute unnamed argument
-                if (executor.value === undefined) {
+                if (executor.unnamedArgumentList.length == 0) {
                     if (executor.injectPipe) {
                         value = this.scope.pipe;
                     }
-                } else if (executor.value instanceof SlashCommandClosure) {
-                    /**@type {SlashCommandClosure}*/
-                    const closure = executor.value;
-                    closure.scope.parent = this.scope;
-                    if (closure.executeNow) {
-                        value = (await closure.execute())?.pipe;
-                    } else {
-                        value = closure;
-                    }
-                } else if (Array.isArray(executor.value)) {
+                } else {
                     value = [];
-                    for (let i = 0; i < executor.value.length; i++) {
-                        let v = executor.value[i];
+                    for (let i = 0; i < executor.unnamedArgumentList.length; i++) {
+                        let v = executor.unnamedArgumentList[i].value;
                         if (v instanceof SlashCommandClosure) {
                             /**@type {SlashCommandClosure}*/
                             const closure = v;
@@ -220,11 +207,13 @@ export class SlashCommandClosure {
                         }
                         value[i] = v;
                     }
-                    if (!value.find(it=>it instanceof SlashCommandClosure)) {
-                        value = value.join(' ');
+                    if (!executor.command.splitUnnamedArgument) {
+                        if (value.length == 1) {
+                            value = value[0];
+                        } else if (!value.find(it=>it instanceof SlashCommandClosure)) {
+                            value = value.join(' ');
+                        }
                     }
-                } else {
-                    value = this.substituteParams(executor.value);
                 }
                 // unescape unnamed argument
                 if (typeof value == 'string') {
@@ -248,7 +237,7 @@ export class SlashCommandClosure {
             }
         }
         /**@type {SlashCommandClosureResult} */
-        const result = Object.assign(new SlashCommandClosureResult(), { interrupt, newText: this.keptText, pipe: this.scope.pipe });
+        const result = Object.assign(new SlashCommandClosureResult(), { newText: this.keptText, pipe: this.scope.pipe });
         return result;
     }
 

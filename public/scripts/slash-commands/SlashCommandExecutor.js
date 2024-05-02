@@ -5,6 +5,7 @@ import { SlashCommandClosure } from './SlashCommandClosure.js';
 import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
 // eslint-disable-next-line no-unused-vars
 import { PARSER_FLAG } from './SlashCommandParser.js';
+import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 
 export class SlashCommandExecutor {
     /**@type {Boolean}*/ injectPipe = true;
@@ -18,7 +19,7 @@ export class SlashCommandExecutor {
     /**@type {SlashCommand}*/ command;
     // @ts-ignore
     /**@type {SlashCommandNamedArgumentAssignment[]}*/ namedArgumentList = [];
-    /**@type {String|SlashCommandClosure|(String|SlashCommandClosure)[]}*/ value;
+    /**@type {SlashCommandUnnamedArgumentAssignment[]}*/ unnamedArgumentList = [];
     /**@type {Object<PARSER_FLAG,boolean>} */ parserFlags;
 
     constructor(start) {
