@@ -5,6 +5,7 @@ import { AutoCompleteFuzzyScore } from './AutoCompleteFuzzyScore.js';
 import { BlankAutoCompleteOption } from './BlankAutoCompleteOption.js';
 // eslint-disable-next-line no-unused-vars
 import { AutoCompleteNameResult } from './AutoCompleteNameResult.js';
+import { AutoCompleteSecondaryNameResult } from './AutoCompleteSecondaryNameResult.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -23,9 +24,12 @@ export class AutoComplete {
     /**@type {boolean}*/ isActive = false;
     /**@type {boolean}*/ isReplaceable = false;
     /**@type {boolean}*/ isShowingDetails = false;
+    /**@type {boolean}*/ wasForced = false;
 
     /**@type {string}*/ text;
     /**@type {AutoCompleteNameResult}*/ parserResult;
+    /**@type {AutoCompleteSecondaryNameResult}*/ secondaryParserResult;
+    get effectiveParserResult() { return this.secondaryParserResult ?? this.parserResult; }
     /**@type {string}*/ name;
 
     /**@type {boolean}*/ startQuote;
@@ -93,10 +97,11 @@ export class AutoComplete {
         this.updateDetailsPositionDebounced = debounce(this.updateDetailsPosition.bind(this), 10);
         this.updateFloatingPositionDebounced = debounce(this.updateFloatingPosition.bind(this), 10);
 
-        textarea.addEventListener('input', ()=>this.text != this.textarea.value && this.show(true));
+        textarea.addEventListener('input', ()=>this.text != this.textarea.value && this.show(true, this.wasForced));
         textarea.addEventListener('keydown', (evt)=>this.handleKeyDown(evt));
         textarea.addEventListener('click', ()=>this.isActive ? this.show() : null);
         textarea.addEventListener('selectionchange', ()=>this.show());
+        //TODO blur
         // textarea.addEventListener('blur', ()=>this.hide());
         if (isFloating) {
             textarea.addEventListener('scroll', ()=>this.updateFloatingPositionDebounced());
@@ -233,10 +238,12 @@ export class AutoComplete {
      * Show the autocomplete.
      * @param {boolean} isInput Whether triggered by input.
      * @param {boolean} isForced Whether force-showing (ctrl+space).
+     * @param {boolean} isSelect Whether an autocomplete option was just selected.
      */
-    async show(isInput = false, isForced = false) {
+    async show(isInput = false, isForced = false, isSelect = false) {
         //TODO check if isInput and isForced are both required
         this.text = this.textarea.value;
+        this.isReplaceable = false;
 
         if (document.activeElement != this.textarea) {
             // only show with textarea in focus
@@ -250,6 +257,7 @@ export class AutoComplete {
         // request provider to get name result (potentially "incomplete", i.e. not an actual existing name) for
         // cursor position
         this.parserResult = await this.getNameAt(this.text, this.textarea.selectionStart);
+        this.secondaryParserResult = null;
 
         if (!this.parserResult) {
             // don't show if no name result found, e.g., cursor's area is not a command
@@ -268,21 +276,36 @@ export class AutoComplete {
         // use lowercase name for matching
         this.name = this.parserResult.name.toLowerCase() ?? '';
 
+        const isCursorInNamePart = this.textarea.selectionStart >= this.parserResult.start && this.textarea.selectionStart <= this.parserResult.start + this.parserResult.name.length + (this.startQuote ? 1 : 0);
         if (isForced || isInput) {
             // if forced (ctrl+space) or user input...
-            if (this.textarea.selectionStart >= this.parserResult.start && this.textarea.selectionStart <= this.parserResult.start + this.parserResult.name.length + (this.startQuote ? 1 : 0)) {
+            if (isCursorInNamePart) {
                 // ...and cursor is somewhere in the name part (including right behind the final char)
                 // -> show autocomplete for the (partial if cursor in the middle) name
                 this.name = this.name.slice(0, this.textarea.selectionStart - (this.parserResult.start) - (this.startQuote ? 1 : 0));
                 this.parserResult.name = this.name;
                 this.isReplaceable = true;
             } else {
-                //TODO check for secondary options (e.g., named arguments)
                 this.isReplaceable = false;
             }
         } else {
             // if not forced and no user input -> just show details
             this.isReplaceable = false;
+        }
+
+        if (isForced || isInput || isSelect) {
+            // is forced or user input or just selected autocomplete option...
+            if (!isCursorInNamePart) {
+                // ...and cursor is not somwehere in the main name part -> check for secondary options (e.g., named arguments)
+                const result = this.parserResult.getSecondaryNameAt(this.text, this.textarea.selectionStart, isSelect);
+                if (result && (isForced || result.isRequired)) {
+                    this.secondaryParserResult = result;
+                    this.name = this.secondaryParserResult.name;
+                    this.isReplaceable = isForced || this.secondaryParserResult.isRequired;
+                } else {
+                    this.isReplaceable = false;
+                }
+            }
         }
 
         if (this.matchType == 'fuzzy') {
@@ -297,7 +320,7 @@ export class AutoComplete {
             'fuzzy': (name) => this.fuzzyRegex.test(name),
         };
 
-        this.result = this.parserResult.optionList
+        this.result = this.effectiveParserResult.optionList
             // filter the list of options by the partial name according to the matching type
             .filter(it => this.isReplaceable || it.name == '' ? matchers[this.matchType](it.name) : it.name.toLowerCase() == this.name)
             // remove aliases
@@ -307,7 +330,7 @@ export class AutoComplete {
                 // build element
                 option.dom = this.makeItem(option);
                 // update replacer and add quotes if necessary
-                if (this.parserResult.canBeQuoted) {
+                if (this.effectiveParserResult.canBeQuoted) {
                     option.replacer = option.name.includes(' ') || this.startQuote || this.endQuote ? `"${option.name}"` : `${option.name}`;
                 } else {
                     option.replacer = option.name;
@@ -331,12 +354,12 @@ export class AutoComplete {
             // otherwise add "no match" notice
             const option = new BlankAutoCompleteOption(
                 this.name.length ?
-                    this.parserResult.makeNoMatchText()
-                    : this.parserResult.makeNoOptionstext()
+                    this.effectiveParserResult.makeNoMatchText()
+                    : this.effectiveParserResult.makeNoOptionstext()
                 ,
             );
             this.result.push(option);
-        } else if (this.result.length == 1 && this.parserResult && this.result[0].name == this.parserResult.name) {
+        } else if (this.result.length == 1 && this.effectiveParserResult && this.result[0].name == this.effectiveParserResult.name) {
             // only one result that is exactly the current value? just show hint, no autocomplete
             this.isReplaceable = false;
             this.isShowingDetails = false;
@@ -345,6 +368,7 @@ export class AutoComplete {
         }
         this.selectedItem = this.result[0];
         this.isActive = true;
+        this.wasForced = isForced;
         this.renderDebounced();
     }
 
@@ -356,6 +380,7 @@ export class AutoComplete {
         this.detailsWrap?.remove();
         this.isActive = false;
         this.isShowingDetails = false;
+        this.wasForced = false;
     }
 
 
@@ -580,12 +605,12 @@ export class AutoComplete {
      */
     async select() {
         if (this.isReplaceable && this.selectedItem.value !== null) {
-            this.textarea.value = `${this.text.slice(0, this.parserResult.start)}${this.selectedItem.replacer}${this.text.slice(this.parserResult.start + this.parserResult.name.length + (this.startQuote ? 1 : 0) + (this.endQuote ? 1 : 0))}`;
+            this.textarea.value = `${this.text.slice(0, this.effectiveParserResult.start)}${this.selectedItem.replacer}${this.text.slice(this.effectiveParserResult.start + this.effectiveParserResult.name.length + (this.startQuote ? 1 : 0) + (this.endQuote ? 1 : 0))}`;
             await this.pointerup;
             this.textarea.focus();
-            this.textarea.selectionStart = this.parserResult.start + this.selectedItem.replacer.length;
+            this.textarea.selectionStart = this.effectiveParserResult.start + this.selectedItem.replacer.length;
             this.textarea.selectionEnd = this.textarea.selectionStart;
-            this.show();
+            this.show(false, false, true);
         } else {
             const selectionStart = this.textarea.selectionStart;
             const selectionEnd = this.textarea.selectionDirection;
@@ -594,6 +619,7 @@ export class AutoComplete {
             this.textarea.selectionStart = selectionStart;
             this.textarea.selectionDirection = selectionEnd;
         }
+        this.wasForced = false;
     }
 
 
@@ -705,7 +731,6 @@ export class AutoComplete {
             return;
         }
         switch (evt.key) {
-            default:
             case 'ArrowUp':
             case 'ArrowDown':
             case 'ArrowRight':
@@ -718,9 +743,16 @@ export class AutoComplete {
                     });
                     if (this.selectionStart != this.textarea.selectionStart) {
                         this.selectionStart = this.textarea.selectionStart;
-                        this.text != this.textarea.value && this.show(this.isReplaceable || oldText != this.textarea.value);
+                        this.show(this.isReplaceable || oldText != this.textarea.value);
                     }
                 }
+                break;
+            }
+            default: {
+                if (this.isActive) {
+                    this.text != this.textarea.value && this.show(this.isReplaceable);
+                }
+                break;
             }
         }
     }

@@ -2,12 +2,14 @@ import { AutoCompleteOption } from './AutoCompleteOption.js';
 
 export class BlankAutoCompleteOption extends AutoCompleteOption {
     /**
-     * @param {string} value
+     * @param {string} name
      */
-    constructor(value) {
-        super(value, value);
+    constructor(name) {
+        super(name);
         this.dom = this.renderItem();
     }
+
+    get value() { return null; }
 
 
     renderItem() {

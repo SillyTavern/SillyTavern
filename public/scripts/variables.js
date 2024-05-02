@@ -4,6 +4,7 @@ import { executeSlashCommands } from './slash-commands.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { SlashCommandClosure } from './slash-commands/SlashCommandClosure.js';
+import { SlashCommandEnumValue } from './slash-commands/SlashCommandEnumValue.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommandScope } from './slash-commands/SlashCommandScope.js';
 import { isFalseBoolean } from './utils.js';
@@ -1044,7 +1045,17 @@ export function registerVariableCommands() {
                 'right', 'right operand', [ARGUMENT_TYPE.VARIABLE_NAME, ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.NUMBER], true,
             ),
             new SlashCommandNamedArgument(
-                'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, ['gt',  'gte',  'lt',  'lte',  'eq',  'neq',  'not',  'in', 'nin'],
+                'rule', 'comparison rule', [ARGUMENT_TYPE.STRING], true, false, null, [
+                    new SlashCommandEnumValue('gt',  'a > b'),
+                    new SlashCommandEnumValue('gte', 'a >= b'),
+                    new SlashCommandEnumValue('lt',  'a < b'),
+                    new SlashCommandEnumValue('lte', 'a <= b'),
+                    new SlashCommandEnumValue('eq',  'a == b'),
+                    new SlashCommandEnumValue('neq', 'a !== b'),
+                    new SlashCommandEnumValue('not', '!a'),
+                    new SlashCommandEnumValue('in',  'a includes b'),
+                    new SlashCommandEnumValue('nin', 'a not includes b'),
+                ],
             ),
             new SlashCommandNamedArgument(
                 'else', 'command to execute if not true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], false,

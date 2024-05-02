@@ -5,6 +5,7 @@ import { AutoCompleteFuzzyScore } from './AutoCompleteFuzzyScore.js';
 
 export class AutoCompleteOption {
     /**@type {string}*/ name;
+    /**@type {string}*/ typeIcon;
     /**@type {AutoCompleteFuzzyScore}*/ score;
     /**@type {string}*/ replacer;
     /**@type {HTMLElement}*/ dom;
@@ -22,8 +23,9 @@ export class AutoCompleteOption {
     /**
      * @param {string} name
      */
-    constructor(name) {
+    constructor(name, typeIcon = ' ') {
         this.name = name;
+        this.typeIcon = typeIcon;
     }
 
 
@@ -174,7 +176,11 @@ export class AutoCompleteOption {
      * @returns {HTMLElement}
      */
     renderItem() {
-        throw new Error(`${this.constructor.name}.renderItem() is not implemented`);
+        // throw new Error(`${this.constructor.name}.renderItem() is not implemented`);
+        let li;
+        li = this.makeItem(this.name, this.typeIcon, true);
+        li.setAttribute('data-name', this.name);
+        return li;
     }
 
 
@@ -182,6 +188,18 @@ export class AutoCompleteOption {
      * @returns {DocumentFragment}
      */
     renderDetails() {
-        throw new Error(`${this.constructor.name}.renderDetails() is not implemented`);
+        // throw new Error(`${this.constructor.name}.renderDetails() is not implemented`);
+        const frag = document.createDocumentFragment();
+        const specs = document.createElement('div'); {
+            specs.classList.add('specs');
+            const name = document.createElement('div'); {
+                name.classList.add('name');
+                name.classList.add('monospace');
+                name.textContent = this.name;
+                specs.append(name);
+            }
+            frag.append(specs);
+        }
+        return frag;
     }
 }

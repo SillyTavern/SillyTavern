@@ -1,4 +1,6 @@
+import { SlashCommandNamedArgumentAutoCompleteOption } from '../slash-commands/SlashCommandNamedArgumentAutoCompleteOption.js';
 import { AutoCompleteOption } from './AutoCompleteOption.js';
+// import { AutoCompleteSecondaryNameResult } from './AutoCompleteSecondaryNameResult.js';
 
 
 
@@ -26,5 +28,17 @@ export class AutoCompleteNameResult {
         this.canBeQuoted = canBeQuoted;
         this.noMatchText = makeNoMatchText ?? this.makeNoMatchText;
         this.noOptionstext = makeNoOptionsText ?? this.makeNoOptionstext;
+    }
+
+
+    /**
+     *
+     * @param {string} text The whole text
+     * @param {number} index Cursor index within text
+     * @param {boolean} isSelect Whether autocomplete was triggered by selecting an autocomplete option
+     * @returns {AutoCompleteSecondaryNameResult}
+     */
+    getSecondaryNameAt(text, index, isSelect) {
+        return null;
     }
 }

@@ -1,4 +1,5 @@
 import { SlashCommandClosure } from './SlashCommandClosure.js';
+import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 
 
 
@@ -48,14 +49,14 @@ export class SlashCommandArgument {
     /**@type {boolean}*/ isRequired = false;
     /**@type {boolean}*/ acceptsMultiple = false;
     /**@type {string|SlashCommandClosure}*/ defaultValue;
-    /**@type {string[]}*/ enumList = [];
+    /**@type {SlashCommandEnumValue[]}*/ enumList = [];
 
 
     /**
      * @param {string} description
      * @param {ARGUMENT_TYPE|ARGUMENT_TYPE[]} types
      * @param {string|SlashCommandClosure} defaultValue
-     * @param {string|string[]} enums
+     * @param {string|string[]|SlashCommandEnumValue|SlashCommandEnumValue[]} enums
      */
     constructor(description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = []) {
         this.description = description;
@@ -63,7 +64,10 @@ export class SlashCommandArgument {
         this.isRequired = isRequired ?? false;
         this.acceptsMultiple = acceptsMultiple ?? false;
         this.defaultValue = defaultValue;
-        this.enumList = enums ? Array.isArray(enums) ? enums : [enums] : [];
+        this.enumList = (enums ? Array.isArray(enums) ? enums : [enums] : []).map(it=>{
+            if (it instanceof SlashCommandEnumValue) return it;
+            return new SlashCommandEnumValue(it);
+        });
     }
 }
 
@@ -107,7 +111,7 @@ export class SlashCommandNamedArgument extends SlashCommandArgument {
      * @param {string} description
      * @param {ARGUMENT_TYPE|ARGUMENT_TYPE[]} types
      * @param {string|SlashCommandClosure} defaultValue
-     * @param {string|string[]} enums
+     * @param {string|string[]|SlashCommandEnumValue|SlashCommandEnumValue[]} enums
      */
     constructor(name, description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = [], aliases = []) {
         super(description, types, isRequired, acceptsMultiple, defaultValue, enums);

@@ -13,6 +13,7 @@ import { SlashCommandScope } from './SlashCommandScope.js';
 import { SlashCommandVariableAutoCompleteOption } from './SlashCommandVariableAutoCompleteOption.js';
 import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
+import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -372,17 +373,7 @@ export class SlashCommandParser {
                 );
                 return result;
             }
-            const result = new AutoCompleteNameResult(
-                executor.name,
-                executor.start - 2,
-                Object
-                    .keys(this.commands)
-                    .map(key=>new SlashCommandCommandAutoCompleteOption(this.commands[key], key))
-                ,
-                false,
-                ()=>`No matching slash commands for "/${result.name}"`,
-                ()=>'No slash commands found!',
-            );
+            const result = new SlashCommandAutoCompleteNameResult(executor, this.commands);
             return result;
         }
         return null;
@@ -701,6 +692,9 @@ export class SlashCommandParser {
         if (this.testUnnamedArgument()) {
             cmd.value = this.parseUnnamedArgument();
             cmd.endUnnamedArgs = this.index;
+            if (typeof cmd.value == 'string') {
+                cmd.endUnnamedArgs = cmd.startUnnamedArgs + cmd.value.length;
+            }
             if (cmd.name == 'let') {
                 if (Array.isArray(cmd.value)) {
                     if (typeof cmd.value[0] == 'string') {
