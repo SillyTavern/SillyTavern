@@ -389,7 +389,7 @@ export class AutoComplete {
      * Create updated DOM.
      */
     render() {
-        // render autocomplete list
+        if (!this.isActive) return this.dom.remove();
         if (this.isReplaceable) {
             this.dom.innerHTML = '';
             const frag = document.createDocumentFragment();
@@ -414,6 +414,7 @@ export class AutoComplete {
      * Create updated DOM for details.
      */
     renderDetails() {
+        if (!this.isActive) return this.detailsWrap.remove();
         if (!this.isShowingDetails && this.isReplaceable) return this.detailsWrap.remove();
         this.detailsDom.innerHTML = '';
         this.detailsDom.append(this.selectedItem?.renderDetails() ?? 'NO ITEM');
