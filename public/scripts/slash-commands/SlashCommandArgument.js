@@ -28,7 +28,7 @@ export class SlashCommandArgument {
      * @param {boolean} [props.isRequired] default: false - whether the argument is required (false = optional argument)
      * @param {boolean} [props.acceptsMultiple] default: false - whether argument accepts multiple values
      * @param {string|SlashCommandClosure} [props.defaultValue] default value if no value is provided
-     * @param {string|string[]} [props.enumList] list of accepted values
+     * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} [props.enumList] list of accepted values
      */
     static fromProps(props) {
         return new SlashCommandArgument(
@@ -56,7 +56,7 @@ export class SlashCommandArgument {
      * @param {string} description
      * @param {ARGUMENT_TYPE|ARGUMENT_TYPE[]} types
      * @param {string|SlashCommandClosure} defaultValue
-     * @param {string|string[]|SlashCommandEnumValue|SlashCommandEnumValue[]} enums
+     * @param {string|SlashCommandEnumValue|(string|SlashCommandEnumValue)[]} enums
      */
     constructor(description, types, isRequired = false, acceptsMultiple = false, defaultValue = null, enums = []) {
         this.description = description;
