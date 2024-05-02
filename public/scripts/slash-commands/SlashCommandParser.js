@@ -15,6 +15,7 @@ import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgument
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
+import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -116,24 +117,29 @@ export class SlashCommandParser {
     constructor() {
         //TODO should not be re-registered from every instance
         // add dummy commands for help strings / autocomplete
-        SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'parser-flag',
-            unnamedArgumentList: [
-                SlashCommandArgument.fromProps({
-                    description: 'The parser flag to modify.',
-                    typeList: [ARGUMENT_TYPE.STRING],
-                    isRequired: true,
-                    enumList: Object.keys(PARSER_FLAG),
-                }),
-                SlashCommandArgument.fromProps({
-                    description: 'The state of the parser flag to set.',
-                    typeList: [ARGUMENT_TYPE.BOOLEAN],
-                    defaultValue: 'on',
-                    enumList: ['on', 'off'],
-                }),
-            ],
-            splitUnnamedArgument: true,
-            helpString: 'Set a parser flag.',
-        }));
+        if (!Object.keys(this.commands).includes('parser-flag')) {
+            const help = {};
+            help[PARSER_FLAG.REPLACE_GETVAR] = 'Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution.';
+            help[PARSER_FLAG.STRICT_ESCAPING] = 'Allows to escape all delimiters with backslash, and allows escaping of backslashes.';
+            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: 'parser-flag',
+                unnamedArgumentList: [
+                    SlashCommandArgument.fromProps({
+                        description: 'The parser flag to modify.',
+                        typeList: [ARGUMENT_TYPE.STRING],
+                        isRequired: true,
+                        enumList: Object.keys(PARSER_FLAG).map(flag=>new SlashCommandEnumValue(flag, help[PARSER_FLAG[flag]])),
+                    }),
+                    SlashCommandArgument.fromProps({
+                        description: 'The state of the parser flag to set.',
+                        typeList: [ARGUMENT_TYPE.BOOLEAN],
+                        defaultValue: 'on',
+                        enumList: ['on', 'off'],
+                    }),
+                ],
+                splitUnnamedArgument: true,
+                helpString: 'Set a parser flag.',
+            }));
+        }
 
         //TODO should not be re-registered from every instance
         const commentCmd = new SlashCommand();
