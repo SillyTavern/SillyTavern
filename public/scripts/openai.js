@@ -114,6 +114,7 @@ const max_4k = 4095;
 const max_8k = 8191;
 const max_16k = 16383;
 const max_32k = 32767;
+const max_64k = 65535;
 const max_128k = 128 * 1000;
 const max_200k = 200 * 1000;
 const max_1mil = 1000 * 1000;
@@ -3728,7 +3729,11 @@ async function onModelChange() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.MISTRALAI) {
-        $('#openai_max_context').attr('max', max_32k);
+        if (oai_settings.mistralai_model.includes('mixtral-8x22b')) {
+            $('#openai_max_context').attr('max', max_64k);
+        } else {
+            $('#openai_max_context').attr('max', max_32k);
+        }
         oai_settings.openai_max_context = Math.min(oai_settings.openai_max_context, Number($('#openai_max_context').attr('max')));
         $('#openai_max_context').val(oai_settings.openai_max_context).trigger('input');
 
