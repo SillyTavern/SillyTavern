@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   version="1.0"
+   width="70pt"
+   height="70pt"
+   viewBox="0 0 70 70"
+   preserveAspectRatio="xMidYMid"
+   id="svg15"
+   sodipodi:docname="infermatic.svg"
+   inkscape:version="1.3 (0e150ed, 2023-07-21)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs15" />
+  <sodipodi:namedview
+     id="namedview15"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="pt"
+     inkscape:zoom="0.75112613"
+     inkscape:cx="306.2069"
+     inkscape:cy="50.590705"
+     inkscape:window-width="1312"
+     inkscape:window-height="449"
+     inkscape:window-x="0"
+     inkscape:window-y="38"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg15" />
+  <path
+     id="path15"
+     d="m 1030,375 v -75 h 75 74 l 6,33 c 4,18 5,51 3,72 l -3,40 -77,3 -78,3 z m 547,619 c -4,-4 -7,-41 -7,-81 v -74 l 78,3 77,3 v 75 75 l -70,3 c -39,1 -74,0 -78,-4 z m -547,-74 v -79 l 133,-3 132,-3 3,-267 2,-268 h 215 215 v 75 75 h -135 -135 l -2,273 -3,272 -212,3 -213,2 z"
+     transform="matrix(0.1,0,0,-0.1,-103,99.999998)" />
+</svg>
