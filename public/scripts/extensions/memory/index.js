@@ -291,17 +291,22 @@ function onMemoryPromptWordsForceInput() {
 }
 
 function updateCase(span, number) { // other languages can use this function too, adding their own attributes to the elements
-    const ru_case1 = span.attr('ru-case1');
-    if (ru_case1) {
-        const ru_case2 = span.attr('ru-case2');
-        const ru_case3 = span.attr('ru-case3');
-        const last_digit = number % 10;
-        if (last_digit == 1) {
-            span.text(ru_case1);
-        } else if (last_digit != 0 && last_digit < 5) {
-            span.text(ru_case2);
+    const ruCase1 = span.attr('ru-case1');
+    if (ruCase1) {
+        const ruCase2 = span.attr('ru-case2');
+        const ruCase3 = span.attr('ru-case3');
+        const elevenToFifteen = [11, 12, 13, 14, 15].indexOf(number % 100) != -1;
+        if (elevenToFifteen) {
+            span.text(ruCase3);
+            return;
+        }
+        const lastDigit = number % 10;
+        if (lastDigit == 1) {
+            span.text(ruCase1);
+        } else if (lastDigit != 0 && lastDigit < 5) {
+            span.text(ruCase2);
         } else {
-            span.text(ru_case3);
+            span.text(ruCase3);
         }
     }
 }
