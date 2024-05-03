@@ -4,7 +4,7 @@ const _ = require('lodash');
 const Readable = require('stream').Readable;
 
 const { jsonParser } = require('../../express-common');
-const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS, INFERMATICAI_KEYS, OPENROUTER_KEYS, DREAMGEN_KEYS } = require('../../constants');
+const { TEXTGEN_TYPES, TOGETHERAI_KEYS, OLLAMA_KEYS, INFERMATICAI_KEYS, OPENROUTER_KEYS, VLLM_KEYS, DREAMGEN_KEYS } = require('../../constants');
 const { forwardFetchResponse, trimV1 } = require('../../util');
 const { setAdditionalHeaders } = require('../../additional-headers');
 
@@ -103,6 +103,7 @@ router.post('/status', jsonParser, async function (request, response) {
         } else {
             switch (request.body.api_type) {
                 case TEXTGEN_TYPES.OOBA:
+                case TEXTGEN_TYPES.VLLM:
                 case TEXTGEN_TYPES.APHRODITE:
                 case TEXTGEN_TYPES.KOBOLDCPP:
                 case TEXTGEN_TYPES.LLAMACPP:
@@ -233,6 +234,7 @@ router.post('/generate', jsonParser, async function (request, response) {
             url += '/v1/generate';
         } else {
             switch (request.body.api_type) {
+                case TEXTGEN_TYPES.VLLM:
                 case TEXTGEN_TYPES.APHRODITE:
                 case TEXTGEN_TYPES.OOBA:
                 case TEXTGEN_TYPES.TABBY:
@@ -288,6 +290,11 @@ router.post('/generate', jsonParser, async function (request, response) {
 
         if (request.body.api_type === TEXTGEN_TYPES.OPENROUTER) {
             request.body = _.pickBy(request.body, (_, key) => OPENROUTER_KEYS.includes(key));
+            args.body = JSON.stringify(request.body);
+        }
+
+        if (request.body.api_type === TEXTGEN_TYPES.VLLM) {
+            request.body = _.pickBy(request.body, (_, key) => VLLM_KEYS.includes(key));
             args.body = JSON.stringify(request.body);
         }
 

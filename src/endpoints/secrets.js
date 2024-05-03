@@ -9,6 +9,7 @@ const SECRETS_FILE = 'secrets.json';
 const SECRET_KEYS = {
     HORDE: 'api_key_horde',
     MANCER: 'api_key_mancer',
+    VLLM: 'api_key_vllm',
     APHRODITE: 'api_key_aphrodite',
     TABBY: 'api_key_tabby',
     OPENAI: 'api_key_openai',
