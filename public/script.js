@@ -8354,6 +8354,33 @@ function addDebugFunctions() {
         localStorage.setItem('eventTracing', localStorage.getItem('eventTracing') === 'true' ? 'false' : 'true');
         toastr.info('Event tracing is now ' + (localStorage.getItem('eventTracing') === 'true' ? 'enabled' : 'disabled'));
     });
+
+    registerDebugFunction('copySetup', 'Copy ST setup to clipboard [WIP]', 'Useful data when reporting bugs', async () => {
+        const getContextContents = getContext();
+        const getSettingsContents = settings;
+        //console.log(getSettingsContents);
+        const logMessage = `
+\`\`\`
+API: ${getSettingsContents.main_api}
+API Type: ${getSettingsContents[getSettingsContents.main_api + '_settings'].type}
+API server: ${getSettingsContents.api_server}
+Model: ${getContextContents.onlineStatus}
+Context Preset: ${power_user.context.preset}
+Instruct Preset: ${power_user.instruct.preset}
+API Settings: ${JSON.stringify(getSettingsContents[getSettingsContents.main_api + '_settings'], null, 2)}
+\`\`\`
+    `;
+
+        //console.log(getSettingsContents)
+        //console.log(logMessage);
+
+        try {
+            await navigator.clipboard.writeText(logMessage);
+            toastr.info('Your ST API setup data has been copied to the clipboard.');
+        } catch (error) {
+            toastr.error('Failed to copy ST Setup to clipboard:', error);
+        }
+    });
 }
 
 jQuery(async function () {
