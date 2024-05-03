@@ -2182,6 +2182,7 @@
                                     </a>
                                 </div>
                                 <h4 data-i18n="Tabby API key">Tabby API key</h4>
+                                <small data-i18n="Access TabbyAPI Admin">To access TabbyAPI's model switching, enter an admin key.</small>
                                 <div class="flex-container">
                                     <input id="api_key_tabby" name="api_key_tabby" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_tabby">
@@ -2194,6 +2195,14 @@
                                     <h4 data-i18n="API url">API URL</h4>
                                     <small data-i18n="Example: 127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="tabby_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="tabby">
+                                </div>
+                                <div id="tabby_api_model_selection">
+                                    <h4 data-i18n="Tabby API Model">Tabby API Model</h4>
+                                    <select id="tabby_api_model">
+                                        <option data-i18n="-- Connect to the API --">
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                             <div data-tg-type="koboldcpp">
