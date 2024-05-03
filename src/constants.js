@@ -318,7 +318,7 @@ const VLLM_KEYS = [
     'temperature',
     'top_p',
     'user',
-    
+
     'use_beam_search',
     'top_k',
     'min_p',
@@ -331,7 +331,7 @@ const VLLM_KEYS = [
     'skip_special_tokens',
     'spaces_between_special_tokens',
     'truncate_prompt_tokens',
-    
+
     'include_stop_str_in_output',
     'response_format',
     'guided_json',

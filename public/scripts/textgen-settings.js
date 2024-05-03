@@ -457,18 +457,6 @@ function loadTextGenSettings(data, loadedSettings) {
     showTypeSpecificControls(settings.type);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(settings.logit_bias, BIAS_KEY);
-    //this is needed because showTypeSpecificControls() does not handle NOT declarations
-    if (settings.type === textgen_types.APHRODITE) {
-        $('[data-forAphro="False"]').each(function () {
-            $(this).hide();
-        });
-    } else {
-        $('[data-forAphro="False"]').each(function () {
-            if ($(this).css('display') !== 'none') { //if it wasn't already hidden by showTypeSpecificControls
-                $(this).show();
-            }
-        });
-    }
 
     registerDebugFunction('change-mancer-url', 'Change Mancer base URL', 'Change Mancer API server base URL', () => {
         const result = prompt(`Enter Mancer base URL\nDefault: ${MANCER_SERVER_DEFAULT}`, MANCER_SERVER);
@@ -591,17 +579,6 @@ jQuery(function () {
         settings.type = type;
 
         if (settings.type === textgen_types.VLLM || settings.type === textgen_types.APHRODITE) {
-            if (settings.type === textgen_types.APHRODITE) {
-                //this is needed because showTypeSpecificControls() does not handle NOT declarations
-                $('[data-forAphro="False"]').each(function () {
-                    $(this).hide();
-                });
-            } else {
-                //this is needed because showTypeSpecificControls() does not handle NOT declarations
-                $('[data-forAphro="False"]').each(function () {
-                    $(this).show();
-                });
-            }
             $('#mirostat_mode_textgenerationwebui').attr('step', 2); //Aphro disallows mode 1
             $('#do_sample_textgenerationwebui').prop('checked', true); //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
             $('#ban_eos_token_textgenerationwebui').prop('checked', false); //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
@@ -612,10 +589,6 @@ jQuery(function () {
                 $('#top_k_textgenerationwebui').val('-1').trigger('input');
             }
         } else {
-            //this is needed because showTypeSpecificControls() does not handle NOT declarations
-            $('[data-forAphro="False"]').each(function () {
-                $(this).show();
-            });
             $('#mirostat_mode_textgenerationwebui').attr('step', 1);
             //undo special vLLM/Aphrodite setup for topK
             $('#top_k_textgenerationwebui').attr('min', 0);
