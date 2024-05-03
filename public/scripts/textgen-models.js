@@ -440,6 +440,10 @@ export function getCurrentOpenRouterModelTokenizer() {
     switch (model?.architecture?.tokenizer) {
         case 'Llama2':
             return tokenizers.LLAMA;
+        case 'Llama3':
+            return tokenizers.LLAMA3;
+        case 'Yi':
+            return tokenizers.YI;
         case 'Mistral':
             return tokenizers.MISTRAL;
         default:

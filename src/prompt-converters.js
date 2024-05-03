@@ -2,6 +2,7 @@ require('./polyfill.js');
 
 /**
  * Convert a prompt from the ChatML objects to the format used by Claude.
+ * Mainly deprecated. Only used for counting tokens.
  * @param {object[]} messages Array of messages
  * @param {boolean}  addAssistantPostfix Add Assistant postfix.
  * @param {string}   addAssistantPrefill Add Assistant prefill after the assistant postfix.

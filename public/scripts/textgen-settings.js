@@ -932,7 +932,7 @@ function toIntArray(string) {
     return string.split(',').map(x => parseInt(x)).filter(x => !isNaN(x));
 }
 
-function getModel() {
+export function getTextGenModel() {
     switch (settings.type) {
         case OOBA:
             if (settings.custom_model) {
@@ -974,7 +974,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     let params = {
         'prompt': finalPrompt,
-        'model': getModel(),
+        'model': getTextGenModel(),
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
         'logprobs': power_user.request_token_probabilities ? 10 : undefined,

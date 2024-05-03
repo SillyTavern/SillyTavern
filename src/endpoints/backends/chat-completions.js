@@ -730,7 +730,11 @@ router.post('/bias', jsonParser, async function (request, response) {
         if (sentencepieceTokenizers.includes(model)) {
             const tokenizer = getSentencepiceTokenizer(model);
             const instance = await tokenizer?.get();
-            encodeFunction = (text) => new Uint32Array(instance?.encodeIds(text));
+            if (!instance) {
+                console.warn('Tokenizer not initialized:', model);
+                return response.send({});
+            }
+            encodeFunction = (text) => new Uint32Array(instance.encodeIds(text));
         } else {
             const tokenizer = getTiktokenTokenizer(model);
             encodeFunction = (tokenizer.encode.bind(tokenizer));
