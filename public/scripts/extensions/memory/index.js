@@ -228,14 +228,18 @@ function onMemorySkipWIANInput() {
 function onMemoryPromptWordsInput() {
     const value = $(this).val();
     extension_settings.memory.promptWords = Number(value);
-    $('#memory_prompt_words_value').text(extension_settings.memory.promptWords);
+    const display = $('#memory_prompt_words_value');
+    display.text(extension_settings.memory.promptWords);
+    updateCase(display.next(), extension_settings.memory.promptWords);
     saveSettingsDebounced();
 }
 
 function onMemoryPromptIntervalInput() {
     const value = $(this).val();
     extension_settings.memory.promptInterval = Number(value);
-    $('#memory_prompt_interval_value').text(extension_settings.memory.promptInterval);
+    const display = $('#memory_prompt_interval_value');
+    display.text(extension_settings.memory.promptInterval);
+    updateCase(display.next(), extension_settings.memory.promptInterval);
     saveSettingsDebounced();
 }
 
@@ -280,14 +284,34 @@ function onMemoryPositionChange(e) {
 function onMemoryPromptWordsForceInput() {
     const value = $(this).val();
     extension_settings.memory.promptForceWords = Number(value);
-    $('#memory_prompt_words_force_value').text(extension_settings.memory.promptForceWords);
+    const display = $('#memory_prompt_words_force_value');
+    display.text(extension_settings.memory.promptForceWords);
+    updateCase(display.next(), extension_settings.memory.promptForceWords);
     saveSettingsDebounced();
+}
+
+function updateCase(span, number) { // other languages can use this function too, adding their own attributes to the elements
+    const ru_case1 = span.attr('ru-case1');
+    if (ru_case1) {
+        const ru_case2 = span.attr('ru-case2');
+        const ru_case3 = span.attr('ru-case3');
+        const last_digit = number % 10;
+        if (last_digit == 1) {
+            span.text(ru_case1);
+        } else if (last_digit != 0 && last_digit < 5) {
+            span.text(ru_case2);
+        } else {
+            span.text(ru_case3);
+        }
+    }
 }
 
 function onOverrideResponseLengthInput() {
     const value = $(this).val();
     extension_settings.memory.overrideResponseLength = Number(value);
-    $('#memory_override_response_length_value').text(extension_settings.memory.overrideResponseLength);
+    const display = $('#memory_override_response_length_value');
+    display.text(extension_settings.memory.overrideResponseLength);
+    updateCase(display.next(), extension_settings.memory.overrideResponseLength);
     saveSettingsDebounced();
 }
 
