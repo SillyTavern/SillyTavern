@@ -25,3 +25,13 @@ label[for="memory_frozen"] input {
     align-items: center;
     justify-content: space-between;
 }
+
+.memory_disabled_hint {
+    margin-left: 2px;
+}
+
+#summarySettingsBlock {
+    display: flex;
+    flex-direction: column;
+    row-gap: 5px;
+}

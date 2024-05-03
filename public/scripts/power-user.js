@@ -10,10 +10,9 @@ import {
     eventSource,
     event_types,
     getCurrentChatId,
-    printCharacters,
+    printCharactersDebounced,
     setCharacterId,
     setEditedMessageId,
-    renderTemplate,
     chat,
     getFirstDisplayedMessageId,
     showMoreMessages,
@@ -21,6 +20,9 @@ import {
     saveChatConditional,
     setAnimationDuration,
     ANIMATION_DURATION_DEFAULT,
+    setActiveGroup,
+    setActiveCharacter,
+    entitiesFilter,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -34,11 +36,13 @@ import {
 } from './instruct-mode.js';
 
 import { registerSlashCommand } from './slash-commands.js';
-import { tags } from './tags.js';
+import { getTagsList, tag_map, tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
+import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, isOdd, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { FILTER_TYPES } from './filters.js';
 
 export {
     loadPowerUserSettings,
@@ -116,6 +120,8 @@ let power_user = {
     markdown_escape_strings: '',
     chat_truncation: 100,
     streaming_fps: 30,
+    smooth_streaming: false,
+    smooth_streaming_speed: 50,
 
     ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
@@ -174,6 +180,7 @@ let power_user = {
     timestamps_enabled: true,
     timestamp_model_icon: false,
     mesIDDisplay_enabled: false,
+    hideChatAvatars_enabled: false,
     max_context_unlocked: false,
     message_token_count_enabled: false,
     expand_message_actions: false,
@@ -195,19 +202,27 @@ let power_user = {
         preset: 'Alpaca',
         system_prompt: 'Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}\'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n',
         input_sequence: '### Instruction:',
+        input_suffix: '',
         output_sequence: '### Response:',
+        output_suffix: '',
+        system_sequence: '',
+        system_suffix: '',
+        last_system_sequence: '',
         first_output_sequence: '',
         last_output_sequence: '',
         system_sequence_prefix: '',
         system_sequence_suffix: '',
         stop_sequence: '',
-        separator_sequence: '',
         wrap: true,
         macro: true,
         names: false,
         names_force_groups: true,
         activation_regex: '',
         bind_to_context: false,
+        user_alignment_message: '',
+        system_same_as_user: false,
+        /** @deprecated Use output_suffix instead */
+        separator_sequence: '',
     },
 
     default_context: 'Default',
@@ -217,6 +232,7 @@ let power_user = {
         chat_start: defaultChatStart,
         example_separator: defaultExampleSeparator,
         use_stop_strings: true,
+        allow_jailbreak: false,
     },
 
     personas: {},
@@ -234,13 +250,17 @@ let power_user = {
     encode_tags: false,
     servers: [],
     bogus_folders: false,
+    zoomed_avatar_magnification: false,
+    show_tag_filters: false,
     aux_field: 'character_version',
     restore_user_input: true,
     reduced_motion: false,
     compact_input_area: true,
     auto_connect: false,
     auto_load_chat: false,
-    forbid_external_images: false,
+    forbid_external_media: true,
+    external_media_allowed_overrides: [],
+    external_media_forbidden_overrides: [],
 };
 
 let themes = [];
@@ -278,6 +298,7 @@ const storage_keys = {
     timestamps_enabled: 'TimestampsEnabled',
     timestamp_model_icon: 'TimestampModelIcon',
     mesIDDisplay_enabled: 'mesIDDisplayEnabled',
+    hideChatAvatars_enabled: 'hideChatAvatarsEnabled',
     message_token_count_enabled: 'MessageTokenCountEnabled',
     expand_message_actions: 'ExpandMessageActions',
     enableZenSliders: 'enableZenSliders',
@@ -294,6 +315,7 @@ const contextControls = [
     { id: 'context_example_separator', property: 'example_separator', isCheckbox: false, isGlobalSetting: false },
     { id: 'context_chat_start', property: 'chat_start', isCheckbox: false, isGlobalSetting: false },
     { id: 'context_use_stop_strings', property: 'use_stop_strings', isCheckbox: true, isGlobalSetting: false, defaultValue: false },
+    { id: 'context_allow_jailbreak', property: 'allow_jailbreak', isCheckbox: true, isGlobalSetting: false, defaultValue: false },
 
     // Existing power user settings
     { id: 'always-force-name2-checkbox', property: 'always_force_name2', isCheckbox: true, isGlobalSetting: true, defaultValue: true },
@@ -305,7 +327,7 @@ const contextControls = [
 let browser_has_focus = true;
 const debug_functions = [];
 
-const setHotswapsDebounced = debounce(favsToHotswap, 500);
+const setHotswapsDebounced = debounce(favsToHotswap);
 
 export function switchSimpleMode() {
     $('[data-newbie-hidden]').each(function () {
@@ -446,6 +468,17 @@ function switchMesIDDisplay() {
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
 }
 
+function switchHideChatAvatars() {
+    const value = localStorage.getItem(storage_keys.hideChatAvatars_enabled);
+    power_user.hideChatAvatars_enabled = value === null ? false : value == 'true';
+    /*console.log(`
+        localstorage value:${value},
+        poweruser after:${power_user.hideChatAvatars_enabled}`)
+    */
+    $('body').toggleClass('hideChatAvatars', power_user.hideChatAvatars_enabled);
+    $('#hideChatAvatarsEnabled').prop('checked', power_user.hideChatAvatars_enabled);
+}
+
 function switchMessageActions() {
     const value = localStorage.getItem(storage_keys.expand_message_actions);
     power_user.expand_message_actions = value === null ? false : value == 'true';
@@ -461,6 +494,7 @@ function switchReducedMotion() {
     const overrideDuration = power_user.reduced_motion ? 0 : ANIMATION_DURATION_DEFAULT;
     setAnimationDuration(overrideDuration);
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
+    $('body').toggleClass('reduced-motion', power_user.reduced_motion);
 }
 
 function switchCompactInputArea() {
@@ -626,6 +660,7 @@ async function CreateZenSliders(elmnt) {
     if (sliderID == 'min_temp_textgenerationwebui' ||
         sliderID == 'max_temp_textgenerationwebui' ||
         sliderID == 'dynatemp_exponent_textgenerationwebui' ||
+        sliderID == 'smoothing_curve_textgenerationwebui' ||
         sliderID == 'smoothing_factor_textgenerationwebui') {
         decimals = 2;
     }
@@ -686,6 +721,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'top_k' ||
         sliderID == 'rep_pen_slope' ||
         sliderID == 'smoothing_factor_textgenerationwebui' ||
+        sliderID == 'smoothing_curve_textgenerationwebui' ||
         sliderID == 'min_length_textgenerationwebui') {
         offVal = 0;
     }
@@ -798,7 +834,7 @@ async function CreateZenSliders(elmnt) {
                         isManualInput = true;
                         //allow enter to trigger slider update
                         if (e.key === 'Enter') {
-                            e.preventDefault;
+                            e.preventDefault();
                             handle.trigger('blur');
                         }
                     })
@@ -939,6 +975,9 @@ function peekSpoilerMode() {
 
 
 function switchMovingUI() {
+    $('.drawer-content.maximized').each(function () {
+        $(this).find('.inline-drawer-maximize').trigger('click');
+    });
     const movingUI = localStorage.getItem(storage_keys.movingUI);
     power_user.movingUI = movingUI === null ? false : movingUI == 'true';
     $('body').toggleClass('movingUI', power_user.movingUI);
@@ -1070,13 +1109,6 @@ async function applyThemeColor(type) {
 
 async function applyCustomCSS() {
     power_user.custom_css = String(localStorage.getItem(storage_keys.custom_css) ?? '');
-
-    if (power_user.custom_css.includes('@import')) {
-        var removeImport = /@import[^;]+;/gm;
-        power_user.custom_css = power_user.custom_css.replace(removeImport, '');
-        localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
-        toastr.warning('@import not allowed in Custom CSS. @import lines removed.');
-    }
 
     $('#customCSS').val(power_user.custom_css);
     var styleId = 'custom-style';
@@ -1253,6 +1285,13 @@ async function applyTheme(name) {
             },
         },
         {
+            key: 'hideChatAvatars_enabled',
+            action: async () => {
+                localStorage.setItem(storage_keys.hideChatAvatars_enabled, Boolean(power_user.hideChatAvatars_enabled));
+                switchHideChatAvatars();
+            },
+        },
+        {
             key: 'expand_message_actions',
             action: async () => {
                 localStorage.setItem(storage_keys.expand_message_actions, Boolean(power_user.expand_message_actions));
@@ -1284,7 +1323,14 @@ async function applyTheme(name) {
             key: 'bogus_folders',
             action: async () => {
                 $('#bogus_folders').prop('checked', power_user.bogus_folders);
-                await printCharacters(true);
+                printCharactersDebounced();
+            },
+        },
+        {
+            key: 'zoomed_avatar_magnification',
+            action: async () => {
+                $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
+                printCharactersDebounced();
             },
         },
         {
@@ -1347,8 +1393,8 @@ export function registerDebugFunction(functionId, name, description, func) {
     debug_functions.push({ functionId, name, description, func });
 }
 
-function showDebugMenu() {
-    const template = renderTemplate('debug', { functions: debug_functions });
+async function showDebugMenu() {
+    const template = await renderTemplateAsync('debug', { functions: debug_functions });
     callPopup(template, 'text', '', { wide: true, large: true });
 }
 
@@ -1367,6 +1413,7 @@ switchTimer();
 switchTimestamps();
 switchIcons();
 switchMesIDDisplay();
+switchHideChatAvatars();
 switchTokenCount();
 switchMessageActions();
 
@@ -1409,6 +1456,7 @@ function loadPowerUserSettings(settings, data) {
     const timer = localStorage.getItem(storage_keys.timer_enabled);
     const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
     const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
+    const hideChatAvatars = localStorage.getItem(storage_keys.hideChatAvatars_enabled);
     const expandMessageActions = localStorage.getItem(storage_keys.expand_message_actions);
     const enableZenSliders = localStorage.getItem(storage_keys.enableZenSliders);
     const enableLabMode = localStorage.getItem(storage_keys.enableLabMode);
@@ -1432,6 +1480,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.timer_enabled = timer === null ? true : timer == 'true';
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == 'true';
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == 'true';
+    power_user.hideChatAvatars_enabled = hideChatAvatars === null ? true : hideChatAvatars == 'true';
     power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == 'true';
     power_user.enableZenSliders = enableZenSliders === null ? false : enableZenSliders == 'true';
     power_user.enableLabMode = enableLabMode === null ? false : enableLabMode == 'true';
@@ -1482,6 +1531,7 @@ function loadPowerUserSettings(settings, data) {
     $('#auto_fix_generated_markdown').prop('checked', power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop('checked', power_user.auto_scroll_chat_to_bottom);
     $('#bogus_folders').prop('checked', power_user.bogus_folders);
+    $('#zoomed_avatar_magnification').prop('checked', power_user.zoomed_avatar_magnification);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr('selected', true);
     $('#import_card_tags').prop('checked', power_user.import_card_tags);
@@ -1516,6 +1566,7 @@ function loadPowerUserSettings(settings, data) {
     $('#messageTimestampsEnabled').prop('checked', power_user.timestamps_enabled);
     $('#messageModelIconEnabled').prop('checked', power_user.timestamp_model_icon);
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
+    $('#hideChatAvatarsEndabled').prop('checked', power_user.hideChatAvatars_enabled);
     $('#prefer_character_prompt').prop('checked', power_user.prefer_character_prompt);
     $('#prefer_character_jailbreak').prop('checked', power_user.prefer_character_jailbreak);
     $('#enableZenSliders').prop('checked', power_user.enableZenSliders).trigger('input');
@@ -1532,6 +1583,9 @@ function loadPowerUserSettings(settings, data) {
 
     $('#streaming_fps').val(power_user.streaming_fps);
     $('#streaming_fps_counter').val(power_user.streaming_fps);
+
+    $('#smooth_streaming').prop('checked', power_user.smooth_streaming);
+    $('#smooth_streaming_speed').val(power_user.smooth_streaming_speed);
 
     $('#font_scale').val(power_user.font_scale);
     $('#font_scale_counter').val(power_user.font_scale);
@@ -1556,7 +1610,7 @@ function loadPowerUserSettings(settings, data) {
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
     $('#auto-connect-checkbox').prop('checked', power_user.auto_connect);
     $('#auto-load-chat-checkbox').prop('checked', power_user.auto_load_chat);
-    $('#forbid_external_images').prop('checked', power_user.forbid_external_images);
+    $('#forbid_external_media').prop('checked', power_user.forbid_external_media);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -1808,10 +1862,17 @@ function highlightDefaultContext() {
     $('#context_delete_preset').toggleClass('disabled', power_user.default_context === power_user.context.preset);
 }
 
+/**
+ * Fuzzy search characters by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchCharacters(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(characters, {
         keys: [
-            { name: 'data.name', weight: 8 },
+            { name: 'data.name', weight: 20 },
+            { name: '#tags', weight: 10, getFn: (character) => getTagsList(character.avatar).map(x => x.name).join('||') },
             { name: 'data.description', weight: 3 },
             { name: 'data.mes_example', weight: 3 },
             { name: 'data.scenario', weight: 2 },
@@ -1824,82 +1885,114 @@ export function fuzzySearchCharacters(searchValue) {
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Characters fuzzy search results for ' + searchValue, results);
-    const indices = results.map(x => x.refIndex);
-    return indices;
+    return results;
 }
 
+/**
+ * Fuzzy search world info entries by a search term
+ * @param {*[]} data - WI items data array
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchWorldInfo(data, searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'key', weight: 3 },
+            { name: 'key', weight: 20 },
+            { name: 'group', weight: 15 },
+            { name: 'comment', weight: 10 },
+            { name: 'keysecondary', weight: 10 },
             { name: 'content', weight: 3 },
-            { name: 'comment', weight: 2 },
-            { name: 'keysecondary', weight: 2 },
             { name: 'uid', weight: 1 },
+            { name: 'automationId', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('World Info fuzzy search results for ' + searchValue, results);
-    return results.map(x => x.item?.uid);
+    return results;
 }
 
+/**
+ * Fuzzy search persona entries by a search term
+ * @param {*[]} data - persona data array
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchPersonas(data, searchValue) {
-    data = data.map(x => ({ key: x, description: power_user.persona_descriptions[x]?.description ?? '', name: power_user.personas[x] ?? '' }));
+    data = data.map(x => ({ key: x, name: power_user.personas[x] ?? '', description: power_user.persona_descriptions[x]?.description ?? '' }));
+    // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'name', weight: 4 },
-            { name: 'description', weight: 1 },
+            { name: 'name', weight: 20 },
+            { name: 'description', weight: 3 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Personas fuzzy search results for ' + searchValue, results);
-    return results.map(x => x.item?.key);
+    return results;
 }
 
+/**
+ * Fuzzy search tags by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchTags(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(tags, {
         keys: [
             { name: 'name', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Tags fuzzy search results for ' + searchValue, results);
-    const ids = results.map(x => String(x.item?.id)).filter(x => x);
-    return ids;
+    return results;
 }
 
+/**
+ * Fuzzy search groups by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchGroups(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(groups, {
         keys: [
-            { name: 'name', weight: 3 },
-            { name: 'members', weight: 1 },
+            { name: 'name', weight: 20 },
+            { name: 'members', weight: 15 },
+            { name: '#tags', weight: 10, getFn: (group) => getTagsList(group.id).map(x => x.name).join('||') },
+            { name: 'id', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Groups fuzzy search results for ' + searchValue, results);
-    const ids = results.map(x => String(x.item?.id)).filter(x => x);
-    return ids;
+    return results;
 }
 
 /**
@@ -1923,7 +2016,9 @@ export function renderStoryString(params) {
 
         // add a newline to the end of the story string if it doesn't have one
         if (output.length > 0 && !output.endsWith('\n')) {
-            output += '\n';
+            if (!power_user.instruct.enabled || power_user.instruct.wrap) {
+                output += '\n';
+            }
         }
 
         return output;
@@ -1972,13 +2067,22 @@ function sortEntitiesList(entities) {
         return;
     }
 
+    const isSearch = $('#character_sort_order option[data-field="search"]').is(':selected');
+
     entities.sort((a, b) => {
+        // Sort tags/folders will always be at the top
         if (a.type === 'tag' && b.type !== 'tag') {
             return -1;
         }
-
         if (a.type !== 'tag' && b.type === 'tag') {
             return 1;
+        }
+
+        // If we have search sorting, we take scores and use those
+        if (isSearch) {
+            const aScore = entitiesFilter.getScore(FILTER_TYPES.SEARCH, `${a.type}.${a.id}`);
+            const bScore = entitiesFilter.getScore(FILTER_TYPES.SEARCH, `${b.type}.${b.id}`);
+            return (aScore - bScore);
         }
 
         return sortFunc(a.item, b.item);
@@ -1991,6 +2095,45 @@ function sortEntitiesList(entities) {
 async function updateTheme() {
     await saveTheme(power_user.theme);
     toastr.success('Theme saved.');
+}
+
+async function deleteTheme() {
+    const themeName = power_user.theme;
+
+    if (!themeName) {
+        toastr.info('No theme selected.');
+        return;
+    }
+
+    const confirm = await callPopup(`Are you sure you want to delete the theme "${themeName}"?`, 'confirm', '', { okButton: 'Yes' });
+
+    if (!confirm) {
+        return;
+    }
+
+    const response = await fetch('/api/themes/delete', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ name: themeName }),
+    });
+
+    if (!response.ok) {
+        toastr.error('Failed to delete theme. Check the console for more information.');
+        return;
+    }
+
+    const themeIndex = themes.findIndex(x => x.name == themeName);
+
+    if (themeIndex !== -1) {
+        themes.splice(themeIndex, 1);
+        $(`#themes option[value="${themeName}"]`).remove();
+        power_user.theme = themes[0]?.name;
+        saveSettingsDebounced();
+        if (power_user.theme) {
+            await applyTheme(power_user.theme);
+        }
+        toastr.success('Theme deleted.');
+    }
 }
 
 /**
@@ -2021,6 +2164,13 @@ async function importTheme(file) {
 
     if (themes.some(t => t.name === parsed.name)) {
         throw new Error('Theme with that name already exists');
+    }
+
+    if (typeof parsed.custom_css === 'string' && parsed.custom_css.includes('@import')) {
+        const confirm = await callPopup('This theme contains @import lines in the Custom CSS. Press "Yes" to proceed.', 'confirm', '', { okButton: 'Yes' });
+        if (!confirm) {
+            throw new Error('Theme contains @import lines');
+        }
     }
 
     themes.push(parsed);
@@ -2074,6 +2224,7 @@ async function saveTheme(name = undefined) {
         timestamp_model_icon: power_user.timestamp_model_icon,
 
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
+        hideChatAvatars_enabled: power_user.hideChatAvatars_enabled,
         message_token_count_enabled: power_user.message_token_count_enabled,
         expand_message_actions: power_user.expand_message_actions,
         enableZenSliders: power_user.enableZenSliders,
@@ -2081,11 +2232,12 @@ async function saveTheme(name = undefined) {
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
         bogus_folders: power_user.bogus_folders,
+        zoomed_avatar_magnification: power_user.zoomed_avatar_magnification,
         reduced_motion: power_user.reduced_motion,
         compact_input_area: power_user.compact_input_area,
     };
 
-    const response = await fetch('/savetheme', {
+    const response = await fetch('/api/themes/save', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(theme),
@@ -2127,7 +2279,7 @@ async function saveMovingUI() {
     };
     console.log(movingUIPreset);
 
-    const response = await fetch('/savemovingui', {
+    const response = await fetch('/api/moving-ui/save', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(movingUIPreset),
@@ -2156,6 +2308,22 @@ async function saveMovingUI() {
     }
 }
 
+/**
+ * Resets the movable styles of the given element to their unset values.
+ * @param {string} id Element ID
+ */
+export function resetMovableStyles(id) {
+    const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin'];
+
+    const panel = document.getElementById(id);
+
+    if (panel) {
+        panelStyles.forEach((style) => {
+            panel.style[style] = '';
+        });
+    }
+}
+
 async function resetMovablePanels(type) {
     const panelIds = [
         'sheld',
@@ -2167,14 +2335,18 @@ async function resetMovablePanels(type) {
         'groupMemberListPopout',
         'summaryExtensionPopout',
         'gallery',
+        'logprobsViewer',
+        'cfgConfig',
     ];
 
+    /**
+     * @type {HTMLElement[]} Generic panels that don't have a known ID
+     */
+    const draggedElements = Array.from(document.querySelectorAll('[data-dragged]'));
+    const allDraggable = panelIds.map(id => document.getElementById(id)).concat(draggedElements).filter(onlyUnique);
+
     const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin'];
-
-    panelIds.forEach((id) => {
-        console.log(id);
-        const panel = document.getElementById(id);
-
+    allDraggable.forEach((panel) => {
         if (panel) {
             $(panel).addClass('resizing');
             panelStyles.forEach((style) => {
@@ -2183,7 +2355,10 @@ async function resetMovablePanels(type) {
         }
     });
 
-    const zoomedAvatars = document.querySelectorAll('.zoomed_avatar');
+    /**
+     * @type {HTMLElement[]} Zoomed avatars that are currently being resized
+     */
+    const zoomedAvatars = Array.from(document.querySelectorAll('.zoomed_avatar'));
     if (zoomedAvatars.length > 0) {
         zoomedAvatars.forEach((avatar) => {
             avatar.classList.add('resizing');
@@ -2232,10 +2407,68 @@ function doNewChat() {
     }, 1);
 }
 
-async function doRandomChat() {
+/**
+ * Finds the ID of the tag with the given name.
+ * @param {string} name
+ * @returns {string} The ID of the tag with the given name.
+ */
+function findTagIdByName(name) {
+    const matchTypes = [
+        (a, b) => a === b,
+        (a, b) => a.startsWith(b),
+        (a, b) => a.includes(b),
+    ];
+
+    // Only get tags that contain at least one record in the tag_map
+    const liveTagIds = new Set(Object.values(tag_map).flat());
+    const liveTags = tags.filter(x => liveTagIds.has(x.id));
+
+    const exactNameMatchIndex = liveTags.map(x => x.name.toLowerCase()).indexOf(name.toLowerCase());
+
+    if (exactNameMatchIndex !== -1) {
+        return liveTags[exactNameMatchIndex].id;
+    }
+
+    for (const matchType of matchTypes) {
+        const index = liveTags.findIndex(x => matchType(x.name.toLowerCase(), name.toLowerCase()));
+        if (index !== -1) {
+            return liveTags[index].id;
+        }
+    }
+}
+
+async function doRandomChat(_, tagName) {
+    /**
+     * Gets the ID of a random character.
+     * @returns {string} The order index of the randomly selected character.
+     */
+    function getRandomCharacterId() {
+        if (!tagName) {
+            return Math.floor(Math.random() * characters.length).toString();
+        }
+
+        const tagId = findTagIdByName(tagName);
+        const taggedCharacters = Object.entries(tag_map)
+            .filter(x => x[1].includes(tagId)) // Get only records that include the tag
+            .map(x => x[0]) // Map the character avatar
+            .filter(x => characters.find(y => y.avatar === x)); // Filter out characters that don't exist
+        const randomCharacter = taggedCharacters[Math.floor(Math.random() * taggedCharacters.length)];
+        const randomIndex = characters.findIndex(x => x.avatar === randomCharacter);
+        if (randomIndex === -1) {
+            return;
+        }
+        return randomIndex.toString();
+    }
+
     resetSelectedGroup();
-    const characterId = Math.floor(Math.random() * characters.length).toString();
+    const characterId = getRandomCharacterId();
+    if (!characterId) {
+        toastr.error('No characters found');
+        return;
+    }
     setCharacterId(characterId);
+    setActiveCharacter(characters[characterId]?.avatar);
+    setActiveGroup(null);
     await delay(1);
     await reloadCurrentChat();
     return characters[characterId]?.name;
@@ -2279,8 +2512,10 @@ async function doMesCut(_, text) {
 
     let totalMesToCut = (range.end - range.start) + 1;
     let mesIDToCut = range.start;
+    let cutText = '';
 
     for (let i = 0; i < totalMesToCut; i++) {
+        cutText += (chat[mesIDToCut]?.mes || '') + '\n';
         let done = false;
         let mesToCut = $('#chat').find(`.mes[mesid=${mesIDToCut}]`);
 
@@ -2301,6 +2536,8 @@ async function doMesCut(_, text) {
             await delay(1);
         }
     }
+
+    return cutText;
 }
 
 async function doDelMode(_, text) {
@@ -2563,6 +2800,7 @@ function setAvgBG() {
 }
 
 async function setThemeCallback(_, text) {
+    // @ts-ignore
     const fuse = new Fuse(themes, {
         keys: [
             { name: 'name', weight: 1 },
@@ -2585,6 +2823,7 @@ async function setThemeCallback(_, text) {
 }
 
 async function setmovingUIPreset(_, text) {
+    // @ts-ignore
     const fuse = new Fuse(movingUIPresets, {
         keys: [
             { name: 'name', weight: 1 },
@@ -2677,23 +2916,44 @@ export function getCustomStoppingStrings(limit = undefined) {
     return strings;
 }
 
+export function forceCharacterEditorTokenize() {
+    $('[data-token-counter]').each(function () {
+        $(document.getElementById($(this).data('token-counter'))).data('last-value-hash', '');
+    });
+    $('#rm_ch_create_block').trigger('input');
+    $('#character_popup').trigger('input');
+}
+
 $(document).ready(() => {
+    const adjustAutocompleteDebounced = debounce(() => {
+        $('.ui-autocomplete-input').each(function () {
+            const isOpen = $(this).autocomplete('widget')[0].style.display !== 'none';
+            if (isOpen) {
+                $(this).autocomplete('search');
+            }
+        });
+    });
 
-    $(window).on('resize', async () => {
-        if (isMobile()) {
-            return;
-        }
-
-        //console.log('Window resized!');
+    const reportZoomLevelDebounced = debounce(() => {
         const zoomLevel = Number(window.devicePixelRatio).toFixed(2);
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
         console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}`);
+    });
+
+    $(window).on('resize', async () => {
+        adjustAutocompleteDebounced();
+        setHotswapsDebounced();
+
+        if (isMobile()) {
+            return;
+        }
+
+        reportZoomLevelDebounced();
+
         if (Object.keys(power_user.movingUIState).length > 0) {
             resetMovablePanels('resize');
         }
-        // Adjust layout and styling here
-        setHotswapsDebounced();
     });
 
     // Settings that go to settings.json
@@ -2864,6 +3124,16 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#smooth_streaming').on('input', function () {
+        power_user.smooth_streaming = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#smooth_streaming_speed').on('input', function () {
+        power_user.smooth_streaming_speed = Number($('#smooth_streaming_speed').val());
+        saveSettingsDebounced();
+    });
+
     $('input[name="font_scale"]').on('input', async function (e) {
         power_user.font_scale = Number(e.target.value);
         $('#font_scale_counter').val(power_user.font_scale);
@@ -2965,6 +3235,7 @@ $(document).ready(() => {
 
     $('#ui-preset-save-button').on('click', () => saveTheme());
     $('#ui-preset-update-button').on('click', () => updateTheme());
+    $('#ui-preset-delete-button').on('click', () => deleteTheme());
     $('#movingui-preset-save-button').on('click', saveMovingUI);
 
     $('#never_resize_avatars').on('input', function () {
@@ -2974,7 +3245,7 @@ $(document).ready(() => {
 
     $('#show_card_avatar_urls').on('input', function () {
         power_user.show_card_avatar_urls = !!$(this).prop('checked');
-        printCharacters();
+        printCharactersDebounced();
         saveSettingsDebounced();
     });
 
@@ -2994,10 +3265,14 @@ $(document).ready(() => {
     });
 
     $('#character_sort_order').on('change', function () {
-        power_user.sort_field = $(this).find(':selected').data('field');
-        power_user.sort_order = $(this).find(':selected').data('order');
-        power_user.sort_rule = $(this).find(':selected').data('rule');
-        printCharacters();
+        const field = String($(this).find(':selected').data('field'));
+        // Save sort order, but do not save search sorting, as this is a temporary sorting option
+        if (field !== 'search') {
+            power_user.sort_field = field;
+            power_user.sort_order = $(this).find(':selected').data('order');
+            power_user.sort_rule = $(this).find(':selected').data('rule');
+        }
+        printCharactersDebounced();
         saveSettingsDebounced();
     });
 
@@ -3064,8 +3339,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
 
         // Trigger character editor re-tokenize
-        $('#rm_ch_create_block').trigger('input');
-        $('#character_popup').trigger('input');
+        forceCharacterEditorTokenize();
     });
 
     $('#send_on_enter').on('change', function () {
@@ -3188,6 +3462,13 @@ $(document).ready(() => {
         switchMesIDDisplay();
     });
 
+    $('#hideChatAvatarsEnabled').on('input', function () {
+        const value = !!$(this).prop('checked');
+        power_user.hideChatAvatars_enabled = value;
+        localStorage.setItem(storage_keys.hideChatAvatars_enabled, Boolean(power_user.hideChatAvatars_enabled));
+        switchHideChatAvatars();
+    });
+
     $('#hotswapEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.hotswap_enabled = value;
@@ -3292,17 +3573,22 @@ $(document).ready(() => {
     });
 
     $('#bogus_folders').on('input', function () {
-        const value = !!$(this).prop('checked');
-        power_user.bogus_folders = value;
+        power_user.bogus_folders = !!$(this).prop('checked');
+        printCharactersDebounced();
         saveSettingsDebounced();
-        printCharacters(true);
+    });
+
+    $('#zoomed_avatar_magnification').on('input', function () {
+        power_user.zoomed_avatar_magnification = !!$(this).prop('checked');
+        printCharactersDebounced();
+        saveSettingsDebounced();
     });
 
     $('#aux_field').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.aux_field = String(value);
+        printCharactersDebounced();
         saveSettingsDebounced();
-        printCharacters(false);
     });
 
     $('#restore_user_input').on('input', function () {
@@ -3334,8 +3620,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#forbid_external_images').on('input', function () {
-        power_user.forbid_external_images = !!$(this).prop('checked');
+    $('#forbid_external_media').on('input', function () {
+        power_user.forbid_external_media = !!$(this).prop('checked');
         saveSettingsDebounced();
         reloadCurrentChat();
     });
@@ -3385,9 +3671,9 @@ $(document).ready(() => {
 
     registerSlashCommand('vn', toggleWaifu, [], '– swaps Visual Novel Mode On/Off', false, true);
     registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
-    registerSlashCommand('random', doRandomChat, [], '– start a new chat with a random character', true, true);
+    registerSlashCommand('random', doRandomChat, [], '<span class="monospace">(optional tag name)</span> – start a new chat with a random character. If an argument is provided, only considers characters that have the specified tag.', true, true);
     registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes last N messages if numeric argument is provided', true, true);
-    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive!', true, true);
+    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive! Returns the text of cut messages separated by a newline.', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
     registerSlashCommand('theme', setThemeCallback, [], '<span class="monospace">(name)</span> – sets a UI theme by name', true, true);

@@ -1,0 +1,17 @@
+# Detect and label pull requests that have merge conflicts
+name: 🏗️ Check Merge Conflicts
+on:
+  push:
+    branches:
+    - staging
+jobs:
+  check-conflicts:
+    if: github.repository == 'SillyTavern/SillyTavern'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: mschilde/auto-label-merge-conflicts@master
+        with:
+          CONFLICT_LABEL_NAME: "🚫 Merge Conflicts"
+          GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          MAX_RETRIES: 5
+          WAIT_MS: 5000

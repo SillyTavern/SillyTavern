@@ -1,5 +1,109 @@
 [
     {
+        "filename": "settings.json",
+        "type": "settings"
+    },
+    {
+        "filename": "themes/Dark Lite.json",
+        "type": "theme"
+    },
+    {
+        "filename": "themes/Cappuccino.json",
+        "type": "theme"
+    },
+    {
+        "filename": "backgrounds/__transparent.png",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/_black.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/_white.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/bedroom clean.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/bedroom cyberpunk.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/bedroom red.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/bedroom tatami.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/cityscape medieval market.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/cityscape medieval night.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/cityscape postapoc.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/forest treehouse fireworks air baloons (by kallmeflocc).jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/japan classroom side.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/japan classroom.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/japan path cherry blossom.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/japan university.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/landscape autumn great tree.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/landscape beach day.png",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/landscape beach night.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/landscape mountain lake.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/landscape postapoc.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/landscape winter lake house.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/royal.jpg",
+        "type": "background"
+    },
+    {
+        "filename": "backgrounds/tavern day.jpg",
+        "type": "background"
+    },
+    {
         "filename": "default_Seraphina.png",
         "type": "character"
     },
@@ -211,7 +315,6 @@
         "filename": "presets/novel/Writers-Daemon-Kayra.json",
         "type": "novel_preset"
     },
-
     {
         "filename": "presets/textgen/Asterism.json",
         "type": "textgen_preset"
@@ -355,5 +458,213 @@
     {
         "filename": "presets/openai/Default.json",
         "type": "openai_preset"
+    },
+    {
+        "filename": "presets/context/Adventure.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Alpaca-Roleplay.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Alpaca-Single-Turn.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Alpaca.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/ChatML.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Default.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/DreamGen Role-Play V1.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Libra-32B.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Lightning 1.1.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Llama 2 Chat.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Minimalist.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Mistral.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/NovelAI.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/OldDefault.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Pygmalion.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Story.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Synthia.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/simple-proxy-for-tavern.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Command R.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Llama 3 Instruct.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/Phi.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/instruct/Adventure.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Alpaca-Roleplay.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Alpaca-Single-Turn.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Alpaca.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/ChatML.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/DreamGen Role-Play V1.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Koala.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Libra-32B.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Lightning 1.1.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Llama 2 Chat.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Metharme.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Mistral.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/OpenOrca-OpenChat.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Pygmalion.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Story.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Synthia.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Vicuna 1.0.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Vicuna 1.1.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/WizardLM-13B.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/WizardLM.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/simple-proxy-for-tavern.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Command R.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Llama 3 Instruct.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/Phi.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/moving-ui/Default.json",
+        "type": "moving_ui"
+    },
+    {
+        "filename": "presets/moving-ui/Black Magic Time.json",
+        "type": "moving_ui"
+    },
+    {
+        "filename": "presets/quick-replies/Default.json",
+        "type": "quick_replies"
+    },
+    {
+        "filename": "presets/instruct/Llama-3-Instruct-Names.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/instruct/ChatML-Names.json",
+        "type": "instruct"
+    },
+    {
+        "filename": "presets/context/Llama-3-Instruct-Names.json",
+        "type": "context"
+    },
+    {
+        "filename": "presets/context/ChatML-Names.json",
+        "type": "context"
     }
 ]

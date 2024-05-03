@@ -1,33 +1,61 @@
-const DIRECTORIES = {
-    worlds: 'public/worlds/',
-    user: 'public/user',
-    avatars: 'public/User Avatars',
+const PUBLIC_DIRECTORIES = {
     images: 'public/img/',
-    userImages: 'public/user/images/',
-    groups: 'public/groups/',
-    groupChats: 'public/group chats',
-    chats: 'public/chats/',
-    characters: 'public/characters/',
-    backgrounds: 'public/backgrounds',
-    novelAI_Settings: 'public/NovelAI Settings',
-    koboldAI_Settings: 'public/KoboldAI Settings',
-    openAI_Settings: 'public/OpenAI Settings',
-    textGen_Settings: 'public/TextGen Settings',
-    thumbnails: 'thumbnails/',
-    thumbnailsBg: 'thumbnails/bg/',
-    thumbnailsAvatar: 'thumbnails/avatar/',
-    themes: 'public/themes',
-    movingUI: 'public/movingUI',
-    extensions: 'public/scripts/extensions',
-    instruct: 'public/instruct',
-    context: 'public/context',
     backups: 'backups/',
-    quickreplies: 'public/QuickReplies',
-    assets: 'public/assets',
-    comfyWorkflows: 'public/user/workflows',
-    files: 'public/user/files',
     sounds: 'public/sounds',
+    extensions: 'public/scripts/extensions',
 };
+
+const DEFAULT_AVATAR = '/img/ai4.png';
+const SETTINGS_FILE = 'settings.json';
+
+/**
+ * @type {import('./users').UserDirectoryList}
+ * @readonly
+ * @enum {string}
+ */
+const USER_DIRECTORY_TEMPLATE = Object.freeze({
+    root: '',
+    thumbnails: 'thumbnails',
+    thumbnailsBg: 'thumbnails/bg',
+    thumbnailsAvatar: 'thumbnails/avatar',
+    worlds: 'worlds',
+    user: 'user',
+    avatars: 'User Avatars',
+    userImages: 'user/images',
+    groups: 'groups',
+    groupChats: 'group chats',
+    chats: 'chats',
+    characters: 'characters',
+    backgrounds: 'backgrounds',
+    novelAI_Settings: 'NovelAI Settings',
+    koboldAI_Settings: 'KoboldAI Settings',
+    openAI_Settings: 'OpenAI Settings',
+    textGen_Settings: 'TextGen Settings',
+    themes: 'themes',
+    movingUI: 'movingUI',
+    extensions: 'extensions',
+    instruct: 'instruct',
+    context: 'context',
+    quickreplies: 'QuickReplies',
+    assets: 'assets',
+    comfyWorkflows: 'user/workflows',
+    files: 'user/files',
+    vectors: 'vectors',
+});
+
+/**
+ * @type {import('./users').User}
+ * @readonly
+ */
+const DEFAULT_USER = Object.freeze({
+    handle: 'default-user',
+    name: 'User',
+    created: Date.now(),
+    password: '',
+    admin: true,
+    enabled: true,
+    salt: '',
+});
 
 const UNSAFE_EXTENSIONS = [
     '.php',
@@ -162,6 +190,8 @@ const CHAT_COMPLETION_SOURCES = {
     MAKERSUITE: 'makersuite',
     MISTRALAI: 'mistralai',
     CUSTOM: 'custom',
+    COHERE: 'cohere',
+    PERPLEXITY: 'perplexity',
 };
 
 const UPLOADS_PATH = './uploads';
@@ -177,6 +207,7 @@ const TEXTGEN_TYPES = {
     LLAMACPP: 'llamacpp',
     OLLAMA: 'ollama',
     INFERMATICAI: 'infermaticai',
+    DREAMGEN: 'dreamgen',
     OPENROUTER: 'openrouter',
 };
 
@@ -190,6 +221,23 @@ const INFERMATICAI_KEYS = [
     'repetition_penalty',
     'stream',
     'stop',
+];
+
+// https://dreamgen.com/docs/api#openai-text
+const DREAMGEN_KEYS = [
+    'model',
+    'prompt',
+    'max_tokens',
+    'temperature',
+    'top_p',
+    'top_k',
+    'min_p',
+    'repetition_penalty',
+    'frequency_penalty',
+    'presence_penalty',
+    'stop',
+    'stream',
+    'minimum_message_content_tokens',
 ];
 
 // https://docs.together.ai/reference/completions
@@ -224,8 +272,8 @@ const OLLAMA_KEYS = [
     'mirostat_eta',
 ];
 
-const AVATAR_WIDTH = 400;
-const AVATAR_HEIGHT = 600;
+const AVATAR_WIDTH = 512;
+const AVATAR_HEIGHT = 768;
 
 const OPENROUTER_HEADERS = {
     'HTTP-Referer': 'https://sillytavern.app',
@@ -251,7 +299,11 @@ const OPENROUTER_KEYS = [
 ];
 
 module.exports = {
-    DIRECTORIES,
+    DEFAULT_USER,
+    DEFAULT_AVATAR,
+    SETTINGS_FILE,
+    PUBLIC_DIRECTORIES,
+    USER_DIRECTORY_TEMPLATE,
     UNSAFE_EXTENSIONS,
     UPLOADS_PATH,
     GEMINI_SAFETY,
@@ -263,6 +315,7 @@ module.exports = {
     TOGETHERAI_KEYS,
     OLLAMA_KEYS,
     INFERMATICAI_KEYS,
+    DREAMGEN_KEYS,
     OPENROUTER_HEADERS,
     OPENROUTER_KEYS,
 };

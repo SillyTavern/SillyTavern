@@ -2,8 +2,13 @@ const { TEXTGEN_TYPES, OPENROUTER_HEADERS } = require('./constants');
 const { SECRET_KEYS, readSecret } = require('./endpoints/secrets');
 const { getConfigValue } = require('./util');
 
-function getMancerHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.MANCER);
+/**
+ * Gets the headers for the Mancer API.
+ * @param {import('./users').UserDirectoryList} directories User directories
+ * @returns {object} Headers for the request
+ */
+function getMancerHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.MANCER);
 
     return apiKey ? ({
         'X-API-KEY': apiKey,
@@ -11,31 +16,64 @@ function getMancerHeaders() {
     }) : {};
 }
 
-function getTogetherAIHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.TOGETHERAI);
+/**
+ * Gets the headers for the TogetherAI API.
+ * @param {import('./users').UserDirectoryList} directories User directories
+ * @returns {object} Headers for the request
+ */
+function getTogetherAIHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.TOGETHERAI);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
     }) : {};
 }
 
-function getInfermaticAIHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.INFERMATICAI);
+/**
+ * Gets the headers for the InfermaticAI API.
+ * @param {import('./users').UserDirectoryList} directories User directories
+ * @returns {object} Headers for the request
+ */
+function getInfermaticAIHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.INFERMATICAI);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
     }) : {};
 }
 
-function getOpenRouterHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.OPENROUTER);
+/**
+ * Gets the headers for the DreamGen API.
+ * @param {import('./users').UserDirectoryList} directories User directories
+ * @returns {object} Headers for the request
+ */
+function getDreamGenHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.DREAMGEN);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
+/**
+ * Gets the headers for the OpenRouter API.
+ * @param {import('./users').UserDirectoryList} directories User directories
+ * @returns {object} Headers for the request
+ */
+function getOpenRouterHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.OPENROUTER);
     const baseHeaders = { ...OPENROUTER_HEADERS };
 
     return apiKey ? Object.assign(baseHeaders, { 'Authorization': `Bearer ${apiKey}` }) : baseHeaders;
 }
 
-function getAphroditeHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.APHRODITE);
+/**
+ * Gets the headers for the Aphrodite API.
+ * @param {import('./users').UserDirectoryList} directories User directories
+ * @returns {object} Headers for the request
+ */
+function getAphroditeHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.APHRODITE);
 
     return apiKey ? ({
         'X-API-KEY': apiKey,
@@ -43,8 +81,13 @@ function getAphroditeHeaders() {
     }) : {};
 }
 
-function getTabbyHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.TABBY);
+/**
+ * Gets the headers for the Tabby API.
+ * @param {import('./users').UserDirectoryList} directories User directories
+ * @returns {object} Headers for the request
+ */
+function getTabbyHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.TABBY);
 
     return apiKey ? ({
         'x-api-key': apiKey,
@@ -52,8 +95,39 @@ function getTabbyHeaders() {
     }) : {};
 }
 
-function getOobaHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.OOBA);
+/**
+ * Gets the headers for the LlamaCPP API.
+ * @param {import('./users').UserDirectoryList} directories User directories
+ * @returns {object} Headers for the request
+ */
+function getLlamaCppHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.LLAMACPP);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
+/**
+ * Gets the headers for the Ooba API.
+ * @param {import('./users').UserDirectoryList} directories
+ * @returns {object} Headers for the request
+ */
+function getOobaHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.OOBA);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
+/**
+ * Gets the headers for the KoboldCpp API.
+ * @param {import('./users').UserDirectoryList} directories
+ * @returns {object} Headers for the request
+ */
+function getKoboldCppHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.KOBOLDCPP);
 
     return apiKey ? ({
         'Authorization': `Bearer ${apiKey}`,
@@ -72,38 +146,38 @@ function getOverrideHeaders(urlHost) {
 
 /**
  * Sets additional headers for the request.
- * @param {object} request Original request body
+ * @param {import('express').Request} request Original request body
  * @param {object} args New request arguments
  * @param {string|null} server API server for new request
  */
 function setAdditionalHeaders(request, args, server) {
-    let headers;
+    const headerGetters = {
+        [TEXTGEN_TYPES.MANCER]: getMancerHeaders,
+        [TEXTGEN_TYPES.APHRODITE]: getAphroditeHeaders,
+        [TEXTGEN_TYPES.TABBY]: getTabbyHeaders,
+        [TEXTGEN_TYPES.TOGETHERAI]: getTogetherAIHeaders,
+        [TEXTGEN_TYPES.OOBA]: getOobaHeaders,
+        [TEXTGEN_TYPES.INFERMATICAI]: getInfermaticAIHeaders,
+        [TEXTGEN_TYPES.DREAMGEN]: getDreamGenHeaders,
+        [TEXTGEN_TYPES.OPENROUTER]: getOpenRouterHeaders,
+        [TEXTGEN_TYPES.KOBOLDCPP]: getKoboldCppHeaders,
+        [TEXTGEN_TYPES.LLAMACPP]: getLlamaCppHeaders,
+    };
 
-    switch (request.body.api_type) {
-        case TEXTGEN_TYPES.MANCER:
-            headers = getMancerHeaders();
-            break;
-        case TEXTGEN_TYPES.APHRODITE:
-            headers = getAphroditeHeaders();
-            break;
-        case TEXTGEN_TYPES.TABBY:
-            headers = getTabbyHeaders();
-            break;
-        case TEXTGEN_TYPES.TOGETHERAI:
-            headers = getTogetherAIHeaders();
-            break;
-        case TEXTGEN_TYPES.OOBA:
-            headers = getOobaHeaders();
-            break;
-        case TEXTGEN_TYPES.INFERMATICAI:
-            headers = getInfermaticAIHeaders();
-            break;
-        case TEXTGEN_TYPES.OPENROUTER:
-            headers = getOpenRouterHeaders();
-            break;
-        default:
-            headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
-            break;
+    const getHeaders = headerGetters[request.body.api_type];
+    const headers = getHeaders ? getHeaders(request.user.directories) : {};
+
+    if (typeof server === 'string' && server.length > 0) {
+        try {
+            const url = new URL(server);
+            const overrideHeaders =  getOverrideHeaders(url.host);
+
+            if (overrideHeaders && Object.keys(overrideHeaders).length > 0) {
+                Object.assign(headers, overrideHeaders);
+            }
+        } catch {
+            // Do nothing
+        }
     }
 
     Object.assign(args.headers, headers);

@@ -1,4 +1,4 @@
-FROM node:19.1.0-alpine3.16
+FROM node:lts-alpine3.18
 
 # Arguments
 ARG APP_HOME=/home/node/app
@@ -26,19 +26,9 @@ COPY . ./
 
 # Copy default chats, characters and user avatars to <folder>.default folder
 RUN \
-  IFS="," RESOURCES="assets,backgrounds,user,context,instruct,QuickReplies,movingUI,themes,characters,chats,groups,group chats,User Avatars,worlds,OpenAI Settings,NovelAI Settings,KoboldAI Settings,TextGen Settings" && \
-  \
-  echo "*** Store default $RESOURCES in <folder>.default ***" && \
-  for R in $RESOURCES; do mv "public/$R" "public/$R.default"; done || true && \
-  \
-  echo "*** Create symbolic links to config directory ***" && \
-  for R in $RESOURCES; do ln -s "../config/$R" "public/$R"; done || true && \
-  \
-  rm -f "config.yaml" "public/settings.json" || true && \
+  rm -f "config.yaml" || true && \
   ln -s "./config/config.yaml" "config.yaml" || true && \
-  ln -s "../config/settings.json" "public/settings.json" || true && \
-  mkdir "config" || true && \
-  mkdir -p "public/user" || true
+  mkdir "config" || true
 
 # Cleanup unnecessary files
 RUN \

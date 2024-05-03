@@ -1,8 +1,9 @@
 import { callPopup, main_api } from '../../../script.js';
 import { getContext } from '../../extensions.js';
 import { registerSlashCommand } from '../../slash-commands.js';
-import { getFriendlyTokenizerName, getTextTokens, getTokenCount, tokenizers } from '../../tokenizers.js';
+import { getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, tokenizers } from '../../tokenizers.js';
 import { resetScrollHeight, debounce } from '../../utils.js';
+import { debounce_timeout } from '../../constants.js';
 
 function rgb2hex(rgb) {
     rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
@@ -33,12 +34,12 @@ async function doTokenCounter() {
             <div id="tokenized_chunks_display" class="wide100p">—</div>
             <hr>
             <div>Token IDs:</div>
-            <textarea id="token_counter_ids" class="wide100p textarea_compact" disabled rows="1">—</textarea>
+            <textarea id="token_counter_ids" class="wide100p textarea_compact" readonly rows="1">—</textarea>
         </div>
     </div>`;
 
     const dialog = $(html);
-    const countDebounced = debounce(() => {
+    const countDebounced = debounce(async () => {
         const text = String($('#token_counter_textarea').val());
         const ids = main_api == 'openai' ? getTextTokens(tokenizers.OPENAI, text) : getTextTokens(tokenizerId, text);
 
@@ -50,8 +51,7 @@ async function doTokenCounter() {
                 drawChunks(Object.getOwnPropertyDescriptor(ids, 'chunks').value, ids);
             }
         } else {
-            const context = getContext();
-            const count = context.getTokenCount(text);
+            const count = await getTokenCountAsync(text);
             $('#token_counter_ids').text('—');
             $('#token_counter_result').text(count);
             $('#tokenized_chunks_display').text('—');
@@ -59,7 +59,7 @@ async function doTokenCounter() {
 
         resetScrollHeight($('#token_counter_textarea'));
         resetScrollHeight($('#token_counter_ids'));
-    }, 1000);
+    }, debounce_timeout.relaxed);
     dialog.find('#token_counter_textarea').on('input', () => countDebounced());
 
     $('#dialogue_popup').addClass('wide_dialogue_popup');
@@ -101,13 +101,15 @@ function drawChunks(chunks, ids) {
         }
 
         const color = pastelRainbow[i % pastelRainbow.length];
-        const chunkHtml = $(`<code style="background-color: ${color};">${chunk}</code>`);
+        const chunkHtml = $('<code></code>');
+        chunkHtml.css('background-color', color);
+        chunkHtml.text(chunk);
         chunkHtml.attr('title', ids[i]);
         $('#tokenized_chunks_display').append(chunkHtml);
     }
 }
 
-function doCount() {
+async function doCount() {
     // get all of the messages in the chat
     const context = getContext();
     const messages = context.chat.filter(x => x.mes && !x.is_system).map(x => x.mes);
@@ -118,7 +120,8 @@ function doCount() {
     console.debug('All messages:', allMessages);
 
     //toastr success with the token count of the chat
-    toastr.success(`Token count: ${getTokenCount(allMessages)}`);
+    const count = await getTokenCountAsync(allMessages);
+    toastr.success(`Token count: ${count}`);
 }
 
 jQuery(() => {

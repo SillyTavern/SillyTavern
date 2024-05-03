@@ -11,7 +11,7 @@ class SileroTtsProvider {
     settings;
     ready = false;
     voices = [];
-    separator = ' .. ';
+    separator = ' ';
 
     defaultSettings = {
         provider_endpoint: 'http://localhost:8001/tts',

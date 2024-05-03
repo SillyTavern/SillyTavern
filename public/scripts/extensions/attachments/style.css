@@ -1,0 +1,39 @@
+.attachmentsList:empty {
+    width: 100%;
+    height: 100%;
+}
+
+.attachmentsList:empty::before {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    content: "No data";
+    font-weight: bolder;
+    width: 100%;
+    height: 100%;
+    opacity: 0.8;
+    min-height: 3rem;
+}
+
+.attachmentListItem {
+    padding: 10px;
+}
+
+.attachmentListItem.disabled .attachmentListItemName {
+    text-decoration: line-through;
+    opacity: 0.75;
+}
+
+.attachmentListItem.disabled .attachmentFileIcon {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
+.attachmentListItemSize {
+    min-width: 4em;
+    text-align: right;
+}
+
+.attachmentListItemCreated {
+    text-align: right;
+}

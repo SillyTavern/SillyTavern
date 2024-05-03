@@ -86,6 +86,10 @@
     margin: 5px;
 }
 
+.marginLeft5 {
+    margin-left: 5px;
+}
+
 .overflowYAuto {
     overflow-y: auto;
 }
@@ -96,6 +100,14 @@
 
 .justifySpaceBetween {
     justify-content: space-between;
+}
+
+.justifySpaceEvenly {
+    justify-content: space-evenly;
+}
+
+.justifySpaceAround {
+    justify-content: space-around;
 }
 
 .alignitemsflexstart {
@@ -249,6 +261,10 @@
     flex-basis: 48%
 }
 
+.flexBasis30p {
+    flex-basis: 30%;
+}
+
 .flex-container {
     display: flex;
     gap: 5px;
@@ -271,15 +287,18 @@
     flex-wrap: wrap;
 }
 
-.flexnowrap {
+.flexnowrap,
+.flexNoWrap {
     flex-wrap: nowrap;
 }
 
-.alignitemscenter {
+.alignitemscenter,
+.alignItemsCenter {
     align-items: center;
 }
 
-.alignitemsstart {
+.alignitemsstart,
+.alignItemsStart {
     align-items: start;
 }
 
@@ -327,6 +346,10 @@
 
 .margin-r5 {
     margin-right: 5px;
+}
+
+.flex0 {
+    flex: 0;
 }
 
 .flex1 {
@@ -449,6 +472,7 @@
 input:disabled,
 textarea:disabled {
     cursor: not-allowed;
+    filter: brightness(0.5);
 }
 
 .debug-red {
@@ -473,6 +497,10 @@ textarea:disabled {
 
 .fontsize120p {
     font-size: calc(var(--mainFontSize) * 1.2) !important;
+}
+
+.fontsize90p {
+    font-size: calc(var(--mainFontSize) * 0.9) !important;
 }
 
 .fontsize80p {
@@ -515,6 +543,10 @@ textarea:disabled {
 
 .opacity50p {
     opacity: 0.5
+}
+
+.grayscale {
+    filter: grayscale(100%);
 }
 
 .opacity1 {

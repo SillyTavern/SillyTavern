@@ -1,0 +1,115 @@
+<div class="adminTabs wide100p">
+    <nav class="adminNav flex-container alignItemsCenter justifyCenter">
+        <button type="button" class="manageUsersButton menu_button menu_button_icon" data-target-tab="usersList">
+            <h4 data-i18n="Manager Users">Manage Users</h4>
+        </button>
+        <button type="button" class="newUserButton menu_button menu_button_icon" data-target-tab="registerNewUserBlock">
+            <h4 data-i18n="New User">New User</h4>
+        </button>
+    </nav>
+    <div class="userAccountTemplate template_element">
+        <div class="flex-container userAccount alignItemsCenter flexGap10">
+            <div class="flex-container flexFlowColumn alignItemsCenter flexNoGap">
+                <div class="avatar" title="If a custom avatar is not set, the user's default persona image will be displayed.">
+                    <img src="img/ai4.png" alt="avatar">
+                </div>
+                <div class="flex-container alignItemsCenter">
+                    <div class="userAvatarChange right_menu_button" title="Set a custom avatar.">
+                        <i class="fa-fw fa-solid fa-image"></i>
+                    </div>
+                    <div class="userAvatarRemove right_menu_button" title="Remove a custom avatar.">
+                        <i class="fa-fw fa-solid fa-trash"></i>
+                    </div>
+                </div>
+                <form>
+                    <input type="file" class="avatarUpload" accept="image/*" hidden>
+                </form>
+            </div>
+            <div class="flex1 flex-container flexFlowColumn flexNoGap justifyLeft">
+                <div class="flex-container flexGap10 alignItemsCenter">
+                    <i class="hasPassword fa-solid fa-lock" title="This account is password protected."></i>
+                    <i class="noPassword fa-solid fa-lock-open" title="This account is not password protected."></i>
+                    <h3 class="userName margin0"></h3>
+                    <small class="userHandle">&nbsp;</small>
+                </div>
+                <div class="flex-container flexFlowColumn flexNoGap">
+                    <span>
+                        <span data-i18n="Role:">Role:</span>
+                        <span class="userRole"></span>
+                    </span>
+                    <span>
+                        <span data-i18n="Status:">Status:</span>
+                        <span class="userStatus">&nbsp;</span>
+                    </span>
+                    <span>
+                        <span data-i18n="Created:">Created:</span>
+                        <span class="userCreated">&nbsp;</span>
+                    </span>
+                </div>
+            </div>
+            <div class="flex-container flexFlowColumn">
+                <div class="flex-container">
+                    <div class="userChangeNameButton menu_button" title="Change user display name.">
+                        <i class="fa-fw fa-solid fa-pencil"></i>
+                    </div>
+                    <div class="userEnableButton menu_button" title="Enable user account.">
+                        <i class="fa-fw fa-solid fa-check"></i>
+                    </div>
+                    <div class="userDisableButton menu_button" title="Disable user account.">
+                        <i class="fa-fw fa-solid fa-ban"></i>
+                    </div>
+                    <div class="userPromoteButton menu_button" title="Promote user to admin.">
+                        <i class="fa-fw fa-solid fa-arrow-up"></i>
+                    </div>
+                    <div class="userDemoteButton menu_button" title="Demote user to regular user.">
+                        <i class="fa-fw fa-solid fa-arrow-down"></i>
+                    </div>
+                </div>
+                <div class="flex-container">
+                    <div class="userBackupButton menu_button menu_button_icon" title="Download a backup of user data.">
+                        <i class="fa-fw fa-solid fa-download"></i>
+                    </div>
+                    <div class="userChangePasswordButton menu_button" title="Change user password.">
+                        <i class="fa-fw fa-solid fa-key"></i>
+                    </div>
+                    <div class="userDelete menu_button warning" title="Delete user account.">
+                        <i class="fa-fw fa-solid fa-trash"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="navTab usersList flex-container flexFlowColumn">
+    </div>
+    <div class="navTab registerNewUserBlock" style="display: none;">
+        <form class="flex-container flexFlowColumn flexGap10 userCreateForm" action="javascript:void(0);">
+            <div class="flex-container flexNoGap">
+                <span data-i18n="Display Name:">Display Name:</span>
+                <span class="warning">*</span>
+                <input name="_name" class="createUserDisplayName text_pole" type="text" placeholder="e.g. John Snow" autocomplete="username">
+            </div>
+            <div class="flex-container flexNoGap">
+                <span data-i18n="User Handle:">User Handle:</span>
+                <span class="warning">*</span>
+                <input name="handle" class="createUserHandle text_pole" placeholder="e.g. john-snow (lowercase letters, numbers, and dashes only)" type="text" pattern="[a-z0-9-]+">
+            </div>
+            <div class="flex-container flexNoGap">
+                <span data-i18n="Password:">Password:</span>
+                <input name="password" class="createUserPassword text_pole" type="password" placeholder="[ No password ]" autocomplete="new-password">
+            </div>
+            <div class="flex-container flexNoGap">
+                <span data-i18n="Confirm Password:">Confirm Password:</span>
+                <input name="confirm" class="createUserConfirmPassword text_pole" type="password" placeholder="[ No password ]" autocomplete="new-password">
+            </div>
+            <span data-i18n="This will create a new subfolder...">
+                This will create a new subfolder in the /data/ directory with the user's handle as the folder name.
+            </span>
+            <div class="flex-container justifyCenter">
+                <button type="submit" class="menu_button menu_button_icon newUserRegisterFinalizeButton">
+                    <i class="fa-fw fa-solid fa-user-plus"></i>
+                    <span data-i18n="Create">Create</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

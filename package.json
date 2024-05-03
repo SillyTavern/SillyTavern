@@ -4,17 +4,21 @@
         "@agnai/web-tokenizers": "^0.1.3",
         "@dqbd/tiktoken": "^1.0.13",
         "@zeldafan0225/ai_horde": "^4.0.1",
+        "archiver": "^7.0.1",
         "bing-translate-api": "^2.9.1",
         "body-parser": "^1.20.2",
         "command-exists": "^1.2.9",
         "compression": "^1",
         "cookie-parser": "^1.4.6",
+        "cookie-session": "^2.1.0",
         "cors": "^2.8.5",
         "csrf-csrf": "^2.2.3",
-        "express": "^4.18.2",
+        "express": "^4.19.2",
         "form-data": "^4.0.0",
         "google-translate-api-browser": "^3.0.1",
         "gpt3-tokenizer": "^1.1.5",
+        "he": "^1.2.0",
+        "helmet": "^7.1.0",
         "ip-matching": "^2.1.2",
         "ipaddr.js": "^2.0.1",
         "jimp": "^0.22.10",
@@ -22,10 +26,12 @@
         "mime-types": "^2.1.35",
         "multer": "^1.4.5-lts.1",
         "node-fetch": "^2.6.11",
+        "node-persist": "^4.0.1",
         "open": "^8.4.2",
         "png-chunk-text": "^1.0.0",
         "png-chunks-encode": "^1.0.0",
         "png-chunks-extract": "^1.0.0",
+        "rate-limiter-flexible": "^5.0.0",
         "response-time": "^2.3.2",
         "sanitize-filename": "^1.6.3",
         "sillytavern-transformers": "^2.14.6",
@@ -45,6 +51,9 @@
         "vectra": {
             "openai": "^4.17.0"
         },
+        "load-bmfont": {
+            "phin": "^3.7.1"
+        },
         "axios": {
             "follow-redirects": "^1.15.4"
         },
@@ -59,7 +68,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.11.5",
+    "version": "1.12.0-preview",
     "scripts": {
         "start": "node server.js",
         "start-multi": "node server.js --disableCsrf",
@@ -76,6 +85,7 @@
     },
     "main": "server.js",
     "devDependencies": {
+        "@types/jquery": "^3.5.29",
         "eslint": "^8.55.0",
         "jquery": "^3.6.4"
     }

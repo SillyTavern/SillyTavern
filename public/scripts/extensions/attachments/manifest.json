@@ -1,0 +1,11 @@
+{
+    "display_name": "Data Bank (Chat Attachments)",
+    "loading_order": 3,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Cohee1207",
+    "version": "1.0.0",
+    "homePage": "https://github.com/SillyTavern/SillyTavern"
+}

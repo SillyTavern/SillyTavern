@@ -3,6 +3,7 @@ import {
     chat_metadata,
     eventSource,
     event_types,
+    extension_prompt_roles,
     saveSettingsDebounced,
     this_chid,
 } from '../script.js';
@@ -10,7 +11,8 @@ import { selected_group } from './group-chats.js';
 import { extension_settings, getContext, saveMetadataDebounced } from './extensions.js';
 import { registerSlashCommand } from './slash-commands.js';
 import { getCharaFilename, debounce, delay } from './utils.js';
-import { getTokenCount } from './tokenizers.js';
+import { getTokenCountAsync } from './tokenizers.js';
+import { debounce_timeout } from './constants.js';
 export { MODULE_NAME as NOTE_MODULE_NAME };
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
@@ -22,6 +24,7 @@ export const metadata_keys = {
     interval: 'note_interval',
     depth: 'note_depth',
     position: 'note_position',
+    role: 'note_role',
 };
 
 const chara_note_position = {
@@ -82,9 +85,9 @@ function updateSettings() {
     setFloatingPrompt();
 }
 
-const setMainPromptTokenCounterDebounced = debounce((value) => $('#extension_floating_prompt_token_counter').text(getTokenCount(value)), 1000);
-const setCharaPromptTokenCounterDebounced = debounce((value) => $('#extension_floating_chara_token_counter').text(getTokenCount(value)), 1000);
-const setDefaultPromptTokenCounterDebounced = debounce((value) => $('#extension_floating_default_token_counter').text(getTokenCount(value)), 1000);
+const setMainPromptTokenCounterDebounced = debounce(async (value) => $('#extension_floating_prompt_token_counter').text(await getTokenCountAsync(value)), debounce_timeout.relaxed);
+const setCharaPromptTokenCounterDebounced = debounce(async (value) => $('#extension_floating_chara_token_counter').text(await getTokenCountAsync(value)), debounce_timeout.relaxed);
+const setDefaultPromptTokenCounterDebounced = debounce(async (value) => $('#extension_floating_default_token_counter').text(await getTokenCountAsync(value)), debounce_timeout.relaxed);
 
 async function onExtensionFloatingPromptInput() {
     chat_metadata[metadata_keys.prompt] = $(this).val();
@@ -113,13 +116,13 @@ async function onExtensionFloatingDepthInput() {
 }
 
 async function onExtensionFloatingPositionInput(e) {
-    chat_metadata[metadata_keys.position] = e.target.value;
+    chat_metadata[metadata_keys.position] = Number(e.target.value);
     updateSettings();
     saveMetadataDebounced();
 }
 
 async function onDefaultPositionInput(e) {
-    extension_settings.note.defaultPosition = e.target.value;
+    extension_settings.note.defaultPosition = Number(e.target.value);
     saveSettingsDebounced();
 }
 
@@ -137,6 +140,16 @@ async function onDefaultDepthInput() {
 
 async function onDefaultIntervalInput() {
     extension_settings.note.defaultInterval = Number($(this).val());
+    saveSettingsDebounced();
+}
+
+function onExtensionFloatingRoleInput(e) {
+    chat_metadata[metadata_keys.role] = Number(e.target.value);
+    updateSettings();
+}
+
+function onExtensionDefaultRoleInput(e) {
+    extension_settings.note.defaultRole = Number(e.target.value);
     saveSettingsDebounced();
 }
 
@@ -217,6 +230,7 @@ function loadSettings() {
     const DEFAULT_DEPTH = 4;
     const DEFAULT_POSITION = 1;
     const DEFAULT_INTERVAL = 1;
+    const DEFAULT_ROLE = extension_prompt_roles.SYSTEM;
 
     if (extension_settings.note.defaultPosition === undefined) {
         extension_settings.note.defaultPosition = DEFAULT_POSITION;
@@ -230,14 +244,20 @@ function loadSettings() {
         extension_settings.note.defaultInterval = DEFAULT_INTERVAL;
     }
 
+    if (extension_settings.note.defaultRole === undefined) {
+        extension_settings.note.defaultRole = DEFAULT_ROLE;
+    }
+
     chat_metadata[metadata_keys.prompt] = chat_metadata[metadata_keys.prompt] ?? extension_settings.note.default ?? '';
     chat_metadata[metadata_keys.interval] = chat_metadata[metadata_keys.interval] ?? extension_settings.note.defaultInterval ?? DEFAULT_INTERVAL;
     chat_metadata[metadata_keys.position] = chat_metadata[metadata_keys.position] ?? extension_settings.note.defaultPosition ?? DEFAULT_POSITION;
     chat_metadata[metadata_keys.depth] = chat_metadata[metadata_keys.depth] ?? extension_settings.note.defaultDepth ?? DEFAULT_DEPTH;
+    chat_metadata[metadata_keys.role] = chat_metadata[metadata_keys.role] ?? extension_settings.note.defaultRole ?? DEFAULT_ROLE;
     $('#extension_floating_prompt').val(chat_metadata[metadata_keys.prompt]);
     $('#extension_floating_interval').val(chat_metadata[metadata_keys.interval]);
     $('#extension_floating_allow_wi_scan').prop('checked', extension_settings.note.allowWIScan ?? false);
     $('#extension_floating_depth').val(chat_metadata[metadata_keys.depth]);
+    $('#extension_floating_role').val(chat_metadata[metadata_keys.role]);
     $(`input[name="extension_floating_position"][value="${chat_metadata[metadata_keys.position]}"]`).prop('checked', true);
 
     if (extension_settings.note.chara && getContext().characterId) {
@@ -255,6 +275,7 @@ function loadSettings() {
     $('#extension_floating_default').val(extension_settings.note.default);
     $('#extension_default_depth').val(extension_settings.note.defaultDepth);
     $('#extension_default_interval').val(extension_settings.note.defaultInterval);
+    $('#extension_default_role').val(extension_settings.note.defaultRole);
     $(`input[name="extension_default_position"][value="${extension_settings.note.defaultPosition}"]`).prop('checked', true);
 }
 
@@ -274,6 +295,10 @@ export function setFloatingPrompt() {
     ------
     lastMessageNumber = ${lastMessageNumber}
     metadata_keys.interval = ${chat_metadata[metadata_keys.interval]}
+    metadata_keys.position = ${chat_metadata[metadata_keys.position]}
+    metadata_keys.depth = ${chat_metadata[metadata_keys.depth]}
+    metadata_keys.role = ${chat_metadata[metadata_keys.role]}
+    ------
     `);
 
     // interval 1 should be inserted no matter what
@@ -313,7 +338,14 @@ export function setFloatingPrompt() {
             }
         }
     }
-    context.setExtensionPrompt(MODULE_NAME, prompt, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan);
+    context.setExtensionPrompt(
+        MODULE_NAME,
+        prompt,
+        chat_metadata[metadata_keys.position],
+        chat_metadata[metadata_keys.depth],
+        extension_settings.note.allowWIScan,
+        chat_metadata[metadata_keys.role],
+    );
     $('#extension_floating_counter').text(shouldAddPrompt ? '0' : messagesTillInsertion);
 }
 
@@ -363,7 +395,7 @@ function onANMenuItemClick() {
     }
 }
 
-function onChatChanged() {
+async function onChatChanged() {
     loadSettings();
     setFloatingPrompt();
     const context = getContext();
@@ -371,7 +403,7 @@ function onChatChanged() {
     // Disable the chara note if in a group
     $('#extension_floating_chara').prop('disabled', context.groupId ? true : false);
 
-    const tokenCounter1 = chat_metadata[metadata_keys.prompt] ? getTokenCount(chat_metadata[metadata_keys.prompt]) : 0;
+    const tokenCounter1 = chat_metadata[metadata_keys.prompt] ? await getTokenCountAsync(chat_metadata[metadata_keys.prompt]) : 0;
     $('#extension_floating_prompt_token_counter').text(tokenCounter1);
 
     let tokenCounter2;
@@ -379,15 +411,13 @@ function onChatChanged() {
         const charaNote = extension_settings.note.chara.find((e) => e.name === getCharaFilename());
 
         if (charaNote) {
-            tokenCounter2 = getTokenCount(charaNote.prompt);
+            tokenCounter2 = await getTokenCountAsync(charaNote.prompt);
         }
     }
 
-    if (tokenCounter2) {
-        $('#extension_floating_chara_token_counter').text(tokenCounter2);
-    }
+    $('#extension_floating_chara_token_counter').text(tokenCounter2 || 0);
 
-    const tokenCounter3 = extension_settings.note.default ? getTokenCount(extension_settings.note.default) : 0;
+    const tokenCounter3 = extension_settings.note.default ? await getTokenCountAsync(extension_settings.note.default) : 0;
     $('#extension_floating_default_token_counter').text(tokenCounter3);
 }
 
@@ -410,6 +440,8 @@ export function initAuthorsNote() {
     $('#extension_default_depth').on('input', onDefaultDepthInput);
     $('#extension_default_interval').on('input', onDefaultIntervalInput);
     $('#extension_floating_allow_wi_scan').on('input', onAllowWIScanCheckboxChanged);
+    $('#extension_floating_role').on('input', onExtensionFloatingRoleInput);
+    $('#extension_default_role').on('input', onExtensionDefaultRoleInput);
     $('input[name="extension_floating_position"]').on('change', onExtensionFloatingPositionInput);
     $('input[name="extension_default_position"]').on('change', onDefaultPositionInput);
     $('input[name="extension_floating_char_position"]').on('change', onExtensionFloatingCharPositionInput);
