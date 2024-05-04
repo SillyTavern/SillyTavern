@@ -14,7 +14,6 @@
     display: flex;
     height: calc(100vh - var(--topBarBlockSize));
     width: 100vw;
-    position: relative;
     overflow: hidden;
 }
 

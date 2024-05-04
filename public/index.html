@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="darkreader-lock">
     <meta name="robots" content="noindex, nofollow" />
+    <link rel="preload" as="style" href="style.css">
     <link rel="manifest" crossorigin="use-credentials" href="manifest.json">
     <link href="webfonts/NotoSans/stylesheet.css" rel="stylesheet">
     <link href="css/fontawesome.min.css" rel="stylesheet">
@@ -1125,7 +1126,7 @@
                                         <div class="fa-solid fa-circle-info opacity50p" title="Set all samplers to their neutral/disabled state." data-i18n="[title]Set all samplers to their neutral/disabled state."></div>
                                     </small>
                                 </div>
-                                <div data-newbie-hidden data-tg-type="mancer, aphrodite" class="flex-container flexFlowColumn alignitemscenter flexBasis100p flexGrow flexShrink gap0">
+                                <div data-newbie-hidden data-tg-type="mancer, vllm, aphrodite" class="flex-container flexFlowColumn alignitemscenter flexBasis100p flexGrow flexShrink gap0">
                                     <small data-i18n="Multiple swipes per generation">Multiple swipes per generation</small>
                                     <input type="number" id="n_textgenerationwebui" class="text_pole textAlignCenter" min="1" value="1" step="1" />
                                 </div>
@@ -1207,12 +1208,12 @@
                                         <input class="neo-range-slider" type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="3" step="0.01">
                                         <input class="neo-range-input" type="number" min="1" max="3" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
                                     </div>
-                                    <div data-forAphro="False" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba, koboldcpp, tabby, ollama, llamacpp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small data-i18n="rep.pen range">Rep Pen Range</small>
                                         <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="-1" max="8192" step="1">
                                         <input class="neo-range-input" type="number" min="-1" max="8192" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
                                     </div>
-                                    <div data-forAphro="False" data-tg-type="ooba" data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba" data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small data-i18n="Encoder Rep. Pen.">Encoder Penalty</small>
                                         <input class="neo-range-slider" type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
                                         <input class="neo-range-input" type="number" min="0.8" max="1.5" step="0.01" data-for="encoder_rep_pen_textgenerationwebui" id="encoder_rep_pen_counter_textgenerationwebui">
@@ -1227,7 +1228,7 @@
                                         <input class="neo-range-slider" type="range" id="presence_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
                                         <input class="neo-range-input" type="number" min="-2" max="2" step="0.01" data-for="presence_pen_textgenerationwebui" id="presence_pen_counter_textgenerationwebui">
                                     </div>
-                                    <div data-forAphro="False" data-tg-type="ooba" data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba" data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small data-i18n="No Repeat Ngram Size">No Repeat Ngram Size</small>
                                         <input class="neo-range-slider" type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
@@ -1247,41 +1248,19 @@
                                             <label data-i18n="Smooth Sampling">Smooth Sampling</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Smooth Sampling" title="Allows you to use quadratic/cubic transformations to adjust the distribution. Lower Smoothing Factor values will be more creative, usually between 0.2-0.3 is the sweetspot (assuming the curve = 1). Higher Smoothing Curve values will make the curve steeper, which will punish low probability choices more aggressively. 1.0 curve is equivalent to only using Smoothing Factor."></div>
                                         </h4>
-                                        <div class="flex-container flexFlowRow gap10px flexShrink">
+                                        <div data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" class="flex-container flexFlowRow gap10px flexShrink">
                                             <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                                 <small data-i18n="Smoothing Factor">Smoothing Factor</small>
                                                 <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
                                             </div>
-                                            <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <div data-tg-type="mancer, ooba, koboldcpp, aphrodite" data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                                 <small data-i18n="Smoothing Curve">Smoothing Curve</small>
                                                 <input class="neo-range-slider" type="range" id="smoothing_curve_textgenerationwebui" name="volume" min="1" max="10" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="1" max="10" step="0.01" data-for="smoothing_curve_textgenerationwebui" id="smoothing_curve_counter_textgenerationwebui">
                                             </div>
                                         </div>
                                     </div>
-                                    <!--
-                                        <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Responses">
-                                            <small>Responses</small>
-                                            <input class="neo-range-slider" type="range" id="n_aphrodite_textgenerationwebui" name="volume" min="1" max="5" step="1">
-                                            <input class="neo-range-input" type="number" min="1" max="5" step="1" data-for="n_aphrodite" id="n_aphrodite_counter_textgenerationwebui">
-                                        </div>
-                                        <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0 displayNone" data-i18n="Keep # Best Responses">
-                                            <small>Keep # Best Responses</small>
-                                            <input class="neo-range-slider" type="range" id="best_of_aphrodite_textgenerationwebui" name="volume" min="1" max="5" step="1">
-                                            <input class="neo-range-input" type="number" min="1" max="5" step="1" data-for="best_of_aphrodite" id="best_of_aphrodite_counter_textgenerationwebui">
-                                        </div>
-                                        <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0 displayNone" data-i18n="Logit Probabilities">
-                                            <small>Logit Probabilities</small>
-                                            <input class="neo-range-slider" type="range" id="log_probs_aphrodite_textgenerationwebui" name="volume" min="0" max="5" step="1">
-                                            <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="log_probs_aphrodite" id="log_probs_aphrodite_counter_textgenerationwebui">
-                                        </div>
-                                        <div data-tg-type="aphrodite" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0 displayNone" data-i18n="Prompt Logit Probabilities">
-                                            <small>Prompt Logit Probabilities</small>
-                                            <input class="neo-range-slider" type="range" id="prompt_log_probs_aphrodite_textgenerationwebui" name="volume" min="0" max="5" step="1">
-                                            <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="prompt_log_probs_aphrodite" id="prompt_log_probs_aphrodite_counter_textgenerationwebui">
-                                        </div>
-                                    -->
                                     <div data-newbie-hidden data-tg-type="ooba, mancer, koboldcpp, tabby, llamacpp, aphrodite" name="dynaTempBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter" data-i18n="DynaTemp">
                                             <div class="flex-container alignitemscenter" style="justify-content: center;">
@@ -1366,7 +1345,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-forAphro="False" data-tg-type="ooba" data-newbie-hidden name="contrastiveSearchBlock" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-tg-type="ooba" data-newbie-hidden name="contrastiveSearchBlock" class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <h4 class="textAlignCenter" data-i18n="Contrastive search">Contrastive Search
                                             <div class=" fa-solid fa-circle-info opacity50p " title="A sampler that encourages diversity while maintaining coherence, by exploiting the isotropicity of the representation space of most LLMs. For details, see the paper A Contrastive Framework for Neural Text Generation by Su et al. (2022)."></div>
                                         </h4>
@@ -1381,26 +1360,26 @@
                                     </div>
                                     <div data-newbie-hidden name="checkboxes" class="flex-container flexBasis48p justifyCenter flexGrow flexShrink ">
                                         <div class="flex-container flexFlowColumn marginTop5">
-                                            <label data-forAphro="False" data-tg-type="ooba" class="checkbox_label  flexGrow flexShrink" for="do_sample_textgenerationwebui">
+                                            <label data-tg-type="ooba" class="checkbox_label  flexGrow flexShrink" for="do_sample_textgenerationwebui">
                                                 <input type="checkbox" id="do_sample_textgenerationwebui" />
                                                 <small data-i18n="Do Sample">Do Sample</small>
                                             </label>
-                                            <label data-forAphro="False" data-tg-type="ooba, tabby" class="checkbox_label  flexGrow flexShrink" for="add_bos_token_textgenerationwebui">
+                                            <label data-tg-type="ooba, tabby" class="checkbox_label  flexGrow flexShrink" for="add_bos_token_textgenerationwebui">
                                                 <input type="checkbox" id="add_bos_token_textgenerationwebui" />
                                                 <label>
                                                     <small data-i18n="Add BOS Token">Add BOS Token</small>
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative" title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
                                                 </label>
                                             </label>
-                                            <label data-forAphro="False" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
+                                            <label data-tg-type="ooba, llamacpp, tabby" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
                                                 <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
                                                 <label>
                                                     <small data-i18n="Ban EOS Token">Ban EOS Token</small>
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Ban the eos_token. This forces the model to never end the generation prematurely" title="Ban the eos_token. This forces the model to never end the generation prematurely."></div>
                                                 </label>
                                             </label>
-                                            <label data-tg-type="aphrodite" class="checkbox_label" for="ignore_eos_token_aphrodite_textgenerationwebui">
-                                                <input type="checkbox" id="ignore_eos_token_aphrodite_textgenerationwebui" />
+                                            <label data-tg-type="vllm, aphrodite" class="checkbox_label" for="ignore_eos_token_textgenerationwebui">
+                                                <input type="checkbox" id="ignore_eos_token_textgenerationwebui" />
                                                 <small data-i18n="Ignore EOS Token">Ignore EOS Token
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="Ignore the EOS Token even if it generates." title="Ignore the EOS Token even if it generates."></div>
                                                 </small>
@@ -1409,7 +1388,7 @@
                                                 <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
                                                 <small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
                                             </label>
-                                            <label data-forAphro="False" data-tg-type="ooba, aphrodite, tabby" class="checkbox_label  flexGrow flexShrink" for="temperature_last_textgenerationwebui">
+                                            <label data-tg-type="ooba, aphrodite, tabby" class="checkbox_label  flexGrow flexShrink" for="temperature_last_textgenerationwebui">
                                                 <input type="checkbox" id="temperature_last_textgenerationwebui" />
                                                 <label>
                                                     <small data-i18n="Temperature Last">Temperature Last</small>
@@ -1417,13 +1396,13 @@
                                                 </label>
                                             </label>
 
-                                            <label data-tg-type="aphrodite" class="checkbox_label" for="spaces_between_special_tokens_aphrodite_textgenerationwebui">
-                                                <input type="checkbox" id="spaces_between_special_tokens_aphrodite_textgenerationwebui" />
+                                            <label data-tg-type="vllm, aphrodite" class="checkbox_label" for="spaces_between_special_tokens_textgenerationwebui">
+                                                <input type="checkbox" id="spaces_between_special_tokens_textgenerationwebui" />
                                                 <small data-i18n="Spaces Between Special Tokens">Spaces Between Special Tokens</small>
                                             </label>
                                         </div>
                                     </div>
-                                    <div data-forAphro="False" data-newbie-hidden class="flex-container flexFlowColumn alignitemscenter flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-tg-type="mancer, ooba, koboldcpp, aphrodite, llamaccp, ollama" data-newbie-hidden class="flex-container flexFlowColumn alignitemscenter flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Seed" class="textAlignCenter">Seed</small>
                                         <input type="number" id="seed_textgenerationwebui" class="text_pole textAlignCenter" min="-1" value="-1" maxlength="100" />
                                     </div>
@@ -1452,7 +1431,7 @@
                                             <div class="logit_bias_list"></div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-forAphro="False" data-tg-type="ooba, tabby" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="ooba, tabby" class="wide100p">
                                         <hr class="width100p">
                                         <h4 data-i18n="CFG" class="textAlignCenter">CFG
                                             <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]Classifier Free Guidance. More helpful tip coming soon" title="Classifier Free Guidance. More helpful tip coming soon."></div>
@@ -1489,10 +1468,11 @@
                                         <hr class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label>
-                                                <span data-i18n="GBNF Grammar">GBNF Grammar</span>
+                                                <span data-i18n="Grammar String">Grammar String</span>
+                                                <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]GNBF or ENBF, depends on the backend in use. If you're using this you should know which." title="GNBF or ENBF, depends on the backend in use. If you're using this you should know which."></div>
                                                 <a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">
                                                     <small>
-                                                        <div class="fa-solid fa-circle-question note-link-span"></div>
+                                                        <div class="fa-solid fa-up-right-from-square note-link-span"></div>
                                                     </small>
                                                 </a>
                                             </label>
@@ -1948,7 +1928,7 @@
                             <div>
                                 <h4 data-i18n="API Type">API Type</h4>
                                 <select id="textgen_type">
-                                    <option value="ooba" data-i18n="Default (oobabooga)">Default (oobabooga)</option>
+                                    <option value="ooba" data-i18n="Default (completions compatible)">Default [OpenAI /completions compatible: oobabooga, LM Studio, etc.]</option>
                                     <option value="aphrodite">Aphrodite</option>
                                     <option value="dreamgen">DreamGen</option>
                                     <option value="infermaticai">InfermaticAI</option>
@@ -1959,6 +1939,7 @@
                                     <option value="openrouter">OpenRouter</option>
                                     <option value="tabby">TabbyAPI</option>
                                     <option value="togetherai">TogetherAI</option>
+                                    <option value="vllm">vLLM</option>
                                 </select>
                             </div>
                             <div data-tg-type="togetherai" class="flex-container flexFlowColumn">
@@ -2098,6 +2079,36 @@
                                 </div>
                                 <input id="custom_model_textgenerationwebui" class="text_pole wide100p" maxlength="500" placeholder="Custom model (optional)" data-i18n="[placeholder]Custom model (optional)" type="text">
                             </div>
+                            <div data-tg-type="vllm">
+                                <div class="flex-container flexFlowColumn">
+                                    <a href="https://github.com/vllm-project/vllm" target="_blank" data-i18n="vllm-project/vllm">
+                                        vllm-project/vllm (OpenAI API wrapper mode)
+                                    </a>
+                                </div>
+                                <h4 data-i18n="vLLM API key">vLLM API key</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_vllm" name="api_key_vllm" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_vllm">
+                                    </div>
+                                </div>
+                                <div data-for="api_key_vllm" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <div class="flex1">
+                                    <h4 data-i18n="API url">API URL</h4>
+                                    <small data-i18n="Example: 127.0.0.1:8000">Example: http://127.0.0.1:8000</small>
+                                    <input id="vllm_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="vllm">
+                                </div>
+                                <div>
+                                    <h4 data-i18n="vLLM Model">vLLM Model</h4>
+                                    <select id="vllm_model">
+                                        <option data-i18n="-- Connect to the API --">
+                                            -- Connect to the API --
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div data-tg-type="aphrodite">
                                 <div class="flex-container flexFlowColumn">
                                     <a href="https://github.com/PygmalionAI/aphrodite-engine" target="_blank" data-i18n="PygmalionAI/aphrodite-engine">
@@ -2218,7 +2229,7 @@
                                 </div>
                             </div>
                             <div class="flex-container">
-                                <div id="api_button_textgenerationwebui" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,aphrodite,tabby,koboldcpp">Connect</div>
+                                <div id="api_button_textgenerationwebui" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,vllm,aphrodite,tabby,koboldcpp,ollama,llamacpp">Connect</div>
                                 <div data-tg-type="openrouter" class="menu_button menu_button_icon openrouter_authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="Authorize;[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
                                 <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
                             </div>
@@ -2637,11 +2648,13 @@
                                     <optgroup label="Latest">
                                         <option value="open-mistral-7b">open-mistral-7b</option>
                                         <option value="open-mixtral-8x7b">open-mixtral-8x7b</option>
+                                        <option value="open-mixtral-8x22b">open-mixtral-8x22b</option>
                                         <option value="mistral-small-latest">mistral-small-latest</option>
                                         <option value="mistral-medium-latest">mistral-medium-latest</option>
                                         <option value="mistral-large-latest">mistral-large-latest</option>
                                     </optgroup>
                                     <optgroup label="Sub-versions">
+                                        <option value="open-mixtral-8x22b-2404">open-mixtral-8x22b-2404</option>
                                         <option value="mistral-tiny-2312">mistral-tiny-2312</option>
                                         <option value="mistral-small-2312">mistral-small-2312</option>
                                         <option value="mistral-small-2402">mistral-small-2402</option>
@@ -3133,11 +3146,13 @@
                                 <option value="0">None / Estimated</option>
                                 <option value="1">GPT-2</option>
                                 <!-- Option #2 was a legacy GPT-2/3 tokenizer -->
-                                <option value="3">LLaMA</option>
+                                <option value="3">Llama 1/2</option>
+                                <option value="12">Llama 3</option>
                                 <option value="4">NerdStash (NovelAI Clio)</option>
                                 <option value="5">NerdStash v2 (NovelAI Kayra)</option>
                                 <option value="7">Mistral</option>
                                 <option value="8">Yi</option>
+                                <option value="11">Claude 1/2</option>
                                 <option value="6">API (WebUI / koboldcpp)</option>
                             </select>
                         </div>
@@ -3410,6 +3425,7 @@
                             <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG" title="Delete World Info" data-i18n="[title]Delete World Info"></div>
                             <input type="search" class="text_pole textarea_compact" data-i18n="[placeholder]Search..." id="world_info_search" placeholder="Search...">
                             <select id="world_info_sort_order" class="margin0">
+                                <option data-rule="search" value="14" data-i18n="Search" hidden>Search</option>
                                 <option data-rule="priority" value="0" data-i18n="Priority">Priority</option>
                                 <option data-rule="custom" value="13" data-i18n="Custom">Custom</option>
                                 <option data-order="asc" data-field="comment" value="1" data-i18n="Title A-Z">Title A-Z</option>
@@ -4249,6 +4265,7 @@
                                 </div>
                                 <input id="persona_search_bar" class="text_pole width100p flex1 margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100">
                                 <select id="persona_sort_order" class="margin0">
+                                    <option value="search" data-i18n="Search" hidden>Search</option>
                                     <option value="asc">A-Z</option>
                                     <option value="desc">Z-A</option>
                                 </select>
@@ -4644,6 +4661,7 @@
                             <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
                             <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100" />
                             <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
+                                <option data-field="search" data-order="desc" data-i18n="Search" hidden>Search</option>
                                 <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
                                 <option data-field="name" data-order="desc" data-i18n="Z-A">Z-A</option>
                                 <option data-field="create_date" data-order="desc" data-i18n="Newest">Newest</option>
@@ -4716,8 +4734,9 @@
         <div id="character_cross" class="fa-solid fa-circle-xmark"></div>
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4 data-i18n="Prompt Overrides (For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)"><!-- This data-i18n attribute on the left is kept for backward compatibility, use the ones below when translating -->
-                    <span data-i18n="Prompt Overrides">Prompt Overrides</span> <small data-i18n="(For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)">(For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)</small>
+                <h4>
+                    <span data-i18n="Prompt Overrides">Prompt Overrides</span>
+                    <small data-i18n="(For Chat Completion and Instruct Mode)">(For Chat Completion and Instruct Mode)</small>
                 </h4>
                 <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
@@ -5224,15 +5243,14 @@
                                 <div class="flex-container justifySpaceBetween">
                                     <small for="group" data-i18n="Inclusion Group">
                                         Inclusion Group
-                                        <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#inclusion-group" class="notes-link" target="_blank"
-                                            title="Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group" data-i18n="[title]Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group">
+                                        <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#inclusion-group" class="notes-link" target="_blank" title="Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group" data-i18n="[title]Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group">
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </small>
                                     <label class="checkbox_label flexNoGap margin-r5" for="groupOverride">
                                         <input type="checkbox" name="groupOverride" />
                                         <span>
-                                            <small data-i18n="Prioritize Inclusion"  title="Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.&#13;" data-i18n="[title]Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.">
+                                            <small data-i18n="Prioritize Inclusion" title="Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.&#13;" data-i18n="[title]Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.">
                                                 Prioritize Inclusion
                                                 <div class="fa-solid fa-circle-info opacity50p"></div>
                                             </small>

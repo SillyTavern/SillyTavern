@@ -195,7 +195,8 @@ class WorldInfoBuffer {
                 return haystack.includes(transformedString);
             }
             else {
-                const regex = new RegExp(`\\b${escapeRegex(transformedString)}\\b`);
+                // Use custom boundaries to include punctuation and other non-alphanumeric characters
+                const regex = new RegExp(`(?:^|\\W)(${escapeRegex(transformedString)})(?:$|\\W)`);
                 if (regex.test(haystack)) {
                     return true;
                 }
@@ -381,6 +382,7 @@ function setWorldInfoSettings(settings, data) {
     });
 
     $('#world_info_sort_order').val(localStorage.getItem(SORT_ORDER_KEY) || '0');
+    $('#world_info').trigger('change');
     $('#world_editor_select').trigger('change');
 
     eventSource.on(event_types.CHAT_CHANGED, () => {
@@ -838,7 +840,17 @@ function sortEntries(data) {
     const sortRule = option.data('rule');
     const orderSign = sortOrder === 'asc' ? 1 : -1;
 
-    if (sortRule === 'custom') {
+    if (!data.length) return data;
+
+    // If we have a search term for WI, we are sorting by weighting scores
+    if (sortRule === 'search') {
+        data.sort((a, b) => {
+            const aScore = worldInfoFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, a.uid);
+            const bScore = worldInfoFilter.getScore(FILTER_TYPES.WORLD_INFO_SEARCH, b.uid);
+            return (aScore - bScore);
+        });
+    }
+    else if (sortRule === 'custom') {
         // First by display index, then by order, then by uid
         data.sort((a, b) => {
             const aValue = a.displayIndex;
@@ -903,7 +915,12 @@ function nullWorldInfo() {
 function displayWorldEntries(name, data, navigation = navigation_option.none) {
     updateEditor = (navigation) => displayWorldEntries(name, data, navigation);
 
-    $('#world_popup_entries_list').empty().show();
+    const worldEntriesList = $('#world_popup_entries_list');
+
+    // We save costly performance by removing all events before emptying. Because we know there are no relevant event handlers reacting on removing elements
+    // This prevents jQuery from actually going through all registered events on the controls for each entry when removing it
+    worldEntriesList.find('*').off();
+    worldEntriesList.empty().show();
 
     if (!data || !('entries' in data)) {
         $('#world_popup_new').off('click').on('click', nullWorldInfo);
@@ -911,10 +928,13 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         $('#world_popup_export').off('click').on('click', nullWorldInfo);
         $('#world_popup_delete').off('click').on('click', nullWorldInfo);
         $('#world_duplicate').off('click').on('click', nullWorldInfo);
-        $('#world_popup_entries_list').hide();
+        worldEntriesList.hide();
         $('#world_info_pagination').html('');
         return;
     }
+
+    // Before printing the WI, we check if we should enable/disable search sorting
+    verifyWorldInfoSearchSortRule();
 
     function getDataArray(callback) {
         // Convert the data.entries object into an array
@@ -924,10 +944,11 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             return entry;
         });
 
-        // Sort the entries array by displayIndex and uid
-        entriesArray.sort((a, b) => a.displayIndex - b.displayIndex || a.uid - b.uid);
-        entriesArray = sortEntries(entriesArray);
+        // Apply the filter and do the chosen sorting
         entriesArray = worldInfoFilter.applyFilters(entriesArray);
+        entriesArray = sortEntries(entriesArray)
+
+        // Run the callback for printing this
         typeof callback === 'function' && callback(entriesArray);
         return entriesArray;
     }
@@ -954,7 +975,11 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         callback: function (/** @type {object[]} */ page) {
-            $('#world_popup_entries_list').empty();
+            // We save costly performance by removing all events before emptying. Because we know there are no relevant event handlers reacting on removing elements
+            // This prevents jQuery from actually going through all registered events on the controls for each entry when removing it
+            worldEntriesList.find('*').off();
+            worldEntriesList.empty();
+
             const keywordHeaders = `
             <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 4.5em;">
             <small class="flex1">
@@ -983,8 +1008,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
                     block.find('.drag-handle').remove();
                 });
             }
-            $('#world_popup_entries_list').append(keywordHeaders);
-            $('#world_popup_entries_list').append(blocks);
+            worldEntriesList.append(keywordHeaders);
+            worldEntriesList.append(blocks);
         },
         afterSizeSelectorChange: function (e) {
             localStorage.setItem(storageKey, e.target.value);
@@ -995,6 +1020,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             });
         },
     });
+
+
 
     if (typeof navigation === 'number' && Number(navigation) >= 0) {
         const selector = `#world_popup_entries_list [uid="${navigation}"]`;
@@ -1097,12 +1124,12 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     });
 
     // Check if a sortable instance exists
-    if ($('#world_popup_entries_list').sortable('instance') !== undefined) {
+    if (worldEntriesList.sortable('instance') !== undefined) {
         // Destroy the instance
-        $('#world_popup_entries_list').sortable('destroy');
+        worldEntriesList.sortable('destroy');
     }
 
-    $('#world_popup_entries_list').sortable({
+    worldEntriesList.sortable({
         delay: getSortableDelay(),
         handle: '.drag-handle',
         stop: async function (event, ui) {
@@ -1155,6 +1182,26 @@ const originalDataKeyMap = {
     'vectorized': 'extensions.vectorized',
     'groupOverride': 'extensions.group_override',
 };
+
+/** Checks the state of the current search, and adds/removes the search sorting option accordingly */
+function verifyWorldInfoSearchSortRule() {
+    const searchTerm = worldInfoFilter.getFilterData(FILTER_TYPES.WORLD_INFO_SEARCH);
+    const searchOption = $('#world_info_sort_order option[data-rule="search"]');
+    const selector = $('#world_info_sort_order');
+    const isHidden = searchOption.attr('hidden') !== undefined;
+
+    // If we have a search term, we are displaying the sorting option for it
+    if (searchTerm && isHidden) {
+        searchOption.removeAttr('hidden');
+        selector.val(searchOption.attr('value') || '0');
+        flashHighlight(selector);
+    }
+    // If search got cleared, we make sure to hide the option and go back to the one before
+    if (!searchTerm && !isHidden) {
+        searchOption.attr('hidden', '');
+        selector.val(localStorage.getItem(SORT_ORDER_KEY) || '0');
+    }
+}
 
 function setOriginalDataValue(data, uid, key, value) {
     if (data.originalData && Array.isArray(data.originalData.entries)) {
@@ -3213,7 +3260,8 @@ jQuery(() => {
 
     $('#world_info_sort_order').on('change', function () {
         const value = String($(this).find(':selected').val());
-        localStorage.setItem(SORT_ORDER_KEY, value);
+        // Save sort order, but do not save search sorting, as this is a temporary sorting option
+        if (value !== 'search') localStorage.setItem(SORT_ORDER_KEY, value);
         updateEditor(navigation_option.none);
     });
 
@@ -3226,6 +3274,23 @@ jQuery(() => {
             placeholder: 'No Worlds active. Click here to select.',
             allowClear: true,
             closeOnSelect: false,
+        });
+
+        // Subscribe world loading to the select2 multiselect items (We need to target the specific select2 control)
+        $('#world_info + span.select2-container').on('click', function (event) {
+            if ($(event.target).hasClass('select2-selection__choice__display')) {
+                event.preventDefault();
+
+                // select2 still bubbles the event to open the dropdown. So we close it here
+                $('#world_info').select2('close');
+
+                const name = $(event.target).text();
+                const selectedIndex = world_names.indexOf(name);
+                if (selectedIndex !== -1) {
+                    $('#world_editor_select').val(selectedIndex).trigger('change');
+                    console.log('Quick selection of world', name);
+                }
+            }
         });
     }
 

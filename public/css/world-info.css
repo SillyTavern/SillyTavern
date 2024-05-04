@@ -157,7 +157,12 @@
     width: 10em;
 }
 
-#world_info_search,
+#world_info_search {
+    width: 10em;
+    min-width: 10em;
+    flex-grow: 1;
+}
+
 #world_info_sort_order {
     width: 7em;
 }
@@ -190,4 +195,22 @@
 
 .WIEntryHeaderTitleMobile {
     display: none;
+}
+
+#world_info+span.select2-container .select2-selection__choice__remove,
+#world_info+span.select2-container .select2-selection__choice__display {
+    cursor: pointer;
+    transition: background-color 0.3s;
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--black50a);
+}
+
+#world_info+span.select2-container .select2-selection__choice__display {
+    /* Fix weird alignment on the left side */
+    margin-left: 1px;
+}
+
+#world_info+span.select2-container .select2-selection__choice__remove:hover,
+#world_info+span.select2-container .select2-selection__choice__display:hover {
+    background-color: var(--white30a);
 }

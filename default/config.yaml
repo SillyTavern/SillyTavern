@@ -48,6 +48,12 @@ allowKeysExposure: false
 skipContentCheck: false
 # Disable automatic chats backup
 disableChatBackup: false
+# Allowed hosts for card downloads
+whitelistImportDomains:
+  - localhost
+  - cdn.discordapp.com
+  - files.catbox.moe
+  - raw.githubusercontent.com
 # API request overrides (for KoboldAI and Text Completion APIs)
 ## Note: host includes the port number if it's not the default (80 or 443)
 ## Format is an array of objects:

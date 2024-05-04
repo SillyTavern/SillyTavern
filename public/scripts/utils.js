@@ -1430,3 +1430,22 @@ export function flashHighlight(element, timespan = 2000) {
     element.addClass('flash animated');
     setTimeout(() => element.removeClass('flash animated'), timespan);
 }
+
+/**
+ * Performs a case-insensitive and accent-insensitive substring search.
+ * This function normalizes the strings to remove diacritical marks and converts them to lowercase to ensure the search is insensitive to case and accents.
+ *
+ * @param {string} text - The text in which to search for the substring.
+ * @param {string} searchTerm - The substring to search for in the text.
+ * @returns {boolean} - Returns true if the searchTerm is found within the text, otherwise returns false.
+ */
+export function includesIgnoreCaseAndAccents(text, searchTerm) {
+    if (!text || !searchTerm) return false; // Return false if either string is empty
+
+    // Normalize and remove diacritics, then convert to lower case
+    const normalizedText = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normalizedSearchTerm = searchTerm.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+    // Check if the normalized text includes the normalized search term
+    return normalizedText.includes(normalizedSearchTerm);
+}

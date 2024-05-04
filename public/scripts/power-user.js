@@ -22,6 +22,7 @@ import {
     ANIMATION_DURATION_DEFAULT,
     setActiveGroup,
     setActiveCharacter,
+    entitiesFilter,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -34,12 +35,13 @@ import {
     selectInstructPreset,
 } from './instruct-mode.js';
 
-import { tag_map, tags } from './tags.js';
+import { getTagsList, tag_map, tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, isOdd, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { FILTER_TYPES } from './filters.js';
 import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
@@ -1904,10 +1906,17 @@ function highlightDefaultContext() {
     $('#context_delete_preset').toggleClass('disabled', power_user.default_context === power_user.context.preset);
 }
 
+/**
+ * Fuzzy search characters by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchCharacters(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(characters, {
         keys: [
-            { name: 'data.name', weight: 8 },
+            { name: 'data.name', weight: 20 },
+            { name: '#tags', weight: 10, getFn: (character) => getTagsList(character.avatar).map(x => x.name).join('||') },
             { name: 'data.description', weight: 3 },
             { name: 'data.mes_example', weight: 3 },
             { name: 'data.scenario', weight: 2 },
@@ -1920,82 +1929,114 @@ export function fuzzySearchCharacters(searchValue) {
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Characters fuzzy search results for ' + searchValue, results);
-    const indices = results.map(x => x.refIndex);
-    return indices;
+    return results;
 }
 
+/**
+ * Fuzzy search world info entries by a search term
+ * @param {*[]} data - WI items data array
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchWorldInfo(data, searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'key', weight: 3 },
+            { name: 'key', weight: 20 },
+            { name: 'group', weight: 15 },
+            { name: 'comment', weight: 10 },
+            { name: 'keysecondary', weight: 10 },
             { name: 'content', weight: 3 },
-            { name: 'comment', weight: 2 },
-            { name: 'keysecondary', weight: 2 },
             { name: 'uid', weight: 1 },
+            { name: 'automationId', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('World Info fuzzy search results for ' + searchValue, results);
-    return results.map(x => x.item?.uid);
+    return results;
 }
 
+/**
+ * Fuzzy search persona entries by a search term
+ * @param {*[]} data - persona data array
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchPersonas(data, searchValue) {
-    data = data.map(x => ({ key: x, description: power_user.persona_descriptions[x]?.description ?? '', name: power_user.personas[x] ?? '' }));
+    data = data.map(x => ({ key: x, name: power_user.personas[x] ?? '', description: power_user.persona_descriptions[x]?.description ?? '' }));
+    // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'name', weight: 4 },
-            { name: 'description', weight: 1 },
+            { name: 'name', weight: 20 },
+            { name: 'description', weight: 3 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Personas fuzzy search results for ' + searchValue, results);
-    return results.map(x => x.item?.key);
+    return results;
 }
 
+/**
+ * Fuzzy search tags by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchTags(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(tags, {
         keys: [
             { name: 'name', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Tags fuzzy search results for ' + searchValue, results);
-    const ids = results.map(x => String(x.item?.id)).filter(x => x);
-    return ids;
+    return results;
 }
 
+/**
+ * Fuzzy search groups by a search term
+ * @param {string} searchValue - The search term
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
+ */
 export function fuzzySearchGroups(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(groups, {
         keys: [
-            { name: 'name', weight: 3 },
-            { name: 'members', weight: 1 },
+            { name: 'name', weight: 20 },
+            { name: 'members', weight: 15 },
+            { name: '#tags', weight: 10, getFn: (group) => getTagsList(group.id).map(x => x.name).join('||') },
+            { name: 'id', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Groups fuzzy search results for ' + searchValue, results);
-    const ids = results.map(x => String(x.item?.id)).filter(x => x);
-    return ids;
+    return results;
 }
 
 /**
@@ -2070,13 +2111,22 @@ function sortEntitiesList(entities) {
         return;
     }
 
+    const isSearch = $('#character_sort_order option[data-field="search"]').is(':selected');
+
     entities.sort((a, b) => {
+        // Sort tags/folders will always be at the top
         if (a.type === 'tag' && b.type !== 'tag') {
             return -1;
         }
-
         if (a.type !== 'tag' && b.type === 'tag') {
             return 1;
+        }
+
+        // If we have search sorting, we take scores and use those
+        if (isSearch) {
+            const aScore = entitiesFilter.getScore(FILTER_TYPES.SEARCH, `${a.type}.${a.id}`);
+            const bScore = entitiesFilter.getScore(FILTER_TYPES.SEARCH, `${b.type}.${b.id}`);
+            return (aScore - bScore);
         }
 
         return sortFunc(a.item, b.item);
@@ -2333,12 +2383,14 @@ async function resetMovablePanels(type) {
         'cfgConfig',
     ];
 
+    /**
+     * @type {HTMLElement[]} Generic panels that don't have a known ID
+     */
+    const draggedElements = Array.from(document.querySelectorAll('[data-dragged]'));
+    const allDraggable = panelIds.map(id => document.getElementById(id)).concat(draggedElements).filter(onlyUnique);
+
     const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin'];
-
-    panelIds.forEach((id) => {
-        console.log(id);
-        const panel = document.getElementById(id);
-
+    allDraggable.forEach((panel) => {
         if (panel) {
             $(panel).addClass('resizing');
             panelStyles.forEach((style) => {
@@ -2347,7 +2399,10 @@ async function resetMovablePanels(type) {
         }
     });
 
-    const zoomedAvatars = document.querySelectorAll('.zoomed_avatar');
+    /**
+     * @type {HTMLElement[]} Zoomed avatars that are currently being resized
+     */
+    const zoomedAvatars = Array.from(document.querySelectorAll('.zoomed_avatar'));
     if (zoomedAvatars.length > 0) {
         zoomedAvatars.forEach((avatar) => {
             avatar.classList.add('resizing');
@@ -2789,6 +2844,7 @@ function setAvgBG() {
 }
 
 async function setThemeCallback(_, text) {
+    // @ts-ignore
     const fuse = new Fuse(themes, {
         keys: [
             { name: 'name', weight: 1 },
@@ -2811,6 +2867,7 @@ async function setThemeCallback(_, text) {
 }
 
 async function setmovingUIPreset(_, text) {
+    // @ts-ignore
     const fuse = new Fuse(movingUIPresets, {
         keys: [
             { name: 'name', weight: 1 },
@@ -3252,9 +3309,13 @@ $(document).ready(() => {
     });
 
     $('#character_sort_order').on('change', function () {
-        power_user.sort_field = $(this).find(':selected').data('field');
-        power_user.sort_order = $(this).find(':selected').data('order');
-        power_user.sort_rule = $(this).find(':selected').data('rule');
+        const field = String($(this).find(':selected').data('field'));
+        // Save sort order, but do not save search sorting, as this is a temporary sorting option
+        if (field !== 'search') {
+            power_user.sort_field = field;
+            power_user.sort_order = $(this).find(':selected').data('order');
+            power_user.sort_rule = $(this).find(':selected').data('rule');
+        }
         printCharactersDebounced();
         saveSettingsDebounced();
     });
