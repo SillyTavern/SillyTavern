@@ -86,6 +86,7 @@ class WorldInfoBuffer {
      * @property {number} [scanDepth] The depth of the scan
      * @property {boolean} [caseSensitive] If the scan is case sensitive
      * @property {boolean} [matchWholeWords] If the scan should match whole words
+     * @property {boolean} [useGroupScoring] If the scan should use group scoring
      * @property {number} [uid] The UID of the entry that triggered the scan
      * @property {string[]} [key] The primary keys to scan for
      * @property {string[]} [keysecondary] The secondary keys to scan for
@@ -1086,6 +1087,7 @@ const originalDataKeyMap = {
     'keysecondary': 'secondary_keys',
     'selective': 'selective',
     'matchWholeWords': 'extensions.match_whole_words',
+    'useGroupScoring': 'extensions.use_group_scoring',
     'caseSensitive': 'extensions.case_sensitive',
     'scanDepth': 'extensions.scan_depth',
     'automationId': 'extensions.automation_id',
@@ -1779,6 +1781,19 @@ function getWorldEntry(name, data, entry) {
     });
     matchWholeWordsSelect.val((entry.matchWholeWords === null || entry.matchWholeWords === undefined) ? 'null' : entry.matchWholeWords ? 'true' : 'false').trigger('input');
 
+    // use group scoring select
+    const useGroupScoringSelect = template.find('select[name="useGroupScoring"]');
+    useGroupScoringSelect.data('uid', entry.uid);
+    useGroupScoringSelect.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = $(this).val();
+
+        data.entries[uid].useGroupScoring = value === 'null' ? null : value === 'true';
+        setOriginalDataValue(data, uid, 'extensions.use_group_scoring', data.entries[uid].useGroupScoring);
+        saveWorldInfo(name, data);
+    });
+    useGroupScoringSelect.val((entry.useGroupScoring === null || entry.useGroupScoring === undefined) ? 'null' : entry.useGroupScoring ? 'true' : 'false').trigger('input');
+
     // automation id
     const automationIdInput = template.find('input[name="automationId"]');
     automationIdInput.data('uid', entry.uid);
@@ -1959,6 +1974,7 @@ const newEntryTemplate = {
     scanDepth: null,
     caseSensitive: null,
     matchWholeWords: null,
+    useGroupScoring: null,
     automationId: '',
     role: 0,
 };
@@ -2526,19 +2542,33 @@ async function checkWorldInfo(chat, maxContext) {
  * Only leaves entries with the highest key matching score in each group.
  * @param {Record<string, WIScanEntry[]>} groups The groups to filter
  * @param {WorldInfoBuffer} buffer The buffer to use for scoring
+ * @param {(entry: WIScanEntry) => void} removeEntry The function to remove an entry
  */
-function filterGroupsByScoring(groups, buffer) {
+function filterGroupsByScoring(groups, buffer, removeEntry) {
     for (const [key, group] of Object.entries(groups)) {
+        // Group scoring is disabled both globally and for the group entries
+        if (!world_info_use_group_scoring && !group.some(x => x.useGroupScoring)) {
+            console.debug(`Skipping group scoring for group '${key}'`);
+            continue;
+        }
+
         const scores = group.map(entry => buffer.getScore(entry));
         const maxScore = Math.max(...scores);
         console.debug(`Group '${key}' max score: ${maxScore}`);
         //console.table(group.map((entry, i) => ({ uid: entry.uid, key: JSON.stringify(entry.key), score: scores[i] })));
 
         for (let i = 0; i < group.length; i++) {
+            const isScored = group[i].useGroupScoring ?? world_info_use_group_scoring;
+
+            if (!isScored) {
+                continue;
+            }
+
             if (scores[i] < maxScore) {
                 console.debug(`Removing score loser from inclusion group '${key}' entry '${group[i].uid}'`, group[i]);
                 group.splice(i, 1);
                 scores.splice(i, 1);
+                removeEntry(group[i]);
                 i--;
             }
         }
@@ -2566,11 +2596,6 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer) {
         return;
     }
 
-    if (world_info_use_group_scoring) {
-        console.debug('Using group scoring');
-        filterGroupsByScoring(grouped, buffer);
-    }
-
     const removeEntry = (entry) => newEntries.splice(newEntries.indexOf(entry), 1);
     function removeAllBut(group, chosen, logging = true) {
         for (const entry of group) {
@@ -2582,6 +2607,8 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer) {
             removeEntry(entry);
         }
     }
+
+    filterGroupsByScoring(grouped, buffer, removeEntry);
 
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`Checking inclusion group '${key}' with ${group.length} entries`, group);
@@ -2660,6 +2687,7 @@ function convertAgnaiMemoryBook(inputObj) {
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
+            useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
         };
@@ -2696,6 +2724,7 @@ function convertRisuLorebook(inputObj) {
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
+            useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
         };
@@ -2737,6 +2766,7 @@ function convertNovelLorebook(inputObj) {
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
+            useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
         };
@@ -2779,6 +2809,7 @@ function convertCharacterBook(characterBook) {
             scanDepth: entry.extensions?.scan_depth ?? null,
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
+            useGroupScoring: entry.extensions?.use_group_scoring ?? null,
             automationId: entry.extensions?.automation_id ?? '',
             role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
             vectorized: entry.extensions?.vectorized ?? false,
