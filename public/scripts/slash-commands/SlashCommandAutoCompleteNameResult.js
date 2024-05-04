@@ -59,7 +59,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         let argAssign;
         index = index + 2;
         const unamedArgLength = this.executor.endUnnamedArgs - this.executor.startUnnamedArgs;
-        const namedArgsFollowedBySpace = text[this.executor.endNamedArgs + 1] == ' ';
+        const namedArgsFollowedBySpace = text[this.executor.endNamedArgs] == ' ';
         if (this.executor.startNamedArgs <= index && this.executor.endNamedArgs + (namedArgsFollowedBySpace ? 1 : 0) >= index) {
             // cursor is somewhere within the named arguments (including final space)
             argAssign = this.executor.namedArgumentList.find(it=>it.start <= index && it.end >= index);
