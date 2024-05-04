@@ -713,7 +713,7 @@ function randValuesCallback(from, to, args) {
  */
 function letCallback(args, value) {
     if (Array.isArray(value)) {
-        args._scope.letVariable(value[0], value[1]);
+        args._scope.letVariable(value[0], typeof value[1] == 'string' ? value.slice(1).join(' ') : value[1]);
         return value[1];
     }
     if (args.key !== undefined) {
@@ -738,7 +738,7 @@ function letCallback(args, value) {
  */
 function varCallback(args, value) {
     if (Array.isArray(value)) {
-        args._scope.setVariable(value[0], value[1], args.index);
+        args._scope.setVariable(value[0], typeof value[1] == 'string' ? value.slice(1).join(' ') : value[1], args.index);
         return value[1];
     }
     if (args.key !== undefined) {
