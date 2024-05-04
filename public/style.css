@@ -1378,6 +1378,7 @@ body[data-stscript-style="theme"] {
     line-height: 1.2;
     text-align: left;
     z-index: 10000;
+    * { text-shadow: none; }
 }
 body[data-stscript-style] .autoComplete [data-option-type] {
     &[data-option-type="enum"] .type { color: var(--ac-color-string); }
@@ -1403,6 +1404,7 @@ body[data-stscript-style] .hljs.language-stscript {
     .hljs-punctuation { color: var(--ac-style-color-punctuation); }
     .hljs-keyword { color: var(--ac-style-color-variableLanguage); }
     .hljs-comment { color: var(--ac-style-color-comment); }
+    .hljs-abort { color: var(--ac-style-color-abort, #e38e23); }
 
     .hljs-closure {
         > .hljs-punctuation { color: var(--ac-style-color-punctuation); }
