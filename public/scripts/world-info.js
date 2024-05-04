@@ -2566,9 +2566,9 @@ function filterGroupsByScoring(groups, buffer, removeEntry) {
 
             if (scores[i] < maxScore) {
                 console.debug(`Removing score loser from inclusion group '${key}' entry '${group[i].uid}'`, group[i]);
+                removeEntry(group[i]);
                 group.splice(i, 1);
                 scores.splice(i, 1);
-                removeEntry(group[i]);
                 i--;
             }
         }
