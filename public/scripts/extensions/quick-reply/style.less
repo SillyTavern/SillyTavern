@@ -331,7 +331,11 @@
 						> #qr--modal-message {
 							grid-column: 1;
 							grid-row: 1;
-							caret-color: var(--SmartThemeBodyColor);
+							caret-color: white;
+							mix-blend-mode: difference;
+							&::-webkit-scrollbar, &::-webkit-scrollbar-thumb {
+								visibility: hidden;
+							}
 						}
 						#qr--modal-message, #qr--modal-messageSyntaxInner {
 							padding: 0.75em;
