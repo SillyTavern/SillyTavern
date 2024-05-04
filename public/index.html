@@ -1247,13 +1247,13 @@
                                             <label data-i18n="Smooth Sampling">Smooth Sampling</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Smooth Sampling" title="Allows you to use quadratic/cubic transformations to adjust the distribution. Lower Smoothing Factor values will be more creative, usually between 0.2-0.3 is the sweetspot (assuming the curve = 1). Higher Smoothing Curve values will make the curve steeper, which will punish low probability choices more aggressively. 1.0 curve is equivalent to only using Smoothing Factor."></div>
                                         </h4>
-                                        <div class="flex-container flexFlowRow gap10px flexShrink">
+                                        <div data-tg-type="mancer, ooba, koboldcpp, aphrodite, tabby" class="flex-container flexFlowRow gap10px flexShrink">
                                             <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                                 <small data-i18n="Smoothing Factor">Smoothing Factor</small>
                                                 <input class="neo-range-slider" type="range" id="smoothing_factor_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="smoothing_factor_textgenerationwebui" id="smoothing_factor_counter_textgenerationwebui">
                                             </div>
-                                            <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <div data-tg-type="mancer, ooba, koboldcpp, aphrodite" data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                                 <small data-i18n="Smoothing Curve">Smoothing Curve</small>
                                                 <input class="neo-range-slider" type="range" id="smoothing_curve_textgenerationwebui" name="volume" min="1" max="10" step="0.01" />
                                                 <input class="neo-range-input" type="number" min="1" max="10" step="0.01" data-for="smoothing_curve_textgenerationwebui" id="smoothing_curve_counter_textgenerationwebui">
@@ -1370,7 +1370,7 @@
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative" title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
                                                 </label>
                                             </label>
-                                            <label data-tg-type="ooba, llamacpp" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
+                                            <label data-tg-type="ooba, llamacpp, tabby" class="checkbox_label  flexGrow flexShrink" for="ban_eos_token_textgenerationwebui">
                                                 <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
                                                 <label>
                                                     <small data-i18n="Ban EOS Token">Ban EOS Token</small>
@@ -1401,7 +1401,7 @@
                                             </label>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden class="flex-container flexFlowColumn alignitemscenter flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-tg-type="mancer, ooba, koboldcpp, aphrodite, llamaccp, ollama" data-newbie-hidden class="flex-container flexFlowColumn alignitemscenter flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Seed" class="textAlignCenter">Seed</small>
                                         <input type="number" id="seed_textgenerationwebui" class="text_pole textAlignCenter" min="-1" value="-1" maxlength="100" />
                                     </div>
@@ -1467,10 +1467,11 @@
                                         <hr class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label>
-                                                <span data-i18n="GBNF Grammar">GBNF Grammar</span>
+                                                <span data-i18n="Grammar String">Grammar String</span>
+                                                <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]GNBF or ENBF, depends on the backend in use. If you're using this you should know which." title="GNBF or ENBF, depends on the backend in use. If you're using this you should know which."></div>
                                                 <a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">
                                                     <small>
-                                                        <div class="fa-solid fa-circle-question note-link-span"></div>
+                                                        <div class="fa-solid fa-up-right-from-square note-link-span"></div>
                                                     </small>
                                                 </a>
                                             </label>
@@ -5177,15 +5178,14 @@
                                 <div class="flex-container justifySpaceBetween">
                                     <small for="group" data-i18n="Inclusion Group">
                                         Inclusion Group
-                                        <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#inclusion-group" class="notes-link" target="_blank"
-                                            title="Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group" data-i18n="[title]Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group">
+                                        <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#inclusion-group" class="notes-link" target="_blank" title="Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group" data-i18n="[title]Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group">
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </small>
                                     <label class="checkbox_label flexNoGap margin-r5" for="groupOverride">
                                         <input type="checkbox" name="groupOverride" />
                                         <span>
-                                            <small data-i18n="Prioritize Inclusion"  title="Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.&#13;" data-i18n="[title]Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.">
+                                            <small data-i18n="Prioritize Inclusion" title="Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.&#13;" data-i18n="[title]Prioritize this entry: When checked, this entry is prioritized out of all selections.&#13;If multiple are prioritized, the one with the highest 'Order' is chosen.">
                                                 Prioritize Inclusion
                                                 <div class="fa-solid fa-circle-info opacity50p"></div>
                                             </small>
