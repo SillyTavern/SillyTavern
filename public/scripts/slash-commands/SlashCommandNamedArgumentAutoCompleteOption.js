@@ -19,7 +19,7 @@ export class SlashCommandNamedArgumentAutoCompleteOption extends AutoCompleteOpt
 
     renderItem() {
         let li;
-        li = this.makeItem(this.name, '⌗', true, [], [], null, this.arg.description);
+        li = this.makeItem(this.name, '⌗', true, [], [], null, `${this.arg.isRequired ? '' : '(optional) '}${this.arg.description ?? ''}`);
         li.setAttribute('data-name', this.name);
         li.setAttribute('data-option-type', 'namedArgument');
         return li;
@@ -40,7 +40,7 @@ export class SlashCommandNamedArgumentAutoCompleteOption extends AutoCompleteOpt
         }
         const help = document.createElement('span'); {
             help.classList.add('help');
-            help.innerHTML = this.cmd.namedArgumentList.find(it=>it.name == this.arg.name)?.description;
+            help.innerHTML = `${this.arg.isRequired ? '' : '(optional) '}${this.arg.description ?? ''}`;
             frag.append(help);
         }
         return frag;
