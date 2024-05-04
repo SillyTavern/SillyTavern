@@ -192,6 +192,12 @@ export class SlashCommandParser {
             end: /\||$|:}/,
             contains: [],
         };
+        const ABORT = {
+            scope: 'abort',
+            begin: /\/abort/,
+            end: /\||$|:}/,
+            contains: [],
+        };
         const LET = {
             begin: [
                 /\/(let|var)\s+/,
@@ -296,6 +302,7 @@ export class SlashCommandParser {
         CLOSURE.contains.push(
             hljs.BACKSLASH_ESCAPE,
             COMMENT,
+            ABORT,
             NAMED_ARG,
             hljs.QUOTE_STRING_MODE,
             NUMBER,
@@ -313,6 +320,7 @@ export class SlashCommandParser {
             contains: [
                 hljs.BACKSLASH_ESCAPE,
                 COMMENT,
+                ABORT,
                 RUN,
                 LET,
                 GETVAR,
