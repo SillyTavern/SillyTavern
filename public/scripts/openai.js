@@ -900,7 +900,7 @@ function getPromptRole(role) {
 /**
  * Populate a chat conversation by adding prompts to the conversation and managing system and user prompts.
  *
- * @param {PromptCollection} prompts - PromptCollection containing all prompts where the key is the prompt identifier and the value is the prompt object.
+ * @param {import('./PromptManager.js').PromptCollection} prompts - PromptCollection containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  * @param {Object} options - An object with optional settings.
  * @param {string} options.bias - A bias to be added in the conversation.
@@ -912,7 +912,7 @@ function getPromptRole(role) {
  * @param {object[]} options.messageExamples - Array containing all message examples.
  * @returns {Promise<void>}
  */
-async function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples } = {}) {
+async function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples }) {
     // Helper function for preparing a prompt, that already exists within the prompt collection, for completion
     const addToChatCompletion = (source, target = null) => {
         // We need the prompts array to determine a position for the source.
@@ -1047,21 +1047,22 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
 /**
  * Combines system prompts with prompt manager prompts
  *
- * @param {string} Scenario - The scenario or context of the dialogue.
- * @param {string} charPersonality - Description of the character's personality.
- * @param {string} name2 - The second name to be used in the messages.
- * @param {string} worldInfoBefore - The world info to be added before the main conversation.
- * @param {string} worldInfoAfter - The world info to be added after the main conversation.
- * @param {string} charDescription - Description of the character.
- * @param {string} quietPrompt - The quiet prompt to be used in the conversation.
- * @param {string} bias - The bias to be added in the conversation.
- * @param {Object} extensionPrompts - An object containing additional prompts.
- * @param {string} systemPromptOverride
- * @param {string} jailbreakPromptOverride
- * @param {string} personaDescription
+ * @param {Object} options - An object with optional settings.
+ * @param {string} options.Scenario - The scenario or context of the dialogue.
+ * @param {string} options.charPersonality - Description of the character's personality.
+ * @param {string} options.name2 - The second name to be used in the messages.
+ * @param {string} options.worldInfoBefore - The world info to be added before the main conversation.
+ * @param {string} options.worldInfoAfter - The world info to be added after the main conversation.
+ * @param {string} options.charDescription - Description of the character.
+ * @param {string} options.quietPrompt - The quiet prompt to be used in the conversation.
+ * @param {string} options.bias - The bias to be added in the conversation.
+ * @param {Object} options.extensionPrompts - An object containing additional prompts.
+ * @param {string} options.systemPromptOverride
+ * @param {string} options.jailbreakPromptOverride
+ * @param {string} options.personaDescription
  * @returns {Object} prompts - The prepared and merged system and user-defined prompts.
  */
-function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride, personaDescription } = {}) {
+function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride, personaDescription }) {
     const scenarioText = Scenario && oai_settings.scenario_format ? substituteParams(oai_settings.scenario_format) : '';
     const charPersonalityText = charPersonality && oai_settings.personality_format ? substituteParams(oai_settings.personality_format) : '';
     const groupNudge = substituteParams(oai_settings.group_nudge_prompt);
@@ -1179,12 +1180,16 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
  * @param {string} content.bias - The bias to be added in the conversation.
  * @param {string} content.type - The type of the chat, can be 'impersonate'.
  * @param {string} content.quietPrompt - The quiet prompt to be used in the conversation.
+ * @param {string} content.quietImage - Image prompt for extras
  * @param {string} content.cyclePrompt - The last prompt used for chat message continuation.
- * @param {Array} content.extensionPrompts - An array of additional prompts.
+ * @param {string} content.systemPromptOverride - The system prompt override.
+ * @param {string} content.jailbreakPromptOverride - The jailbreak prompt override.
+ * @param {string} content.personaDescription - The persona description.
+ * @param {object} content.extensionPrompts - An array of additional prompts.
  * @param {object[]} content.messages - An array of messages to be used as chat history.
  * @param {string[]} content.messageExamples - An array of messages to be used as dialogue examples.
  * @param dryRun - Whether this is a live call or not.
- * @returns {(*[]|boolean)[]} An array where the first element is the prepared chat and the second element is a boolean flag.
+ * @returns {Promise<(any[]|boolean)[]>} An array where the first element is the prepared chat and the second element is a boolean flag.
  */
 export async function prepareOpenAIMessages({
     name2,
@@ -1204,7 +1209,7 @@ export async function prepareOpenAIMessages({
     personaDescription,
     messages,
     messageExamples,
-} = {}, dryRun) {
+}, dryRun) {
     // Without a character selected, there is no way to accurately calculate tokens
     if (!promptManager.activeCharacter && dryRun) return [null, false];
 

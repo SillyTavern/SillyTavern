@@ -44,6 +44,7 @@ module.exports = {
                 toastr: 'readonly',
                 Readability: 'readonly',
                 isProbablyReaderable: 'readonly',
+                ePub: 'readonly',
             },
         },
     ],

@@ -1912,7 +1912,7 @@ function getMessageFromTemplate({
     timestamp,
     tokenCount,
     extra,
-} = {}) {
+}) {
     const mes = messageTemplate.clone();
     mes.attr({
         'mesid': mesId,
