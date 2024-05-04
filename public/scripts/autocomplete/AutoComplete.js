@@ -621,6 +621,7 @@ export class AutoComplete {
             this.textarea.selectionDirection = selectionEnd;
         }
         this.wasForced = false;
+        this.textarea.dispatchEvent(new Event('input', { bubbles:true }));
     }
 
 
