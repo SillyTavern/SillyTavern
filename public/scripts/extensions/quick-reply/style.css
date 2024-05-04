@@ -299,6 +299,8 @@
   margin: 0;
   border: none;
   overflow: hidden;
+  min-width: 100%;
+  width: 0;
 }
 .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder > #qr--modal-messageSyntax > #qr--modal-messageSyntaxInner {
   height: 100%;
