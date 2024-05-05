@@ -372,7 +372,7 @@ export class SlashCommandParser {
                 const options = [...frag.querySelectorAll('ul:nth-of-type(2n+1) > li')].map(li=>new MacroAutoCompleteOption(
                     li.querySelector('tt').textContent.slice(2, -2).split(/[\s:]/)[0],
                     li.querySelector('tt').textContent,
-                    li.innerHTML,
+                    (li.querySelector('tt').remove(),li.innerHTML),
                 ));
                 const result = new AutoCompleteNameResult(
                     macro.name,
