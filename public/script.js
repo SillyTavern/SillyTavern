@@ -4257,7 +4257,6 @@ function unblockGeneration(type) {
     setGenerationProgress(0);
     flushEphemeralStoppingStrings();
     flushWIDepthInjections();
-    $('#send_textarea').removeAttr('disabled');
 }
 
 export function getNextMessageId(type) {
@@ -5263,7 +5262,6 @@ export function activateSendButtons() {
     is_send_press = false;
     $('#send_but').removeClass('displayNone');
     $('#mes_continue').removeClass('displayNone');
-    $('#send_textarea').attr('disabled', String(false));
     $('.mes_buttons:last').show();
     hideStopButton();
 }
