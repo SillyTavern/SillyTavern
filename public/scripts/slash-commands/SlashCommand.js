@@ -83,7 +83,7 @@ export class SlashCommand {
                                             for (const e of arg.enumList) {
                                                 const enumItem = document.createElement('span'); {
                                                     enumItem.classList.add('argument-enum');
-                                                    enumItem.textContent = e;
+                                                    enumItem.textContent = e.value;
                                                     enums.append(enumItem);
                                                 }
                                             }
@@ -117,7 +117,7 @@ export class SlashCommand {
                                             for (const e of arg.enumList) {
                                                 const enumItem = document.createElement('span'); {
                                                     enumItem.classList.add('argument-enum');
-                                                    enumItem.textContent = e;
+                                                    enumItem.textContent = e.value;
                                                     enums.append(enumItem);
                                                 }
                                             }
@@ -230,7 +230,7 @@ export class SlashCommand {
                                                 for (const e of arg.enumList) {
                                                     const enumItem = document.createElement('span'); {
                                                         enumItem.classList.add('argument-enum');
-                                                        enumItem.textContent = e;
+                                                        enumItem.textContent = e.value;
                                                         enums.append(enumItem);
                                                     }
                                                 }
@@ -286,7 +286,7 @@ export class SlashCommand {
                                             for (const e of arg.enumList) {
                                                 const enumItem = document.createElement('span'); {
                                                     enumItem.classList.add('argument-enum');
-                                                    enumItem.textContent = e;
+                                                    enumItem.textContent = e.value;
                                                     enums.append(enumItem);
                                                 }
                                             }
