@@ -71,10 +71,11 @@
     "version": "1.12.0-preview",
     "scripts": {
         "start": "node server.js",
-        "start-multi": "node server.js --disableCsrf",
+        "start:no-csrf": "node server.js --disableCsrf",
         "postinstall": "node post-install.js",
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
-        "lint-fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix"
+        "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
+        "plugins:update": "node plugins update"
     },
     "bin": {
         "sillytavern": "./server.js"
