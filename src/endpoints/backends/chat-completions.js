@@ -5,7 +5,7 @@ const Readable = require('stream').Readable;
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
-const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages } = require('../../prompt-converters');
+const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages } = require('../../prompt-converters');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
 const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
@@ -465,35 +465,7 @@ async function sendMistralAIRequest(request, response) {
     }
 
     try {
-        //must send a user role as last message
-        const messages = Array.isArray(request.body.messages) ? request.body.messages : [];
-        //large seems to be throwing a 500 error if we don't make the first message a user role, most likely a bug since the other models won't do this
-        if (request.body.model.includes('large'))
-            messages[0].role = 'user';
-        const lastMsg = messages[messages.length - 1];
-        if (messages.length > 0 && lastMsg && (lastMsg.role === 'system' || lastMsg.role === 'assistant')) {
-            if (lastMsg.role === 'assistant' && lastMsg.name) {
-                lastMsg.content = lastMsg.name + ': ' + lastMsg.content;
-            } else if (lastMsg.role === 'system') {
-                lastMsg.content = '[INST] ' + lastMsg.content + ' [/INST]';
-            }
-            lastMsg.role = 'user';
-        }
-
-        //system prompts can be stacked at the start, but any futher sys prompts after the first user/assistant message will break the model
-        let encounteredNonSystemMessage = false;
-        messages.forEach(msg => {
-            if ((msg.role === 'user' || msg.role === 'assistant') && !encounteredNonSystemMessage) {
-                encounteredNonSystemMessage = true;
-            }
-
-            if (encounteredNonSystemMessage && msg.role === 'system') {
-                msg.role = 'user';
-                //unsure if the instruct version is what they've deployed on their endpoints and if this will make a difference or not.
-                //it should be better than just sending the message as a user role without context though
-                msg.content = '[INST] ' + msg.content + ' [/INST]';
-            }
-        });
+        const messages = convertMistralMessages(request.body.messages, request.body.model, request.body.char_name, request.body.user_name);
         const controller = new AbortController();
         request.socket.removeAllListeners('close');
         request.socket.on('close', function () {
@@ -758,7 +730,11 @@ router.post('/bias', jsonParser, async function (request, response) {
         if (sentencepieceTokenizers.includes(model)) {
             const tokenizer = getSentencepiceTokenizer(model);
             const instance = await tokenizer?.get();
-            encodeFunction = (text) => new Uint32Array(instance?.encodeIds(text));
+            if (!instance) {
+                console.warn('Tokenizer not initialized:', model);
+                return response.send({});
+            }
+            encodeFunction = (text) => new Uint32Array(instance.encodeIds(text));
         } else {
             const tokenizer = getTiktokenTokenizer(model);
             encodeFunction = (tokenizer.encode.bind(tokenizer));

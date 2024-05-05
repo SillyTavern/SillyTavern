@@ -28,6 +28,7 @@ export {
 export const textgen_types = {
     OOBA: 'ooba',
     MANCER: 'mancer',
+    VLLM: 'vllm',
     APHRODITE: 'aphrodite',
     TABBY: 'tabby',
     KOBOLDCPP: 'koboldcpp',
@@ -39,7 +40,7 @@ export const textgen_types = {
     OPENROUTER: 'openrouter',
 };
 
-const { MANCER, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER, KOBOLDCPP } = textgen_types;
+const { MANCER, VLLM, APHRODITE, TABBY, TOGETHERAI, OOBA, OLLAMA, LLAMACPP, INFERMATICAI, DREAMGEN, OPENROUTER, KOBOLDCPP } = textgen_types;
 
 const LLAMACPP_DEFAULT_ORDER = [
     'top_k',
@@ -77,6 +78,7 @@ let OPENROUTER_SERVER = 'https://openrouter.ai/api';
 
 const SERVER_INPUTS = {
     [textgen_types.OOBA]: '#textgenerationwebui_api_url_text',
+    [textgen_types.VLLM]: '#vllm_api_url_text',
     [textgen_types.APHRODITE]: '#aphrodite_api_url_text',
     [textgen_types.TABBY]: '#tabby_api_url_text',
     [textgen_types.KOBOLDCPP]: '#koboldcpp_api_url_text',
@@ -135,8 +137,8 @@ const settings = {
     samplers: LLAMACPP_DEFAULT_ORDER,
     //n_aphrodite: 1,
     //best_of_aphrodite: 1,
-    ignore_eos_token_aphrodite: false,
-    spaces_between_special_tokens_aphrodite: true,
+    ignore_eos_token: false,
+    spaces_between_special_tokens: true,
     //logits_processors_aphrodite: [],
     //log_probs_aphrodite: 0,
     //prompt_log_probs_aphrodite: 0,
@@ -146,6 +148,7 @@ const settings = {
     infermaticai_model: '',
     ollama_model: '',
     openrouter_model: 'openrouter/auto',
+    vllm_model: '',
     aphrodite_model: '',
     dreamgen_model: 'opus-v1-xl/text',
     legacy_api: false,
@@ -208,8 +211,8 @@ const setting_names = [
     'legacy_api',
     //'n_aphrodite',
     //'best_of_aphrodite',
-    'ignore_eos_token_aphrodite',
-    'spaces_between_special_tokens_aphrodite',
+    'ignore_eos_token',
+    'spaces_between_special_tokens',
     //'logits_processors_aphrodite',
     //'log_probs_aphrodite',
     //'prompt_log_probs_aphrodite'
@@ -454,18 +457,6 @@ function loadTextGenSettings(data, loadedSettings) {
     showTypeSpecificControls(settings.type);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(settings.logit_bias, BIAS_KEY);
-    //this is needed because showTypeSpecificControls() does not handle NOT declarations
-    if (settings.type === textgen_types.APHRODITE) {
-        $('[data-forAphro="False"]').each(function () {
-            $(this).hide();
-        });
-    } else {
-        $('[data-forAphro="False"]').each(function () {
-            if ($(this).css('display') !== 'none') { //if it wasn't already hidden by showTypeSpecificControls
-                $(this).show();
-            }
-        });
-    }
 
     registerDebugFunction('change-mancer-url', 'Change Mancer base URL', 'Change Mancer API server base URL', () => {
         const result = prompt(`Enter Mancer base URL\nDefault: ${MANCER_SERVER_DEFAULT}`, MANCER_SERVER);
@@ -587,27 +578,19 @@ jQuery(function () {
         const type = String($(this).val());
         settings.type = type;
 
-        if (settings.type === textgen_types.APHRODITE) {
-            //this is needed because showTypeSpecificControls() does not handle NOT declarations
-            $('[data-forAphro="False"]').each(function () {
-                $(this).hide();
-            });
+        if ([VLLM, APHRODITE, INFERMATICAI].includes(settings.type)) {
             $('#mirostat_mode_textgenerationwebui').attr('step', 2); //Aphro disallows mode 1
             $('#do_sample_textgenerationwebui').prop('checked', true); //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
             $('#ban_eos_token_textgenerationwebui').prop('checked', false); //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
-            //special handling for Aphrodite topK -1 disable state
+            //special handling for vLLM/Aphrodite topK -1 disable state
             $('#top_k_textgenerationwebui').attr('min', -1);
             if ($('#top_k_textgenerationwebui').val() === '0' || settings['top_k'] === 0) {
                 settings['top_k'] = -1;
                 $('#top_k_textgenerationwebui').val('-1').trigger('input');
             }
         } else {
-            //this is needed because showTypeSpecificControls() does not handle NOT declarations
-            $('[data-forAphro="False"]').each(function () {
-                $(this).show();
-            });
             $('#mirostat_mode_textgenerationwebui').attr('step', 1);
-            //undo special Aphrodite setup for topK
+            //undo special vLLM/Aphrodite setup for topK
             $('#top_k_textgenerationwebui').attr('min', 0);
             if ($('#top_k_textgenerationwebui').val() === '-1' || settings['top_k'] === -1) {
                 settings['top_k'] = 0;
@@ -636,7 +619,7 @@ jQuery(function () {
     $('#samplerResetButton').off('click').on('click', function () {
         const inputs = {
             'temp_textgenerationwebui': 1,
-            'top_k_textgenerationwebui': 0,
+            'top_k_textgenerationwebui': [INFERMATICAI, APHRODITE, VLLM].includes(settings.type) ? -1 : 0,
             'top_p_textgenerationwebui': 1,
             'min_p_textgenerationwebui': 0,
             'rep_pen_textgenerationwebui': 1,
@@ -711,9 +694,10 @@ jQuery(function () {
                 const value = Number($(this).val());
                 $(`#${id}_counter_textgenerationwebui`).val(value);
                 settings[id] = value;
-                //special handling for aphrodite using -1 as disabled instead of 0
+                //special handling for vLLM/Aphrodite using -1 as disabled instead of 0
                 if ($(this).attr('id') === 'top_k_textgenerationwebui' &&
-                    settings.type === textgen_types.APHRODITE &&
+                    (settings.type === textgen_types.VLLM ||
+                    settings.type === textgen_types.APHRODITE) &&
                     value === 0) {
                     settings[id] = -1;
                     $(this).val(-1);
@@ -869,6 +853,7 @@ export function parseTextgenLogprobs(token, logprobs) {
 
     switch (settings.type) {
         case TABBY:
+        case VLLM:
         case APHRODITE:
         case MANCER:
         case OOBA: {
@@ -947,7 +932,7 @@ function toIntArray(string) {
     return string.split(',').map(x => parseInt(x)).filter(x => !isNaN(x));
 }
 
-function getModel() {
+export function getTextGenModel() {
     switch (settings.type) {
         case OOBA:
             if (settings.custom_model) {
@@ -964,6 +949,8 @@ function getModel() {
             return settings.dreamgen_model;
         case OPENROUTER:
             return settings.openrouter_model;
+        case VLLM:
+            return settings.vllm_model;
         case APHRODITE:
             return settings.aphrodite_model;
         case OLLAMA:
@@ -987,7 +974,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     let params = {
         'prompt': finalPrompt,
-        'model': getModel(),
+        'model': getTextGenModel(),
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
         'logprobs': power_user.request_token_probabilities ? 10 : undefined,
@@ -1061,11 +1048,18 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'ignore_eos': settings.ban_eos_token,
         'n_probs': power_user.request_token_probabilities ? 10 : undefined,
     };
+    const vllmParams = {
+        'n': canMultiSwipe ? settings.n : 1,
+        'best_of': canMultiSwipe ? settings.n : 1,
+        'ignore_eos': settings.ignore_eos_token,
+        'spaces_between_special_tokens': settings.spaces_between_special_tokens,
+        'seed': settings.seed,
+    };
     const aphroditeParams = {
         'n': canMultiSwipe ? settings.n : 1,
         'best_of': canMultiSwipe ? settings.n : 1,
-        'ignore_eos': settings.ignore_eos_token_aphrodite,
-        'spaces_between_special_tokens': settings.spaces_between_special_tokens_aphrodite,
+        'ignore_eos': settings.ignore_eos_token,
+        'spaces_between_special_tokens': settings.spaces_between_special_tokens,
         'grammar': settings.grammar_string,
         //'logits_processors': settings.logits_processors_aphrodite,
         //'logprobs': settings.log_probs_aphrodite,
@@ -1087,10 +1081,18 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         delete params.dynatemp_high;
     }
 
-    if (settings.type === APHRODITE) {
-        params = Object.assign(params, aphroditeParams);
-    } else {
-        params = Object.assign(params, nonAphroditeParams);
+    switch (settings.type) {
+        case VLLM:
+            params = Object.assign(params, vllmParams);
+            break;
+
+        case APHRODITE:
+            params = Object.assign(params, aphroditeParams);
+            break;
+
+        default:
+            params = Object.assign(params, nonAphroditeParams);
+            break;
     }
 
     if (Array.isArray(settings.logit_bias) && settings.logit_bias.length) {
@@ -1119,4 +1121,3 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
 
     return params;
 }
-

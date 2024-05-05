@@ -155,8 +155,11 @@ body {
     border-radius: 10px;
     background-clip: content-box;
     border: 2px solid transparent;
-    border-top: 20px solid transparent;
     min-height: 40px;
+}
+
+body.movingUI ::-webkit-scrollbar-thumb:vertical {
+    border-top: 20px solid transparent;
 }
 
 ::-webkit-scrollbar-thumb:horizontal {
@@ -165,7 +168,6 @@ body {
     border-radius: 10px;
     background-clip: content-box;
     border: 2px solid transparent;
-    /* border-left: 20px solid transparent; */
     min-width: 40px;
 }
 
@@ -487,8 +489,8 @@ body.reduced-motion #bg_custom {
 }
 
 #sheld {
-    display: grid;
-    grid-template-rows: auto min-content;
+    display: flex;
+    flex-direction: column;
     /* -1px to give sheld some wiggle room to bounce off tobar when moving*/
     height: calc(100vh - var(--topBarBlockSize) - 1px);
     height: calc(100svh - var(--topBarBlockSize) - 1px);
@@ -582,6 +584,7 @@ body .panelControlBar {
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     flex-direction: column;
     z-index: 30;
+    flex-grow: 1;
 }
 
 #form_sheld {

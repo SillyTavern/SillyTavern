@@ -7,6 +7,7 @@ let mancerModels = [];
 let togetherModels = [];
 let infermaticAIModels = [];
 let dreamGenModels = [];
+let vllmModels = [];
 let aphroditeModels = [];
 export let openRouterModels = [];
 
@@ -156,6 +157,28 @@ export async function loadOpenRouterModels(data) {
     calculateOpenRouterCost();
 }
 
+export async function loadVllmModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid vLLM models data', data);
+        return;
+    }
+
+    vllmModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.vllm_model)) {
+        textgen_settings.vllm_model = data[0]?.id || '';
+    }
+
+    $('#vllm_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.vllm_model;
+        $('#vllm_model').append(option);
+    }
+}
+
 export async function loadAphroditeModels(data) {
     if (!Array.isArray(data)) {
         console.error('Invalid Aphrodite models data', data);
@@ -222,6 +245,12 @@ function onOpenRouterModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
     const model = openRouterModels.find(x => x.id === modelId);
     setGenerationParamsFromPreset({ max_length: model.context_length });
+}
+
+function onVllmModelSelect() {
+    const modelId = String($('#vllm_model').val());
+    textgen_settings.vllm_model = modelId;
+    $('#api_button_textgenerationwebui').trigger('click');
 }
 
 function onAphroditeModelSelect() {
@@ -306,6 +335,20 @@ function getOpenRouterModelTemplate(option) {
     return $((`
         <div class="flex-container flexFlowColumn" title="${DOMPurify.sanitize(model.id)}">
             <div><strong>${DOMPurify.sanitize(model.name)}</strong> | ${model.context_length} ctx | <small>${price}</small></div>
+        </div>
+    `));
+}
+
+function getVllmModelTemplate(option) {
+    const model = vllmModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
         </div>
     `));
 }
@@ -397,6 +440,10 @@ export function getCurrentOpenRouterModelTokenizer() {
     switch (model?.architecture?.tokenizer) {
         case 'Llama2':
             return tokenizers.LLAMA;
+        case 'Llama3':
+            return tokenizers.LLAMA3;
+        case 'Yi':
+            return tokenizers.YI;
         case 'Mistral':
             return tokenizers.MISTRAL;
         default:
@@ -426,6 +473,7 @@ jQuery(function () {
     $('#ollama_model').on('change', onOllamaModelSelect);
     $('#openrouter_model').on('change', onOpenRouterModelSelect);
     $('#ollama_download_model').on('click', downloadOllamaModel);
+    $('#vllm_model').on('change', onVllmModelSelect);
     $('#aphrodite_model').on('change', onAphroditeModelSelect);
 
     if (!isMobile()) {
@@ -469,6 +517,13 @@ jQuery(function () {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getOpenRouterModelTemplate,
+        });
+        $('#vllm_model').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getVllmModelTemplate,
         });
         $('#aphrodite_model').select2({
             placeholder: 'Select a model',
