@@ -4076,18 +4076,18 @@
                                     </div>
                                 </div>
                             </div>
-                            <div name="STscriptToggles">
-                                <h4 data-i18n="STscript Settings">STscript Settings</h4>
-                                <div title="Determines how STscript commands are found for autocomplete." data-i18n="[title]Determines how STscript commands are found for autocomplete.">
-                                    <label for="stscript_matching" data-i18n="Autocomplete Matching">Autocomplete Matching</label>
+                            <div name="AutoCompleteToggle">
+                                <h4 data-i18n="AutoComplete Settings">AutoComplete Settings</h4>
+                                <div title="Determines how entries are found for autocomplete." data-i18n="[title]Determines how entries are found for autocomplete.">
+                                    <label for="stscript_matching" data-i18n="Autocomplete Matching">Matching</label>
                                     <select id="stscript_matching">
                                         <option data-i18n="Starts with" value="strict">Starts with</option>
                                         <option data-i18n="Includes" value="includes">Includes</option>
                                         <option data-i18n="Fuzzy" value="fuzzy">Fuzzy</option>
                                     </select>
                                 </div>
-                                <div title="Sets the style of the autocomplete for STscript." data-i18n="[title]Sets the style of the autocomplete for STscript.">
-                                    <label for="stscript_autocomplete_style" data-i18n="Autocomplete Style">Autocomplete Style</label>
+                                <div title="Sets the style of the autocomplete." data-i18n="[title]Sets the style of the autocomplete.">
+                                    <label for="stscript_autocomplete_style" data-i18n="Autocomplete Style">Style</label>
                                     <div class="flex-container flexFlowRow alignItemsBaseline">
                                         <select id="stscript_autocomplete_style">
                                             <option data-i18n="Follow Theme" value="theme">Follow Theme</option>
@@ -4097,8 +4097,8 @@
                                         <div class="menu_button fa-solid fa-pen-to-square" title="Customize colors"></div>
                                     </div>
                                 </div>
-                                <div title="Sets the width of the autocomplete for STscript." data-i18n="[title]Sets the width of the autocomplete for STscript.">
-                                    <label for="stscript_autocomplete_width" data-i18n="Autocomplete Width">Autocomplete Width</label>
+                                <div title="Sets the width of the autocomplete." data-i18n="[title]Sets the width of the autocomplete.">
+                                    <label for="stscript_autocomplete_width" data-i18n="Autocomplete Width">Width</label>
                                     <div class="doubleRangeContainer">
                                         <div class="doubleRangeInputContainer">
                                             <input type="range" id="stscript_autocomplete_width_left" min="0" max="2" step="1">
@@ -4118,6 +4118,9 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                            <div name="STscriptToggles">
+                                <h4 data-i18n="STscript Settings">STscript Settings</h4>
                                 <div title="Sets default flags for the STscript parser." data-i18n="[title]Sets default flags for the STscript parser.">
                                     <label data-i18n="Parser Flags">Parser Flags</label>
                                     <label class="checkbox_label" title="STRICT_ESCAPING." data-i18n="[title]STRICT_ESCAPING">
