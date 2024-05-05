@@ -3321,10 +3321,13 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Extension added strings
     // Set non-WI AN
     setFloatingPrompt();
-    // Add WI to prompt (and also inject WI to AN value via hijack)
 
+    // Add WI to prompt (and also inject WI to AN value via hijack)
+    // Make quiet prompt available for WIAN
+    setExtensionPrompt('QUIET_PROMPT', quiet_prompt || '', extension_prompt_types.IN_PROMPT, 0, true);
     const chatForWI = coreChat.map(x => `${x.name}: ${x.mes}`).reverse();
     let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun);
+    setExtensionPrompt('QUIET_PROMPT', '', extension_prompt_types.IN_PROMPT, 0, true);
 
     if (skipWIAN !== true) {
         console.log('skipWIAN not active, adding WIAN');
