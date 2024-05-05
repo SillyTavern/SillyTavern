@@ -238,6 +238,91 @@ class FileScraper {
     }
 }
 
+class MediaWikiScraper {
+    constructor() {
+        this.id = 'mediawiki';
+        this.name = 'MediaWiki';
+        this.description = 'Download a page from a MediaWiki wiki.';
+        this.iconClass = 'fa-brands fa-wikipedia-w';
+        this.iconAvailable = true;
+    }
+
+    async isAvailable() {
+        try {
+            const result = await fetch('/api/plugins/fandom/probe-mediawiki', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+            });
+
+            return result.ok;
+        } catch (error) {
+            console.debug('Could not probe Fandom/MediaWiki plugin', error);
+            return false;
+        }
+    }
+
+    async scrape() {
+        let url = '';
+        let filter = '';
+        let output = 'single';
+
+        const template = $(await renderExtensionTemplateAsync('attachments', 'mediawiki-scrape', {}));
+        template.find('input[name="scrapeInput"]').on('input', function () {
+            url = String($(this).val()).trim();
+        });
+        template.find('input[name="scrapeFilter"]').on('input', function () {
+            filter = String($(this).val());
+        });
+        template.find('input[name="scrapeOutput"]').on('input', function () {
+            output = String($(this).val());
+        });
+
+        const confirm = await callGenericPopup(template, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Scrape', cancelButton: 'Cancel' });
+
+        if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
+            return;
+        }
+
+        if (!url) {
+            toastr.error('URL name is required');
+            return;
+        }
+
+        const toast = toastr.info('Working, please wait...');
+
+        const result = await fetch('/api/plugins/fandom/scrape-mediawiki', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url, filter }),
+        });
+
+        if (!result.ok) {
+            const error = await result.text();
+            throw new Error(error);
+        }
+
+        const data = await result.json();
+        toastr.clear(toast);
+
+        if (output === 'multi') {
+            const files = [];
+            for (const attachment of data) {
+                const file = new File([String(attachment.content).trim()], `${String(attachment.title).trim()}.txt`, { type: 'text/plain' });
+                files.push(file);
+            }
+            return files;
+        }
+
+        if (output === 'single') {
+            const combinedContent = data.map((a) => String(a.title).trim() + '\n\n' + String(a.content).trim()).join('\n\n\n\n');
+            const file = new File([combinedContent], `${url}.txt`, { type: 'text/plain' });
+            return [file];
+        }
+
+        return [];
+    }
+}
+
 /**
  * Scrape data from a Fandom wiki.
  * @implements {Scraper}
@@ -419,5 +504,6 @@ class YouTubeScraper {
 ScraperManager.registerDataBankScraper(new FileScraper());
 ScraperManager.registerDataBankScraper(new Notepad());
 ScraperManager.registerDataBankScraper(new WebScraper());
+ScraperManager.registerDataBankScraper(new MediaWikiScraper());
 ScraperManager.registerDataBankScraper(new FandomScraper());
 ScraperManager.registerDataBankScraper(new YouTubeScraper());
