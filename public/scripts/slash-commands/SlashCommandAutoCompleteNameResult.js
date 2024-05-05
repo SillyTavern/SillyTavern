@@ -109,14 +109,18 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             }
         }
 
-        const result = new AutoCompleteSecondaryNameResult(
-            name,
-            start - 2,
-            notProvidedNamedArguments.map(it=>new SlashCommandNamedArgumentAutoCompleteOption(it, this.executor.command)),
-            false,
-        );
-        result.isRequired = notProvidedNamedArguments.find(it=>it.isRequired) != null;
-        return result;
+        if (notProvidedNamedArguments.length > 0) {
+            const result = new AutoCompleteSecondaryNameResult(
+                name,
+                start - 2,
+                notProvidedNamedArguments.map(it=>new SlashCommandNamedArgumentAutoCompleteOption(it, this.executor.command)),
+                false,
+            );
+            result.isRequired = notProvidedNamedArguments.find(it=>it.isRequired) != null;
+            return result;
+        }
+
+        return null;
     }
 
     getUnnamedArgumentAt(text, index, isSelect) {
@@ -133,7 +137,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             if (idx > -1) {
                 argAssign = this.executor.unnamedArgumentList[idx];
                 cmdArg = this.executor.command.unnamedArgumentList[idx];
-                if (cmdArg.enumList.length > 0) {
+                if (cmdArg && cmdArg.enumList.length > 0) {
                     value = argAssign.value.toString().slice(0, index - argAssign.start);
                     start = argAssign.start;
                 } else {
