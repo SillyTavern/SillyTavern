@@ -1582,7 +1582,6 @@ body[data-stscript-style] .hljs.language-stscript {
                     content: "(optional) ";
                     color: var(--ac-color-text);
                     opacity: 0.5;
-                    font-size: 0.8em;
                 }
                 .argument-description {
                     margin-left: 0.5em;
