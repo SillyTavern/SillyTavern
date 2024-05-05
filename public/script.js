@@ -4410,14 +4410,16 @@ export function removeMacros(str) {
  * @param {string} messageText Message text.
  * @param {string} messageBias Message bias.
  * @param {number} [insertAt] Optional index to insert the message at.
- * @params {boolean} [compact] Send as a compact display message.
+ * @param {boolean} [compact] Send as a compact display message.
+ * @param {string} [name] Name of the user sending the message. Defaults to name1.
+ * @param {string} [avatar] Avatar of the user sending the message. Defaults to user_avatar.
  * @returns {Promise<void>} A promise that resolves when the message is inserted.
  */
-export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false) {
+export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false, name = name1, avatar = user_avatar) {
     messageText = getRegexedString(messageText, regex_placement.USER_INPUT);
 
     const message = {
-        name: name1,
+        name: name,
         is_user: true,
         is_system: false,
         send_date: getMessageTimeStamp(),
@@ -4432,8 +4434,8 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     }
 
     // Lock user avatar to a persona.
-    if (user_avatar in power_user.personas) {
-        message.force_avatar = getUserAvatar(user_avatar);
+    if (avatar in power_user.personas) {
+        message.force_avatar = getUserAvatar(avatar);
     }
 
     if (messageBias) {
