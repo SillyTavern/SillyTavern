@@ -192,6 +192,7 @@ const CHAT_COMPLETION_SOURCES = {
     CUSTOM: 'custom',
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
+    GROQ: 'groq',
 };
 
 const UPLOADS_PATH = './uploads';

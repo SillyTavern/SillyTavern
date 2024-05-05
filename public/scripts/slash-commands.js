@@ -1678,6 +1678,7 @@ function modelCallback(_, model) {
         { id: 'model_custom_select', api: 'openai', type: chat_completion_sources.CUSTOM },
         { id: 'model_cohere_select', api: 'openai', type: chat_completion_sources.COHERE },
         { id: 'model_perplexity_select', api: 'openai', type: chat_completion_sources.PERPLEXITY },
+        { id: 'model_groq_select', api: 'openai', type: chat_completion_sources.GROQ },
         { id: 'model_novel_select', api: 'novel', type: null },
         { id: 'horde_model', api: 'koboldhorde', type: null },
     ];
