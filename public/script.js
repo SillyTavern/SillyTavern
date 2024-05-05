@@ -4387,7 +4387,8 @@ function formatMessageHistoryItem(chatItem, isInstruct, forceOutputSequence) {
     const itemName = chatItem.is_user ? chatItem['name'] : characterName;
     const shouldPrependName = !isNarratorType;
 
-    let textResult = shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
+    // Don't include a name if it's empty
+    let textResult = chatItem?.name && shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
 
     if (isInstruct) {
         textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar, name1, name2, forceOutputSequence);
