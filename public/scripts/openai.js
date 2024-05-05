@@ -3772,6 +3772,12 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
+        else if (['llama-3-sonar-small-32k-chat', 'llama-3-sonar-large-32k-chat'].includes(oai_settings.perplexity_model)) {
+            $('#openai_max_context').attr('max', max_32k);
+        }
+        else if (['llama-3-sonar-small-32k-online', 'llama-3-sonar-large-32k-online'].includes(oai_settings.perplexity_model)) {
+            $('#openai_max_context').attr('max', 28000);
+        }
         else if (['sonar-small-chat', 'sonar-medium-chat', 'codellama-70b-instruct', 'mistral-7b-instruct', 'mixtral-8x7b-instruct', 'mixtral-8x22b-instruct'].includes(oai_settings.perplexity_model)) {
             $('#openai_max_context').attr('max', max_16k);
         }
