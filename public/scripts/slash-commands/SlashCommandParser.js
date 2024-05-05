@@ -16,6 +16,8 @@ import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
+import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
+import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption.js';
 
 /**@readonly*/
 /**@enum {Number}*/
@@ -95,6 +97,7 @@ export class SlashCommandParser {
     /**@type {boolean}*/ jumpedEscapeSequence = false;
 
     /**@type {{start:number, end:number}[]}*/ closureIndex;
+    /**@type {{start:number, end:number, name:string}[]}*/ macroIndex;
     /**@type {SlashCommandExecutor[]}*/ commandIndex;
     /**@type {SlashCommandScope[]}*/ scopeIndex;
 
@@ -362,6 +365,25 @@ export class SlashCommandParser {
                 ?? null
             ;
             if (childClosure !== null) return null;
+            const macro = this.macroIndex.findLast(it=>it.start <= index && it.end >= index);
+            console.log(macro);
+            if (macro) {
+                const frag = document.createRange().createContextualFragment(await (await fetch('/scripts/templates/macros.html')).text());
+                const options = [...frag.querySelectorAll('ul:nth-of-type(2n+1) > li')].map(li=>new MacroAutoCompleteOption(
+                    li.querySelector('tt').textContent.slice(2, -2).split(/[\s:]/)[0],
+                    li.querySelector('tt').textContent,
+                    li.innerHTML,
+                ));
+                const result = new AutoCompleteNameResult(
+                    macro.name,
+                    macro.start - 2 + 2,
+                    options,
+                    false,
+                    ()=>`No matching macros for "{{${result.name}}}"`,
+                    ()=>'No macros found.',
+                );
+                return result;
+            }
             if (executor.name == ':') {
                 const options = this.scopeIndex[this.commandIndex.indexOf(executor)]
                     ?.allVariableNames
@@ -526,13 +548,14 @@ export class SlashCommandParser {
             this.flags[PARSER_FLAG[key]] = flags?.[PARSER_FLAG[key]] ?? power_user.stscript.parser.flags[PARSER_FLAG[key]] ?? false;
         }
         this.abortController = abortController;
-        this.text = `{:${text}:}`;
+        this.text = `{:${text}\n:}`;
         this.keptText = '';
         this.index = 0;
         this.scope = null;
         this.closureIndex = [];
         this.commandIndex = [];
         this.scopeIndex = [];
+        this.macroIndex = [];
         const closure = this.parseClosure();
         closure.keptText = this.keptText;
         return closure;
@@ -777,6 +800,7 @@ export class SlashCommandParser {
                 isList = true;
                 if (value.length > 0) {
                     assignment.end = assignment.end - (value.length - value.trim().length);
+                    this.indexMacros(this.index - value.length, value);
                     assignment.value = value.trim();
                     listValues.push(assignment);
                     assignment = new SlashCommandUnnamedArgumentAssignment();
@@ -823,6 +847,7 @@ export class SlashCommandParser {
         if (isList) {
             return listValues;
         }
+        this.indexMacros(this.index - value.length, value);
         value = value.trim();
         if (this.flags[PARSER_FLAG.REPLACE_GETVAR]) {
             value = this.replaceGetvar(value);
@@ -853,6 +878,7 @@ export class SlashCommandParser {
         if (this.flags[PARSER_FLAG.REPLACE_GETVAR]) {
             value = this.replaceGetvar(value);
         }
+        this.indexMacros(this.index - value.length, value);
         return value;
     }
 
@@ -870,6 +896,7 @@ export class SlashCommandParser {
         if (this.flags[PARSER_FLAG.REPLACE_GETVAR]) {
             value = this.replaceGetvar(value);
         }
+        this.indexMacros(this.index - value.length, value);
         return value;
     }
 
@@ -886,6 +913,23 @@ export class SlashCommandParser {
         if (this.flags[PARSER_FLAG.REPLACE_GETVAR]) {
             value = this.replaceGetvar(value);
         }
+        this.indexMacros(this.index - value.length, value);
         return value;
+    }
+
+    indexMacros(offset, text) {
+        const re = /{{(?:((?:(?!}})[^\s:])+)((?:(?!}}).)*)(}}|}$|$))?/s;
+        let remaining = text;
+        let localOffset = 0;
+        while (remaining.length > 0 && re.test(remaining)) {
+            const match = re.exec(remaining);
+            this.macroIndex.push({
+                start: offset + localOffset + match.index,
+                end: offset + localOffset + match.index + (match[0]?.length ?? 0),
+                name: match[1] ?? '',
+            });
+            localOffset += match.index + (match[0]?.length ?? 0);
+            remaining = remaining.slice(match.index + (match[0]?.length ?? 0));
+        }
     }
 }

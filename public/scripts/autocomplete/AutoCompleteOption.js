@@ -6,6 +6,7 @@ import { AutoCompleteFuzzyScore } from './AutoCompleteFuzzyScore.js';
 export class AutoCompleteOption {
     /**@type {string}*/ name;
     /**@type {string}*/ typeIcon;
+    /**@type {number}*/ nameOffset = 0;
     /**@type {AutoCompleteFuzzyScore}*/ score;
     /**@type {string}*/ replacer;
     /**@type {HTMLElement}*/ dom;

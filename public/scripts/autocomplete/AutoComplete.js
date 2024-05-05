@@ -141,7 +141,7 @@ export class AutoComplete {
         switch (this.matchType) {
             case 'strict': {
                 chars.forEach((it, idx)=>{
-                    if (idx < item.name.length) {
+                    if (idx + item.nameOffset < item.name.length) {
                         it.classList.add('matched');
                     } else {
                         it.classList.remove('matched');
@@ -152,9 +152,9 @@ export class AutoComplete {
             case 'includes': {
                 const start = item.name.toLowerCase().search(this.name);
                 chars.forEach((it, idx)=>{
-                    if (idx < start) {
+                    if (idx + item.nameOffset < start) {
                         it.classList.remove('matched');
-                    } else if (idx < start + item.name.length) {
+                    } else if (idx + item.nameOffset < start + item.name.length) {
                         it.classList.add('matched');
                     } else {
                         it.classList.remove('matched');
@@ -168,7 +168,7 @@ export class AutoComplete {
                     if (parts.length == 2) {
                         chars.forEach(c=>c.classList.remove('matched'));
                     } else {
-                        let cIdx = 0;
+                        let cIdx = item.nameOffset;
                         parts.forEach((it, idx)=>{
                             if (it === null || it.length == 0) return '';
                             if (idx % 2 == 1) {

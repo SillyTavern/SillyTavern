@@ -1386,6 +1386,7 @@ body[data-stscript-style] .autoComplete [data-option-type] {
     &[data-option-type="namedArgument"] .type { color: var(--ac-color-argName); }
     &[data-option-type="variable"] .type { color: var(--ac-color-punctuationL1); }
     &[data-option-type="qr"] .type { color: var(--ac-color-variable); }
+    &[data-option-type="macro"] .type { color: var(--ac-color-variableLanguage); }
 }
 body[data-stscript-style] .hljs.language-stscript {
     * { text-shadow: none !important; }
