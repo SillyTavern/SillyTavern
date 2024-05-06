@@ -1,8 +1,7 @@
 import { isMobile } from './RossAscends-mods.js';
-import { amount_gen, callPopup, eventSource, event_types, getRequestHeaders, max_context, saveSettingsDebounced, setGenerationParamsFromPreset } from '../script.js';
+import { amount_gen, callPopup, eventSource, event_types, getRequestHeaders, max_context, setGenerationParamsFromPreset } from '../script.js';
 import { textgenerationwebui_settings as textgen_settings, textgen_types } from './textgen-settings.js';
 import { tokenizers } from './tokenizers.js';
-import { oai_settings } from './openai.js';
 
 let mancerModels = [];
 let togetherModels = [];
@@ -514,25 +513,6 @@ jQuery(function () {
             text: provider,
         }));
     }
-
-    providersSelect.on('change', function () {
-        const selectedProviders = $(this).val();
-
-        // Not a multiple select?
-        if (!Array.isArray(selectedProviders)) {
-            return;
-        }
-
-        if ($(this).is('#openrouter_providers_text')) {
-            textgen_settings.openrouter_providers = selectedProviders;
-        }
-
-        if ($(this).is('#openrouter_providers_chat')) {
-            oai_settings.openrouter_providers = selectedProviders;
-        }
-
-        saveSettingsDebounced();
-    });
 
     if (!isMobile()) {
         $('#mancer_model').select2({

@@ -4786,6 +4786,19 @@ $(document).ready(async function () {
         });
     }
 
+    $('#openrouter_providers_chat').on('change', function () {
+        const selectedProviders = $(this).val();
+
+        // Not a multiple select?
+        if (!Array.isArray(selectedProviders)) {
+            return;
+        }
+
+        oai_settings.openrouter_providers = selectedProviders;
+
+        saveSettingsDebounced();
+    });
+
     $('#api_button_openai').on('click', onConnectButtonClick);
     $('#openai_reverse_proxy').on('input', onReverseProxyInput);
     $('#model_openai_select').on('change', onModelChange);
