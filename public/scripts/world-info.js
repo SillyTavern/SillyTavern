@@ -2656,7 +2656,7 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer) {
         let winner = null;
 
         for (const entry of group) {
-            currentWeight += (entry.group_weight ?? DEFAULT_WEIGHT);
+            currentWeight += (entry.groupWeight ?? DEFAULT_WEIGHT);
 
             if (rollValue <= currentWeight) {
                 console.debug(`Activated inclusion group '${key}' with roll winner entry '${entry.uid}'`, entry);
