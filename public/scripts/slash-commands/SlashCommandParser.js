@@ -101,7 +101,7 @@ export class SlashCommandParser {
     /**@type {SlashCommandExecutor[]}*/ commandIndex;
     /**@type {SlashCommandScope[]}*/ scopeIndex;
 
-    get userIndex() { return this.index - 2; }
+    get userIndex() { return this.index; }
 
     get ahead() {
         return this.text.slice(this.index + 1);
@@ -143,17 +143,18 @@ export class SlashCommandParser {
                 helpString: 'Set a parser flag.',
             }));
         }
-
-        //TODO should not be re-registered from every instance
-        const commentCmd = new SlashCommand();
-        commentCmd.name = '/';
-        commentCmd.aliases.push('#');
-        commentCmd.unnamedArgumentList.push(new SlashCommandArgument(
-            'commentary',
-            ARGUMENT_TYPE.STRING,
-        ));
-        commentCmd.helpString = 'Write a comment.';
-        SlashCommandParser.addCommandObjectUnsafe(commentCmd);
+        if (!Object.keys(this.commands).includes('/')) {
+            SlashCommandParser.addCommandObjectUnsafe(SlashCommand.fromProps({ name: '/',
+                aliases: ['#'],
+                unnamedArgumentList: [
+                    SlashCommandArgument.fromProps({
+                        description: 'commentary',
+                        typeList: [ARGUMENT_TYPE.STRING],
+                    }),
+                ],
+                helpString: 'Write a comment.',
+            }));
+        }
 
         //TODO should not be re-registered from every instance
         this.registerLanguage();
@@ -376,7 +377,7 @@ export class SlashCommandParser {
                 ));
                 const result = new AutoCompleteNameResult(
                     macro.name,
-                    macro.start - 2 + 2,
+                    macro.start + 2,
                     options,
                     false,
                     ()=>`No matching macros for "{{${result.name}}}"`,
@@ -400,7 +401,7 @@ export class SlashCommandParser {
                 } catch { /* empty */ }
                 const result = new AutoCompleteNameResult(
                     executor.unnamedArgumentList[0]?.value.toString(),
-                    executor.start - 2,
+                    executor.start,
                     options,
                     true,
                     ()=>`No matching variables in scope and no matching Quick Replies for "${result.name}"`,
@@ -548,7 +549,7 @@ export class SlashCommandParser {
             this.flags[PARSER_FLAG[key]] = flags?.[PARSER_FLAG[key]] ?? power_user.stscript.parser.flags[PARSER_FLAG[key]] ?? false;
         }
         this.abortController = abortController;
-        this.text = `{:${text}\n:}`;
+        this.text = text.trim();
         this.keptText = '';
         this.index = 0;
         this.scope = null;
@@ -556,7 +557,7 @@ export class SlashCommandParser {
         this.commandIndex = [];
         this.scopeIndex = [];
         this.macroIndex = [];
-        const closure = this.parseClosure();
+        const closure = this.parseClosure(true);
         closure.keptText = this.keptText;
         return closure;
     }
@@ -565,14 +566,19 @@ export class SlashCommandParser {
         return this.testSymbol('{:');
     }
     testClosureEnd() {
+        if (!this.scope.parent) {
+            // "root" closure does not have {: and :}
+            if (this.index == this.text.length) return true;
+            return false;
+        }
         if (this.ahead.length < 1) throw new SlashCommandParserError(`Unclosed closure at position ${this.userIndex}`, this.text, this.index);
         return this.testSymbol(':}');
     }
-    parseClosure() {
+    parseClosure(isRoot = false) {
         const closureIndexEntry = { start:this.index + 1, end:null };
         this.closureIndex.push(closureIndexEntry);
         let injectPipe = true;
-        this.take(2); // discard opening {:
+        if (!isRoot) this.take(2); // discard opening {:
         let closure = new SlashCommandClosure(this.scope);
         closure.abortController = this.abortController;
         this.scope = closure.scope;
@@ -613,7 +619,7 @@ export class SlashCommandParser {
             }
             this.discardWhitespace(); // discard further whitespace
         }
-        this.take(2); // discard closing :}
+        if (!isRoot) this.take(2); // discard closing :}
         if (this.testSymbol('()')) {
             this.take(2); // discard ()
             closure.executeNow = true;
@@ -633,6 +639,7 @@ export class SlashCommandParser {
     parseComment() {
         const start = this.index + 1;
         const cmd = new SlashCommandExecutor(start);
+        cmd.command = this.commands['/'];
         this.commandIndex.push(cmd);
         this.scopeIndex.push(this.scope.getCopy());
         this.take(); // discard "/"
@@ -720,7 +727,7 @@ export class SlashCommandParser {
         this.take(); // discard "/"
         while (!/\s/.test(this.char) && !this.testCommandEnd()) cmd.name += this.take(); // take chars until whitespace or end
         this.discardWhitespace();
-        if (this.verifyCommandNames && !this.commands[cmd.name]) throw new SlashCommandParserError(`Unknown command at position ${this.index - cmd.name.length - 2}: "/${cmd.name}"`, this.text, this.index - cmd.name.length);
+        if (this.verifyCommandNames && !this.commands[cmd.name]) throw new SlashCommandParserError(`Unknown command at position ${this.index - cmd.name.length}: "/${cmd.name}"`, this.text, this.index - cmd.name.length);
         cmd.command = this.commands[cmd.name];
         cmd.startNamedArgs = this.index;
         cmd.endNamedArgs = this.index;

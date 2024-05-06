@@ -38,13 +38,13 @@ export class SlashCommandParserError extends Error {
             tabOffset = untabbedLine.length - line.length;
             hint.push(`${num}:  ${untabbedLine}`);
         }
-        hint.push(`${' '.repeat(this.index - 2 - lineStart + lineOffset + 1 + tabOffset)}^^^^^`);
+        hint.push(`${' '.repeat(this.index - lineStart + lineOffset + 1 + tabOffset)}^^^^^`);
         return hint.join('\n');
     }
 
     constructor(message, text, index) {
         super(message);
-        this.text = text.slice(2, -2);
-        this.index = index - 2;
+        this.text = text;
+        this.index = index;
     }
 }
