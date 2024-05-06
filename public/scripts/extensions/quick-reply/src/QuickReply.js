@@ -268,7 +268,7 @@ export class QuickReply {
             const message = dom.querySelector('#qr--modal-message');
             message.value = this.message;
             message.addEventListener('input', () => {
-                messageSyntaxInner.innerHTML = hljs.highlight(message.value, { language:'stscript', ignoreIllegals:true })?.value;
+                messageSyntaxInner.innerHTML = hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
                 this.updateMessage(message.value);
                 updateScrollDebounced();
             });
@@ -327,7 +327,7 @@ export class QuickReply {
             /**@type {HTMLElement}*/
             const messageSyntaxInner = dom.querySelector('#qr--modal-messageSyntaxInner');
             const style = window.getComputedStyle(message);
-            messageSyntaxInner.innerHTML = hljs.highlight(message.value, { language:'stscript', ignoreIllegals:true })?.value;
+            messageSyntaxInner.innerHTML = hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
             updateWrap();
             updateTabSize();
 
