@@ -254,6 +254,7 @@ const default_settings = {
     openrouter_force_instruct: false,
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
+    openrouter_providers: [],
     jailbreak_system: false,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
@@ -328,6 +329,7 @@ const oai_settings = {
     openrouter_force_instruct: false,
     openrouter_group_models: false,
     openrouter_sort_models: 'alphabetically',
+    openrouter_providers: [],
     jailbreak_system: false,
     reverse_proxy: '',
     chat_completion_source: chat_completion_sources.OPENAI,
@@ -1770,6 +1772,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['repetition_penalty'] = Number(oai_settings.repetition_penalty_openai);
         generate_data['top_a'] = Number(oai_settings.top_a_openai);
         generate_data['use_fallback'] = oai_settings.openrouter_use_fallback;
+        generate_data['provider'] = oai_settings.openrouter_providers;
 
         if (isTextCompletion) {
             generate_data['stop'] = getStoppingStrings(isImpersonate, isContinue);
@@ -2793,6 +2796,7 @@ function loadOpenAISettings(data, settings) {
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
     $('#openrouter_force_instruct').prop('checked', oai_settings.openrouter_force_instruct);
     $('#openrouter_group_models').prop('checked', oai_settings.openrouter_group_models);
+    $('#openrouter_providers_chat').val(oai_settings.openrouter_providers).trigger('change');
     $('#squash_system_messages').prop('checked', oai_settings.squash_system_messages);
     $('#continue_prefill').prop('checked', oai_settings.continue_prefill);
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
@@ -3016,6 +3020,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         openrouter_force_instruct: settings.openrouter_force_instruct,
         openrouter_group_models: settings.openrouter_group_models,
         openrouter_sort_models: settings.openrouter_sort_models,
+        openrouter_providers: settings.openrouter_providers,
         ai21_model: settings.ai21_model,
         mistralai_model: settings.mistralai_model,
         cohere_model: settings.cohere_model,
@@ -3412,6 +3417,7 @@ function onSettingsPresetChange() {
         openrouter_force_instruct: ['#openrouter_force_instruct', 'openrouter_force_instruct', true],
         openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
         openrouter_sort_models: ['#openrouter_sort_models', 'openrouter_sort_models', false],
+        openrouter_providers: ['#openrouter_providers_chat', 'openrouter_providers', false],
         ai21_model: ['#model_ai21_select', 'ai21_model', false],
         mistralai_model: ['#model_mistralai_select', 'mistralai_model', false],
         cohere_model: ['#model_cohere_select', 'cohere_model', false],
@@ -3496,6 +3502,7 @@ function onSettingsPresetChange() {
 
         $('#chat_completion_source').trigger('change');
         $('#openai_logit_bias_preset').trigger('change');
+        $('#openrouter_providers_chat').trigger('change');
 
         saveSettingsDebounced();
         eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER);

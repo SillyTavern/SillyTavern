@@ -845,6 +845,13 @@ router.post('/generate', jsonParser, function (request, response) {
             bodyParams['repetition_penalty'] = request.body.repetition_penalty;
         }
 
+        if (Array.isArray(request.body.provider) && request.body.provider.length > 0) {
+            bodyParams['provider'] = {
+                allow_fallbacks: true,
+                order: request.body.provider ?? [],
+            };
+        }
+
         if (request.body.use_fallback) {
             bodyParams['route'] = 'fallback';
         }
