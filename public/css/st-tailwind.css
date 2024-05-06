@@ -360,6 +360,14 @@
     flex: 2 !important;
 }
 
+.flex3 {
+    flex: 3;
+}
+
+.flex4 {
+    flex: 4;
+}
+
 .flexFlowColumn {
     flex-flow: column;
 }
