@@ -580,7 +580,7 @@ export class SlashCommandParser {
     testClosureEnd() {
         if (!this.scope.parent) {
             // "root" closure does not have {: and :}
-            if (this.index == this.text.length) return true;
+            if (this.index >= this.text.length) return true;
             return false;
         }
         if (this.ahead.length < 1) throw new SlashCommandParserError(`Unclosed closure at position ${this.userIndex}`, this.text, this.index);
