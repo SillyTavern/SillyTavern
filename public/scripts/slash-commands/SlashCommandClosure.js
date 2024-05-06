@@ -229,7 +229,7 @@ export class SlashCommandClosure {
                 if (abortResult) {
                     return abortResult;
                 }
-                executor.onProgress = (subDone, subTotal)=>this.onProgress(done + subDone, this.commandCount);
+                executor.onProgress = (subDone, subTotal)=>this.onProgress?.(done + subDone, this.commandCount);
                 this.scope.pipe = await executor.command.callback(args, value ?? '');
                 done += executor.commandCount;
                 this.onProgress?.(done, this.commandCount);
