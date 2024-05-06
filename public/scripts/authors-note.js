@@ -9,7 +9,6 @@ import {
 } from '../script.js';
 import { selected_group } from './group-chats.js';
 import { extension_settings, getContext, saveMetadataDebounced } from './extensions.js';
-import { registerSlashCommand } from './slash-commands.js';
 import { getCharaFilename, debounce, delay } from './utils.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { debounce_timeout } from './constants.js';

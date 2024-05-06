@@ -8,7 +8,6 @@ import { groups, selected_group } from '../../group-chats.js';
 import { loadFileToDocument, delay } from '../../utils.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
-import { registerSlashCommand } from '../../slash-commands.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';

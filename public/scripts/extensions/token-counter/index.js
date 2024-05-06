@@ -1,6 +1,5 @@
 import { callPopup, main_api } from '../../../script.js';
 import { getContext } from '../../extensions.js';
-import { registerSlashCommand } from '../../slash-commands.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, tokenizers } from '../../tokenizers.js';

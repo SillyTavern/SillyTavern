@@ -8,7 +8,6 @@ import { CoquiTtsProvider } from './coqui.js';
 import { SystemTtsProvider } from './system.js';
 import { NovelTtsProvider } from './novel.js';
 import { power_user } from '../../power-user.js';
-import { registerSlashCommand } from '../../slash-commands.js';
 import { OpenAITtsProvider } from './openai.js';
 import { XTTSTtsProvider } from './xtts.js';
 import { AllTalkTtsProvider } from './alltalk.js';

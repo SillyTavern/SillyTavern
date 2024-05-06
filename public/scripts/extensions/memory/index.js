@@ -16,7 +16,6 @@ import {
     getMaxContextSize,
 } from '../../../script.js';
 import { is_group_generating, selected_group } from '../../group-chats.js';
-import { registerSlashCommand } from '../../slash-commands.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { getTextTokens, getTokenCountAsync, tokenizers } from '../../tokenizers.js';
