@@ -270,18 +270,20 @@ export class SlashCommandParser {
         LET.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
-            hljs.QUOTE_STRING_MODE,
             NUMBER,
             MACRO,
             CLOSURE,
+            hljs.REGEXP_MODE,
+            hljs.QUOTE_STRING_MODE,
         );
         SETVAR.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
-            hljs.QUOTE_STRING_MODE,
             NUMBER,
             MACRO,
             CLOSURE,
+            hljs.REGEXP_MODE,
+            hljs.QUOTE_STRING_MODE,
         );
         GETVAR.contains.push(
             hljs.BACKSLASH_ESCAPE,
@@ -294,17 +296,17 @@ export class SlashCommandParser {
         COMMAND.contains.push(
             hljs.BACKSLASH_ESCAPE,
             NAMED_ARG,
-            hljs.QUOTE_STRING_MODE,
             NUMBER,
             MACRO,
             CLOSURE,
+            hljs.REGEXP_MODE,
+            hljs.QUOTE_STRING_MODE,
         );
         CLOSURE.contains.push(
             hljs.BACKSLASH_ESCAPE,
             COMMENT,
             ABORT,
             NAMED_ARG,
-            hljs.QUOTE_STRING_MODE,
             NUMBER,
             MACRO,
             RUN,
@@ -313,6 +315,8 @@ export class SlashCommandParser {
             SETVAR,
             COMMAND,
             'self',
+            hljs.REGEXP_MODE,
+            hljs.QUOTE_STRING_MODE,
         );
         hljs.registerLanguage('stscript', ()=>({
             case_insensitive: false,
