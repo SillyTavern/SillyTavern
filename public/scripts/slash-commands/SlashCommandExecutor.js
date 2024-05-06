@@ -22,6 +22,23 @@ export class SlashCommandExecutor {
     /**@type {SlashCommandUnnamedArgumentAssignment[]}*/ unnamedArgumentList = [];
     /**@type {Object<PARSER_FLAG,boolean>} */ parserFlags;
 
+    get commandCount() {
+        return 1
+            + this.namedArgumentList.filter(it=>it.value instanceof SlashCommandClosure).map(it=>/**@type {SlashCommandClosure}*/(it.value).commandCount).reduce((cur, sum)=>cur + sum, 0)
+            + this.unnamedArgumentList.filter(it=>it.value instanceof SlashCommandClosure).map(it=>/**@type {SlashCommandClosure}*/(it.value).commandCount).reduce((cur, sum)=>cur + sum, 0)
+        ;
+    }
+
+    set onProgress(value) {
+        const closures = /**@type {SlashCommandClosure[]}*/([
+            ...this.namedArgumentList.filter(it=>it.value instanceof SlashCommandClosure).map(it=>it.value),
+            ...this.unnamedArgumentList.filter(it=>it.value instanceof SlashCommandClosure).map(it=>it.value),
+        ]);
+        for (const closure of closures) {
+            closure.onProgress = value;
+        }
+    }
+
     constructor(start) {
         this.start = start;
     }

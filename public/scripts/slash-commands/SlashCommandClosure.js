@@ -18,6 +18,11 @@ export class SlashCommandClosure {
     /**@type {SlashCommandAbortController}*/ abortController;
     /**@type {(done:number, total:number)=>void}*/ onProgress;
 
+    /**@type {number}*/
+    get commandCount() {
+        return this.executorList.map(executor=>executor.commandCount).reduce((sum,cur)=>sum + cur, 0);
+    }
+
     constructor(parent) {
         this.scope = new SlashCommandScope(parent);
     }
@@ -144,8 +149,7 @@ export class SlashCommandClosure {
 
         let done = 0;
         for (const executor of this.executorList) {
-            done += 0.5;
-            this.onProgress?.(done, this.executorList.length);
+            this.onProgress?.(done, this.commandCount);
             if (executor instanceof SlashCommandClosureExecutor) {
                 const closure = this.scope.getVariable(executor.name);
                 if (!closure || !(closure instanceof SlashCommandClosure)) throw new Error(`${executor.name} is not a closure.`);
@@ -225,9 +229,10 @@ export class SlashCommandClosure {
                 if (abortResult) {
                     return abortResult;
                 }
+                executor.onProgress = (subDone, subTotal)=>this.onProgress(done + subDone, this.commandCount);
                 this.scope.pipe = await executor.command.callback(args, value ?? '');
-                done += 0.5;
-                this.onProgress?.(done, this.executorList.length);
+                done += executor.commandCount;
+                this.onProgress?.(done, this.commandCount);
                 abortResult = await this.testAbortController();
                 if (abortResult) {
                     return abortResult;
