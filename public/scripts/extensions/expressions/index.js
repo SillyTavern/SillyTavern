@@ -972,8 +972,8 @@ function sampleClassifyText(text) {
         return text;
     }
 
-    // Remove asterisks and quotes
-    let result = text.replace(/[*"]/g, '');
+    // Replace macros, remove asterisks and quotes
+    let result = substituteParams(text).replace(/[*"]/g, '');
 
     const SAMPLE_THRESHOLD = 500;
     const HALF_SAMPLE_THRESHOLD = SAMPLE_THRESHOLD / 2;
