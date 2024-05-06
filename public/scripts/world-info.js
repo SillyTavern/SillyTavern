@@ -1478,13 +1478,24 @@ function getWorldEntry(name, data, entry) {
     groupWeightInput.data('uid', entry.uid);
     groupWeightInput.on('input', function () {
         const uid = $(this).data('uid');
-        const value = Number($(this).val());
+        let value = Number($(this).val());
+        const min = Number($(this).attr('min'));
+        const max = Number($(this).attr('max'));
 
-        data.entries[uid].groupWeight = !isNaN(value) ? Math.abs(value) : 0;
+        // Clamp the value
+        if (value < min) {
+            value = min;
+            $(this).val(min);
+        } else if (value > max) {
+            value = max;
+            $(this).val(max);
+        }
+
+        data.entries[uid].groupWeight = !isNaN(value) ? Math.abs(value) : 1;
         setOriginalDataValue(data, uid, 'extensions.group_weight', data.entries[uid].groupWeight);
         saveWorldInfo(name, data);
     });
-    groupWeightInput.val(entry.groupWeight).trigger('input');
+    groupWeightInput.val(entry.groupWeight ?? DEFAULT_WEIGHT).trigger('input');
 
     // probability
     if (entry.probability === undefined) {
