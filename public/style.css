@@ -1476,13 +1476,13 @@ body[data-stscript-style] .hljs.language-stscript {
             flex: 0 0 auto;
             display: inline-flex;
             justify-content: center;
-            align-items: center;
             width: 2.25em;
             font-size: 0.8em;
             text-align: center;
             /* opacity: 0.6; */
             white-space: nowrap;
             font-family: monospace;
+            line-height: calc(1.2em / 0.8);
             /* &:before { content: "["; }
             &:after { content: "]"; } */
         }
