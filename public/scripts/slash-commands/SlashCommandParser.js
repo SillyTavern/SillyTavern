@@ -343,7 +343,7 @@ export class SlashCommandParser {
      * @param {*} index Index to check for names (cursor position).
      */
     async getNameAt(text, index) {
-        if (this.text != `{:${text}:}`) {
+        if (this.text != text) {
             try {
                 this.parse(text, false);
             } catch (e) {
@@ -351,7 +351,6 @@ export class SlashCommandParser {
                 console.warn(e);
             }
         }
-        index += 2;
         const executor = this.commandIndex
             .filter(it=>it.start <= index && (it.end >= index || it.end == null))
             .slice(-1)[0]
@@ -562,7 +561,7 @@ export class SlashCommandParser {
             this.flags[PARSER_FLAG[key]] = flags?.[PARSER_FLAG[key]] ?? power_user.stscript.parser.flags[PARSER_FLAG[key]] ?? false;
         }
         this.abortController = abortController;
-        this.text = text.trim();
+        this.text = text;
         this.index = 0;
         this.scope = null;
         this.closureIndex = [];
