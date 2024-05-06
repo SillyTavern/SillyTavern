@@ -368,7 +368,7 @@ export class SlashCommandParser {
             if (macro) {
                 const frag = document.createRange().createContextualFragment(await (await fetch('/scripts/templates/macros.html')).text());
                 const options = [...frag.querySelectorAll('ul:nth-of-type(2n+1) > li')].map(li=>new MacroAutoCompleteOption(
-                    li.querySelector('tt').textContent.slice(2, -2).split(/[\s:]/)[0],
+                    li.querySelector('tt').textContent.slice(2, -2).replace(/^([^\s:]+[\s:]+).*$/, '$1'),
                     li.querySelector('tt').textContent,
                     (li.querySelector('tt').remove(),li.innerHTML),
                 ));
@@ -930,7 +930,7 @@ export class SlashCommandParser {
     }
 
     indexMacros(offset, text) {
-        const re = /{{(?:((?:(?!}})[^\s:])+)((?:(?!}}).)*)(}}|}$|$))?/s;
+        const re = /{{(?:((?:(?!}})[^\s:])+[\s:]*)((?:(?!}}).)*)(}}|}$|$))?/s;
         let remaining = text;
         let localOffset = 0;
         while (remaining.length > 0 && re.test(remaining)) {
