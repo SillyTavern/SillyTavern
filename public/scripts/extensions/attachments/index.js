@@ -11,8 +11,6 @@ jQuery(async () => {
         callback: () => document.getElementById('manageAttachments')?.click(),
         aliases: ['databank', 'data-bank'],
         helpString: 'Open the data bank',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
 
 });

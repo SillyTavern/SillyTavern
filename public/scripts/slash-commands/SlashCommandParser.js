@@ -35,10 +35,8 @@ export class SlashCommandParser {
      * @param {(namedArguments:Object.<string,string|SlashCommandClosure>, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|void|Promise<string|SlashCommandClosure|void>} callback The function to execute when the command is called
      * @param {string[]} aliases List of alternative command names
      * @param {string} helpString Help text shown in autocomplete and command browser
-     * @param {boolean} interruptsGeneration (deprecated) Has no effect
-     * @param {boolean} purgeFromMessage (deprecated) Has no effect
      */
-    static addCommand(command, callback, aliases, helpString = '', interruptsGeneration = false, purgeFromMessage = true) {
+    static addCommand(command, callback, aliases, helpString = '') {
         this.addCommandObject(SlashCommand.fromProps({
             name: command,
             callback,

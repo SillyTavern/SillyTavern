@@ -688,16 +688,12 @@ function registerWorldInfoSlashCommands() {
             </div>
         `,
         aliases: [],
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatbook',
         callback: getChatBookCallback,
         returns: 'lorebook name',
         helpString: 'Get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe.',
         aliases: ['getchatlore', 'getchatwi'],
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'findentry',
         aliases: ['findlore', 'findwi'],
@@ -729,8 +725,6 @@ function registerWorldInfoSlashCommands() {
                 </ul>
             </div>
         `,
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getentryfield',
         aliases: ['getlorefield', 'getwifield'],
@@ -762,8 +756,6 @@ function registerWorldInfoSlashCommands() {
                 </ul>
             </div>
         `,
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'createentry',
         callback: createEntryCallback,

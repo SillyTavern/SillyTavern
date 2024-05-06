@@ -486,22 +486,16 @@ export function initBackgrounds() {
         callback: onLockBackgroundClick,
         aliases: ['bglock'],
         helpString: 'Locks a background for the currently selected chat',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'unlockbg',
         callback: onUnlockBackgroundClick,
         aliases: ['bgunlock'],
         helpString: 'Unlocks a background for the currently selected chat',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'autobg',
         callback: autoBackgroundCommand,
         aliases: ['bgauto'],
         helpString: 'Automatically changes the background based on the chat context using the AI request prompt',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
 
 }

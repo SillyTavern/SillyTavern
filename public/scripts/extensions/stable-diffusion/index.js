@@ -3041,8 +3041,6 @@ jQuery(async () => {
                 'argument', [ARGUMENT_TYPE.STRING], false, false, null, Object.values(triggerWords).flat(),
             ),
         ],
-        interruptsGeneration: true,
-        purgeFromMessage: true,
         helpString: `
             <div>
                 Requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments: <code>${Object.values(triggerWords).flat().join(', ')}</code>.

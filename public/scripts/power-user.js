@@ -3757,19 +3757,13 @@ $(document).ready(() => {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'vn',
         callback: toggleWaifu,
         helpString: 'Swaps Visual Novel Mode On/Off',
-        interruptsGeneration: false,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'newchat',
         callback: doNewChat,
         helpString: 'Start a new chat with the current character',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'random',
         callback: doRandomChat,
-        interruptsGeneration: true,
-        purgeFromMessage: true,
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'optional tag name', [ARGUMENT_TYPE.STRING], false,
@@ -3780,8 +3774,6 @@ $(document).ready(() => {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delmode',
         callback: doDelMode,
         aliases: ['del'],
-        interruptsGeneration: true,
-        purgeFromMessage: true,
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'optional number', [ARGUMENT_TYPE.NUMBER], false,
@@ -3814,15 +3806,11 @@ $(document).ready(() => {
             </div>
         `,
         aliases: [],
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'resetpanels',
         callback: doResetPanels,
         helpString: 'resets UI panels to original state',
         aliases: ['resetui'],
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'bgcol',
         callback: setAvgBG,

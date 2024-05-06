@@ -1981,8 +1981,6 @@ function migrateSettings() {
             ),
         ],
         helpString: 'Force sets the sprite for the current character.',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'spriteoverride',
         aliases: ['costume'],
@@ -1993,8 +1991,6 @@ function migrateSettings() {
             ),
         ],
         helpString: 'Sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lastsprite',
         callback: (_, value) => lastExpression[value.trim()] ?? '',
@@ -2005,15 +2001,11 @@ function migrateSettings() {
             ),
         ],
         helpString: 'Returns the last set sprite / expression for the named character.',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'th',
         callback: toggleTalkingHeadCommand,
         aliases: ['talkinghead'],
         helpString: 'Character Expressions: toggles <i>Image Type - talkinghead (extras)</i> on/off.',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'classify',
         callback: classifyCommand,

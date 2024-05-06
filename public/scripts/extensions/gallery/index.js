@@ -422,8 +422,6 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'show-gallery
     aliases: ['sg'],
     callback: showGalleryCommand,
     helpString: 'Shows the gallery.',
-    interruptsGeneration: true,
-    purgeFromMessage: true,
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'list-gallery',
     aliases: ['lg'],
@@ -438,8 +436,6 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'list-gallery
         ),
     ],
     helpString: 'List images in the gallery of the current char / group or a specified char / group.',
-    interruptsGeneration: true,
-    purgeFromMessage: true,
 }));
 
 

@@ -870,7 +870,5 @@ jQuery(async function () {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'summarize',
         callback: forceSummarizeChat,
         helpString: 'Forces the summarization of the current chat using the Main API.',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
 });

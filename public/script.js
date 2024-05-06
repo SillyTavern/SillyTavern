@@ -8469,27 +8469,19 @@ jQuery(async function () {
         callback: doGetChatName,
         returns: 'chat file name',
         helpString: 'Returns the name of the current chat file into the pipe.',
-        interruptsGeneration: false,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'closechat',
         callback: doCloseChat,
         helpString: 'Closes the current chat.',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'panels',
         callback: doTogglePanels,
         aliases: ['togglepanels'],
         helpString: 'Toggle UI panels on/off',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'forcesave',
         callback: doForceSave,
         helpString: 'Forces a save of the current chat and settings',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct',
         callback: selectInstructCallback,
@@ -8521,8 +8513,6 @@ jQuery(async function () {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct-off',
         callback: disableInstructCallback,
         helpString: 'Disables instruct mode',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'context',
         callback: selectContextCallback,
@@ -8533,15 +8523,11 @@ jQuery(async function () {
             ),
         ],
         helpString: 'Selects context template by name. Gets the current template if no name is provided',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'chat-manager',
         callback: () => $('#option_select_chat').trigger('click'),
         aliases: ['chat-history', 'manage-chats'],
         helpString: 'Opens the chat manager for the current character/group.',
-        interruptsGeneration: true,
-        purgeFromMessage: true,
     }));
 
     setTimeout(function () {

@@ -46,8 +46,6 @@ export class SlashCommandHandler {
                 ),
             ],
             helpString: 'Toggle global QR set',
-            interruptsGeneration: true,
-            purgeFromMessage: true,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-on',
             callback: (args, value) => this.addGlobalSet(value, args),
@@ -62,8 +60,6 @@ export class SlashCommandHandler {
                 ),
             ],
             helpString: 'Activate global QR set',
-            interruptsGeneration: true,
-            purgeFromMessage: true,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-off',
             callback: (_, value) => this.removeGlobalSet(value),
@@ -73,8 +69,6 @@ export class SlashCommandHandler {
                 ),
             ],
             helpString: 'Deactivate global QR set',
-            interruptsGeneration: true,
-            purgeFromMessage: true,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-chat-set',
             callback: (args, value) => this.toggleChatSet(value, args),
@@ -89,8 +83,6 @@ export class SlashCommandHandler {
                 ),
             ],
             helpString: 'Toggle chat QR set',
-            interruptsGeneration: true,
-            purgeFromMessage: true,
         }));
 
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-chat-set-on',
@@ -106,8 +98,6 @@ export class SlashCommandHandler {
                 ),
             ],
             helpString: 'Activate chat QR set',
-            interruptsGeneration: true,
-            purgeFromMessage: true,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-chat-set-off',
             callback: (_, value) => this.removeChatSet(value),
@@ -117,8 +107,6 @@ export class SlashCommandHandler {
                 ),
             ],
             helpString: 'Deactivate chat QR set',
-            interruptsGeneration: true,
-            purgeFromMessage: true,
         }));
         SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-list',
             callback: (_, value) => this.listSets(value ?? 'all'),
@@ -293,8 +281,6 @@ export class SlashCommandHandler {
                     </ul>
                 </div>
             `,
-            purgeFromMessage: true,
-            interruptsGeneration: true,
         }));
 
         const presetArgs = [
