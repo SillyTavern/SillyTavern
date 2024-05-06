@@ -41,8 +41,6 @@ export class AutoComplete {
     /**@type {AutoCompleteOption[]}*/ result = [];
     /**@type {AutoCompleteOption}*/ selectedItem = null;
 
-    /**@type {Promise}*/ pointerup = Promise.resolve();
-
     /**@type {HTMLElement}*/ clone;
     /**@type {HTMLElement}*/ domWrap;
     /**@type {HTMLElement}*/ dom;
@@ -116,15 +114,8 @@ export class AutoComplete {
     makeItem(option) {
         const li = option.renderItem();
         // gotta listen to pointerdown (happens before textarea-blur)
-        li.addEventListener('pointerdown', ()=>{
-            // gotta catch pointerup to restore focus to textarea (blurs after pointerdown)
-            this.pointerup = new Promise(resolve=>{
-                const resolver = ()=>{
-                    window.removeEventListener('pointerup', resolver);
-                    resolve();
-                };
-                window.addEventListener('pointerup', resolver);
-            });
+        li.addEventListener('pointerdown', (evt)=>{
+            evt.preventDefault();
             this.selectedItem = this.result.find(it=>it.name == li.getAttribute('data-name'));
             this.select();
         });
@@ -607,16 +598,12 @@ export class AutoComplete {
     async select() {
         if (this.isReplaceable && this.selectedItem.value !== null) {
             this.textarea.value = `${this.text.slice(0, this.effectiveParserResult.start)}${this.selectedItem.replacer}${this.text.slice(this.effectiveParserResult.start + this.effectiveParserResult.name.length + (this.startQuote ? 1 : 0) + (this.endQuote ? 1 : 0))}`;
-            await this.pointerup;
-            this.textarea.focus();
             this.textarea.selectionStart = this.effectiveParserResult.start + this.selectedItem.replacer.length;
             this.textarea.selectionEnd = this.textarea.selectionStart;
             this.show(false, false, true);
         } else {
             const selectionStart = this.textarea.selectionStart;
             const selectionEnd = this.textarea.selectionDirection;
-            await this.pointerup;
-            this.textarea.focus();
             this.textarea.selectionStart = selectionStart;
             this.textarea.selectionDirection = selectionEnd;
         }
