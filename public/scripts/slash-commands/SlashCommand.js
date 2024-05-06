@@ -180,7 +180,7 @@ export class SlashCommand {
             }
             this.helpCache[key] = li;
         }
-        return this.helpCache[key].cloneNode(true);
+        return /**@type {HTMLElement}*/(this.helpCache[key].cloneNode(true));
     }
 
     renderHelpDetails(key = null) {
