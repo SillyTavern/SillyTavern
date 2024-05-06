@@ -2185,12 +2185,18 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
         ? extension_settings.sd.prompt_prefix
         : combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix());
 
-    const prefixedPrompt = combinePrefixes(prefix, prompt, '{prompt}');
+    const promptTokens = prompt.split(", ").map(x => x.trim());
+    const negativePromptTokens = promptTokens.filter(x => x.startsWith('-')).map(x => x.slice(1));
+    const positivePromptTokens = promptTokens.filter(x => !x.startsWith('-'));
+    
+    const prefixedPrompt = combinePrefixes(prefix, positivePromptTokens.join(', '), '{prompt}');
 
-    const negativePrompt = noCharPrefix.includes(generationType)
+    let negativePrompt = noCharPrefix.includes(generationType)
         ? extension_settings.sd.negative_prompt
         : combinePrefixes(extension_settings.sd.negative_prompt, getCharacterNegativePrefix());
-
+    
+    negativePrompt = combinePrefixes(negativePrompt, negativePromptTokens.join(', '), '{prompt}');
+    
     let result = { format: '', data: '' };
     const currentChatId = getCurrentChatId();
 
