@@ -15,7 +15,6 @@ export class SlashCommandClosure {
     // @ts-ignore
     /**@type {SlashCommandNamedArgumentAssignment[]}*/ providedArgumentList = [];
     /**@type {SlashCommandExecutor[]}*/ executorList = [];
-    /**@type {string}*/ keptText;
     /**@type {SlashCommandAbortController}*/ abortController;
     /**@type {(done:number, total:number)=>void}*/ onProgress;
 
@@ -80,7 +79,6 @@ export class SlashCommandClosure {
         closure.argumentList = this.argumentList;
         closure.providedArgumentList = this.providedArgumentList;
         closure.executorList = this.executorList;
-        closure.keptText = this.keptText;
         closure.abortController = this.abortController;
         closure.onProgress = this.onProgress;
         return closure;
@@ -237,7 +235,7 @@ export class SlashCommandClosure {
             }
         }
         /**@type {SlashCommandClosureResult} */
-        const result = Object.assign(new SlashCommandClosureResult(), { newText: this.keptText, pipe: this.scope.pipe });
+        const result = Object.assign(new SlashCommandClosureResult(), { pipe: this.scope.pipe });
         return result;
     }
 

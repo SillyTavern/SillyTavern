@@ -3,7 +3,6 @@ import { isTrueBoolean, uuidv4 } from '../utils.js';
 import { SlashCommand } from './SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './SlashCommandArgument.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
-import { SlashCommandCommandAutoCompleteOption } from './SlashCommandCommandAutoCompleteOption.js';
 import { SlashCommandExecutor } from './SlashCommandExecutor.js';
 import { SlashCommandParserError } from './SlashCommandParserError.js';
 import { AutoCompleteNameResult } from '../autocomplete/AutoCompleteNameResult.js';
@@ -12,11 +11,11 @@ import { SlashCommandQuickReplyAutoCompleteOption } from './SlashCommandQuickRep
 import { SlashCommandScope } from './SlashCommandScope.js';
 import { SlashCommandVariableAutoCompleteOption } from './SlashCommandVariableAutoCompleteOption.js';
 import { SlashCommandNamedArgumentAssignment } from './SlashCommandNamedArgumentAssignment.js';
+// eslint-disable-next-line no-unused-vars
 import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandAutoCompleteNameResult } from './SlashCommandAutoCompleteNameResult.js';
 import { SlashCommandUnnamedArgumentAssignment } from './SlashCommandUnnamedArgumentAssignment.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
-import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
 import { MacroAutoCompleteOption } from '../autocomplete/MacroAutoCompleteOption.js';
 
 /**@readonly*/
@@ -86,7 +85,6 @@ export class SlashCommandParser {
     /**@type {Object.<string, string>}*/ helpStrings = {};
     /**@type {boolean}*/ verifyCommandNames = true;
     /**@type {string}*/ text;
-    /**@type {string}*/ keptText;
     /**@type {number}*/ index;
     /**@type {SlashCommandAbortController}*/ abortController;
     /**@type {SlashCommandScope}*/ scope;
@@ -421,13 +419,12 @@ export class SlashCommandParser {
      * @param {boolean} keep Whether to add the characters to the kept text.
      * @returns The last character taken.
      */
-    take(length = 1, keep = false) {
+    take(length = 1) {
         this.jumpedEscapeSequence = false;
         let content = this.char;
         this.index++;
-        if (keep) this.keptText += content;
         if (length > 1) {
-            content = this.take(length - 1, keep);
+            content = this.take(length - 1);
         }
         return content;
     }
@@ -514,30 +511,46 @@ export class SlashCommandParser {
             name = name.trim();
             // store pipe
             const pipeName = `_PARSER_${uuidv4()}`;
-            const storePipe = new SlashCommandExecutor(null);
-            storePipe.command = this.commands['let'];
-            storePipe.name = 'let';
-            storePipe.unnamedArgumentList = `${pipeName} {{pipe}}`;
-            this.closure.executorList.push(storePipe);
+            const storePipe = new SlashCommandExecutor(null); {
+                storePipe.command = this.commands['let'];
+                storePipe.name = 'let';
+                const nameAss = new SlashCommandUnnamedArgumentAssignment();
+                nameAss.value = pipeName;
+                const valAss = new SlashCommandUnnamedArgumentAssignment();
+                valAss.value = '{{pipe}}';
+                storePipe.unnamedArgumentList = [nameAss, valAss];
+                this.closure.executorList.push(storePipe);
+            }
             // getvar / getglobalvar
-            const getvar = new SlashCommandExecutor(null);
-            getvar.command = this.commands[cmd];
-            getvar.name = 'cmd';
-            getvar.unnamedArgumentList = name;
-            this.closure.executorList.push(getvar);
+            const getvar = new SlashCommandExecutor(null); {
+                getvar.command = this.commands[cmd];
+                getvar.name = 'cmd';
+                const nameAss = new SlashCommandUnnamedArgumentAssignment();
+                nameAss.value = name;
+                getvar.unnamedArgumentList = [nameAss];
+                this.closure.executorList.push(getvar);
+            }
             // set to temp scoped var
             const varName = `_PARSER_${uuidv4()}`;
-            const setvar = new SlashCommandExecutor(null);
-            setvar.command = this.commands['let'];
-            setvar.name = 'let';
-            setvar.unnamedArgumentList = `${varName} {{pipe}}`;
-            this.closure.executorList.push(setvar);
+            const setvar = new SlashCommandExecutor(null); {
+                setvar.command = this.commands['let'];
+                setvar.name = 'let';
+                const nameAss = new SlashCommandUnnamedArgumentAssignment();
+                nameAss.value = varName;
+                const valAss = new SlashCommandUnnamedArgumentAssignment();
+                valAss.value = '{{pipe}}';
+                setvar.unnamedArgumentList = [nameAss, valAss];
+                this.closure.executorList.push(setvar);
+            }
             // return pipe
-            const returnPipe = new SlashCommandExecutor(null);
-            returnPipe.command = this.commands['return'];
-            returnPipe.name = 'return';
-            returnPipe.unnamedArgumentList = `{{var::${pipeName}}}`;
-            this.closure.executorList.push(returnPipe);
+            const returnPipe = new SlashCommandExecutor(null); {
+                returnPipe.command = this.commands['return'];
+                returnPipe.name = 'return';
+                const varAss = new SlashCommandUnnamedArgumentAssignment();
+                varAss.value = `{{var::${pipeName}}}`;
+                returnPipe.unnamedArgumentList = [varAss];
+                this.closure.executorList.push(returnPipe);
+            }
             return `{{var::${varName}}}`;
         });
     }
@@ -550,7 +563,6 @@ export class SlashCommandParser {
         }
         this.abortController = abortController;
         this.text = text.trim();
-        this.keptText = '';
         this.index = 0;
         this.scope = null;
         this.closureIndex = [];
@@ -558,7 +570,6 @@ export class SlashCommandParser {
         this.scopeIndex = [];
         this.macroIndex = [];
         const closure = this.parseClosure(true);
-        closure.keptText = this.keptText;
         return closure;
     }
 
@@ -704,7 +715,6 @@ export class SlashCommandParser {
         // /run shorthand does not take unnamed arguments (the command name practically *is* the unnamed argument)
         if (this.testRunShorthandEnd()) {
             cmd.end = this.index;
-            if (!cmd.command?.purgeFromMessage) this.keptText += this.text.slice(cmd.start, cmd.end);
             return cmd;
         } else {
             console.warn(this.behind, this.char, this.ahead);
@@ -743,9 +753,6 @@ export class SlashCommandParser {
         if (this.testUnnamedArgument()) {
             cmd.unnamedArgumentList = this.parseUnnamedArgument(cmd.command?.unnamedArgumentList?.length && cmd?.command?.splitUnnamedArgument);
             cmd.endUnnamedArgs = this.index;
-            if (typeof cmd.unnamedArgumentList == 'string') {
-                cmd.endUnnamedArgs = cmd.startUnnamedArgs + cmd.unnamedArgumentList.length;
-            }
             if (cmd.name == 'let') {
                 const keyArg = cmd.namedArgumentList.find(it=>it.name == 'key');
                 if (keyArg) {
@@ -757,7 +764,6 @@ export class SlashCommandParser {
         }
         if (this.testCommandEnd()) {
             cmd.end = this.index;
-            if (!cmd.command?.purgeFromMessage) this.keptText += this.text.slice(cmd.start, cmd.end);
             return cmd;
         } else {
             console.warn(this.behind, this.char, this.ahead);
