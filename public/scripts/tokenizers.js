@@ -536,6 +536,15 @@ export function getTokenizerModel() {
         }
     }
 
+    if (oai_settings.chat_completion_source === chat_completion_sources.GROQ) {
+        if (oai_settings.groq_model.includes('llama-3') || oai_settings.groq_model.includes('llama3')) {
+            return llama3Tokenizer;
+        }
+        if (oai_settings.groq_model.includes('mistral') || oai_settings.groq_model.includes('mixtral')) {
+            return mistralTokenizer;
+        }
+    }
+
     // Default to Turbo 3.5
     return turboTokenizer;
 }

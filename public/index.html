@@ -423,7 +423,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -436,7 +436,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity,groq">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -449,7 +449,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,ai21,custom,cohere,perplexity,groq">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -488,7 +488,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity">
+                                <div data-newbie-hidden class="range-block" data-source="openai,claude,openrouter,ai21,scale,makersuite,mistralai,custom,cohere,perplexity,groq">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -724,7 +724,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,mistralai,custom,cohere">
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter,mistralai,custom,cohere,groq">
                                     <div class="range-block-title justifyLeft" data-i18n="Seed">
                                         Seed
                                     </div>
@@ -2266,6 +2266,7 @@
                                 <option value="ai21">AI21</option>
                                 <option value="claude">Claude</option>
                                 <option value="cohere">Cohere</option>
+                                <option value="groq">Groq</option>
                                 <option value="makersuite">Google MakerSuite</option>
                                 <option value="mistralai">MistralAI</option>
                                 <option value="openrouter">OpenRouter</option>
@@ -2670,6 +2671,23 @@
                                 </select>
                             </div>
                         </form>
+                        <div id="groq_form" data-source="groq">
+                            <h4 data-i18n="Groq API Key">Groq API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_groq" name="api_key_groq" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_groq"></div>
+                            </div>
+                            <div data-for="api_key_groq" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <h4 data-i18n="Groq Model">Groq Model</h4>
+                            <select id="model_groq_select">
+                                <option value="llama3-8b-8192">llama3-8b-8192</option>
+                                <option value="llama3-70b-8192">llama3-70b-8192</option>
+                                <option value="mixtral-8x7b-32768">mixtral-8x7b-32768</option>
+                                <option value="gemma-7b-it">gemma-7b-it</option>
+                            </select>
+                        </div>
                         <div id="perplexity_form" data-source="perplexity">
                             <h4 data-i18n="Perplexity API Key">Perplexity API Key</h4>
                             <div class="flex-container">
@@ -2682,6 +2700,10 @@
                             <h4 data-i18n="Perplexity Model">Perplexity Model</h4>
                             <select id="model_perplexity_select">
                                 <optgroup label="Perplexity Models">
+                                    <option value="llama-3-sonar-small-32k-chat">llama-3-sonar-small-32k-chat</option>
+                                    <option value="llama-3-sonar-small-32k-online">llama-3-sonar-small-32k-online</option>
+                                    <option value="llama-3-sonar-large-32k-chat">llama-3-sonar-large-32k-chat</option>
+                                    <option value="llama-3-sonar-large-32k-online">llama-3-sonar-large-32k-online</option>
                                     <option value="sonar-small-chat">sonar-small-chat</option>
                                     <option value="sonar-small-online">sonar-small-online</option>
                                     <option value="sonar-medium-chat">sonar-medium-chat</option>
@@ -3396,6 +3418,12 @@
                                         <input id="world_info_match_whole_words" type="checkbox" />
                                         <small data-i18n="Match whole words" class="whitespacenowrap flex1">
                                             Match whole words
+                                        </small>
+                                    </label>
+                                    <label title="Only the entries with the most number of key matches will be selected for Inclusion Group filtering" data-i18n="[title]Only the entries with the most number of key matches will be selected for Inclusion Group filtering" class="checkbox_label flex1">
+                                        <input id="world_info_use_group_scoring" type="checkbox" />
+                                        <small data-i18n="Use Group Scoring" class="whitespacenowrap flex1">
+                                            Use Group Scoring
                                         </small>
                                     </label>
                                     <label title="Alert if your world info is greater than the allocated budget." data-i18n="[title]Alert if your world info is greater than the allocated budget." class="checkbox_label flex1">
@@ -5172,6 +5200,14 @@
                                 <div class="world_entry_form_control flex1">
                                     <small class="textAlignCenter" data-i18n="Match Whole Words">Match Whole Words</small>
                                     <select name="matchWholeWords" class="text_pole widthNatural margin0">
+                                        <option value="null" data-i18n="Use global setting">Use global setting</option>
+                                        <option value="true" data-i18n="Yes">Yes</option>
+                                        <option value="false" data-i18n="No">No</option>
+                                    </select>
+                                </div>
+                                <div class="world_entry_form_control flex1">
+                                    <small class="textAlignCenter" data-i18n="Use Group Scoring">Use Group Scoring</small>
+                                    <select name="useGroupScoring" class="text_pole widthNatural margin0">
                                         <option value="null" data-i18n="Use global setting">Use global setting</option>
                                         <option value="true" data-i18n="Yes">Yes</option>
                                         <option value="false" data-i18n="No">No</option>

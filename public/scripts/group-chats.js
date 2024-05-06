@@ -788,7 +788,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             }
         }
         else if (type === 'impersonate') {
-            $('#send_textarea').attr('disabled', true);
             activatedMembers = activateImpersonate(group.members);
         }
         else if (activationStrategy === group_activation_strategy.NATURAL) {
@@ -840,7 +839,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         typingIndicator.hide();
 
         is_group_generating = false;
-        $('#send_textarea').attr('disabled', false);
         setSendButtonState(false);
         setCharacterId(undefined);
         setCharacterName('');

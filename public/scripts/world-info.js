@@ -60,6 +60,7 @@ let world_info_recursive = false;
 let world_info_overflow_alert = false;
 let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
+let world_info_use_group_scoring = false;
 let world_info_character_strategy = world_info_insertion_strategy.character_first;
 let world_info_budget_cap = 0;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), debounce_timeout.relaxed);
@@ -83,7 +84,17 @@ const MAX_SCAN_DEPTH = 1000;
  */
 class WorldInfoBuffer {
     // Typedef area
-    /** @typedef {{scanDepth?: number, caseSensitive?: boolean, matchWholeWords?: boolean}} WIScanEntry The entry that triggered the scan */
+    /**
+     * @typedef {object} WIScanEntry The entry that triggered the scan
+     * @property {number} [scanDepth] The depth of the scan
+     * @property {boolean} [caseSensitive] If the scan is case sensitive
+     * @property {boolean} [matchWholeWords] If the scan should match whole words
+     * @property {boolean} [useGroupScoring] If the scan should use group scoring
+     * @property {number} [uid] The UID of the entry that triggered the scan
+     * @property {string[]} [key] The primary keys to scan for
+     * @property {string[]} [keysecondary] The secondary keys to scan for
+     * @property {number} [selectiveLogic] The logic to use for selective activation
+     */
     // End typedef area
 
     /**
@@ -247,6 +258,58 @@ class WorldInfoBuffer {
     cleanExternalActivations() {
         WorldInfoBuffer.externalActivations.splice(0, WorldInfoBuffer.externalActivations.length);
     }
+
+    /**
+     * Gets the match score for the given entry.
+     * @param {WIScanEntry} entry Entry to check
+     * @returns {number} The number of key activations for the given entry
+     */
+    getScore(entry) {
+        const bufferState = this.get(entry);
+        let numberOfPrimaryKeys = 0;
+        let numberOfSecondaryKeys = 0;
+        let primaryScore = 0;
+        let secondaryScore = 0;
+
+        // Increment score for every key found in the buffer
+        if (Array.isArray(entry.key)) {
+            numberOfPrimaryKeys = entry.key.length;
+            for (const key of entry.key) {
+                if (this.matchKeys(bufferState, key, entry)) {
+                    primaryScore++;
+                }
+            }
+        }
+
+        // Increment score for every secondary key found in the buffer
+        if (Array.isArray(entry.keysecondary)) {
+            numberOfSecondaryKeys = entry.keysecondary.length;
+            for (const key of entry.keysecondary) {
+                if (this.matchKeys(bufferState, key, entry)) {
+                    secondaryScore++;
+                }
+            }
+        }
+
+        // No keys == no score
+        if (!numberOfPrimaryKeys) {
+            return 0;
+        }
+
+        // Only positive logic influences the score
+        if (numberOfSecondaryKeys > 0) {
+            switch (entry.selectiveLogic) {
+                // AND_ANY: Add both scores
+                case world_info_logic.AND_ANY:
+                    return primaryScore + secondaryScore;
+                // AND_ALL: Add both scores if all secondary keys are found, otherwise only primary score
+                case world_info_logic.AND_ALL:
+                    return secondaryScore === numberOfSecondaryKeys ? primaryScore + secondaryScore : primaryScore;
+            }
+        }
+
+        return primaryScore;
+    }
 }
 
 export function getWorldInfoSettings() {
@@ -262,6 +325,7 @@ export function getWorldInfoSettings() {
         world_info_match_whole_words,
         world_info_character_strategy,
         world_info_budget_cap,
+        world_info_use_group_scoring,
     };
 }
 
@@ -325,10 +389,16 @@ function setWorldInfoSettings(settings, data) {
         world_info_character_strategy = Number(settings.world_info_character_strategy);
     if (settings.world_info_budget_cap !== undefined)
         world_info_budget_cap = Number(settings.world_info_budget_cap);
+    if (settings.world_info_use_group_scoring !== undefined)
+        world_info_use_group_scoring = Boolean(settings.world_info_use_group_scoring);
 
     // Migrate old settings
     if (world_info_budget > 100) {
         world_info_budget = 25;
+    }
+
+    if (world_info_use_group_scoring === undefined) {
+        world_info_use_group_scoring = false;
     }
 
     // Reset selected world from old string and delete old keys
@@ -360,6 +430,7 @@ function setWorldInfoSettings(settings, data) {
     $('#world_info_overflow_alert').prop('checked', world_info_overflow_alert);
     $('#world_info_case_sensitive').prop('checked', world_info_case_sensitive);
     $('#world_info_match_whole_words').prop('checked', world_info_match_whole_words);
+    $('#world_info_use_group_scoring').prop('checked', world_info_use_group_scoring);
 
     $(`#world_info_character_strategy option[value='${world_info_character_strategy}']`).prop('selected', true);
     $('#world_info_character_strategy').val(world_info_character_strategy);
@@ -946,7 +1017,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
 
         // Apply the filter and do the chosen sorting
         entriesArray = worldInfoFilter.applyFilters(entriesArray);
-        entriesArray = sortEntries(entriesArray)
+        entriesArray = sortEntries(entriesArray);
 
         // Run the callback for printing this
         typeof callback === 'function' && callback(entriesArray);
@@ -1176,6 +1247,7 @@ const originalDataKeyMap = {
     'keysecondary': 'secondary_keys',
     'selective': 'selective',
     'matchWholeWords': 'extensions.match_whole_words',
+    'useGroupScoring': 'extensions.use_group_scoring',
     'caseSensitive': 'extensions.case_sensitive',
     'scanDepth': 'extensions.scan_depth',
     'automationId': 'extensions.automation_id',
@@ -1869,6 +1941,19 @@ function getWorldEntry(name, data, entry) {
     });
     matchWholeWordsSelect.val((entry.matchWholeWords === null || entry.matchWholeWords === undefined) ? 'null' : entry.matchWholeWords ? 'true' : 'false').trigger('input');
 
+    // use group scoring select
+    const useGroupScoringSelect = template.find('select[name="useGroupScoring"]');
+    useGroupScoringSelect.data('uid', entry.uid);
+    useGroupScoringSelect.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = $(this).val();
+
+        data.entries[uid].useGroupScoring = value === 'null' ? null : value === 'true';
+        setOriginalDataValue(data, uid, 'extensions.use_group_scoring', data.entries[uid].useGroupScoring);
+        saveWorldInfo(name, data);
+    });
+    useGroupScoringSelect.val((entry.useGroupScoring === null || entry.useGroupScoring === undefined) ? 'null' : entry.useGroupScoring ? 'true' : 'false').trigger('input');
+
     // automation id
     const automationIdInput = template.find('input[name="automationId"]');
     automationIdInput.data('uid', entry.uid);
@@ -2049,6 +2134,7 @@ const newEntryTemplate = {
     scanDepth: null,
     caseSensitive: null,
     matchWholeWords: null,
+    useGroupScoring: null,
     automationId: '',
     role: 0,
 };
@@ -2492,7 +2578,7 @@ async function checkWorldInfo(chat, maxContext) {
         const textToScanTokens = await getTokenCountAsync(allActivatedText);
         const probabilityChecksBefore = failedProbabilityChecks.size;
 
-        filterByInclusionGroups(newEntries, allActivatedEntries);
+        filterByInclusionGroups(newEntries, allActivatedEntries, buffer);
 
         console.debug('-- PROBABILITY CHECKS BEGIN --');
         for (const entry of newEntries) {
@@ -2613,11 +2699,49 @@ async function checkWorldInfo(chat, maxContext) {
 }
 
 /**
+ * Only leaves entries with the highest key matching score in each group.
+ * @param {Record<string, WIScanEntry[]>} groups The groups to filter
+ * @param {WorldInfoBuffer} buffer The buffer to use for scoring
+ * @param {(entry: WIScanEntry) => void} removeEntry The function to remove an entry
+ */
+function filterGroupsByScoring(groups, buffer, removeEntry) {
+    for (const [key, group] of Object.entries(groups)) {
+        // Group scoring is disabled both globally and for the group entries
+        if (!world_info_use_group_scoring && !group.some(x => x.useGroupScoring)) {
+            console.debug(`Skipping group scoring for group '${key}'`);
+            continue;
+        }
+
+        const scores = group.map(entry => buffer.getScore(entry));
+        const maxScore = Math.max(...scores);
+        console.debug(`Group '${key}' max score: ${maxScore}`);
+        //console.table(group.map((entry, i) => ({ uid: entry.uid, key: JSON.stringify(entry.key), score: scores[i] })));
+
+        for (let i = 0; i < group.length; i++) {
+            const isScored = group[i].useGroupScoring ?? world_info_use_group_scoring;
+
+            if (!isScored) {
+                continue;
+            }
+
+            if (scores[i] < maxScore) {
+                console.debug(`Removing score loser from inclusion group '${key}' entry '${group[i].uid}'`, group[i]);
+                removeEntry(group[i]);
+                group.splice(i, 1);
+                scores.splice(i, 1);
+                i--;
+            }
+        }
+    }
+}
+
+/**
  * Filters entries by inclusion groups.
  * @param {object[]} newEntries Entries activated on current recursion level
  * @param {Set<object>} allActivatedEntries Set of all activated entries
+ * @param {WorldInfoBuffer} buffer The buffer to use for scanning
  */
-function filterByInclusionGroups(newEntries, allActivatedEntries) {
+function filterByInclusionGroups(newEntries, allActivatedEntries, buffer) {
     console.debug('-- INCLUSION GROUP CHECKS BEGIN --');
     const grouped = newEntries.filter(x => x.group).reduce((acc, item) => {
         if (!acc[item.group]) {
@@ -2643,6 +2767,8 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
             removeEntry(entry);
         }
     }
+
+    filterGroupsByScoring(grouped, buffer, removeEntry);
 
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`Checking inclusion group '${key}' with ${group.length} entries`, group);
@@ -2721,6 +2847,7 @@ function convertAgnaiMemoryBook(inputObj) {
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
+            useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
         };
@@ -2757,6 +2884,7 @@ function convertRisuLorebook(inputObj) {
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
+            useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
         };
@@ -2798,6 +2926,7 @@ function convertNovelLorebook(inputObj) {
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
+            useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
         };
@@ -2840,6 +2969,7 @@ function convertCharacterBook(characterBook) {
             scanDepth: entry.extensions?.scan_depth ?? null,
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
+            useGroupScoring: entry.extensions?.use_group_scoring ?? null,
             automationId: entry.extensions?.automation_id ?? '',
             role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
             vectorized: entry.extensions?.vectorized ?? false,
@@ -3215,6 +3345,11 @@ jQuery(() => {
 
     $('#world_info_overflow_alert').on('change', function () {
         world_info_overflow_alert = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#world_info_use_group_scoring').on('change', function () {
+        world_info_use_group_scoring = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
