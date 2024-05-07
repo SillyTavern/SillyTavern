@@ -321,6 +321,7 @@ class PresetManager {
             'dreamgen_model',
             'openrouter_model',
             'max_tokens_second',
+            'openrouter_providers',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 

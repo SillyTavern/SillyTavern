@@ -283,6 +283,7 @@ app.use('/api/users', require('./src/endpoints/users-public').router);
 
 // Everything below this line requires authentication
 app.use(userModule.requireLoginMiddleware);
+app.get('/api/ping', (_, response) => response.sendStatus(204));
 
 // File uploads
 app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));

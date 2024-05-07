@@ -11,6 +11,36 @@ let vllmModels = [];
 let aphroditeModels = [];
 export let openRouterModels = [];
 
+/**
+ * List of OpenRouter providers.
+ * @type {string[]}
+ */
+const OPENROUTER_PROVIDERS = [
+    'OpenAI',
+    'Anthropic',
+    'HuggingFace',
+    'Google',
+    'Mancer',
+    'Mancer 2',
+    'Together',
+    'DeepInfra',
+    'Azure',
+    'Modal',
+    'AnyScale',
+    'Replicate',
+    'Perplexity',
+    'Recursal',
+    'Fireworks',
+    'Mistral',
+    'Groq',
+    'Cohere',
+    'Lepton',
+    'OctoAI',
+    'Novita',
+    'Lynn',
+    'Lynn 2',
+];
+
 export async function loadOllamaModels(data) {
     if (!Array.isArray(data)) {
         console.error('Invalid Ollama models data', data);
@@ -476,6 +506,14 @@ jQuery(function () {
     $('#vllm_model').on('change', onVllmModelSelect);
     $('#aphrodite_model').on('change', onAphroditeModelSelect);
 
+    const providersSelect = $('.openrouter_providers');
+    for (const provider of OPENROUTER_PROVIDERS) {
+        providersSelect.append($('<option>', {
+            value: provider,
+            text: provider,
+        }));
+    }
+
     if (!isMobile()) {
         $('#mancer_model').select2({
             placeholder: 'Select a model',
@@ -531,6 +569,21 @@ jQuery(function () {
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getAphroditeModelTemplate,
+        });
+        providersSelect.select2({
+            sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
+            placeholder: 'Select providers. No selection = all providers.',
+            searchInputPlaceholder: 'Search providers...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+        });
+        providersSelect.on('select2:select', function (/** @type {any} */ evt) {
+            const element = evt.params.data.element;
+            const $element = $(element);
+
+            $element.detach();
+            $(this).append($element);
+            $(this).trigger('change');
         });
     }
 });

@@ -148,6 +148,7 @@ const settings = {
     infermaticai_model: '',
     ollama_model: '',
     openrouter_model: 'openrouter/auto',
+    openrouter_providers: [],
     vllm_model: '',
     aphrodite_model: '',
     dreamgen_model: 'opus-v1-xl/text',
@@ -454,6 +455,7 @@ function loadTextGenSettings(data, loadedSettings) {
     }
 
     $('#textgen_type').val(settings.type);
+    $('#openrouter_providers_text').val(settings.openrouter_providers).trigger('change');
     showTypeSpecificControls(settings.type);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(settings.logit_bias, BIAS_KEY);
@@ -708,6 +710,19 @@ jQuery(function () {
     }
 
     $('#textgen_logit_bias_new_entry').on('click', () => createNewLogitBiasEntry(settings.logit_bias, BIAS_KEY));
+
+    $('#openrouter_providers_text').on('change', function () {
+        const selectedProviders = $(this).val();
+
+        // Not a multiple select?
+        if (!Array.isArray(selectedProviders)) {
+            return;
+        }
+
+        settings.openrouter_providers = selectedProviders;
+
+        saveSettingsDebounced();
+    });
 });
 
 function showTypeSpecificControls(type) {
@@ -1065,6 +1080,10 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         //'logprobs': settings.log_probs_aphrodite,
         //'prompt_logprobs': settings.prompt_log_probs_aphrodite,
     };
+
+    if (settings.type === OPENROUTER) {
+        params.provider = settings.openrouter_providers;
+    }
 
     if (settings.type === KOBOLDCPP) {
         params.grammar = settings.grammar_string;

@@ -76,6 +76,7 @@ const SORT_ORDER_KEY = 'world_info_sort_order';
 const METADATA_KEY = 'world_info';
 
 const DEFAULT_DEPTH = 4;
+const DEFAULT_WEIGHT = 100;
 const MAX_SCAN_DEPTH = 1000;
 
 /**
@@ -1244,6 +1245,7 @@ const originalDataKeyMap = {
     'automationId': 'extensions.automation_id',
     'vectorized': 'extensions.vectorized',
     'groupOverride': 'extensions.group_override',
+    'groupWeight': 'extensions.group_weight',
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
@@ -1617,10 +1619,34 @@ function getWorldEntry(name, data, entry) {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid].groupOverride = value;
-        setOriginalDataValue(data, uid, 'extensions.groupOverride', data.entries[uid].groupOverride);
+        setOriginalDataValue(data, uid, 'extensions.group_override', data.entries[uid].groupOverride);
         saveWorldInfo(name, data);
     });
     groupOverrideInput.prop('checked', entry.groupOverride).trigger('input');
+
+    // group weight
+    const groupWeightInput = template.find('input[name="groupWeight"]');
+    groupWeightInput.data('uid', entry.uid);
+    groupWeightInput.on('input', function () {
+        const uid = $(this).data('uid');
+        let value = Number($(this).val());
+        const min = Number($(this).attr('min'));
+        const max = Number($(this).attr('max'));
+
+        // Clamp the value
+        if (value < min) {
+            value = min;
+            $(this).val(min);
+        } else if (value > max) {
+            value = max;
+            $(this).val(max);
+        }
+
+        data.entries[uid].groupWeight = !isNaN(value) ? Math.abs(value) : 1;
+        setOriginalDataValue(data, uid, 'extensions.group_weight', data.entries[uid].groupWeight);
+        saveWorldInfo(name, data);
+    });
+    groupWeightInput.val(entry.groupWeight ?? DEFAULT_WEIGHT).trigger('input');
 
     // probability
     if (entry.probability === undefined) {
@@ -2122,6 +2148,7 @@ const newEntryTemplate = {
     depth: DEFAULT_DEPTH,
     group: '',
     groupOverride: false,
+    groupWeight: DEFAULT_WEIGHT,
     scanDepth: null,
     caseSensitive: null,
     matchWholeWords: null,
@@ -2575,7 +2602,7 @@ async function checkWorldInfo(chat, maxContext) {
         for (const entry of newEntries) {
             const rollValue = Math.random() * 100;
 
-            if (!entry.group && entry.useProbability && rollValue > entry.probability) {
+            if (entry.useProbability && rollValue > entry.probability) {
                 console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
                 failedProbabilityChecks.add(entry);
                 continue;
@@ -2784,14 +2811,14 @@ function filterByInclusionGroups(newEntries, allActivatedEntries, buffer) {
             continue;
         }
 
-        // Do weighted random using probability of entry as weight
-        const totalWeight = group.reduce((acc, item) => acc + item.probability, 0);
+        // Do weighted random using entry's weight
+        const totalWeight = group.reduce((acc, item) => acc + (item.groupWeight ?? DEFAULT_WEIGHT), 0);
         const rollValue = Math.random() * totalWeight;
         let currentWeight = 0;
         let winner = null;
 
         for (const entry of group) {
-            currentWeight += entry.probability;
+            currentWeight += (entry.groupWeight ?? DEFAULT_WEIGHT);
 
             if (rollValue <= currentWeight) {
                 console.debug(`Activated inclusion group '${key}' with roll winner entry '${entry.uid}'`, entry);
@@ -2835,6 +2862,7 @@ function convertAgnaiMemoryBook(inputObj) {
             useProbability: false,
             group: '',
             groupOverride: false,
+            groupWeight: DEFAULT_WEIGHT,
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
@@ -2872,6 +2900,7 @@ function convertRisuLorebook(inputObj) {
             useProbability: entry.activationPercent ?? false,
             group: '',
             groupOverride: false,
+            groupWeight: DEFAULT_WEIGHT,
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
@@ -2914,6 +2943,7 @@ function convertNovelLorebook(inputObj) {
             useProbability: false,
             group: '',
             groupOverride: false,
+            groupWeight: DEFAULT_WEIGHT,
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
@@ -2957,6 +2987,7 @@ function convertCharacterBook(characterBook) {
             selectiveLogic: entry.extensions?.selectiveLogic ?? world_info_logic.AND_ANY,
             group: entry.extensions?.group ?? '',
             groupOverride: entry.extensions?.group_override ?? false,
+            groupWeight: entry.extensions?.group_weight ?? DEFAULT_WEIGHT,
             scanDepth: entry.extensions?.scan_depth ?? null,
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,

@@ -289,6 +289,14 @@ router.post('/generate', jsonParser, async function (request, response) {
         }
 
         if (request.body.api_type === TEXTGEN_TYPES.OPENROUTER) {
+            if (Array.isArray(request.body.provider) && request.body.provider.length > 0) {
+                request.body.provider = {
+                    allow_fallbacks: true,
+                    order: request.body.provider,
+                };
+            } else {
+                delete request.body.provider;
+            }
             request.body = _.pickBy(request.body, (_, key) => OPENROUTER_KEYS.includes(key));
             args.body = JSON.stringify(request.body);
         }

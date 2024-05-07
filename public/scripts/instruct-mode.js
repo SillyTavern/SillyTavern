@@ -340,8 +340,11 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const textArray = includeNames ? [prefix, `${name}: ${mes}` + suffix] : [prefix, mes + suffix];
+
+    // Don't include the name if it's empty
+    const textArray = includeNames && name ? [prefix, `${name}: ${mes}` + suffix] : [prefix, mes + suffix];
     const text = textArray.filter(x => x).join(separator);
+
     return text;
 }
 
