@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getStringHash, getSelect2OptionId } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { registerSlashCommand } from './slash-commands.js';
@@ -1147,6 +1147,12 @@ function deleteOriginalDataValue(data, uid) {
 }
 
 /**
+ * @typedef {object} Select2Option The option object for select2 controls
+ * @property {string} id - The unique ID inside this select
+ * @property {string} text - The text for this option
+ */
+
+/**
  * Splits a given input string that contains one or more keywords or regexes, separated by commas.
  *
  * Each part can be a valid regex following the pattern `/myregex/flags` with optional flags. Commmas inside the regex are allowed, slashes have to be escaped like this: `\/`
@@ -1162,12 +1168,12 @@ function splitKeywordsAndRegexes(input) {
     // We can make this easy. Instead of writing another function to find and parse regexes,
     // we gonna utilize the custom tokenizer that also handles the input.
     // No need for validation here
-    const addFindCallback = (/** @type {{id: string, text: string}} */ item) => {
-        keywordsAndRegexes.push(item.id);
+    const addFindCallback = (/** @type {Select2Option} */ item) => {
+        keywordsAndRegexes.push(item.text);
     }
 
     const { term } = customTokenizer({ _type: 'custom_call', term: input }, undefined, addFindCallback);
-    addFindCallback({ id: term.trim(), text: term.trim() });
+    addFindCallback({ id: getSelect2OptionId(term.trim()), text: term.trim() });
 
     return keywordsAndRegexes;
 }
@@ -1177,7 +1183,7 @@ function splitKeywordsAndRegexes(input) {
  * 
  * @param {{_type: string, term: string}} input - The typed input
  * @param {{options: object}} _selection - The selection even object (?)
- * @param {function} callback - The original callback function to call if an item should be inserted
+ * @param {function(Select2Option):void} callback - The original callback function to call if an item should be inserted
  * @returns {{term: string}} - The remaining part that is untokenized in the textbox
  */
 function customTokenizer(input, _selection, callback) {
@@ -1205,12 +1211,14 @@ function customTokenizer(input, _selection, callback) {
             // So now the comma really means the token is done.
             // We take the token up till now, and insert it. Empty will be skipped.
             if (token) {
+                const isRegex = isValidRegex(token);
+
                 // Last chance to check for valid regex again. Because it might have been valid while typing, but now is not valid anymore and contains commas we need to split.
-                if (token.startsWith('/') && !isValidRegex(token)) {
+                if (token.startsWith('/') && !isRegex) {
                     const tokens = token.split(',').map(x => x.trim());
                     tokens.forEach(x => callback({ id: x, text: x }));
                 } else {
-                    callback({ id: token, text: token });
+                    callback({ id: getSelect2OptionId(token), text: token });
                 }
             }
 
@@ -1289,17 +1297,26 @@ function getWorldEntry(name, data, entry) {
             event.stopPropagation();
         });
 
+        function templateStyling(/** @type {Select2Option} */ item) {
+            const isRegex = isValidRegex(item.text);
+            if (!isRegex) return item.text;
+            return $('<span>').addClass('regex_item').text(item.text)
+                .prepend($('<span>').addClass('regex_icon').text("•*").attr('title', 'Regex'));
+        }
+
         if (!isMobile()) {
             input.select2({
                 tags: true,
                 tokenSeparators: [','],
                 tokenizer: customTokenizer,
                 placeholder: input.attr('placeholder'),
+                templateResult: templateStyling,
+                templateSelection: templateStyling,
             });
             input.on('change', function (_, { skipReset, noSave } = {}) {
                 const uid = $(this).data('uid');
                 /** @type {string[]} */
-                const keys = ($(this).select2('data')).map(x => x.id);
+                const keys = ($(this).select2('data')).map(x => x.text);
 
                 !skipReset && resetScrollHeight(this);
                 if (!noSave) {
@@ -3421,8 +3438,9 @@ jQuery(() => {
             if ($(event.target).hasClass('select2-selection__choice__display')) {
                 event.preventDefault();
 
-                // select2 still bubbles the event to open the dropdown. So we close it here
+                // select2 still bubbles the event to open the dropdown. So we close it here and remove focus
                 $('#world_info').select2('close');
+                setTimeout(() => $('#world_info + span.select2-container textarea').trigger('blur'), debounce_timeout.quick);
 
                 const name = $(event.target).text();
                 const selectedIndex = world_names.indexOf(name);

@@ -1450,6 +1450,18 @@ export function includesIgnoreCaseAndAccents(text, searchTerm) {
     return normalizedText.includes(normalizedSearchTerm);
 }
 
+
+
+/**
+ * Returns a unique hash as ID for a select2 option text
+ * 
+ * @param {string} option - The option
+ * @returns {string} A hashed version of that option
+ */
+export function getSelect2OptionId(option) {
+    return String(getStringHash(option));
+}
+
 /**
  * Modifies the select2 options by adding not existing one and optionally selecting them
  *
@@ -1462,7 +1474,7 @@ export function includesIgnoreCaseAndAccents(text, searchTerm) {
 export function select2ModifyOptions(element, items, { select = false, changeEventArgs = null } = {}) {
     if (!items.length) return;
     /** @type {{id: string, text: string}[]} */
-    const dataItems = items.map(x => typeof x === 'string' ? { id: x, text: x } : x);
+    const dataItems = items.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
 
     dataItems.forEach(item => {
         // Set the value, creating a new option if necessary

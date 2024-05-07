@@ -197,20 +197,20 @@
     display: none;
 }
 
-#world_info+span.select2-container .select2-selection__choice__remove,
-#world_info+span.select2-container .select2-selection__choice__display {
-    cursor: pointer;
-    transition: background-color 0.3s;
+span.select2-container .select2-selection__choice__display:has(> .regex_item),
+span.select2-container .select2-results__option:has(> .regex_item) {
+    background-color: #D27D2D30;
+}
+
+.regex_item .regex_icon {
+    background-color: var(--black30a);
     color: var(--SmartThemeBodyColor);
-    background-color: var(--black50a);
-}
-
-#world_info+span.select2-container .select2-selection__choice__display {
-    /* Fix weird alignment on the left side */
-    margin-left: 1px;
-}
-
-#world_info+span.select2-container .select2-selection__choice__remove:hover,
-#world_info+span.select2-container .select2-selection__choice__display:hover {
-    background-color: var(--white30a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 7px;
+    font-weight: bold;
+    font-size: calc(var(--mainFontSize) * 0.75);
+    padding: 0px 3px;
+    position: relative;
+    top: -1px;
+    margin-right: 3px;
 }
