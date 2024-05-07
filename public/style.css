@@ -1210,16 +1210,23 @@ select {
 
 .autoComplete-detailsWrap {
     --targetOffset: 0;
+    --rightOffset: 1vw;
+    --bottomOffset: 0;
+    --leftOffset: 74vw;
     display: flex;
     flex-direction: column;
     position: absolute;
+    top: 5vh;
+    right: var(--rightOffset);
+    bottom: var(--bottomOffset);
+    left: var(--leftOffset);
     z-index: 10000;
+    pointer-events: none;
 
     &:before {
         content: "";
         flex: 0 1 calc(var(--targetOffset) * 1px - 5vh);
         display: block;
-        pointer-events: none;
     }
     .autoComplete-details {
         flex: 0 0 auto;
@@ -1230,7 +1237,6 @@ select {
         content: "";
         flex: 1 1 0;
         display: block;
-        pointer-events: none;
     }
 
     &.isFloating {
@@ -1725,7 +1731,7 @@ body[data-stscript-style] .hljs.language-stscript {
         right: 1vw;
     }
     .autoComplete-detailsWrap:not(.full) {
-        display: none;
+        left: 50vw;
     }
 }
 .slashCommandBrowser {
@@ -1752,6 +1758,7 @@ body[data-stscript-style] .hljs.language-stscript {
     > .commandContainer {
         display: flex;
         align-items: flex-start;
+        container-type: inline-size;
         > .autoComplete {
             flex: 1 1 auto;
             max-height: unset;
@@ -1772,11 +1779,22 @@ body[data-stscript-style] .hljs.language-stscript {
             align-self: stretch;
             width: 30%;
             position: static;
+
             &:before {
                 flex: 0 1 calc(var(--targetOffset) * 1px);
             }
             > .autoComplete-details {
                 max-height: 50vh;
+            }
+        }
+        @container (max-width: 1000px) {
+            > .autoComplete-detailsWrap {
+                width: 50%;
+                max-width: unset;
+                position: absolute;
+                left: unset;
+                right: 0;
+                top: 0;
             }
         }
     }

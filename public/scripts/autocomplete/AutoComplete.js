@@ -457,17 +457,15 @@ export class AutoComplete {
                     this.detailsWrap.classList.remove('full');
                     const selRect = this.selectedItem.dom.children[0].getBoundingClientRect();
                     this.detailsWrap.style.setProperty('--targetOffset', `${selRect.top}`);
-                    this.detailsWrap.style.bottom = `calc(100vh - ${rect[AUTOCOMPLETE_WIDTH.INPUT]}px)`;
-                    this.detailsWrap.style.left = `calc(100vw - ${this.domWrap.style.getPropertyValue('--rightOffset')}`;
-                    this.detailsWrap.style.right = '1vw';
-                    this.detailsWrap.style.top = '5vh';
+                    this.detailsWrap.style.setProperty('--rightOffset', '1vw');
+                    this.detailsWrap.style.setProperty('--bottomOffset', `calc(100vh - ${rect[AUTOCOMPLETE_WIDTH.INPUT].top}px)`);
+                    this.detailsWrap.style.setProperty('--leftOffset', `calc(100vw - ${this.domWrap.style.getPropertyValue('--rightOffset')}`);
                 } else {
                     this.detailsWrap.classList.add('full');
                     this.detailsWrap.style.setProperty('--targetOffset', `${rect[AUTOCOMPLETE_WIDTH.INPUT].top}`);
-                    this.detailsWrap.style.bottom = `calc(100vh - ${rect[AUTOCOMPLETE_WIDTH.INPUT].top}px)`;
-                    this.detailsWrap.style.left = `${rect[power_user.stscript.autocomplete.width.left].left}px`;
-                    this.detailsWrap.style.right = `calc(100vw - ${rect[power_user.stscript.autocomplete.width.right].right}px)`;
-                    this.detailsWrap.style.top = '5vh';
+                    this.detailsWrap.style.setProperty('--bottomOffset', `calc(100vh - ${rect[AUTOCOMPLETE_WIDTH.INPUT].top}px)`);
+                    this.detailsWrap.style.setProperty('--leftOffset', `${rect[power_user.stscript.autocomplete.width.left].left}px`);
+                    this.detailsWrap.style.setProperty('--rightOffset', `calc(100vw - ${rect[power_user.stscript.autocomplete.width.right].right}px)`);
                 }
             }
         }
