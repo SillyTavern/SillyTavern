@@ -132,6 +132,11 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sendas',
         new SlashCommandNamedArgument(
             'compact', 'Use compact layout', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['true', 'false'],
         ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'at',
+            description: 'position to insert the message',
+            typeList: [ARGUMENT_TYPE.NUMBER],
+        }),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -168,6 +173,11 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sys',
             false,
             'false',
         ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'at',
+            description: 'position to insert the message',
+            typeList: [ARGUMENT_TYPE.NUMBER],
+        }),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -214,6 +224,11 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'comment',
             false,
             'false',
         ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'at',
+            description: 'position to insert the message',
+            typeList: [ARGUMENT_TYPE.NUMBER],
+        }),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
