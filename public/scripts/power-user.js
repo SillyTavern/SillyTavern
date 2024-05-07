@@ -260,6 +260,9 @@ let power_user = {
         matching: 'fuzzy',
         autocomplete: {
             style: 'theme',
+            font: {
+                scale: 0.8,
+            },
             width: {
                 left: AUTOCOMPLETE_WIDTH.CHAT,
                 right: AUTOCOMPLETE_WIDTH.CHAT,
@@ -1458,8 +1461,13 @@ function loadPowerUserSettings(settings, data) {
     } else {
         if (power_user.stscript.autocomplete === undefined) {
             power_user.stscript.autocomplete = defaultStscript.autocomplete;
-        } else if (power_user.stscript.autocomplete.width === undefined) {
-            power_user.stscript.autocomplete.width = defaultStscript.autocomplete.width;
+        } else {
+            if (power_user.stscript.autocomplete.width === undefined) {
+                power_user.stscript.autocomplete.width = defaultStscript.autocomplete.width;
+            }
+            if (power_user.stscript.autocomplete.font === undefined) {
+                power_user.stscript.autocomplete.font = defaultStscript.autocomplete.font;
+            }
         }
         if (power_user.stscript.parser === undefined) {
             power_user.stscript.parser = defaultStscript.parser;
@@ -1615,6 +1623,9 @@ function loadPowerUserSettings(settings, data) {
     document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete_style);
     $('#stscript_parser_flag_strict_escaping').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] ?? false);
     $('#stscript_parser_flag_replace_getvar').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] ?? false);
+    $('#stscript_autocomplete_font_scale').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
+    $('#stscript_autocomplete_font_scale_counter').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
+    document.body.style.setProperty('--ac-font-scale', power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale.toString());
     $('#stscript_autocomplete_width_left').val(power_user.stscript.autocomplete.width.left ?? AUTOCOMPLETE_WIDTH.CHAT);
     document.querySelector('#stscript_autocomplete_width_left').dispatchEvent(new Event('input', { bubbles:true }));
     $('#stscript_autocomplete_width_right').val(power_user.stscript.autocomplete.width.right ?? AUTOCOMPLETE_WIDTH.CHAT);
@@ -3648,18 +3659,35 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#stscript_autocomplete_font_scale').on('input', function () {
+        const value = $(this).val();
+        $('#stscript_autocomplete_font_scale_counter').val(value);
+        power_user.stscript.autocomplete.font.scale = Number(value);
+        document.body.style.setProperty('--ac-font-scale', value.toString());
+        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        saveSettingsDebounced();
+    });
+    $('#stscript_autocomplete_font_scale_counter').on('input', function () {
+        const value = $(this).val();
+        $('#stscript_autocomplete_font_scale').val(value);
+        power_user.stscript.autocomplete.font.scale = Number(value);
+        document.body.style.setProperty('--ac-font-scale', value.toString());
+        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        saveSettingsDebounced();
+    });
+
     $('#stscript_autocomplete_width_left').on('input', function () {
         const value = $(this).val();
-        power_user.stscript.autocomplete.width.left = String(value);
-        this.closest('.doubleRangeInputContainer').style.setProperty('--value', value);
+        power_user.stscript.autocomplete.width.left = Number(value);
+        /**@type {HTMLElement}*/(this.closest('.doubleRangeInputContainer')).style.setProperty('--value', value.toString());
         window.dispatchEvent(new Event('resize', { bubbles:true }));
         saveSettingsDebounced();
     });
 
     $('#stscript_autocomplete_width_right').on('input', function () {
         const value = $(this).val();
-        power_user.stscript.autocomplete.width.right = String(value);
-        this.closest('.doubleRangeInputContainer').style.setProperty('--value', value);
+        power_user.stscript.autocomplete.width.right = Number(value);
+        /**@type {HTMLElement}*/(this.closest('.doubleRangeInputContainer')).style.setProperty('--value', value.toString());
         window.dispatchEvent(new Event('resize', { bubbles:true }));
         saveSettingsDebounced();
     });

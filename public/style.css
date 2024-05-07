@@ -1345,6 +1345,9 @@ body[data-stscript-style="theme"] {
     --ac-style-color-currentParenthesis: rgba(195 118 210 / 1);
     --ac-style-color-comment: rgba(122 151 90 / 1);
 }
+body {
+    --ac-font-scale: 0.8;
+}
 .autoComplete, .autoComplete-details {
     --ac-color-border: var(--ac-style-color-border, rgba(69 69 69 / 1));
     --ac-color-background: var(--ac-style-color-background, rgba(32 32 32 / 1));
@@ -1368,6 +1371,8 @@ body[data-stscript-style="theme"] {
     --ac-color-punctuationL2: var(--ac-style-color-punctuationL2, rgba(98 160 251 / 1));
     --ac-color-currentParenthesis: var(--ac-style-color-currentParenthesis, rgba(195 118 210 / 1));
     --ac-color-comment: var(--ac-style-color-comment, rgba(122 151 90 / 1));
+
+    font-size: calc(var(--ac-font-scale) * 1em);
 
     --bottom: 50vh;
     background: var(--ac-color-background);
@@ -1446,9 +1451,8 @@ body[data-stscript-style] .hljs.language-stscript {
         text-shadow: none;
         display: flex;
         gap: 0.5em;
-        font-size: 0.8em;
         display: contents;
-        @container (max-width: 1000px) {
+        @container (max-width: 80em) {
             .specs {
                 grid-column: 2 / 4;
             }
@@ -1527,7 +1531,6 @@ body[data-stscript-style] .hljs.language-stscript {
     }
 }
 .autoComplete-details {
-    font-size: 0.8em;
     display: flex;
     flex-direction: column;
     gap: 0.5em;

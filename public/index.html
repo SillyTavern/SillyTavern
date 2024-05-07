@@ -4117,7 +4117,7 @@
                             <div name="AutoCompleteToggle">
                                 <h4 data-i18n="AutoComplete Settings">AutoComplete Settings</h4>
                                 <div title="Determines how entries are found for autocomplete." data-i18n="[title]Determines how entries are found for autocomplete.">
-                                    <label for="stscript_matching" data-i18n="Autocomplete Matching">Matching</label>
+                                    <label for="stscript_matching" data-i18n="Autocomplete Matching"><small>Matching</small></label>
                                     <select id="stscript_matching">
                                         <option data-i18n="Starts with" value="strict">Starts with</option>
                                         <option data-i18n="Includes" value="includes">Includes</option>
@@ -4125,7 +4125,7 @@
                                     </select>
                                 </div>
                                 <div title="Sets the style of the autocomplete." data-i18n="[title]Sets the style of the autocomplete.">
-                                    <label for="stscript_autocomplete_style" data-i18n="Autocomplete Style">Style</label>
+                                    <label for="stscript_autocomplete_style" data-i18n="Autocomplete Style"><small>Style</small></label>
                                     <div class="flex-container flexFlowRow alignItemsBaseline">
                                         <select id="stscript_autocomplete_style">
                                             <option data-i18n="Follow Theme" value="theme">Follow Theme</option>
@@ -4135,8 +4135,13 @@
                                         <!-- <div class="menu_button fa-solid fa-pen-to-square" title="Customize colors"></div> -->
                                     </div>
                                 </div>
+                                <div class="flex-container flexFlowColumn gap0" title="Sets the font size of the autocomplete." data-i18n="[title]Sets the font size of the autocomplete.">
+                                    <label for="stscript_autocomplete_font_scale"><small>Font Scale</small></label>
+                                    <input class="neo-range-slider" type="range" id="stscript_autocomplete_font_scale" min="0.5" max="2" step="0.01">
+                                    <input class="neo-range-input" type="number" min="0.5" max="2" step="0.01" data-for="stscript_autocomplete_font_scale" id="stscript_autocomplete_font_scale_counter">
+                                </div>
                                 <div title="Sets the width of the autocomplete." data-i18n="[title]Sets the width of the autocomplete.">
-                                    <label for="stscript_autocomplete_width" data-i18n="Autocomplete Width">Width</label>
+                                    <label for="stscript_autocomplete_width" data-i18n="Autocomplete Width"><small>Width</small></label>
                                     <div class="doubleRangeContainer">
                                         <div class="doubleRangeInputContainer">
                                             <input type="range" id="stscript_autocomplete_width_left" min="0" max="2" step="1">
@@ -4160,17 +4165,17 @@
                             <div name="STscriptToggles">
                                 <h4 data-i18n="STscript Settings">STscript Settings</h4>
                                 <div title="Sets default flags for the STscript parser." data-i18n="[title]Sets default flags for the STscript parser.">
-                                    <label data-i18n="Parser Flags">Parser Flags</label>
+                                    <label data-i18n="Parser Flags"><small>Parser Flags</small></label>
                                     <label class="checkbox_label" title="Switch to stricter escaping, allowing all delimiting characters to be escaped with a backslash, and backslashes to be escaped as well." data-i18n="[title]Switch to stricter escaping, allowing all dellimiting characters to be escaped with a backslash, and backslashes to be escaped as well.">
                                         <input id="stscript_parser_flag_strict_escaping" type="checkbox" />
-                                        <span data-i18n="STRICT_ESCAPING">STRICT_ESCAPING</span>
+                                        <span data-i18n="STRICT_ESCAPING"><small>STRICT_ESCAPING</small></span>
                                         <a href="https://docs.sillytavern.app/" class="notes-link">
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </label>
                                     <label class="checkbox_label" title="Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution." data-i18n="[title]Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution.">
                                         <input id="stscript_parser_flag_replace_getvar" type="checkbox" />
-                                        <span data-i18n="REPLACE_GETVAR">REPLACE_GETVAR</span>
+                                        <span data-i18n="REPLACE_GETVAR"><small>REPLACE_GETVAR</small></span>
                                         <a href="https://docs.sillytavern.app/" class="notes-link">
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
