@@ -579,7 +579,11 @@ export class SlashCommandParser {
             if (this.index >= this.text.length) return true;
             return false;
         }
-        if (this.ahead.length < 1) throw new SlashCommandParserError(`Unclosed closure at position ${this.userIndex}`, this.text, this.index);
+        if (!this.verifyCommandNames) {
+            if (this.index >= this.text.length) return true;
+        } else {
+            if (this.ahead.length < 1) throw new SlashCommandParserError(`Unclosed closure at position ${this.userIndex}`, this.text, this.index);
+        }
         return this.testSymbol(':}');
     }
     parseClosure(isRoot = false) {
