@@ -273,7 +273,6 @@ export class SlashCommandParser {
             NUMBER,
             MACRO,
             CLOSURE,
-            hljs.REGEXP_MODE,
             hljs.QUOTE_STRING_MODE,
         );
         SETVAR.contains.push(
@@ -282,7 +281,6 @@ export class SlashCommandParser {
             NUMBER,
             MACRO,
             CLOSURE,
-            hljs.REGEXP_MODE,
             hljs.QUOTE_STRING_MODE,
         );
         GETVAR.contains.push(
@@ -299,7 +297,6 @@ export class SlashCommandParser {
             NUMBER,
             MACRO,
             CLOSURE,
-            hljs.REGEXP_MODE,
             hljs.QUOTE_STRING_MODE,
         );
         CLOSURE.contains.push(
@@ -315,7 +312,6 @@ export class SlashCommandParser {
             SETVAR,
             COMMAND,
             'self',
-            hljs.REGEXP_MODE,
             hljs.QUOTE_STRING_MODE,
         );
         hljs.registerLanguage('stscript', ()=>({
