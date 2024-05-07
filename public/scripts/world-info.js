@@ -194,6 +194,13 @@ class WorldInfoBuffer {
      * @returns {boolean} True if the string was found in the buffer
      */
     matchKeys(haystack, needle, entry) {
+        // If the needle is a regex, we do regex pattern matching and override all the other options
+        const keyRegex = parseRegexFromString(needle);
+        if (keyRegex) {
+            return keyRegex.test(haystack);
+        }
+
+        // Otherwise we do normal matching of plaintext with the chosen entry settings
         const transformedString = this.#transformString(needle, entry);
         const matchWholeWords = entry.matchWholeWords ?? world_info_match_whole_words;
 
