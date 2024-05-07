@@ -380,7 +380,7 @@ export class AutoComplete {
      * Create updated DOM.
      */
     render() {
-        if (!this.isActive) return this.dom.remove();
+        if (!this.isActive) return this.domWrap.remove();
         if (this.isReplaceable) {
             this.dom.innerHTML = '';
             const frag = document.createDocumentFragment();
