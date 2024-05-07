@@ -66,10 +66,10 @@
                             </div>
                         </label>
                         <textarea id="memory_prompt" class="text_pole textarea_compact" rows="6" data-i18n="[placeholder]ext_sum_prompt_placeholder" placeholder="This prompt will be sent to AI to request the summary generation. &lcub;&lcub;words&rcub;&rcub; will resolve to the 'Number of words' parameter."></textarea>
-                        <label for="memory_prompt_words"><span data-i18n="ext_sum_target_length_1">Target summary length</span> (<span id="memory_prompt_words_value"></span> <span data-i18n="ext_sum_target_length_2;[ru-case1]ext_sum_words_ru_case1;[ru-case2]ext_sum_words_ru_case2;[ru-case3]ext_sum_words_ru_case3">words</span>)</label>
+                        <label for="memory_prompt_words"><span data-i18n="ext_sum_target_length_1">Target summary length</span> <span data-i18n="ext_sum_target_length_2">(</span><span id="memory_prompt_words_value"></span><span data-i18n="ext_sum_target_length_3"> words)</span></label>
                         <input id="memory_prompt_words" type="range" value="{{defaultSettings.promptWords}}" min="{{defaultSettings.promptMinWords}}" max="{{defaultSettings.promptMaxWords}}" step="{{defaultSettings.promptWordsStep}}" />
                         <label for="memory_override_response_length">
-                            <span data-i18n="ext_sum_api_response_length_1">API response length</span> (<span id="memory_override_response_length_value"></span> <span data-i18n="ext_sum_api_response_length_2;[ru-case1]ext_sum_tokens_ru_case1;[ru-case2]ext_sum_tokens_ru_case2;[ru-case3]ext_sum_tokens_ru_case3">tokens</span>)
+                            <span data-i18n="ext_sum_api_response_length_1">API response length</span> <span data-i18n="ext_sum_api_response_length_2">(</span><span id="memory_override_response_length_value"></span><span data-i18n="ext_sum_api_response_length_3"> tokens)</span>
                             <small class="memory_disabled_hint" data-i18n="ext_sum_0_default">0 = default</small>
                         </label>
                         <input id="memory_override_response_length" type="range" value="{{defaultSettings.overrideResponseLength}}" min="{{defaultSettings.overrideResponseLengthMin}}" max="{{defaultSettings.overrideResponseLengthMax}}" step="{{defaultSettings.overrideResponseLengthStep}}" />
@@ -83,7 +83,7 @@
                         </h4>
                         <label for="memory_prompt_interval" class="title_restorable">
                             <span>
-                                <span data-i18n="ext_sum_update_every_messages_1">Update every</span> <span id="memory_prompt_interval_value"></span> <span data-i18n="ext_sum_update_every_messages_2;[ru-case1]ext_sum_messages_ru_case1;[ru-case2]ext_sum_messages_ru_case2;[ru-case3]ext_sum_messages_ru_case3">messages</span>
+                                <span data-i18n="ext_sum_update_every_messages_1">Update every</span> <span id="memory_prompt_interval_value"></span><span data-i18n="ext_sum_update_every_messages_2"> messages</span>
                                 <small class="memory_disabled_hint" data-i18n="ext_sum_0_disable">0 = disable</small>
                             </span>
                             <div id="memory_prompt_interval_auto" data-i18n="[title]ext_sum_auto_adjust_desc" title="Try to automatically adjust the interval based on the chat metrics." class="right_menu_button">
@@ -93,7 +93,7 @@
                         <input id="memory_prompt_interval" type="range" value="{{defaultSettings.promptInterval}}" min="{{defaultSettings.promptMinInterval}}" max="{{defaultSettings.promptMaxInterval}}" step="{{defaultSettings.promptIntervalStep}}" />
                         <label for="memory_prompt_words_force" class="title_restorable">
                             <span>
-                                <span data-i18n="ext_sum_update_every_words_1">Update every</span> <span id="memory_prompt_words_force_value"></span> <span data-i18n="ext_sum_update_every_words_2;[ru-case1]ext_sum_words_ru_case1;[ru-case2]ext_sum_words_ru_case2;[ru-case3]ext_sum_words_ru_case3">words</span>
+                                <span data-i18n="ext_sum_update_every_words_1">Update every</span> <span id="memory_prompt_words_force_value"></span><span data-i18n="ext_sum_update_every_words_2"> words</span>
                                 <small class="memory_disabled_hint" data-i18n="ext_sum_0_disable">0 = disable</small>
                             </span>
                             <div id="memory_prompt_words_auto" data-i18n="[title]ext_sum_auto_adjust_desc" title="Try to automatically adjust the interval based on the chat metrics." class="right_menu_button">

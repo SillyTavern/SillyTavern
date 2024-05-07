@@ -228,18 +228,14 @@ function onMemorySkipWIANInput() {
 function onMemoryPromptWordsInput() {
     const value = $(this).val();
     extension_settings.memory.promptWords = Number(value);
-    const display = $('#memory_prompt_words_value');
-    display.text(extension_settings.memory.promptWords);
-    updateCase(display.next(), extension_settings.memory.promptWords);
+    $('#memory_prompt_words_value').text(extension_settings.memory.promptWords);
     saveSettingsDebounced();
 }
 
 function onMemoryPromptIntervalInput() {
     const value = $(this).val();
     extension_settings.memory.promptInterval = Number(value);
-    const display = $('#memory_prompt_interval_value');
-    display.text(extension_settings.memory.promptInterval);
-    updateCase(display.next(), extension_settings.memory.promptInterval);
+    $('#memory_prompt_interval_value').text(extension_settings.memory.promptInterval);
     saveSettingsDebounced();
 }
 
@@ -284,39 +280,14 @@ function onMemoryPositionChange(e) {
 function onMemoryPromptWordsForceInput() {
     const value = $(this).val();
     extension_settings.memory.promptForceWords = Number(value);
-    const display = $('#memory_prompt_words_force_value');
-    display.text(extension_settings.memory.promptForceWords);
-    updateCase(display.next(), extension_settings.memory.promptForceWords);
+    $('#memory_prompt_words_force_value').text(extension_settings.memory.promptForceWords);
     saveSettingsDebounced();
-}
-
-function updateCase(span, number) { // other languages can use this function too, adding their own attributes to the elements
-    const ruCase1 = span.attr('ru-case1');
-    if (ruCase1) {
-        const ruCase2 = span.attr('ru-case2');
-        const ruCase3 = span.attr('ru-case3');
-        const elevenToFifteen = [11, 12, 13, 14, 15].indexOf(number % 100) != -1;
-        if (elevenToFifteen) {
-            span.text(ruCase3);
-            return;
-        }
-        const lastDigit = number % 10;
-        if (lastDigit == 1) {
-            span.text(ruCase1);
-        } else if (lastDigit != 0 && lastDigit < 5) {
-            span.text(ruCase2);
-        } else {
-            span.text(ruCase3);
-        }
-    }
 }
 
 function onOverrideResponseLengthInput() {
     const value = $(this).val();
     extension_settings.memory.overrideResponseLength = Number(value);
-    const display = $('#memory_override_response_length_value');
-    display.text(extension_settings.memory.overrideResponseLength);
-    updateCase(display.next(), extension_settings.memory.overrideResponseLength);
+    $('#memory_override_response_length_value').text(extension_settings.memory.overrideResponseLength);
     saveSettingsDebounced();
 }
 

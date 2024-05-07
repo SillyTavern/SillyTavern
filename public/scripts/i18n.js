@@ -107,12 +107,12 @@ export function applyLocale(root = document) {
             const attributeMatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
             if (attributeMatch) { // attribute-tagged key
                 const localizedValue = localeData?.[attributeMatch[2]];
-                if (localizedValue) {
+                if (localizedValue || localizedValue == '') {
                     $(this).attr(attributeMatch[1], localizedValue);
                 }
             } else { // No attribute tag, treat as 'text'
                 const localizedValue = localeData?.[key];
-                if (localizedValue) {
+                if (localizedValue || localizedValue == '') {
                     $(this).text(localizedValue);
                 }
             }
