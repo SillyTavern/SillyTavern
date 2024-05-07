@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { registerSlashCommand } from './slash-commands.js';
@@ -1044,7 +1044,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     worldEntriesList.sortable({
         delay: getSortableDelay(),
         handle: '.drag-handle',
-        stop: async function (event, ui) {
+        stop: async function (_event, _ui) {
             const firstEntryUid = $('#world_popup_entries_list .world_entry').first().data('uid');
             const minDisplayIndex = data?.entries[firstEntryUid]?.displayIndex ?? 0;
             $('#world_popup_entries_list .world_entry').each(function (index) {
@@ -1139,6 +1139,131 @@ function deleteOriginalDataValue(data, uid) {
     }
 }
 
+/**
+ * Splits a given input string that contains one or more keywords or regexes, separated by commas.
+ *
+ * Each part can be a valid regex following the pattern `/myregex/flags` with optional flags. Commmas inside the regex are allowed, slashes have to be escaped like this: `\/`
+ * If a regex doesn't stand alone, it is not treated as a regex.
+ *
+ * @param {string} input - One or multiple keywords or regexes, separated by commas
+ * @returns {string[]} An array of keywords and regexes
+ */
+function splitKeywordsAndRegexes(input) {
+    /** @type {string[]} */
+    let keywordsAndRegexes = [];
+
+    // We can make this easy. Instead of writing another function to find and parse regexes,
+    // we gonna utilize the custom tokenizer that also handles the input.
+    // No need for validation here
+    const addFindCallback = (/** @type {{id: string, text: string}} */ item) => {
+        keywordsAndRegexes.push(item.id);
+    }
+
+    const { term } = customTokenizer({ _type: 'custom_call', term: input }, undefined, addFindCallback);
+    addFindCallback({ id: term.trim(), text: term.trim() });
+
+    return keywordsAndRegexes;
+}
+
+/**
+ * Tokenizer parsing input and splitting it into keywords and regexes
+ * 
+ * @param {{_type: string, term: string}} input - The typed input
+ * @param {{options: object}} _selection - The selection even object (?)
+ * @param {function} callback - The original callback function to call if an item should be inserted
+ * @returns {{term: string}} - The remaining part that is untokenized in the textbox
+ */
+function customTokenizer(input, _selection, callback) {
+    let current = input.term;
+
+    // Go over the input and check the current state, if we can get a token
+    for (let i = 0; i < current.length; i++) {
+        let char = current[i];
+
+        // If a comma is typed, we tokenize the input.
+        // unless we are inside a possible regex, which would allow commas inside
+        if (char === ',') {
+            // We take everything up till now and consider this a token
+            const token = current.slice(0, i).trim();
+
+            // Now how we test if this is a valid regex? And not a finished one, but a half-finished one?
+            // Easy, if someone typed a comma it can't be a delimiter escape.
+            // So we just check if this opening with a slash, and if so, we "close" the regex and try to parse it.
+            // So if we are inside a valid regex, we can't take the token now, we continue processing until the regex is closed,
+            // or this is not a valid regex anymore
+            if (token.startsWith('/') && isValidRegex(token + '/')) {
+                continue;
+            }
+
+            // So now the comma really means the token is done.
+            // We take the token up till now, and insert it. Empty will be skipped.
+            if (token) {
+                // Last chance to check for valid regex again. Because it might have been valid while typing, but now is not valid anymore and contains commas we need to split.
+                if (token.startsWith('/') && !isValidRegex(token)) {
+                    const tokens = token.split(',').map(x => x.trim());
+                    tokens.forEach(x => callback({ id: x, text: x }));
+                } else {
+                    callback({ id: token, text: token });
+                }
+            }
+
+            // Now remove the token from the current input, and the comma too
+            current = current.slice(i + 1);
+        }
+    }
+
+    // At the end, just return the left-over input
+    return { term: current };
+}
+
+/**
+ * Validates if a string is a valid slash-delimited regex, that can be parsed and executed
+ *
+ * This is a wrapper around `parseRegexFromString`
+ *
+ * @param {string} input - A delimited regex string
+ * @returns {boolean} Whether this would be a valid regex that can be parsed and executed
+ */
+function isValidRegex(input) {
+    return parseRegexFromString(input) !== null;
+}
+
+/**
+ * Gets a real regex object from a slash-delimited regex string
+ *
+ * This function works with `/` as delimiter, and each occurance of it inside the regex has to be escaped.
+ * Flags are optional, but can only be valid flags supported by JavaScript's `RegExp` (`g`, `i`, `m`, `s`, `u`, `y`).
+ *
+ * @param {string} input - A delimited regex string
+ * @returns {RegExp|null} The regex object, or null if not a valid regex
+ */
+function parseRegexFromString(input) {
+    // Extracting the regex pattern and flags
+    let match = input.match(/^\/([\w\W]+?)\/([gimsuy]*)$/);
+    if (!match) {
+        return null; // Not a valid regex format
+    }
+
+    let [, pattern, flags] = match;
+
+    // If we find any unescaped slash delimiter, we also exit out.
+    // JS doesn't care about delimiters inside regex patterns, but for this to be a valid regex outside of our implementation,
+    // we have to make sure that our delimiter is correctly escaped. Or every other engine would fail.
+    if (pattern.match(/(^|[^\\])\//)) {
+        return null;
+    }
+
+    // Now we need to actually unescape the slash delimiters, because JS doesn't care about delimiters
+    pattern = pattern.replace('\\/', '/');
+
+    // Then we return the regex. If it fails, it was invalid syntax.
+    try {
+        return new RegExp(pattern, flags);
+    } catch (e) {
+        return null;
+    }
+}
+
 function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
@@ -1148,28 +1273,60 @@ function getWorldEntry(name, data, entry) {
     template.data('uid', entry.uid);
     template.attr('uid', entry.uid);
 
+    /** Function to build the keys input controls @param {string} entryPropName @param {string} originalDataValueName */
+    function enableKeysInput(entryPropName, originalDataValueName) {
+        const input = !isMobile() ? template.find(`select[name="${entryPropName}"]`) : template.find(`textarea[name="${entryPropName}"]`);
+        input.data('uid', entry.uid);
+        input.on('click', function (event) {
+            // Prevent closing the drawer on clicking the input
+            event.stopPropagation();
+        });
+
+        if (!isMobile()) {
+            input.select2({
+                tags: true,
+                tokenSeparators: [','],
+                tokenizer: customTokenizer,
+                placeholder: input.attr('placeholder'),
+            });
+            input.on('change', function (_, { skipReset, noSave } = {}) {
+                const uid = $(this).data('uid');
+                /** @type {string[]} */
+                const keys = ($(this).select2('data')).map(x => x.id);
+
+                !skipReset && resetScrollHeight(this);
+                if (!noSave) {
+                    data.entries[uid][entryPropName] = keys;
+                    setOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
+                    saveWorldInfo(name, data);
+                }
+            });
+
+            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
+        }
+        else {
+            // Compatibility with mobile devices. On mobile we need a text input field, not a select option control, so we need its own event handlers
+            template.find(`select[name="${entryPropName}"]`).hide();
+            input.show();
+
+            input.on('input', function (_, { skipReset } = {}) {
+                const uid = $(this).data('uid');
+                const value = String($(this).val());
+                !skipReset && resetScrollHeight(this);
+                data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
+
+                setOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
+                saveWorldInfo(name, data);
+            });
+            input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
+        }
+    }
+
     // key
-    const keyInput = template.find('textarea[name="key"]');
-    keyInput.data('uid', entry.uid);
-    keyInput.on('click', function (event) {
-        // Prevent closing the drawer on clicking the input
-        event.stopPropagation();
-    });
+    enableKeysInput("key", "keys");
 
-    keyInput.on('input', function (_, { skipReset } = {}) {
-        const uid = $(this).data('uid');
-        const value = String($(this).val());
-        !skipReset && resetScrollHeight(this);
-        data.entries[uid].key = value
-            .split(',')
-            .map((x) => x.trim())
-            .filter((x) => x);
-
-        setOriginalDataValue(data, uid, 'keys', data.entries[uid].key);
-        saveWorldInfo(name, data);
-    });
-    keyInput.val(entry.key.join(', ')).trigger('input', { skipReset: true });
-    //initScrollHeight(keyInput);
+    // keysecondary
+    enableKeysInput("keysecondary", "secondary_keys");
 
     // logic AND/NOT
     const selectiveLogicDropdown = template.find('select[name="entryLogicType"]');
@@ -1298,25 +1455,6 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
 
-    // keysecondary
-    const keySecondaryInput = template.find('textarea[name="keysecondary"]');
-    keySecondaryInput.data('uid', entry.uid);
-    keySecondaryInput.on('input', function (_, { skipReset } = {}) {
-        const uid = $(this).data('uid');
-        const value = String($(this).val());
-        !skipReset && resetScrollHeight(this);
-        data.entries[uid].keysecondary = value
-            .split(',')
-            .map((x) => x.trim())
-            .filter((x) => x);
-
-        setOriginalDataValue(data, uid, 'secondary_keys', data.entries[uid].keysecondary);
-        saveWorldInfo(name, data);
-    });
-
-    keySecondaryInput.val(entry.keysecondary.join(', ')).trigger('input', { skipReset: true });
-    //initScrollHeight(keySecondaryInput);
-
     // comment
     const commentInput = template.find('textarea[name="comment"]');
     const commentToggle = template.find('input[name="addMemo"]');
@@ -1379,8 +1517,8 @@ function getWorldEntry(name, data, entry) {
         if (counter.data('first-run')) {
             counter.data('first-run', false);
             countTokensDebounced(counter, contentInput.val());
-            initScrollHeight(keyInput);
-            initScrollHeight(keySecondaryInput);
+            // initScrollHeight(keyInput);
+            // initScrollHeight(keySecondaryInput);
         }
     });
 
@@ -1403,11 +1541,11 @@ function getWorldEntry(name, data, entry) {
             .closest('.world_entry')
             .find('.keysecondarytextpole');
 
-        const keyprimarytextpole = $(this)
+        const keyprimaryselect = $(this)
             .closest('.world_entry')
-            .find('.keyprimarytextpole');
+            .find('.keyprimaryselect');
 
-        const keyprimaryHeight = keyprimarytextpole.outerHeight();
+        const keyprimaryHeight = keyprimaryselect.outerHeight();
         keysecondarytextpole.css('height', keyprimaryHeight + 'px');
 
         value ? keysecondary.show() : keysecondary.hide();
@@ -1919,7 +2057,7 @@ function createEntryInputAutocomplete(input, callback) {
     $(input).autocomplete({
         minLength: 0,
         source: callback,
-        select: function (event, ui) {
+        select: function (_event, ui) {
             $(input).val(ui.item.value).trigger('input').trigger('blur');
         },
     });
@@ -1995,7 +2133,7 @@ const newEntryTemplate = {
     role: 0,
 };
 
-function createWorldInfoEntry(name, data) {
+function createWorldInfoEntry(_name, data) {
     const newUid = getFreeWorldEntryUid(data);
 
     if (!Number.isInteger(newUid)) {
@@ -3069,7 +3207,7 @@ export async function importWorldInfo(file) {
                 toastr.info(`World Info "${data.name}" imported successfully!`);
             }
         },
-        error: (jqXHR, exception) => { },
+        error: (_jqXHR, _exception) => { },
     });
 }
 

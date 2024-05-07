@@ -4036,3 +4036,41 @@ body:not(.movingUI) .drawer-content.maximized {
         z-index: 9999;
     }
 }
+
+/* Custom class to support same line multi inputs of select2 controls */
+.select2_multi_sameline+span.select2-container .select2-selection--multiple {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search--inline {
+    flex-grow: 1; /* Allow search placeholder to take up all space if needed */
+}
+
+.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__rendered {
+    /* Fix weird styling choice or huge margin around selected options */
+    margin-block-start: 2px;
+    margin-block-end: 2px;
+}
+
+.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search__field {
+    min-height: calc(var(--mainFontSize) + 13px);
+    min-width: 4em;
+    align-content: center;
+    /* Fix search textarea alignment issue with UL elements */
+    margin-top: 0px;
+    height: unset;
+}
+
+.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__rendered {
+    min-height: calc(var(--mainFontSize) + 13px);
+}
+
+/* Make search bar invisible unless the select2 is active, to save space */
+.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search--inline {
+    height: 1px;
+}
+
+.select2_multi_sameline+span.select2-container.select2-container--open .select2-selection--multiple .select2-search--inline {
+    height: unset;
+}

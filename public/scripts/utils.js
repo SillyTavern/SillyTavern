@@ -1449,3 +1449,31 @@ export function includesIgnoreCaseAndAccents(text, searchTerm) {
     // Check if the normalized text includes the normalized search term
     return normalizedText.includes(normalizedSearchTerm);
 }
+
+/**
+ * Modifies the select2 options by adding not existing one and optionally selecting them
+ *
+ * @param {JQuery<HTMLElement>} element - The "select" element to add the options to
+ * @param {string[]|{id: string, text: string}[]} items - The option items to build, add or select
+ * @param {object} [options] - Optional arguments
+ * @param {boolean} [options.select=false] - Whether the options should be selected right away
+ * @param {object} [options.changeEventArgs=null] - Optional event args being passed into the "change" event when its triggered because a new options is selected
+ */
+export function select2ModifyOptions(element, items, { select = false, changeEventArgs = null } = {}) {
+    if (!items.length) return;
+    /** @type {{id: string, text: string}[]} */
+    const dataItems = items.map(x => typeof x === 'string' ? { id: x, text: x } : x);
+
+    dataItems.forEach(item => {
+        // Set the value, creating a new option if necessary
+        if (element.find("option[value='" + item.id + "']").length) {
+            if (select) element.val(item.id).trigger('change', changeEventArgs);
+        } else {
+            // Create a DOM Option and optionally pre-select by default
+            var newOption = new Option(item.text, item.id, select, select);
+            // Append it to the select
+            element.append(newOption);
+            if (select) element.trigger('change', changeEventArgs);
+        }
+    });
+}

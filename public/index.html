@@ -3310,7 +3310,7 @@
                             <span data-i18n="Active World(s) for all chats"><small>Active World(s) for all chats</small></span>
                         </div>
                         <div class="range-block-range">
-                            <select id="world_info" multiple>
+                            <select id="world_info" class="select2_multi_sameline" multiple>
                                 <option value="" data-i18n="-- World Info not found --">-- World Info not found -- </option>
                             </select>
                         </div>
@@ -5109,7 +5109,8 @@
                                         </span>
                                     </small>
                                     <small class="textAlignCenter" data-i18n="Primary Keywords">Primary Keywords</small>
-                                    <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="2000"></textarea>
+                                    <select class="keyprimaryselect select2_multi_sameline" name="key" data-i18n="[placeholder]Keywords or Regexes" placeholder="Keywords or Regexes" multiple="multiple"></select>
+                                    <textarea class="text_pole keyprimarytextpole mobile" name="key" rows="1" data-i18n="[placeholder]Comma separated list" placeholder="Comma separated list" maxlength="2000" style="display: none;"></textarea>
                                 </div>
                                 <div class="world_entry_form_control">
                                     <small class="textAlignCenter" data-i18n="Logic">Logic</small>
@@ -5127,9 +5128,8 @@
                                         </span>
                                     </small>
                                     <small class="textAlignCenter" data-i18n="Optional Filter">Optional Filter</small>
-                                    <div class="flex-container flexFlowRow alignitemscenter">
-                                        <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="2000"></textarea>
-                                    </div>
+                                    <select class="keypsecondaryselect select2_multi_sameline" name="keysecondary" data-i18n="[placeholder]Keywords or Regexes (ignored if empty)" placeholder="Keywords or Regexes (ignored if empty)" multiple="multiple"></select>
+                                    <textarea class="text_pole keysecondarytextpole mobile" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated list (ignored if empty)" placeholder="Comma separated list (ignored if empty)" maxlength="2000" style="display: none;"></textarea>
                                 </div>
                             </div>
                             <div name="perEntryOverridesBlock" class="flex-container wide100p alignitemscenter">
@@ -5220,7 +5220,7 @@
                                     </label>
                                 </div>
                                 <div class="range-block-range">
-                                    <select name="characterFilter" multiple>
+                                    <select name="characterFilter" class="select2_multi_sameline" multiple>
                                         <option value="">
                                             <span data-i18n="-- Characters not found --">-- Characters not found --</span>
                                         </option>

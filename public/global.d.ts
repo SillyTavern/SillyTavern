@@ -24,6 +24,7 @@ interface JQuery {
     pagination(options?: any): JQuery;
     transition(options?: any): JQuery;
     select2(options?: any): JQuery;
+    select2(field: 'data'): any[];
     sortable(options?: any): JQuery;
     autocomplete(options?: any): JQuery;
     autocomplete(method: string, options?: any): JQuery;
