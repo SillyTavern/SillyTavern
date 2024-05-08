@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getStringHash, getSelect2OptionId } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getStringHash, getSelect2OptionId, getDynamicSelect2DataViaAjax } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { registerSlashCommand } from './slash-commands.js';
@@ -831,6 +831,37 @@ function nullWorldInfo() {
     toastr.info('Create or import a new World Info file first.', 'World Info is not set', { timeOut: 10000, preventDuplicates: true });
 }
 
+/** @type {Select2Option[]} Cache all keys as selectable dropdown option */
+const worldEntryKeyOptionsCache = [];
+
+/**
+ * Update the cache and all select options for the keys with new values to display
+ * @param {string[]|Select2Option[]} keyOptions - An array of options to update
+ * @param {object} options - Optional arguments
+ * @param {boolean?} [options.remove=false] - Whether the option was removed, so the count should be reduced - otherwise it'll be increased
+ * @param {boolean?} [options.reset=false] - Whether the cache should be reset. Reset will also not trigger update of the controls, as we expect them to be redrawn anyway
+ */
+function updateWorldEntryKeyOptionsCache(keyOptions, { remove = false, reset = false } = {}) {
+    if (!keyOptions.length) return;
+    /** @type {Select2Option[]} */
+    const options = keyOptions.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
+    if (reset) worldEntryKeyOptionsCache.length = 0;
+    options.forEach(option => {
+        // Update the cache list
+        let cachedEntry = worldEntryKeyOptionsCache.find(x => x.id == option.id);
+        if (cachedEntry) {
+            cachedEntry.count += !remove ? 1 : -1;
+        } else if (!remove) {
+            worldEntryKeyOptionsCache.push(option);
+            cachedEntry = option;
+            cachedEntry.count = 1;
+        }
+    });
+
+    // Sort by count DESC and then alphabetically
+    worldEntryKeyOptionsCache.sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
+}
+
 function displayWorldEntries(name, data, navigation = navigation_option.none) {
     updateEditor = (navigation) => displayWorldEntries(name, data, navigation);
 
@@ -866,6 +897,10 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         // Apply the filter and do the chosen sorting
         entriesArray = worldInfoFilter.applyFilters(entriesArray);
         entriesArray = sortEntries(entriesArray);
+
+        // Cache keys
+        const keys = entriesArray.flatMap(entry => [...entry.key, ...entry.keysecondary]);
+        updateWorldEntryKeyOptionsCache(keys, { reset: true });
 
         // Run the callback for printing this
         typeof callback === 'function' && callback(entriesArray);
@@ -1146,11 +1181,7 @@ function deleteOriginalDataValue(data, uid) {
     }
 }
 
-/**
- * @typedef {object} Select2Option The option object for select2 controls
- * @property {string} id - The unique ID inside this select
- * @property {string} text - The text for this option
- */
+/** @typedef {import('./utils.js').Select2Option} Select2Option */
 
 /**
  * Splits a given input string that contains one or more keywords or regexes, separated by commas.
@@ -1297,21 +1328,33 @@ function getWorldEntry(name, data, entry) {
             event.stopPropagation();
         });
 
-        function templateStyling(/** @type {Select2Option} */ item) {
+        function templateStyling(/** @type {Select2Option} */ item, { searchStyle = false } = {}) {
+            const content = $('<span>').addClass('item').text(item.text);
             const isRegex = isValidRegex(item.text);
-            if (!isRegex) return item.text;
-            return $('<span>').addClass('regex_item').text(item.text)
-                .prepend($('<span>').addClass('regex_icon').text("•*").attr('title', 'Regex'));
+            if (isRegex) {
+                content.addClass('regex_item').prepend($('<span>').addClass('regex_icon').text("•*").attr('title', 'Regex'));
+            }
+
+            if (searchStyle && item.count) {
+                // Build a wrapping element
+                const wrapper = $('<span>').addClass('result_block')
+                    .append(content);
+                wrapper.append($('<span>').addClass('item_count').text(item.count).attr('title', `Used as a key ${item.count} ${item.count != 1 ? 'times' : 'time'} in this lorebook`));
+                return wrapper;
+            }
+
+            return content;
         }
 
         if (!isMobile()) {
             input.select2({
+                ajax: getDynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
                 tags: true,
                 tokenSeparators: [','],
                 tokenizer: customTokenizer,
                 placeholder: input.attr('placeholder'),
-                templateResult: templateStyling,
-                templateSelection: templateStyling,
+                templateResult: item => templateStyling(item, { searchStyle: true }),
+                templateSelection: item => templateStyling(item),
             });
             input.on('change', function (_, { skipReset, noSave } = {}) {
                 const uid = $(this).data('uid');
@@ -1325,6 +1368,8 @@ function getWorldEntry(name, data, entry) {
                     saveWorldInfo(name, data);
                 }
             });
+            input.on('select2:select', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data]));
+            input.on('select2:unselect', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data], { remove: true }));
 
             select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
         }

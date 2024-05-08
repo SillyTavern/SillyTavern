@@ -198,7 +198,7 @@
 }
 
 span.select2-container .select2-selection__choice__display:has(> .regex_item),
-span.select2-container .select2-results__option:has(> .regex_item) {
+span.select2-container .select2-results__option:has(> .result_block .regex_item) {
     background-color: #D27D2D30;
 }
 
@@ -213,4 +213,13 @@ span.select2-container .select2-results__option:has(> .regex_item) {
     position: relative;
     top: -1px;
     margin-right: 3px;
+}
+
+.select2-results__option .regex_item .regex_icon {
+    margin-right: 6px;
+}
+
+.select2-results__option .item_count {
+    margin-left: 10px;
+    float: right;
 }

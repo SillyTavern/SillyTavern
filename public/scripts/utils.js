@@ -1450,7 +1450,12 @@ export function includesIgnoreCaseAndAccents(text, searchTerm) {
     return normalizedText.includes(normalizedSearchTerm);
 }
 
-
+/**
+ * @typedef {object} Select2Option The option object for select2 controls
+ * @property {string} id - The unique ID inside this select
+ * @property {string} text - The text for this option
+ * @property {number?} [count] - Optionally show the count how often that option was chosen already
+ */
 
 /**
  * Returns a unique hash as ID for a select2 option text
@@ -1466,20 +1471,21 @@ export function getSelect2OptionId(option) {
  * Modifies the select2 options by adding not existing one and optionally selecting them
  *
  * @param {JQuery<HTMLElement>} element - The "select" element to add the options to
- * @param {string[]|{id: string, text: string}[]} items - The option items to build, add or select
+ * @param {string[]|Select2Option[]} items - The option items to build, add or select
  * @param {object} [options] - Optional arguments
  * @param {boolean} [options.select=false] - Whether the options should be selected right away
  * @param {object} [options.changeEventArgs=null] - Optional event args being passed into the "change" event when its triggered because a new options is selected
  */
 export function select2ModifyOptions(element, items, { select = false, changeEventArgs = null } = {}) {
     if (!items.length) return;
-    /** @type {{id: string, text: string}[]} */
+    /** @type {Select2Option[]} */
     const dataItems = items.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
 
+    const existingValues = [];
     dataItems.forEach(item => {
         // Set the value, creating a new option if necessary
         if (element.find("option[value='" + item.id + "']").length) {
-            if (select) element.val(item.id).trigger('change', changeEventArgs);
+            if (select) existingValues.push(item.id);
         } else {
             // Create a DOM Option and optionally pre-select by default
             var newOption = new Option(item.text, item.id, select, select);
@@ -1487,5 +1493,34 @@ export function select2ModifyOptions(element, items, { select = false, changeEve
             element.append(newOption);
             if (select) element.trigger('change', changeEventArgs);
         }
+        if (existingValues.length) element.val(existingValues).trigger('change', changeEventArgs);
     });
+}
+
+/**
+ * Returns the ajax settings that can be used on the select2 ajax property to dynamically get the data.
+ * Can be used on a single global array, querying data from the server or anything similar.
+ * 
+ * @param {function():Select2Option[]} dataProvider - The provider/function to retrieve the data - can be as simple as "() => myData" for arrays
+ * @return {object} The ajax object with the transport function to use on the select2 ajax property
+ */
+export function getDynamicSelect2DataViaAjax(dataProvider) {
+    function dynamicSelect2DataTransport(params, success, failure) {
+        var items = dataProvider();
+        // fitering if params.data.q available
+        if (params.data && params.data.q) {
+            items = items.filter(function (item) {
+                return new RegExp(params.data.q).test(item.text);
+            });
+        }
+        var promise = new Promise(function (resolve, reject) {
+            resolve({ results: items });
+        });
+        promise.then(success);
+        promise.catch(failure);
+    };
+    const ajax = {
+        transport: dynamicSelect2DataTransport
+    };
+    return ajax;
 }
