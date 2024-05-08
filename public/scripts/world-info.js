@@ -340,7 +340,7 @@ const world_info_position = {
 export const wi_anchor_position = {
     before: 0,
     after: 1,
-}
+};
 
 const worldInfoCache = {};
 
@@ -369,8 +369,8 @@ async function getWorldInfoPrompt(chat, maxContext, isDryRun) {
         worldInfoString,
         worldInfoBefore,
         worldInfoAfter,
-        worldInfoExamples: activatedWorldInfo.EMEntries,
-        worldInfoDepth: activatedWorldInfo.WIDepthEntries,
+        worldInfoExamples: activatedWorldInfo.EMEntries ?? [],
+        worldInfoDepth: activatedWorldInfo.WIDepthEntries ?? [],
     };
 }
 
@@ -2323,7 +2323,7 @@ async function checkWorldInfo(chat, maxContext) {
     const sortedEntries = await getSortedEntries();
 
     if (sortedEntries.length === 0) {
-        return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], allActivatedEntries: new Set() };
+        return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
     }
 
     while (needsToScan) {
@@ -2539,12 +2539,12 @@ async function checkWorldInfo(chat, maxContext) {
                 break;
             case world_info_position.EMTop:
                 EMEntries.unshift(
-                    {position: wi_anchor_position.before, content: entry.content}
+                    { position: wi_anchor_position.before, content: entry.content },
                 );
                 break;
             case world_info_position.EMBottom:
                 EMEntries.unshift(
-                    {position: wi_anchor_position.after, content: entry.content}
+                    { position: wi_anchor_position.after, content: entry.content },
                 );
                 break;
             case world_info_position.ANTop:
@@ -3155,6 +3155,10 @@ jQuery(() => {
     });
 
     $('#world_import_file').on('change', async function (e) {
+        if (!(e.target instanceof HTMLInputElement)) {
+            return;
+        }
+
         const file = e.target.files[0];
 
         await importWorldInfo(file);

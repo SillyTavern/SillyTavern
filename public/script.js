@@ -3336,7 +3336,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
             continue;
         }
 
-        let formattedExample = baseChatReplace(exampleMessage, name1, name2)
+        let formattedExample = baseChatReplace(exampleMessage, name1, name2);
         const cleanedExample = parseMesExamples(formattedExample);
 
         // Insert depending on before or after position
@@ -3348,7 +3348,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     // At this point, the raw message examples can be created
-    const mesExamplesRawArray = [...mesExamplesArray]
+    const mesExamplesRawArray = [...mesExamplesArray];
 
     if (mesExamplesArray && isInstruct) {
         mesExamplesArray = formatInstructModeExamples(mesExamplesArray, name1, name2);
