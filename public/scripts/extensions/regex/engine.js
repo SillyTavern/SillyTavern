@@ -18,7 +18,7 @@ const regex_placement = {
     AI_OUTPUT: 2,
     SLASH_COMMAND: 3,
     // 4 - sendAs (legacy)
-    WAIN: 5,
+    WORLD_INFO: 5,
 };
 
 /**

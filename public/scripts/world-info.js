@@ -2531,37 +2531,40 @@ async function checkWorldInfo(chat, maxContext) {
     // Appends from insertion order 999 to 1. Use unshift for this purpose
     // TODO (kingbri): Change to use WI Anchor positioning instead of separate top/bottom arrays
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
+        const regexDepth = entry.position === world_info_position.atDepth ? (entry.depth ?? DEFAULT_DEPTH) : null;
+        const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
+
         switch (entry.position) {
             case world_info_position.before:
-                WIBeforeEntries.unshift(substituteParams(entry.content));
+                WIBeforeEntries.unshift(substituteParams(content));
                 break;
             case world_info_position.after:
-                WIAfterEntries.unshift(substituteParams(entry.content));
+                WIAfterEntries.unshift(substituteParams(content));
                 break;
             case world_info_position.EMTop:
                 EMEntries.unshift(
-                    { position: wi_anchor_position.before, content: entry.content },
+                    { position: wi_anchor_position.before, content: content },
                 );
                 break;
             case world_info_position.EMBottom:
                 EMEntries.unshift(
-                    { position: wi_anchor_position.after, content: entry.content },
+                    { position: wi_anchor_position.after, content: content },
                 );
                 break;
             case world_info_position.ANTop:
-                ANTopEntries.unshift(entry.content);
+                ANTopEntries.unshift(content);
                 break;
             case world_info_position.ANBottom:
-                ANBottomEntries.unshift(entry.content);
+                ANBottomEntries.unshift(content);
                 break;
             case world_info_position.atDepth: {
                 const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === (entry.depth ?? DEFAULT_DEPTH) && e.role === (entry.role ?? extension_prompt_roles.SYSTEM));
                 if (existingDepthIndex !== -1) {
-                    WIDepthEntries[existingDepthIndex].entries.unshift(entry.content);
+                    WIDepthEntries[existingDepthIndex].entries.unshift(content);
                 } else {
                     WIDepthEntries.push({
                         depth: entry.depth,
-                        entries: [entry.content],
+                        entries: [content],
                         role: entry.role ?? extension_prompt_roles.SYSTEM,
                     });
                 }
@@ -2582,14 +2585,6 @@ async function checkWorldInfo(chat, maxContext) {
     }
 
     buffer.cleanExternalActivations();
-
-    {
-        let regexType = regex_placement.WAIN;
-        let options = { isPrompt: true, depth: 0 };
-
-        worldInfoAfter = getRegexedString(worldInfoAfter, regexType, options);
-        worldInfoBefore = getRegexedString(worldInfoBefore, regexType, options);
-    }
 
     return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, allActivatedEntries };
 }
