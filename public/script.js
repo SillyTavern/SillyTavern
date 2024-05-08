@@ -34,6 +34,7 @@ import {
     checkEmbeddedWorld,
     setWorldInfoButtonClass,
     importWorldInfo,
+    wi_anchor_position,
 } from './scripts/world-info.js';
 
 import {
@@ -426,8 +427,6 @@ export const characterGroupOverlay = new BulkEditOverlay();
 const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
 eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
 console.debug('Character context menu initialized', characterContextMenu);
-
-hljs.addPlugin({ 'before:highlightElement': ({ el }) => { el.textContent = el.innerText; } });
 
 // Markdown converter
 export let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
@@ -3220,32 +3219,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan, depthPromptRole);
     }
 
-    // Parse example messages
-    if (!mesExamples.startsWith('<START>')) {
-        mesExamples = '<START>\n' + mesExamples.trim();
-    }
-    if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
-        mesExamples = '';
-    }
-    const mesExamplesRaw = mesExamples;
-    /**
-     * Adds a block heading to the examples string.
-     * @param {string} examplesStr
-     * @returns {string[]} Examples array with block heading
-     */
-    function addBlockHeading(examplesStr) {
-        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-        const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
-        return examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
-    }
-
-    let mesExamplesArray = addBlockHeading(mesExamples);
-    let mesExamplesRawArray = addBlockHeading(mesExamplesRaw);
-
-    if (mesExamplesArray && isInstruct) {
-        mesExamplesArray = formatInstructModeExamples(mesExamplesArray, name1, name2);
-    }
-
     // First message in fresh 1-on-1 chat reacts to user/character settings changes
     if (chat.length) {
         chat[0].mes = substituteParams(chat[0].mes);
@@ -3314,6 +3287,30 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         force_name2 = false;
     }
 
+    // TODO (kingbri): Migrate to a utility function
+    /**
+     * Parses an examples string.
+     * @param {string} examplesStr
+     * @returns {string[]} Examples array with block heading
+     */
+    function parseMesExamples(examplesStr) {
+        if (examplesStr.length === 0) {
+            return [];
+        }
+
+        if (!examplesStr.startsWith('<START>')) {
+            examplesStr = '<START>\n' + examplesStr.trim();
+        }
+
+        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
+        const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
+        const splitExamples = examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+
+        return splitExamples;
+    }
+
+    let mesExamplesArray = parseMesExamples(mesExamples);
+
     //////////////////////////////////
     // Extension added strings
     // Set non-WI AN
@@ -3323,8 +3320,34 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Make quiet prompt available for WIAN
     setExtensionPrompt('QUIET_PROMPT', quiet_prompt || '', extension_prompt_types.IN_PROMPT, 0, true);
     const chatForWI = coreChat.map(x => `${x.name}: ${x.mes}`).reverse();
-    let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun);
+    const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun);
     setExtensionPrompt('QUIET_PROMPT', '', extension_prompt_types.IN_PROMPT, 0, true);
+
+    // Add message example WI
+    for (const example of worldInfoExamples) {
+        const exampleMessage = example.content;
+
+        if (exampleMessage.length === 0) {
+            continue;
+        }
+
+        const formattedExample = baseChatReplace(exampleMessage, name1, name2);
+        const cleanedExample = parseMesExamples(formattedExample);
+
+        // Insert depending on before or after position
+        if (example.position === wi_anchor_position.before) {
+            mesExamplesArray.unshift(...cleanedExample);
+        } else {
+            mesExamplesArray.push(...cleanedExample);
+        }
+    }
+
+    // At this point, the raw message examples can be created
+    const mesExamplesRawArray = [...mesExamplesArray];
+
+    if (mesExamplesArray && isInstruct) {
+        mesExamplesArray = formatInstructModeExamples(mesExamplesArray, name1, name2);
+    }
 
     if (skipWIAN !== true) {
         console.log('skipWIAN not active, adding WIAN');
