@@ -10,6 +10,7 @@ import { power_user } from './power-user.js';
 import { getTagKeyForEntity } from './tags.js';
 import { resolveVariable } from './variables.js';
 import { debounce_timeout } from './constants.js';
+import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
 
 export {
     world_info,
@@ -2571,8 +2572,8 @@ async function checkWorldInfo(chat, maxContext) {
         }
     });
 
-    const worldInfoBefore = WIBeforeEntries.length ? WIBeforeEntries.join('\n') : '';
-    const worldInfoAfter = WIAfterEntries.length ? WIAfterEntries.join('\n') : '';
+    var worldInfoBefore = WIBeforeEntries.length ? WIBeforeEntries.join('\n') : '';
+    var worldInfoAfter = WIAfterEntries.length ? WIAfterEntries.join('\n') : '';
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
@@ -2581,6 +2582,14 @@ async function checkWorldInfo(chat, maxContext) {
     }
 
     buffer.cleanExternalActivations();
+
+    {
+        let regexType = regex_placement.WAIN;
+        let options = { isPrompt: true, depth: 0 };
+
+        worldInfoAfter = getRegexedString(worldInfoAfter, regexType, options);
+        worldInfoBefore = getRegexedString(worldInfoBefore, regexType, options);
+    }
 
     return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, allActivatedEntries };
 }
