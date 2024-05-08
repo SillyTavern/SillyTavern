@@ -423,8 +423,6 @@ const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
 eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
 console.debug('Character context menu initialized', characterContextMenu);
 
-hljs.addPlugin({ 'before:highlightElement': ({ el }) => { el.textContent = el.innerText; } });
-
 // Markdown converter
 export let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
 let converter;
