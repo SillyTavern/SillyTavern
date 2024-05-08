@@ -68,7 +68,7 @@
                 </label>
                 <div>
                     <textarea
-                        class="regex_trim_strings text_pole wide100p textarea_compact" data-i18n="[placeholder]ext_regex_trim_placeholder" 
+                        class="regex_trim_strings text_pole wide100p textarea_compact" data-i18n="[placeholder]ext_regex_trim_placeholder"
                         placeholder="Globally trims any unwanted parts from a regex match before replacement. Separate each element by an enter."
                         rows="3"
                     ></textarea>
@@ -79,34 +79,40 @@
         <div class="flex-container">
             <div class="flex1 wi-enter-footer-text flex-container flexFlowColumn flexNoGap alignitemsstart">
                 <small data-i18n="ext_regex_affects">Affects</small>
-                <div>
+                <div title="Messages sent by the user.">
                     <label class="checkbox flex-container">
                         <input type="checkbox" name="replace_position" value="1">
                         <span data-i18n="ext_regex_user_input">User Input</span>
                     </label>
                 </div>
-                <div>
+                <div title="Messages received from the Generation API.">
                     <label class="checkbox flex-container">
                         <input type="checkbox" name="replace_position" value="2">
                         <span data-i18n="ext_regex_ai_output">AI Output</span>
                     </label>
                 </div>
-                <div>
+                <div title="Messages sent using STscript commands.">
                     <label class="checkbox flex-container">
                         <input type="checkbox" name="replace_position" value="3">
                         <span data-i18n="Slash Commands">Slash Commands</span>
                     </label>
                 </div>
+                <div title="Lorebook/World Info entry contents. Requires 'Only Format Prompt' to be checked!">
+                    <label class="checkbox flex-container">
+                        <input type="checkbox" name="replace_position" value="5">
+                        <span data-i18n="World Info">World Info</span>
+                    </label>
+                </div>
                 <div class="flex-container wide100p marginTop5">
                     <div class="flex1 flex-container flexNoGap">
-                        <small data-i18n="[title]ext_regex_min_depth_desc" title="When applied to prompts or display, only affect messages that are at least N levels deep. 0 = last message, 1 = penultimate message, etc. Only counts usable messages, i.e. not hidden or system.">
+                        <small data-i18n="[title]ext_regex_min_depth_desc" title="When applied to prompts or display, only affect messages that are at least N levels deep. 0 = last message, 1 = penultimate message, etc. Only counts WI entries @Depth and usable messages, i.e. not hidden or system.">
                             <span data-i18n="Min Depth">Min Depth</span>
                             <span class="fa-solid fa-circle-question note-link-span"></span>
                         </small>
                         <input name="min_depth" class="text_pole textarea_compact" type="number" min="0" max="999" data-i18n="[placeholder]ext_regex_min_depth_placeholder" placeholder="Unlimited" />
                     </div>
                     <div class="flex1 flex-container flexNoGap">
-                        <small data-i18n="[title]ext_regex_max_depth_desc" title="When applied to prompts or display, only affect messages no more than N levels deep. 0 = last message, 1 = penultimate message, etc. Only counts usable messages, i.e. not hidden or system.">
+                        <small data-i18n="[title]ext_regex_max_depth_desc" title="When applied to prompts or display, only affect messages no more than N levels deep. 0 = last message, 1 = penultimate message, etc. Only counts WI entries @Depth and usable messages, i.e. not hidden or system.">
                             <span data-i18n="Max Depth">Max Depth</span>
                             <span class="fa-solid fa-circle-question note-link-span"></span>
                         </small>
@@ -120,11 +126,11 @@
                     <input type="checkbox" name="disabled" />
                     <span data-i18n="Disabled">Disabled</span>
                 </label>
-                <label class="checkbox flex-container">
+                <label class="checkbox flex-container" title="Chat history won't change, only the message rendered in the UI.">
                     <input type="checkbox" name="only_format_display" />
                     <span data-i18n="Only Format Display">Only Format Display</span>
                 </label>
-                <label class="checkbox flex-container" data-i18n="[title]ext_regex_only_format_prompt_desc" title="Chat history won't change, only the prompt as the request is sent (on generation)">
+                <label class="checkbox flex-container" data-i18n="[title]ext_regex_only_format_prompt_desc" title="Chat history won't change, only the prompt as the request is sent (on generation).">
                     <input type="checkbox" name="only_format_prompt"/>
                     <span>
                         <span data-i18n="Only Format Prompt (?)">Only Format Prompt</span>
@@ -135,7 +141,7 @@
                     <input type="checkbox" name="run_on_edit" />
                     <span data-i18n="Run On Edit">Run On Edit</span>
                 </label>
-                <label class="checkbox flex-container" data-i18n="[title]ext_regex_substitute_regex_desc" title="Substitute {{macros}} in Find Regex before running it">
+                <label class="checkbox flex-container" data-i18n="[title]ext_regex_substitute_regex_desc" title="Substitute &lcub;&lcub;macros&rcub;&rcub; in Find Regex before running it">
                     <input type="checkbox" name="substitute_regex" />
                     <span>
                         <span data-i18n="Substitute Regex">Substitute Regex</span>
