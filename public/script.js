@@ -9191,7 +9191,7 @@ jQuery(async function () {
     //////////////////////////////////////////////////////////////////////////////////////////////
 
     //functionality for the cancel delete messages button, reverts to normal display of input form
-    $('#dialogue_del_mes_cancel').click(function () {
+    $('#dialogue_del_mes_cancel').on("click", function () {
         $('#dialogue_del_mes').css('display', 'none');
         $('#send_form').css('display', css_send_form_display);
         $('.del_checkbox').each(function () {
@@ -9203,10 +9203,11 @@ jQuery(async function () {
         showSwipeButtons();
         this_del_mes = -1;
         is_delete_mode = false;
+        $('#send_textarea').trigger("focus");
     });
 
     //confirms message deletion with the "ok" button
-    $('#dialogue_del_mes_ok').click(async function () {
+    $('#dialogue_del_mes_ok').on("click", async function () {
         $('#dialogue_del_mes').css('display', 'none');
         $('#send_form').css('display', css_send_form_display);
         $('.del_checkbox').each(function () {
@@ -9235,6 +9236,7 @@ jQuery(async function () {
         showSwipeButtons();
         this_del_mes = -1;
         is_delete_mode = false;
+        $('#send_textarea').trigger("focus");
     });
 
     $('#settings_preset').change(function () {
