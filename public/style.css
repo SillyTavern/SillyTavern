@@ -1587,7 +1587,7 @@ body[data-stscript-style] .hljs.language-stscript {
                 }
 
                 .argument.optional + .argument-description:before,
-                .argumentSpec:has(.argument.optional) + argument.description:before
+                .argumentSpec:has(.argument.optional) + .argument-description:before
                 {
                     content: "(optional) ";
                     color: var(--ac-color-text);
