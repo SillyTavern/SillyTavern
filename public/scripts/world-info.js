@@ -476,6 +476,9 @@ function setWorldInfoSettings(settings, data) {
 }
 
 function registerWorldInfoSlashCommands() {
+    /**
+     * @param {string} file
+     */
     function reloadEditor(file) {
         const selectedIndex = world_names.indexOf(file);
         if (selectedIndex !== -1) {
@@ -483,6 +486,9 @@ function registerWorldInfoSlashCommands() {
         }
     }
 
+    /**
+     * @param {string} file
+     */
     async function getEntriesFromFile(file) {
         if (!file || !world_names.includes(file)) {
             toastr.warning('Valid World Info file name is required');
@@ -528,6 +534,10 @@ function registerWorldInfoSlashCommands() {
         return name;
     }
 
+    /**
+     * @param {{ file: string; field: string; }} args
+     * @param {any} value
+     */
     async function findBookEntryCallback(args, value) {
         const file = resolveVariable(args.file);
         const field = args.field || 'key';
@@ -559,6 +569,10 @@ function registerWorldInfoSlashCommands() {
         return result;
     }
 
+    /**
+     * @param {{ file: string; field: string; }} args
+     * @param {any} uid
+     */
     async function getEntryFieldCallback(args, uid) {
         const file = resolveVariable(args.file);
         const field = args.field || 'content';
@@ -588,7 +602,7 @@ function registerWorldInfoSlashCommands() {
         }
 
         if (Array.isArray(fieldValue)) {
-            return fieldValue.map(x => substituteParams(x)).join(', ');
+            return fieldValue.map(x => (substituteParams(x) || x)).join(', ');
         }
 
         return substituteParams(String(fieldValue));
@@ -2372,7 +2386,7 @@ async function checkWorldInfo(chat, maxContext) {
             }
 
             if (entry.constant || buffer.isExternallyActivated(entry)) {
-                entry.content = substituteParams(entry.content);
+                entry.content = substituteParams(entry.content) || entry.content;
                 activatedNow.add(entry);
                 continue;
             }
@@ -2382,7 +2396,7 @@ async function checkWorldInfo(chat, maxContext) {
                 const selectiveLogic = entry.selectiveLogic ?? 0;
 
                 primary: for (let key of entry.key) {
-                    const substituted = substituteParams(key);
+                    const substituted = substituteParams(key) || key;
                     const textToScan = buffer.get(entry);
 
                     if (substituted && buffer.matchKeys(textToScan, substituted.trim(), entry)) {
@@ -2398,7 +2412,7 @@ async function checkWorldInfo(chat, maxContext) {
                             let hasAnyMatch = false;
                             let hasAllMatch = true;
                             secondary: for (let keysecondary of entry.keysecondary) {
-                                const secondarySubstituted = substituteParams(keysecondary);
+                                const secondarySubstituted = substituteParams(keysecondary) || keysecondary;
                                 const hasSecondaryMatch = secondarySubstituted && buffer.matchKeys(textToScan, secondarySubstituted.trim(), entry);
                                 console.debug(`WI UID:${entry.uid}: Filtering for secondary keyword - "${secondarySubstituted}".`);
 
@@ -2465,7 +2479,7 @@ async function checkWorldInfo(chat, maxContext) {
                 continue;
             } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`); }
 
-            newContent += `${substituteParams(entry.content)}\n`;
+            newContent += `${substituteParams(entry.content) || entry.content}\n`;
 
             if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
                 console.debug('WI budget reached, stopping');
@@ -2498,7 +2512,7 @@ async function checkWorldInfo(chat, maxContext) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
                 .filter(x => !x.preventRecursion)
-                .map(x => substituteParams(x.content)).join('\n');
+                .map(x => (substituteParams(x.content) || x.content)).join('\n');
             buffer.addRecurse(text);
             allActivatedText = (text + '\n' + allActivatedText);
         }
@@ -2571,12 +2585,15 @@ async function checkWorldInfo(chat, maxContext) {
         }
     });
 
-    const worldInfoBefore = WIBeforeEntries.length ? WIBeforeEntries.join('\n') : '';
-    const worldInfoAfter = WIAfterEntries.length ? WIAfterEntries.join('\n') : '';
+    //remove entries that are empty
+    let notempty = (entry) => entry !== ''
+
+    const worldInfoBefore = WIBeforeEntries.length ? WIBeforeEntries.filter(notempty).join('\n') : '';
+    const worldInfoAfter = WIAfterEntries.length ? WIAfterEntries.filter(notempty).join('\n') : '';
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
-        const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`;
+        const ANWithWI = `${ANTopEntries.filter(notempty).join('\n')}\n${originalAN}\n${ANBottomEntries.filter(notempty).join('\n')}`;
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
