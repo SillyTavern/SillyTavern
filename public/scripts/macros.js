@@ -1,4 +1,4 @@
-import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams } from '../script.js';
+import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams, this_chid, characters } from '../script.js';
 import { timestampToMoment, isDigitsOnly, getStringHash } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
@@ -316,6 +316,8 @@ export function evaluateMacros(content, env) {
     content = content.replace(/{{weekday}}/gi, () => moment().format('dddd'));
     content = content.replace(/{{isotime}}/gi, () => moment().format('HH:mm'));
     content = content.replace(/{{isodate}}/gi, () => moment().format('YYYY-MM-DD'));
+
+    content = content.replace(/{{char_version}}/gi, characters[this_chid]?.data?.character_version);
 
     content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
         const formattedTime = moment().format(format);
