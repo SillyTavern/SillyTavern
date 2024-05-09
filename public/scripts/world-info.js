@@ -2534,6 +2534,11 @@ async function checkWorldInfo(chat, maxContext) {
         const regexDepth = entry.position === world_info_position.atDepth ? (entry.depth ?? DEFAULT_DEPTH) : null;
         const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
 
+        if (!content) {
+            console.debug('Skipping adding WI entry to prompt due to empty content:', entry);
+            return;
+        }
+
         switch (entry.position) {
             case world_info_position.before:
                 WIBeforeEntries.unshift(substituteParams(content));
