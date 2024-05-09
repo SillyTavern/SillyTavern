@@ -2534,6 +2534,11 @@ async function checkWorldInfo(chat, maxContext) {
         const regexDepth = entry.position === world_info_position.atDepth ? (entry.depth ?? DEFAULT_DEPTH) : null;
         const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
 
+        if (!content) {
+            console.debug('Skipping adding WI entry to prompt due to empty content:', entry);
+            return;
+        }
+
         switch (entry.position) {
             case world_info_position.before:
                 WIBeforeEntries.unshift(substituteParams(content));
@@ -2575,15 +2580,12 @@ async function checkWorldInfo(chat, maxContext) {
         }
     });
 
-    //remove entries that are empty
-    let notempty = (entry) => entry !== ''
-
-    const worldInfoBefore = WIBeforeEntries.filter(notempty).join('\n');
-    const worldInfoAfter = WIAfterEntries.filter(notempty).join('\n');
+    const worldInfoBefore = WIBeforeEntries.join('\n');
+    const worldInfoAfter = WIAfterEntries.join('\n');
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
-        const ANWithWI = `${ANTopEntries.filter(notempty).join('\n')}\n${originalAN}\n${ANBottomEntries.filter(notempty).join('\n')}`;
+        const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`;
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
