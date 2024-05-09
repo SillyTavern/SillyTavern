@@ -4036,3 +4036,12 @@ body:not(.movingUI) .drawer-content.maximized {
         z-index: 9999;
     }
 }
+
+/* CSS styles using a consistent pastel color palette */
+.regex-brackets { color: #FFB347; } /* Pastel Orange */
+.regex-special { color: #B0E0E6; } /* Powder Blue */
+.regex-quantifier { color: #DDA0DD; } /* Plum */
+.regex-operator { color: #FFB6C1; } /* Light Pink */
+.regex-flags { color: #98FB98; } /* Pale Green */
+.regex-delimiter { font-weight: bold; color: #FF6961; } /* Pastel Red */
+.regex-highlight { color: #FAF8F6; } /* Pastel White */

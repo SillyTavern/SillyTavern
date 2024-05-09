@@ -1502,9 +1502,9 @@ export function select2ModifyOptions(element, items, { select = false, changeEve
  * Can be used on a single global array, querying data from the server or anything similar.
  * 
  * @param {function():Select2Option[]} dataProvider - The provider/function to retrieve the data - can be as simple as "() => myData" for arrays
- * @return {object} The ajax object with the transport function to use on the select2 ajax property
+ * @return {{transport: function}} The ajax object with the transport function to use on the select2 ajax property
  */
-export function getDynamicSelect2DataViaAjax(dataProvider) {
+export function dynamicSelect2DataViaAjax(dataProvider) {
     function dynamicSelect2DataTransport(params, success, failure) {
         var items = dataProvider();
         // fitering if params.data.q available
@@ -1523,4 +1523,45 @@ export function getDynamicSelect2DataViaAjax(dataProvider) {
         transport: dynamicSelect2DataTransport
     };
     return ajax;
+}
+
+/**
+ * Applies syntax highlighting to a given regex string by generating HTML with classes
+ * 
+ * @param {string} regexStr - The javascript compatible regex string
+ * @returns {string} The html representation of the highlighted regex
+ */
+export function highlightRegex(regexStr) {
+    // Function to escape HTML special characters for safety
+    const escapeHtml = (str) => str.replace(/[&<>"']/g, match => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[match]);
+
+    // Replace special characters with their HTML-escaped forms
+    regexStr = escapeHtml(regexStr);
+
+    // Patterns that we want to highlight only if they are not escaped
+    const patterns = {
+        brackets: /(?<!\\)\[.*?\]/g,  // Non-escaped squary brackets
+        quantifiers: /(?<!\\)[*+?{}]/g,  // Non-escaped quantifiers
+        operators: /(?<!\\)[|.^$()]/g,  // Non-escaped operators like | and ()
+        specialChars: /\\./g,
+        flags: /(?<=\/)([gimsuy]*)$/g,  // Match trailing flags
+        delimiters: /^\/|(?<![\\<])\//g,  // Match leading or trailing delimiters
+    };
+
+    // Function to replace each pattern with a highlighted HTML span
+    const wrapPattern = (pattern, className) => {
+        regexStr = regexStr.replace(pattern, match => `<span class="${className}">${match}</span>`);
+    };
+
+    // Apply highlighting patterns
+    wrapPattern(patterns.brackets, 'regex-brackets');
+    wrapPattern(patterns.quantifiers, 'regex-quantifier');
+    wrapPattern(patterns.operators, 'regex-operator');
+    wrapPattern(patterns.specialChars, 'regex-special');
+    wrapPattern(patterns.flags, 'regex-flags');
+    wrapPattern(patterns.delimiters, 'regex-delimiter');
+
+    return `<span class="regex-highlight">${regexStr}</span>`;
 }
