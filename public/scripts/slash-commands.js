@@ -135,7 +135,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sendas',
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER],
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
         }),
     ],
     unnamedArgumentList: [
@@ -176,7 +176,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sys',
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER],
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
         }),
     ],
     unnamedArgumentList: [
@@ -227,7 +227,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'comment',
         SlashCommandNamedArgument.fromProps({
             name: 'at',
             description: 'position to insert the message',
-            typeList: [ARGUMENT_TYPE.NUMBER],
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
         }),
     ],
     unnamedArgumentList: [
@@ -364,6 +364,19 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'send',
             false,
             'false',
         ),
+        SlashCommandNamedArgument.fromProps({
+            name: 'at',
+            description: 'position to insert the message',
+            typeList: [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.VARIABLE_NAME],
+        }),
+        new SlashCommandNamedArgument(
+            'name',
+            'display name',
+            [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME],
+            false,
+            false,
+            '{{user}}',
+        ),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -378,6 +391,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'send',
         </div>
         <div>
             If <code>compact</code> is set to <code>true</code>, the message is sent using a compact layout.
+        </div>
+        <div>
+            If <code>name</code> is set, it will be displayed as the message sender. Can be an empty for no name.
         </div>
         <div>
             <strong>Example:</strong>
