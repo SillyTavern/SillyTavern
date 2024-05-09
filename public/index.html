@@ -3955,7 +3955,7 @@
                                         </div>
                                     </label>
                                     <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file." data-i18n="[title]Save movingUI changes to a new file" class="menu_button margin0 fa-solid fa-save"></div>
-                                    <div data-newbie-hidden id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button fa-solid fa-recycle margin0" data-i18n="Reset Panels"></div>
+                                    <div data-newbie-hidden id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button fa-solid fa-recycle margin0" data-i18n="[title]Reset MovingUI panel sizes/locations."></div>
                                 </div>
                             </div>
                             <div data-newbie-hidden id="CustomCSS-block" class="flex-container flexFlowColumn">
@@ -5057,12 +5057,18 @@
                                 <div class="WIEnteryHeaderControls flex-container">
                                     <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios wi-enter-footer-text">
                                         <label for="position" class="WIEntryHeaderTitleMobile" data-i18n="Position:">Position:</label>
-                                        <select name="position" class="text_pole widthNatural margin0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D ⚙️: at Depth (System)&#13;@D 👤: at Depth (User)&#13;@D 🤖: at Depth (Assistant)">
+                                        <select name="position" class="text_pole widthNatural margin0" data-i18n="[title]T_Position" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑EM: Before Example Messages&#13;↓EM: After Example Messages&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D ⚙️: at Depth (System)&#13;@D 👤: at Depth (User)&#13;@D 🤖: at Depth (Assistant)">
                                             <option value="0" data-role="" data-i18n="Before Char Defs">
                                                 ↑Char
                                             </option>
                                             <option value="1" data-role="" data-i18n="After Char Defs">
                                                 ↓Char
+                                            </option>
+                                            <option value="5" data-role="" data-i18n="Before EM">
+                                                ↑EM
+                                            </option>
+                                            <option value="6" data-role="" data-i18n="After EM">
+                                                ↓EM
                                             </option>
                                             <option value="2" data-role="" data-i18n="Before AN">
                                                 ↑AN
@@ -5256,7 +5262,7 @@
                                     </small>
                                 </div>
                                 <div class="range-block-range">
-                                    <input type="number" class="text_pole margin0" name="groupWeight" rows="1" placeholder="100" min="0" max="999999">
+                                    <input type="number" class="text_pole margin0" name="groupWeight" rows="1" placeholder="100" min="1" max="999999">
                                 </div>
                             </div>
                         </div>

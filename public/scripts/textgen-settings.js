@@ -710,6 +710,19 @@ jQuery(function () {
     }
 
     $('#textgen_logit_bias_new_entry').on('click', () => createNewLogitBiasEntry(settings.logit_bias, BIAS_KEY));
+
+    $('#openrouter_providers_text').on('change', function () {
+        const selectedProviders = $(this).val();
+
+        // Not a multiple select?
+        if (!Array.isArray(selectedProviders)) {
+            return;
+        }
+
+        settings.openrouter_providers = selectedProviders;
+
+        saveSettingsDebounced();
+    });
 });
 
 function showTypeSpecificControls(type) {
