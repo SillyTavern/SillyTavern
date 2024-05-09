@@ -1108,8 +1108,8 @@ select {
 }
 
 #send_textarea {
-    min-height: var(--bottomFormBlockSize);
-    height: var(--bottomFormBlockSize);
+    min-height: calc(var(--bottomFormBlockSize) + 3px);
+    height: calc(var(--bottomFormBlockSize) + 3px);
     max-height: 50vh;
     max-height: 50svh;
     word-wrap: break-word;
