@@ -3064,6 +3064,9 @@ jQuery(async () => {
             new SlashCommandNamedArgument(
                 'quiet', 'whether to post the generated image to chat', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['false', 'true'],
             ),
+            new SlashCommandNamedArgument(
+                'negative', 'negative prompt prefix', [ARGUMENT_TYPE.STRING], false, false, '',
+            ),
         ],
         unnamedArgumentList: [
             new SlashCommandArgument(
