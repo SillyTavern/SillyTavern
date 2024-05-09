@@ -1338,7 +1338,7 @@ function getWorldEntry(name, data, entry) {
         });
 
         function templateStyling(/** @type {Select2Option} */ item, { searchStyle = false } = {}) {
-            const content = $('<span>').addClass('item').text(item.text);
+            const content = $('<span>').addClass('item').text(item.text).attr('title', `${item.text}\n\nClick to edit`);
             const isRegex = isValidRegex(item.text);
             if (isRegex) {
                 content.html(highlightRegex(item.text));
@@ -1380,6 +1380,24 @@ function getWorldEntry(name, data, entry) {
             });
             input.on('select2:select', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data]));
             input.on('select2:unselect', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data], { remove: true }));
+
+            select2ChoiceClickSubscribe(input, target => {
+                const key = $(target).text();
+                console.debug('Editing WI key', key);
+
+                // Remove the current key from the actual selection
+                const selected = input.val();
+                if (!Array.isArray(selected)) return;
+                var index = selected.indexOf(getSelect2OptionId(key));
+                if (index > -1) selected.splice(index, 1);
+                input.val(selected).trigger('change');
+                // Manually update the cache, that change event is not gonna trigger it
+                updateWorldEntryKeyOptionsCache([key], { remove: true })
+
+                // We need to "hack" the actual text input into the currently open textarea
+                input.next('span.select2-container').find('textarea')
+                    .val(key).trigger('input');
+            }, { openDrawer: true });
 
             select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
         }
@@ -3525,14 +3543,14 @@ jQuery(() => {
         });
 
         // Subscribe world loading to the select2 multiselect items (We need to target the specific select2 control)
-        select2ChoiceClickSubscribe($('#world_info'), (target) => {
+        select2ChoiceClickSubscribe($('#world_info'), target => {
             const name = $(target).text();
             const selectedIndex = world_names.indexOf(name);
             if (selectedIndex !== -1) {
                 $('#world_editor_select').val(selectedIndex).trigger('change');
                 console.log('Quick selection of world', name);
             }
-        }, { closeDrawer: true });
+        }, { buttonStyle: true, closeDrawer: true });
     }
 
     $('#WorldInfo').on('scroll', () => {

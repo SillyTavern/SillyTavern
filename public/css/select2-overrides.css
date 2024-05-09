@@ -193,12 +193,15 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
 /* Custom class to support styling to show clickable choice options */
 .select2_choice_clickable+span.select2-container .select2-selection__choice__display {
     cursor: pointer;
+}
+.select2_choice_clickable_buttonstyle+span.select2-container .select2-selection__choice__display {
+    cursor: pointer;
     transition: background-color 0.3s;
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
 }
 
-.select2_choice_clickable+span.select2-container .select2-selection__choice__display:hover {
+.select2_choice_clickable_buttonstyle+span.select2-container .select2-selection__choice__display:hover {
     background-color: var(--white30a);
 }
 

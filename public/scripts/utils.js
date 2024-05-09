@@ -1531,22 +1531,29 @@ export function dynamicSelect2DataViaAjax(dataProvider) {
  * @param {JQuery<HTMLElement>} control The original control the select2 was applied to
  * @param {function(EventTarget):void} action - The action to execute when a choice element is clicked
  * @param {object} options - Optional parameters
+ * @param {boolean} [options.buttonStyle=false] - Whether the choices should be styles as a clickable button with color and hover transition, instead of just changed cursor
  * @param {boolean} [options.closeDrawer=false] - Whether the drawer should be closed and focus removed after the choice item was clicked
+ * @param {boolean} [options.openDrawer=false] - Whether the drawer should be opened, even if this click would normally close it
  */
-export function select2ChoiceClickSubscribe(control, action, { closeDrawer = false } = {}) {
+export function select2ChoiceClickSubscribe(control, action, { buttonStyle = false, closeDrawer = false, openDrawer = false } = {}) {
     // Add class for styling (hover color, changed cursor, etc)
     control.addClass('select2_choice_clickable');
+    if (buttonStyle) control.addClass('select2_choice_clickable_buttonstyle');
 
     // Get the real container below and create a click handler on that one
     const select2Container = control.next('span.select2-container');
     select2Container.on('click', function (event) {
-        if ($(event.target).hasClass('select2-selection__choice__display')) {
+        const $target = $(event.target);
+        if ($target.hasClass('select2-selection__choice__display') || $target.parents('.select2-selection__choice__display')) {
             event.preventDefault();
 
             // select2 still bubbles the event to open the dropdown. So we close it here and remove focus if we want that
             if (closeDrawer) {
                 control.select2('close');
                 setTimeout(() => select2Container.find('textarea').trigger('blur'), debounce_timeout.quick);
+            }
+            if (openDrawer) {
+                control.select2('open');
             }
 
             // Now execute the actual action that was subscribed
