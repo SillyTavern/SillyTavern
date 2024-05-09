@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getStringHash, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getStringHash, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { registerSlashCommand } from './slash-commands.js';
@@ -1220,7 +1220,7 @@ function splitKeywordsAndRegexes(input) {
 
 /**
  * Tokenizer parsing input and splitting it into keywords and regexes
- * 
+ *
  * @param {{_type: string, term: string}} input - The typed input
  * @param {{options: object}} _selection - The selection even object (?)
  * @param {function(Select2Option):void} callback - The original callback function to call if an item should be inserted
@@ -3525,22 +3525,14 @@ jQuery(() => {
         });
 
         // Subscribe world loading to the select2 multiselect items (We need to target the specific select2 control)
-        $('#world_info + span.select2-container').on('click', function (event) {
-            if ($(event.target).hasClass('select2-selection__choice__display')) {
-                event.preventDefault();
-
-                // select2 still bubbles the event to open the dropdown. So we close it here and remove focus
-                $('#world_info').select2('close');
-                setTimeout(() => $('#world_info + span.select2-container textarea').trigger('blur'), debounce_timeout.quick);
-
-                const name = $(event.target).text();
-                const selectedIndex = world_names.indexOf(name);
-                if (selectedIndex !== -1) {
-                    $('#world_editor_select').val(selectedIndex).trigger('change');
-                    console.log('Quick selection of world', name);
-                }
+        select2ChoiceClickSubscribe($('#world_info'), (target) => {
+            const name = $(target).text();
+            const selectedIndex = world_names.indexOf(name);
+            if (selectedIndex !== -1) {
+                $('#world_editor_select').val(selectedIndex).trigger('change');
+                console.log('Quick selection of world', name);
             }
-        });
+        }, { closeDrawer: true });
     }
 
     $('#WorldInfo').on('scroll', () => {

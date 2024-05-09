@@ -1459,7 +1459,7 @@ export function includesIgnoreCaseAndAccents(text, searchTerm) {
 
 /**
  * Returns a unique hash as ID for a select2 option text
- * 
+ *
  * @param {string} option - The option
  * @returns {string} A hashed version of that option
  */
@@ -1500,7 +1500,7 @@ export function select2ModifyOptions(element, items, { select = false, changeEve
 /**
  * Returns the ajax settings that can be used on the select2 ajax property to dynamically get the data.
  * Can be used on a single global array, querying data from the server or anything similar.
- * 
+ *
  * @param {function():Select2Option[]} dataProvider - The provider/function to retrieve the data - can be as simple as "() => myData" for arrays
  * @return {{transport: function}} The ajax object with the transport function to use on the select2 ajax property
  */
@@ -1526,8 +1526,38 @@ export function dynamicSelect2DataViaAjax(dataProvider) {
 }
 
 /**
+ * Subscribes a 'click' event handler to the choice elements of a select2 multi-select control
+ *
+ * @param {JQuery<HTMLElement>} control The original control the select2 was applied to
+ * @param {function(EventTarget):void} action - The action to execute when a choice element is clicked
+ * @param {object} options - Optional parameters
+ * @param {boolean} [options.closeDrawer=false] - Whether the drawer should be closed and focus removed after the choice item was clicked
+ */
+export function select2ChoiceClickSubscribe(control, action, { closeDrawer = false } = {}) {
+    // Add class for styling (hover color, changed cursor, etc)
+    control.addClass('select2_choice_clickable');
+
+    // Get the real container below and create a click handler on that one
+    const select2Container = control.next('span.select2-container');
+    select2Container.on('click', function (event) {
+        if ($(event.target).hasClass('select2-selection__choice__display')) {
+            event.preventDefault();
+
+            // select2 still bubbles the event to open the dropdown. So we close it here and remove focus if we want that
+            if (closeDrawer) {
+                control.select2('close');
+                setTimeout(() => select2Container.find('textarea').trigger('blur'), debounce_timeout.quick);
+            }
+
+            // Now execute the actual action that was subscribed
+            action(event.target);
+        }
+    });
+}
+
+/**
  * Applies syntax highlighting to a given regex string by generating HTML with classes
- * 
+ *
  * @param {string} regexStr - The javascript compatible regex string
  * @returns {string} The html representation of the highlighted regex
  */
