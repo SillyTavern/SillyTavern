@@ -2575,12 +2575,15 @@ async function checkWorldInfo(chat, maxContext) {
         }
     });
 
-    const worldInfoBefore = WIBeforeEntries.length ? WIBeforeEntries.join('\n') : '';
-    const worldInfoAfter = WIAfterEntries.length ? WIAfterEntries.join('\n') : '';
+    //remove entries that are empty
+    let notempty = (entry) => entry !== ''
+
+    const worldInfoBefore = WIBeforeEntries.filter(notempty).join('\n');
+    const worldInfoAfter = WIAfterEntries.filter(notempty).join('\n');
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
-        const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`;
+        const ANWithWI = `${ANTopEntries.filter(notempty).join('\n')}\n${originalAN}\n${ANBottomEntries.filter(notempty).join('\n')}`;
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
