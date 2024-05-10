@@ -4116,23 +4116,25 @@
                             </div>
                             <div name="AutoCompleteToggle">
                                 <h4 data-i18n="AutoComplete Settings">AutoComplete Settings</h4>
-                                <div title="Determines how entries are found for autocomplete." data-i18n="[title]Determines how entries are found for autocomplete.">
-                                    <label for="stscript_matching" data-i18n="Autocomplete Matching"><small>Matching</small></label>
-                                    <select id="stscript_matching">
-                                        <option data-i18n="Starts with" value="strict">Starts with</option>
-                                        <option data-i18n="Includes" value="includes">Includes</option>
-                                        <option data-i18n="Fuzzy" value="fuzzy">Fuzzy</option>
-                                    </select>
-                                </div>
-                                <div title="Sets the style of the autocomplete." data-i18n="[title]Sets the style of the autocomplete.">
-                                    <label for="stscript_autocomplete_style" data-i18n="Autocomplete Style"><small>Style</small></label>
-                                    <div class="flex-container flexFlowRow alignItemsBaseline">
-                                        <select id="stscript_autocomplete_style">
-                                            <option data-i18n="Follow Theme" value="theme">Follow Theme</option>
-                                            <option data-i18n="Dark" value="dark">Dark</option>
-                                            <option data-i18n="Light" value="light">Light</option>
+                                <div class="flex-container">
+                                    <div class="flex1" title="Determines how entries are found for autocomplete." data-i18n="[title]Determines how entries are found for autocomplete.">
+                                        <label for="stscript_matching" data-i18n="Autocomplete Matching"><small>Matching</small></label>
+                                        <select id="stscript_matching">
+                                            <option data-i18n="Starts with" value="strict">Starts with</option>
+                                            <option data-i18n="Includes" value="includes">Includes</option>
+                                            <option data-i18n="Fuzzy" value="fuzzy">Fuzzy</option>
                                         </select>
-                                        <!-- <div class="menu_button fa-solid fa-pen-to-square" title="Customize colors"></div> -->
+                                    </div>
+                                    <div class="flex1" title="Sets the style of the autocomplete." data-i18n="[title]Sets the style of the autocomplete.">
+                                        <label for="stscript_autocomplete_style" data-i18n="Autocomplete Style"><small>Style</small></label>
+                                        <div class="flex-container flexFlowRow alignItemsBaseline">
+                                            <select id="stscript_autocomplete_style">
+                                                <option data-i18n="Follow Theme" value="theme">Follow Theme</option>
+                                                <option data-i18n="Dark" value="dark">Dark</option>
+                                                <option data-i18n="Light" value="light">Light</option>
+                                            </select>
+                                            <!-- <div class="menu_button fa-solid fa-pen-to-square" title="Customize colors"></div> -->
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="flex-container flexFlowColumn gap0" title="Sets the font size of the autocomplete." data-i18n="[title]Sets the font size of the autocomplete.">
