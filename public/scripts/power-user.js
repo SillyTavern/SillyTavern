@@ -654,6 +654,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'top_k' ||
         sliderID == 'mirostat_mode_kobold' ||
         sliderID == 'rep_pen_range' ||
+		sliderID == 'dry_allowed_length_textgenerationwebui' ||
         sliderID == 'max_tokens_second_textgenerationwebui') {
         decimals = 0;
     }
@@ -661,7 +662,9 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'max_temp_textgenerationwebui' ||
         sliderID == 'dynatemp_exponent_textgenerationwebui' ||
         sliderID == 'smoothing_curve_textgenerationwebui' ||
-        sliderID == 'smoothing_factor_textgenerationwebui') {
+        sliderID == 'smoothing_factor_textgenerationwebui' ||
+		sliderID == 'dry_multiplier_textgenerationwebui' ||
+        sliderID == 'dry_base_textgenerationwebui') {
         decimals = 2;
     }
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
@@ -722,6 +725,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'rep_pen_slope' ||
         sliderID == 'smoothing_factor_textgenerationwebui' ||
         sliderID == 'smoothing_curve_textgenerationwebui' ||
+		sliderID == 'dry_multiplier_textgenerationwebui' ||
         sliderID == 'min_length_textgenerationwebui') {
         offVal = 0;
     }
