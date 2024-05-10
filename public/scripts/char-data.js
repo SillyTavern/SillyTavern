@@ -1,5 +1,5 @@
 /**
- * @typedef {object} WorldInfoEntry
+ * @typedef {object} v2DataWorldInfoEntry
  * @property {string[]} keys - An array of primary keys associated with the entry.
  * @property {string[]} secondary_keys - An array of secondary keys associated with the entry (optional).
  * @property {string} comment - A human-readable description or explanation for the entry.
@@ -9,11 +9,11 @@
  * @property {number} insertion_order - Defines the order in which the entry is inserted during processing.
  * @property {boolean} enabled - Controls whether the entry is currently active and used.
  * @property {string} position - Specifies the location or context where the entry applies.
- * @property {WorldInfoEntryExtensionInfos} extensions - An object containing additional details for extensions associated with the entry.
+ * @property {v2DataWorldInfoEntryExtensionInfos} extensions - An object containing additional details for extensions associated with the entry.
  * @property {number} id - A unique identifier assigned to the entry.
  */
 /**
- * @typedef {object} WorldInfoEntryExtensionInfos
+ * @typedef {object} v2DataWorldInfoEntryExtensionInfos
  * @property {number} position - The order in which the extension is applied relative to other extensions.
  * @property {boolean} exclude_recursion - Prevents the extension from being applied recursively.
  * @property {number} probability - The chance (between 0 and 1) of the extension being applied.
@@ -37,7 +37,7 @@
 /**
  * @typedef {object} WorldInfoBook
  * @property {string} name - the name of the book
- * @property {WorldInfoEntry[]} entries - the entries of the book
+ * @property {v2DataWorldInfoEntry[]} entries - the entries of the book
  */
 
 /**
