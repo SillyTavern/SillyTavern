@@ -84,3 +84,4 @@
  * @property {string} create_date - create_date
  * @property {v2CharData} data - v2 data extension
  */
+export default 0;// now this file is a module
