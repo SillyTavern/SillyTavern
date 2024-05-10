@@ -99,8 +99,7 @@ export class AutoComplete {
         textarea.addEventListener('keydown', (evt)=>this.handleKeyDown(evt));
         textarea.addEventListener('click', ()=>this.isActive ? this.show() : null);
         textarea.addEventListener('selectionchange', ()=>this.show());
-        //TODO blur
-        // textarea.addEventListener('blur', ()=>this.hide());
+        textarea.addEventListener('blur', ()=>this.hide());
         if (isFloating) {
             textarea.addEventListener('scroll', ()=>this.updateFloatingPositionDebounced());
         }
