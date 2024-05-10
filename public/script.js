@@ -292,6 +292,11 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
         return;
     }
 
+    // Replace line breaks with <br> in unknown elements
+    if (node instanceof HTMLUnknownElement) {
+        node.innerHTML = node.innerHTML.replaceAll('\n', '<br>');
+    }
+
     const isMediaAllowed = isExternalMediaAllowed();
     if (isMediaAllowed) {
         return;
@@ -2102,7 +2107,6 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     const newMessage = $(`#chat [mesid="${newMessageId}"]`);
     const isSmallSys = mes?.extra?.isSmallSys;
-    newMessage.data('isSystem', isSystem);
 
     if (isSmallSys === true) {
         newMessage.addClass('smallSysMes');
@@ -9452,14 +9456,9 @@ jQuery(async function () {
     else {
         $(document).on('pointerup', '.mes_copy', function () {
             if (this_chid !== undefined || selected_group) {
-                const message = $(this).closest('.mes');
-
-                if (message.data('isSystem')) {
-                    return;
-                }
                 try {
-                    var edit_mes_id = $(this).closest('.mes').attr('mesid');
-                    var text = chat[edit_mes_id]['mes'];
+                    const messageId = $(this).closest('.mes').attr('mesid');
+                    const text = chat[messageId]['mes'];
                     navigator.clipboard.writeText(text);
                     toastr.info('Copied!', '', { timeOut: 2000 });
                 } catch (err) {
@@ -9718,8 +9717,8 @@ jQuery(async function () {
         }
 
         hideSwipeButtons();
-        let oldScroll = $('#chat')[0].scrollTop;
-        const clone = JSON.parse(JSON.stringify(chat[this_edit_mes_id])); // quick and dirty clone
+        const oldScroll = chatElement[0].scrollTop;
+        const clone = structuredClone(chat[this_edit_mes_id]);
         clone.send_date = Date.now();
         clone.mes = $(this).closest('.mes').find('.edit_textarea').val();
 
@@ -9732,7 +9731,7 @@ jQuery(async function () {
 
         updateViewMessageIds();
         await saveChatConditional();
-        $('#chat')[0].scrollTop = oldScroll;
+        chatElement[0].scrollTop = oldScroll;
         showSwipeButtons();
     });
 

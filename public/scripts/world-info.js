@@ -2524,7 +2524,6 @@ async function checkWorldInfo(chat, maxContext) {
             }
 
             if (entry.constant || buffer.isExternallyActivated(entry)) {
-                entry.content = substituteParams(entry.content);
                 activatedNow.add(entry);
                 continue;
             }
@@ -2617,7 +2616,9 @@ async function checkWorldInfo(chat, maxContext) {
                 continue;
             } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`); }
 
-            newContent += `${substituteParams(entry.content)}\n`;
+            // Substitute macros inline, for both this checking and also future processing
+            entry.content = substituteParams(entry.content);
+            newContent += `${entry.content}\n`;
 
             if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
                 console.debug('WI budget reached, stopping');
@@ -2650,7 +2651,7 @@ async function checkWorldInfo(chat, maxContext) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
                 .filter(x => !x.preventRecursion)
-                .map(x => substituteParams(x.content)).join('\n');
+                .map(x => x.content).join('\n');
             buffer.addRecurse(text);
             allActivatedText = (text + '\n' + allActivatedText);
         }
@@ -2684,6 +2685,11 @@ async function checkWorldInfo(chat, maxContext) {
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
         const regexDepth = entry.position === world_info_position.atDepth ? (entry.depth ?? DEFAULT_DEPTH) : null;
         const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
+
+        if (!content) {
+            console.debug('Skipping adding WI entry to prompt due to empty content:', entry);
+            return;
+        }
 
         switch (entry.position) {
             case world_info_position.before:
