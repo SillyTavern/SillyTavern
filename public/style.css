@@ -4263,6 +4263,15 @@ a {
     transition: all 250ms;
 }
 
+#user-settings-block [name="MiscellaneousToggles"],
+#CustomCSS-block,
+#CustomCSS-textAreaBlock {
+    display: contents;
+}
+#customCSS {
+    flex: 1 1 auto;
+}
+
 #ui_language_select {
     width: 8em;
 }
