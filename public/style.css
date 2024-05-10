@@ -3536,6 +3536,9 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     justify-content: space-between;
     align-items: center;
     padding: 5px 0;
+}
+
+.inline-drawer-header:has(> .inline-drawer-icon) {
     cursor: pointer;
 }
 
