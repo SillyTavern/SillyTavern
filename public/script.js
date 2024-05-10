@@ -227,7 +227,6 @@ import { currentUser, setUserControls } from './scripts/user.js';
 import { callGenericPopup } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
-import { v1CharData } from './scripts/char-data.js';
 
 //exporting functions and vars for mods
 export {

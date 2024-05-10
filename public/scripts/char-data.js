@@ -1,340 +1,86 @@
-class WorldInfoEntry {
-	/**
-	 * the id of the entry
-	 * @type {number}
-	 */
-	id
-	/**
-	 * the keys of the entry
-	 * @type {string[]}
-	 */
-	keys
-	/**
-	 * the secondary keys of the entry
-	 * @type {string[]}
-	 */
-	secondary_keys
-	/**
-	 * the comment of the entry
-	 * @type {string}
-	 */
-	comment
-	/**
-	 * the content of the entry
-	 * @type {string}
-	 */
-	content
-	/**
-	 * is this entry a constant
-	 * @type {boolean}
-	 */
-	constant
-	/**
-	 * is this entry case selective
-	 * @type {boolean}
-	 */
-	selective
-	/**
-	 * the insertion order of the entry
-	 * @type {number}
-	 * @default 100
-	 */
-	insertion_order
-	/**
-	 * is this entry enabled
-	 * @type {boolean}
-	 * @default true
-	 */
-	enabled
-	/**
-	 * the position of the entry
-	 * @type {"before_char" | "after_char" | string}
-	 * @default "before_char"
-	 */
-	position
-	/**
-	 * the extension datas of the entry
-	 */
-	extensions = {
-		/**
-		 * the position of the entry
-		 * @type {number}
-		 * @default 0
-		 */
-		position: 0,
-		/**
-		 * is this entry excluded from recursion
-		 * @type {boolean}
-		 * @default false
-		 */
-		exclude_recursion: false,
-		/**
-		 * the display index of the entry
-		 * @type {number}
-		 */
-		display_index: 0,
-		/**
-		 * the probability of the entry
-		 * @type {number}
-		 * @default 100
-		 */
-		probability: 100,
-		/**
-		 * is the probability of the entry used
-		 * @type {boolean}
-		 * @default true
-		 */
-		useProbability: true,
-		/**
-		 * the depth of the entry
-		 * @type {number}
-		 * @default 4
-		 */
-		depth: 4,
-		/**
-		 * the selective logic of the entry
-		 * @type {number}
-		 * @default 0
-		 */
-		selectiveLogic: 0,
-		/**
-		 * the group of the entry
-		 * @type {string}
-		 */
-		group: "",
-		/**
-		 * is the group override of the entry
-		 * @type {boolean}
-		 * @default false
-		 */
-		group_override: false,
-		/**
-		 * is the entry prevented from recursion
-		 * @type {boolean}
-		 * @default false
-		 */
-		prevent_recursion: false,
-		/**
-		 * the scan depth of the entry
-		 * @type {number}
-		 * @default null
-		 */
-		scan_depth: null,
-		/**
-		 * is the entry matched with whole words
-		 * @type {boolean}
-		 * @default null
-		 */
-		match_whole_words: null,
-		/**
-		 * is the entry case sensitive
-		 * @type {boolean}
-		 * @default null
-		 */
-		case_sensitive: null,
-		/**
-		 * the automation id of the entry
-		 * @type {string}
-		 */
-		automation_id: "",
-		/**
-		 * the role of the entry
-		 * @type {number}
-		 * @default 0
-		 */
-		role: 0,
-		/**
-		 * is the entry vectorized
-		 * @type {boolean}
-		 * @default false
-		 */
-		vectorized: false,
-	}
-}
-class WorldInfoBook {
-	/**
-	 * the name of the book
-	 * @type {string}
-	 */
-	name
-	/**
-	 * the entries of the book
-	 * @type {WorldInfoEntry[]}
-	 */
-	entries
-}
-class v2CharData {
-	/**
-	 * the name of the character
-	 * @type {string}
-	 */
-	name
-	/**
-	 * the description of the character
-	 * @type {string}
-	 */
-	description
-	/**
-	 * character's version
-	 * @type {string}
-	 */
-	character_version
-	/**
-	 * a short personality description of the character
-	 * @type {string}
-	 */
-	personality
-	/**
-	 * a scenario description of the character
-	 * @type {string}
-	 */
-	scenario
-	/**
-	 * the first message in the conversation
-	 * @type {string}
-	 */
-	first_mes
-	/**
-	 * the example message in the conversation
-	 * @type {string}
-	 */
-	mes_example
-	/**
-	 * creator's notes of the character
-	 * @type {string}
-	 */
-	creator_notes
-	/**
-	 * the tags of the character
-	 * @type {string[]}
-	 */
-	tags
-	/**
-	 * system_prompt override
-	 * @type {string}
-	 */
-	system_prompt
-	/**
-	 * post_history_instructions
-	 * @type {string}
-	 */
-	post_history_instructions
-	/**
-	 * creator's name
-	 * @type {string}
-	 */
-	creator
-	/**
-	 * alternate_greetings for user choices
-	 * @type {string[]}
-	 */
-	alternate_greetings
-	/**
-	 * extra data
-	 */
-	extensions = {
-		/**
-		 * talkativeness
-		 * @type {number}
-		 */
-		talkativeness: 0.5,
-		/**
-		 * fav
-		 * @type {boolean}
-		 */
-		fav: false,
-		/**
-		 * world
-		 * @type {string}
-		 */
-		world: "",
-		/**
-		 * depth_prompt
-		 */
-		depth_prompt: {
-			/**
-			 * depth
-			 * @type {number}
-			 */
-			depth: 4,
-			/**
-			 * prompt
-			 * @type {string}
-			 */
-			prompt: "",
-			/**
-			 * role
-			 * @type {"system" | "user" | "assistant"}
-			 */
-			role: "system",
-		}
-	}
-	/**
-	 * the charbook
-	 * @type {WorldInfoBook}
-	 */
-	character_book
-}
-class v1CharData {
-	/**
-	 * the name of the character
-	 * @type {string}
-	 */
-	name
-	/**
-	 * the description of the character
-	 * @type {string}
-	 */
-	description
-	/**
-	 * a short personality description of the character
-	 * @type {string}
-	 */
-	personality
-	/**
-	 * a scenario description of the character
-	 * @type {string}
-	 */
-	scenario
-	/**
-	 * the first message in the conversation
-	 * @type {string}
-	 */
-	first_mes
-	/**
-	 * the example message in the conversation
-	 * @type {string}
-	 */
-	mes_example
-	/**
-	 * creator's notes of the character
-	 * @type {string}
-	 */
-	creatorcomment
-	/**
-	 * the tags of the character
-	 * @type {string[]}
-	 */
-	tags
-	/**
-	 * talkativeness
-	 * @type {number}
-	 */
-	talkativeness
-	/**
-	 * fav
-	 * @type {boolean}
-	 */
-	fav
-	/**
-	 * create_date
-	 * @type {string}
-	 */
-	create_date
-	/**
-	 * v2 data extension
-	 * @type {v2CharData}
-	 */
-	data
-}
-export { v2CharData, v1CharData, WorldInfoBook, WorldInfoEntry }
+/**
+ * @typedef {object} WorldInfoEntry
+ * @property {string[]} keys - An array of primary keys associated with the entry.
+ * @property {string[]} secondary_keys - An array of secondary keys associated with the entry (optional).
+ * @property {string} comment - A human-readable description or explanation for the entry.
+ * @property {string} content - The main content or data associated with the entry.
+ * @property {boolean} constant - Indicates if the entry's content is fixed and unchangeable.
+ * @property {boolean} selective - Indicates if the entry's inclusion is controlled by specific conditions.
+ * @property {number} insertion_order - Defines the order in which the entry is inserted during processing.
+ * @property {boolean} enabled - Controls whether the entry is currently active and used.
+ * @property {string} position - Specifies the location or context where the entry applies.
+ * @property {WorldInfoEntryExtensionInfos} extensions - An object containing additional details for extensions associated with the entry.
+ * @property {number} id - A unique identifier assigned to the entry.
+ */
+/**
+ * @typedef {object} WorldInfoEntryExtensionInfos
+ * @property {number} position - The order in which the extension is applied relative to other extensions.
+ * @property {boolean} exclude_recursion - Prevents the extension from being applied recursively.
+ * @property {number} probability - The chance (between 0 and 1) of the extension being applied.
+ * @property {boolean} useProbability - Determines if the `probability` property is used.
+ * @property {number} depth - The maximum level of nesting allowed for recursive application of the extension.
+ * @property {number} selectiveLogic - Defines the logic used to determine if the extension is applied selectively.
+ * @property {string} group - A category or grouping for the extension.
+ * @property {boolean} group_override - Overrides any existing group assignment for the extension.
+ * @property {number} group_weight - A value used for prioritizing extensions within the same group.
+ * @property {boolean} prevent_recursion - Completely disallows recursive application of the extension.
+ * @property {number} scan_depth - The maximum depth to search for matches when applying the extension.
+ * @property {boolean} match_whole_words - Specifies if only entire words should be matched during extension application.
+ * @property {boolean} use_group_scoring - Indicates if group weight is considered when selecting extensions.
+ * @property {boolean} case_sensitive - Controls whether case sensitivity is applied during matching for the extension.
+ * @property {string} automation_id - An identifier used for automation purposes related to the extension.
+ * @property {number} role - The specific function or purpose of the extension.
+ * @property {boolean} vectorized - Indicates if the extension is optimized for vectorized processing.
+ * @property {number} display_index - The order in which the extension should be displayed for user interfaces.
+ */
+
+/**
+ * @typedef {object} WorldInfoBook
+ * @property {string} name - the name of the book
+ * @property {WorldInfoEntry[]} entries - the entries of the book
+ */
+
+/**
+ * @typedef {object} v2CharData
+ * @property {string} name - The character's name.
+ * @property {string} description - A brief description of the character.
+ * @property {string} character_version - The character's data version.
+ * @property {string} personality - A short summary of the character's personality traits.
+ * @property {string} scenario - A description of the character's background or setting.
+ * @property {string} first_mes - The character's opening message in a conversation.
+ * @property {string} mes_example - An example message demonstrating the character's conversation style.
+ * @property {string} creator_notes - Internal notes or comments left by the character's creator.
+ * @property {string[]} tags - A list of keywords or labels associated with the character.
+ * @property {string} system_prompt - The system prompt used to interact with the character.
+ * @property {string} post_history_instructions - Instructions for handling the character's conversation history.
+ * @property {string} creator - The name of the person who created the character.
+ * @property {string[]} alternate_greetings - Additional greeting messages the character can use.
+ * @property {WorldInfoBook} character_book - Data about the character's world or story (if applicable).
+ * @property {v2CharDataExtensionInfos} extensions - Additional details specific to the character.
+ */
+/**
+ * @typedef {object} v2CharDataExtensionInfos
+ * @property {number} talkativeness - A numerical value indicating the character's propensity to talk.
+ * @property {boolean} fav - A flag indicating whether the character is a favorite.
+ * @property {string} world - The fictional world or setting where the character exists (if applicable).
+ * @property {object} depth_prompt - Prompts used to explore the character's depth and complexity.
+ * @property {number} depth_prompt.depth - The level of detail or nuance targeted by the prompt.
+ * @property {string} depth_prompt.prompt - The actual prompt text used for deeper character interaction.
+ * @property {"system" | "user" | "assistant"} depth_prompt.role - The role the character takes on during the prompted interaction (system, user, or assistant).
+ */
+
+/**
+ * @typedef {object} v1CharData
+ * @property {string} name - the name of the character
+ * @property {string} description - the description of the character
+ * @property {string} personality - a short personality description of the character
+ * @property {string} scenario - a scenario description of the character
+ * @property {string} first_mes - the first message in the conversation
+ * @property {string} mes_example - the example message in the conversation
+ * @property {string} creatorcomment - creator's notes of the character
+ * @property {string[]} tags - the tags of the character
+ * @property {number} talkativeness - talkativeness
+ * @property {boolean} fav - fav
+ * @property {string} create_date - create_date
+ * @property {v2CharData} data - v2 data extension
+ */
