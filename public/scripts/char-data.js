@@ -61,94 +61,94 @@ class WorldInfoEntry {
 		 * @type {number}
 		 * @default 0
 		 */
-		position,
+		position: 0,
 		/**
 		 * is this entry excluded from recursion
 		 * @type {boolean}
 		 * @default false
 		 */
-		exclude_recursion,
+		exclude_recursion: false,
 		/**
 		 * the display index of the entry
 		 * @type {number}
 		 */
-		display_index,
+		display_index: 0,
 		/**
 		 * the probability of the entry
 		 * @type {number}
 		 * @default 100
 		 */
-		probability,
+		probability: 100,
 		/**
 		 * is the probability of the entry used
 		 * @type {boolean}
 		 * @default true
 		 */
-		useProbability,
+		useProbability: true,
 		/**
 		 * the depth of the entry
 		 * @type {number}
 		 * @default 4
 		 */
-		depth,
+		depth: 4,
 		/**
 		 * the selective logic of the entry
 		 * @type {number}
 		 * @default 0
 		 */
-		selectiveLogic,
+		selectiveLogic: 0,
 		/**
 		 * the group of the entry
 		 * @type {string}
 		 */
-		group,
+		group: "",
 		/**
 		 * is the group override of the entry
 		 * @type {boolean}
 		 * @default false
 		 */
-		group_override,
+		group_override: false,
 		/**
 		 * is the entry prevented from recursion
 		 * @type {boolean}
 		 * @default false
 		 */
-		prevent_recursion,
+		prevent_recursion: false,
 		/**
 		 * the scan depth of the entry
 		 * @type {number}
 		 * @default null
 		 */
-		scan_depth,
+		scan_depth: null,
 		/**
 		 * is the entry matched with whole words
 		 * @type {boolean}
 		 * @default null
 		 */
-		match_whole_words,
+		match_whole_words: null,
 		/**
 		 * is the entry case sensitive
 		 * @type {boolean}
 		 * @default null
 		 */
-		case_sensitive,
+		case_sensitive: null,
 		/**
 		 * the automation id of the entry
 		 * @type {string}
 		 */
-		automation_id,
+		automation_id: "",
 		/**
 		 * the role of the entry
 		 * @type {number}
 		 * @default 0
 		 */
-		role,
+		role: 0,
 		/**
 		 * is the entry vectorized
 		 * @type {boolean}
 		 * @default false
 		 */
-		vectorized,
+		vectorized: false,
 	}
 }
 class WorldInfoBook {
@@ -225,11 +225,6 @@ class v2CharData {
 	 */
 	creator
 	/**
-	 * creator's name
-	 * @type {string}
-	 */
-	create_by
-	/**
 	 * alternate_greetings for user choices
 	 * @type {string[]}
 	 */
@@ -242,17 +237,17 @@ class v2CharData {
 		 * talkativeness
 		 * @type {number}
 		 */
-		talkativeness,
+		talkativeness: 0.5,
 		/**
 		 * fav
 		 * @type {boolean}
 		 */
-		fav,
+		fav: false,
 		/**
 		 * world
 		 * @type {string}
 		 */
-		world,
+		world: "",
 		/**
 		 * depth_prompt
 		 */
@@ -261,17 +256,17 @@ class v2CharData {
 			 * depth
 			 * @type {number}
 			 */
-			depth,
+			depth: 4,
 			/**
 			 * prompt
 			 * @type {string}
 			 */
-			prompt,
+			prompt: "",
 			/**
 			 * role
 			 * @type {"system" | "user" | "assistant"}
 			 */
-			role
+			role: "system",
 		}
 	}
 	/**
