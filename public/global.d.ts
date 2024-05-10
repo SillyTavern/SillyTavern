@@ -112,58 +112,6 @@ interface JQuery {
     //#endregion
 }
 
-/**
- * Toastr is a global object for displaying toast notifications
- */
-declare var toastr: {
-    /**
-     * Show a success toast notification.
-     *
-     * @param message - The main message to display in the notification.
-     * @param title - An optional title for the notification.
-     * @param optionsOverride - Optional object to override default options.
-     */
-    success(message: string, title?: string, optionsOverride?: object): void;
-
-    /**
-     * Show an info toast notification.
-     *
-     * @param message - The main message to display in the notification.
-     * @param title - An optional title for the notification.
-     * @param optionsOverride - Optional object to override default options.
-     */
-    info(message: string, title?: string, optionsOverride?: object): void;
-
-    /**
-     * Show a warning toast notification.
-     *
-     * @param message - The main message to display in the notification.
-     * @param title - An optional title for the notification.
-     * @param optionsOverride - Optional object to override default options.
-     */
-    warning(message: string, title?: string, optionsOverride?: object): void;
-
-    /**
-     * Show an error toast notification.
-     *
-     * @param message - The main message to display in the notification.
-     * @param title - An optional title for the notification.
-     * @param optionsOverride - Optional object to override default options.
-     */
-    error(message: string, title?: string, optionsOverride?: object): void;
-
-    /**
-     * Clear one or all toast notifications.
-     *
-     * @param toast - Optional specific toast to clear.
-     * @param clearOptions - Optional object to override default clear options.
-     */
-    clear(toast?: any, clearOptions?: object): void;
-
-    // Add any other `toastr` methods or properties here.
-};
-
-
 //#region Fuse
 
 /**
