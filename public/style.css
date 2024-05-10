@@ -3359,6 +3359,8 @@ input[type="range"]::-webkit-slider-thumb {
 .doubleRangeContainer {
     display: flex;
     --markerWidth: 15px;
+    container-type: inline-size;
+    container-name: doubleRangeContainer;
     > .doubleRangeInputContainer {
         flex: 0 0 50%;
         overflow: hidden;
@@ -3375,14 +3377,37 @@ input[type="range"]::-webkit-slider-thumb {
                 justify-content: center;
             }
         }
+        @container doubleRangeContainer (max-width: 200px) {
+            > datalist {
+                height: 2.5em;
+            }
+            &:nth-child(1) > datalist > option {
+                transform: rotate(-45deg);
+                transform-origin: bottom right;
+            }
+            &:nth-child(2) > datalist > option {
+                transform: rotate(45deg);
+                transform-origin: bottom left;
+            }
+        }
         > input::-webkit-slider-thumb {
             z-index: 2;
         }
         &:after {
+            /* shifted to center to hide corners of the inset shadow */
+            --shift: 2px;
+            /* 100% of the input width (1em padding) */
+            --inputWidth: calc(100% - 1em);
+            /* input padding max(20px, 20%) */
+            --inputPadding: calc(max(20px, var(--inputWidth) * 0.2));
+            /* 100% of the variable range width: 100% of input - input padding - marker width) */
+            --rangeWidth: calc(var(--inputWidth) - var(--inputPadding) - var(--markerWidth));
+            /* always visible part of the input range (value = 0) */
+            --zeroOffset: calc(var(--inputPadding) + var(--markerWidth) / 2);
             content: '';
             position: absolute;
             top: 11px;
-            width: calc(var(--value) * (100% - 1em - max(20px, 20%)) / 2 + max(20px, 20%));
+            width: calc(var(--value) / 2 * var(--rangeWidth) + var(--zeroOffset) + var(--shift));
             height: 5px;
             background-color: var(--SmartThemeQuoteColor);
             box-shadow: inset 0 0 2px black;
