@@ -3437,6 +3437,18 @@ a {
     transition: all 250ms;
 }
 
+.standoutHeader.inline-drawer-header {
+    padding: 5px;
+    margin-bottom: 0;
+}
+
+.standoutHeader~.inline-drawer-content {
+    border: 1px solid var(--SmartThemeBorderColor);
+    padding: 5px;
+    border-radius: 10px;
+    background-color: var(--black30a);
+}
+
 #ui_language_select {
     width: 8em;
 }
