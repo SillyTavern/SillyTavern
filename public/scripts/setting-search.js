@@ -4,7 +4,7 @@
 async function searchSettings() {
     removeHighlighting(); // Remove previous highlights
     const searchString = String($('#settingsSearch').val());
-    const searchableText = $('#user-settings-block-content'); // Get the HTML block
+    const searchableText = $('#user_settings_block_content'); // Get the HTML block
     if (searchString.trim() !== '') {
         highlightMatchingElements(searchableText[0], searchString); // Highlight matching elements
     }

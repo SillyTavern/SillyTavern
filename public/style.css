@@ -3431,7 +3431,13 @@ a {
 
 #extensions_settings .inline-drawer-toggle.inline-drawer-header,
 #extensions_settings2 .inline-drawer-toggle.inline-drawer-header,
-#user-settings-block h4,
+#user_settings_block .inline-drawer-toggle.inline-drawer-header h4,
+#user_settings_theme .inline-drawer-toggle.inline-drawer-header,
+#user_settings_theme_colors .inline-drawer-toggle.inline-drawer-header,
+#user_settings_character_handling .inline-drawer-toggle.inline-drawer-header,
+#user_settings_chatmessage_handling .inline-drawer-toggle.inline-drawer-header,
+#user_settings_auto_swipe .inline-drawer-toggle.inline-drawer-header,
+#user_settings_miscellaneous .inline-drawer-toggle.inline-drawer-header,
 .standoutHeader {
     background-image: linear-gradient(348deg, var(--white30a)2%, var(--grey30a)10%, var(--black70a)95%, var(--SmartThemeQuoteColor)100%);
     margin-bottom: 5px;

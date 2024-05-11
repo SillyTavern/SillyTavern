@@ -3494,11 +3494,11 @@
                 </div>
             </div>
         </div>
-        <div id="user-settings-button" class="drawer">
+        <div id="user_settings_button" class="drawer">
             <div class="drawer-toggle">
                 <div class="drawer-icon fa-solid fa-user-cog closedIcon" title="User Settings" data-i18n="[title]User Settings"></div>
             </div>
-            <div id="user-settings-block" class="drawer-content closedDrawer">
+            <div id="user_settings_block" class="drawer-content closedDrawer">
                 <div class="flex-container flexFlowColumn">
                     <div name="userSettingsRowOne" class="flex-container flexFlowRow alignitemscenter spaceBetween">
                         <div class="flex-container">
@@ -3537,584 +3537,602 @@
                         <textarea id="settingsSearch" class="textarea_compact flex1" rows="1" placeholder="Search Settings" data-i18n="[placeholder]Search Settings"></textarea>
                     </div>
                 </div>
-                <div id="user-settings-block-content" class="flex-container spaceEvenly">
+                <div id="user_settings_block_content" class="flex-container spaceEvenly">
                     <div name="UserSettingsFirstColumn" id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p">
                         <div id="UI-presets-block" class="flex-container flexFlowColumn">
-                            <h4 class="title_restorable">
-                                <span data-i18n="UI Theme">UI Theme</span>
-                                <div class="flex-container">
-                                    <div id="ui_preset_import_button" class="menu_button menu_button_icon margin0" title="Import a theme file" data-i18n="[title]Import a theme file">
-                                        <i class="fa-solid fa-file-import"></i>
-                                    </div>
-                                    <div id="ui_preset_export_button" class="menu_button menu_button_icon margin0" title="Export a theme file" data-i18n="[title]Export a theme file">
-                                        <i class="fa-solid fa-file-export"></i>
-                                    </div>
-                                    <div id="ui-preset-delete-button" class="menu_button menu_button_icon margin0" title="Delete a theme" data-i18n="[title]Delete a theme">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </div>
-                                </div>
-                                <input type="file" id="ui_preset_import_file" accept=".json" hidden>
-                            </h4>
-                            <div class="flex-container flexnowrap alignitemscenter">
-                                <select id="themes" class="margin0">
-                                </select>
-                                <div id="ui-preset-update-button" title="Update a theme file" data-i18n="[title]Update a theme file" class="menu_button margin0">
-                                    <i class="fa-solid fa-save"></i>
-                                </div>
-                                <div id="ui-preset-save-button" title="Save as a new theme" data-i18n="[title]Save as a new theme" class="menu_button margin0">
-                                    <i class="fa-solid fa-file-circle-plus"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div name="themeElements" data-newbie-hidden class="flex-container flexFlowColumn flexNoGap">
-                            <!-- <h4><span data-i18n="UI Colors">Theme Settings</span></h4> -->
-                            <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
-                                <div class="flex-container">
-                                    <span data-i18n="Avatar Style">Avatars:</span>
-                                    <select id="avatar_style" class="widthNatural flex1 margin0">
-                                        <option value="0" data-i18n="Circle">Circle</option>
-                                        <option value="2" data-i18n="Square">Square</option>
-                                        <option value="1" data-i18n="Rectangle">Rectangle</option>
-                                    </select>
-                                </div>
-                                <div class="flex-container">
-                                    <span data-i18n="Chat Style:">Chat Style:</span><br>
-                                    <select id="chat_display" class="widthNatural flex1 margin0">
-                                        <option value="0" data-i18n="Default">Flat</span>
-                                        <option value="1" data-i18n="Bubbles">Bubbles</option>
-                                        <option value="2" data-i18n="Document">Document</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
-                                <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Specify colors for your theme." data-i18n="[title]Specify colors for your theme.">
-                                    <b><span data-i18n="Theme Colors">Theme Colors</span></b>
+                            <div id="user_settings_theme" data-newbie-hidden="" class="inline-drawer wide100p flexFlowColumn">
+                                <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Theme settings." data-i18n="[title]Theme settings.">
+                                    <b><span data-i18n="Theme">Theme</span></b>
                                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                 </div>
                                 <div class="inline-drawer-content">
-                                    <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
+                                    <h4 class="title_restorable">
+                                        <span data-i18n="UI Theme">UI Theme</span>
                                         <div class="flex-container">
-                                            <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
-                                            <span data-i18n="Main Text">Main Text</span>
+                                            <div id="ui_preset_import_button" class="menu_button menu_button_icon margin0" title="Import a theme file" data-i18n="[title]Import a theme file">
+                                                <i class="fa-solid fa-file-import"></i>
+                                            </div>
+                                            <div id="ui_preset_export_button" class="menu_button menu_button_icon margin0" title="Export a theme file" data-i18n="[title]Export a theme file">
+                                                <i class="fa-solid fa-file-export"></i>
+                                            </div>
+                                            <div id="ui-preset-delete-button" class="menu_button menu_button_icon margin0" title="Delete a theme" data-i18n="[title]Delete a theme">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </div>
                                         </div>
-                                        <div class="flex-container">
-                                            <toolcool-color-picker id="italics-color-picker"></toolcool-color-picker>
-                                            <span data-i18n="Italics Text">Italics Text</span>
+                                        <input type="file" id="ui_preset_import_file" accept=".json" hidden>
+                                    </h4>
+                                    <div class="flex-container flexnowrap alignitemscenter">
+                                        <select id="themes" class="margin0">
+                                        </select>
+                                        <div id="ui-preset-update-button" title="Update a theme file" data-i18n="[title]Update a theme file" class="menu_button margin0">
+                                            <i class="fa-solid fa-save"></i>
                                         </div>
-                                        <div class="flex-container">
-                                            <toolcool-color-picker id="underline-color-picker"></toolcool-color-picker>
-                                            <span data-i18n="Underlined Text">Underlined Text</span>
+                                        <div id="ui-preset-save-button" title="Save as a new theme" data-i18n="[title]Save as a new theme" class="menu_button margin0">
+                                            <i class="fa-solid fa-file-circle-plus"></i>
                                         </div>
-                                        <div class="flex-container">
-                                            <toolcool-color-picker id="quote-color-picker"></toolcool-color-picker>
-                                            <span data-i18n="Quote Text">Quote Text</span>
+                                    </div>
+
+                                    <div name="themeElements" data-newbie-hidden class="flex-container flexFlowColumn flexNoGap">
+                                        <!-- <h4><span data-i18n="UI Colors">Theme Settings</span></h4> -->
+                                        <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
+                                            <div class="flex-container">
+                                                <span data-i18n="Avatar Style">Avatars:</span>
+                                                <select id="avatar_style" class="widthNatural flex1 margin0">
+                                                    <option value="0" data-i18n="Circle">Circle</option>
+                                                    <option value="2" data-i18n="Square">Square</option>
+                                                    <option value="1" data-i18n="Rectangle">Rectangle</option>
+                                                </select>
+                                            </div>
+                                            <div class="flex-container">
+                                                <span data-i18n="Chat Style:">Chat Style:</span><br>
+                                                <select id="chat_display" class="widthNatural flex1 margin0">
+                                                    <option value="0" data-i18n="Default">Flat</span>
+                                                    <option value="1" data-i18n="Bubbles">Bubbles</option>
+                                                    <option value="2" data-i18n="Document">Document</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div class="flex-container">
-                                            <toolcool-color-picker id="shadow-color-picker"></toolcool-color-picker>
-                                            <span data-i18n="Shadow Color">Text Shadow</span>
+                                    </div>
+                                
+                                    <div id="user_settings_theme_colors" data-newbie-hidden="" class="inline-drawer wide100p flexFlowColumn">
+                                        <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Specify colors for your theme." data-i18n="[title]Specify colors for your theme.">
+                                            <b><span data-i18n="Theme Colors">Theme Colors</span></b>
+                                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                         </div>
-                                        <div class="flex-container">
-                                            <toolcool-color-picker id="chat-tint-color-picker"></toolcool-color-picker>
-                                            <span data-i18n="Chat Background">Chat Background</span>
+                                        <div class="inline-drawer-content">
+                                            <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
+                                                <div class="flex-container">
+                                                    <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
+                                                    <span data-i18n="Main Text">Main Text</span>
+                                                </div>
+                                                <div class="flex-container">
+                                                    <toolcool-color-picker id="italics-color-picker"></toolcool-color-picker>
+                                                    <span data-i18n="Italics Text">Italics Text</span>
+                                                </div>
+                                                <div class="flex-container">
+                                                    <toolcool-color-picker id="underline-color-picker"></toolcool-color-picker>
+                                                    <span data-i18n="Underlined Text">Underlined Text</span>
+                                                </div>
+                                                <div class="flex-container">
+                                                    <toolcool-color-picker id="quote-color-picker"></toolcool-color-picker>
+                                                    <span data-i18n="Quote Text">Quote Text</span>
+                                                </div>
+                                                <div class="flex-container">
+                                                    <toolcool-color-picker id="shadow-color-picker"></toolcool-color-picker>
+                                                    <span data-i18n="Shadow Color">Text Shadow</span>
+                                                </div>
+                                                <div class="flex-container">
+                                                    <toolcool-color-picker id="chat-tint-color-picker"></toolcool-color-picker>
+                                                    <span data-i18n="Chat Background">Chat Background</span>
+                                                </div>
+                                                <div class="flex-container">
+                                                    <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
+                                                    <span data-i18n="UI Background">UI Background</span>
+                                                </div>
+                                                <div class="flex-container">
+                                                    <toolcool-color-picker id="border-color-picker"></toolcool-color-picker>
+                                                    <span data-i18n="UI Border">UI Border</span>
+                                                </div>
+                                                <div class="flex-container">
+                                                    <toolcool-color-picker id="user-mes-blur-tint-color-picker"></toolcool-color-picker>
+                                                    <span data-i18n="User Message Blur Tint">User Message</span>
+                                                </div>
+                                                <div class="flex-container">
+                                                    <toolcool-color-picker id="bot-mes-blur-tint-color-picker"></toolcool-color-picker>
+                                                    <span data-i18n="AI Message Blur Tint">AI Message</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="flex-container">
-                                            <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
-                                            <span data-i18n="UI Background">UI Background</span>
+                                    </div>
+                                    <hr>
+                                    <div data-newbie-hidden name="FontBlurChatWidthBlock" class="flex-container">
+
+                                        <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <small>
+                                                <span data-i18n="Chat Width">Chat Width <i class="fa-solid fa-desktop"></i></span>
+                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Width of the main chat window in % of screen width" title="Width of the main chat window in % of screen width"></div>
+                                            </small>
+                                            <input class="neo-range-slider" type="range" id="chat_width_slider" name="chat_width_slider" min="25" max="100" step="1">
+                                            <input class="neo-range-input" type="number" min="25" max="100" step="1" data-for="chat_width_slider" id="chat_width_slider_counter">
                                         </div>
-                                        <div class="flex-container">
-                                            <toolcool-color-picker id="border-color-picker"></toolcool-color-picker>
-                                            <span data-i18n="UI Border">UI Border</span>
+
+                                        <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <small>
+                                                <span data-i18n="Font Scale">Font Scale</span>
+                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Font size" title="Font size"></div>
+                                            </small>
+                                            <input class="neo-range-slider" type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.01">
+                                            <input class="neo-range-input" type="number" min="0.8" max="1.2" step="0.01" data-for="font_scale" id="font_scale_counter">
                                         </div>
-                                        <div class="flex-container">
-                                            <toolcool-color-picker id="user-mes-blur-tint-color-picker"></toolcool-color-picker>
-                                            <span data-i18n="User Message Blur Tint">User Message</span>
+
+                                        <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <small>
+                                                <span data-i18n="Blur Strength">Blur Strength</span>
+                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Blur strength on UI panels." title="Blur strength on UI panels."></div>
+                                            </small>
+                                            <input class="neo-range-slider" type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
+                                            <input class="neo-range-input" type="number" min="0" max="30" step="1" data-for="blur_strength" id="blur_strength_counter">
                                         </div>
-                                        <div class="flex-container">
-                                            <toolcool-color-picker id="bot-mes-blur-tint-color-picker"></toolcool-color-picker>
-                                            <span data-i18n="AI Message Blur Tint">AI Message</span>
+
+                                        <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                            <small>
+                                                <span data-i18n="Text Shadow Width">Shadow Width</span>
+                                                <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Strength of the text shadows" title="Strength of the text shadows"></div>
+                                            </small>
+                                            <input class="neo-range-slider" type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
+                                            <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter">
                                         </div>
+
+
+
+                                        <!--                                 <div data-newbie-hidden class="range-block">
+                                            <label for="compact_input_area" class="range-block-title">
+                                                <span data-i18n="Chat Width (PC)">
+                                                    Chat Width
+                                                </span>
+                                                <i class="fa-solid fa-desktop"></i>
+                                            </label>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range">
+                                                    <input id="chat_width_slider" class="wide100p" type="range" min="25" max="100" step="1" value="50">
+                                                </div>
+                                                <div class="range-block-counter">
+                                                    <input type="number" min="25" max="100" step="1" value="50" data-for="chat_width_slider" id="chat_width_slider_counter">
+                                                </div>
+                                            </div>
+                                        </div> -->
+
+                                        <!--                                 <div id="font-scale-block" class="range-block">
+                                            <div class="range-block-title" data-i18n="Font Scale">
+                                                Font Scale
+                                            </div>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range">
+                                                    <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.01">
+                                                </div>
+                                                <div class="range-block-counter">
+                                                    <input type="number" min="0.8" max="1.2" step="0.01" data-for="font_scale" id="font_scale_counter">
+                                                </div>
+                                            </div>
+                                        </div> -->
+                                        <!--                                 <div id="blur-strength-block" class="range-block">
+                                            <div class="range-block-title" data-i18n="Blur Strength">
+                                                Blur Strength
+                                            </div>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range">
+                                                    <input type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
+                                                </div>
+                                                <div class="range-block-counter">
+                                                    <input type="number" min="0" max="30" step="1" data-for="blur_strength" id="blur_strength_counter">
+                                                </div>
+                                            </div>
+                                        </div> -->
+                                        <!--                                 <div id="shadow-width-block" class="range-block">
+                                            <div class="range-block-title" data-i18n="Text Shadow Width">
+                                                Text Shadow Width
+                                            </div>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range">
+                                                    <input type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
+                                                </div>
+                                                <div class="range-block-counter">
+                                                    <input type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter">
+                                                </div>
+                                            </div>
+                                        </div> -->
+                                        <!--                                 <div id="chat-truncation-block" class="range-block">
+                                            <label for="compact_input_area" class="range-block-title">
+                                                <span data-i18n="Chat Truncation">
+                                                    Chat Truncation
+                                                </span>
+                                                <small data-i18n="(0 = unlimited)">(0 = unlimited)</small>
+                                            </label>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range">
+                                                    <input type="range" id="chat_truncation" name="chat_truncation" min="0" max="1000" step="25">
+                                                </div>
+                                                <div class="range-block-counter">
+                                                    <input type="number" min="0" max="1000" step="1" data-for="chat_truncation" id="chat_truncation_counter">
+                                                </div>
+                                            </div>
+                                        </div> -->
+                                        <!--                                 <div id="streaming-fps" class="range-block">
+                                            <div class="range-block-title" data-i18n="Streaming FPS">
+                                                Streaming FPS
+                                            </div>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range">
+                                                    <input type="range" id="streaming_fps" name="streaming_fps" min="5" max="100" step="5">
+                                                </div>
+                                                <div class="range-block-counter">
+                                                    <input type="number" min="5" max="100" step="1" data-for="streaming_fps" id="streaming_fps_counter">
+                                                </div>
+                                            </div>
+                                        </div> -->
+
+                                    </div>
+                                    <hr>
+                                    <div name="themeToggles">
+                                        <!-- <h4 data-i18n="Theme Toggles">Theme Toggles</h4> -->
+
+                                        <label for="reduced_motion" class="checkbox_label" title="Disable animations and transitions" data-i18n="[title]Disables animations and transitions">
+                                            <input id="reduced_motion" type="checkbox" />
+                                            <small data-i18n="Reduced Motion">Reduced Motion</small>
+                                        </label>
+                                        <label data-newbie-hidden for="fast_ui_mode" class="checkbox_label" title="Remove blur from window backgrounds, for faster rendering." data-i18n="[title]removes blur from window backgrounds">
+                                            <input id="fast_ui_mode" type="checkbox" />
+                                            <small data-i18n="No Blur Effect">No Blur Effect</small>
+                                        </label>
+                                        <label data-newbie-hidden for="noShadowsmode" class="checkbox_label" title="Remove text shadow effect." data-i18n="[title]Remove text shadow effect">
+                                            <input id="noShadowsmode" type="checkbox" />
+                                            <small data-i18n="No Text Shadows">No Text Shadows</small>
+                                        </label>
+                                        <label for="waifuMode" class="checkbox_label" title="Reduce chat height, and put a static sprite behind the chat window." data-i18n="[title]Reduce chat height, and put a static sprite behind the chat window">
+                                            <input id="waifuMode" type="checkbox" />
+                                            <small data-i18n="Waifu Mode">Visual Novel Mode</small>
+                                        </label>
+                                        <label data-newbie-hidden for="expandMessageActions" class="checkbox_label" title="Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'." data-i18n="[title]Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'">
+                                            <input id="expandMessageActions" type="checkbox" />
+                                            <small data-i18n="Auto-Expand Message Actions">Expand Message Actions</small>
+                                        </label>
+                                        <label data-newbie-hidden for="enableZenSliders" class="checkbox_label" title="Alternative UI for numeric sampling parameters with fewer steps." data-i18n="[title]Alternative UI for numeric sampling parameters with fewer steps">
+                                            <input id="enableZenSliders" type="checkbox" />
+                                            <small data-i18n="Zen Sliders">Zen Sliders</small>
+                                        </label>
+                                        <label data-newbie-hidden for="enableLabMode" class="checkbox_label" title="Entirely unrestrict all numeric sampling parameters." data-i18n="[title]Entirely unrestrict all numeric sampling parameters">
+                                            <input id="enableLabMode" type="checkbox" />
+                                            <small data-i18n="Mad Lab Mode">Mad Lab Mode</small>
+                                        </label>
+                                        <label data-newbie-hidden for="messageTimerEnabled" class="checkbox_label" title="Time the AI's message generation, and show the duration in the chat log." data-i18n="[title]Time the AI's message generation, and show the duration in the chat log">
+                                            <input id="messageTimerEnabled" type="checkbox" />
+                                            <small data-i18n="Message Timer">Message Timer</small>
+                                        </label>
+                                        <label data-newbie-hidden for="messageTimestampsEnabled" class="checkbox_label" title="Show a timestamp for each message in the chat log." data-i18n="[title]Show a timestamp for each message in the chat log">
+                                            <input id="messageTimestampsEnabled" type="checkbox" />
+                                            <small data-i18n="Chat Timestamps">Chat Timestamps</small>
+                                        </label>
+                                        <label data-newbie-hidden for="messageModelIconEnabled" class="checkbox_label" title="Show an icon for the API that generated the message." data-i18n="[title]Show an icon for the API that generated the message">
+                                            <input id="messageModelIconEnabled" type="checkbox" />
+                                            <small data-i18n="Model Icon">Model Icons</small>
+                                        </label>
+                                        <label data-newbie-hidden for="mesIDDisplayEnabled" class="checkbox_label" title="Show sequential message numbers in the chat log." data-i18n="[title]Show sequential message numbers in the chat log">
+                                            <input id="mesIDDisplayEnabled" type="checkbox" />
+                                            <small data-i18n="Message IDs">Message IDs</small>
+                                        </label>
+                                        <label data-newbie-hidden for="hideChatAvatarsEnabled" class="checkbox_label" title="Hide avatars in chat messages." data-i18n="[title]Hide avatars in chat messages.">
+                                            <input id="hideChatAvatarsEnabled" type="checkbox" />
+                                            <small data-i18n="Hide Chat Avatars">Hide Chat Avatars</small>
+                                        </label>
+                                        <label data-newbie-hidden for="messageTokensEnabled" class="checkbox_label" title="Show the number of tokens for each message in the chat log." data-i18n="[title]Show the number of tokens in each message in the chat log">
+                                            <input id="messageTokensEnabled" type="checkbox" />
+                                            <small data-i18n="Show Message Token Count">Message Token Count</small>
+                                        </label>
+                                        <label for="compact_input_area" class="checkbox_label" title="Single-row message input area. Mobile only, no effect on PC." data-i18n="[title]Single-row message input area. Mobile only, no effect on PC">
+                                            <input id="compact_input_area" type="checkbox" />
+                                            <small data-i18n="Compact Input Area (Mobile)">Compact Input Area</small><i class="fa-solid fa-mobile-screen-button"></i>
+                                        </label>
+                                        <label data-newbie-hidden for="hotswapEnabled" class="checkbox_label" title="In the Character Management panel, show quick selection buttons for favorited characters." data-i18n="[title]In the Character Management panel, show quick selection buttons for favorited characters">
+                                            <input id="hotswapEnabled" type="checkbox" />
+                                            <small data-i18n="Characters Hotswap">Characters Hotswap</small>
+                                        </label>
+                                        <label for="zoomed_avatar_magnification" class="checkbox_label" title="Enable magnification for zoomed avatar display." data-i18n="[title]Enable magnification for zoomed avatar display.">
+                                            <input id="zoomed_avatar_magnification" type="checkbox" />
+                                            <small data-i18n="Avatar Hover Magnification">Avatar Hover Magnification</small>
+                                            <i title="Enables a magnification effect on hover when you display the zoomed avatar after clicking an avatar's image in chat." class="right_menu_button fa-solid fa-circle-exclamation"></i>
+                                        </label>
+                                        <label for="bogus_folders" class="checkbox_label" title="Show tagged character folders in the character list." data-i18n="[title]Show tagged character folders in the character list">
+                                            <input id="bogus_folders" type="checkbox" />
+                                            <small data-i18n="Tags as Folders">Tags as Folders</small>
+                                            <i title="Recent change: Tags must be marked as folders in the Tag Management menu to appear as such. Click here to bring it up." class="tags_view right_menu_button fa-solid fa-circle-exclamation"></i>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
-                            <hr>
-                            <div data-newbie-hidden name="FontBlurChatWidthBlock" class="flex-container">
-
-                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                    <small>
-                                        <span data-i18n="Chat Width">Chat Width <i class="fa-solid fa-desktop"></i></span>
-                                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Width of the main chat window in % of screen width" title="Width of the main chat window in % of screen width"></div>
-                                    </small>
-                                    <input class="neo-range-slider" type="range" id="chat_width_slider" name="chat_width_slider" min="25" max="100" step="1">
-                                    <input class="neo-range-input" type="number" min="25" max="100" step="1" data-for="chat_width_slider" id="chat_width_slider_counter">
-                                </div>
-
-                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                    <small>
-                                        <span data-i18n="Font Scale">Font Scale</span>
-                                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Font size" title="Font size"></div>
-                                    </small>
-                                    <input class="neo-range-slider" type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.01">
-                                    <input class="neo-range-input" type="number" min="0.8" max="1.2" step="0.01" data-for="font_scale" id="font_scale_counter">
-                                </div>
-
-                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                    <small>
-                                        <span data-i18n="Blur Strength">Blur Strength</span>
-                                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Blur strength on UI panels." title="Blur strength on UI panels."></div>
-                                    </small>
-                                    <input class="neo-range-slider" type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
-                                    <input class="neo-range-input" type="number" min="0" max="30" step="1" data-for="blur_strength" id="blur_strength_counter">
-                                </div>
-
-                                <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                    <small>
-                                        <span data-i18n="Text Shadow Width">Shadow Width</span>
-                                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Strength of the text shadows" title="Strength of the text shadows"></div>
-                                    </small>
-                                    <input class="neo-range-slider" type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
-                                    <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter">
-                                </div>
-
-
-
-                                <!--                                 <div data-newbie-hidden class="range-block">
-                                    <label for="compact_input_area" class="range-block-title">
-                                        <span data-i18n="Chat Width (PC)">
-                                            Chat Width
-                                        </span>
-                                        <i class="fa-solid fa-desktop"></i>
-                                    </label>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input id="chat_width_slider" class="wide100p" type="range" min="25" max="100" step="1" value="50">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="25" max="100" step="1" value="50" data-for="chat_width_slider" id="chat_width_slider_counter">
-                                        </div>
-                                    </div>
-                                </div> -->
-
-                                <!--                                 <div id="font-scale-block" class="range-block">
-                                    <div class="range-block-title" data-i18n="Font Scale">
-                                        Font Scale
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.01">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0.8" max="1.2" step="0.01" data-for="font_scale" id="font_scale_counter">
-                                        </div>
-                                    </div>
-                                </div> -->
-                                <!--                                 <div id="blur-strength-block" class="range-block">
-                                    <div class="range-block-title" data-i18n="Blur Strength">
-                                        Blur Strength
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="30" step="1" data-for="blur_strength" id="blur_strength_counter">
-                                        </div>
-                                    </div>
-                                </div> -->
-                                <!--                                 <div id="shadow-width-block" class="range-block">
-                                    <div class="range-block-title" data-i18n="Text Shadow Width">
-                                        Text Shadow Width
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter">
-                                        </div>
-                                    </div>
-                                </div> -->
-                                <!--                                 <div id="chat-truncation-block" class="range-block">
-                                    <label for="compact_input_area" class="range-block-title">
-                                        <span data-i18n="Chat Truncation">
-                                            Chat Truncation
-                                        </span>
-                                        <small data-i18n="(0 = unlimited)">(0 = unlimited)</small>
-                                    </label>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="chat_truncation" name="chat_truncation" min="0" max="1000" step="25">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="1000" step="1" data-for="chat_truncation" id="chat_truncation_counter">
-                                        </div>
-                                    </div>
-                                </div> -->
-                                <!--                                 <div id="streaming-fps" class="range-block">
-                                    <div class="range-block-title" data-i18n="Streaming FPS">
-                                        Streaming FPS
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="streaming_fps" name="streaming_fps" min="5" max="100" step="5">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="5" max="100" step="1" data-for="streaming_fps" id="streaming_fps_counter">
-                                        </div>
-                                    </div>
-                                </div> -->
-
-                            </div>
-                            <hr>
-                            <div name="themeToggles">
-                                <!-- <h4 data-i18n="Theme Toggles">Theme Toggles</h4> -->
-
-                                <label for="reduced_motion" class="checkbox_label" title="Disable animations and transitions" data-i18n="[title]Disables animations and transitions">
-                                    <input id="reduced_motion" type="checkbox" />
-                                    <small data-i18n="Reduced Motion">Reduced Motion</small>
-                                </label>
-                                <label data-newbie-hidden for="fast_ui_mode" class="checkbox_label" title="Remove blur from window backgrounds, for faster rendering." data-i18n="[title]removes blur from window backgrounds">
-                                    <input id="fast_ui_mode" type="checkbox" />
-                                    <small data-i18n="No Blur Effect">No Blur Effect</small>
-                                </label>
-                                <label data-newbie-hidden for="noShadowsmode" class="checkbox_label" title="Remove text shadow effect." data-i18n="[title]Remove text shadow effect">
-                                    <input id="noShadowsmode" type="checkbox" />
-                                    <small data-i18n="No Text Shadows">No Text Shadows</small>
-                                </label>
-                                <label for="waifuMode" class="checkbox_label" title="Reduce chat height, and put a static sprite behind the chat window." data-i18n="[title]Reduce chat height, and put a static sprite behind the chat window">
-                                    <input id="waifuMode" type="checkbox" />
-                                    <small data-i18n="Waifu Mode">Visual Novel Mode</small>
-                                </label>
-                                <label data-newbie-hidden for="expandMessageActions" class="checkbox_label" title="Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'." data-i18n="[title]Always show the full list of the Message Actions context items for chat messages, instead of hiding them behind '...'">
-                                    <input id="expandMessageActions" type="checkbox" />
-                                    <small data-i18n="Auto-Expand Message Actions">Expand Message Actions</small>
-                                </label>
-                                <label data-newbie-hidden for="enableZenSliders" class="checkbox_label" title="Alternative UI for numeric sampling parameters with fewer steps." data-i18n="[title]Alternative UI for numeric sampling parameters with fewer steps">
-                                    <input id="enableZenSliders" type="checkbox" />
-                                    <small data-i18n="Zen Sliders">Zen Sliders</small>
-                                </label>
-                                <label data-newbie-hidden for="enableLabMode" class="checkbox_label" title="Entirely unrestrict all numeric sampling parameters." data-i18n="[title]Entirely unrestrict all numeric sampling parameters">
-                                    <input id="enableLabMode" type="checkbox" />
-                                    <small data-i18n="Mad Lab Mode">Mad Lab Mode</small>
-                                </label>
-                                <label data-newbie-hidden for="messageTimerEnabled" class="checkbox_label" title="Time the AI's message generation, and show the duration in the chat log." data-i18n="[title]Time the AI's message generation, and show the duration in the chat log">
-                                    <input id="messageTimerEnabled" type="checkbox" />
-                                    <small data-i18n="Message Timer">Message Timer</small>
-                                </label>
-                                <label data-newbie-hidden for="messageTimestampsEnabled" class="checkbox_label" title="Show a timestamp for each message in the chat log." data-i18n="[title]Show a timestamp for each message in the chat log">
-                                    <input id="messageTimestampsEnabled" type="checkbox" />
-                                    <small data-i18n="Chat Timestamps">Chat Timestamps</small>
-                                </label>
-                                <label data-newbie-hidden for="messageModelIconEnabled" class="checkbox_label" title="Show an icon for the API that generated the message." data-i18n="[title]Show an icon for the API that generated the message">
-                                    <input id="messageModelIconEnabled" type="checkbox" />
-                                    <small data-i18n="Model Icon">Model Icons</small>
-                                </label>
-                                <label data-newbie-hidden for="mesIDDisplayEnabled" class="checkbox_label" title="Show sequential message numbers in the chat log." data-i18n="[title]Show sequential message numbers in the chat log">
-                                    <input id="mesIDDisplayEnabled" type="checkbox" />
-                                    <small data-i18n="Message IDs">Message IDs</small>
-                                </label>
-                                <label data-newbie-hidden for="hideChatAvatarsEnabled" class="checkbox_label" title="Hide avatars in chat messages." data-i18n="[title]Hide avatars in chat messages.">
-                                    <input id="hideChatAvatarsEnabled" type="checkbox" />
-                                    <small data-i18n="Hide Chat Avatars">Hide Chat Avatars</small>
-                                </label>
-                                <label data-newbie-hidden for="messageTokensEnabled" class="checkbox_label" title="Show the number of tokens for each message in the chat log." data-i18n="[title]Show the number of tokens in each message in the chat log">
-                                    <input id="messageTokensEnabled" type="checkbox" />
-                                    <small data-i18n="Show Message Token Count">Message Token Count</small>
-                                </label>
-                                <label for="compact_input_area" class="checkbox_label" title="Single-row message input area. Mobile only, no effect on PC." data-i18n="[title]Single-row message input area. Mobile only, no effect on PC">
-                                    <input id="compact_input_area" type="checkbox" />
-                                    <small data-i18n="Compact Input Area (Mobile)">Compact Input Area</small><i class="fa-solid fa-mobile-screen-button"></i>
-                                </label>
-                                <label data-newbie-hidden for="hotswapEnabled" class="checkbox_label" title="In the Character Management panel, show quick selection buttons for favorited characters." data-i18n="[title]In the Character Management panel, show quick selection buttons for favorited characters">
-                                    <input id="hotswapEnabled" type="checkbox" />
-                                    <small data-i18n="Characters Hotswap">Characters Hotswap</small>
-                                </label>
-                                <label for="zoomed_avatar_magnification" class="checkbox_label" title="Enable magnification for zoomed avatar display." data-i18n="[title]Enable magnification for zoomed avatar display.">
-                                    <input id="zoomed_avatar_magnification" type="checkbox" />
-                                    <small data-i18n="Avatar Hover Magnification">Avatar Hover Magnification</small>
-                                    <i title="Enables a magnification effect on hover when you display the zoomed avatar after clicking an avatar's image in chat." class="right_menu_button fa-solid fa-circle-exclamation"></i>
-                                </label>
-                                <label for="bogus_folders" class="checkbox_label" title="Show tagged character folders in the character list." data-i18n="[title]Show tagged character folders in the character list">
-                                    <input id="bogus_folders" type="checkbox" />
-                                    <small data-i18n="Tags as Folders">Tags as Folders</small>
-                                    <i title="Recent change: Tags must be marked as folders in the Tag Management menu to appear as such. Click here to bring it up." class="tags_view right_menu_button fa-solid fa-circle-exclamation"></i>
-                                </label>
-
-                            </div>
-
-
                         </div>
                     </div>
-                    <div name="UserSettingsSecondColumn" id="UI-Customization" class="flex-container flexFlowColumn wide100p flexNoGap">
-                        <div data-newbie-hidden name="CharacterHandlingToggles">
-                            <h4 data-i18n="Character Handling">
-                                Character Handling
-                            </h4>
-                            <div title="If set in the advanced character definitions, this field will be displayed in the characters list." data-i18n="[title]If set in the advanced character definitions, this field will be displayed in the characters list.">
-                                <label for="aux_field" data-i18n="Char List Subheader"><small>Char List Subheader</small></label>
-                                <select id="aux_field">
-                                    <option data-i18n="Character Version" value="character_version">Character Version</option>
-                                    <option data-i18n="Created by" value="creator">Created by</option>
-                                </select>
+                        <div id="user_settings_character_handling" data-newbie-hidden="" class="inline-drawer flexFlowColumn">
+                            <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Settings for character handling." data-i18n="[title]Settings for character handling.">
+                                <b><span data-i18n="Character Handling">Character Handling</span></b>
+                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                             </div>
-                            <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox" title="Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring." data-i18n="[title]Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring">
-                                <input id="fuzzy_search_checkbox" type="checkbox" />
-                                <small data-i18n="Advanced Character Search">Advanced Character Search</small>
-                            </label>
-                            <label data-newbie-hidden for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." data-i18n="[title]If checked and the character card contains a prompt override (System Prompt), use that instead" class="checkbox_label">
-                                <input id="prefer_character_prompt" type="checkbox" />
-                                <small data-i18n="Prefer Character Card Prompt">Prefer Char. Prompt</small>
-                            </label>
-                            <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead" class="checkbox_label">
-                                <input id="prefer_character_jailbreak" type="checkbox" />
-                                <small data-i18n="Prefer Character Card Jailbreak">Prefer Char. Jailbreak</small>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars" title="Avoid cropping and resizing imported character images. When off, crop/resize to 512x768." data-i18n="[title]Avoid cropping and resizing imported character images. When off, crop/resize to 512x768">
-                                <input id="never_resize_avatars" type="checkbox" />
-                                <small data-i18n="Never resize avatars">Never resize avatars</small>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="show_card_avatar_urls" title="Show actual file names on the disk, in the characters list display only." data-i18n="[title]Show actual file names on the disk, in the characters list display only">
-                                <input id="show_card_avatar_urls" type="checkbox" />
-                                <small data-i18n="Show avatar filenames">Show avatar filenames</small>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="import_card_tags" title="Prompt to import embedded card tags on character import. Otherwise embedded tags are ignored." data-i18n="[title]Prompt to import embedded card tags on character import. Otherwise embedded tags are ignored">
-                                <input id="import_card_tags" type="checkbox" />
-                                <small data-i18n="Import Card Tags">Import Card Tags</small>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="spoiler_free_mode" title="Hide character definitions from the editor panel behind a spoiler button." data-i18n="[title]Hide character definitions from the editor panel behind a spoiler button">
-                                <input id="spoiler_free_mode" type="checkbox" />
-                                <small data-i18n="Spoiler Free Mode">Spoiler Free Mode</small>
-                            </label>
-
+                            <div class="inline-drawer-content">
+                                <div title="If set in the advanced character definitions, this field will be displayed in the characters list." data-i18n="[title]If set in the advanced character definitions, this field will be displayed in the characters list.">
+                                    <label for="aux_field" data-i18n="Char List Subheader"><small>Char List Subheader</small></label>
+                                    <select id="aux_field">
+                                        <option data-i18n="Character Version" value="character_version">Character Version</option>
+                                        <option data-i18n="Created by" value="creator">Created by</option>
+                                    </select>
+                                </div>
+                                <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox" title="Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring." data-i18n="[title]Use fuzzy matching, and search characters in the list by all data fields, not just by a name substring">
+                                    <input id="fuzzy_search_checkbox" type="checkbox" />
+                                    <small data-i18n="Advanced Character Search">Advanced Character Search</small>
+                                </label>
+                                <label data-newbie-hidden for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." data-i18n="[title]If checked and the character card contains a prompt override (System Prompt), use that instead" class="checkbox_label">
+                                    <input id="prefer_character_prompt" type="checkbox" />
+                                    <small data-i18n="Prefer Character Card Prompt">Prefer Char. Prompt</small>
+                                </label>
+                                <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead" class="checkbox_label">
+                                    <input id="prefer_character_jailbreak" type="checkbox" />
+                                    <small data-i18n="Prefer Character Card Jailbreak">Prefer Char. Jailbreak</small>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars" title="Avoid cropping and resizing imported character images. When off, crop/resize to 512x768." data-i18n="[title]Avoid cropping and resizing imported character images. When off, crop/resize to 512x768">
+                                    <input id="never_resize_avatars" type="checkbox" />
+                                    <small data-i18n="Never resize avatars">Never resize avatars</small>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="show_card_avatar_urls" title="Show actual file names on the disk, in the characters list display only." data-i18n="[title]Show actual file names on the disk, in the characters list display only">
+                                    <input id="show_card_avatar_urls" type="checkbox" />
+                                    <small data-i18n="Show avatar filenames">Show avatar filenames</small>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="import_card_tags" title="Prompt to import embedded card tags on character import. Otherwise embedded tags are ignored." data-i18n="[title]Prompt to import embedded card tags on character import. Otherwise embedded tags are ignored">
+                                    <input id="import_card_tags" type="checkbox" />
+                                    <small data-i18n="Import Card Tags">Import Card Tags</small>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="spoiler_free_mode" title="Hide character definitions from the editor panel behind a spoiler button." data-i18n="[title]Hide character definitions from the editor panel behind a spoiler button">
+                                    <input id="spoiler_free_mode" type="checkbox" />
+                                    <small data-i18n="Spoiler Free Mode">Spoiler Free Mode</small>
+                                </label>
+                            
                         </div>
-                        <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
-
-                        <div>
-                            <div data-newbie-hidden class="flex-container">
-                                <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat.">
-                                    <small data-i18n="Reload Chat">Reload Chat</small>
-                                </div>
-                                <div id="debug_menu" class="menu_button whitespacenowrap" data-i18n="Debug Menu">
-                                    <small data-i18n="Debug Menu">Debug Menu</small>
-                                </div>
+                        <div id="user_settings_miscellaneous" data-newbie-hidden="" class="inline-drawer wide100p flexFlowColumn">
+                            <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Miscellaneous settings." data-i18n="[title]Miscellaneous settings.">
+                                <b><span data-i18n="Miscellaneous">Miscellaneous</span></b>
+                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                             </div>
-                            <label class="checkbox_label flexWrap" for="smooth_streaming">
-                                <input id="smooth_streaming" type="checkbox" />
-                                <div class="flex-container alignItemsBaseline">
-                                    <small data-i18n="Smooth Streaming">
-                                        Smooth Streaming
-                                    </small>
-                                    <i class="fa-solid fa-flask" data-i18n="[title]Experimental feature. May not work for all backends." title="Experimental feature. May not work for all backends."></i>
-                                </div>
-                                <div id="smooth_streaming_speed_control" class="flexBasis100p wide100p">
-                                    <input type="range" id="smooth_streaming_speed" name="smooth_streaming_speed" min="0" max="100" step="10" value="50">
-                                    <div class="slider_hint">
-                                        <span data-i18n="Slow">Slow</span>
-                                        <span data-i18n=""></span>
-                                        <span data-i18n="Slow">Fast</span>
+                            <div class="inline-drawer-content">
+                                <div>
+                                    <div data-newbie-hidden class="flex-container">
+                                        <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat.">
+                                            <small data-i18n="Reload Chat">Reload Chat</small>
+                                        </div>
+                                        <div id="debug_menu" class="menu_button whitespacenowrap" data-i18n="Debug Menu">
+                                            <small data-i18n="Debug Menu">Debug Menu</small>
+                                        </div>
                                     </div>
-                                </div>
-                            </label>
-
-                            <label for="play_message_sound" class="checkbox_label" title="Play a sound when a message generation finishes." data-i18n="[title]Play a sound when a message generation finishes">
-                                <input id="play_message_sound" type="checkbox" />
-                                <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
-                                <span>
-                                    <small data-i18n="Message Sound">Message Sound</small>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#message-sound" class="notes-link" target="_blank">
-                                        <span class="fa-solid fa-circle-question note-link-span"></span>
-                                    </a>
-                                </span>
-                            </label>
-                            <label for="play_sound_unfocused" class="checkbox_label" title="Only play a sound when ST's browser tab is unfocused." data-i18n="[title]Only play a sound when ST's browser tab is unfocused">
-                                <input id="play_sound_unfocused" type="checkbox" />
-                                <small data-i18n="Background Sound Only">Background Sound Only</small>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLs." data-i18n="[title]Reduce the formatting requirements on API URLs">
-                                <input id="relaxed_api_urls" type="checkbox" />
-                                <small data-i18n="Relaxed API URLS">Relaxed API URLs</small>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="world_import_dialog" title="Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead." data-i18n="[title]Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead">
-                                <input id="world_import_dialog" type="checkbox" />
-                                <small data-i18n="Lorebook Import Dialog">Lorebook Import Dialog</small>
-                            </label>
-                            <label class="checkbox_label" for="restore_user_input" title="Restore unsaved user input on page refresh." data-i18n="[title]Restore unsaved user input on page refresh">
-                                <input id="restore_user_input" type="checkbox" />
-                                <small data-i18n="Restore User Input">Restore User Input</small>
-                            </label>
-                            <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile">
-                                <input id="movingUImode" type="checkbox" />
-                                <small data-i18n="Movable UI Panels">MovingUI&nbsp;<i class="fa-solid fa-desktop"></i></small>
-                            </label>
-                            <div data-newbie-hidden id="MovingUI-presets-block" class="flex-container alignitemscenter">
-                                <div class="flex-container alignItemsFlexEnd">
-                                    <label for="movingUIPresets" title="MovingUI preset. Predefined/saved draggable positions." data-i18n="[title]MovingUI preset. Predefined/saved draggable positions">
-                                        <small data-i18n="MUI Preset">MUI Preset:</small>
-                                        <div class="flex-container flexnowrap">
-                                            <select id="movingUIPresets" class="widthNatural flex1 margin0">
-                                            </select>
+                                    <label class="checkbox_label flexWrap" for="smooth_streaming">
+                                        <input id="smooth_streaming" type="checkbox" />
+                                        <div class="flex-container alignItemsBaseline">
+                                            <small data-i18n="Smooth Streaming">
+                                                Smooth Streaming
+                                            </small>
+                                            <i class="fa-solid fa-flask" data-i18n="[title]Experimental feature. May not work for all backends." title="Experimental feature. May not work for all backends."></i>
+                                        </div>
+                                        <div id="smooth_streaming_speed_control" class="flexBasis100p wide100p">
+                                            <input type="range" id="smooth_streaming_speed" name="smooth_streaming_speed" min="0" max="100" step="10" value="50">
+                                            <div class="slider_hint">
+                                                <span data-i18n="Slow">Slow</span>
+                                                <span data-i18n=""></span>
+                                                <span data-i18n="Slow">Fast</span>
+                                            </div>
                                         </div>
                                     </label>
-                                    <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file." data-i18n="[title]Save movingUI changes to a new file" class="menu_button margin0 fa-solid fa-save"></div>
-                                    <div data-newbie-hidden id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button fa-solid fa-recycle margin0" data-i18n="[title]Reset MovingUI panel sizes/locations."></div>
-                                </div>
-                            </div>
-                            <div data-newbie-hidden id="CustomCSS-block" class="flex-container flexFlowColumn">
-                                <h4 class="title_restorable" title="Apply a custom CSS style to all of the ST GUI." data-i18n="[title]Apply a custom CSS style to all of the ST GUI">
-                                    <span data-i18n="Custom CSS">Custom CSS</span>
-                                    <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="customCSS" title="Expand the editor"></i>
-                                </h4>
-                                <div class="flex-container flexnowrap alignitemscenter">
-                                    <textarea id="customCSS" class="text_pole margin0 margin-r5 textarea_compact monospace"></textarea>
+                                    <label for="play_message_sound" class="checkbox_label" title="Play a sound when a message generation finishes." data-i18n="[title]Play a sound when a message generation finishes">
+                                        <input id="play_message_sound" type="checkbox" />
+                                        <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
+                                        <span>
+                                            <small data-i18n="Message Sound">Message Sound</small>
+                                            <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#message-sound" class="notes-link" target="_blank">
+                                                <span class="fa-solid fa-circle-question note-link-span"></span>
+                                            </a>
+                                        </span>
+                                    </label>
+                                    <label for="play_sound_unfocused" class="checkbox_label" title="Only play a sound when ST's browser tab is unfocused." data-i18n="[title]Only play a sound when ST's browser tab is unfocused">
+                                        <input id="play_sound_unfocused" type="checkbox" />
+                                        <small data-i18n="Background Sound Only">Background Sound Only</small>
+                                    </label>
+                                    <label data-newbie-hidden class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLs." data-i18n="[title]Reduce the formatting requirements on API URLs">
+                                        <input id="relaxed_api_urls" type="checkbox" />
+                                        <small data-i18n="Relaxed API URLS">Relaxed API URLs</small>
+                                    </label>
+                                    <label data-newbie-hidden class="checkbox_label" for="world_import_dialog" title="Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead." data-i18n="[title]Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead">
+                                        <input id="world_import_dialog" type="checkbox" />
+                                        <small data-i18n="Lorebook Import Dialog">Lorebook Import Dialog</small>
+                                    </label>
+                                    <label class="checkbox_label" for="restore_user_input" title="Restore unsaved user input on page refresh." data-i18n="[title]Restore unsaved user input on page refresh">
+                                        <input id="restore_user_input" type="checkbox" />
+                                        <small data-i18n="Restore User Input">Restore User Input</small>
+                                    </label>
+                                    <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label" title="Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile." data-i18n="[title]Allow repositioning certain UI elements by dragging them. PC only, no effect on mobile">
+                                        <input id="movingUImode" type="checkbox" />
+                                        <small data-i18n="Movable UI Panels">MovingUI&nbsp;<i class="fa-solid fa-desktop"></i></small>
+                                    </label>
+                                    <div data-newbie-hidden id="MovingUI-presets-block" class="flex-container alignitemscenter">
+                                        <div class="flex-container alignItemsFlexEnd">
+                                            <label for="movingUIPresets" title="MovingUI preset. Predefined/saved draggable positions." data-i18n="[title]MovingUI preset. Predefined/saved draggable positions">
+                                                <small data-i18n="MUI Preset">MUI Preset:</small>
+                                                <div class="flex-container flexnowrap">
+                                                    <select id="movingUIPresets" class="widthNatural flex1 margin0">
+                                                    </select>
+                                                </div>
+                                            </label>
+                                            <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file." data-i18n="[title]Save movingUI changes to a new file" class="menu_button margin0 fa-solid fa-save"></div>
+                                            <div data-newbie-hidden id="movingUIreset" title="Reset MovingUI panel sizes/locations." class="menu_button fa-solid fa-recycle margin0" data-i18n="[title]Reset MovingUI panel sizes/locations."></div>
+                                        </div>
+                                    </div>
+                                    <div data-newbie-hidden id="CustomCSS-block" class="flex-container flexFlowColumn">
+                                        <h4 class="title_restorable" title="Apply a custom CSS style to all of the ST GUI." data-i18n="[title]Apply a custom CSS style to all of the ST GUI">
+                                            <span data-i18n="Custom CSS">Custom CSS</span>
+                                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="customCSS" title="Expand the editor"></i>
+                                        </h4>
+                                        <div class="flex-container flexnowrap alignitemscenter">
+                                            <textarea id="customCSS" class="text_pole margin0 margin-r5 textarea_compact monospace"></textarea>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div name="UserSettingsThirdColumn" id="power-user-options-block" class="flex-container wide100p">
                         <div id="power-user-option-checkboxes">
-
                             <div name="ChatMessageHandlingToggles">
-                                <h4 data-i18n="Chat/Message Handling">Chat/Message Handling</h4>
-                                <div class="flex-container">
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small>
-                                            <span data-i18n="# Messages to Load"># Msg. to Load</span>
-
-                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]The number of chat history messages to load before pagination." title="The number of chat history messages to load before pagination."></div>
-                                        </small>
-                                        <input class="neo-range-slider" type="range" id="chat_truncation" name="chat_truncation" min="0" max="1000" step="25">
-                                        <input class="neo-range-input" type="number" min="0" max="1000" step="25" data-for="chat_truncation" id="chat_truncation_counter">
-                                        <small data-i18n="(0 = All)">(0 = All)</small>
-                                    </div>
-
-                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small>
-                                            <span data-i18n="Streaming FPS">Streaming FPS</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Update speed of streamed text." title="Update speed of streamed text."></div>
-                                        </small>
-                                        <input class="neo-range-slider" type="range" id="streaming_fps" name="streaming_fps" min="5" max="100" step="5">
-                                        <input class="neo-range-input" type="number" min="5" max="100" step="5" data-for="streaming_fps" id="streaming_fps_counter">
-                                    </div>
-                                </div>
-                                <div data-newbie-hidden id="examples-behavior-block">
-                                    <label data-i18n="Example Messages Behavior">
-                                        <small>Example Messages Behavior:</small>
-                                    </label>
-                                    <select id="example_messages_behavior">
-                                        <option value="normal" data-i18n="Gradual push-out">Gradual push-out</option>
-                                        <option value="keep" data-i18n="Always include examples">Always include examples</option>
-                                        <option value="strip" data-i18n="Never include examples">Never include examples</option>
-                                    </select>
-                                </div>
-                                <div data-newbie-hidden class="flex-container alignitemscenter">
-                                    <small data-i18n="Send on Enter">
-                                        Enter to Send:
-                                    </small>
-                                    <select id="send_on_enter" class="widthNatural flex1 margin0">
-                                        <option value="-1" data-i18n="Disabled">Disabled</option>
-                                        <option value="0" data-i18n="Automatic (PC)">Automatic (PC)</option>
-                                        <option value="1" data-i18n="Enabled">Enabled</option>
-                                    </select>
-                                </div>
-                                <label data-newbie-hidden class="checkbox_label" for="continue_on_send">
-                                    <input id="continue_on_send" type="checkbox" />
-                                    <small data-i18n="Press Send to continue">
-                                        "Send" to Continue
-                                    </small>
-                                </label>
-                                <label class="checkbox_label" for="quick_continue" title="Show a button in the input area to ask the AI to continue (extend) its last message." data-i18n="[title]Show a button in the input area to ask the AI to continue (extend) its last message">
-                                    <input id="quick_continue" type="checkbox" />
-                                    <small data-i18n="Quick 'Continue' button">
-                                        Quick "Continue" button
-                                    </small>
-                                </label>
-                                <div class="checkbox-container flex-container">
-                                    <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox" title="Show arrow buttons on the last in-chat message to generate alternative AI responses. Both PC and mobile." data-i18n="[title]Show arrow buttons on the last in-chat message to generate alternative AI responses. Both PC and mobile">
-                                        <input id="swipes-checkbox" type="checkbox" />
-                                        <small data-i18n="Swipes">Swipes</small><i class="fa-solid fa-desktop"></i><i class="fa-solid fa-mobile-screen-button"></i>
-                                    </label>
-                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox" title="Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC." , data-i18n="[title]Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC">
-                                        <input id="gestures-checkbox" type="checkbox" />
-                                        <small data-i18n="Gestures">Gestures</small>
-                                        <i class="fa-solid fa-mobile-screen-button"></i>
-                                    </label>
-                                </div>
-                                <label class="checkbox_label" for="auto-load-chat-checkbox">
-                                    <input id="auto-load-chat-checkbox" type="checkbox" />
-                                    <small data-i18n="Auto-load Last Chat">Auto-load Last Chat</small>
-                                </label>
-                                <label data-newbie-hidden for="auto_scroll_chat_to_bottom" class="checkbox_label">
-                                    <input id="auto_scroll_chat_to_bottom" type="checkbox" />
-                                    <small data-i18n="Auto-scroll Chat">Auto-scroll Chat</small>
-                                </label>
-                                <label data-newbie-hidden class="checkbox_label" for="auto_save_msg_edits" title="Save edits to messages without confirmation as you type." data-i18n="[title]Save edits to messages without confirmation as you type">
-                                    <input id="auto_save_msg_edits" type="checkbox" />
-                                    <small data-i18n="Auto-save Message Edits">Auto-save Message Edits</small>
-                                </label>
-                                <label data-newbie-hidden class="checkbox_label" for="confirm_message_delete">
-                                    <input id="confirm_message_delete" type="checkbox" />
-                                    <small data-i18n="Confirm message deletion">Confirm message deletion</small>
-                                </label>
-                                <label class="checkbox_label" for="auto_fix_generated_markdown">
-                                    <input id="auto_fix_generated_markdown" type="checkbox" />
-                                    <small data-i18n="Auto-fix Markdown">Auto-fix Markdown</small>
-                                </label>
-                                <label data-newbie-hidden class="checkbox_label" for="render_formulas" title="Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX." data-i18n="[title]Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX">
-                                    <input id="render_formulas" type="checkbox" />
-                                    <small data-i18n="Render Formulas">Render Formulas</small>
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#formulas-rendering" class="notes-link" target="_blank">
-                                        <small class="fa-solid fa-circle-question note-link-small"></small>
-                                    </a>
-                                </label>
-                                <label class="checkbox_label" for="forbid_external_media" title="Disalow embedded media from other domains in chat messages." data-i18n="[title]Disalow embedded media from other domains in chat messages">
-                                    <input id="forbid_external_media" type="checkbox" />
-                                    <small data-i18n="Forbid External Media">Forbid External Media</small>
-                                </label>
-                                <label data-newbie-hidden class="checkbox_label" for="allow_name2_display">
-                                    <input id="allow_name2_display" type="checkbox" />
-                                    <small data-i18n="Allow {{char}}: in bot messages">Show {{char}}: in responses</small>
-                                </label>
-                                <label data-newbie-hidden class="checkbox_label" for="allow_name1_display">
-                                    <input id="allow_name1_display" type="checkbox" />
-                                    <small data-i18n="Allow {{user}}: in bot messages">Show {{user}}: in responses</small>
-                                </label>
-                                <label class="checkbox_label" for="encode_tags" title="Skip encoding &lt; and &gt; characters in message text, allowing a subset of HTML markup as well as Markdown." data-i18n="[title]Skip encoding  and  characters in message text, allowing a subset of HTML markup as well as Markdown">
-                                    <input id="encode_tags" type="checkbox" />
-                                    <small data-i18n="Show tags in responses">Show &lt;tags&gt; in responses</small>
-                                </label>
-                                <label data-newbie-hidden class="checkbox_label" for="disable_group_trimming" title="Allow AI messages in groups to contain lines spoken by other group members." data-i18n="[title]Allow AI messages in groups to contain lines spoken by other group members">
-                                    <input id="disable_group_trimming" type="checkbox" />
-                                    <small data-i18n="Relax message trim in Groups">Relax message trim in Groups</small>
-                                </label>
-                                <label data-newbie-hidden class="checkbox_label" for="console_log_prompts">
-                                    <input id="console_log_prompts" type="checkbox" />
-                                    <small data-i18n="Log prompts to console">Log prompts to console</small>
-                                </label>
-                                <label data-newbie-hidden class="checkbox_label" for="request_token_probabilities" title="Requests logprobs from the API for the Token Probabilities feature." data-i18n="[title]Requests logprobs from the API for the Token Probabilities feature">
-                                    <input id="request_token_probabilities" type="checkbox" />
-                                    <small data-i18n="Request token probabilities">Request token probabilities</small>
-                                </label>
-                                <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
-                                    <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Automatically reject and re-generate AI message based on configurable criteria." data-i18n="[title]Automatically reject and re-generate AI message based on configurable criteria">
-                                        <b><span data-i18n="Auto-swipe">Auto-swipe</span></b>
+                                <div id="user_settings_chatmessage_handling" data-newbie-hidden="" class="inline-drawer wide100p flexFlowColumn">
+                                    <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Settings to handle chat messages." data-i18n="[title]Settings to handle chat messages.">
+                                        <b><span data-i18n="Chat/Message Handling">Chat/Message Handling</span></b>
                                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                     </div>
                                     <div class="inline-drawer-content">
-                                        <label class="checkbox_label" for="auto_swipe" title="Enable the auto-swipe function. Settings in this section only have an effect when auto-swipe is enabled." data-i18n="[title]Enable the auto-swipe function. Settings in this section only have an effect when auto-swipe is enabled">
-                                            <input id="auto_swipe" type="checkbox" />
-                                            <small data-i18n="Enabled">Enabled</small>
+                                        <div class="flex-container">
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                                <small>
+                                                    <span data-i18n="# Messages to Load"># Msg. to Load</span>
+
+                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]The number of chat history messages to load before pagination." title="The number of chat history messages to load before pagination."></div>
+                                                </small>
+                                                <input class="neo-range-slider" type="range" id="chat_truncation" name="chat_truncation" min="0" max="1000" step="25">
+                                                <input class="neo-range-input" type="number" min="0" max="1000" step="25" data-for="chat_truncation" id="chat_truncation_counter">
+                                                <small data-i18n="(0 = All)">(0 = All)</small>
+                                            </div>
+
+                                            <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                                <small>
+                                                    <span data-i18n="Streaming FPS">Streaming FPS</span>
+                                                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Update speed of streamed text." title="Update speed of streamed text."></div>
+                                                </small>
+                                                <input class="neo-range-slider" type="range" id="streaming_fps" name="streaming_fps" min="5" max="100" step="5">
+                                                <input class="neo-range-input" type="number" min="5" max="100" step="5" data-for="streaming_fps" id="streaming_fps_counter">
+                                            </div>
+                                        </div>
+                                        <div data-newbie-hidden id="examples-behavior-block">
+                                            <label data-i18n="Example Messages Behavior">
+                                                <small>Example Messages Behavior:</small>
+                                            </label>
+                                            <select id="example_messages_behavior">
+                                                <option value="normal" data-i18n="Gradual push-out">Gradual push-out</option>
+                                                <option value="keep" data-i18n="Always include examples">Always include examples</option>
+                                                <option value="strip" data-i18n="Never include examples">Never include examples</option>
+                                            </select>
+                                        </div>
+                                        <div data-newbie-hidden class="flex-container alignitemscenter">
+                                            <small data-i18n="Send on Enter">
+                                                Enter to Send:
+                                            </small>
+                                            <select id="send_on_enter" class="widthNatural flex1 margin0">
+                                                <option value="-1" data-i18n="Disabled">Disabled</option>
+                                                <option value="0" data-i18n="Automatic (PC)">Automatic (PC)</option>
+                                                <option value="1" data-i18n="Enabled">Enabled</option>
+                                            </select>
+                                        </div>
+                                        <label data-newbie-hidden class="checkbox_label" for="continue_on_send">
+                                            <input id="continue_on_send" type="checkbox" />
+                                            <small data-i18n="Press Send to continue">
+                                                "Send" to Continue
+                                            </small>
                                         </label>
-                                        <small data-i18n="Minimum generated message length">Minimum generated message length</small>
-                                        <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole" title="If the generated message is shorter than this, trigger an auto-swipe." data-i18n="[title]If the generated message is shorter than this, trigger an auto-swipe">
-                                        <small data-i18n="Blacklisted words">Blacklisted words</small>
-                                        <div class="auto_swipe">
-                                            <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" data-i18n="[placeholder]words you dont want generated separated by comma ','" placeholder="words you don't want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
-                                            <small data-i18n="Blacklisted word count to swipe">Blacklisted word count to swipe</small>
-                                            <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole" title="Minimum number of blacklisted words detected to trigger an auto-swipe." data-i18n="[title]Minimum number of blacklisted words detected to trigger an auto-swipe">
+                                        <label class="checkbox_label" for="quick_continue" title="Show a button in the input area to ask the AI to continue (extend) its last message." data-i18n="[title]Show a button in the input area to ask the AI to continue (extend) its last message">
+                                            <input id="quick_continue" type="checkbox" />
+                                            <small data-i18n="Quick 'Continue' button">
+                                                Quick "Continue" button
+                                            </small>
+                                        </label>
+                                        <div class="checkbox-container flex-container">
+                                            <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox" title="Show arrow buttons on the last in-chat message to generate alternative AI responses. Both PC and mobile." data-i18n="[title]Show arrow buttons on the last in-chat message to generate alternative AI responses. Both PC and mobile">
+                                                <input id="swipes-checkbox" type="checkbox" />
+                                                <small data-i18n="Swipes">Swipes</small><i class="fa-solid fa-desktop"></i><i class="fa-solid fa-mobile-screen-button"></i>
+                                            </label>
+                                            <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox" title="Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC." , data-i18n="[title]Allow using swiping gestures on the last in-chat message to trigger swipe generation. Mobile only, no effect on PC">
+                                                <input id="gestures-checkbox" type="checkbox" />
+                                                <small data-i18n="Gestures">Gestures</small>
+                                                <i class="fa-solid fa-mobile-screen-button"></i>
+                                            </label>
+                                        </div>
+                                        <label class="checkbox_label" for="auto-load-chat-checkbox">
+                                            <input id="auto-load-chat-checkbox" type="checkbox" />
+                                            <small data-i18n="Auto-load Last Chat">Auto-load Last Chat</small>
+                                        </label>
+                                        <label data-newbie-hidden for="auto_scroll_chat_to_bottom" class="checkbox_label">
+                                            <input id="auto_scroll_chat_to_bottom" type="checkbox" />
+                                            <small data-i18n="Auto-scroll Chat">Auto-scroll Chat</small>
+                                        </label>
+                                        <label data-newbie-hidden class="checkbox_label" for="auto_save_msg_edits" title="Save edits to messages without confirmation as you type." data-i18n="[title]Save edits to messages without confirmation as you type">
+                                            <input id="auto_save_msg_edits" type="checkbox" />
+                                            <small data-i18n="Auto-save Message Edits">Auto-save Message Edits</small>
+                                        </label>
+                                        <label data-newbie-hidden class="checkbox_label" for="confirm_message_delete">
+                                            <input id="confirm_message_delete" type="checkbox" />
+                                            <small data-i18n="Confirm message deletion">Confirm message deletion</small>
+                                        </label>
+                                        <label class="checkbox_label" for="auto_fix_generated_markdown">
+                                            <input id="auto_fix_generated_markdown" type="checkbox" />
+                                            <small data-i18n="Auto-fix Markdown">Auto-fix Markdown</small>
+                                        </label>
+                                        <label data-newbie-hidden class="checkbox_label" for="render_formulas" title="Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX." data-i18n="[title]Render LaTeX and AsciiMath equation notation in chat messages. Powered by KaTeX">
+                                            <input id="render_formulas" type="checkbox" />
+                                            <small data-i18n="Render Formulas">Render Formulas</small>
+                                            <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#formulas-rendering" class="notes-link" target="_blank">
+                                                <small class="fa-solid fa-circle-question note-link-small"></small>
+                                            </a>
+                                        </label>
+                                        <label class="checkbox_label" for="forbid_external_media" title="Disalow embedded media from other domains in chat messages." data-i18n="[title]Disalow embedded media from other domains in chat messages">
+                                            <input id="forbid_external_media" type="checkbox" />
+                                            <small data-i18n="Forbid External Media">Forbid External Media</small>
+                                        </label>
+                                        <label data-newbie-hidden class="checkbox_label" for="allow_name2_display">
+                                            <input id="allow_name2_display" type="checkbox" />
+                                            <small data-i18n="Allow {{char}}: in bot messages">Show {{char}}: in responses</small>
+                                        </label>
+                                        <label data-newbie-hidden class="checkbox_label" for="allow_name1_display">
+                                            <input id="allow_name1_display" type="checkbox" />
+                                            <small data-i18n="Allow {{user}}: in bot messages">Show {{user}}: in responses</small>
+                                        </label>
+                                        <label class="checkbox_label" for="encode_tags" title="Skip encoding &lt; and &gt; characters in message text, allowing a subset of HTML markup as well as Markdown." data-i18n="[title]Skip encoding  and  characters in message text, allowing a subset of HTML markup as well as Markdown">
+                                            <input id="encode_tags" type="checkbox" />
+                                            <small data-i18n="Show tags in responses">Show &lt;tags&gt; in responses</small>
+                                        </label>
+                                        <label data-newbie-hidden class="checkbox_label" for="disable_group_trimming" title="Allow AI messages in groups to contain lines spoken by other group members." data-i18n="[title]Allow AI messages in groups to contain lines spoken by other group members">
+                                            <input id="disable_group_trimming" type="checkbox" />
+                                            <small data-i18n="Relax message trim in Groups">Relax message trim in Groups</small>
+                                        </label>
+                                        <label data-newbie-hidden class="checkbox_label" for="console_log_prompts">
+                                            <input id="console_log_prompts" type="checkbox" />
+                                            <small data-i18n="Log prompts to console">Log prompts to console</small>
+                                        </label>
+                                        <label data-newbie-hidden class="checkbox_label" for="request_token_probabilities" title="Requests logprobs from the API for the Token Probabilities feature." data-i18n="[title]Requests logprobs from the API for the Token Probabilities feature">
+                                            <input id="request_token_probabilities" type="checkbox" />
+                                            <small data-i18n="Request token probabilities">Request token probabilities</small>
+                                        </label>
+                                        <div id="user_settings_auto_swipe" data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
+                                            <div class="inline-drawer-toggle inline-drawer-header userSettingsInnerExpandable" title="Automatically reject and re-generate AI message based on configurable criteria." data-i18n="[title]Automatically reject and re-generate AI message based on configurable criteria">
+                                                <b><span data-i18n="Auto-swipe">Auto-swipe</span></b>
+                                                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                            </div>
+                                            <div class="inline-drawer-content">
+                                                <label class="checkbox_label" for="auto_swipe" title="Enable the auto-swipe function. Settings in this section only have an effect when auto-swipe is enabled." data-i18n="[title]Enable the auto-swipe function. Settings in this section only have an effect when auto-swipe is enabled">
+                                                    <input id="auto_swipe" type="checkbox" />
+                                                    <small data-i18n="Enabled">Enabled</small>
+                                                </label>
+                                                <small data-i18n="Minimum generated message length">Minimum generated message length</small>
+                                                <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole" title="If the generated message is shorter than this, trigger an auto-swipe." data-i18n="[title]If the generated message is shorter than this, trigger an auto-swipe">
+                                                <small data-i18n="Blacklisted words">Blacklisted words</small>
+                                                <div class="auto_swipe">
+                                                    <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" data-i18n="[placeholder]words you dont want generated separated by comma ','" placeholder="words you don't want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
+                                                    <small data-i18n="Blacklisted word count to swipe">Blacklisted word count to swipe</small>
+                                                    <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole" title="Minimum number of blacklisted words detected to trigger an auto-swipe." data-i18n="[title]Minimum number of blacklisted words detected to trigger an auto-swipe">
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
