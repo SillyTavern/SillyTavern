@@ -346,6 +346,7 @@ export function evaluateMacros(content, env) {
         const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
         return utcTime;
     });
+    content = timeDiffReplace(content);
     content = bannedWordsReplace(content);
     content = randomReplace(content);
     content = pickReplace(content, rawContent);
