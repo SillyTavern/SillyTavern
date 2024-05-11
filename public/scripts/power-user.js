@@ -1869,7 +1869,7 @@ function highlightDefaultContext() {
 /**
  * Fuzzy search characters by a search term
  * @param {string} searchValue - The search term
- * @returns {FuseResult[]} Results as items with their score
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
  */
 export function fuzzySearchCharacters(searchValue) {
     // @ts-ignore
@@ -1902,7 +1902,7 @@ export function fuzzySearchCharacters(searchValue) {
  * Fuzzy search world info entries by a search term
  * @param {*[]} data - WI items data array
  * @param {string} searchValue - The search term
- * @returns {FuseResult[]} Results as items with their score
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
  */
 export function fuzzySearchWorldInfo(data, searchValue) {
     // @ts-ignore
@@ -1931,7 +1931,7 @@ export function fuzzySearchWorldInfo(data, searchValue) {
  * Fuzzy search persona entries by a search term
  * @param {*[]} data - persona data array
  * @param {string} searchValue - The search term
- * @returns {FuseResult[]} Results as items with their score
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
  */
 export function fuzzySearchPersonas(data, searchValue) {
     data = data.map(x => ({ key: x, name: power_user.personas[x] ?? '', description: power_user.persona_descriptions[x]?.description ?? '' }));
@@ -1955,7 +1955,7 @@ export function fuzzySearchPersonas(data, searchValue) {
 /**
  * Fuzzy search tags by a search term
  * @param {string} searchValue - The search term
- * @returns {FuseResult[]} Results as items with their score
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
  */
 export function fuzzySearchTags(searchValue) {
     // @ts-ignore
@@ -1977,7 +1977,7 @@ export function fuzzySearchTags(searchValue) {
 /**
  * Fuzzy search groups by a search term
  * @param {string} searchValue - The search term
- * @returns {FuseResult[]} Results as items with their score
+ * @returns {{item?: *, refIndex: number, score: number}[]} Results as items with their score
  */
 export function fuzzySearchGroups(searchValue) {
     // @ts-ignore
