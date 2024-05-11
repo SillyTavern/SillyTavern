@@ -2447,7 +2447,7 @@ async function checkWorldInfo(chat, maxContext) {
         }
 
         needsToScan = world_info_recursive && activatedNow.size > 0;
-        const newEntries = [...activatedNow]
+        var newEntries = [...activatedNow]
             .sort((a, b) => sortedEntries.indexOf(a) - sortedEntries.indexOf(b));
         let newContent = '';
         const textToScanTokens = await getTokenCountAsync(allActivatedText);
@@ -2490,6 +2490,32 @@ async function checkWorldInfo(chat, maxContext) {
             console.debug('WI probability checks failed for all activated entries, stopping');
             needsToScan = false;
         }
+
+        var FilterednewEntries = newEntries
+        for (const entry of newEntries) {
+            if (!entry.excludeRecursion && entry?.keysecondary?.length) {
+                if (entry.selectiveLogic === world_info_logic.NOT_ANY)
+                    for (const secondary of entry.keysecondary) {
+                        const secondarySubstituted = substituteParams(secondary);
+                        if (FilterednewEntries.some(x => !x.preventRecursion && x.content.includes(secondarySubstituted))) {
+                            FilterednewEntries = FilterednewEntries.filter(x => x !== entry);
+                            allActivatedEntries.delete(entry);
+                            break;
+                        }
+                    }
+                else if (entry.selectiveLogic === world_info_logic.NOT_ALL) {
+                    for (const secondary of entry.keysecondary) {
+                        const secondarySubstituted = substituteParams(secondary);
+                        if (!FilterednewEntries.some(x => !x.preventRecursion && x.content.includes(secondarySubstituted))) {
+                            break;
+                        }
+                        FilterednewEntries = FilterednewEntries.filter(x => x !== entry);
+                        allActivatedEntries.delete(entry);
+                    }
+                }
+            }
+        }
+        newEntries = FilterednewEntries
 
         if (newEntries.length === 0) {
             console.debug('No new entries activated, stopping');
