@@ -2494,7 +2494,7 @@ async function checkWorldInfo(chat, maxContext) {
         var FilterednewEntries = newEntries
         for (const entry of newEntries) {
             if (!entry.excludeRecursion && entry?.keysecondary?.length) {
-                if (entry.selectiveLogic === world_info_logic.NOT_ANY)
+                if (entry.selectiveLogic === world_info_logic.NOT_ANY) {
                     for (const secondary of entry.keysecondary) {
                         const secondarySubstituted = substituteParams(secondary);
                         if (FilterednewEntries.some(x => !x.preventRecursion && x.content.includes(secondarySubstituted))) {
@@ -2503,12 +2503,16 @@ async function checkWorldInfo(chat, maxContext) {
                             break;
                         }
                     }
+                }
                 else if (entry.selectiveLogic === world_info_logic.NOT_ALL) {
+                    let notAllMatch = false;
                     for (const secondary of entry.keysecondary) {
                         const secondarySubstituted = substituteParams(secondary);
                         if (!FilterednewEntries.some(x => !x.preventRecursion && x.content.includes(secondarySubstituted))) {
-                            break;
+                            notAllMatch = true;
                         }
+                    }
+                    if (notAllMatch) {
                         FilterednewEntries = FilterednewEntries.filter(x => x !== entry);
                         allActivatedEntries.delete(entry);
                     }
