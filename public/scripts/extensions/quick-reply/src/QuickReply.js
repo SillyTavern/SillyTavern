@@ -241,11 +241,26 @@ export class QuickReply {
                 }
                 updateScrollDebounced();
             };
-            const updateScroll = () => {
-                messageSyntaxInner.scrollTop = message.scrollTop;
-                messageSyntaxInner.scrollLeft = message.scrollLeft;
+            const updateScroll = (evt) => {
+                let left = message.scrollLeft;
+                let top = message.scrollTop;
+                if (evt) {
+                    evt.preventDefault();
+                    left = message.scrollLeft + evt.deltaX;
+                    top = message.scrollTop + evt.deltaY;
+                    message.scrollTo({
+                        behavior: 'instant',
+                        left,
+                        top,
+                    });
+                }
+                messageSyntaxInner.scrollTo({
+                    behavior: 'instant',
+                    left,
+                    top,
+                });
             };
-            const updateScrollDebounced = debounce(()=>updateScroll(), 1);
+            const updateScrollDebounced = updateScroll; //debounce(()=>updateScroll(), 0);
             /**@type {HTMLInputElement}*/
             const tabSize = dom.querySelector('#qr--modal-tabSize');
             tabSize.value = JSON.parse(localStorage.getItem('qr--tabSize') ?? '4');
@@ -318,7 +333,10 @@ export class QuickReply {
                     }
                 }
             });
-            message.addEventListener('scroll', ()=>{
+            message.addEventListener('wheel', (evt)=>{
+                updateScrollDebounced(evt);
+            });
+            message.addEventListener('scroll', (evt)=>{
                 updateScrollDebounced();
             });
             message.style.color = 'transparent';
