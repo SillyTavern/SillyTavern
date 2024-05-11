@@ -818,8 +818,7 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 
 /**
  * Pings the STserver to check if it is reachable.
- * @returns {Promise<boolean>} True if the server is reachable.
- * @throws {Error} If the server is unreachable.
+ * @returns {Promise<boolean>} True if the server is reachable, false otherwise.
  */
 export async function pingServer() {
     try {
