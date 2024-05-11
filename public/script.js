@@ -465,7 +465,6 @@ let generatedPromptCache = '';
 let generation_started = new Date();
 /** @type {import('scripts/char-data.js').v1CharData[]} */
 export let characters = [];
-/** @type {number | string | undefined} */
 export let this_chid;
 let saveCharactersPage = 0;
 export const default_avatar = 'img/ai4.png';

@@ -67,6 +67,9 @@
  * @property {number} depth_prompt.depth - The level of detail or nuance targeted by the prompt.
  * @property {string} depth_prompt.prompt - The actual prompt text used for deeper character interaction.
  * @property {"system" | "user" | "assistant"} depth_prompt.role - The role the character takes on during the prompted interaction (system, user, or assistant).
+ * // Non-standard extensions added by external tools
+ * @property {string} [pygmalion_id] - The unique identifier assigned to the character by the Pygmalion.chat.
+ * @property {{full_path: string}} [chub] - The Chub-specific data associated with the character.
  */
 
 /**
@@ -80,8 +83,12 @@
  * @property {string} creatorcomment - creator's notes of the character
  * @property {string[]} tags - the tags of the character
  * @property {number} talkativeness - talkativeness
- * @property {boolean} fav - fav
+ * @property {boolean|string} fav - fav
  * @property {string} create_date - create_date
  * @property {v2CharData} data - v2 data extension
+ * // Non-standard extensions added by the ST server (not part of the original data)
+ * @property {string} chat - name of the current chat file chat
+ * @property {string} avatar - file name of the avatar image (acts as a unique identifier)
+ * @property {string} json_data - the full raw JSON data of the character
  */
 export default 0;// now this file is a module
