@@ -20,7 +20,7 @@ interface JQuery {
     pagination(method: 'getCurrentPageNum'): number;
     pagination(method: string, options?: any): JQuery;
     pagination(options?: any): JQuery;
-    transition(options?: any): JQuery;
+    transition(options?: any, complete?: function): JQuery;
     autocomplete(options?: any): JQuery;
     autocomplete(method: string, options?: any): JQuery;
     slider(options?: any): JQuery;

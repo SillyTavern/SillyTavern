@@ -463,6 +463,7 @@ let currentVersion = '0.0.0';
 export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
 let generation_started = new Date();
+/** @type {import('scripts/char-data.js').v1CharData[]} */
 export let characters = [];
 export let this_chid;
 let saveCharactersPage = 0;
