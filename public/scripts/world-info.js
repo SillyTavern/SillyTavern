@@ -2498,6 +2498,7 @@ async function checkWorldInfo(chat, maxContext) {
                     for (const secondary of entry.keysecondary) {
                         const secondarySubstituted = substituteParams(secondary);
                         if (FilterednewEntries.some(x => !x.preventRecursion && x.content.includes(secondarySubstituted))) {
+                            console.log(`WI entry ${entry.uid} excluded due to secondary keyword "${secondarySubstituted}"`);
                             FilterednewEntries = FilterednewEntries.filter(x => x !== entry);
                             allActivatedEntries.delete(entry);
                             break;
@@ -2513,6 +2514,7 @@ async function checkWorldInfo(chat, maxContext) {
                         }
                     }
                     if (notAllMatch) {
+                        console.log(`WI entry ${entry.uid} excluded due to secondary keywords`);
                         FilterednewEntries = FilterednewEntries.filter(x => x !== entry);
                         allActivatedEntries.delete(entry);
                     }
