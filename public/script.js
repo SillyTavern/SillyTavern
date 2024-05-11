@@ -816,6 +816,29 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
     xhr.setRequestHeader('X-CSRF-Token', token);
 });
 
+/**
+ * Pings the STserver to check if it is reachable.
+ * @returns {Promise<boolean>} True if the server is reachable.
+ * @throws {Error} If the server is unreachable.
+ */
+export async function pingServer() {
+    try {
+        const result = await fetch('api/ping', {
+            method: 'GET',
+            headers: getRequestHeaders(),
+        });
+
+        if (!result.ok) {
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error pinging server', error);
+        return false;
+    }
+}
+
 async function firstLoadInit() {
     try {
         const tokenResponse = await fetch('/csrf-token');
@@ -3082,6 +3105,15 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     if (!dryRun) {
+        // Ping server to make sure it is still alive
+        const pingResult = await pingServer();
+
+        if (!pingResult) {
+            unblockGeneration(type);
+            toastr.error('Verify that the server is running and accessible.', 'ST Server cannot be reached' );
+            throw new Error('Server unreachable');
+        }
+
         // Hide swipes if not in a dry run.
         hideSwipeButtons();
         // If generated any message, set the flag to indicate it can't be recreated again.
