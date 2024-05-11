@@ -709,10 +709,7 @@ jQuery(function () {
                 $(`#${id}_counter_textgenerationwebui`).val(value);
                 settings[id] = value;
                 //special handling for vLLM/Aphrodite using -1 as disabled instead of 0
-                if ($(this).attr('id') === 'top_k_textgenerationwebui' &&
-                    (settings.type === textgen_types.VLLM ||
-                    settings.type === textgen_types.APHRODITE) &&
-                    value === 0) {
+                if ($(this).attr('id') === 'top_k_textgenerationwebui' && [INFERMATICAI, APHRODITE, VLLM].includes(settings.type) && value === 0) {
                     settings[id] = -1;
                     $(this).val(-1);
                 }
@@ -999,7 +996,7 @@ export function isJsonSchemaSupported() {
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
-    const {banned_tokens, banned_strings} = getCustomTokenBans();
+    const { banned_tokens, banned_strings } = getCustomTokenBans();
 
     let params = {
         'prompt': finalPrompt,
