@@ -259,22 +259,23 @@ function diceRollReplace(input, invalidRollPlaceholder = '') {
     });
 }
 
-/* Returns the difference between two times. Works with any time format acceptable by moment().
+/**
+ * Returns the difference between two times. Works with any time format acceptable by moment().
  * Can work with {{date}} {{time}} macros
+ * @param {string} input - The string to replace time difference macros in.
+ * @returns {string} The string with replaced time difference macros.
  */
 function timeDiffReplace(input) {
     const timeDiffPattern = /{{timeDiff::(.*?)::(.*?)}}/gi;
-    
-    const output = input.replace(timeDiffPattern, (match, matchPart1, matchPart2) => {
 
-        const time1 = new moment(matchPart1);
+    const output = input.replace(timeDiffPattern, (_match, matchPart1, matchPart2) => {
+        const time1 = moment(matchPart1);
+        const time2 = moment(matchPart2);
 
-        const time2 = new moment(matchPart2);
-        
         const timeDifference = moment.duration(time1.diff(time2));
         return timeDifference.humanize();
     });
-    
+
     return output;
 }
 
