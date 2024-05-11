@@ -35,7 +35,7 @@
  */
 
 /**
- * @typedef {object} WorldInfoBook
+ * @typedef {object} v2WorldInfoBook
  * @property {string} name - the name of the book
  * @property {v2DataWorldInfoEntry[]} entries - the entries of the book
  */
@@ -55,7 +55,7 @@
  * @property {string} post_history_instructions - Instructions for handling the character's conversation history.
  * @property {string} creator - The name of the person who created the character.
  * @property {string[]} alternate_greetings - Additional greeting messages the character can use.
- * @property {WorldInfoBook} character_book - Data about the character's world or story (if applicable).
+ * @property {v2WorldInfoBook} character_book - Data about the character's world or story (if applicable).
  * @property {v2CharDataExtensionInfos} extensions - Additional details specific to the character.
  */
 /**
