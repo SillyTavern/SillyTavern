@@ -1629,6 +1629,10 @@ select option:not(:checked) {
     max-width: 4em;
 }
 
+#persona-management-block .paginationjs-nav {
+    width: max-content;
+}
+
 input[type=search]::-webkit-search-cancel-button {
     -webkit-appearance: none;
     height: 1em;
@@ -3999,6 +4003,10 @@ body:not(.movingUI) .drawer-content.maximized {
     flex-direction: column;
     gap: 10px;
     text-align: left;
+}
+
+.onboarding span.menu_button {
+    display: inline-flex;
 }
 
 .onboarding>h3 {

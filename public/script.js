@@ -224,7 +224,7 @@ import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, de
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
-import { callGenericPopup } from './scripts/popup.js';
+import { POPUP_TYPE, callGenericPopup } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
 
@@ -418,6 +418,7 @@ export const event_types = {
     SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
     FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
     WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
+    OPEN_CHARACTER_LIBRARY: 'open_character_library',
 };
 
 export const eventSource = new EventEmitter();
@@ -5932,7 +5933,7 @@ async function doOnboarding(avatarId) {
     template.find('input[name="enable_simple_mode"]').on('input', function () {
         simpleUiMode = $(this).is(':checked');
     });
-    let userName = await callPopup(template, 'input', currentUser?.name || name1);
+    let userName = await callGenericPopup(template, POPUP_TYPE.INPUT, currentUser?.name || name1, { rows: 2 });
 
     if (userName) {
         userName = userName.replace('\n', ' ');
@@ -6110,15 +6111,6 @@ export async function getSettings() {
 
         //Load User's Name and Avatar
         initUserAvatar(settings.user_avatar);
-
-        firstRun = !!settings.firstRun;
-
-        if (firstRun) {
-            hideLoader();
-            await doOnboarding(user_avatar);
-            firstRun = false;
-        }
-
         setPersonaDescription();
 
         //Load the active character and group
@@ -6137,6 +6129,14 @@ export async function getSettings() {
             const isVersionChanged = settings.currentVersion !== currentVersion;
             await loadExtensionSettings(settings, isVersionChanged);
             eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+        }
+
+        firstRun = !!settings.firstRun;
+
+        if (firstRun) {
+            hideLoader();
+            await doOnboarding(user_avatar);
+            firstRun = false;
         }
     }
 
@@ -10254,7 +10254,7 @@ jQuery(async function () {
         userStatsHandler();
     });
 
-    $('#external_import_button').on('click', async () => {
+    $(document).on('click', '.external_import_button, #external_import_button', async () => {
         const html = `<h3>Enter the URL of the content to import</h3>
         Supported sources:<br>
         <ul class="justifyLeft">
@@ -10265,7 +10265,7 @@ jQuery(async function () {
             <li>AICharacterCard.com Character (Direct Link or ID)<br>Example: <tt>AICC/aicharcards/the-game-master</tt></li>
             <li>Direct PNG Link (refer to <code>config.yaml</code> for allowed hosts)<br>Example: <tt>https://files.catbox.moe/notarealfile.png</tt></li>
         <ul>`;
-        const input = await callPopup(html, 'input', '', { okButton: 'Import', rows: 4 });
+        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: 'Import', rows: 4 });
 
         if (!input) {
             console.debug('Custom content import cancelled');
@@ -10353,6 +10353,11 @@ jQuery(async function () {
 
     $(document).on('mouseup touchend', '#show_more_messages', () => {
         showMoreMessages();
+    });
+
+    $(document).on('click', '.open_characters_library', async function () {
+        await getCharacters();
+        eventSource.emit(event_types.OPEN_CHARACTER_LIBRARY);
     });
 
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
