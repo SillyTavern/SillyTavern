@@ -337,8 +337,6 @@ export function evaluateMacros(content, env) {
     content = content.replace(/{{isotime}}/gi, () => moment().format('HH:mm'));
     content = content.replace(/{{isodate}}/gi, () => moment().format('YYYY-MM-DD'));
 
-    content = content.replace(/{{char_version}}/gi, env.char_version);
-
     content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
         const formattedTime = moment().format(format);
         return formattedTime;
