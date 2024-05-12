@@ -29,6 +29,7 @@ fi
 
 echo "Installing Node Modules..."
 export NODE_ENV=production
+cd "$(dirname "$0")"
 npm i --no-audit --no-fund --quiet --omit=dev
 
 echo "Entering SillyTavern..."
