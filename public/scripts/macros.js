@@ -1,4 +1,4 @@
-import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams, this_chid, characters } from '../script.js';
+import { chat, chat_metadata, main_api, getMaxContextSize, getCurrentChatId, substituteParams } from '../script.js';
 import { timestampToMoment, isDigitsOnly, getStringHash } from './utils.js';
 import { textgenerationwebui_banned_in_macros } from './textgen-settings.js';
 import { replaceInstructMacros } from './instruct-mode.js';
