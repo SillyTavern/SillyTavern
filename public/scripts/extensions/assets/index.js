@@ -340,10 +340,10 @@ async function openCharacterBrowser(forceDefault) {
         return;
     }
 
-    const listElement = $(document.createElement('div'));
-    listElement.addClass('characterAssetList');
+    const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'market', {}));
 
-    for (const character of characters) {
+    for (const character of characters.sort((a, b) => a.name.localeCompare(b.name))) {
+        const listElement = template.find(character.highlight ? '.contestWinnersList' : '.featuredCharactersList');
         const characterElement = $(await renderExtensionTemplateAsync(MODULE_NAME, 'character', character));
         const downloadButton  = characterElement.find('.characterAssetDownloadButton');
         const checkMark = characterElement.find('.characterAssetCheckMark');
@@ -361,7 +361,7 @@ async function openCharacterBrowser(forceDefault) {
         listElement.append(characterElement);
     }
 
-    callGenericPopup(listElement, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, allowVerticalScrolling: true, allowHorizontalScrolling: false });
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, allowVerticalScrolling: true, allowHorizontalScrolling: false });
 }
 
 //#############################//
@@ -396,6 +396,11 @@ jQuery(async () => {
 
     const assetsJsonUrl = windowHtml.find('#assets-json-url-field');
     assetsJsonUrl.val(ASSETS_JSON_URL);
+
+    const charactersButton = windowHtml.find('#assets-characters-button');
+    charactersButton.on('click', async function () {
+        openCharacterBrowser(false);
+    });
 
     const connectButton = windowHtml.find('#assets-connect-button');
     connectButton.on('click', async function () {
