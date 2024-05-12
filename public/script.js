@@ -288,6 +288,11 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
         return;
     }
 
+    // Replace line breaks with <br> in unknown elements
+    if (node instanceof HTMLUnknownElement) {
+        node.innerHTML = node.innerHTML.replaceAll('\n', '<br>');
+    }
+
     const isMediaAllowed = isExternalMediaAllowed();
     if (isMediaAllowed) {
         return;
@@ -458,6 +463,7 @@ let currentVersion = '0.0.0';
 export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
 let generation_started = new Date();
+/** @type {import('scripts/char-data.js').v1CharData[]} */
 export let characters = [];
 export let this_chid;
 let saveCharactersPage = 0;
@@ -783,7 +789,6 @@ export let novelai_setting_names;
 let abortController;
 
 //css
-var css_mes_bg = $('<div class="mes"></div>').css('background');
 var css_send_form_display = $('<div id=send_form></div>').css('display');
 const MAX_GENERATION_LOOPS = 5;
 
@@ -810,6 +815,28 @@ export function getRequestHeaders() {
 $.ajaxPrefilter((options, originalOptions, xhr) => {
     xhr.setRequestHeader('X-CSRF-Token', token);
 });
+
+/**
+ * Pings the STserver to check if it is reachable.
+ * @returns {Promise<boolean>} True if the server is reachable, false otherwise.
+ */
+export async function pingServer() {
+    try {
+        const result = await fetch('api/ping', {
+            method: 'GET',
+            headers: getRequestHeaders(),
+        });
+
+        if (!result.ok) {
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error pinging server', error);
+        return false;
+    }
+}
 
 async function firstLoadInit() {
     try {
@@ -3077,6 +3104,15 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     if (!dryRun) {
+        // Ping server to make sure it is still alive
+        const pingResult = await pingServer();
+
+        if (!pingResult) {
+            unblockGeneration(type);
+            toastr.error('Verify that the server is running and accessible.', 'ST Server cannot be reached' );
+            throw new Error('Server unreachable');
+        }
+
         // Hide swipes if not in a dry run.
         hideSwipeButtons();
         // If generated any message, set the flag to indicate it can't be recreated again.
@@ -8580,19 +8616,17 @@ jQuery(async function () {
         }
         $('.mes').children('.del_checkbox').each(function () {
             $(this).prop('checked', false);
-            $(this).parent().css('background', css_mes_bg);
+            $(this).parent().removeClass('selected');
         });
-        $(this).css('background', '#600'); //sets the bg of the mes selected for deletion
+        $(this).addClass('selected'); //sets the bg of the mes selected for deletion
         var i = Number($(this).attr('mesid')); //checks the message ID in the chat
         this_del_mes = i;
+        //as long as the current message ID is less than the total chat length
         while (i < chat.length) {
-            //as long as the current message ID is less than the total chat length
-            $('.mes[mesid=\'' + i + '\']').css('background', '#600'); //sets the bg of the all msgs BELOW the selected .mes
-            $('.mes[mesid=\'' + i + '\']')
-                .children('.del_checkbox')
-                .prop('checked', true);
+            //sets the bg of the all msgs BELOW the selected .mes
+            $(`.mes[mesid="${i}"]`).addClass('selected');
+            $(`.mes[mesid="${i}"]`).children('.del_checkbox').prop('checked', true);
             i++;
-            //console.log(i);
         }
     });
 
@@ -9196,7 +9230,7 @@ jQuery(async function () {
         $('.del_checkbox').each(function () {
             $(this).css('display', 'none');
             $(this).parent().children('.for_checkbox').css('display', 'block');
-            $(this).parent().css('background', css_mes_bg);
+            $(this).parent().removeClass('selected');
             $(this).prop('checked', false);
         });
         showSwipeButtons();
@@ -9211,22 +9245,19 @@ jQuery(async function () {
         $('.del_checkbox').each(function () {
             $(this).css('display', 'none');
             $(this).parent().children('.for_checkbox').css('display', 'block');
-            $(this).parent().css('background', css_mes_bg);
+            $(this).parent().removeClass('selected');
             $(this).prop('checked', false);
         });
 
         if (this_del_mes >= 0) {
-            $('.mes[mesid=\'' + this_del_mes + '\']')
-                .nextAll('div')
-                .remove();
-            $('.mes[mesid=\'' + this_del_mes + '\']').remove();
+            $(`.mes[mesid="${this_del_mes}"]`).nextAll('div').remove();
+            $(`.mes[mesid="${this_del_mes}"]`).remove();
             chat.length = this_del_mes;
             await saveChatConditional();
-            var $textchat = $('#chat');
-            $textchat.scrollTop($textchat[0].scrollHeight);
+            chatElement.scrollTop(chatElement[0].scrollHeight);
             eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+            $('#chat .mes').removeClass('last_mes');
             $('#chat .mes').last().addClass('last_mes');
-            $('#chat .mes').eq(-2).removeClass('last_mes');
         } else {
             console.log('this_del_mes is not >= 0, not deleting');
         }

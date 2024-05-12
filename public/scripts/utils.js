@@ -612,8 +612,8 @@ const dateCache = new Map();
 /**
  * Cached version of moment() to avoid re-parsing the same date strings.
  * Important: Moment objects are mutable, so use clone() before modifying them!
- * @param {any} timestamp String or number representing a date.
- * @returns {*} Moment object
+ * @param {string|number} timestamp String or number representing a date.
+ * @returns {moment.Moment} Moment object
  */
 export function timestampToMoment(timestamp) {
     if (dateCache.has(timestamp)) {
@@ -663,8 +663,8 @@ function parseTimestamp(timestamp) {
 
 /**
  * Compare two moment objects for sorting.
- * @param {*} a The first moment object.
- * @param {*} b The second moment object.
+ * @param {moment.Moment} a The first moment object.
+ * @param {moment.Moment} b The second moment object.
  * @returns {number} A negative number if a is before b, a positive number if a is after b, or 0 if they are equal.
  */
 export function sortMoments(a, b) {
