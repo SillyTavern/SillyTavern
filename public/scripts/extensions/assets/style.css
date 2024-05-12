@@ -136,9 +136,8 @@
 }
 
 .characterAssetImage {
-    aspect-ratio: 3/4;
     max-height: 140px;
-    object-fit: cover;
+    object-fit: scale-down;
     border-radius: 5px;
 }
 
