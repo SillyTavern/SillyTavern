@@ -2311,6 +2311,7 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
     environment.char = _name2 ?? name2;
     environment.group = environment.charIfNotGroup = getGroupValue();
     environment.model = getGeneratingModel();
+    environment.char_version = characters.filter(x => x.name === environment.char).map(x => x.data.character_version)[0];
 
     return evaluateMacros(content, environment);
 }
