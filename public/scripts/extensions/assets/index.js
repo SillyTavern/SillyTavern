@@ -3,8 +3,9 @@ TODO:
 */
 //const DEBUG_TONY_SAMA_FORK_MODE = true
 
-import { getRequestHeaders, callPopup, processDroppedFiles } from '../../../script.js';
+import { getRequestHeaders, callPopup, processDroppedFiles, eventSource, event_types } from '../../../script.js';
 import { deleteExtension, extensionNames, getContext, installExtension, renderExtensionTemplateAsync } from '../../extensions.js';
+import { POPUP_TYPE, callGenericPopup } from '../../popup.js';
 import { executeSlashCommands } from '../../slash-commands.js';
 import { getStringHash, isValidUrl } from '../../utils.js';
 export { MODULE_NAME };
@@ -328,6 +329,41 @@ async function deleteAsset(assetType, filename) {
     }
 }
 
+async function openCharacterBrowser(forceDefault) {
+    const url = forceDefault ? ASSETS_JSON_URL : String($('#assets-json-url-field').val());
+    const fetchResult = await fetch(url, { cache: 'no-cache' });
+    const json = await fetchResult.json();
+    const characters = json.filter(x => x.type === 'character');
+
+    if (!characters.length) {
+        toastr.error('No characters found in the assets list', 'Character browser');
+        return;
+    }
+
+    const template = $(await renderExtensionTemplateAsync(MODULE_NAME, 'market', {}));
+
+    for (const character of characters.sort((a, b) => a.name.localeCompare(b.name))) {
+        const listElement = template.find(character.highlight ? '.contestWinnersList' : '.featuredCharactersList');
+        const characterElement = $(await renderExtensionTemplateAsync(MODULE_NAME, 'character', character));
+        const downloadButton  = characterElement.find('.characterAssetDownloadButton');
+        const checkMark = characterElement.find('.characterAssetCheckMark');
+        const isInstalled = isAssetInstalled('character', character.id);
+
+        downloadButton.toggle(!isInstalled).on('click', async () => {
+            downloadButton.toggleClass('fa-download fa-spinner fa-spin');
+            await installAsset(character.url, 'character', character.id);
+            downloadButton.hide();
+            checkMark.show();
+        });
+
+        checkMark.toggle(isInstalled);
+
+        listElement.append(characterElement);
+    }
+
+    callGenericPopup(template, POPUP_TYPE.TEXT, '', { okButton: 'Close', wide: true, large: true, allowVerticalScrolling: true, allowHorizontalScrolling: false });
+}
+
 //#############################//
 //  API Calls                  //
 //#############################//
@@ -360,6 +396,11 @@ jQuery(async () => {
 
     const assetsJsonUrl = windowHtml.find('#assets-json-url-field');
     assetsJsonUrl.val(ASSETS_JSON_URL);
+
+    const charactersButton = windowHtml.find('#assets-characters-button');
+    charactersButton.on('click', async function () {
+        openCharacterBrowser(false);
+    });
 
     const connectButton = windowHtml.find('#assets-connect-button');
     connectButton.on('click', async function () {
@@ -397,4 +438,8 @@ jQuery(async () => {
 
     windowHtml.find('#assets_filters').hide();
     $('#extensions_settings').append(windowHtml);
+
+    eventSource.on(event_types.OPEN_CHARACTER_LIBRARY, async (forceDefault) => {
+        openCharacterBrowser(forceDefault);
+    });
 });
