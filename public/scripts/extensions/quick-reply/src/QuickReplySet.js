@@ -1,5 +1,6 @@
 import { getRequestHeaders, substituteParams } from '../../../../script.js';
-import { executeSlashCommands } from '../../../slash-commands.js';
+import { executeSlashCommands, executeSlashCommandsOnChatInput, executeSlashCommandsWithOptions } from '../../../slash-commands.js';
+import { SlashCommandScope } from '../../../slash-commands/SlashCommandScope.js';
 import { debounceAsync, warn } from '../index.js';
 import { QuickReply } from './QuickReply.js';
 
@@ -100,15 +101,29 @@ export class QuickReplySet {
 
 
     /**
-     * @param {QuickReply} qr
-     * @param {String} [message] - optional altered message to be used
+     *
+     * @param {QuickReply} qr The QR to execute.
+     * @param {object} options
+     * @param {string} [options.message] (null) altered message to be used
+     * @param {boolean} [options.isAutoExecute] (false) whether the execution is triggered by auto execute
+     * @param {boolean} [options.isEditor] (false) whether the execution is triggered by the QR editor
+     * @param {boolean} [options.isRun] (false) whether the execution is triggered by /run or /: (window.executeQuickReplyByName)
+     * @param {SlashCommandScope} [options.scope] (null) scope to be used when running the command
+     * @returns
      */
-    async execute(qr, message = null, isAutoExecute = false) {
+    async executeWithOptions(qr, options = {}) {
+        options = Object.assign({
+            message:null,
+            isAutoExecute:false,
+            isEditor:false,
+            isRun:false,
+            scope:null,
+        }, options);
         /**@type {HTMLTextAreaElement}*/
         const ta = document.querySelector('#send_textarea');
-        const finalMessage = message ?? qr.message;
+        const finalMessage = options.message ?? qr.message;
         let input = ta.value;
-        if (!isAutoExecute && this.injectInput && input.length > 0) {
+        if (!options.isAutoExecute && !options.isEditor && !options.isRun && this.injectInput && input.length > 0) {
             if (this.placeBeforeInput) {
                 input = `${finalMessage} ${input}`;
             } else {
@@ -119,7 +134,24 @@ export class QuickReplySet {
         }
 
         if (input[0] == '/' && !this.disableSend) {
-            const result = await executeSlashCommands(input);
+            let result;
+            if (options.isAutoExecute || options.isRun) {
+                result = await executeSlashCommandsWithOptions(input, {
+                    handleParserErrors: true,
+                    scope: options.scope,
+                });
+            } else if (options.isEditor) {
+                result = await executeSlashCommandsWithOptions(input, {
+                    handleParserErrors: false,
+                    scope: options.scope,
+                    abortController: qr.abortController,
+                    onProgress: (done, total) => qr.updateEditorProgress(done, total),
+                });
+            } else {
+                result = await executeSlashCommandsOnChatInput(input, {
+                    scope: options.scope,
+                });
+            }
             return typeof result === 'object' ? result?.pipe : '';
         }
 
@@ -130,6 +162,18 @@ export class QuickReplySet {
             // @ts-ignore
             document.querySelector('#send_but').click();
         }
+    }
+    /**
+     * @param {QuickReply} qr
+     * @param {String} [message] - optional altered message to be used
+     * @param {SlashCommandScope} [scope] - optional scope to be used when running the command
+     */
+    async execute(qr, message = null, isAutoExecute = false, scope = null) {
+        return this.executeWithOptions(qr, {
+            message,
+            isAutoExecute,
+            scope,
+        });
     }
 
 
@@ -152,7 +196,7 @@ export class QuickReplySet {
     }
 
     hookQuickReply(qr) {
-        qr.onExecute = (_, message, isAutoExecute)=>this.execute(qr, message, isAutoExecute);
+        qr.onExecute = (_, options)=>this.executeWithOptions(qr, options);
         qr.onDelete = ()=>this.removeQuickReply(qr);
         qr.onUpdate = ()=>this.save();
     }

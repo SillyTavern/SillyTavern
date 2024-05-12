@@ -1,6 +1,8 @@
 import { callPopup, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced } from '../../../script.js';
 import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
-import { registerSlashCommand } from '../../slash-commands.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
 import { resolveVariable } from '../../variables.js';
 import { regex_placement, runRegexScript } from './engine.js';
@@ -353,5 +355,20 @@ jQuery(async () => {
     await loadRegexScripts();
     $('#saved_regex_scripts').sortable('enable');
 
-    registerSlashCommand('regex', runRegexCallback, [], '(name=scriptName [input]) – runs a Regex extension script by name on the provided string. The script must be enabled.', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'regex',
+        callback: runRegexCallback,
+        returns: 'replaced text',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'name', 'script name', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'input', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: 'Runs a Regex extension script by name on the provided string. The script must be enabled.',
+    }));
+
 });

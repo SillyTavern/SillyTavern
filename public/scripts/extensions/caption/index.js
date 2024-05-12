@@ -5,7 +5,9 @@ import { getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getMultimodalCaption } from '../shared.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
-import { registerSlashCommand } from '../../slash-commands.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -254,6 +256,19 @@ async function onSelectImage(e, prompt, quiet) {
         return '';
     }
 
+    const caption = await getCaptionForFile(file, prompt, quiet);
+    form && form.reset();
+    return caption;
+}
+
+/**
+ * Gets a caption for an image file.
+ * @param {File} file Input file
+ * @param {string} prompt Caption prompt
+ * @param {boolean} quiet Suppresses sending a message
+ * @returns {Promise<string>} Generated caption
+ */
+async function getCaptionForFile(file, prompt, quiet) {
     try {
         setSpinnerIcon();
         const context = getContext();
@@ -273,7 +288,6 @@ async function onSelectImage(e, prompt, quiet) {
         return '';
     }
     finally {
-        form && form.reset();
         setImageIcon();
     }
 }
@@ -288,9 +302,26 @@ function onRefineModeInput() {
  * @param {object} args Named parameters
  * @param {string} prompt Caption prompt
  */
-function captionCommandCallback(args, prompt) {
+async function captionCommandCallback(args, prompt) {
+    const quiet = isTrueBoolean(args?.quiet);
+    const id = args?.id;
+
+    if (!isNaN(Number(id))) {
+        const message = getContext().chat[id];
+        if (message?.extra?.image) {
+            try {
+                const fetchResult = await fetch(message.extra.image);
+                const blob = await fetchResult.blob();
+                const file = new File([blob], 'image.jpg', { type: blob.type });
+                return await getCaptionForFile(file, prompt, quiet);
+            } catch (error) {
+                toastr.error('Failed to get image from the message. Make sure the image is accessible.');
+                return '';
+            }
+        }
+    }
+
     return new Promise(resolve => {
-        const quiet = isTrueBoolean(args?.quiet);
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
@@ -492,5 +523,35 @@ jQuery(function () {
         saveSettingsDebounced();
     });
 
-    registerSlashCommand('caption', captionCommandCallback, [], '<span class="monospace">quiet=true/false [prompt]</span> - caption an image with an optional prompt and passes the caption down the pipe. Only multimodal sources support custom prompts. Set the "quiet" argument to true to suppress sending a captioned message, default: false.', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'caption',
+        callback: captionCommandCallback,
+        returns: 'caption',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'quiet', 'suppress sending a captioned message', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['true', 'false'],
+            ),
+            new SlashCommandNamedArgument(
+                'id', 'get image from a message with this ID', [ARGUMENT_TYPE.NUMBER], false, false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'prompt', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Caption an image with an optional prompt and passes the caption down the pipe.
+            </div>
+            <div>
+                Only multimodal sources support custom prompts.
+            </div>
+            <div>
+                Provide a message ID to get an image from a message instead of uploading one.
+            </div>
+            <div>
+                Set the "quiet" argument to true to suppress sending a captioned message, default: false.
+            </div>
+        `,
+    }));
 });

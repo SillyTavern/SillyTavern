@@ -3886,9 +3886,9 @@
                             </label>
 
                         </div>
-                        <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
 
-                        <div>
+                        <div name="MiscellaneousToggles">
+                            <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
                             <div data-newbie-hidden class="flex-container">
                                 <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="[title]Reload and redraw the currently open chat" title="Reload and redraw the currently open chat.">
                                     <small data-i18n="Reload Chat">Reload Chat</small>
@@ -3963,8 +3963,8 @@
                                     <span data-i18n="Custom CSS">Custom CSS</span>
                                     <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="customCSS" title="Expand the editor"></i>
                                 </h4>
-                                <div class="flex-container flexnowrap alignitemscenter">
-                                    <textarea id="customCSS" class="text_pole margin0 margin-r5 textarea_compact monospace"></textarea>
+                                <div id="CustomCSS-textAreaBlock" class="flex-container flexnowrap alignitemscenter">
+                                    <textarea id="customCSS" class="text_pole margin0 margin-r5 textarea_compact monospace" rows="8"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -4114,7 +4114,76 @@
                                     </div>
                                 </div>
                             </div>
-
+                            <div name="AutoCompleteToggle">
+                                <h4 data-i18n="AutoComplete Settings">AutoComplete Settings</h4>
+                                <div class="flex-container">
+                                    <div class="flex1" title="Determines how entries are found for autocomplete." data-i18n="[title]Determines how entries are found for autocomplete.">
+                                        <label for="stscript_matching" data-i18n="Autocomplete Matching"><small>Matching</small></label>
+                                        <select id="stscript_matching">
+                                            <option data-i18n="Starts with" value="strict">Starts with</option>
+                                            <option data-i18n="Includes" value="includes">Includes</option>
+                                            <option data-i18n="Fuzzy" value="fuzzy">Fuzzy</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex1" title="Sets the style of the autocomplete." data-i18n="[title]Sets the style of the autocomplete.">
+                                        <label for="stscript_autocomplete_style" data-i18n="Autocomplete Style"><small>Style</small></label>
+                                        <div class="flex-container flexFlowRow alignItemsBaseline">
+                                            <select id="stscript_autocomplete_style">
+                                                <option data-i18n="Follow Theme" value="theme">Follow Theme</option>
+                                                <option data-i18n="Dark" value="dark">Dark</option>
+                                                <option data-i18n="Light" value="light">Light</option>
+                                            </select>
+                                            <!-- <div class="menu_button fa-solid fa-pen-to-square" title="Customize colors"></div> -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex-container flexFlowColumn gap0" title="Sets the font size of the autocomplete." data-i18n="[title]Sets the font size of the autocomplete.">
+                                    <label for="stscript_autocomplete_font_scale"><small>Font Scale</small></label>
+                                    <input class="neo-range-slider" type="range" id="stscript_autocomplete_font_scale" min="0.5" max="2" step="0.01">
+                                    <input class="neo-range-input" type="number" min="0.5" max="2" step="0.01" data-for="stscript_autocomplete_font_scale" id="stscript_autocomplete_font_scale_counter">
+                                </div>
+                                <div title="Sets the width of the autocomplete." data-i18n="[title]Sets the width of the autocomplete.">
+                                    <label for="stscript_autocomplete_width" data-i18n="Autocomplete Width"><small>Width</small></label>
+                                    <div class="doubleRangeContainer">
+                                        <div class="doubleRangeInputContainer">
+                                            <input type="range" id="stscript_autocomplete_width_left" min="0" max="2" step="1">
+                                            <datalist id="stscript_autocomplete_width_left_values">
+                                                <option value="0" label="input" title="chat input box"></option>
+                                                <option value="1" label="chat" title="entire chat width"></option>
+                                                <option value="2" label="full" title="full window width"></option>
+                                            </datalist>
+                                        </div>
+                                        <div class="doubleRangeInputContainer">
+                                            <input type="range" id="stscript_autocomplete_width_right" min="0" max="2" step="1">
+                                            <datalist id="stscript_autocomplete_width_right_values">
+                                                <option value="0" label="input" title="chat input box"></option>
+                                                <option value="1" label="chat" title="entire chat width"></option>
+                                                <option value="2" label="full" title="full window width"></option>
+                                            </datalist>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div name="STscriptToggles">
+                                <h4 data-i18n="STscript Settings">STscript Settings</h4>
+                                <div title="Sets default flags for the STscript parser." data-i18n="[title]Sets default flags for the STscript parser.">
+                                    <label data-i18n="Parser Flags"><small>Parser Flags</small></label>
+                                    <label class="checkbox_label" title="Switch to stricter escaping, allowing all delimiting characters to be escaped with a backslash, and backslashes to be escaped as well." data-i18n="[title]Switch to stricter escaping, allowing all dellimiting characters to be escaped with a backslash, and backslashes to be escaped as well.">
+                                        <input id="stscript_parser_flag_strict_escaping" type="checkbox" />
+                                        <span data-i18n="STRICT_ESCAPING"><small>STRICT_ESCAPING</small></span>
+                                        <a href="https://docs.sillytavern.app/" target="_blank" class="notes-link">
+                                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                                        </a>
+                                    </label>
+                                    <label class="checkbox_label" title="Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution." data-i18n="[title]Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution.">
+                                        <input id="stscript_parser_flag_replace_getvar" type="checkbox" />
+                                        <span data-i18n="REPLACE_GETVAR"><small>REPLACE_GETVAR</small></span>
+                                        <a href="https://docs.sillytavern.app/" target="_blank" class="notes-link">
+                                            <span class="fa-solid fa-circle-question note-link-span"></span>
+                                        </a>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -6070,6 +6139,15 @@
                     </div>
                     <textarea id="send_textarea" name="text" data-i18n="[no_connection_text]Not connected to API!;[connected_text]Type a message, or /? for help" placeholder="Not connected to API!" no_connection_text="Not connected to API!" connected_text="Type a message, or /? for help"></textarea>
                     <div id="rightSendForm" class="alignContentCenter">
+                        <div id="stscript_continue" title="Continue script execution" class="stscript_btn stscript_continue" data-i18n="[title]Continue script execution">
+                            <i class="fa-solid fa-play"></i>
+                        </div>
+                        <div id="stscript_pause" title="Pause script execution" class="stscript_btn stscript_pause" data-i18n="[title]Pause script execution">
+                            <i class="fa-solid fa-pause"></i>
+                        </div>
+                        <div id="stscript_stop" title="Abort script execution" class="stscript_btn stscript_stop" data-i18n="[title]Abort script execution">
+                            <i class="fa-solid fa-stop"></i>
+                        </div>
                         <div id="mes_stop" title="Abort request" class="mes_stop" data-i18n="[title]Abort request">
                             <i class="fa-solid fa-circle-stop"></i>
                         </div>
@@ -6233,31 +6311,8 @@
     <script type="module" src="lib/structured-clone/monkey-patch.js"></script>
     <script type="module" src="lib/swiped-events.js"></script>
     <script type="module" src="lib/eventemitter.js"></script>
-    <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/i18n.js"></script>
     <script type="module" src="script.js"></script>
-    <script type="module" src="scripts/world-info.js"></script>
-    <script type="module" src="scripts/group-chats.js"></script>
-    <script type="module" src="scripts/kai-settings.js"></script>
-    <script type="module" src="scripts/textgen-settings.js"></script>
-    <script type="module" src="scripts/textgen-models.js"></script>
-    <script type="module" src="scripts/bookmarks.js"></script>
-    <script type="module" src="scripts/horde.js"></script>
-    <script type="module" src="scripts/RossAscends-mods.js"></script>
-    <script type="module" src="scripts/slash-commands.js"></script>
-    <script type="module" src="scripts/tags.js"></script>
-    <script type="module" src="scripts/secrets.js"></script>
-    <script type="module" src="scripts/extensions.js"></script>
-    <script type="module" src="scripts/authors-note.js"></script>
-    <script type="module" src="scripts/preset-manager.js"></script>
-    <script type="module" src="scripts/filters.js"></script>
-    <script type="module" src="scripts/personas.js"></script>
-    <script type="module" src="scripts/server-history.js"></script>
-    <script type="module" src="scripts/setting-search.js"></script>
-    <script type="module" src="scripts/bulk-edit.js"></script>
-    <script type="module" src="scripts/cfg-scale.js"></script>
-    <script type="module" src="scripts/chats.js"></script>
-    <script type="module" src="scripts/user.js"></script>
     <script>
         // Configure toast library:
         toastr.options.escapeHtml = true; // Prevent raw HTML inserts

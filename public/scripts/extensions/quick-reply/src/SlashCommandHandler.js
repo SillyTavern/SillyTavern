@@ -1,4 +1,6 @@
-import { registerSlashCommand } from '../../../slash-commands.js';
+import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { isTrueBoolean } from '../../../utils.js';
 // eslint-disable-next-line no-unused-vars
 import { QuickReplyApi } from '../api/QuickReplyApi.js';
@@ -17,46 +19,331 @@ export class SlashCommandHandler {
 
 
     init() {
-        registerSlashCommand('qr', (_, value) => this.executeQuickReplyByIndex(Number(value)), [], '<span class="monospace">(number)</span> – activates the specified Quick Reply', true, true);
-        registerSlashCommand('qrset', ()=>toastr.warning('The command /qrset has been deprecated. Use /qr-set, /qr-set-on, and /qr-set-off instead.'), [], '<strong>DEPRECATED</strong> – The command /qrset has been deprecated. Use /qr-set, /qr-set-on, and /qr-set-off instead.', true, true);
-        registerSlashCommand('qr-set', (args, value)=>this.toggleGlobalSet(value, args), [], '<span class="monospace">[visible=true] (number)</span> – toggle global QR set', true, true);
-        registerSlashCommand('qr-set-on', (args, value)=>this.addGlobalSet(value, args), [], '<span class="monospace">[visible=true] (number)</span> – activate global QR set', true, true);
-        registerSlashCommand('qr-set-off', (_, value)=>this.removeGlobalSet(value), [], '<span class="monospace">(number)</span> – deactivate global QR set', true, true);
-        registerSlashCommand('qr-chat-set', (args, value)=>this.toggleChatSet(value, args), [], '<span class="monospace">[visible=true] (number)</span> – toggle chat QR set', true, true);
-        registerSlashCommand('qr-chat-set-on', (args, value)=>this.addChatSet(value, args), [], '<span class="monospace">[visible=true] (number)</span> – activate chat QR set', true, true);
-        registerSlashCommand('qr-chat-set-off', (_, value)=>this.removeChatSet(value), [], '<span class="monospace">(number)</span> – deactivate chat QR set', true, true);
-        registerSlashCommand('qr-set-list', (_, value)=>this.listSets(value ?? 'all'), [], '(all|global|chat) – gets a list of the names of all quick reply sets', true, true);
-        registerSlashCommand('qr-list', (_, value)=>this.listQuickReplies(value), [], '(set name) – gets a list of the names of all quick replies in this quick reply set', true, true);
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr',
+            callback: (_, value) => this.executeQuickReplyByIndex(Number(value)),
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'number', [ARGUMENT_TYPE.NUMBER], true,
+                ),
+            ],
+            helpString: 'Activates the specified Quick Reply',
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qrset',
+            callback: () => toastr.warning('The command /qrset has been deprecated. Use /qr-set, /qr-set-on, and /qr-set-off instead.'),
+            helpString: '<strong>DEPRECATED</strong> – The command /qrset has been deprecated. Use /qr-set, /qr-set-on, and /qr-set-off instead.',
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set',
+            callback: (args, value) => this.toggleGlobalSet(value, args),
+            namedArgumentList: [
+                new SlashCommandNamedArgument(
+                    'visible', 'set visibility', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
+                ),
+            ],
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'QR set name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: 'Toggle global QR set',
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-on',
+            callback: (args, value) => this.addGlobalSet(value, args),
+            namedArgumentList: [
+                new SlashCommandNamedArgument(
+                    'visible', 'set visibility', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
+                ),
+            ],
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'QR set name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: 'Activate global QR set',
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-off',
+            callback: (_, value) => this.removeGlobalSet(value),
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'QR set name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: 'Deactivate global QR set',
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-chat-set',
+            callback: (args, value) => this.toggleChatSet(value, args),
+            namedArgumentList: [
+                new SlashCommandNamedArgument(
+                    'visible', 'set visibility', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true',
+                ),
+            ],
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'QR set name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: 'Toggle chat QR set',
+        }));
 
-        const qrArgs = `
-        label    - string - text on the button, e.g., label=MyButton
-        set      - string - name of the QR set, e.g., set=PresetName1
-        hidden   - bool   - whether the button should be hidden, e.g., hidden=true
-        startup  - bool   - auto execute on app startup, e.g., startup=true
-        user     - bool   - auto execute on user message, e.g., user=true
-        bot      - bool   - auto execute on AI message, e.g., bot=true
-        load     - bool   - auto execute on chat load, e.g., load=true
-        group    - bool   - auto execute on group member selection, e.g., group=true
-        title    - string - title / tooltip to be shown on button, e.g., title="My Fancy Button"
-        `.trim();
-        const qrUpdateArgs = `
-        newlabel - string - new text for the button, e.g. newlabel=MyRenamedButton
-        ${qrArgs}
-        `.trim();
-        registerSlashCommand('qr-create', (args, message)=>this.createQuickReply(args, message), [], `<span class="monospace" style="white-space:pre-line;">[arguments] (message)\n  arguments:\n    ${qrArgs}</span> – creates a new Quick Reply, example: <tt>/qr-create set=MyPreset label=MyButton /echo 123</tt>`, true, true);
-        registerSlashCommand('qr-update', (args, message)=>this.updateQuickReply(args, message), [], `<span class="monospace" style="white-space:pre-line;">[arguments] (message)\n  arguments:\n    ${qrUpdateArgs}</span> – updates Quick Reply, example: <tt>/qr-update set=MyPreset label=MyButton newlabel=MyRenamedButton /echo 123</tt>`, true, true);
-        registerSlashCommand('qr-delete', (args, name)=>this.deleteQuickReply(args, name), [], '<span class="monospace">set=string [label]</span> – deletes Quick Reply', true, true);
-        registerSlashCommand('qr-contextadd', (args, name)=>this.createContextItem(args, name), [], '<span class="monospace">set=string label=string [chain=false] (preset name)</span> – add context menu preset to a QR, example: <tt>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset</tt>', true, true);
-        registerSlashCommand('qr-contextdel', (args, name)=>this.deleteContextItem(args, name), [], '<span class="monospace">set=string label=string (preset name)</span> – remove context menu preset from a QR, example: <tt>/qr-contextdel set=MyPreset label=MyButton MyOtherPreset</tt>', true, true);
-        registerSlashCommand('qr-contextclear', (args, label)=>this.clearContextMenu(args, label), [], '<span class="monospace">set=string (label)</span> – remove all context menu presets from a QR, example: <tt>/qr-contextclear set=MyPreset MyButton</tt>', true, true);
-        const presetArgs = `
-        nosend  - bool - disable send / insert in user input (invalid for slash commands)
-        before  - bool - place QR before user input
-        inject  - bool - inject user input automatically (if disabled use {{input}})
-        `.trim();
-        registerSlashCommand('qr-set-create', (args, name)=>this.createSet(name, args), ['qr-presetadd'], `<span class="monospace" style="white-space:pre-line;">[arguments] (name)\n  arguments:\n    ${presetArgs}</span> – create a new preset (overrides existing ones), example: <tt>/qr-set-add MyNewPreset</tt>`, true, true);
-        registerSlashCommand('qr-set-update', (args, name)=>this.updateSet(name, args), ['qr-presetupdate'], `<span class="monospace" style="white-space:pre-line;">[arguments] (name)\n  arguments:\n    ${presetArgs}</span> – update an existing preset, example: <tt>/qr-set-update enabled=false MyPreset</tt>`, true, true);
-        registerSlashCommand('qr-set-delete', (args, name)=>this.deleteSet(name), ['qr-presetdelete'], `<span class="monospace" style="white-space:pre-line;">(name)\n  arguments:\n    ${presetArgs}</span> – delete an existing preset, example: <tt>/qr-set-delete MyPreset</tt>`, true, true);
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-chat-set-on',
+            callback: (args, value) => this.addChatSet(value, args),
+            namedArgumentList: [
+                new SlashCommandNamedArgument(
+                    'visible', 'whether the QR set should be visible', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true', ['true', 'false'],
+                ),
+            ],
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'QR set name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: 'Activate chat QR set',
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-chat-set-off',
+            callback: (_, value) => this.removeChatSet(value),
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'QR set name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: 'Deactivate chat QR set',
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-list',
+            callback: (_, value) => this.listSets(value ?? 'all'),
+            returns: 'list of QR sets',
+            namedArgumentList: [],
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'set type', [ARGUMENT_TYPE.STRING], false, false, null, ['all', 'global', 'chat'],
+                ),
+            ],
+            helpString: 'Gets a list of the names of all quick reply sets.',
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-list',
+            callback: (_, value) => this.listQuickReplies(value),
+            returns: 'list of QRs',
+            namedArgumentList: [],
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'set name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: 'Gets a list of the names of all quick replies in this quick reply set.',
+        }));
+
+        const qrArgs = [
+            new SlashCommandNamedArgument('label', 'text on the button, e.g., label=MyButton', [ARGUMENT_TYPE.STRING]),
+            new SlashCommandNamedArgument('set', 'name of the QR set, e.g., set=PresetName1', [ARGUMENT_TYPE.STRING]),
+            new SlashCommandNamedArgument('hidden', 'whether the button should be hidden, e.g., hidden=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
+            new SlashCommandNamedArgument('startup', 'auto execute on app startup, e.g., startup=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
+            new SlashCommandNamedArgument('user', 'auto execute on user message, e.g., user=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
+            new SlashCommandNamedArgument('bot', 'auto execute on AI message, e.g., bot=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
+            new SlashCommandNamedArgument('load', 'auto execute on chat load, e.g., load=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
+            new SlashCommandNamedArgument('group', 'auto execute on group member selection, e.g., group=true', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false'),
+            new SlashCommandNamedArgument('title', 'title / tooltip to be shown on button, e.g., title="My Fancy Button"', [ARGUMENT_TYPE.STRING], false),
+        ];
+        const qrUpdateArgs = [
+            new SlashCommandNamedArgument('newlabel', 'new text for the button', [ARGUMENT_TYPE.STRING], false),
+        ];
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-create',
+            callback: (args, message) => this.createQuickReply(args, message),
+            namedArgumentList: qrArgs,
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'command', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: `
+                <div>Creates a new Quick Reply.</div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code>/qr-create set=MyPreset label=MyButton /echo 123</code></pre>
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-update',
+            callback: (args, message) => this.updateQuickReply(args, message),
+            returns: 'updated quick reply',
+            namedArgumentList: [...qrUpdateArgs, ...qrArgs],
+            helpString: `
+                <div>
+                    Updates Quick Reply.
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code>/qr-update set=MyPreset label=MyButton newlabel=MyRenamedButton /echo 123</code></pre>
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-delete',
+            callback: (args, name) => this.deleteQuickReply(args, name),
+            namedArgumentList: [
+                new SlashCommandNamedArgument(
+                    'set', 'Quick Reply set', [ARGUMENT_TYPE.STRING], true,
+                ),
+                new SlashCommandNamedArgument(
+                    'label', 'Quick Reply label', [ARGUMENT_TYPE.STRING], false,
+                ),
+            ],
+            helpString: 'Deletes a Quick Reply from the specified set. If no label is provided, the entire set is deleted.',
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-contextadd',
+            callback: (args, name) => this.createContextItem(args, name),
+            namedArgumentList: [
+                new SlashCommandNamedArgument(
+                    'set', 'string', [ARGUMENT_TYPE.STRING], true,
+                ),
+                new SlashCommandNamedArgument(
+                    'label', 'string', [ARGUMENT_TYPE.STRING], true,
+                ),
+                new SlashCommandNamedArgument(
+                    'chain', 'boolean', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false',
+                ),
+            ],
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'preset name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: `
+                <div>
+                    Add context menu preset to a QR.
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code>/qr-contextadd set=MyPreset label=MyButton chain=true MyOtherPreset</code></pre>
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-contextdel',
+            callback: (args, name) => this.deleteContextItem(args, name),
+            namedArgumentList: [
+                new SlashCommandNamedArgument(
+                    'set', 'string', [ARGUMENT_TYPE.STRING], true,
+                ),
+                new SlashCommandNamedArgument(
+                    'label', 'string', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'preset name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: `
+                <div>
+                    Remove context menu preset from a QR.
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code>/qr-contextdel set=MyPreset label=MyButton MyOtherPreset</code></pre>
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-contextclear',
+            callback: (args, label) => this.clearContextMenu(args, label),
+            namedArgumentList: [
+                new SlashCommandNamedArgument(
+                    'set', 'context menu preset name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'label', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: `
+                <div>
+                    Remove all context menu presets from a QR.
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code>/qr-contextclear set=MyPreset MyButton</code></pre>
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
+
+        const presetArgs = [
+            new SlashCommandNamedArgument('nosend', 'disable send / insert in user input (invalid for slash commands)', [ARGUMENT_TYPE.BOOLEAN], false),
+            new SlashCommandNamedArgument('before', 'place QR before user input', [ARGUMENT_TYPE.BOOLEAN], false),
+            new SlashCommandNamedArgument('inject', 'inject user input automatically (if disabled use {{input}})', [ARGUMENT_TYPE.BOOLEAN], false),
+        ];
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-create',
+            callback: (args, name) => this.createSet(name, args),
+            aliases: ['qr-presetadd'],
+            namedArgumentList: presetArgs,
+            unnamedArgumentList: [
+                new SlashCommandArgument(
+                    'name', [ARGUMENT_TYPE.STRING], true,
+                ),
+            ],
+            helpString: `
+                <div>
+                    Create a new preset (overrides existing ones).
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code>/qr-set-add MyNewPreset</code></pre>
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
+
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-update',
+            callback: (args, name) => this.updateSet(name, args),
+            aliases: ['qr-presetupdate'],
+            namedArgumentList: presetArgs,
+            unnamedArgumentList: [
+                new SlashCommandArgument('name', [ARGUMENT_TYPE.STRING], true),
+            ],
+            helpString: `
+                <div>
+                    Update an existing preset.
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <pre><code>/qr-set-update enabled=false MyPreset</code></pre>
+                </div>
+            `,
+        }));
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'qr-set-delete',
+            callback: (args, name) => this.deleteSet(name),
+            aliases: ['qr-presetdelete'],
+            unnamedArgumentList: [
+                new SlashCommandArgument('name', [ARGUMENT_TYPE.STRING], true),
+            ],
+            helpString: `
+                <div>
+                    Delete an existing preset.
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <pre><code>/qr-set-delete MyPreset</code></pre>
+                </div>
+            `,
+        }));
     }
 
 

@@ -158,7 +158,7 @@ import {
 import { debounce_timeout } from './scripts/constants.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from './scripts/slash-commands.js';
+import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsOnChatInput, getSlashCommandsHelp, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, registerSlashCommand, stopScriptExecution } from './scripts/slash-commands.js';
 import {
     tag_map,
     tags,
@@ -227,6 +227,10 @@ import { currentUser, setUserControls } from './scripts/user.js';
 import { POPUP_TYPE, callGenericPopup } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
+import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
+import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from './scripts/slash-commands/SlashCommandArgument.js';
+import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 
 //exporting functions and vars for mods
 export {
@@ -1717,6 +1721,7 @@ export async function reloadCurrentChat() {
  */
 export function sendTextareaMessage() {
     if (is_send_press) return;
+    if (isExecutingCommandsFromChatInput) return;
 
     let generateType;
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
@@ -2305,6 +2310,8 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
         environment.scenario = fields.scenario || '';
         environment.persona = fields.persona || '';
         environment.mesExamples = fields.mesExamples || '';
+        environment.charVersion = fields.version || '';
+        environment.char_version = fields.version || '';
     }
 
     // Must be substituted last so that they're replaced inside {{description}}
@@ -2396,30 +2403,14 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
  * @param {string} message Text to be sent
  * @returns {Promise<boolean>} Whether the message sending was interrupted
  */
-async function processCommands(message) {
+export async function processCommands(message) {
     if (!message || !message.trim().startsWith('/')) {
         return false;
     }
-
-    const previousText = String($('#send_textarea').val());
-    const result = await executeSlashCommands(message);
-
-    if (!result || typeof result !== 'object') {
-        return false;
-    }
-
-    const currentText = String($('#send_textarea').val());
-
-    if (previousText === currentText) {
-        $('#send_textarea').val(result.newText).trigger('input');
-    }
-
-    // interrupt generation if the input was nothing but a command
-    if (message.length > 0 && result?.newText.length === 0) {
-        return true;
-    }
-
-    return result?.interrupt;
+    await executeSlashCommandsOnChatInput(message, {
+        clearChatInput: true,
+    });
+    return true;
 }
 
 export function sendSystemMessage(type, text, extra = {}) {
@@ -2449,6 +2440,14 @@ export function sendSystemMessage(type, text, extra = {}) {
     chat.push(newMessage);
     addOneMessage(newMessage);
     is_send_press = false;
+    if (type == system_message_types.SLASH_COMMANDS) {
+        const browser = new SlashCommandBrowser();
+        const spinner = document.querySelector('#chat .last_mes .custom-slashHelp');
+        const parent = spinner.parentElement;
+        spinner.remove();
+        browser.renderInto(parent);
+        browser.search.focus();
+    }
 }
 
 /**
@@ -2602,10 +2601,10 @@ export function baseChatReplace(value, name1, name2) {
 
 /**
  * Returns the character card fields for the current character.
- * @returns {{system: string, mesExamples: string, description: string, personality: string, persona: string, scenario: string, jailbreak: string}}
+ * @returns {{system: string, mesExamples: string, description: string, personality: string, persona: string, scenario: string, jailbreak: string, version: string}}
  */
 export function getCharacterCardFields() {
-    const result = { system: '', mesExamples: '', description: '', personality: '', persona: '', scenario: '', jailbreak: '' };
+    const result = { system: '', mesExamples: '', description: '', personality: '', persona: '', scenario: '', jailbreak: '', version: '' };
     const character = characters[this_chid];
 
     if (!character) {
@@ -2620,6 +2619,7 @@ export function getCharacterCardFields() {
     result.persona = baseChatReplace(power_user.persona_description?.trim(), name1, name2);
     result.system = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
     result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
+    result.version = characters[this_chid].data?.character_version ?? '';
 
     if (selected_group) {
         const groupCards = getGroupCharacterCards(selected_group, Number(this_chid));
@@ -2695,7 +2695,7 @@ class StreamingProcessor {
         let messageId = -1;
 
         if (this.type == 'impersonate') {
-            $('#send_textarea').val('').trigger('input');
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
         }
         else {
             await saveReply(this.type, text, true);
@@ -2731,7 +2731,7 @@ class StreamingProcessor {
         }
 
         if (isImpersonate) {
-            $('#send_textarea').val(processedText).trigger('input');
+            $('#send_textarea').val(processedText)[0].dispatchEvent(new Event('input', { bubbles:true }));
         }
         else {
             let currentTime = new Date();
@@ -3078,7 +3078,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
 
         if (interruptedByCommand) {
-            //$("#send_textarea").val('').trigger('input');
+            //$("#send_textarea").val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
             unblockGeneration(type);
             return Promise.resolve();
         }
@@ -3173,7 +3173,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun) {
         is_send_press = true;
         textareaText = String($('#send_textarea').val());
-        $('#send_textarea').val('').trigger('input');
+        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
     } else {
         textareaText = '';
         if (chat.length && chat[chat.length - 1]['is_user']) {
@@ -4135,7 +4135,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (getMessage.length > 0) {
             if (isImpersonate) {
-                $('#send_textarea').val(getMessage).trigger('input');
+                $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles:true }));
                 generatedPromptCache = '';
                 await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
             }
@@ -6720,7 +6720,7 @@ export function select_selected_character(chid) {
     $('#description_textarea').val(characters[chid].description);
     $('#character_world').val(characters[chid].data?.extensions?.world || '');
     $('#creator_notes_textarea').val(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
-    $('#creator_notes_spoiler').html(DOMPurify.sanitize(converter.makeHtml(characters[chid].data?.creator_notes || characters[chid].creatorcomment), { MESSAGE_SANITIZE: true }));
+    $('#creator_notes_spoiler').html(DOMPurify.sanitize(converter.makeHtml(substituteParams(characters[chid].data?.creator_notes) || characters[chid].creatorcomment), { MESSAGE_SANITIZE: true }));
     $('#character_version_textarea').val(characters[chid].data?.character_version || '');
     $('#system_prompt_textarea').val(characters[chid].data?.system_prompt || '');
     $('#post_history_instructions_textarea').val(characters[chid].data?.post_history_instructions || '');
@@ -8474,19 +8474,123 @@ jQuery(async function () {
         toastr.success('Chat and settings saved.');
     }
 
-    registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
-    registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
-    registerSlashCommand('impersonate', doImpersonate, ['imp'], '<span class="monospace">[prompt]</span> – calls an impersonation response, with an optional additional prompt', true, true);
-    registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
-    registerSlashCommand('getchatname', doGetChatName, [], '– returns the name of the current chat file into the pipe', false, true);
-    registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
-    registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
-    registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
-    registerSlashCommand('instruct', selectInstructCallback, [], '<span class="monospace">(name)</span> – selects instruct mode preset by name. Gets the current instruct if no name is provided', true, true);
-    registerSlashCommand('instruct-on', enableInstructCallback, [], '– enables instruct mode', true, true);
-    registerSlashCommand('instruct-off', disableInstructCallback, [], '– disables instruct mode', true, true);
-    registerSlashCommand('context', selectContextCallback, [], '<span class="monospace">(name)</span> – selects context template by name. Gets the current template if no name is provided', true, true);
-    registerSlashCommand('chat-manager', () => $('#option_select_chat').trigger('click'), ['chat-history', 'manage-chats'], '– opens the chat manager for the current character/group', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'dupe',
+        callback: DupeChar,
+        helpString: 'Duplicates the currently selected character.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'api',
+        callback: connectAPISlash,
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'API to connect to',
+                [ARGUMENT_TYPE.STRING],
+                true,
+                false,
+                null,
+                Object.keys(CONNECT_API_MAP),
+            ),
+        ],
+        helpString: `
+            <div>
+                Connect to an API.
+            </div>
+            <div>
+                <strong>Available APIs:</strong>
+                <pre><code>${Object.keys(CONNECT_API_MAP).join(', ')}</code></pre>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'impersonate',
+        callback: doImpersonate,
+        aliases: ['imp'],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'prompt', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Calls an impersonation response, with an optional additional prompt.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/impersonate What is the meaning of life?</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delchat',
+        callback: doDeleteChat,
+        helpString: 'Deletes the current chat.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatname',
+        callback: doGetChatName,
+        returns: 'chat file name',
+        helpString: 'Returns the name of the current chat file into the pipe.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'closechat',
+        callback: doCloseChat,
+        helpString: 'Closes the current chat.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'panels',
+        callback: doTogglePanels,
+        aliases: ['togglepanels'],
+        helpString: 'Toggle UI panels on/off',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'forcesave',
+        callback: doForceSave,
+        helpString: 'Forces a save of the current chat and settings',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct',
+        callback: selectInstructCallback,
+        returns: 'current preset',
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Selects instruct mode preset by name. Gets the current instruct if no name is provided.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/instruct creative</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct-on',
+        callback: enableInstructCallback,
+        helpString: 'Enables instruct mode.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct-off',
+        callback: disableInstructCallback,
+        helpString: 'Disables instruct mode',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'context',
+        callback: selectContextCallback,
+        returns: 'template name',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: 'Selects context template by name. Gets the current template if no name is provided',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'chat-manager',
+        callback: () => $('#option_select_chat').trigger('click'),
+        aliases: ['chat-history', 'manage-chats'],
+        helpString: 'Opens the chat manager for the current character/group.',
+    }));
 
     setTimeout(function () {
         $('#groupControlsToggle').trigger('click');
@@ -9864,11 +9968,22 @@ jQuery(async function () {
             streamingProcessor = null;
         }
         if (abortController) {
-            abortController.abort();
+            abortController.abort('Clicked stop button');
             hideStopButton();
         }
         eventSource.emit(event_types.GENERATION_STOPPED);
-        activateSendButtons();
+    });
+
+    $(document).on('click', '#form_sheld .stscript_continue', function () {
+        pauseScriptExecution();
+    });
+
+    $(document).on('click', '#form_sheld .stscript_pause', function () {
+        pauseScriptExecution();
+    });
+
+    $(document).on('click', '#form_sheld .stscript_stop', function () {
+        stopScriptExecution();
     });
 
     $('.drawer-toggle').on('click', function () {
