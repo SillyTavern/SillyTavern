@@ -2304,6 +2304,8 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
         environment.scenario = fields.scenario || '';
         environment.persona = fields.persona || '';
         environment.mesExamples = fields.mesExamples || '';
+        environment.charVersion = fields.version || '';
+        environment.char_version = fields.version || '';
     }
 
     // Must be substituted last so that they're replaced inside {{description}}
@@ -2601,10 +2603,10 @@ export function baseChatReplace(value, name1, name2) {
 
 /**
  * Returns the character card fields for the current character.
- * @returns {{system: string, mesExamples: string, description: string, personality: string, persona: string, scenario: string, jailbreak: string}}
+ * @returns {{system: string, mesExamples: string, description: string, personality: string, persona: string, scenario: string, jailbreak: string, version: string}}
  */
 export function getCharacterCardFields() {
-    const result = { system: '', mesExamples: '', description: '', personality: '', persona: '', scenario: '', jailbreak: '' };
+    const result = { system: '', mesExamples: '', description: '', personality: '', persona: '', scenario: '', jailbreak: '', version: '' };
     const character = characters[this_chid];
 
     if (!character) {
@@ -2619,6 +2621,7 @@ export function getCharacterCardFields() {
     result.persona = baseChatReplace(power_user.persona_description?.trim(), name1, name2);
     result.system = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
     result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
+    result.version = characters[this_chid].data?.character_version ?? '';
 
     if (selected_group) {
         const groupCards = getGroupCharacterCards(selected_group, Number(this_chid));
@@ -6720,7 +6723,7 @@ export function select_selected_character(chid) {
     $('#description_textarea').val(characters[chid].description);
     $('#character_world').val(characters[chid].data?.extensions?.world || '');
     $('#creator_notes_textarea').val(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
-    $('#creator_notes_spoiler').html(DOMPurify.sanitize(converter.makeHtml(characters[chid].data?.creator_notes || characters[chid].creatorcomment), { MESSAGE_SANITIZE: true }));
+    $('#creator_notes_spoiler').html(DOMPurify.sanitize(converter.makeHtml(substituteParams(characters[chid].data?.creator_notes) || characters[chid].creatorcomment), { MESSAGE_SANITIZE: true }));
     $('#character_version_textarea').val(characters[chid].data?.character_version || '');
     $('#system_prompt_textarea').val(characters[chid].data?.system_prompt || '');
     $('#post_history_instructions_textarea').val(characters[chid].data?.post_history_instructions || '');
