@@ -260,7 +260,10 @@ export class QuickReply {
                     top,
                 });
             };
-            const updateScrollDebounced = updateScroll; //debounce(()=>updateScroll(), 0);
+            const updateScrollDebounced = updateScroll;
+            const updateSyntax = ()=>{
+                messageSyntaxInner.innerHTML = hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
+            };
             /**@type {HTMLInputElement}*/
             const tabSize = dom.querySelector('#qr--modal-tabSize');
             tabSize.value = JSON.parse(localStorage.getItem('qr--tabSize') ?? '4');
@@ -283,7 +286,7 @@ export class QuickReply {
             const message = dom.querySelector('#qr--modal-message');
             message.value = this.message;
             message.addEventListener('input', () => {
-                messageSyntaxInner.innerHTML = hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
+                updateSyntax();
                 this.updateMessage(message.value);
                 updateScrollDebounced();
             });
@@ -300,12 +303,12 @@ export class QuickReply {
                         message.value = `${message.value.substring(0, lineStart)}${message.value.substring(lineStart, end).replace(/\n/g, '\n\t')}${message.value.substring(end)}`;
                         message.selectionStart = start + 1;
                         message.selectionEnd = end + count;
-                        this.updateMessage(message.value);
+                        updateSyntax();
                     } else {
                         message.value = `${message.value.substring(0, start)}\t${message.value.substring(end)}`;
                         message.selectionStart = start + 1;
                         message.selectionEnd = end + 1;
-                        this.updateMessage(message.value);
+                        updateSyntax();
                     }
                 } else if (evt.key == 'Tab' && evt.shiftKey && !evt.ctrlKey && !evt.altKey) {
                     evt.preventDefault();
@@ -316,7 +319,7 @@ export class QuickReply {
                     message.value = `${message.value.substring(0, lineStart)}${message.value.substring(lineStart, end).replace(/\n\t/g, '\n')}${message.value.substring(end)}`;
                     message.selectionStart = start - 1;
                     message.selectionEnd = end - count;
-                    this.updateMessage(message.value);
+                    updateSyntax();
                 } else if (evt.key == 'Enter' && evt.ctrlKey && !evt.shiftKey && !evt.altKey) {
                     evt.stopPropagation();
                     evt.preventDefault();
@@ -344,8 +347,7 @@ export class QuickReply {
             message.style.setProperty('text-shadow', 'none', 'important');
             /**@type {HTMLElement}*/
             const messageSyntaxInner = dom.querySelector('#qr--modal-messageSyntaxInner');
-            const style = window.getComputedStyle(message);
-            messageSyntaxInner.innerHTML = hljs.highlight(`${message.value}${message.value.slice(-1) == '\n' ? ' ' : ''}`, { language:'stscript', ignoreIllegals:true })?.value;
+            updateSyntax();
             updateWrap();
             updateTabSize();
 
