@@ -74,6 +74,7 @@
 </div>
 <div><small>Local variables = unique to the current chat</small></div>
 <div><small>Global variables = works in any chat for any character</small></div>
+<div><small>Scoped variables = works in STscript</small></div>
 <ul>
     <li><tt>&lcub;&lcub;getvar::name&rcub;&rcub;</tt> – replaced with the value of the local variable "name"</li>
     <li><tt>&lcub;&lcub;setvar::name::value&rcub;&rcub;</tt> – replaced with empty string, sets the local variable "name" to "value"</li>
@@ -85,4 +86,6 @@
     <li><tt>&lcub;&lcub;addglobalvar::name::value&rcub;&rcub;</tt> – replaced with empty string, adds a numeric value of "increment" to the global variable "name"</li>
     <li><tt>&lcub;&lcub;incglobalvar::name&rcub;&rcub;</tt> – replaced with the result of the increment of value of the global variable "name" by 1</li>
     <li><tt>&lcub;&lcub;decglobalvar::name&rcub;&rcub;</tt> – replaced with the result of the decrement of value of the global variable "name" by 1</li>
+    <li><tt>&lcub;&lcub;var::name&rcub;&rcub;</tt> – replaced with the value of the scoped variable "name"</li>
+    <li><tt>&lcub;&lcub;var::name::index&rcub;&rcub;</tt> – replaced with the value of item at index (for arrays / lists or objects / dictionaries) of the scoped variable "name"</li>
 </ul>

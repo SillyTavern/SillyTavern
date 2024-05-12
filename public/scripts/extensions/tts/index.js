@@ -8,11 +8,13 @@ import { CoquiTtsProvider } from './coqui.js';
 import { SystemTtsProvider } from './system.js';
 import { NovelTtsProvider } from './novel.js';
 import { power_user } from '../../power-user.js';
-import { registerSlashCommand } from '../../slash-commands.js';
 import { OpenAITtsProvider } from './openai.js';
 import { XTTSTtsProvider } from './xtts.js';
 import { AllTalkTtsProvider } from './alltalk.js';
 import { SpeechT5TtsProvider } from './speecht5.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
@@ -1063,6 +1065,36 @@ $(document).ready(function () {
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged);
     eventSource.on(event_types.MESSAGE_SENT, onMessageEvent);
     eventSource.on(event_types.MESSAGE_RECEIVED, onMessageEvent);
-    registerSlashCommand('speak', onNarrateText, ['narrate', 'tts'], '<span class="monospace">(text)</span>  – narrate any text using currently selected character\'s voice. Use voice="Character Name" argument to set other voice from the voice map, example: <tt>/speak voice="Donald Duck" Quack!</tt>', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'speak',
+        callback: onNarrateText,
+        aliases: ['narrate', 'tts'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'voice', 'character voice name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'text', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Narrate any text using currently selected character's voice.
+            </div>
+            <div>
+                Use <code>voice="Character Name"</code> argument to set other voice from the voice map.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/speak voice="Donald Duck" Quack!</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+
     document.body.appendChild(audioElement);
 });
