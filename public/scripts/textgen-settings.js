@@ -373,7 +373,7 @@ function getCustomTokenBans() {
         } else if (line.startsWith('"') && line.endsWith('"')) {
             // Remove the enclosing quotes
 
-            banned_strings.push(line.slice(1, -1))
+            banned_strings.push(line.slice(1, -1));
         } else {
             try {
                 const tokens = getTextTokens(tokenizer, line);
@@ -1137,7 +1137,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         const logitBiasArray = (params.logit_bias && typeof params.logit_bias === 'object' && Object.keys(params.logit_bias).length > 0)
             ? Object.entries(params.logit_bias).map(([key, value]) => [Number(key), value])
             : [];
-        const tokenBans = toIntArray(getCustomTokenBans());
+        const tokenBans = toIntArray(banned_tokens);
         logitBiasArray.push(...tokenBans.map(x => [Number(x), false]));
         const llamaCppParams = {
             'logit_bias': logitBiasArray,
