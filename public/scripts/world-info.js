@@ -2165,6 +2165,7 @@ const newEntryTemplate = {
     position: 0,
     disable: false,
     excludeRecursion: false,
+    preventRecursion: false,
     delayUntilRecursion: false,
     probability: 100,
     useProbability: true,
