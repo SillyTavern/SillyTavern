@@ -1,16 +1,20 @@
 import { AutoCompleteOption } from '../autocomplete/AutoCompleteOption.js';
+import { SlashCommand } from './SlashCommand.js';
 import { SlashCommandEnumValue } from './SlashCommandEnumValue.js';
 
 export class SlashCommandEnumAutoCompleteOption extends AutoCompleteOption {
+    /**@type {SlashCommand}*/ cmd;
     /**@type {SlashCommandEnumValue}*/ enumValue;
 
 
 
     /**
+     * @param {SlashCommand} cmd
      * @param {SlashCommandEnumValue} enumValue
      */
-    constructor(enumValue) {
+    constructor(cmd, enumValue) {
         super(enumValue.value, '◊');
+        this.cmd = cmd;
         this.enumValue = enumValue;
     }
 
@@ -25,22 +29,6 @@ export class SlashCommandEnumAutoCompleteOption extends AutoCompleteOption {
 
 
     renderDetails() {
-        const frag = document.createDocumentFragment();
-        const specs = document.createElement('div'); {
-            specs.classList.add('specs');
-            const name = document.createElement('div'); {
-                name.classList.add('name');
-                name.classList.add('monospace');
-                name.textContent = this.name;
-                specs.append(name);
-            }
-            frag.append(specs);
-        }
-        const help = document.createElement('span'); {
-            help.classList.add('help');
-            help.textContent = this.enumValue.description;
-            frag.append(help);
-        }
-        return frag;
+        return this.cmd.renderHelpDetails();
     }
 }
