@@ -856,7 +856,7 @@ async function firstLoadInit() {
 
     await getClientVersion();
     await readSecretState();
-    initLocales(); // this function needs to be executed this late because otherwise, locale file fails to load on time sometimes
+    initLocales();
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await getSettings();
