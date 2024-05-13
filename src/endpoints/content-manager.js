@@ -3,7 +3,7 @@ const path = require('path');
 const express = require('express');
 const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
-const { getConfigValue } = require('../util');
+const { getConfigValue, color } = require('../util');
 const { jsonParser } = require('../express-common');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const contentDirectory = path.join(process.cwd(), 'default/content');
@@ -94,8 +94,11 @@ function getDefaultPresetFile(filename) {
  * @param {ContentItem[]} contentIndex Content index
  * @param {import('../users').UserDirectoryList} directories User directories
  * @param {string[]} forceCategories List of categories to force check (even if content check is skipped)
+ * @returns {Promise<boolean>} Whether any content was added
  */
 async function seedContentForUser(contentIndex, directories, forceCategories) {
+    let anyContentAdded = false;
+
     if (!fs.existsSync(directories.root)) {
         fs.mkdirSync(directories.root, { recursive: true });
     }
@@ -134,9 +137,11 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
 
         fs.cpSync(contentPath, targetPath, { recursive: true, force: false });
         console.log(`Content file ${contentItem.filename} copied to ${contentTarget}`);
+        anyContentAdded = true;
     }
 
     writeFileAtomicSync(contentLogPath, contentLog.join('\n'));
+    return anyContentAdded;
 }
 
 /**
@@ -147,15 +152,27 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
  */
 async function checkForNewContent(directoriesList, forceCategories = []) {
     try {
-        if (getConfigValue('skipContentCheck', false) && forceCategories?.length === 0) {
+        const contentCheckSkip = getConfigValue('skipContentCheck', false);
+        if (contentCheckSkip && forceCategories?.length === 0) {
             return;
         }
 
         const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
         const contentIndex = JSON.parse(contentIndexText);
+        let anyContentAdded = false;
 
         for (const directories of directoriesList) {
-            await seedContentForUser(contentIndex, directories, forceCategories);
+            const seedResult = await seedContentForUser(contentIndex, directories, forceCategories);
+
+            if (seedResult) {
+                anyContentAdded = true;
+            }
+        }
+
+        if (anyContentAdded && !contentCheckSkip && forceCategories?.length === 0) {
+            console.log();
+            console.log(`${color.blue('If you don\'t want to receive content updates in the future, set')} ${color.yellow('skipContentCheck')} ${color.blue('to true in the config.yaml file.')}`);
+            console.log();
         }
     } catch (err) {
         console.log('Content check failed', err);

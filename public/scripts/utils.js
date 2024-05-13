@@ -612,8 +612,8 @@ const dateCache = new Map();
 /**
  * Cached version of moment() to avoid re-parsing the same date strings.
  * Important: Moment objects are mutable, so use clone() before modifying them!
- * @param {any} timestamp String or number representing a date.
- * @returns {*} Moment object
+ * @param {string|number} timestamp String or number representing a date.
+ * @returns {moment.Moment} Moment object
  */
 export function timestampToMoment(timestamp) {
     if (dateCache.has(timestamp)) {
@@ -663,8 +663,8 @@ function parseTimestamp(timestamp) {
 
 /**
  * Compare two moment objects for sorting.
- * @param {*} a The first moment object.
- * @param {*} b The second moment object.
+ * @param {moment.Moment} a The first moment object.
+ * @param {moment.Moment} b The second moment object.
  * @returns {number} A negative number if a is before b, a positive number if a is after b, or 0 if they are equal.
  */
 export function sortMoments(a, b) {
@@ -730,6 +730,24 @@ export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '
 export function isDataURL(str) {
     const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@/?#]+)?$/i;
     return regex.test(str);
+}
+
+/**
+ * Gets the size of an image from a data URL.
+ * @param {string} dataUrl Image data URL
+ * @returns {Promise<{ width: number, height: number }>} Image size
+ */
+export function getImageSizeFromDataURL(dataUrl) {
+    const image = new Image();
+    image.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        image.onload = function () {
+            resolve({ width: image.width, height: image.height });
+        };
+        image.onerror = function () {
+            reject(new Error('Failed to load image'));
+        };
+    });
 }
 
 export function getCharaFilename(chid) {

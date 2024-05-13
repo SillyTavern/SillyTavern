@@ -2,7 +2,6 @@ import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_meta
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getStringHash, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
-import { registerSlashCommand } from './slash-commands.js';
 import { isMobile } from './RossAscends-mods.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { getTokenCountAsync } from './tokenizers.js';
@@ -11,6 +10,9 @@ import { getTagKeyForEntity } from './tags.js';
 import { resolveVariable } from './variables.js';
 import { debounce_timeout } from './constants.js';
 import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 
 export {
     world_info,
@@ -681,12 +683,161 @@ function registerWorldInfoSlashCommands() {
         return '';
     }
 
-    registerSlashCommand('world', onWorldInfoChange, [], '<span class="monospace">[optional state=off|toggle] [optional silent=true] (optional name)</span> – sets active World, or unsets if no args provided, use <code>state=off</code> and <code>state=toggle</code> to deactivate or toggle a World, use <code>silent=true</code> to suppress toast messages', true, true);
-    registerSlashCommand('getchatbook', getChatBookCallback, ['getchatlore', 'getchatwi'], '– get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe', true, true);
-    registerSlashCommand('findentry', findBookEntryCallback, ['findlore', 'findwi'], '<span class="monospace">(file=bookName field=field [texts])</span> – find a UID of the record from the specified book using the fuzzy match of a field value (default: key) and pass it down the pipe, e.g. <tt>/findentry file=chatLore field=key Shadowfang</tt>', true, true);
-    registerSlashCommand('getentryfield', getEntryFieldCallback, ['getlorefield', 'getwifield'], '<span class="monospace">(file=bookName field=field [UID])</span> – get a field value (default: content) of the record with the UID from the specified book and pass it down the pipe, e.g. <tt>/getentryfield file=chatLore field=content 123</tt>', true, true);
-    registerSlashCommand('createentry', createEntryCallback, ['createlore', 'createwi'], '<span class="monospace">(file=bookName key=key [content])</span> – create a new record in the specified book with the key and content (both are optional) and pass the UID down the pipe, e.g. <tt>/createentry file=chatLore key=Shadowfang The sword of the king</tt>', true, true);
-    registerSlashCommand('setentryfield', setEntryFieldCallback, ['setlorefield', 'setwifield'], '<span class="monospace">(file=bookName uid=UID field=field [value])</span> – set a field value (default: content) of the record with the UID from the specified book. To set multiple values for key fields, use comma-delimited list as a value, e.g. <tt>/setentryfield file=chatLore uid=123 field=key Shadowfang,sword,weapon</tt>', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'world',
+        callback: onWorldInfoChange,
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'state', 'set world state', [ARGUMENT_TYPE.STRING], false, false, null, ['off', 'toggle'],
+            ),
+            new SlashCommandNamedArgument(
+                'silent', 'suppress toast messages', [ARGUMENT_TYPE.BOOLEAN], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Sets active World, or unsets if no args provided, use <code>state=off</code> and <code>state=toggle</code> to deactivate or toggle a World, use <code>silent=true</code> to suppress toast messages.
+            </div>
+        `,
+        aliases: [],
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatbook',
+        callback: getChatBookCallback,
+        returns: 'lorebook name',
+        helpString: 'Get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe.',
+        aliases: ['getchatlore', 'getchatwi'],
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'findentry',
+        aliases: ['findlore', 'findwi'],
+        returns: 'UID',
+        callback: findBookEntryCallback,
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'file', 'bookName', ARGUMENT_TYPE.STRING, true,
+            ),
+            new SlashCommandNamedArgument(
+                'field', 'field value for fuzzy match (default: key)', ARGUMENT_TYPE.STRING, false, false, 'key',
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'texts', ARGUMENT_TYPE.STRING, true, true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Find a UID of the record from the specified book using the fuzzy match of a field value (default: key) and pass it down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/findentry file=chatLore field=key Shadowfang</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getentryfield',
+        aliases: ['getlorefield', 'getwifield'],
+        callback: getEntryFieldCallback,
+        returns: 'field value',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'file', 'bookName', ARGUMENT_TYPE.STRING, true,
+            ),
+            new SlashCommandNamedArgument(
+                'field', 'field to retrieve (default: content)', ARGUMENT_TYPE.STRING, false, false, 'content',
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'UID', ARGUMENT_TYPE.STRING, true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Get a field value (default: content) of the record with the UID from the specified book and pass it down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/getentryfield file=chatLore field=content 123</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'createentry',
+        callback: createEntryCallback,
+        aliases: ['createlore', 'createwi'],
+        returns: 'UID of the new record',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'file', 'book name', [ARGUMENT_TYPE.STRING], true,
+            ),
+            new SlashCommandNamedArgument(
+                'key', 'record key', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'content', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Create a new record in the specified book with the key and content (both are optional) and pass the UID down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/createentry file=chatLore key=Shadowfang The sword of the king</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'setentryfield',
+        callback: setEntryFieldCallback,
+        aliases: ['setlorefield', 'setwifield'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'file', 'book name', [ARGUMENT_TYPE.STRING], true,
+            ),
+            new SlashCommandNamedArgument(
+                'uid', 'record UID', [ARGUMENT_TYPE.STRING], true,
+            ),
+            new SlashCommandNamedArgument(
+                'field', 'field name', [ARGUMENT_TYPE.STRING], true, false, 'content',
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Set a field value (default: content) of the record with the UID from the specified book. To set multiple values for key fields, use comma-delimited list as a value.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/setentryfield file=chatLore uid=123 field=key Shadowfang,sword,weapon</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+
 }
 
 // World Info Editor
@@ -927,7 +1078,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     $('#world_info_pagination').pagination({
         dataSource: getDataArray,
         pageSize: Number(localStorage.getItem(storageKey)) || perPageDefault,
-        sizeChangerOptions: [10, 25, 50, 100],
+        sizeChangerOptions: [10, 25, 50, 100, 500, 1000],
         showSizeChanger: true,
         pageRange: 1,
         pageNumber: startPage,
@@ -2963,8 +3114,8 @@ function convertAgnaiMemoryBook(inputObj) {
             addMemo: !!entry.name,
             excludeRecursion: false,
             displayIndex: index,
-            probability: null,
-            useProbability: false,
+            probability: 100,
+            useProbability: true,
             group: '',
             groupOverride: false,
             groupWeight: DEFAULT_WEIGHT,
@@ -3001,8 +3152,8 @@ function convertRisuLorebook(inputObj) {
             addMemo: true,
             excludeRecursion: false,
             displayIndex: index,
-            probability: entry.activationPercent ?? null,
-            useProbability: entry.activationPercent ?? false,
+            probability: entry.activationPercent ?? 100,
+            useProbability: entry.activationPercent ?? true,
             group: '',
             groupOverride: false,
             groupWeight: DEFAULT_WEIGHT,
@@ -3044,8 +3195,8 @@ function convertNovelLorebook(inputObj) {
             addMemo: addMemo,
             excludeRecursion: false,
             displayIndex: index,
-            probability: null,
-            useProbability: false,
+            probability: 100,
+            useProbability: true,
             group: '',
             groupOverride: false,
             groupWeight: DEFAULT_WEIGHT,
@@ -3086,8 +3237,8 @@ function convertCharacterBook(characterBook) {
             disable: !entry.enabled,
             addMemo: entry.comment ? true : false,
             displayIndex: entry.extensions?.display_index ?? index,
-            probability: entry.extensions?.probability ?? null,
-            useProbability: entry.extensions?.useProbability ?? false,
+            probability: entry.extensions?.probability ?? 100,
+            useProbability: entry.extensions?.useProbability ?? true,
             depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
             selectiveLogic: entry.extensions?.selectiveLogic ?? world_info_logic.AND_ANY,
             group: entry.extensions?.group ?? '',

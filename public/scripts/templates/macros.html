@@ -18,6 +18,7 @@
     <li><tt>&lcub;&lcub;mesExamplesRaw&rcub;&rcub;</tt> – unformatted Dialogue Examples <b>(only for Story String)</b></li>
     <li><tt>&lcub;&lcub;user&rcub;&rcub;</tt> – your current Persona username</li>
     <li><tt>&lcub;&lcub;char&rcub;&rcub;</tt> – the Character's name</li>
+    <li><tt>&lcub;&lcub;char_version&rcub;&rcub;</tt> – the Character's version number</li>
     <li><tt>&lcub;&lcub;group&rcub;&rcub;</tt> – a comma-separated list of group member names or the character name in solo chats. Alias: &lcub;&lcub;charIfNotGroup&rcub;&rcub;</li>
     <li><tt>&lcub;&lcub;model&rcub;&rcub;</tt> – a text generation model name for the currently selected API. <b>Can be inaccurate!</b></li>
     <li><tt>&lcub;&lcub;lastMessage&rcub;&rcub;</tt> - the text of the latest chat message.</li>
@@ -33,6 +34,7 @@
     <li><tt>&lcub;&lcub;isodate&rcub;&rcub;</tt> – the current ISO date (YYYY-MM-DD)</li>
     <li><tt>&lcub;&lcub;datetimeformat &hellip;&rcub;&rcub;</tt> – the current date/time in the specified format, e. g. for German date/time: <tt>&lcub;&lcub;datetimeformat DD.MM.YYYY HH:mm&rcub;&rcub;</tt></li>
     <li><tt>&lcub;&lcub;time_UTC±#&rcub;&rcub;</tt> – the current time in the specified UTC time zone offset, e.g. UTC-4 or UTC+2</li>
+    <li><tt>&lcub;&lcub;timeDiff::(time1)::(time2)&rcub;&rcub;</tt> – the time difference between time1 and time2. Accepts time and date macros. (Ex: &lcub;&lcub;timeDiff::&lcub;&lcub;isodate&rcub;&rcub; &lcub;&lcub;time&rcub;&rcub;::2024/5/11 12:30:00&rcub;&rcub;)</li>
     <li><tt>&lcub;&lcub;idle_duration&rcub;&rcub;</tt> – the time since the last user message was sent</li>
     <li><tt>&lcub;&lcub;bias "text here"&rcub;&rcub;</tt> – sets a behavioral bias for the AI until the next user input. Quotes around the text are important.</li>
     <li><tt>&lcub;&lcub;roll:(formula)&rcub;&rcub;</tt> – rolls a dice. (ex: <tt>>&lcub;&lcub;roll:1d6&rcub;&rcub;</tt> will roll a 6-sided dice and return a number between 1 and 6)</li>
@@ -72,6 +74,7 @@
 </div>
 <div><small>Local variables = unique to the current chat</small></div>
 <div><small>Global variables = works in any chat for any character</small></div>
+<div><small>Scoped variables = works in STscript</small></div>
 <ul>
     <li><tt>&lcub;&lcub;getvar::name&rcub;&rcub;</tt> – replaced with the value of the local variable "name"</li>
     <li><tt>&lcub;&lcub;setvar::name::value&rcub;&rcub;</tt> – replaced with empty string, sets the local variable "name" to "value"</li>
@@ -83,4 +86,6 @@
     <li><tt>&lcub;&lcub;addglobalvar::name::value&rcub;&rcub;</tt> – replaced with empty string, adds a numeric value of "increment" to the global variable "name"</li>
     <li><tt>&lcub;&lcub;incglobalvar::name&rcub;&rcub;</tt> – replaced with the result of the increment of value of the global variable "name" by 1</li>
     <li><tt>&lcub;&lcub;decglobalvar::name&rcub;&rcub;</tt> – replaced with the result of the decrement of value of the global variable "name" by 1</li>
+    <li><tt>&lcub;&lcub;var::name&rcub;&rcub;</tt> – replaced with the value of the scoped variable "name"</li>
+    <li><tt>&lcub;&lcub;var::name::index&rcub;&rcub;</tt> – replaced with the value of item at index (for arrays / lists or objects / dictionaries) of the scoped variable "name"</li>
 </ul>

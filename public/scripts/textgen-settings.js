@@ -328,15 +328,20 @@ function getTokenizerForTokenIds() {
 }
 
 /**
- * @returns {string} String with comma-separated banned token IDs
+ * @typedef {{banned_tokens: string, banned_strings: string[]}} TokenBanResult
+ * @returns {TokenBanResult} String with comma-separated banned token IDs
  */
 function getCustomTokenBans() {
     if (!settings.banned_tokens && !textgenerationwebui_banned_in_macros.length) {
-        return '';
+        return {
+            banned_tokens: '',
+            banned_strings: [],
+        };
     }
 
     const tokenizer = getTokenizerForTokenIds();
-    const result = [];
+    const banned_tokens = [];
+    const banned_strings = [];
     const sequences = settings.banned_tokens
         .split('\n')
         .concat(textgenerationwebui_banned_in_macros)
@@ -358,24 +363,31 @@ function getCustomTokenBans() {
                 const tokens = JSON.parse(line);
 
                 if (Array.isArray(tokens) && tokens.every(t => Number.isInteger(t))) {
-                    result.push(...tokens);
+                    banned_tokens.push(...tokens);
                 } else {
                     throw new Error('Not an array of integers');
                 }
             } catch (err) {
                 console.log(`Failed to parse bad word token list: ${line}`, err);
             }
+        } else if (line.startsWith('"') && line.endsWith('"')) {
+            // Remove the enclosing quotes
+
+            banned_strings.push(line.slice(1, -1));
         } else {
             try {
                 const tokens = getTextTokens(tokenizer, line);
-                result.push(...tokens);
+                banned_tokens.push(...tokens);
             } catch {
                 console.log(`Could not tokenize raw text: ${line}`);
             }
         }
     }
 
-    return result.filter(onlyUnique).map(x => String(x)).join(',');
+    return {
+        banned_tokens: banned_tokens.filter(onlyUnique).map(x => String(x)).join(','),
+        banned_strings: banned_strings,
+    };
 }
 
 /**
@@ -697,10 +709,7 @@ jQuery(function () {
                 $(`#${id}_counter_textgenerationwebui`).val(value);
                 settings[id] = value;
                 //special handling for vLLM/Aphrodite using -1 as disabled instead of 0
-                if ($(this).attr('id') === 'top_k_textgenerationwebui' &&
-                    (settings.type === textgen_types.VLLM ||
-                    settings.type === textgen_types.APHRODITE) &&
-                    value === 0) {
+                if ($(this).attr('id') === 'top_k_textgenerationwebui' && [INFERMATICAI, APHRODITE, VLLM].includes(settings.type) && value === 0) {
                     settings[id] = -1;
                     $(this).val(-1);
                 }
@@ -987,6 +996,8 @@ export function isJsonSchemaSupported() {
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
+    const { banned_tokens, banned_strings } = getCustomTokenBans();
+
     let params = {
         'prompt': finalPrompt,
         'model': getTextGenModel(),
@@ -1033,8 +1044,9 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'mirostat_tau': settings.mirostat_tau,
         'mirostat_eta': settings.mirostat_eta,
         'custom_token_bans': [APHRODITE, MANCER].includes(settings.type) ?
-            toIntArray(getCustomTokenBans()) :
-            getCustomTokenBans(),
+            toIntArray(banned_tokens) :
+            banned_tokens,
+        'banned_strings': banned_strings,
         'api_type': settings.type,
         'api_server': getTextGenServer(),
         'legacy_api': settings.legacy_api && (settings.type === OOBA || settings.type === APHRODITE),
@@ -1125,7 +1137,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         const logitBiasArray = (params.logit_bias && typeof params.logit_bias === 'object' && Object.keys(params.logit_bias).length > 0)
             ? Object.entries(params.logit_bias).map(([key, value]) => [Number(key), value])
             : [];
-        const tokenBans = toIntArray(getCustomTokenBans());
+        const tokenBans = toIntArray(banned_tokens);
         logitBiasArray.push(...tokenBans.map(x => [Number(x), false]));
         const llamaCppParams = {
             'logit_bias': logitBiasArray,
