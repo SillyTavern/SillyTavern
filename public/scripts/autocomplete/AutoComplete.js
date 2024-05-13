@@ -25,6 +25,8 @@ export class AutoComplete {
     /**@type {boolean}*/ isReplaceable = false;
     /**@type {boolean}*/ isShowingDetails = false;
     /**@type {boolean}*/ wasForced = false;
+    /**@type {boolean}*/ isForceHidden = false;
+    /**@type {boolean}*/ canBeAutoHidden = false;
 
     /**@type {string}*/ text;
     /**@type {AutoCompleteNameResult}*/ parserResult;
@@ -55,6 +57,10 @@ export class AutoComplete {
 
     get matchType() {
         return power_user.stscript.matching ?? 'fuzzy';
+    }
+
+    get autoHide() {
+        return power_user.stscript.autocomplete.autoHide ?? false;
     }
 
 
@@ -224,6 +230,16 @@ export class AutoComplete {
         return a.name.localeCompare(b.name);
     }
 
+    basicAutoHideCheck() {
+        // auto hide only if at least one char has been typed after the name + space
+        return this.textarea.selectionStart > this.parserResult.start
+            + this.parserResult.name.length
+            + (this.startQuote ? 1 : 0)
+            + (this.endQuote ? 1 : 0)
+            + 1
+        ;
+    }
+
     /**
      * Show the autocomplete.
      * @param {boolean} isInput Whether triggered by input.
@@ -243,6 +259,9 @@ export class AutoComplete {
             // only show if provider wants to
             return this.hide();
         }
+
+        // disable force-hide if trigger was forced
+        if (isForced) this.isForceHidden = false;
 
         // request provider to get name result (potentially "incomplete", i.e. not an actual existing name) for
         // cursor position
@@ -275,12 +294,16 @@ export class AutoComplete {
                 this.name = this.name.slice(0, this.textarea.selectionStart - (this.parserResult.start) - (this.startQuote ? 1 : 0));
                 this.parserResult.name = this.name;
                 this.isReplaceable = true;
+                this.isForceHidden = false;
+                this.canBeAutoHidden = false;
             } else {
                 this.isReplaceable = false;
+                this.canBeAutoHidden = this.basicAutoHideCheck();
             }
         } else {
             // if not forced and no user input -> just show details
             this.isReplaceable = false;
+            this.canBeAutoHidden = this.basicAutoHideCheck();
         }
 
         if (isForced || isInput || isSelect) {
@@ -292,8 +315,11 @@ export class AutoComplete {
                     this.secondaryParserResult = result;
                     this.name = this.secondaryParserResult.name;
                     this.isReplaceable = isForced || this.secondaryParserResult.isRequired;
+                    this.isForceHidden = false;
+                    this.canBeAutoHidden = false;
                 } else {
                     this.isReplaceable = false;
+                    this.canBeAutoHidden = this.basicAutoHideCheck();
                 }
             }
         }
@@ -314,7 +340,17 @@ export class AutoComplete {
             // filter the list of options by the partial name according to the matching type
             .filter(it => this.isReplaceable || it.name == '' ? matchers[this.matchType](it.name) : it.name.toLowerCase() == this.name)
             // remove aliases
-            .filter((it,idx,list) => list.findIndex(opt=>opt.value == it.value) == idx)
+            .filter((it,idx,list) => list.findIndex(opt=>opt.value == it.value) == idx);
+
+        if (this.result.length == 0 && this.effectiveParserResult != this.parserResult && isForced) {
+            // no matching secondary results and forced trigger -> show current command details
+            this.secondaryParserResult = null;
+            this.result = [this.effectiveParserResult.optionList.find(it=>it.name == this.effectiveParserResult.name)];
+            this.name = this.effectiveParserResult.name;
+            this.fuzzyRegex = /(.*)(.*)(.*)/;
+        }
+
+        this.result
             // update remaining options
             .map(option => {
                 // build element
@@ -336,6 +372,15 @@ export class AutoComplete {
         ;
 
 
+
+        if (this.isForceHidden) {
+            // hidden with escape
+            return this.hide();
+        }
+        if (this.autoHide && this.canBeAutoHidden && !isForced && this.effectiveParserResult == this.parserResult && this.result.length == 1) {
+            // auto hide user setting enabled and somewhere after name part and would usually show command details
+            return this.hide();
+        }
         if (this.result.length == 0) {
             if (!isInput) {
                 // no result and no input? hide autocomplete
@@ -683,6 +728,8 @@ export class AutoComplete {
                     if (evt.ctrlKey || evt.altKey || evt.shiftKey) return;
                     evt.preventDefault();
                     evt.stopPropagation();
+                    this.isForceHidden = true;
+                    this.wasForced = false;
                     this.hide();
                     return;
                 }

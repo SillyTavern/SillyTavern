@@ -27,22 +27,6 @@ export class SlashCommandNamedArgumentAutoCompleteOption extends AutoCompleteOpt
 
 
     renderDetails() {
-        const frag = document.createDocumentFragment();
-        const specs = document.createElement('div'); {
-            specs.classList.add('specs');
-            const name = document.createElement('div'); {
-                name.classList.add('name');
-                name.classList.add('monospace');
-                name.textContent = this.name;
-                specs.append(name);
-            }
-            frag.append(specs);
-        }
-        const help = document.createElement('span'); {
-            help.classList.add('help');
-            help.innerHTML = `${this.arg.isRequired ? '' : '(optional) '}${this.arg.description ?? ''}`;
-            frag.append(help);
-        }
-        return frag;
+        return this.cmd.renderHelpDetails();
     }
 }
