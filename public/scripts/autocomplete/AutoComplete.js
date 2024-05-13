@@ -350,7 +350,7 @@ export class AutoComplete {
             this.fuzzyRegex = /(.*)(.*)(.*)/;
         }
 
-        this.result
+        this.result = this.result
             // update remaining options
             .map(option => {
                 // build element
