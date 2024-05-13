@@ -1337,7 +1337,7 @@ function getMessagesCallback(args, value) {
         }
 
         if (role === 'system') {
-            return mes.is_system || mes.extra?.type === system_message_types.NARRATOR;
+            return mes.extra?.type === system_message_types.NARRATOR;
         }
 
         if (role === 'assistant') {
