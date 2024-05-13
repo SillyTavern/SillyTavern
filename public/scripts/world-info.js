@@ -2029,9 +2029,13 @@ function getWorldEntry(name, data, entry) {
  * @returns {(input: any, output: any) => any} Callback function for the autocomplete
  */
 function getInclusionGroupCallback(data) {
-    return function (input, output) {
+    return function (control, input, output) {
+        const uid = $(control).data("uid");
+        const thisGroups = String($(control).val()).split(/,\s*/).filter(x => x).map(x => x.toLowerCase());
         const groups = new Set();
         for (const entry of Object.values(data.entries)) {
+            // Skip the groups of this entry, because auto-complete should only suggest the ones that are already available on other entries
+            if (entry.uid == uid) continue;
             if (entry.group) {
                 entry.group.split(/,\s*/).filter(x => x).forEach(x => groups.add(x));
             }
@@ -2041,20 +2045,19 @@ function getInclusionGroupCallback(data) {
         haystack.sort((a, b) => a.localeCompare(b));
         const needle = input.term.toLowerCase();
         const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
-        const result = haystack.filter(x => x.toLowerCase().includes(needle));
-
-        if (input.term && !hasExactMatch) {
-            result.unshift(input.term);
-        }
+        const result = haystack.filter(x => x.toLowerCase().includes(needle) && (!thisGroups.includes(x) || hasExactMatch && thisGroups.filter(g => g == x).length == 1));
 
         output(result);
     };
 }
 
 function getAutomationIdCallback(data) {
-    return function (input, output) {
+    return function (control, input, output) {
+        const uid = $(control).data("uid");
         const ids = new Set();
         for (const entry of Object.values(data.entries)) {
+            // Skip automation id of this entry, because auto-complete should only suggest the ones that are already available on other entries
+            if (entry.uid == uid) continue;
             if (entry.automationId) {
                 ids.add(String(entry.automationId));
             }
@@ -2070,12 +2073,7 @@ function getAutomationIdCallback(data) {
         const haystack = Array.from(ids);
         haystack.sort((a, b) => a.localeCompare(b));
         const needle = input.term.toLowerCase();
-        const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
         const result = haystack.filter(x => x.toLowerCase().includes(needle));
-
-        if (input.term && !hasExactMatch) {
-            result.unshift(input.term);
-        }
 
         output(result);
     };
@@ -2084,7 +2082,7 @@ function getAutomationIdCallback(data) {
 /**
  * Create an autocomplete for the inclusion group.
  * @param {JQuery<HTMLElement>} input - Input element to attach the autocomplete to
- * @param {(input: any, output: any) => any} callback - Source data callbacks
+ * @param {(control: JQuery<HTMLElement>, input: any, output: any) => any} callback - Source data callbacks
  * @param {object} [options={}] - Optional arguments
  * @param {boolean} [options.allowMultiple=false] - Whether to allow multiple comma-separated values
  */
@@ -2106,11 +2104,11 @@ function createEntryInputAutocomplete(input, callback, { allowMultiple = false }
         minLength: 0,
         source: function (request, response) {
             if (!allowMultiple) {
-                callback(request, response);
+                callback(input, request, response);
             } else {
                 const term = request.term.split(/,\s*/).pop();
                 request.term = term;
-                callback(request, response);
+                callback(input, request, response);
             }
         },
         select: handleSelect,
