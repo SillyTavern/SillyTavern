@@ -847,6 +847,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'messages',
         new SlashCommandNamedArgument(
             'names', 'show message author names', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', ['off', 'on'],
         ),
+        new SlashCommandNamedArgument(
+            'hidden', 'include hidden messages', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', ['off', 'on'],
+        ),
+        new SlashCommandNamedArgument(
+            'role', 'filter messages by role' , [ARGUMENT_TYPE.STRING], false, false, null, ['system', 'assistant', 'user'],
+        ),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -857,6 +863,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'messages',
     helpString: `
         <div>
             Returns the specified message or range of messages as a string.
+        </div>
+        <div>
+            Use the <code>hidden=off</code> argument to exclude hidden messages.
+        </div>
+        <div>
+            Use the <code>role</code> argument to filter messages by role. Possible values are: system, assistant, user.
         </div>
         <div>
             <strong>Examples:</strong>
@@ -1310,12 +1322,34 @@ async function popupCallback(args, value) {
 
 function getMessagesCallback(args, value) {
     const includeNames = !isFalseBoolean(args?.names);
+    const includeHidden = isTrueBoolean(args?.hidden);
+    const role = args?.role;
     const range = stringToRange(value, 0, chat.length - 1);
 
     if (!range) {
-        console.warn(`WARN: Invalid range provided for /getmessages command: ${value}`);
+        console.warn(`WARN: Invalid range provided for /messages command: ${value}`);
         return '';
     }
+
+    const filterByRole = (mes) => {
+        if (!role) {
+            return true;
+        }
+
+        if (role === 'system') {
+            return mes.is_system || mes.extra?.type === system_message_types.NARRATOR;
+        }
+
+        if (role === 'assistant') {
+            return !mes.is_user;
+        }
+
+        if (role === 'user') {
+            return mes.is_user;
+        }
+
+        throw new Error(`Invalid role provided. Expected one of: system, assistant, user. Got: ${role}`);
+    };
 
     const messages = [];
 
@@ -1326,7 +1360,13 @@ function getMessagesCallback(args, value) {
             continue;
         }
 
-        if (message.is_system) {
+        if (role && !filterByRole(message)) {
+            console.debug(`/messages: Skipping message with ID ${messageId} due to role filter`);
+            continue;
+        }
+
+        if (!includeHidden && message.is_system) {
+            console.debug(`/messages: Skipping hidden message with ID ${messageId}`);
             continue;
         }
 
