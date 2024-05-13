@@ -3515,7 +3515,7 @@ function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
     }
-    else if (value.includes('gpt-4-turbo') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
+    else if (value.includes('gpt-4-turbo') || value.includes('gpt-4o') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
         return max_128k;
     }
     else if (value.includes('gpt-3.5-turbo-1106')) {
@@ -4244,6 +4244,7 @@ export function isImageInliningSupported() {
         'gemini-pro-vision',
         'claude-3',
         'gpt-4-turbo',
+        'gpt-4o',
     ];
 
     switch (oai_settings.chat_completion_source) {

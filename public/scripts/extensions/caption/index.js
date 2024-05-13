@@ -435,6 +435,7 @@ jQuery(function () {
                             <select id="caption_multimodal_model" class="flex1 text_pole">
                                 <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                                 <option data-type="openai" value="gpt-4-turbo">gpt-4-turbo</option>
+                                <option data-type="openai" value="gpt-4o">gpt-4o</option>
                                 <option data-type="anthropic" value="claude-3-opus-20240229">claude-3-opus-20240229</option>
                                 <option data-type="anthropic" value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                 <option data-type="anthropic" value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
