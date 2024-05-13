@@ -1336,16 +1336,18 @@ function getMessagesCallback(args, value) {
             return true;
         }
 
+        const isNarrator = mes.extra?.type === system_message_types.NARRATOR;
+
         if (role === 'system') {
-            return mes.extra?.type === system_message_types.NARRATOR;
+            return isNarrator && !mes.is_user;
         }
 
         if (role === 'assistant') {
-            return !mes.is_user;
+            return !isNarrator && !mes.is_user;
         }
 
         if (role === 'user') {
-            return mes.is_user;
+            return !isNarrator && mes.is_user;
         }
 
         throw new Error(`Invalid role provided. Expected one of: system, assistant, user. Got: ${role}`);
