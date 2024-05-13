@@ -6,6 +6,7 @@ import { Message, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
 import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
 import { debounce_timeout } from './constants.js';
+import { applyLocale } from './i18n.js'
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -1097,12 +1098,12 @@ class PromptManager {
     createQuickEdit(identifier, title) {
         const prompt = this.getPromptById(identifier);
         const textareaIdentifier = `${identifier}_prompt_quick_edit_textarea`;
-        const html = `<div class="range-block m-t-1">
+        const html = applyLocale(`<div class="range-block m-t-1">
                         <div class="justifyLeft" data-i18n="${title}">${title}</div>
                         <div class="wide100p">
                             <textarea id="${textareaIdentifier}" class="text_pole textarea_compact" rows="6" placeholder="">${prompt.content}</textarea>
                         </div>
-                    </div>`;
+                    </div>`);
 
         const quickEditContainer = document.getElementById('quick-edit-container');
         quickEditContainer.insertAdjacentHTML('afterbegin', html);
@@ -1355,18 +1356,18 @@ class PromptManager {
 
         const totalActiveTokens = this.tokenUsage;
 
-        promptManagerDiv.insertAdjacentHTML('beforeend', `
+        promptManagerDiv.insertAdjacentHTML('beforeend', applyLocale(`
             <div class="range-block">
                 ${this.error ? errorDiv : ''}
                 <div class="${this.configuration.prefix}prompt_manager_header">
                     <div class="${this.configuration.prefix}prompt_manager_header_advanced">
                         <span data-i18n="Prompts">Prompts</span>
                     </div>
-                    <div>Total Tokens: ${totalActiveTokens} </div>
+                    <div><span data-i18n="Total Tokens:">Total Tokens:</span> ${totalActiveTokens} </div>
                 </div>
                 <ul id="${this.configuration.prefix}prompt_manager_list" class="text_pole"></ul>
             </div>
-        `);
+        `));
 
         this.listElement = promptManagerDiv.querySelector(`#${this.configuration.prefix}prompt_manager_list`);
 
@@ -1384,7 +1385,7 @@ class PromptManager {
                 selectedPromptIndex = 0;
             }
 
-            const footerHtml = `
+            const footerHtml = applyLocale(`
                 <div class="${this.configuration.prefix}prompt_manager_footer">
                     <select id="${this.configuration.prefix}prompt_manager_footer_append_prompt" class="text_pole" name="append-prompt">
                         ${promptsHtml}
@@ -1396,7 +1397,7 @@ class PromptManager {
                     <a class="menu_button fa-undo fa-solid" id="prompt-manager-reset-character" title="Reset current character" data-i18n="[title]Reset current character"></a>
                     <a class="menu_button fa-plus-square fa-solid" title="New prompt" data-i18n="[title]New prompt"></a>
                 </div>
-            `;
+            `);
 
             const rangeBlockDiv = promptManagerDiv.querySelector('.range-block');
             const headerDiv = promptManagerDiv.querySelector('.completion_prompt_manager_header');
@@ -1410,12 +1411,12 @@ class PromptManager {
             footerDiv.querySelector('select').selectedIndex = selectedPromptIndex;
 
             // Add prompt export dialogue and options
-            const exportForCharacter = `
+            const exportForCharacter = applyLocale(`
             <div class="row">
                 <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
                 <span class="tooltip fa-solid fa-info-circle" title="Export prompts for this character, including their order."></span>
-            </div>`;
-            const exportPopup = `
+            </div>`);
+            const exportPopup = applyLocale(`
                     <div id="prompt-manager-export-format-popup" class="list-group">
                         <div class="prompt-manager-export-format-popup-flex">
                             <div class="row">
@@ -1425,7 +1426,7 @@ class PromptManager {
                             ${'global' === this.configuration.promptOrder.strategy ? '' : exportForCharacter}
                         </div>
                 </div>
-                `;
+                `);
 
             rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
 
@@ -1468,16 +1469,16 @@ class PromptManager {
 
         const { prefix } = this.configuration;
 
-        let listItemHtml = `
+        let listItemHtml = applyLocale(`
             <li class="${prefix}prompt_manager_list_head">
                 <span data-i18n="Name">Name</span>
                 <span></span>
-                <span class="prompt_manager_prompt_tokens" data-i18n="Tokens">Tokens</span>
+                <span class="prompt_manager_prompt_tokens" data-i18n="Tokens;prompt_manager_tokens">Tokens</span>
             </li>
             <li class="${prefix}prompt_manager_list_separator">
                 <hr>
             </li>
-        `;
+        `);
 
         this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
             if (!prompt) return;
