@@ -362,7 +362,6 @@ export class SlashCommandParser {
             ;
             if (childClosure !== null) return null;
             const macro = this.macroIndex.findLast(it=>it.start <= index && it.end >= index);
-            console.log(macro);
             if (macro) {
                 const frag = document.createRange().createContextualFragment(await (await fetch('/scripts/templates/macros.html')).text());
                 const options = [...frag.querySelectorAll('ul:nth-of-type(2n+1) > li')].map(li=>new MacroAutoCompleteOption(
