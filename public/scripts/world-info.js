@@ -1036,7 +1036,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     $('#world_info_pagination').pagination({
         dataSource: getDataArray,
         pageSize: Number(localStorage.getItem(storageKey)) || perPageDefault,
-        sizeChangerOptions: [10, 25, 50, 100],
+        sizeChangerOptions: [10, 25, 50, 100, 500, 1000],
         showSizeChanger: true,
         pageRange: 1,
         pageNumber: startPage,
