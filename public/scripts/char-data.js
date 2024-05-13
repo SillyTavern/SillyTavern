@@ -24,6 +24,7 @@
  * @property {boolean} group_override - Overrides any existing group assignment for the extension.
  * @property {number} group_weight - A value used for prioritizing extensions within the same group.
  * @property {boolean} prevent_recursion - Completely disallows recursive application of the extension.
+ * @property {boolean} delay_until_recursion - Will only be checked during recursion.
  * @property {number} scan_depth - The maximum depth to search for matches when applying the extension.
  * @property {boolean} match_whole_words - Specifies if only entire words should be matched during extension application.
  * @property {boolean} use_group_scoring - Indicates if group weight is considered when selecting extensions.
