@@ -75,7 +75,8 @@
         "postinstall": "node post-install.js",
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
         "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
-        "plugins:update": "node plugins update"
+        "plugins:update": "node plugins update",
+        "plugins:install": "node plugins install"
     },
     "bin": {
         "sillytavern": "./server.js"
