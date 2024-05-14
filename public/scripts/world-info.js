@@ -1234,6 +1234,7 @@ const originalDataKeyMap = {
     'displayIndex': 'extensions.display_index',
     'excludeRecursion': 'extensions.exclude_recursion',
     'preventRecursion': 'extensions.prevent_recursion',
+    'delayUntilRecursion': 'extensions.delay_until_recursion',
     'selectiveLogic': 'selectiveLogic',
     'comment': 'comment',
     'constant': 'constant',
@@ -1891,6 +1892,18 @@ function getWorldEntry(name, data, entry) {
     });
     preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
 
+    // delay until recursion
+    const delayUntilRecursionInput = template.find('input[name="delay_until_recursion"]');
+    delayUntilRecursionInput.data('uid', entry.uid);
+    delayUntilRecursionInput.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = $(this).prop('checked');
+        data.entries[uid].delayUntilRecursion = value;
+        setOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
+        saveWorldInfo(name, data);
+    });
+    delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
+
     // duplicate button
     const duplicateButton = template.find('.duplicate_entry_button');
     duplicateButton.data('uid', entry.uid);
@@ -2152,6 +2165,8 @@ const newEntryTemplate = {
     position: 0,
     disable: false,
     excludeRecursion: false,
+    preventRecursion: false,
+    delayUntilRecursion: false,
     probability: 100,
     useProbability: true,
     depth: DEFAULT_DEPTH,
@@ -2519,7 +2534,7 @@ async function checkWorldInfo(chat, maxContext) {
                 continue;
             }
 
-            if (allActivatedEntries.has(entry) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion)) {
+            if (allActivatedEntries.has(entry) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion) || (count == 1 && entry.delayUntilRecursion)) {
                 continue;
             }
 
@@ -2887,6 +2902,7 @@ function convertAgnaiMemoryBook(inputObj) {
             disable: !entry.enabled,
             addMemo: !!entry.name,
             excludeRecursion: false,
+            delayUntilRecursion: false,
             displayIndex: index,
             probability: 100,
             useProbability: true,
@@ -2925,6 +2941,7 @@ function convertRisuLorebook(inputObj) {
             disable: false,
             addMemo: true,
             excludeRecursion: false,
+            delayUntilRecursion: false,
             displayIndex: index,
             probability: entry.activationPercent ?? 100,
             useProbability: entry.activationPercent ?? true,
@@ -2968,6 +2985,7 @@ function convertNovelLorebook(inputObj) {
             disable: !entry.enabled,
             addMemo: addMemo,
             excludeRecursion: false,
+            delayUntilRecursion: false,
             displayIndex: index,
             probability: 100,
             useProbability: true,
@@ -3008,6 +3026,7 @@ function convertCharacterBook(characterBook) {
             position: entry.extensions?.position ?? (entry.position === 'before_char' ? world_info_position.before : world_info_position.after),
             excludeRecursion: entry.extensions?.exclude_recursion ?? false,
             preventRecursion: entry.extensions?.prevent_recursion ?? false,
+            delayUntilRecursion: entry.extensions?.delay_until_recursion ?? false,
             disable: !entry.enabled,
             addMemo: entry.comment ? true : false,
             displayIndex: entry.extensions?.display_index ?? index,
