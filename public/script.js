@@ -415,6 +415,7 @@ export const event_types = {
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
+    CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
