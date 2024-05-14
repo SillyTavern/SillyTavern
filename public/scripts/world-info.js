@@ -1620,7 +1620,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     groupInput.val(entry.group ?? '').trigger('input');
-    setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data)), 1);
+    setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data), { allowMultiple: true }), 1);
 
     // inclusion priority
     const groupOverrideInput = template.find('input[name="groupOverride"]');
@@ -2042,11 +2042,15 @@ function getWorldEntry(name, data, entry) {
  * @returns {(input: any, output: any) => any} Callback function for the autocomplete
  */
 function getInclusionGroupCallback(data) {
-    return function (input, output) {
+    return function (control, input, output) {
+        const uid = $(control).data("uid");
+        const thisGroups = String($(control).val()).split(/,\s*/).filter(x => x).map(x => x.toLowerCase());
         const groups = new Set();
         for (const entry of Object.values(data.entries)) {
+            // Skip the groups of this entry, because auto-complete should only suggest the ones that are already available on other entries
+            if (entry.uid == uid) continue;
             if (entry.group) {
-                groups.add(String(entry.group));
+                entry.group.split(/,\s*/).filter(x => x).forEach(x => groups.add(x));
             }
         }
 
@@ -2054,20 +2058,19 @@ function getInclusionGroupCallback(data) {
         haystack.sort((a, b) => a.localeCompare(b));
         const needle = input.term.toLowerCase();
         const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
-        const result = haystack.filter(x => x.toLowerCase().includes(needle));
-
-        if (input.term && !hasExactMatch) {
-            result.unshift(input.term);
-        }
+        const result = haystack.filter(x => x.toLowerCase().includes(needle) && (!thisGroups.includes(x) || hasExactMatch && thisGroups.filter(g => g == x).length == 1));
 
         output(result);
     };
 }
 
 function getAutomationIdCallback(data) {
-    return function (input, output) {
+    return function (control, input, output) {
+        const uid = $(control).data("uid");
         const ids = new Set();
         for (const entry of Object.values(data.entries)) {
+            // Skip automation id of this entry, because auto-complete should only suggest the ones that are already available on other entries
+            if (entry.uid == uid) continue;
             if (entry.automationId) {
                 ids.add(String(entry.automationId));
             }
@@ -2083,12 +2086,7 @@ function getAutomationIdCallback(data) {
         const haystack = Array.from(ids);
         haystack.sort((a, b) => a.localeCompare(b));
         const needle = input.term.toLowerCase();
-        const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
         const result = haystack.filter(x => x.toLowerCase().includes(needle));
-
-        if (input.term && !hasExactMatch) {
-            result.unshift(input.term);
-        }
 
         output(result);
     };
@@ -2096,22 +2094,44 @@ function getAutomationIdCallback(data) {
 
 /**
  * Create an autocomplete for the inclusion group.
- * @param {JQuery<HTMLElement>} input Input element to attach the autocomplete to
- * @param {(input: any, output: any) => any} callback Source data callbacks
+ * @param {JQuery<HTMLElement>} input - Input element to attach the autocomplete to
+ * @param {(control: JQuery<HTMLElement>, input: any, output: any) => any} callback - Source data callbacks
+ * @param {object} [options={}] - Optional arguments
+ * @param {boolean} [options.allowMultiple=false] - Whether to allow multiple comma-separated values
  */
-function createEntryInputAutocomplete(input, callback) {
+function createEntryInputAutocomplete(input, callback, { allowMultiple = false } = {}) {
+    const handleSelect = (event, ui) => {
+        // Prevent default autocomplete select, so we can manually set the value
+        event.preventDefault();
+        if (!allowMultiple) {
+            $(input).val(ui.item.value).trigger('input').trigger('blur');
+        } else {
+            var terms = String($(input).val()).split(/,\s*/);
+            terms.pop(); // remove the current input
+            terms.push(ui.item.value); // add the selected item
+            $(input).val(terms.filter(x => x).join(", ")).trigger('input').trigger('blur');
+        }
+    };
+
     $(input).autocomplete({
         minLength: 0,
-        source: callback,
-        select: function (event, ui) {
-            $(input).val(ui.item.value).trigger('input').trigger('blur');
+        source: function (request, response) {
+            if (!allowMultiple) {
+                callback(input, request, response);
+            } else {
+                const term = request.term.split(/,\s*/).pop();
+                request.term = term;
+                callback(input, request, response);
+            }
         },
+        select: handleSelect,
     });
 
     $(input).on('focus click', function () {
-        $(input).autocomplete('search', String($(input).val()));
+        $(input).autocomplete('search', allowMultiple ? String($(input).val()).split(/,\s*/).pop() : $(input).val());
     });
 }
+
 
 /**
  * Duplicated a WI entry by copying all of its properties and assigning a new uid
@@ -2807,10 +2827,12 @@ function filterGroupsByScoring(groups, buffer, removeEntry) {
 function filterByInclusionGroups(newEntries, allActivatedEntries, buffer) {
     console.debug('-- INCLUSION GROUP CHECKS BEGIN --');
     const grouped = newEntries.filter(x => x.group).reduce((acc, item) => {
-        if (!acc[item.group]) {
-            acc[item.group] = [];
-        }
-        acc[item.group].push(item);
+        item.group.split(/,\s*/).filter(x => x).forEach(group => {
+            if (!acc[group]) {
+                acc[group] = [];
+            }
+            acc[group].push(item);
+        });
         return acc;
     }, {});
 
