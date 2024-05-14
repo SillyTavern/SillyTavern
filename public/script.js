@@ -415,6 +415,7 @@ export const event_types = {
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
+    CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
@@ -7566,6 +7567,7 @@ window['SillyTavern'].getContext = function () {
         getCurrentChatId: getCurrentChatId,
         getRequestHeaders: getRequestHeaders,
         reloadCurrentChat: reloadCurrentChat,
+        renameChat: renameChat,
         saveSettingsDebounced: saveSettingsDebounced,
         onlineStatus: online_status,
         maxContext: Number(max_context),
@@ -8289,6 +8291,58 @@ async function doDeleteChat() {
 }
 
 /**
+ * Renames the currently selected chat.
+ * @param {string} oldFileName Old name of the chat (no JSONL extension)
+ * @param {string} newName New name for the chat (no JSONL extension)
+ */
+export async function renameChat(oldFileName, newName) {
+    const body = {
+        is_group: !!selected_group,
+        avatar_url: characters[this_chid]?.avatar,
+        original_file: `${oldFileName}.jsonl`,
+        renamed_file: `${newName}.jsonl`,
+    };
+
+    try {
+        showLoader();
+        const response = await fetch('/api/chats/rename', {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: getRequestHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Unsuccessful request.');
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error('Server returned an error.');
+        }
+
+        if (selected_group) {
+            await renameGroupChat(selected_group, oldFileName, newName);
+        }
+        else {
+            if (characters[this_chid].chat == oldFileName) {
+                characters[this_chid].chat = newName;
+                $('#selected_chat_pole').val(characters[this_chid].chat);
+                await createOrEditCharacter();
+            }
+        }
+
+        await reloadCurrentChat();
+    } catch {
+        hideLoader();
+        await delay(500);
+        await callPopup('An error has occurred. Chat was not renamed.', 'text');
+    } finally {
+        hideLoader();
+    }
+}
+
+/**
  * /getchatname` slash command
  */
 async function doGetChatName() {
@@ -8966,69 +9020,26 @@ jQuery(async function () {
 
     $(document).on('click', '.renameChatButton', async function (e) {
         e.stopPropagation();
-        const old_filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
-        const old_filename = old_filenamefull.replace('.jsonl', '');
+        const oldFileNameFull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
+        const oldFileName = oldFileNameFull.replace('.jsonl', '');
 
         const popupText = `<h3>Enter the new name for the chat:<h3>
         <small>!!Using an existing filename will produce an error!!<br>
         This will break the link between checkpoint chats.<br>
         No need to add '.jsonl' at the end.<br>
         </small>`;
-        const newName = await callPopup(popupText, 'input', old_filename);
+        const newName = await callPopup(popupText, 'input', oldFileName);
 
-        if (!newName || newName == old_filename) {
+        if (!newName || newName == oldFileName) {
             console.log('no new name found, aborting');
             return;
         }
 
-        const body = {
-            is_group: !!selected_group,
-            avatar_url: characters[this_chid]?.avatar,
-            original_file: `${old_filename}.jsonl`,
-            renamed_file: `${newName}.jsonl`,
-        };
+        await renameChat(oldFileName, newName);
 
-        try {
-            showLoader();
-            const response = await fetch('/api/chats/rename', {
-                method: 'POST',
-                body: JSON.stringify(body),
-                headers: getRequestHeaders(),
-            });
-
-            if (!response.ok) {
-                throw new Error('Unsuccessful request.');
-            }
-
-            const data = await response.json();
-
-            if (data.error) {
-                throw new Error('Server returned an error.');
-            }
-
-            if (selected_group) {
-                await renameGroupChat(selected_group, old_filename, newName);
-            }
-            else {
-                if (characters[this_chid].chat == old_filename) {
-                    characters[this_chid].chat = newName;
-                    $('#selected_chat_pole').val(characters[this_chid].chat);
-                    await createOrEditCharacter();
-                }
-            }
-
-            await reloadCurrentChat();
-
-            await delay(250);
-            $('#option_select_chat').trigger('click');
-            $('#options').hide();
-        } catch {
-            hideLoader();
-            await delay(500);
-            await callPopup('An error has occurred. Chat was not renamed.', 'text');
-        } finally {
-            hideLoader();
-        }
+        await delay(250);
+        $('#option_select_chat').trigger('click');
+        $('#options').hide();
     });
 
     $(document).on('click', '.exportChatButton, .exportRawChatButton', async function (e) {

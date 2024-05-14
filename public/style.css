@@ -129,7 +129,7 @@ body {
     height: 100vh;
     height: 100svh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
-    height: calc(var(--doc-height) - 1px);
+    /*height: calc(var(--doc-height) - 1px);*/
     background-color: var(--greyCAIbg);
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -872,7 +872,8 @@ body .panelControlBar {
 }
 
 #chat .mes.selected{
-    background-color: rgb(from var(--SmartThemeQuoteColor) r g b / .5);
+    /* background-color: rgb(from var(--SmartThemeQuoteColor) r g b / .5); */
+    background-color: rgb(102, 0, 0);
 }
 
 .mes q:before,

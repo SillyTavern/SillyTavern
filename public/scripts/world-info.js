@@ -1276,6 +1276,7 @@ const originalDataKeyMap = {
     'displayIndex': 'extensions.display_index',
     'excludeRecursion': 'extensions.exclude_recursion',
     'preventRecursion': 'extensions.prevent_recursion',
+    'delayUntilRecursion': 'extensions.delay_until_recursion',
     'selectiveLogic': 'selectiveLogic',
     'comment': 'comment',
     'constant': 'constant',
@@ -1361,7 +1362,7 @@ function splitKeywordsAndRegexes(input) {
     // No need for validation here
     const addFindCallback = (/** @type {Select2Option} */ item) => {
         keywordsAndRegexes.push(item.text);
-    }
+    };
 
     const { term } = customTokenizer({ _type: 'custom_call', term: input }, undefined, addFindCallback);
     const finalTerm = term.trim();
@@ -1501,7 +1502,7 @@ function getWorldEntry(name, data, entry) {
             const isRegex = isValidRegex(item.text);
             if (isRegex) {
                 content.html(highlightRegex(item.text));
-                content.addClass('regex_item').prepend($('<span>').addClass('regex_icon').text("•*").attr('title', 'Regex'));
+                content.addClass('regex_item').prepend($('<span>').addClass('regex_icon').text('•*').attr('title', 'Regex'));
             }
 
             if (searchStyle && item.count) {
@@ -1551,7 +1552,7 @@ function getWorldEntry(name, data, entry) {
                 if (index > -1) selected.splice(index, 1);
                 input.val(selected).trigger('change');
                 // Manually update the cache, that change event is not gonna trigger it
-                updateWorldEntryKeyOptionsCache([key], { remove: true })
+                updateWorldEntryKeyOptionsCache([key], { remove: true });
 
                 // We need to "hack" the actual text input into the currently open textarea
                 input.next('span.select2-container').find('textarea')
@@ -1580,10 +1581,10 @@ function getWorldEntry(name, data, entry) {
     }
 
     // key
-    enableKeysInput("key", "keys");
+    enableKeysInput('key', 'keys');
 
     // keysecondary
-    enableKeysInput("keysecondary", "secondary_keys");
+    enableKeysInput('keysecondary', 'secondary_keys');
 
     // draw key input switch button
     template.find('.switch_input_type_icon').on('click', function () {
@@ -1871,7 +1872,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     groupInput.val(entry.group ?? '').trigger('input');
-    setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data)), 1);
+    setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data), { allowMultiple: true }), 1);
 
     // inclusion priority
     const groupOverrideInput = template.find('input[name="groupOverride"]');
@@ -2143,6 +2144,18 @@ function getWorldEntry(name, data, entry) {
     });
     preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
 
+    // delay until recursion
+    const delayUntilRecursionInput = template.find('input[name="delay_until_recursion"]');
+    delayUntilRecursionInput.data('uid', entry.uid);
+    delayUntilRecursionInput.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = $(this).prop('checked');
+        data.entries[uid].delayUntilRecursion = value;
+        setOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
+        saveWorldInfo(name, data);
+    });
+    delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
+
     // duplicate button
     const duplicateButton = template.find('.duplicate_entry_button');
     duplicateButton.data('uid', entry.uid);
@@ -2281,11 +2294,15 @@ function getWorldEntry(name, data, entry) {
  * @returns {(input: any, output: any) => any} Callback function for the autocomplete
  */
 function getInclusionGroupCallback(data) {
-    return function (input, output) {
+    return function (control, input, output) {
+        const uid = $(control).data('uid');
+        const thisGroups = String($(control).val()).split(/,\s*/).filter(x => x).map(x => x.toLowerCase());
         const groups = new Set();
         for (const entry of Object.values(data.entries)) {
+            // Skip the groups of this entry, because auto-complete should only suggest the ones that are already available on other entries
+            if (entry.uid == uid) continue;
             if (entry.group) {
-                groups.add(String(entry.group));
+                entry.group.split(/,\s*/).filter(x => x).forEach(x => groups.add(x));
             }
         }
 
@@ -2293,20 +2310,19 @@ function getInclusionGroupCallback(data) {
         haystack.sort((a, b) => a.localeCompare(b));
         const needle = input.term.toLowerCase();
         const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
-        const result = haystack.filter(x => x.toLowerCase().includes(needle));
-
-        if (input.term && !hasExactMatch) {
-            result.unshift(input.term);
-        }
+        const result = haystack.filter(x => x.toLowerCase().includes(needle) && (!thisGroups.includes(x) || hasExactMatch && thisGroups.filter(g => g == x).length == 1));
 
         output(result);
     };
 }
 
 function getAutomationIdCallback(data) {
-    return function (input, output) {
+    return function (control, input, output) {
+        const uid = $(control).data('uid');
         const ids = new Set();
         for (const entry of Object.values(data.entries)) {
+            // Skip automation id of this entry, because auto-complete should only suggest the ones that are already available on other entries
+            if (entry.uid == uid) continue;
             if (entry.automationId) {
                 ids.add(String(entry.automationId));
             }
@@ -2322,12 +2338,7 @@ function getAutomationIdCallback(data) {
         const haystack = Array.from(ids);
         haystack.sort((a, b) => a.localeCompare(b));
         const needle = input.term.toLowerCase();
-        const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
         const result = haystack.filter(x => x.toLowerCase().includes(needle));
-
-        if (input.term && !hasExactMatch) {
-            result.unshift(input.term);
-        }
 
         output(result);
     };
@@ -2335,22 +2346,44 @@ function getAutomationIdCallback(data) {
 
 /**
  * Create an autocomplete for the inclusion group.
- * @param {JQuery<HTMLElement>} input Input element to attach the autocomplete to
- * @param {(input: any, output: any) => any} callback Source data callbacks
+ * @param {JQuery<HTMLElement>} input - Input element to attach the autocomplete to
+ * @param {(control: JQuery<HTMLElement>, input: any, output: any) => any} callback - Source data callbacks
+ * @param {object} [options={}] - Optional arguments
+ * @param {boolean} [options.allowMultiple=false] - Whether to allow multiple comma-separated values
  */
-function createEntryInputAutocomplete(input, callback) {
+function createEntryInputAutocomplete(input, callback, { allowMultiple = false } = {}) {
+    const handleSelect = (event, ui) => {
+        // Prevent default autocomplete select, so we can manually set the value
+        event.preventDefault();
+        if (!allowMultiple) {
+            $(input).val(ui.item.value).trigger('input').trigger('blur');
+        } else {
+            var terms = String($(input).val()).split(/,\s*/);
+            terms.pop(); // remove the current input
+            terms.push(ui.item.value); // add the selected item
+            $(input).val(terms.filter(x => x).join(', ')).trigger('input').trigger('blur');
+        }
+    };
+
     $(input).autocomplete({
         minLength: 0,
-        source: callback,
-        select: function (_event, ui) {
-            $(input).val(ui.item.value).trigger('input').trigger('blur');
+        source: function (request, response) {
+            if (!allowMultiple) {
+                callback(input, request, response);
+            } else {
+                const term = request.term.split(/,\s*/).pop();
+                request.term = term;
+                callback(input, request, response);
+            }
         },
+        select: handleSelect,
     });
 
     $(input).on('focus click', function () {
-        $(input).autocomplete('search', String($(input).val()));
+        $(input).autocomplete('search', allowMultiple ? String($(input).val()).split(/,\s*/).pop() : $(input).val());
     });
 }
+
 
 /**
  * Duplicated a WI entry by copying all of its properties and assigning a new uid
@@ -2404,6 +2437,8 @@ const newEntryTemplate = {
     position: 0,
     disable: false,
     excludeRecursion: false,
+    preventRecursion: false,
+    delayUntilRecursion: false,
     probability: 100,
     useProbability: true,
     depth: DEFAULT_DEPTH,
@@ -2771,7 +2806,7 @@ async function checkWorldInfo(chat, maxContext) {
                 continue;
             }
 
-            if (allActivatedEntries.has(entry) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion)) {
+            if (allActivatedEntries.has(entry) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion) || (count == 1 && entry.delayUntilRecursion)) {
                 continue;
             }
 
@@ -3044,10 +3079,12 @@ function filterGroupsByScoring(groups, buffer, removeEntry) {
 function filterByInclusionGroups(newEntries, allActivatedEntries, buffer) {
     console.debug('-- INCLUSION GROUP CHECKS BEGIN --');
     const grouped = newEntries.filter(x => x.group).reduce((acc, item) => {
-        if (!acc[item.group]) {
-            acc[item.group] = [];
-        }
-        acc[item.group].push(item);
+        item.group.split(/,\s*/).filter(x => x).forEach(group => {
+            if (!acc[group]) {
+                acc[group] = [];
+            }
+            acc[group].push(item);
+        });
         return acc;
     }, {});
 
@@ -3139,6 +3176,7 @@ function convertAgnaiMemoryBook(inputObj) {
             disable: !entry.enabled,
             addMemo: !!entry.name,
             excludeRecursion: false,
+            delayUntilRecursion: false,
             displayIndex: index,
             probability: 100,
             useProbability: true,
@@ -3177,6 +3215,7 @@ function convertRisuLorebook(inputObj) {
             disable: false,
             addMemo: true,
             excludeRecursion: false,
+            delayUntilRecursion: false,
             displayIndex: index,
             probability: entry.activationPercent ?? 100,
             useProbability: entry.activationPercent ?? true,
@@ -3220,6 +3259,7 @@ function convertNovelLorebook(inputObj) {
             disable: !entry.enabled,
             addMemo: addMemo,
             excludeRecursion: false,
+            delayUntilRecursion: false,
             displayIndex: index,
             probability: 100,
             useProbability: true,
@@ -3260,6 +3300,7 @@ function convertCharacterBook(characterBook) {
             position: entry.extensions?.position ?? (entry.position === 'before_char' ? world_info_position.before : world_info_position.after),
             excludeRecursion: entry.extensions?.exclude_recursion ?? false,
             preventRecursion: entry.extensions?.prevent_recursion ?? false,
+            delayUntilRecursion: entry.extensions?.delay_until_recursion ?? false,
             disable: !entry.enabled,
             addMemo: entry.comment ? true : false,
             displayIndex: entry.extensions?.display_index ?? index,

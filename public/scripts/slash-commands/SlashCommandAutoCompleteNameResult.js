@@ -50,6 +50,14 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
     }
 
     getNamedArgumentAt(text, index, isSelect) {
+        function getSplitRegex() {
+            try {
+                return new RegExp('(?<==)');
+            } catch {
+                // For browsers that don't support lookbehind
+                return new RegExp('=(.*)');
+            }
+        }
         const notProvidedNamedArguments = this.executor.command.namedArgumentList.filter(arg=>!this.executor.namedArgumentList.find(it=>it.name == arg.name));
         let name;
         let value;
@@ -62,7 +70,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             // cursor is somewhere within the named arguments (including final space)
             argAssign = this.executor.namedArgumentList.find(it=>it.start <= index && it.end >= index);
             if (argAssign) {
-                const [argName, ...v] = text.slice(argAssign.start, index).split(/(?<==)/);
+                const [argName, ...v] = text.slice(argAssign.start, index).split(getSplitRegex());
                 name = argName;
                 value = v.join('');
                 start = argAssign.start;
