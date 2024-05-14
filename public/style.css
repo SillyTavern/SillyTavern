@@ -872,7 +872,8 @@ body .panelControlBar {
 }
 
 #chat .mes.selected{
-    background-color: rgb(from var(--SmartThemeQuoteColor) r g b / .5);
+    /* background-color: rgb(from var(--SmartThemeQuoteColor) r g b / .5); */
+    background-color: rgb(102, 0, 0);
 }
 
 .mes q:before,
