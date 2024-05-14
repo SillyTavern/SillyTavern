@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getStringHash, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { isMobile } from './RossAscends-mods.js';
@@ -69,7 +69,7 @@ const saveSettingsDebounced = debounce(() => {
     saveSettings();
 }, debounce_timeout.relaxed);
 const sortFn = (a, b) => b.order - a.order;
-let updateEditor = (navigation) => { console.debug('Triggered WI navigation', navigation); };
+let updateEditor = (navigation, flashOnNav = true) => { console.debug('Triggered WI navigation', navigation, flashOnNav); };
 
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 const worldInfoFilter = new FilterHelper(() => updateEditor());
@@ -1022,8 +1022,8 @@ function updateWorldEntryKeyOptionsCache(keyOptions, { remove = false, reset = f
     worldEntryKeyOptionsCache.sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
 }
 
-function displayWorldEntries(name, data, navigation = navigation_option.none) {
-    updateEditor = (navigation) => displayWorldEntries(name, data, navigation);
+function displayWorldEntries(name, data, navigation = navigation_option.none, flashOnNav = true) {
+    updateEditor = (navigation, flashOnNav = true) => displayWorldEntries(name, data, navigation, flashOnNav);
 
     const worldEntriesList = $('#world_popup_entries_list');
 
@@ -1156,7 +1156,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             const parentOffset = element.parent().offset();
             const scrollOffset = elementOffset.top - parentOffset.top;
             $('#WorldInfo').scrollTop(scrollOffset);
-            flashHighlight(element);
+            if (flashOnNav) flashHighlight(element);
         });
     }
 
@@ -1364,7 +1364,10 @@ function splitKeywordsAndRegexes(input) {
     }
 
     const { term } = customTokenizer({ _type: 'custom_call', term: input }, undefined, addFindCallback);
-    addFindCallback({ id: getSelect2OptionId(term.trim()), text: term.trim() });
+    const finalTerm = term.trim();
+    if (finalTerm) {
+        addFindCallback({ id: getSelect2OptionId(finalTerm), text: finalTerm });
+    }
 
     return keywordsAndRegexes;
 }
@@ -1407,7 +1410,7 @@ function customTokenizer(input, _selection, callback) {
                 // Last chance to check for valid regex again. Because it might have been valid while typing, but now is not valid anymore and contains commas we need to split.
                 if (token.startsWith('/') && !isRegex) {
                     const tokens = token.split(',').map(x => x.trim());
-                    tokens.forEach(x => callback({ id: x, text: x }));
+                    tokens.forEach(x => callback({ id: getSelect2OptionId(x), text: x }));
                 } else {
                     callback({ id: getSelect2OptionId(token), text: token });
                 }
@@ -1415,6 +1418,7 @@ function customTokenizer(input, _selection, callback) {
 
             // Now remove the token from the current input, and the comma too
             current = current.slice(i + 1);
+            i = 0;
         }
     }
 
@@ -1481,7 +1485,8 @@ function getWorldEntry(name, data, entry) {
 
     /** Function to build the keys input controls @param {string} entryPropName @param {string} originalDataValueName */
     function enableKeysInput(entryPropName, originalDataValueName) {
-        const input = !isMobile() ? template.find(`select[name="${entryPropName}"]`) : template.find(`textarea[name="${entryPropName}"]`);
+        const isFancyInput = !isMobile() && !power_user.wi_key_input_plaintext;
+        const input = isFancyInput ? template.find(`select[name="${entryPropName}"]`) : template.find(`textarea[name="${entryPropName}"]`);
         input.data('uid', entry.uid);
         input.on('click', function (event) {
             // Prevent closing the drawer on clicking the input
@@ -1507,7 +1512,7 @@ function getWorldEntry(name, data, entry) {
             return content;
         }
 
-        if (!isMobile()) {
+        if (isFancyInput) {
             input.select2({
                 ajax: dynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
                 tags: true,
@@ -1557,14 +1562,15 @@ function getWorldEntry(name, data, entry) {
             template.find(`select[name="${entryPropName}"]`).hide();
             input.show();
 
-            input.on('input', function (_, { skipReset } = {}) {
+            input.on('input', function (_, { skipReset, noSave } = {}) {
                 const uid = $(this).data('uid');
                 const value = String($(this).val());
                 !skipReset && resetScrollHeight(this);
-                data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
-
-                setOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
-                saveWorldInfo(name, data);
+                if (!noSave) {
+                    data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
+                    setOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
+                    saveWorldInfo(name, data);
+                }
             });
             input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
         }
@@ -1575,6 +1581,23 @@ function getWorldEntry(name, data, entry) {
 
     // keysecondary
     enableKeysInput("keysecondary", "secondary_keys");
+
+    // draw key input switch button
+    template.find('.switch_input_type_icon').on('click', function () {
+        power_user.wi_key_input_plaintext = !power_user.wi_key_input_plaintext;
+        saveSettingsDebounced();
+
+        // Just redraw the panel
+        const uid = ($(this).parents('.world_entry')).data('uid');
+        updateEditor(uid, false);
+
+        $(`.world_entry[uid="${uid}"] .inline-drawer-icon`).trigger('click');
+        // setTimeout(() => {
+        // }, debounce_timeout.standard);
+    }).each((_, icon) => {
+        $(icon).attr('title', $(icon).data(power_user.wi_key_input_plaintext ? 'tooltip-on' : 'tooltip-off'));
+        $(icon).text($(icon).data(power_user.wi_key_input_plaintext ? 'icon-on' : 'icon-off'));
+    });
 
     // logic AND/NOT
     const selectiveLogicDropdown = template.find('select[name="entryLogicType"]');

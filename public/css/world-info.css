@@ -76,6 +76,7 @@
 .world_entry_form_control {
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 .world_entry_thin_controls {
@@ -222,4 +223,26 @@ span.select2-container .select2-results__option:has(> .result_block .regex_item)
 .select2-results__option .item_count {
     margin-left: 10px;
     float: right;
+}
+
+select.keyselect+span.select2-container .select2-selection--multiple {
+    padding-right: 30px;
+}
+
+.switch_input_type_icon {
+    cursor: pointer;
+    font-weight: bold;
+    height: calc(100% - var(--mainFontSize));
+    width: 25px;
+    margin-right: 5px;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    padding: 1px;
+
+    background-color: transparent;
+    border: none;
+    font-size: 1em;
+
+    color: var(--SmartThemeBodyColor);
 }

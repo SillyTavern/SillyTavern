@@ -1520,7 +1520,7 @@ export function select2ModifyOptions(element, items, { select = false, changeEve
  * Can be used on a single global array, querying data from the server or anything similar.
  *
  * @param {function():Select2Option[]} dataProvider - The provider/function to retrieve the data - can be as simple as "() => myData" for arrays
- * @return {{transport: function}} The ajax object with the transport function to use on the select2 ajax property
+ * @return {{transport: (params, success, failure) => any}} The ajax object with the transport function to use on the select2 ajax property
  */
 export function dynamicSelect2DataViaAjax(dataProvider) {
     function dynamicSelect2DataTransport(params, success, failure) {
@@ -1544,10 +1544,20 @@ export function dynamicSelect2DataViaAjax(dataProvider) {
 }
 
 /**
+ * Checks whether a given control is a select2 choice element - meaning one of the results being displayed in the select multi select box
+ * @param {JQuery<HTMLElement>|HTMLElement} element - The element to check
+ * @returns {boolean} Whether this is a choice element
+ */
+export function isSelect2ChoiceElement(element) {
+    const $element = $(element);
+    return ($element.hasClass('select2-selection__choice__display') || $element.parents('.select2-selection__choice__display').length > 0);
+}
+
+/**
  * Subscribes a 'click' event handler to the choice elements of a select2 multi-select control
  *
  * @param {JQuery<HTMLElement>} control The original control the select2 was applied to
- * @param {function(EventTarget):void} action - The action to execute when a choice element is clicked
+ * @param {function(HTMLElement):void} action - The action to execute when a choice element is clicked
  * @param {object} options - Optional parameters
  * @param {boolean} [options.buttonStyle=false] - Whether the choices should be styles as a clickable button with color and hover transition, instead of just changed cursor
  * @param {boolean} [options.closeDrawer=false] - Whether the drawer should be closed and focus removed after the choice item was clicked
@@ -1561,8 +1571,8 @@ export function select2ChoiceClickSubscribe(control, action, { buttonStyle = fal
     // Get the real container below and create a click handler on that one
     const select2Container = control.next('span.select2-container');
     select2Container.on('click', function (event) {
-        const $target = $(event.target);
-        if ($target.hasClass('select2-selection__choice__display') || $target.parents('.select2-selection__choice__display')) {
+        const isChoice = isSelect2ChoiceElement(event.target);
+        if (isChoice) {
             event.preventDefault();
 
             // select2 still bubbles the event to open the dropdown. So we close it here and remove focus if we want that
