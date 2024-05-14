@@ -732,6 +732,24 @@ export function isDataURL(str) {
     return regex.test(str);
 }
 
+/**
+ * Gets the size of an image from a data URL.
+ * @param {string} dataUrl Image data URL
+ * @returns {Promise<{ width: number, height: number }>} Image size
+ */
+export function getImageSizeFromDataURL(dataUrl) {
+    const image = new Image();
+    image.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        image.onload = function () {
+            resolve({ width: image.width, height: image.height });
+        };
+        image.onerror = function () {
+            reject(new Error('Failed to load image'));
+        };
+    });
+}
+
 export function getCharaFilename(chid) {
     const context = getContext();
     const fileName = context.characters[chid ?? context.characterId].avatar;

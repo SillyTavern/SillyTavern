@@ -1063,8 +1063,8 @@ $(document).ready(function () {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.on(event_types.MESSAGE_DELETED, onMessageDeleted);
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged);
-    eventSource.on(event_types.MESSAGE_SENT, onMessageEvent);
-    eventSource.on(event_types.MESSAGE_RECEIVED, onMessageEvent);
+    eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onMessageEvent);
+    eventSource.makeLast(event_types.USER_MESSAGE_RENDERED, onMessageEvent);
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'speak',
         callback: onNarrateText,
         aliases: ['narrate', 'tts'],

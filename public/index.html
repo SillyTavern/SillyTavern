@@ -1680,7 +1680,7 @@
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom">
-                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
+                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand marginBot10">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
@@ -1689,6 +1689,16 @@
                                                 <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image file to the chat.
                                             </div>
                                         </label>
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter">
+                                            <label for="openai_inline_image_quality">
+                                                Inline Image Quality
+                                            </label>
+                                            <select id="openai_inline_image_quality">
+                                                <option value="auto">Auto</option>
+                                                <option value="low">Low</option>
+                                                <option value="high">High</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div class="range-block" data-source="ai21">
                                         <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
@@ -2404,6 +2414,10 @@
                                         <option value="gpt-4-32k">gpt-4-32k</option>
                                         <option value="gpt-4-32k-0613">gpt-4-32k-0613 (2023)</option>
                                         <option value="gpt-4-32k-0314">gpt-4-32k-0314 (2023)</option>
+                                    </optgroup>
+                                    <optgroup label="GPT-4o">
+                                        <option value="gpt-4o">gpt-4o</option>
+                                        <option value="gpt-4o-2024-05-13">gpt-4o-2024-05-13</option>
                                     </optgroup>
                                     <optgroup label="GPT-4 Turbo">
                                         <option value="gpt-4-turbo">gpt-4-turbo</option>
@@ -4116,6 +4130,12 @@
                             </div>
                             <div name="AutoCompleteToggle">
                                 <h4 data-i18n="AutoComplete Settings">AutoComplete Settings</h4>
+                                <label data-newbie-hidden class="checkbox_label" for="stscript_autocomplete_autoHide">
+                                    <input id="stscript_autocomplete_autoHide" type="checkbox" />
+                                    <small data-i18n="Automatically hide details">
+                                        Automatically hide details
+                                    </small>
+                                </label>
                                 <div class="flex-container">
                                     <div class="flex1" title="Determines how entries are found for autocomplete." data-i18n="[title]Determines how entries are found for autocomplete.">
                                         <label for="stscript_matching" data-i18n="Autocomplete Matching"><small>Matching</small></label>
@@ -4171,14 +4191,14 @@
                                     <label class="checkbox_label" title="Switch to stricter escaping, allowing all delimiting characters to be escaped with a backslash, and backslashes to be escaped as well." data-i18n="[title]Switch to stricter escaping, allowing all dellimiting characters to be escaped with a backslash, and backslashes to be escaped as well.">
                                         <input id="stscript_parser_flag_strict_escaping" type="checkbox" />
                                         <span data-i18n="STRICT_ESCAPING"><small>STRICT_ESCAPING</small></span>
-                                        <a href="https://docs.sillytavern.app/" target="_blank" class="notes-link">
+                                        <a href="https://docs.sillytavern.app/usage/st-script/#strict-escaping" target="_blank" class="notes-link">
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </label>
                                     <label class="checkbox_label" title="Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution." data-i18n="[title]Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution.">
                                         <input id="stscript_parser_flag_replace_getvar" type="checkbox" />
                                         <span data-i18n="REPLACE_GETVAR"><small>REPLACE_GETVAR</small></span>
-                                        <a href="https://docs.sillytavern.app/" target="_blank" class="notes-link">
+                                        <a href="https://docs.sillytavern.app/usage/st-script/#replace-variable-macros" target="_blank" class="notes-link">
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </label>

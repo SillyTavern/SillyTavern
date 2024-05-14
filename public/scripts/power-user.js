@@ -259,6 +259,7 @@ let power_user = {
     stscript: {
         matching: 'fuzzy',
         autocomplete: {
+            autoHide: false,
             style: 'theme',
             font: {
                 scale: 0.8,
@@ -1618,6 +1619,7 @@ function loadPowerUserSettings(settings, data) {
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
 
+    $('#stscript_autocomplete_autoHide').prop('checked', power_user.stscript.autocomplete.autoHide ?? false).trigger('input');
     $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
     $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete_style ?? 'theme');
     document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete_style);
@@ -3643,6 +3645,11 @@ $(document).ready(() => {
         const value = $(this).find(':selected').val();
         power_user.aux_field = String(value);
         printCharactersDebounced();
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_autocomplete_autoHide').on('input', function () {
+        power_user.stscript.autocomplete.autoHide = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

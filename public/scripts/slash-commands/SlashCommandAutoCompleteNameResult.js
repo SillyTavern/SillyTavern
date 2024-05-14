@@ -99,7 +99,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
                 const result = new AutoCompleteSecondaryNameResult(
                     value,
                     start + name.length,
-                    cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(it)),
+                    cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(this.executor.command, it)),
                     true,
                 );
                 result.isRequired = true;
@@ -154,7 +154,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         const result = new AutoCompleteSecondaryNameResult(
             value,
             start,
-            cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(it)),
+            cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(this.executor.command, it)),
             false,
         );
         const isCompleteValue = cmdArg.enumList.find(it=>it.value == value);

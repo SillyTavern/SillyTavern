@@ -804,10 +804,7 @@ function setMemoryContext(value, saveToMessage, index = null) {
     const context = getContext();
     context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth, false, extension_settings.memory.role);
     $('#memory_contents').val(value);
-    console.log('Summary set to: ' + value);
-    console.debug('Position: ' + extension_settings.memory.position);
-    console.debug('Depth: ' + extension_settings.memory.depth);
-    console.debug('Role: ' + extension_settings.memory.role);
+    console.log('Summary set to: ' + value, 'Position: ' + extension_settings.memory.position, 'Depth: ' + extension_settings.memory.depth, 'Role: ' + extension_settings.memory.role);
 
     if (saveToMessage && context.chat.length) {
         const idx = index ?? context.chat.length - 2;
