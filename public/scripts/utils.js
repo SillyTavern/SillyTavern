@@ -1528,7 +1528,7 @@ export function dynamicSelect2DataViaAjax(dataProvider) {
         // fitering if params.data.q available
         if (params.data && params.data.q) {
             items = items.filter(function (item) {
-                return new RegExp(params.data.q).test(item.text);
+                return includesIgnoreCaseAndAccents(item.text, params.data.q);
             });
         }
         var promise = new Promise(function (resolve, reject) {
