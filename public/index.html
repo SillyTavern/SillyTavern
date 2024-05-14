@@ -1680,7 +1680,7 @@
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom">
-                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
+                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand marginBot10">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
@@ -1689,6 +1689,16 @@
                                                 <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image file to the chat.
                                             </div>
                                         </label>
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter">
+                                            <label for="openai_inline_image_quality">
+                                                Inline Image Quality
+                                            </label>
+                                            <select id="openai_inline_image_quality">
+                                                <option value="auto">Auto</option>
+                                                <option value="low">Low</option>
+                                                <option value="high">High</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div class="range-block" data-source="ai21">
                                         <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
@@ -5274,6 +5284,12 @@
                                                         <input type="checkbox" name="prevent_recursion" />
                                                         <span data-i18n="Prevent further recursion (this entry will not activate others)">
                                                             Prevent further recursion (this entry will not activate others)
+                                                        </span>
+                                                    </label>
+                                                    <label class="checkbox flex-container alignitemscenter flexNoGap">
+                                                        <input type="checkbox" name="delay_until_recursion" />
+                                                        <span data-i18n="Delay until recursion (this entry can only be activated on recursive checking)">
+                                                            Delay until recursion (this entry can only be activated on recursive checking)
                                                         </span>
                                                     </label>
                                                 </div>

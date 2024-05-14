@@ -1948,7 +1948,7 @@ async function generatePicture(args, trigger, message, callback) {
     }
 
     if (!isValidState()) {
-        toastr.warning('Extensions API is not connected or doesn\'t provide SD module. Enable Stable Horde to generate images.');
+        toastr.warning('Image generation is not available. Check your settings and try again.');
         return;
     }
 
