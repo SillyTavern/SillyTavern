@@ -1483,6 +1483,9 @@ function getWorldEntry(name, data, entry) {
     template.data('uid', entry.uid);
     template.attr('uid', entry.uid);
 
+    // Init default state of WI Key toggle (=> true)
+    if (typeof power_user.wi_key_input_plaintext === 'undefined') power_user.wi_key_input_plaintext = true;
+
     /** Function to build the keys input controls @param {string} entryPropName @param {string} originalDataValueName */
     function enableKeysInput(entryPropName, originalDataValueName) {
         const isFancyInput = !isMobile() && !power_user.wi_key_input_plaintext;
