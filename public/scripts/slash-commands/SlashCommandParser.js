@@ -186,6 +186,15 @@ export class SlashCommandParser {
             relevance: 0,
         };
 
+        function getQuotedRunRegex() {
+            try {
+                return new RegExp('(".+?(?<!\\\\)")|(\\S+?)');
+            } catch {
+                // fallback for browsers that don't support lookbehind
+                return /(".+?")|(\S+?)/;
+            }
+        }
+
         const COMMENT = {
             scope: 'comment',
             begin: /\/[/#]/,
@@ -225,7 +234,7 @@ export class SlashCommandParser {
         const RUN = {
             match: [
                 /\/:/,
-                /(".+?(?<!\\)") |(\S+?) /,
+                getQuotedRunRegex(),
             ],
             className: {
                 1: 'variable.language',

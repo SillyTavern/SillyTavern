@@ -1133,6 +1133,11 @@ export function initRossMods() {
                 return;
             }
 
+            if ($('#dialogue_del_mes_cancel').is(':visible')) {
+                $('#dialogue_del_mes_cancel').trigger('click');
+                return;
+            }
+
             if ($('.drawer-content')
                 .not('#WorldInfo')
                 .not('#left-nav-panel')

@@ -102,7 +102,7 @@
     height: auto;
     margin-top: 0;
     margin-bottom: 0;
-    min-height: calc(var(--mainFontSize) + 13px);
+    min-height: calc(var(--mainFontSize) + 14px);
 }
 
 .delete_entry_button {
