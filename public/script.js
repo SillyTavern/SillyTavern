@@ -654,6 +654,13 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
     } */
 });
 
+var version_data = {
+    agent: '',
+    pkgVersion: '',
+    gitRevision: '',
+    gitBranch: '',
+    displayVersion: '',
+}
 async function getClientVersion() {
     try {
         const response = await fetch('/version');
@@ -665,6 +672,9 @@ async function getClientVersion() {
         if (data.gitRevision && data.gitBranch) {
             displayVersion += ` '${data.gitBranch}' (${data.gitRevision})`;
         }
+
+        version_data = data;
+        version_data.displayVersion = displayVersion;
 
         $('#version_display').text(displayVersion);
         $('#version_display_welcome').text(displayVersion);
@@ -2320,6 +2330,8 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
     environment.char = _name2 ?? name2;
     environment.group = environment.charIfNotGroup = getGroupValue();
     environment.model = getGeneratingModel();
+    environment.baseware_name = 'SillyTavern';
+    environment.baseware_version = version_data.pkgVersion;
 
     return evaluateMacros(content, environment);
 }
