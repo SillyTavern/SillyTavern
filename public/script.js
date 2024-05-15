@@ -10294,6 +10294,9 @@ jQuery(async function () {
                     $('#character_replace_file').off('change').on('change', uploadReplacementCard).trigger('click');
                 }
             } break;
+            case 'import_tags':{
+                await importTags(characters[this_chid]);
+            } break;
             /*case 'delete_button':
                 popup_type = "del_ch";
                 callPopup(`
