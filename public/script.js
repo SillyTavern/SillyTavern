@@ -1465,6 +1465,9 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
                 // sub entities filter "hacked" because folder filter should not be applied there, so even in "only folders" mode characters show up
                 subEntities = entitiesFilter.applyFilters(subEntities, { clearScoreCache: false, tempOverrides: { [FILTER_TYPES.FOLDER]: FILTER_STATES.UNDEFINED } });
             }
+            if (doSort) {
+                sortEntitiesList(subEntities);
+            }
             entity.entities = subEntities;
             entity.hidden = subCount - subEntities.length;
         }
