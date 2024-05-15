@@ -6275,6 +6275,8 @@ function updateMessage(div) {
         mes.extra.bias = null;
     }
 
+    chat_metadata['tainted'] = true;
+
     return { mesBlock, text, mes, bias };
 }
 
