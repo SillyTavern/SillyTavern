@@ -209,6 +209,10 @@
   justify-content: center;
   padding-bottom: 0.5em;
 }
+#qr--qrOptions {
+  display: flex;
+  flex-direction: column;
+}
 #qr--qrOptions > #qr--ctxEditor .qr--ctxItem {
   display: flex;
   flex-direction: row;
