@@ -1158,7 +1158,7 @@ export function registerVariableCommands() {
                 <strong>Examples:</strong>
                 <ul>
                     <li>
-                        <pre><code class="language-stscript">/setvar key=i 0 | /while left=i right=10 rule=let "/addvar key=i 1"</code></pre>
+                        <pre><code class="language-stscript">/setvar key=i 0 | /while left=i right=10 rule=lte "/addvar key=i 1"</code></pre>
                         adds 1 to the value of "i" until it reaches 10.
                     </li>
                 </ul>
