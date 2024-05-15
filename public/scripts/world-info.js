@@ -1578,13 +1578,14 @@ function getWorldEntry(name, data, entry) {
             });
             input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
         }
+        return { isFancy: isFancyInput, control: input };
     }
 
     // key
-    enableKeysInput('key', 'keys');
+    const keyInput = enableKeysInput('key', 'keys');
 
     // keysecondary
-    enableKeysInput('keysecondary', 'secondary_keys');
+    const keySecondaryInput = enableKeysInput('keysecondary', 'secondary_keys');
 
     // draw key input switch button
     template.find('.switch_input_type_icon').on('click', function () {
@@ -1792,8 +1793,8 @@ function getWorldEntry(name, data, entry) {
         if (counter.data('first-run')) {
             counter.data('first-run', false);
             countTokensDebounced(counter, contentInput.val());
-            // initScrollHeight(keyInput);
-            // initScrollHeight(keySecondaryInput);
+            if (!keyInput.isFancy) initScrollHeight(keyInput.control);
+            if (!keySecondaryInput) initScrollHeight(keySecondaryInput.control);
         }
     });
 
