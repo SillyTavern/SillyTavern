@@ -1,5 +1,5 @@
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, shouldSendOnEnter } from './scripts/RossAscends-mods.js';
-import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
+import { userStatsHandler, statMesProcess, initStats, charStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -2323,6 +2323,17 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
         environment.mesExamples = fields.mesExamples || '';
         environment.charVersion = fields.version || '';
         environment.char_version = fields.version || '';
+
+        // Get character stats
+        let CharStats = charStats[characters[this_chid].avatar];
+        environment.char_stat_total_gen_time = CharStats.total_gen_time;
+        environment.char_stat_user_msg_count = CharStats.user_msg_count;
+        environment.char_stat_non_user_msg_count = CharStats.non_user_msg_count;
+        environment.char_stat_user_word_count = CharStats.user_word_count;
+        environment.char_stat_non_user_word_count = CharStats.non_user_word_count;
+        environment.char_stat_total_swipe_count = CharStats.total_swipe_count;
+        environment.char_stat_date_last_chat = CharStats.date_last_chat;
+        environment.char_stat_date_first_chat = CharStats.date_first_chat;
     }
 
     // Must be substituted last so that they're replaced inside {{description}}
