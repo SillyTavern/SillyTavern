@@ -244,5 +244,6 @@ select.keyselect+span.select2-container .select2-selection--multiple {
     border: none;
     font-size: 1em;
 
+    opacity: 0.75;
     color: var(--SmartThemeBodyColor);
 }
