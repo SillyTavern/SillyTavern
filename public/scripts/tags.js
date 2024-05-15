@@ -17,6 +17,7 @@ import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, Filte
 import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
 import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight } from './utils.js';
 import { power_user } from './power-user.js';
+import { debounce_timeout } from './constants.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -321,6 +322,13 @@ function filterByGroups(filterHelper) {
  * @param {FilterHelper} filterHelper Instance of FilterHelper class.
  */
 function filterByFolder(filterHelper) {
+    if (!power_user.bogus_folders) {
+        $('#bogus_folders').prop('checked', true).trigger('input');
+        onViewTagsListClick();
+        flashHighlight($('#dialogue_popup .tag_as_folder, #dialogue_popup .tag_folder_indicator'));
+        return;
+    }
+
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.FOLDER.filter_state = state;
     filterHelper.setFilterData(FILTER_TYPES.FOLDER, state);
@@ -882,8 +890,9 @@ function printTagFilters(type = tag_filter_types.character) {
     const FILTER_SELECTOR = type === tag_filter_types.character ? CHARACTER_FILTER_SELECTOR : GROUP_FILTER_SELECTOR;
     $(FILTER_SELECTOR).empty();
 
-    // Print all action tags. (Exclude folder if that setting isn't chosen)
-    const actionTags = Object.values(ACTIONABLE_TAGS).filter(tag => power_user.bogus_folders || tag.id != ACTIONABLE_TAGS.FOLDER.id);
+    // Print all action tags. (Rework 'Folder' button to some kind of onboarding if no folders are enabled yet)
+    const actionTags = Object.values(ACTIONABLE_TAGS);
+    actionTags.find(x => x == ACTIONABLE_TAGS.FOLDER).name = power_user.bogus_folders ? 'Show only folders' : 'Enable \'Tags as Folder\'\n\nAllows characters to be grouped in folders by their assigned tags.\nTags have to be explicitly chosen as folder to show up.\n\nClick here to start';
     printTagList($(FILTER_SELECTOR), { empty: false, sort: false, tags: actionTags, tagActionSelector: tag => tag.action, tagOptions: { isGeneralList: true } });
 
     const inListActionTags = Object.values(InListActionable);
