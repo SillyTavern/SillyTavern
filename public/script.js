@@ -6275,6 +6275,8 @@ function updateMessage(div) {
         mes.extra.bias = null;
     }
 
+    chat_metadata['tainted'] = true;
+
     return { mesBlock, text, mes, bias };
 }
 
@@ -10291,6 +10293,9 @@ jQuery(async function () {
                     }
                     $('#character_replace_file').off('change').on('change', uploadReplacementCard).trigger('click');
                 }
+            } break;
+            case 'import_tags':{
+                await importTags(characters[this_chid]);
             } break;
             /*case 'delete_button':
                 popup_type = "del_ch";

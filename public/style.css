@@ -2374,16 +2374,16 @@ input[type=search]::-webkit-search-cancel-button {
     height: 1em;
     width: 1em;
     border-radius: 50em;
-    background: url('/img/times-circle.svg') no-repeat 50% 50%;
+    background-color: var(--SmartThemeBodyColor);
+    mask: url('/img/times-circle.svg') no-repeat 50% 50%;
     background-size: contain;
-    backdrop-filter: invert(1) contrast(9);
     opacity: 0;
     pointer-events: none;
     cursor: pointer;
 }
 
 input[type=search]:focus::-webkit-search-cancel-button {
-    opacity: .3;
+    opacity: .5;
     pointer-events: all;
 }
 
