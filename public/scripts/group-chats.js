@@ -637,7 +637,7 @@ function isValidImageUrl(url) {
     if (Object.keys(url).length === 0) {
         return false;
     }
-    return isDataURL(url) || (url && url.startsWith('user'));
+    return isDataURL(url) || (url && (url.startsWith('user') || url.startsWith('/user')));
 }
 
 function getGroupAvatar(group) {
@@ -1418,6 +1418,10 @@ function select_group_chats(groupId, skipAnimation) {
  * @returns {Promise<void>} - A promise that resolves when the processing and upload is complete.
  */
 async function uploadGroupAvatar(event) {
+    if (!(event.target instanceof HTMLInputElement) || !event.target.files.length) {
+        return;
+    }
+
     const file = event.target.files[0];
 
     if (!file) {
