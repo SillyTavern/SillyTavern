@@ -218,11 +218,15 @@
 @media screen and (max-width: 750px) {
   body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor {
     flex-direction: column;
+    overflow: auto;
+  }
+  body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main {
+    flex: 0 0 auto;
   }
   body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--labels {
     flex-direction: column;
   }
-  body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-message {
+  body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor > #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder {
     min-height: 90svh;
   }
 }
