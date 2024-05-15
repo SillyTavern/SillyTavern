@@ -282,7 +282,6 @@ let power_user = {
     forbid_external_media: true,
     external_media_allowed_overrides: [],
     external_media_forbidden_overrides: [],
-    import_card_tags: true,
 };
 
 let themes = [];
