@@ -79,6 +79,11 @@
     position: relative;
 }
 
+.world_entry_form_control .keyprimarytextpole,
+.world_entry_form_control .keysecondarytextpole {
+    padding-right: 30px;
+}
+
 .world_entry_thin_controls {
     display: flex;
     flex-direction: row;
