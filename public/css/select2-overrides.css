@@ -229,6 +229,8 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
     /* Fix search textarea alignment issue with UL elements */
     margin-top: 0px;
     height: unset;
+    /* Prevent height from jumping around when input is focused */
+    line-height: 1;
 }
 
 .select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__rendered {
