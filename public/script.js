@@ -8290,6 +8290,23 @@ async function doDeleteChat() {
     $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
 }
 
+async function doRenameChat(_, chatName) {
+    if (!chatName) {
+        toastr.warning('Name must be provided as an argument to rename this chat.');
+        return;
+    }
+
+    const currentChatName = getCurrentChatId();
+    if (!currentChatName) {
+        toastr.warning('No chat selected that can be renamed.');
+        return;
+    }
+
+    await renameChat(currentChatName, chatName);
+
+    toastr.success(`Successfully renamed chat to: ${chatName}`);
+}
+
 /**
  * Renames the currently selected chat.
  * @param {string} oldFileName Old name of the chat (no JSONL extension)
@@ -8581,12 +8598,27 @@ jQuery(async function () {
         callback: doDeleteChat,
         helpString: 'Deletes the current chat.',
     }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'renamechat',
+        callback: doRenameChat,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'new chat name', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: 'Renames the current chat.',
+    }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatname',
         callback: doGetChatName,
         returns: 'chat file name',
         helpString: 'Returns the name of the current chat file into the pipe.',
     }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'closechat',
+        callback: doCloseChat,
+        helpString: 'Closes the current chat.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'closechat',
         callback: doCloseChat,
         helpString: 'Closes the current chat.',
     }));
