@@ -237,13 +237,11 @@ select.keyselect+span.select2-container .select2-selection--multiple {
 .switch_input_type_icon {
     cursor: pointer;
     font-weight: bold;
-    height: max-content;
-    top: 50%;
-    width: 25px;
-    margin-right: 5px;
+    height: 20px;
+    margin-right: 10px;
+    margin-top: calc(5px + var(--mainFontSize));
     position: absolute;
     right: 0;
-    bottom: 0;
     padding: 1px;
 
     background-color: transparent;
