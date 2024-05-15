@@ -3725,7 +3725,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_1mil);
-        } else if (value === 'gemini-1.5-pro-latest') {
+        } else if (value === 'gemini-1.5-pro-latest' || value.includes('gemini-1.5-flash')) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value === 'gemini-ultra' || value === 'gemini-1.0-pro-latest' || value === 'gemini-pro' || value === 'gemini-1.0-ultra-latest') {
             $('#openai_max_context').attr('max', max_32k);
@@ -4285,6 +4285,8 @@ export function isImageInliningSupported() {
     // gultra just isn't being offered as multimodal, thanks google.
     const visionSupportedModels = [
         'gpt-4-vision',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-flash',
         'gemini-1.0-pro-vision-latest',
         'gemini-1.5-pro-latest',
         'gemini-pro-vision',

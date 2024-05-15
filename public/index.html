@@ -1719,8 +1719,9 @@
                                     <div class="range-block" data-source="makersuite">
                                         <label for="use_makersuite_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="use_makersuite_sysprompt" type="checkbox" />
-                                            <span data-i18n="Use system prompt (Gemini 1.5 pro+ only)">
-                                                Use system prompt (Gemini 1.5 pro+ only)
+                                            <span>
+                                                <span data-i18n="Use system prompt">Use system prompt</span><br>
+                                                <small data-i18n="(Gemini 1.5 Pro/Flash only)">(Gemini 1.5 Pro/Flash only)</small>
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
@@ -2648,6 +2649,8 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
                                     <optgroup label="Latest">
+                                        <!-- Doesn't work without "latest". Maybe my key is scuffed? -->
+                                        <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
                                         <!-- Points to 1.0, no default 1.5 endpoint -->
                                         <option value="gemini-pro">Gemini Pro</option>
                                         <option value="gemini-pro-vision">Gemini Pro Vision</option>
