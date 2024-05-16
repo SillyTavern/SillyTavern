@@ -384,6 +384,7 @@ export const event_types = {
     MESSAGE_RECEIVED: 'message_received',
     MESSAGE_EDITED: 'message_edited',
     MESSAGE_DELETED: 'message_deleted',
+    MESSAGE_UPDATED: 'message_updated',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
     GENERATION_STARTED: 'generation_started',
@@ -6366,6 +6367,7 @@ async function messageEditDone(div) {
 
     this_edit_mes_id = undefined;
     await saveChatConditional();
+    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
 }
 
 /**
