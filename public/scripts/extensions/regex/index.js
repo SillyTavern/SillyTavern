@@ -325,7 +325,9 @@ jQuery(async () => {
     });
     $('#import_regex_file').on('change', async function () {
         const inputElement = this instanceof HTMLInputElement && this;
-        await onRegexImportFileChange(inputElement.files[0]);
+        for (const file of inputElement.files) {
+            await onRegexImportFileChange(file);
+        }
         inputElement.value = '';
     });
     $('#import_regex').on('click', function () {
