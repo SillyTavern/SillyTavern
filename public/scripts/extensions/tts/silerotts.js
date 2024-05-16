@@ -23,7 +23,7 @@ class SileroTtsProvider {
         <label for="silero_tts_endpoint">Provider Endpoint:</label>
         <input id="silero_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
         <span>
-        <span>Use <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-extras">SillyTavern Extras API</a> or <a target="_blank" href="https://github.com/ouoertheo/silero-api-server">Silero TTS Server</a>.</span>
+        <span>Use <a target="_blank" href="https://github.com/Dechat/SillyTavern-extras">Dechat Extras API</a> or <a target="_blank" href="https://github.com/ouoertheo/silero-api-server">Silero TTS Server</a>.</span>
         `;
         return html;
     }

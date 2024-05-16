@@ -246,7 +246,7 @@ table.responsiveTable {
     color: var(--white50a);
 }
 
-.mes[is_system="true"][ch_name="SillyTavern System"] .mes_text br {
+.mes[is_system="true"][ch_name="Dechat System"] .mes_text br {
     display: none;
 }
 

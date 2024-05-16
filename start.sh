@@ -31,5 +31,5 @@ echo "Installing Node Modules..."
 export NODE_ENV=production
 npm i --no-audit --no-fund --quiet --omit=dev
 
-echo "Entering SillyTavern..."
+echo "Entering Dechat..."
 node "$(dirname "$0")/server.js" "$@"

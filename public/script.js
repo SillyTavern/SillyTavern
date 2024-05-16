@@ -399,7 +399,7 @@ DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
 });
 
 // API OBJECT FOR EXTERNAL WIRING
-window['SillyTavern'] = {};
+window['Dechat'] = {};
 
 // Event source init
 export const event_types = {
@@ -466,13 +466,13 @@ reloadMarkdownProcessor();
 
 // array for prompt token calculations
 console.debug('initializing Prompt Itemization Array on Startup');
-const promptStorage = new localforage.createInstance({ name: 'SillyTavern_Prompts' });
+const promptStorage = new localforage.createInstance({ name: 'Dechat_Prompts' });
 let itemizedPrompts = [];
 
-export const systemUserName = 'SillyTavern System';
+export const systemUserName = 'Dechat System';
 let default_user_name = 'User';
 let name1 = default_user_name;
-let name2 = 'SillyTavern System';
+let name2 = 'Dechat System';
 let chat = [];
 let safetychat = [
     {
@@ -500,7 +500,7 @@ let savePersonasPage = 0;
 const default_avatar = 'img/ai4.png';
 export const system_avatar = 'img/five.png';
 export const comment_avatar = 'img/quill.png';
-export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
+export let CLIENT_VERSION = 'Dechat:UNKNOWN:Cohee#1207'; // For Horde header
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
     placement: 'top-start',
 });
@@ -669,7 +669,7 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
     if (xhr.status == 403) {
         toastr.warning(
             'doubleCsrf errors in console are NORMAL in this case. If you want to run ST in multiple tabs, start the server with --disableCsrf option.',
-            'Looks like you\'ve opened SillyTavern in another browser tab',
+            'Looks like you\'ve opened Dechat in another browser tab',
             { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true },
         );
     }
@@ -680,7 +680,7 @@ async function getClientVersion() {
         const response = await fetch('/version');
         const data = await response.json();
         CLIENT_VERSION = data.agent;
-        let displayVersion = `SillyTavern ${data.pkgVersion}`;
+        let displayVersion = `Dechat ${data.pkgVersion}`;
         currentVersion = data.pkgVersion;
 
         if (data.gitRevision && data.gitBranch) {
@@ -7751,7 +7751,7 @@ async function createOrEditCharacter(e) {
     }
 }
 
-window['SillyTavern'].getContext = function () {
+window['Dechat'].getContext = function () {
     return {
         chat: chat,
         characters: characters,
@@ -10004,7 +10004,7 @@ jQuery(async function () {
         }
 
         if (selected_group && file.name.endsWith('.json')) {
-            toastr.warning('Only SillyTavern\'s own format is supported for group chat imports. Sorry!');
+            toastr.warning('Only Dechat\'s own format is supported for group chat imports. Sorry!');
             return;
         }
 

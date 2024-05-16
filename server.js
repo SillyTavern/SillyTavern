@@ -66,15 +66,15 @@ const cliArguments = yargs(hideBin(process.argv))
     .option('port', {
         type: 'number',
         default: null,
-        describe: `Sets the port under which SillyTavern will run.\nIf not provided falls back to yaml config 'port'.\n[config default: ${DEFAULT_PORT}]`,
+        describe: `Sets the port under which Dechat will run.\nIf not provided falls back to yaml config 'port'.\n[config default: ${DEFAULT_PORT}]`,
     }).option('autorun', {
         type: 'boolean',
         default: null,
-        describe: `Automatically launch SillyTavern in the browser.\nAutorun is automatically disabled if --ssl is set to true.\nIf not provided falls back to yaml config 'autorun'.\n[config default: ${DEFAULT_AUTORUN}]`,
+        describe: `Automatically launch Dechat in the browser.\nAutorun is automatically disabled if --ssl is set to true.\nIf not provided falls back to yaml config 'autorun'.\n[config default: ${DEFAULT_AUTORUN}]`,
     }).option('listen', {
         type: 'boolean',
         default: null,
-        describe: `SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If false, will limit it only to internal localhost (127.0.0.1).\nIf not provided falls back to yaml config 'listen'.\n[config default: ${DEFAULT_LISTEN}]`,
+        describe: `Dechat is listening on all network interfaces (Wi-Fi, LAN, localhost). If false, will limit it only to internal localhost (127.0.0.1).\nIf not provided falls back to yaml config 'listen'.\n[config default: ${DEFAULT_LISTEN}]`,
     }).option('corsProxy', {
         type: 'boolean',
         default: null,
@@ -478,7 +478,7 @@ const setupTasks = async function () {
 
     // Print formatted header
     console.log();
-    console.log(`SillyTavern ${version.pkgVersion}`);
+    console.log(`Dechat ${version.pkgVersion}`);
     console.log(version.gitBranch ? `Running '${version.gitBranch}' (${version.gitRevision}) - ${version.commitDate}` : '');
     if (version.gitBranch && !version.isLatest && ['staging', 'release'].includes(version.gitBranch)) {
         console.log('INFO: Currently not on the latest commit.');
@@ -522,12 +522,12 @@ const setupTasks = async function () {
 
     if (autorun) open(autorunUrl.toString());
 
-    setWindowTitle('SillyTavern WebServer');
+    setWindowTitle('Dechat WebServer');
 
-    console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
+    console.log(color.green('Dechat is listening on: ' + tavernUrl));
 
     if (listen) {
-        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
+        console.log('\n0.0.0.0 means Dechat is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the Dechat directory if you want to inspect incoming connections.\n');
     }
 
     if (basicAuthMode) {
@@ -560,7 +560,7 @@ if (listen && !getConfigValue('whitelistMode', true) && !basicAuthMode) {
         console.warn(color.red('Security has been overridden. If it\'s not a trusted network, change the settings.'));
     }
     else {
-        console.error(color.red('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.'));
+        console.error(color.red('Your Dechat is currently unsecurely open to the public. Enable whitelisting or basic authentication.'));
         process.exit(1);
     }
 }

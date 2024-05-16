@@ -150,7 +150,7 @@ const extension_settings = {
 let modules = [];
 let activeExtensions = new Set();
 
-const getContext = () => window['SillyTavern'].getContext();
+const getContext = () => window['Dechat'].getContext();
 const getApiUrl = () => extension_settings.apiUrl;
 let connectedToApi = false;
 

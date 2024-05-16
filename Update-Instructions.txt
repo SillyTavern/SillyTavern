@@ -1,15 +1,15 @@
-How to Update SillyTavern
+How to Update Dechat
 
-The most recent version can be found here: https://docs.sillytavern.app/usage/update/
+The most recent version can be found here: https://docs.Dechat.app/usage/update/
 
 This is not an installation guide. If you need installation instructions, look here:
-https://docs.sillytavern.app/installation/windows/
+https://docs.Dechat.app/installation/windows/
 
-This guide assumes you have already installed SillyTavern once, and know how to run it on your OS.
+This guide assumes you have already installed Dechat once, and know how to run it on your OS.
 
 Linux/Termux:
 
-You definitely installed via git, so just 'git pull' inside the SillyTavern directory.
+You definitely installed via git, so just 'git pull' inside the Dechat directory.
 
 Windows/MacOS:
 
@@ -64,6 +64,6 @@ If you insist on installing via a zip, here is the tedious process for doing the
 
 5. Paste those items into the /Public/ folder of the new install.
 
-6. Start SillyTavern once again with the method appropriate to your OS, and pray you got it right.
+6. Start Dechat once again with the method appropriate to your OS, and pray you got it right.
 
 7. If everything shows up, you can safely delete the old ST folder.

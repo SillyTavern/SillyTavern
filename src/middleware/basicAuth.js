@@ -5,7 +5,7 @@
 const { getConfig } = require('../util.js');
 
 const unauthorizedResponse = (res) => {
-    res.set('WWW-Authenticate', 'Basic realm="SillyTavern", charset="UTF-8"');
+    res.set('WWW-Authenticate', 'Basic realm="Dechat", charset="UTF-8"');
     return res.status(401).send('Authentication required');
 };
 

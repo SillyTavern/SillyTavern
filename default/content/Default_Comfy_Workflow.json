@@ -76,7 +76,7 @@
     "9": {
         "class_type": "SaveImage",
         "inputs": {
-            "filename_prefix": "SillyTavern",
+            "filename_prefix": "Dechat",
             "images": [
                 "8",
                 0

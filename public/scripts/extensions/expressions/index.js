@@ -1892,10 +1892,10 @@ function migrateSettings() {
     document.addEventListener('visibilitychange', function (event) {
         let pageIsVisible;
         if (document.hidden) {
-            console.debug('expressions: SillyTavern is now hidden');
+            console.debug('expressions: Dechat is now hidden');
             pageIsVisible = false;
         } else {
-            console.debug('expressions: SillyTavern is now visible');
+            console.debug('expressions: Dechat is now visible');
             pageIsVisible = true;
         }
 

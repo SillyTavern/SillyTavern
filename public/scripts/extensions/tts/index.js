@@ -110,7 +110,7 @@ async function onNarrateText(args, text) {
     await initVoiceMap(true);
 
     const baseName = args?.voice || name2;
-    const name = (baseName === 'SillyTavern System' ? DEFAULT_VOICE_MARKER : baseName) || DEFAULT_VOICE_MARKER;
+    const name = (baseName === 'Dechat System' ? DEFAULT_VOICE_MARKER : baseName) || DEFAULT_VOICE_MARKER;
 
     const voiceMapEntry = voiceMap[name] === DEFAULT_VOICE_MARKER
         ? voiceMap[DEFAULT_VOICE_MARKER]
@@ -945,7 +945,7 @@ export async function initVoiceMap(unrestricted = false) {
 
     // Build UI using VoiceMapEntry objects
     for (const character of characters) {
-        if (character === 'SillyTavern System') {
+        if (character === 'Dechat System') {
             continue;
         }
         // Check provider settings for voiceIds
