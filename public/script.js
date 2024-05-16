@@ -1533,6 +1533,18 @@ function getCharacterSource(chId = this_chid) {
         return `https://pygmalion.chat/${pygmalionId}`;
     }
 
+    const githubRepo = characters[chId]?.data?.extensions?.github_repo;
+
+    if (githubRepo) {
+        return `https://github.com/${githubRepo}`;
+    }
+
+    const sourceUrl = characters[chId]?.data?.extensions?.source_url;
+
+    if (sourceUrl) {
+        return sourceUrl;
+    }
+
     return '';
 }
 
