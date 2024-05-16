@@ -7,7 +7,7 @@ import {
     power_user,
     context_presets,
 } from './power-user.js';
-import { resetScrollHeight } from './utils.js';
+import { regexFromString, resetScrollHeight } from './utils.js';
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -189,10 +189,10 @@ export function autoSelectInstructPreset(modelId) {
             // If activation regex is set, check if it matches the model id
             if (preset.activation_regex) {
                 try {
-                    const regex = new RegExp(preset.activation_regex, 'i');
+                    const regex = regexFromString(preset.activation_regex);
 
                     // Stop on first match so it won't cycle back and forth between presets if multiple regexes match
-                    if (regex.test(modelId)) {
+                    if (regex instanceof RegExp && regex.test(modelId)) {
                         selectInstructPreset(preset.name);
 
                         return true;

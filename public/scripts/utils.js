@@ -791,6 +791,29 @@ export function escapeRegex(string) {
     return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
+/**
+ * Instantiates a regular expression from a string.
+ * @param {string} input The input string.
+ * @returns {RegExp} The regular expression instance.
+ * @copyright Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
+ */
+export function regexFromString(input) {
+    try {
+        // Parse input
+        var m = input.match(/(\/?)(.+)\1([a-z]*)/i);
+
+        // Invalid flags
+        if (m[3] && !/^(?!.*?(.).*?\1)[gmixXsuUAJ]+$/.test(m[3])) {
+            return RegExp(input);
+        }
+
+        // Create the regular expression
+        return new RegExp(m[2], m[3]);
+    } catch {
+        return;
+    }
+}
+
 export class Stopwatch {
     /**
      * Initializes a Stopwatch class.
@@ -1502,7 +1525,7 @@ export function select2ModifyOptions(element, items, { select = false, changeEve
     const existingValues = [];
     dataItems.forEach(item => {
         // Set the value, creating a new option if necessary
-        if (element.find("option[value='" + item.id + "']").length) {
+        if (element.find('option[value=\'' + item.id + '\']').length) {
             if (select) existingValues.push(item.id);
         } else {
             // Create a DOM Option and optionally pre-select by default
@@ -1536,9 +1559,9 @@ export function dynamicSelect2DataViaAjax(dataProvider) {
         });
         promise.then(success);
         promise.catch(failure);
-    };
+    }
     const ajax = {
-        transport: dynamicSelect2DataTransport
+        transport: dynamicSelect2DataTransport,
     };
     return ajax;
 }
@@ -1599,7 +1622,7 @@ export function select2ChoiceClickSubscribe(control, action, { buttonStyle = fal
 export function highlightRegex(regexStr) {
     // Function to escape HTML special characters for safety
     const escapeHtml = (str) => str.replace(/[&<>"']/g, match => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;',
     })[match]);
 
     // Replace special characters with their HTML-escaped forms
