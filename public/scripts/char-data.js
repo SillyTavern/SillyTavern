@@ -70,6 +70,8 @@
  * @property {"system" | "user" | "assistant"} depth_prompt.role - The role the character takes on during the prompted interaction (system, user, or assistant).
  * // Non-standard extensions added by external tools
  * @property {string} [pygmalion_id] - The unique identifier assigned to the character by the Pygmalion.chat.
+ * @property {`${string}/${string}`} [github_repo] - The gitHub repository associated with the character.
+ * @property {string} [source_url] - The source URL associated with the character.
  * @property {{full_path: string}} [chub] - The Chub-specific data associated with the character.
  */
 
