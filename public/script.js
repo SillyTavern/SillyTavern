@@ -1530,10 +1530,10 @@ function getCharacterSource(chId = this_chid) {
         return `https://github.com/${githubRepo}`;
     }
 
-    const SourceUrl = characters[chId]?.data?.extensions?.source_url;
+    const sourceUrl = characters[chId]?.data?.extensions?.source_url;
 
-    if (SourceUrl) {
-        return SourceUrl;
+    if (sourceUrl) {
+        return sourceUrl;
     }
 
     return '';
