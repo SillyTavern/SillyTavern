@@ -351,7 +351,7 @@ function parseChubUrl(str) {
     let domainIndex = -1;
 
     splitStr.forEach((part, index) => {
-        if (part === 'www.chub.ai' || part === 'chub.ai') {
+        if (part === 'www.chub.ai' || part === 'chub.ai' || part === 'www.characterhub.org' || part === 'characterhub.org') {
             domainIndex = index;
         }
     });
@@ -521,7 +521,7 @@ router.post('/importURL', jsonParser, async (request, response) => {
         let result;
         let type;
 
-        const isChub = host.includes('chub.ai');
+        const isChub = host.includes('chub.ai') || host.includes('characterhub.org');
         const isJannnyContent = host.includes('janitorai');
         const isPygmalionContent = host.includes('pygmalion.chat');
         const isAICharacterCardsContent = host.includes('aicharactercards.com');
