@@ -258,9 +258,8 @@ export class FilterHelper {
      */
     folderFilter(data) {
         const state = this.filterData[FILTER_TYPES.FOLDER];
-        // Slightly different than the other filters, as a positive folder filter means it doesn't filter anything (folders get "not hidden" at another place),
-        // while a negative state should then filter out all folders.
-        const isFolder = entity => isFilterState(state, FILTER_STATES.SELECTED) ? true : entity.type === 'tag';
+        // Filter directly on folder. Special rules on still displaying characters with active folder filter are implemented in 'getEntitiesList' directly.
+        const isFolder = entity => entity.type === 'tag';
 
         return this.filterDataByState(data, state, isFolder);
     }
@@ -342,14 +341,39 @@ export class FilterHelper {
      * Applies all filters to the given data.
      * @param {any[]} data - The data to filter.
      * @param {object} options - Optional call parameters
-     * @param {boolean|FilterType} [options.clearScoreCache=true] - Whether the score
+     * @param {boolean} [options.clearScoreCache=true] - Whether the score cache should be cleared.
+     * @param {Object.<FilterType, any>} [options.tempOverrides={}] - Temporarily override specific filters for this filter application
      * @returns {any[]} The filtered data.
      */
-    applyFilters(data, { clearScoreCache = true } = {}) {
+    applyFilters(data, { clearScoreCache = true, tempOverrides = {} } = {}) {
         if (clearScoreCache) this.clearScoreCache();
-        return Object.values(this.filterFunctions)
-            .reduce((data, fn) => fn(data), data);
+
+        // Save original filter states
+        const originalStates = {};
+        for (const key in tempOverrides) {
+            originalStates[key] = this.filterData[key];
+            this.filterData[key] = tempOverrides[key];
+        }
+
+        try {
+            const result = Object.values(this.filterFunctions)
+                .reduce((data, fn) => fn(data), data);
+
+            // Restore original filter states
+            for (const key in originalStates) {
+                this.filterData[key] = originalStates[key];
+            }
+
+            return result;
+        } catch (error) {
+            // Restore original filter states in case of an error
+            for (const key in originalStates) {
+                this.filterData[key] = originalStates[key];
+            }
+            throw error;
+        }
     }
+
 
     /**
      * Cache scores for a specific filter type

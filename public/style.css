@@ -2814,7 +2814,7 @@ grammarly-extension {
 #result_info_text {
     display: flex;
     flex-direction: column;
-    line-height: 1;
+    line-height: 0.9;
     text-align: right;
 }
 
