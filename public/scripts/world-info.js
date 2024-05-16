@@ -1794,7 +1794,7 @@ function getWorldEntry(name, data, entry) {
             counter.data('first-run', false);
             countTokensDebounced(counter, contentInput.val());
             if (!keyInput.isFancy) initScrollHeight(keyInput.control);
-            if (!keySecondaryInput) initScrollHeight(keySecondaryInput.control);
+            if (!keySecondaryInput.isFancy) initScrollHeight(keySecondaryInput.control);
         }
     });
 
