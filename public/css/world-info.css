@@ -81,7 +81,7 @@
 
 .world_entry_form_control .keyprimarytextpole,
 .world_entry_form_control .keysecondarytextpole {
-    padding-right: 30px;
+    padding-right: 25px;
 }
 
 .world_entry_thin_controls {
@@ -238,7 +238,8 @@ select.keyselect+span.select2-container .select2-selection--multiple {
     cursor: pointer;
     font-weight: bold;
     height: 20px;
-    margin-right: 10px;
+    width: fit-content;
+    margin-right: 5px;
     margin-top: calc(5px + var(--mainFontSize));
     position: absolute;
     right: 0;
@@ -248,7 +249,7 @@ select.keyselect+span.select2-container .select2-selection--multiple {
     border: none;
     font-size: 1em;
 
-    opacity: 0.75;
+    opacity: 0.5;
     color: var(--SmartThemeBodyColor);
     transition: opacity 0.3s;
 }
