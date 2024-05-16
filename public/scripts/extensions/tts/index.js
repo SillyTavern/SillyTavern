@@ -261,6 +261,7 @@ async function playAudioData(audioJob) {
     audioElement.addEventListener('ended', completeCurrentAudioJob);
     audioElement.addEventListener('canplay', () => {
         console.debug('Starting TTS playback');
+        audioElement.playbackRate = extension_settings.tts.playback_rate;
         audioElement.play();
     });
 }
@@ -538,6 +539,7 @@ const defaultSettings = {
     currentProvider: 'ElevenLabs',
     auto_generation: true,
     narrate_user: false,
+    playback_rate: 1
 };
 
 function setTtsStatus(status, success) {
@@ -1022,6 +1024,20 @@ $(document).ready(function () {
                         <small>Pass Asterisks to TTS Engine</small>
                         </label>
                     </div>
+                    <div class="range-block">
+                        <hr>
+                        <div class="range-block-title justifyLeft" data-i18n="Audio Playback Speed">
+                            Audio Playback Speed
+                        </div>
+                        <div class="range-block-range-and-counter">
+                            <div class="range-block-range">
+                                <input type="range" id="playback_rate" name="volume" min="0" max="3" step="0.05">
+                            </div>
+                            <div class="range-block-counter">
+                                <input type="number" min="0" max="3" step="0.05" data-for="playback_rate" id="playback_rate_counter">
+                            </div>
+                        </div>
+                    </div>
                     <div id="tts_voicemap_block">
                     </div>
                     <hr>
@@ -1046,6 +1062,17 @@ $(document).ready(function () {
         $('#tts_pass_asterisks').on('click', onPassAsterisksClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
+
+        $('#playback_rate').val(extension_settings.tts.playback_rate);
+        $('#playback_rate_counter').val(Number(extension_settings.tts.playback_rate).toFixed(2));
+        $('#playback_rate').on('input', function () {
+            const value = $(this).val();
+            const formattedValue = Number(value).toFixed(2);
+            extension_settings.tts.playback_rate = value;
+            $('#playback_rate_counter').val(formattedValue);
+            saveSettingsDebounced();
+        });
+
         $('#tts_voices').on('click', onTtsVoicesClick);
         for (const provider in ttsProviders) {
             $('#tts_provider').append($('<option />').val(provider).text(provider));
