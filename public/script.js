@@ -8636,11 +8636,6 @@ jQuery(async function () {
         callback: doCloseChat,
         helpString: 'Closes the current chat.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'closechat',
-        callback: doCloseChat,
-        helpString: 'Closes the current chat.',
-    }));
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'panels',
         callback: doTogglePanels,
         aliases: ['togglepanels'],
