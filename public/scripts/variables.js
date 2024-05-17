@@ -518,7 +518,7 @@ async function executeSubCommands(command, scope = null, parserFlags = null) {
         command = command.slice(1, -1);
     }
 
-    const result = await executeSlashCommands(command, true, scope, true, parserFlags);
+    const result = await executeSlashCommands(command, true, scope, false, parserFlags);
 
     if (!result || typeof result !== 'object') {
         return '';
