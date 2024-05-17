@@ -447,8 +447,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'unhide',
     ],
     helpString: 'Unhides a message from the prompt.',
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'disable',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-disable',
     callback: disableGroupMemberCallback,
+    aliases: ['disable', 'disablemember', 'memberdisable'],
     unnamedArgumentList: [
         new SlashCommandArgument(
             'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
@@ -456,7 +457,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'disable',
     ],
     helpString: 'Disables a group member from being drafted for replies.',
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'enable',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-enable',
+    aliases: ['enable', 'enablemember', 'memberenable'],
     callback: enableGroupMemberCallback,
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -465,9 +467,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'enable',
     ],
     helpString: 'Enables a group member to be drafted for replies.',
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberadd',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-add',
     callback: addGroupMemberCallback,
-    aliases: ['addmember'],
+    aliases: ['addmember', 'memberadd'],
     unnamedArgumentList: [
         new SlashCommandArgument(
             'character name', [ARGUMENT_TYPE.STRING], true,
@@ -487,9 +489,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberadd',
         </div>
     `,
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberremove',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-remove',
     callback: removeGroupMemberCallback,
-    aliases: ['removemember'],
+    aliases: ['removemember', 'memberremove'],
     unnamedArgumentList: [
         new SlashCommandArgument(
             'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
@@ -510,9 +512,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberremove
         </div>
     `,
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberup',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-up',
     callback: moveGroupMemberUpCallback,
-    aliases: ['upmember'],
+    aliases: ['upmember', 'memberup'],
     unnamedArgumentList: [
         new SlashCommandArgument(
             'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
@@ -520,9 +522,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberup',
     ],
     helpString: 'Moves a group member up in the group chat list.',
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberdown',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-down',
     callback: moveGroupMemberDownCallback,
-    aliases: ['downmember'],
+    aliases: ['downmember', 'memberdown'],
     unnamedArgumentList: [
         new SlashCommandArgument(
             'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
