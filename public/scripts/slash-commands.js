@@ -483,7 +483,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-add',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/memberadd John Doe</code></pre>
+                    <pre><code>/member-add John Doe</code></pre>
                 </li>
             </ul>
         </div>
@@ -505,8 +505,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-remov
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/memberremove 2</code></pre>
-                    <pre><code>/memberremove John Doe</code></pre>
+                    <pre><code>/member-remove 2</code></pre>
+                    <pre><code>/member-remove John Doe</code></pre>
                 </li>
             </ul>
         </div>
