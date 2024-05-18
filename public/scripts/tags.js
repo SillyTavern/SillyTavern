@@ -985,7 +985,7 @@ function onGroupCreateClick() {
 
 export function applyTagsOnCharacterSelect() {
     //clearTagsFilter();
-    const chid = Number($(this).attr('chid'));
+    const chid = Number(this_chid);
     printTagList($('#tagList'), { forEntityOrKey: chid, tagOptions: { removable: true } });
 }
 
@@ -1467,8 +1467,6 @@ export function initTags() {
 
     $(document).on('click', '#rm_button_create', onCharacterCreateClick);
     $(document).on('click', '#rm_button_group_chats', onGroupCreateClick);
-    $(document).on('click', '.character_select', applyTagsOnCharacterSelect);
-    $(document).on('click', '.group_select', applyTagsOnGroupSelect);
     $(document).on('click', '.tag_remove', onTagRemoveClick);
     $(document).on('input', '.tag_input', onTagInput);
     $(document).on('click', '.tags_view', onViewTagsListClick);
@@ -1479,6 +1477,7 @@ export function initTags() {
     $(document).on('click', '.tag_view_backup', onTagsBackupClick);
     $(document).on('click', '.tag_view_restore', onBackupRestoreClick);
     eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
+    eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
 
     $(document).on('input', '#dialogue_popup input[name="auto_sort_tags"]', (evt) => {
         const toggle = $(evt.target).is(':checked');
