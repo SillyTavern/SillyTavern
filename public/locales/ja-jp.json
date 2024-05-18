@@ -3,7 +3,6 @@
     "kobldpresets": "Koboldのプリセット",
     "guikoboldaisettings": "KoboldAIのGUI設定",
     "novelaipreserts": "NovelAIのプリセット",
-    "default": "デフォルト",
     "openaipresets": "OpenAIのプリセット",
     "text gen webio(ooba) presets": "WebUI(ooba)のプリセット",
     "response legth(tokens)": "応答の長さ（トークン数）",
@@ -140,7 +139,7 @@
     "Influences bot behavior in its responses": "返信でボットの動作に影響を与えます",
     "Connect": "接続",
     "Test Message": "テストメッセージ",
-    "API": "API",    
+    "API": "API",
     "KoboldAI": "KoboldAI",
     "Use Horde": "ホードを使用",
     "API url": "API URL",
@@ -494,7 +493,6 @@
     "Global Lore First": "グローバルロアを最初に表示",
     "Recursive Scan": "再帰的スキャン",
     "Case Sensitive": "大文字と小文字を区別する",
-    "Match whole words": "完全な単語の一致",
     "Alert On Overflow": "オーバーフロー時に警告",
     "World/Lore Editor": "ワールド/ロアの編集",
     "--- None ---": "--- なし ---",
@@ -914,5 +912,5 @@
     "Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.": "Googleモデル用の適切なトークナイザーを使用します。 API経由で。 処理が遅くなりますが、トークンの数え上げがはるかに正確になります。",
     "Load koboldcpp order": "koboldcppオーダーを読み込む",
     "Use Google Tokenizer": "Googleトークナイザーを使用"
-    
+
 }
