@@ -3,7 +3,6 @@
     "kobldpresets": "Cài đặt trước Kobold",
     "guikoboldaisettings": "Cài đặt giao diện KoboldAI",
     "novelaipreserts": "Cài đặt trước NovelAI",
-    "default": "Mặc định",
     "openaipresets": "Cài đặt trước OpenAI",
     "text gen webio(ooba) presets": "Cài đặt trước WebUI(ooba) của máy tạo văn bản",
     "response legth(tokens)": "Độ dài phản hồi (trong các token)",
@@ -62,7 +61,7 @@
     "Temperature": "Nhiệt độ",
     "Frequency Penalty": "Phạt Tần số",
     "Presence Penalty": "Phạt Sự hiện",
-    "Top-p": "Top-p",    
+    "Top-p": "Top-p",
     "Display bot response text chunks as they are generated": "Hiển thị các phần văn bản phản hồi của bot khi chúng được tạo ra",
     "Top A": "Top A",
     "Typical Sampling": "Mẫu Đại diện",
@@ -141,7 +140,7 @@
     "Influences bot behavior in its responses": "Ảnh hưởng đến hành vi của bot trong các phản hồi của nó",
     "Connect": "Kết nối",
     "Test Message": "Tin nhắn kiểm tra",
-    "API": "Giao diện lập trình ứng dụng (API)",    
+    "API": "Giao diện lập trình ứng dụng (API)",
     "KoboldAI": "KoboldAI",
     "Use Horde": "Sử dụng Horde",
     "API url": "URL API",
@@ -206,7 +205,7 @@
     "Scale API Key": "Khóa API của Scale",
     "Alt Method": "Phương pháp thay thế",
     "AI21 API Key": "Khóa API của AI21",
-    "AI21 Model": "Mô hình AI21",    
+    "AI21 Model": "Mô hình AI21",
     "View API Usage Metrics": "Xem số liệu sử dụng API",
     "Show External models (provided by API)": "Hiển thị các mô hình bên ngoài (do API cung cấp)",
     "Bot": "Bot:",
@@ -495,7 +494,6 @@
     "Global Lore First": "Sử liệu toàn cầu đầu tiên",
     "Recursive Scan": "Quét đệ quy",
     "Case Sensitive": "Phân biệt chữ hoa chữ thường",
-    "Match whole words": "Khớp toàn bộ từ",
     "Alert On Overflow": "Cảnh báo khi tràn",
     "World/Lore Editor": "Trình soạn thảo Thế giới/Sử liệu",
     "--- None ---": "--- Không ---",
@@ -915,5 +913,5 @@
     "Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.": "Sử dụng bộ mã hóa phù hợp cho các mô hình của Google thông qua API của họ. Xử lý lời mời chậm hơn, nhưng cung cấp đếm token chính xác hơn nhiều.",
     "Load koboldcpp order": "Tải đơn hàng koboldcpp",
     "Use Google Tokenizer": "Sử dụng bộ mã hóa của Google"
-    
+
 }

@@ -3,7 +3,6 @@
     "kobldpresets": "الإعدادات المسبقة لـ Kobold",
     "guikoboldaisettings": "إعدادات واجهة KoboldAI",
     "novelaipreserts": "الإعدادات المسبقة لـ NovelAI",
-    "default": "افتراضي",
     "openaipresets": "الإعدادات المسبقة لـ OpenAI",
     "text gen webio(ooba) presets": "الإعدادات المسبقة لـ WebUI(ooba)",
     "response legth(tokens)": "طول الاستجابة (بعدد الاحرف او الرموز)",
@@ -62,7 +61,7 @@
     "Temperature": "درجة الحرارة",
     "Frequency Penalty": "عقوبة التكرار",
     "Presence Penalty": "عقوبة الوجود",
-    "Top-p": "أعلى p",    
+    "Top-p": "أعلى p",
     "Display bot response text chunks as they are generated": "عرض النصوص لجظة بلحظة",
     "Top A": "أعلى A",
     "Typical Sampling": "عينة نموذجية",
@@ -101,7 +100,7 @@
     "Inserts jailbreak as a last system message.": "يدرج كسر الحظر كرسالة نظام أخيرة.",
     "This tells the AI to ignore its usual content restrictions.": "هذا يخبر الذكاء الاصطناعي بتجاهل القيود المعتادة على المحتوى.",
     "NSFW Encouraged": "NSFW مشجع",
-    "Tell the AI that NSFW is allowed.": "قل للذكاء الاصطناعي أنه يُسمح بـ NSFW",    
+    "Tell the AI that NSFW is allowed.": "قل للذكاء الاصطناعي أنه يُسمح بـ NSFW",
     "NSFW Prioritized": "الأولوية للمحتوى غير مناسب للعمل",
     "NSFW prompt text goes first in the prompt to emphasize its effect.": "النص الغير مناسب للعمل يأتي أولاً في التعليمات لتأكيد تأثيره.",
     "Streaming": "البث المباشر ل",
@@ -141,7 +140,7 @@
     "Influences bot behavior in its responses": "يؤثر على سلوك الروبوت في ردوده.",
     "Connect": "الاتصال",
     "Test Message": "رسالة اختبار",
-    "API": "واجهة برمجة التطبيقات (API)",    
+    "API": "واجهة برمجة التطبيقات (API)",
     "KoboldAI": "KoboldAI",
     "Use Horde": "استخدام Horde",
     "API url": "رابط API",
@@ -206,7 +205,7 @@
     "Scale API Key": "مفتاح API لـ Scale",
     "Alt Method": "طريقة بديلة",
     "AI21 API Key": "مفتاح API لـ AI21",
-    "AI21 Model": "نموذج AI21",    
+    "AI21 Model": "نموذج AI21",
     "View API Usage Metrics": "عرض مقاييس استخدام واجهة برمجة التطبيقات",
     "Show External models (provided by API)": "عرض النماذج الخارجية (المقدمة من قبل واجهة برمجة التطبيقات)",
     "Bot": "روبوت:",
@@ -495,7 +494,6 @@
     "Global Lore First": "سرد العالم أولاً",
     "Recursive Scan": "فحص متكرر",
     "Case Sensitive": "حساس لحالة الأحرف",
-    "Match whole words": "تطابق الكلمات الكاملة",
     "Alert On Overflow": "تنبيه عند التجاوز",
     "World/Lore Editor": "محرر العالم/السرد",
     "--- None ---": "--- لا شيء ---",
@@ -915,7 +913,7 @@
     "Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.": "استخدم المحلل النحوي المناسب لنماذج Google عبر واجهة برمجة التطبيقات الخاصة بهم. معالجة الإشارات الأولية بطيئة، ولكنها تقدم عداد رمز دقيق جدًا.",
     "Load koboldcpp order": "تحميل أمر koboldcpp",
     "Use Google Tokenizer": "استخدم محلل النحوي من Google"
-    
-    
-    
+
+
+
 }
