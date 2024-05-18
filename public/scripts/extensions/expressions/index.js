@@ -1020,11 +1020,11 @@ function parseLlmResponse(emotionResponse, labels) {
         const parsedEmotion = JSON.parse(emotionResponse);
         return parsedEmotion?.emotion ?? fallbackExpression;
     } catch {
-        const fuse = new Fuse(labels, {includeScore: true});
-        console.debug("Using fuzzy search in labels: " + labels.join(', '))
+        const fuse = new Fuse(labels, { includeScore: true });
+        console.debug('Using fuzzy search in labels:', labels);
         const result = fuse.search(emotionResponse);
         if (result.length > 0) {
-            console.debug("fuzzy search found: " + result[0].item + " as closest for the LLM response: " + emotionResponse)
+            console.debug(`fuzzy search found: ${result[0].item} as closest for the LLM response:`, emotionResponse);
             return result[0].item;
         }
     }
