@@ -829,6 +829,7 @@ export class SlashCommandParser {
                     assignment.start = this.index;
                     value = '';
                 }
+                assignment.start = this.index;
                 assignment.value = this.parseClosure();
                 assignment.end = this.index;
                 listValues.push(assignment);
