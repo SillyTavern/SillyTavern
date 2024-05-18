@@ -1423,7 +1423,7 @@ async function runCallback(args, name) {
 
 function abortCallback() {
     $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
-    throw new Error('/abort command executed');
+    throw new Error('/abort command executed', { cause: 'abort' });
 }
 
 async function delayCallback(_, amount) {
@@ -2749,10 +2749,12 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         }
     } catch (e) {
         document.querySelector('#form_sheld').classList.add('script_error');
-        toastr.error(e.message);
         result = new SlashCommandClosureResult();
         result.isError = true;
         result.errorMessage = e.message;
+        if (e.cause !== 'abort') {
+            toastr.error(e.message);
+        }
     } finally {
         delay(1000).then(()=>clearCommandProgressDebounced());
 
