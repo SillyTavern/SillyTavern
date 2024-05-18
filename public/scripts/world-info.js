@@ -1257,6 +1257,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
     }
 
     worldEntriesList.sortable({
+        items: '.world_entry',
         delay: getSortableDelay(),
         handle: '.drag-handle',
         stop: async function (_event, _ui) {
