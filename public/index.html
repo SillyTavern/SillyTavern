@@ -2360,6 +2360,15 @@
                                     <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="5000" form="openai_form" autocomplete="off" />
                                     <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                 </div>
+                                <div class="">
+                                    <div class="range-block-title justifyLeft" id="proxy_current_source" data-i18n="Current source: ">
+                                        Current source:
+                                    </div>
+                                    <label for="openai_show_external_models" class="checkbox_label">
+                                        <input id="proxy_save_completion_source" type="checkbox" />
+                                        <span data-i18n="Save Model/Completion Source?">Save Model/Completion Source?</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
