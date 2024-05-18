@@ -7,7 +7,9 @@ const { getConfigValue, color } = require('../util');
 const { jsonParser } = require('../express-common');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const contentDirectory = path.join(process.cwd(), 'default/content');
+const scaffoldDirectory = path.join(process.cwd(), 'default/scaffold');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
+const scaffoldIndexPath = path.join(scaffoldDirectory, 'index.json');
 const characterCardParser = require('../character-card-parser.js');
 
 const WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES = getConfigValue('whitelistImportDomains', []);
@@ -16,6 +18,8 @@ const WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES = getConfigValue('whitelistImportDo
  * @typedef {Object} ContentItem
  * @property {string} filename
  * @property {string} type
+ * @property {string} [name]
+ * @property {string|null} [folder]
  */
 
 /**
@@ -48,9 +52,7 @@ const CONTENT_TYPES = {
  */
 function getDefaultPresets(directories) {
     try {
-        const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
-        const contentIndex = JSON.parse(contentIndexText);
-
+        const contentIndex = getContentIndex();
         const presets = [];
 
         for (const contentItem of contentIndex) {
@@ -112,8 +114,12 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
             continue;
         }
 
-        contentLog.push(contentItem.filename);
-        const contentPath = path.join(contentDirectory, contentItem.filename);
+        if (!contentItem.folder) {
+            console.log(`Content file ${contentItem.filename} has no parent folder`);
+            continue;
+        }
+
+        const contentPath = path.join(contentItem.folder, contentItem.filename);
 
         if (!fs.existsSync(contentPath)) {
             console.log(`Content file ${contentItem.filename} is missing`);
@@ -129,6 +135,7 @@ async function seedContentForUser(contentIndex, directories, forceCategories) {
 
         const basePath = path.parse(contentItem.filename).base;
         const targetPath = path.join(contentTarget, basePath);
+        contentLog.push(contentItem.filename);
 
         if (fs.existsSync(targetPath)) {
             console.log(`Content file ${contentItem.filename} already exists in ${contentTarget}`);
@@ -157,8 +164,7 @@ async function checkForNewContent(directoriesList, forceCategories = []) {
             return;
         }
 
-        const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
-        const contentIndex = JSON.parse(contentIndexText);
+        const contentIndex = getContentIndex();
         let anyContentAdded = false;
 
         for (const directories of directoriesList) {
@@ -177,6 +183,38 @@ async function checkForNewContent(directoriesList, forceCategories = []) {
     } catch (err) {
         console.log('Content check failed', err);
     }
+}
+
+/**
+ * Gets combined content index from the content and scaffold directories.
+ * @returns {ContentItem[]} Array of content index
+ */
+function getContentIndex() {
+    const result = [];
+
+    if (fs.existsSync(scaffoldIndexPath)) {
+        const scaffoldIndexText = fs.readFileSync(scaffoldIndexPath, 'utf8');
+        const scaffoldIndex = JSON.parse(scaffoldIndexText);
+        if (Array.isArray(scaffoldIndex)) {
+            scaffoldIndex.forEach((item) => {
+                item.folder = scaffoldDirectory;
+            });
+            result.push(...scaffoldIndex);
+        }
+    }
+
+    if (fs.existsSync(contentIndexPath)) {
+        const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
+        const contentIndex = JSON.parse(contentIndexText);
+        if (Array.isArray(contentIndex)) {
+            contentIndex.forEach((item) => {
+                item.folder = contentDirectory;
+            });
+            result.push(...contentIndex);
+        }
+    }
+
+    return result;
 }
 
 /**

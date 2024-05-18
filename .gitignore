@@ -47,3 +47,4 @@ access.log
 public/css/user.css
 /plugins/
 /data
+/default/scaffold

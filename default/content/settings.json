@@ -624,6 +624,7 @@
         "show_external_models": false,
         "proxy_password": "",
         "assistant_prefill": "",
+        "assistant_impersonation": "",
         "use_ai21_tokenizer": false
     }
 }
