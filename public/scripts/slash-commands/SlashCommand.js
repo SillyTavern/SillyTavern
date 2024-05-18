@@ -1,5 +1,25 @@
+import { SlashCommandAbortController } from './SlashCommandAbortController.js';
 import { SlashCommandArgument, SlashCommandNamedArgument } from './SlashCommandArgument.js';
 import { SlashCommandClosure } from './SlashCommandClosure.js';
+import { PARSER_FLAG } from './SlashCommandParser.js';
+import { SlashCommandScope } from './SlashCommandScope.js';
+
+
+
+
+/**
+ * @typedef {{
+ * _pipe:string|SlashCommandClosure,
+ * _scope:SlashCommandScope,
+ * _parserFlags:{[id:PARSER_FLAG]:boolean},
+ * _abortController:SlashCommandAbortController,
+ * [id:string]:string,
+ * }} NamedArguments
+ */
+
+/**
+ * @typedef {string|SlashCommandClosure|(string|SlashCommandClosure)[]} UnnamedArguments
+*/
 
 
 
@@ -8,7 +28,7 @@ export class SlashCommand {
      * Creates a SlashCommand from a properties object.
      * @param {Object} props
      * @param {string} [props.name]
-     * @param {(namedArguments:Object.<string,string|SlashCommandClosure>, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|void|Promise<string|SlashCommandClosure|void>} [props.callback]
+     * @param {(namedArguments:NamedArguments, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|void|Promise<string|SlashCommandClosure|void>} [props.callback]
      * @param {string} [props.helpString]
      * @param {boolean} [props.splitUnnamedArgument]
      * @param {string[]} [props.aliases]
@@ -25,7 +45,7 @@ export class SlashCommand {
 
 
     /**@type {string}*/ name;
-    /**@type {(namedArguments:Object<string, string|SlashCommandClosure>, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>}*/ callback;
+    /**@type {(namedArguments:{_pipe:string|SlashCommandClosure, _scope:SlashCommandScope, _abortController:SlashCommandAbortController, [id:string]:string|SlashCommandClosure}, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|Promise<string|SlashCommandClosure>}*/ callback;
     /**@type {string}*/ helpString;
     /**@type {boolean}*/ splitUnnamedArgument = false;
     /**@type {string[]}*/ aliases = [];

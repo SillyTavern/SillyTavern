@@ -20,7 +20,7 @@ export class SlashCommandExecutor {
     // @ts-ignore
     /**@type {SlashCommandNamedArgumentAssignment[]}*/ namedArgumentList = [];
     /**@type {SlashCommandUnnamedArgumentAssignment[]}*/ unnamedArgumentList = [];
-    /**@type {Object<PARSER_FLAG,boolean>} */ parserFlags;
+    /**@type {{[id:PARSER_FLAG]:boolean}} */ parserFlags;
 
     get commandCount() {
         return 1
