@@ -1,0 +1,17 @@
+[
+    { "lang": "ar-sa",  "display": "عربي (Arabic)" },
+    { "lang": "zh-cn",  "display": "简体中文 (Chinese) (Simplified)" },
+    { "lang": "zh-tw",  "display": "繁體中文 (Chinese) (Taiwan)" },
+    { "lang": "nl-nl",  "display": "Nederlands (Dutch)" },
+    { "lang": "de-de",  "display": "Deutsch (German)" },
+    { "lang": "fr-fr",  "display": "Français (French)" },
+    { "lang": "is-is",  "display": "íslenska (Icelandic)" },
+    { "lang": "it-it",  "display": "Italiano (Italian)" },
+    { "lang": "ja-jp",  "display": "日本語 (Japanese)" },
+    { "lang": "ko-kr",  "display": "한국어 (Korean)" },
+    { "lang": "pt-pt",  "display": "Português (Portuguese brazil)" },
+    { "lang": "ru-ru",  "display": "Русский (Russian)" },
+    { "lang": "es-es",  "display": "Español (Spanish)" },
+    { "lang": "uk-ua",  "display": "Yкраїнська (Ukrainian)" },
+    { "lang": "vi-vn",  "display": "Tiếng Việt (Vietnamese)" }
+]

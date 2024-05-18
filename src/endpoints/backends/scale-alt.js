@@ -7,16 +7,18 @@ const { readSecret, SECRET_KEYS } = require('../secrets');
 
 const router = express.Router();
 
-router.post('/generate', jsonParser, function (request, response) {
+router.post('/generate', jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
-    fetch('https://dashboard.scale.com/spellbook/api/trpc/v2.variant.run', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'cookie': `_jwt=${readSecret(SECRET_KEYS.SCALE_COOKIE)}`,
-        },
-        body: JSON.stringify({
+    try {
+        const cookie = readSecret(request.user.directories, SECRET_KEYS.SCALE_COOKIE);
+
+        if (!cookie) {
+            console.log('No Scale cookie found');
+            return response.sendStatus(400);
+        }
+
+        const body = {
             json: {
                 variant: {
                     name: 'New Variant',
@@ -59,18 +61,41 @@ router.post('/generate', jsonParser, function (request, response) {
                     'modelParameters.logprobs': ['undefined'],
                 },
             },
-        }),
-    })
-        .then(res => res.json())
-        .then(data => {
-            console.log(data.result.data.json.outputs[0]);
-            return response.send({ output: data.result.data.json.outputs[0] });
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            return response.send({ error: true });
+        };
+
+        console.log('Scale request:', body);
+
+        const result = await fetch('https://dashboard.scale.com/spellbook/api/trpc/v2.variant.run', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'cookie': `_jwt=${cookie}`,
+            },
+            timeout: 0,
+            body: JSON.stringify(body),
         });
 
+        if (!result.ok) {
+            const text = await result.text();
+            console.log('Scale request failed', result.statusText, text);
+            return response.status(500).send({ error: { message: result.statusText } });
+        }
+
+        const data = await result.json();
+        const output = data?.result?.data?.json?.outputs?.[0] || '';
+
+        console.log('Scale response:', data);
+
+        if (!output) {
+            console.warn('Scale response is empty');
+            return response.sendStatus(500).send({ error: { message: 'Empty response' } });
+        }
+
+        return response.json({ output });
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
 });
 
 module.exports = { router };

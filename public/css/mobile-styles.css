@@ -28,15 +28,22 @@
         z-index: 30;
         overflow: hidden;
         right: 0;
-        top: 50px;
-        aspect-ratio: 2 / 3;
         width: fit-content;
         max-height: calc(60vh - 60px);
         max-height: calc(60svh - 60px);
         max-width: 90vw;
         max-width: 90svw;
         left: 50%;
-        transform: translateX(-50%);
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        align-items: center;
+        justify-content: center;
+        height: fit-content;
+        width: 100%;
+    }
+
+    .zoomed_avatar .dragClose {
+        display: unset;
     }
 
     /* .world_entry_thin_controls, */
@@ -96,6 +103,11 @@
         left: 0;
         top: 5px;
         border: 1px solid var(--SmartThemeBorderColor);
+    }
+
+    .drawer-content .floating_panel_maximize,
+    .drawer-content .inline-drawer-maximize {
+        display: none;
     }
 
     #select_chat_popup {
@@ -201,7 +213,9 @@
     #left-nav-panel,
     #floatingPrompt,
     #cfgConfig,
-    #logprobsViewer {
+    #logprobsViewer,
+    #movingDivs > div {
+        /* 100vh are fallback units for browsers that don't support svh */
         height: calc(100vh - 45px);
         height: calc(100svh - 45px);
         min-width: 100% !important;
@@ -217,9 +231,16 @@
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     }
 
+    /*
+    #right-nav-panel {
+        padding-right: 15px;
+    }
+    */
+
     #floatingPrompt,
     #cfgConfig,
-    #logprobsViewer {
+    #logprobsViewer,
+    #movingDivs > div {
         height: min-content;
     }
 
@@ -288,6 +309,10 @@
         object-fit: cover;
     }
 
+    body.waifuMode .zoomed_avatar_container {
+        height: 100%;
+    }
+
     body.waifuMode .zoomed_avatar {
         width: fit-content;
         max-height: calc(60vh - 60px);
@@ -335,15 +360,18 @@
     }
 
     body:not(.waifuMode) .zoomed_avatar {
-
-        width: fit-content;
         max-height: calc(60vh - 60px);
         max-height: calc(60svh - 60px);
         max-width: 90vw;
         max-width: 90svw;
+        left: 50%;
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        align-items: center;
+        justify-content: center;
+        height: fit-content;
+        width: 100%;
     }
-
-
 }
 
 /*portrait mode phones*/
@@ -361,10 +389,13 @@
         overflow: hidden;
         display: none;
         right: 0;
-        top: 50px;
-        aspect-ratio: 2 / 3;
         left: 50%;
-        transform: translateX(-50%);
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        align-items: center;
+        justify-content: center;
+        height: fit-content;
+        width: 100%;
     }
 
     .drawer25pWidth {
@@ -390,10 +421,6 @@
         width: 1.15em;
         flex-wrap: wrap;
         height: unset;
-    }
-
-    #extensionsMenuButton {
-        order: 1;
     }
 }
 

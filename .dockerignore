@@ -4,6 +4,7 @@ npm-debug.log
 readme*
 Start.bat
 /dist
-/backups/
+/backups
 cloudflared.exe
 access.log
+/data

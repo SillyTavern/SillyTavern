@@ -10,7 +10,8 @@ router.post('/caption-image', jsonParser, async (request, response) => {
     try {
         const mimeType = request.body.image.split(';')[0].split(':')[1];
         const base64Data = request.body.image.split(',')[1];
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${readSecret(SECRET_KEYS.MAKERSUITE)}`;
+        const key = readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${key}`;
         const body = {
             contents: [{
                 parts: [

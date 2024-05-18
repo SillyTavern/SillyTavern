@@ -1,6 +1,8 @@
 import { callPopup, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced } from '../../../script.js';
-import { extension_settings } from '../../extensions.js';
-import { registerSlashCommand } from '../../slash-commands.js';
+import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { download, getFileText, getSortableDelay, uuidv4 } from '../../utils.js';
 import { resolveVariable } from '../../variables.js';
 import { regex_placement, runRegexScript } from './engine.js';
@@ -71,7 +73,7 @@ async function deleteRegexScript({ existingId }) {
 async function loadRegexScripts() {
     $('#saved_regex_scripts').empty();
 
-    const scriptTemplate = $(await $.get('scripts/extensions/regex/scriptTemplate.html'));
+    const scriptTemplate = $(await renderExtensionTemplateAsync('regex', 'scriptTemplate'));
 
     extension_settings.regex.forEach((script) => {
         // Have to clone here
@@ -94,7 +96,7 @@ async function loadRegexScripts() {
             await onRegexEditorOpenClick(scriptHtml.attr('id'));
         });
         scriptHtml.find('.export_regex').on('click', async function () {
-            const fileName = `${script.scriptName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+            const fileName = `${script.scriptName.replace(/[\s.<>:"/\\|?*\x00-\x1F\x7F]/g, '_').toLowerCase()}.json`;
             const fileData = JSON.stringify(script, null, 4);
             download(fileData, fileName, 'application/json');
         });
@@ -113,7 +115,7 @@ async function loadRegexScripts() {
 }
 
 async function onRegexEditorOpenClick(existingId) {
-    const editorHtml = $(await $.get('scripts/extensions/regex/editor.html'));
+    const editorHtml = $(await renderExtensionTemplateAsync('regex', 'editor'));
 
     // If an ID exists, fill in all the values
     let existingScriptIndex = -1;
@@ -316,14 +318,16 @@ jQuery(async () => {
         return;
     }
 
-    const settingsHtml = await $.get('scripts/extensions/regex/dropdown.html');
+    const settingsHtml = $(await renderExtensionTemplateAsync('regex', 'dropdown'));
     $('#extensions_settings2').append(settingsHtml);
     $('#open_regex_editor').on('click', function () {
         onRegexEditorOpenClick(false);
     });
     $('#import_regex_file').on('change', async function () {
         const inputElement = this instanceof HTMLInputElement && this;
-        await onRegexImportFileChange(inputElement.files[0]);
+        for (const file of inputElement.files) {
+            await onRegexImportFileChange(file);
+        }
         inputElement.value = '';
     });
     $('#import_regex').on('click', function () {
@@ -353,5 +357,20 @@ jQuery(async () => {
     await loadRegexScripts();
     $('#saved_regex_scripts').sortable('enable');
 
-    registerSlashCommand('regex', runRegexCallback, [], '(name=scriptName [input]) – runs a Regex extension script by name on the provided string. The script must be enabled.', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'regex',
+        callback: runRegexCallback,
+        returns: 'replaced text',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'name', 'script name', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'input', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: 'Runs a Regex extension script by name on the provided string. The script must be enabled.',
+    }));
+
 });

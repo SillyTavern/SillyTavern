@@ -1,0 +1,51 @@
+<div>
+    <div class="flex-container flexFlowColumn">
+        <label for="fandomScrapeInput" data-i18n="Enter a URL or the ID of a Fandom wiki page to scrape:">
+            Enter a URL or the ID of a Fandom wiki page to scrape:
+        </label>
+        <small>
+            <span data-i18n="Examples:">Examples:</span>
+            <code>https://harrypotter.fandom.com/</code>
+            <span data-i18n="or">or</span>
+            <code>harrypotter</code>
+        </small>
+        <input type="text" id="fandomScrapeInput" name="fandomScrapeInput" class="text_pole" placeholder="">
+    </div>
+    <div class="flex-container flexFlowColumn">
+        <label for="fandomScrapeFilter">
+            Optional regex to pick the content by its title:
+        </label>
+        <small>
+            <span data-i18n="Example:">Example:</span>
+            <code>/(Azkaban|Weasley)/gi</code>
+        </small>
+        <input type="text" id="fandomScrapeFilter" name="fandomScrapeFilter" class="text_pole" placeholder="">
+    </div>
+    <div class="flex-container flexFlowColumn">
+        <label>
+            Output format:
+        </label>
+        <label class="checkbox_label justifyLeft" for="fandomScrapeOutputSingle">
+            <input id="fandomScrapeOutputSingle" type="radio" name="fandomScrapeOutput" value="single" checked>
+            <div class="flex-container flexFlowColumn flexNoGap">
+                <span data-i18n="Single file">
+                    Single file
+                </span>
+                <small data-i18n="All articles will be concatenated into a single file.">
+                    All articles will be concatenated into a single file.
+                </small>
+            </div>
+        </label>
+        <label class="checkbox_label justifyLeft" for="fandomScrapeOutputMulti">
+            <input id="fandomScrapeOutputMulti" type="radio" name="fandomScrapeOutput" value="multi">
+            <div class="flex-container flexFlowColumn flexNoGap">
+                <span data-i18n="File per article">
+                    File per article
+                </span>
+                <small data-i18n="Each article will be saved as a separate file.">
+                    Not recommended. Each article will be saved as a separate file.
+                </small>
+            </div>
+        </label>
+    </div>
+</div>

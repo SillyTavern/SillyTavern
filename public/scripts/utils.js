@@ -2,6 +2,7 @@ import { getContext } from './extensions.js';
 import { getRequestHeaders } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines } from './power-user.js';
+import { debounce_timeout } from './constants.js';
 
 /**
  * Pagination status string template.
@@ -42,6 +43,10 @@ export function isValidUrl(value) {
  */
 export function stringToRange(input, min, max) {
     let start, end;
+
+    if (typeof input !== 'string') {
+        input = String(input);
+    }
 
     if (input.includes('-')) {
         const parts = input.split('-');
@@ -252,10 +257,10 @@ export function getStringHash(str, seed = 0) {
 /**
  * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
  * @param {function} func The function to debounce.
- * @param {number} [timeout=300] The timeout in milliseconds.
+ * @param {debounce_timeout|number} [timeout=debounce_timeout.default] The timeout based on the common enum values, or in milliseconds.
  * @returns {function} The debounced function.
  */
-export function debounce(func, timeout = 300) {
+export function debounce(func, timeout = debounce_timeout.standard) {
     let timer;
     return (...args) => {
         clearTimeout(timer);
@@ -602,7 +607,25 @@ export function isOdd(number) {
     return number % 2 !== 0;
 }
 
+const dateCache = new Map();
+
+/**
+ * Cached version of moment() to avoid re-parsing the same date strings.
+ * Important: Moment objects are mutable, so use clone() before modifying them!
+ * @param {string|number} timestamp String or number representing a date.
+ * @returns {moment.Moment} Moment object
+ */
 export function timestampToMoment(timestamp) {
+    if (dateCache.has(timestamp)) {
+        return dateCache.get(timestamp);
+    }
+
+    const moment = parseTimestamp(timestamp);
+    dateCache.set(timestamp, moment);
+    return moment;
+}
+
+function parseTimestamp(timestamp) {
     if (!timestamp) {
         return moment.invalid();
     }
@@ -640,8 +663,8 @@ export function timestampToMoment(timestamp) {
 
 /**
  * Compare two moment objects for sorting.
- * @param {*} a The first moment object.
- * @param {*} b The second moment object.
+ * @param {moment.Moment} a The first moment object.
+ * @param {moment.Moment} b The second moment object.
  * @returns {number} A negative number if a is before b, a positive number if a is after b, or 0 if they are equal.
  */
 export function sortMoments(a, b) {
@@ -663,12 +686,17 @@ export function sortMoments(a, b) {
  * splitRecursive('Hello, world!', 3); // ['Hel', 'lo,', 'wor', 'ld!']
 */
 export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '']) {
+    // Invalid length
+    if (length <= 0) {
+        return [input];
+    }
+
     const delim = delimiters[0] ?? '';
     const parts = input.split(delim);
 
     const flatParts = parts.flatMap(p => {
         if (p.length < length) return p;
-        return splitRecursive(input, length, delimiters.slice(1));
+        return splitRecursive(p, length, delimiters.slice(1));
     });
 
     // Merge short chunks
@@ -702,6 +730,24 @@ export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '
 export function isDataURL(str) {
     const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@/?#]+)?$/i;
     return regex.test(str);
+}
+
+/**
+ * Gets the size of an image from a data URL.
+ * @param {string} dataUrl Image data URL
+ * @returns {Promise<{ width: number, height: number }>} Image size
+ */
+export function getImageSizeFromDataURL(dataUrl) {
+    const image = new Image();
+    image.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        image.onload = function () {
+            resolve({ width: image.width, height: image.height });
+        };
+        image.onerror = function () {
+            reject(new Error('Failed to load image'));
+        };
+    });
 }
 
 export function getCharaFilename(chid) {
@@ -743,6 +789,29 @@ export function extractAllWords(value) {
  */
 export function escapeRegex(string) {
     return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+/**
+ * Instantiates a regular expression from a string.
+ * @param {string} input The input string.
+ * @returns {RegExp} The regular expression instance.
+ * @copyright Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
+ */
+export function regexFromString(input) {
+    try {
+        // Parse input
+        var m = input.match(/(\/?)(.+)\1([a-z]*)/i);
+
+        // Invalid flags
+        if (m[3] && !/^(?!.*?(.).*?\1)[gmixXsuUAJ]+$/.test(m[3])) {
+            return RegExp(input);
+        }
+
+        // Create the regular expression
+        return new RegExp(m[2], m[3]);
+    } catch {
+        return;
+    }
 }
 
 export class Stopwatch {
@@ -970,11 +1039,11 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
     const requestBody = {
         image: dataURL,
         ch_name: characterName,
-        filename: filename,
+        filename: String(filename).replace(/\./g, '_'),
     };
 
     // Send the data URL to your backend using fetch
-    const response = await fetch('/uploadimage', {
+    const response = await fetch('/api/images/upload', {
         method: 'POST',
         body: JSON.stringify(requestBody),
         headers: {
@@ -1026,14 +1095,50 @@ export function loadFileToDocument(url, type) {
 }
 
 /**
+ * Ensure that we can import war crime image formats like WEBP and AVIF.
+ * @param {File} file Input file
+ * @returns {Promise<File>} A promise that resolves to the supported file.
+ */
+export async function ensureImageFormatSupported(file) {
+    const supportedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/bmp',
+        'image/tiff',
+        'image/gif',
+        'image/apng',
+    ];
+
+    if (supportedTypes.includes(file.type) || !file.type.startsWith('image/')) {
+        return file;
+    }
+
+    return await convertImageFile(file, 'image/png');
+}
+
+/**
+ * Converts an image file to a given format.
+ * @param {File} inputFile File to convert
+ * @param {string} type Target file type
+ * @returns {Promise<File>} A promise that resolves to the converted file.
+ */
+export async function convertImageFile(inputFile, type = 'image/png') {
+    const base64 = await getBase64Async(inputFile);
+    const thumbnail = await createThumbnail(base64, null, null, type);
+    const blob = await fetch(thumbnail).then(res => res.blob());
+    const outputFile = new File([blob], inputFile.name, { type });
+    return outputFile;
+}
+
+/**
  * Creates a thumbnail from a data URL.
  * @param {string} dataUrl The data URL encoded data of the image.
- * @param {number} maxWidth The maximum width of the thumbnail.
- * @param {number} maxHeight The maximum height of the thumbnail.
+ * @param {number|null} maxWidth The maximum width of the thumbnail.
+ * @param {number|null} maxHeight The maximum height of the thumbnail.
  * @param {string} [type='image/jpeg'] The type of the thumbnail.
  * @returns {Promise<string>} A promise that resolves to the thumbnail data URL.
  */
-export function createThumbnail(dataUrl, maxWidth, maxHeight, type = 'image/jpeg') {
+export function createThumbnail(dataUrl, maxWidth = null, maxHeight = null, type = 'image/jpeg') {
     // Someone might pass in a base64 encoded string without the data URL prefix
     if (!dataUrl.includes('data:')) {
         dataUrl = `data:image/jpeg;base64,${dataUrl}`;
@@ -1050,6 +1155,16 @@ export function createThumbnail(dataUrl, maxWidth, maxHeight, type = 'image/jpeg
             const aspectRatio = img.width / img.height;
             let thumbnailWidth = maxWidth;
             let thumbnailHeight = maxHeight;
+
+            if (maxWidth === null) {
+                thumbnailWidth = img.width;
+                maxWidth = img.width;
+            }
+
+            if (maxHeight === null) {
+                thumbnailHeight = img.height;
+                maxHeight = img.height;
+            }
 
             if (img.width > img.height) {
                 thumbnailHeight = maxWidth / aspectRatio;
@@ -1111,19 +1226,47 @@ export function uuidv4() {
     });
 }
 
-function postProcessText(text) {
-    // Collapse multiple newlines into one
-    text = collapseNewlines(text);
-    // Trim leading and trailing whitespace, and remove empty lines
-    text = text.split('\n').map(l => l.trim()).filter(Boolean).join('\n');
+function postProcessText(text, collapse = true) {
     // Remove carriage returns
     text = text.replace(/\r/g, '');
+    // Replace tabs with spaces
+    text = text.replace(/\t/g, ' ');
     // Normalize unicode spaces
     text = text.replace(/\u00A0/g, ' ');
+    // Collapse multiple newlines into one
+    if (collapse) {
+        text = collapseNewlines(text);
+        // Trim leading and trailing whitespace, and remove empty lines
+        text = text.split('\n').map(l => l.trim()).filter(Boolean).join('\n');
+    } else {
+        // Replace more than 4 newlines with 4 newlines
+        text = text.replace(/\n{4,}/g, '\n\n\n\n');
+        // Trim lines that contain nothing but whitespace
+        text = text.split('\n').map(l => /^\s+$/.test(l) ? '' : l).join('\n');
+    }
     // Collapse multiple spaces into one (except for newlines)
     text = text.replace(/ {2,}/g, ' ');
     // Remove leading and trailing spaces
     text = text.trim();
+    return text;
+}
+
+/**
+ * Uses Readability.js to parse the text from a web page.
+ * @param {Document} document HTML document
+ * @param {string} [textSelector='body'] The fallback selector for the text to parse.
+ * @returns {Promise<string>} A promise that resolves to the parsed text.
+ */
+export async function getReadableText(document, textSelector = 'body') {
+    if (isProbablyReaderable(document)) {
+        const parser = new Readability(document);
+        const article = parser.parse();
+        return postProcessText(article.textContent, false);
+    }
+
+    const elements = document.querySelectorAll(textSelector);
+    const rawText = Array.from(elements).map(e => e.textContent).join('\n');
+    const text = postProcessText(rawText);
     return text;
 }
 
@@ -1188,10 +1331,7 @@ export async function extractTextFromHTML(blob, textSelector = 'body') {
     const html = await blob.text();
     const domParser = new DOMParser();
     const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
-    const elements = document.querySelectorAll(textSelector);
-    const rawText = Array.from(elements).map(e => e.textContent).join('\n');
-    const text = postProcessText(rawText);
-    return text;
+    return await getReadableText(document, textSelector);
 }
 
 /**
@@ -1205,6 +1345,311 @@ export async function extractTextFromMarkdown(blob) {
     const html = converter.makeHtml(markdown);
     const domParser = new DOMParser();
     const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
-    const text = postProcessText(document.body.textContent);
+    const text = postProcessText(document.body.textContent, false);
     return text;
+}
+
+export async function extractTextFromEpub(blob) {
+    async function initEpubJs() {
+        const epubScript = new Promise((resolve, reject) => {
+            const epubScript = document.createElement('script');
+            epubScript.async = true;
+            epubScript.src = 'lib/epub.min.js';
+            epubScript.onload = resolve;
+            epubScript.onerror = reject;
+            document.head.appendChild(epubScript);
+        });
+
+        const jszipScript = new Promise((resolve, reject) => {
+            const jszipScript = document.createElement('script');
+            jszipScript.async = true;
+            jszipScript.src = 'lib/jszip.min.js';
+            jszipScript.onload = resolve;
+            jszipScript.onerror = reject;
+            document.head.appendChild(jszipScript);
+        });
+
+        return Promise.all([epubScript, jszipScript]);
+    }
+
+    if (!('ePub' in window)) {
+        await initEpubJs();
+    }
+
+    const book = ePub(blob);
+    await book.ready;
+    const sectionPromises = [];
+
+    book.spine.each((section) => {
+        const sectionPromise = (async () => {
+            const chapter = await book.load(section.href);
+            if (!(chapter instanceof Document) || !chapter.body?.textContent) {
+                return '';
+            }
+            return chapter.body.textContent.trim();
+        })();
+
+        sectionPromises.push(sectionPromise);
+    });
+
+    const content = await Promise.all(sectionPromises);
+    const text = content.filter(text => text);
+    return postProcessText(text.join('\n'), false);
+}
+
+/**
+ * Extracts text from an Office document using the server plugin.
+ * @param {File} blob File to extract text from
+ * @returns {Promise<string>} A promise that resolves to the extracted text.
+ */
+export async function extractTextFromOffice(blob) {
+    async function checkPluginAvailability() {
+        try {
+            const result = await fetch('/api/plugins/office/probe', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+            });
+
+            return result.ok;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    const isPluginAvailable = await checkPluginAvailability();
+
+    if (!isPluginAvailable) {
+        throw new Error('Importing Office documents requires a server plugin. Please refer to the documentation for more information.');
+    }
+
+    const base64 = await getBase64Async(blob);
+
+    const response = await fetch('/api/plugins/office/parse', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ data: base64 }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to parse the Office document');
+    }
+
+    const data = await response.text();
+    return postProcessText(data, false);
+}
+
+/**
+ * Sets a value in an object by a path.
+ * @param {object} obj Object to set value in
+ * @param {string} path Key path
+ * @param {any} value Value to set
+ * @returns {void}
+ */
+export function setValueByPath(obj, path, value) {
+    const keyParts = path.split('.');
+    let currentObject = obj;
+
+    for (let i = 0; i < keyParts.length - 1; i++) {
+        const part = keyParts[i];
+
+        if (!Object.hasOwn(currentObject, part)) {
+            currentObject[part] = {};
+        }
+
+        currentObject = currentObject[part];
+    }
+
+    currentObject[keyParts[keyParts.length - 1]] = value;
+}
+
+/**
+ * Flashes the given HTML element via CSS flash animation for a defined period
+ * @param {JQuery<HTMLElement>} element - The element to flash
+ * @param {number} timespan - A numer in milliseconds how the flash should last
+ */
+export function flashHighlight(element, timespan = 2000) {
+    element.addClass('flash animated');
+    setTimeout(() => element.removeClass('flash animated'), timespan);
+}
+
+/**
+ * Performs a case-insensitive and accent-insensitive substring search.
+ * This function normalizes the strings to remove diacritical marks and converts them to lowercase to ensure the search is insensitive to case and accents.
+ *
+ * @param {string} text - The text in which to search for the substring.
+ * @param {string} searchTerm - The substring to search for in the text.
+ * @returns {boolean} - Returns true if the searchTerm is found within the text, otherwise returns false.
+ */
+export function includesIgnoreCaseAndAccents(text, searchTerm) {
+    if (!text || !searchTerm) return false; // Return false if either string is empty
+
+    // Normalize and remove diacritics, then convert to lower case
+    const normalizedText = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normalizedSearchTerm = searchTerm.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+    // Check if the normalized text includes the normalized search term
+    return normalizedText.includes(normalizedSearchTerm);
+}
+
+/**
+ * @typedef {object} Select2Option The option object for select2 controls
+ * @property {string} id - The unique ID inside this select
+ * @property {string} text - The text for this option
+ * @property {number?} [count] - Optionally show the count how often that option was chosen already
+ */
+
+/**
+ * Returns a unique hash as ID for a select2 option text
+ *
+ * @param {string} option - The option
+ * @returns {string} A hashed version of that option
+ */
+export function getSelect2OptionId(option) {
+    return String(getStringHash(option));
+}
+
+/**
+ * Modifies the select2 options by adding not existing one and optionally selecting them
+ *
+ * @param {JQuery<HTMLElement>} element - The "select" element to add the options to
+ * @param {string[]|Select2Option[]} items - The option items to build, add or select
+ * @param {object} [options] - Optional arguments
+ * @param {boolean} [options.select=false] - Whether the options should be selected right away
+ * @param {object} [options.changeEventArgs=null] - Optional event args being passed into the "change" event when its triggered because a new options is selected
+ */
+export function select2ModifyOptions(element, items, { select = false, changeEventArgs = null } = {}) {
+    if (!items.length) return;
+    /** @type {Select2Option[]} */
+    const dataItems = items.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
+
+    const existingValues = [];
+    dataItems.forEach(item => {
+        // Set the value, creating a new option if necessary
+        if (element.find('option[value=\'' + item.id + '\']').length) {
+            if (select) existingValues.push(item.id);
+        } else {
+            // Create a DOM Option and optionally pre-select by default
+            var newOption = new Option(item.text, item.id, select, select);
+            // Append it to the select
+            element.append(newOption);
+            if (select) element.trigger('change', changeEventArgs);
+        }
+        if (existingValues.length) element.val(existingValues).trigger('change', changeEventArgs);
+    });
+}
+
+/**
+ * Returns the ajax settings that can be used on the select2 ajax property to dynamically get the data.
+ * Can be used on a single global array, querying data from the server or anything similar.
+ *
+ * @param {function():Select2Option[]} dataProvider - The provider/function to retrieve the data - can be as simple as "() => myData" for arrays
+ * @return {{transport: (params, success, failure) => any}} The ajax object with the transport function to use on the select2 ajax property
+ */
+export function dynamicSelect2DataViaAjax(dataProvider) {
+    function dynamicSelect2DataTransport(params, success, failure) {
+        var items = dataProvider();
+        // fitering if params.data.q available
+        if (params.data && params.data.q) {
+            items = items.filter(function (item) {
+                return includesIgnoreCaseAndAccents(item.text, params.data.q);
+            });
+        }
+        var promise = new Promise(function (resolve, reject) {
+            resolve({ results: items });
+        });
+        promise.then(success);
+        promise.catch(failure);
+    }
+    const ajax = {
+        transport: dynamicSelect2DataTransport,
+    };
+    return ajax;
+}
+
+/**
+ * Checks whether a given control is a select2 choice element - meaning one of the results being displayed in the select multi select box
+ * @param {JQuery<HTMLElement>|HTMLElement} element - The element to check
+ * @returns {boolean} Whether this is a choice element
+ */
+export function isSelect2ChoiceElement(element) {
+    const $element = $(element);
+    return ($element.hasClass('select2-selection__choice__display') || $element.parents('.select2-selection__choice__display').length > 0);
+}
+
+/**
+ * Subscribes a 'click' event handler to the choice elements of a select2 multi-select control
+ *
+ * @param {JQuery<HTMLElement>} control The original control the select2 was applied to
+ * @param {function(HTMLElement):void} action - The action to execute when a choice element is clicked
+ * @param {object} options - Optional parameters
+ * @param {boolean} [options.buttonStyle=false] - Whether the choices should be styles as a clickable button with color and hover transition, instead of just changed cursor
+ * @param {boolean} [options.closeDrawer=false] - Whether the drawer should be closed and focus removed after the choice item was clicked
+ * @param {boolean} [options.openDrawer=false] - Whether the drawer should be opened, even if this click would normally close it
+ */
+export function select2ChoiceClickSubscribe(control, action, { buttonStyle = false, closeDrawer = false, openDrawer = false } = {}) {
+    // Add class for styling (hover color, changed cursor, etc)
+    control.addClass('select2_choice_clickable');
+    if (buttonStyle) control.addClass('select2_choice_clickable_buttonstyle');
+
+    // Get the real container below and create a click handler on that one
+    const select2Container = control.next('span.select2-container');
+    select2Container.on('click', function (event) {
+        const isChoice = isSelect2ChoiceElement(event.target);
+        if (isChoice) {
+            event.preventDefault();
+
+            // select2 still bubbles the event to open the dropdown. So we close it here and remove focus if we want that
+            if (closeDrawer) {
+                control.select2('close');
+                setTimeout(() => select2Container.find('textarea').trigger('blur'), debounce_timeout.quick);
+            }
+            if (openDrawer) {
+                control.select2('open');
+            }
+
+            // Now execute the actual action that was subscribed
+            action(event.target);
+        }
+    });
+}
+
+/**
+ * Applies syntax highlighting to a given regex string by generating HTML with classes
+ *
+ * @param {string} regexStr - The javascript compatible regex string
+ * @returns {string} The html representation of the highlighted regex
+ */
+export function highlightRegex(regexStr) {
+    // Function to escape HTML special characters for safety
+    const escapeHtml = (str) => str.replace(/[&<>"']/g, match => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;',
+    })[match]);
+
+    // Replace special characters with their HTML-escaped forms
+    regexStr = escapeHtml(regexStr);
+
+    // Patterns that we want to highlight only if they are not escaped
+    const patterns = {
+        brackets: /(?<!\\)\[.*?\]/g,  // Non-escaped squary brackets
+        quantifiers: /(?<!\\)[*+?{}]/g,  // Non-escaped quantifiers
+        operators: /(?<!\\)[|.^$()]/g,  // Non-escaped operators like | and ()
+        specialChars: /\\./g,
+        flags: /(?<=\/)([gimsuy]*)$/g,  // Match trailing flags
+        delimiters: /^\/|(?<![\\<])\//g,  // Match leading or trailing delimiters
+    };
+
+    // Function to replace each pattern with a highlighted HTML span
+    const wrapPattern = (pattern, className) => {
+        regexStr = regexStr.replace(pattern, match => `<span class="${className}">${match}</span>`);
+    };
+
+    // Apply highlighting patterns
+    wrapPattern(patterns.brackets, 'regex-brackets');
+    wrapPattern(patterns.quantifiers, 'regex-quantifier');
+    wrapPattern(patterns.operators, 'regex-operator');
+    wrapPattern(patterns.specialChars, 'regex-special');
+    wrapPattern(patterns.flags, 'regex-flags');
+    wrapPattern(patterns.delimiters, 'regex-delimiter');
+
+    return `<span class="regex-highlight">${regexStr}</span>`;
 }

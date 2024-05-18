@@ -76,6 +76,12 @@
 .world_entry_form_control {
     display: flex;
     flex-direction: column;
+    position: relative;
+}
+
+.world_entry_form_control .keyprimarytextpole,
+.world_entry_form_control .keysecondarytextpole {
+    padding-right: 25px;
 }
 
 .world_entry_thin_controls {
@@ -101,7 +107,7 @@
     height: auto;
     margin-top: 0;
     margin-bottom: 0;
-    min-height: calc(var(--mainFontSize) + 13px);
+    min-height: calc(var(--mainFontSize) + 14px);
 }
 
 .delete_entry_button {
@@ -157,7 +163,12 @@
     width: 10em;
 }
 
-#world_info_search,
+#world_info_search {
+    width: 10em;
+    min-width: 10em;
+    flex-grow: 1;
+}
+
 #world_info_sort_order {
     width: 7em;
 }
@@ -190,4 +201,59 @@
 
 .WIEntryHeaderTitleMobile {
     display: none;
+}
+
+span.select2-container .select2-selection__choice__display:has(> .regex_item),
+span.select2-container .select2-results__option:has(> .result_block .regex_item) {
+    background-color: #D27D2D30;
+}
+
+.regex_item .regex_icon {
+    background-color: var(--black30a);
+    color: var(--SmartThemeBodyColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 7px;
+    font-weight: bold;
+    font-size: calc(var(--mainFontSize) * 0.75);
+    padding: 0px 3px;
+    position: relative;
+    top: -1px;
+    margin-right: 3px;
+}
+
+.select2-results__option .regex_item .regex_icon {
+    margin-right: 6px;
+}
+
+.select2-results__option .item_count {
+    margin-left: 10px;
+    float: right;
+}
+
+select.keyselect+span.select2-container .select2-selection--multiple {
+    padding-right: 30px;
+}
+
+.switch_input_type_icon {
+    cursor: pointer;
+    font-weight: bold;
+    height: 20px;
+    width: fit-content;
+    margin-right: 5px;
+    margin-top: calc(5px + var(--mainFontSize));
+    position: absolute;
+    right: 0;
+    padding: 1px;
+
+    background-color: transparent;
+    border: none;
+    font-size: 1em;
+
+    opacity: 0.5;
+    color: var(--SmartThemeBodyColor);
+    transition: opacity 0.3s;
+}
+
+.switch_input_type_icon:hover {
+    opacity: 1;
 }

@@ -1,0 +1,128 @@
+<div class="wide100p padding5">
+    <h2 class="marginBot5">
+        <span data-i18n="Data Bank">
+            Data Bank
+        </span>
+    </h2>
+    <div data-i18n="These files will be available for extensions that support attachments (e.g. Vector Storage).">
+        These files will be available for extensions that support attachments (e.g. Vector Storage).
+    </div>
+    <div class="marginTopBot5">
+        <span data-i18n="Supported file types: Plain Text, PDF, Markdown, HTML, EPUB." >
+            Supported file types: Plain Text, PDF, Markdown, HTML, EPUB.
+        </span>
+        <span data-i18n="Drag and drop files here to upload.">
+            Drag and drop files here to upload.
+        </span>
+    </div>
+    <div class="flex-container marginTopBot5">
+        <input type="search" id="attachmentSearch" class="attachmentSearch text_pole margin0 flex1" placeholder="Search...">
+        <select id="attachmentSort" class="attachmentSort text_pole margin0 flex1 textarea_compact">
+            <option data-sort-field="created" data-sort-order="desc" data-i18n="Date (Newest First)">
+                Date (Newest First)
+            </option>
+            <option data-sort-field="created" data-sort-order="asc" data-i18n="Date (Oldest First)">
+                Date (Oldest First)
+            </option>
+            <option data-sort-field="name" data-sort-order="asc" data-i18n="Name (A-Z)">
+                Name (A-Z)
+            </option>
+            <option data-sort-field="name" data-sort-order="desc" data-i18n="Name (Z-A)">
+                Name (Z-A)
+            </option>
+            <option data-sort-field="size" data-sort-order="asc" data-i18n="Size (Smallest First)">
+                Size (Smallest First)
+            </option>
+            <option data-sort-field="size" data-sort-order="desc" data-i18n="Size (Largest First)">
+                Size (Largest First)
+            </option>
+        </select>
+
+    </div>
+    <div class="justifyLeft globalAttachmentsBlock marginBot10">
+        <h3 class="globalAttachmentsTitle margin0 title_restorable">
+            <span data-i18n="Global Attachments">
+                Global Attachments
+            </span>
+            <div class="openActionModalButton menu_button menu_button_icon">
+                <i class="fa-solid fa-plus"></i>
+                <span data-i18n="Add">Add</span>
+            </div>
+        </h3>
+        <small data-i18n="These files are available for all characters in all chats.">
+            These files are available for all characters in all chats.
+        </small>
+        <div class="globalAttachmentsList attachmentsList"></div>
+        <hr>
+    </div>
+    <div class="justifyLeft characterAttachmentsBlock marginBot10">
+        <h3 class="characterAttachmentsTitle margin0 title_restorable">
+            <span data-i18n="Character Attachments">
+                Character Attachments
+            </span>
+            <div class="openActionModalButton menu_button menu_button_icon">
+                <i class="fa-solid fa-plus"></i>
+                <span data-i18n="Add">Add</span>
+            </div>
+        </h3>
+        <div class="flex-container flexFlowColumn">
+            <strong><small class="characterAttachmentsName"></small></strong>
+            <small>
+                <span data-i18n="These files are available the current character in all chats they are in.">
+                    These files are available the current character in all chats they are in.
+                </span>
+                <span>
+                    <span data-i18n="Saved locally. Not exported.">
+                        Saved locally. Not exported.
+                    </span>
+                </span>
+            </small>
+        </div>
+        <div class="characterAttachmentsList attachmentsList"></div>
+        <hr>
+    </div>
+    <div class="justifyLeft chatAttachmentsBlock marginBot10">
+        <h3 class="chatAttachmentsTitle margin0 title_restorable">
+            <span data-i18n="Chat Attachments">
+                Chat Attachments
+            </span>
+            <div class="openActionModalButton menu_button menu_button_icon">
+                <i class="fa-solid fa-plus"></i>
+                <span data-i18n="Add">Add</span>
+            </div>
+        </h3>
+        <div class="flex-container flexFlowColumn">
+            <strong><small class="chatAttachmentsName"></small></strong>
+            <small data-i18n="These files are available to all characters in the current chat.">
+                These files are available to all characters in the current chat.
+            </small>
+        </div>
+        <div class="chatAttachmentsList attachmentsList"></div>
+    </div>
+
+    <div class="attachmentListItemTemplate template_element">
+        <div class="attachmentListItem flex-container alignItemsCenter flexGap10">
+            <div class="attachmentFileIcon fa-solid fa-file-alt"></div>
+            <div class="attachmentListItemName flex1"></div>
+            <small class="attachmentListItemCreated"></small>
+            <small class="attachmentListItemSize"></small>
+            <div class="viewAttachmentButton right_menu_button fa-fw fa-solid fa-magnifying-glass" title="View attachment content"></div>
+            <div class="disableAttachmentButton right_menu_button fa-fw fa-solid fa-comment" title="Disable attachment"></div>
+            <div class="enableAttachmentButton right_menu_button fa-fw fa-solid fa-comment-slash" title="Enable attachment"></div>
+            <div class="moveAttachmentButton right_menu_button fa-fw fa-solid fa-arrows-alt" title="Move attachment"></div>
+            <div class="editAttachmentButton right_menu_button fa-fw fa-solid fa-pencil" title="Edit attachment"></div>
+            <div class="downloadAttachmentButton right_menu_button fa-fw fa-solid fa-download" title="Download attachment"></div>
+            <div class="deleteAttachmentButton right_menu_button fa-fw fa-solid fa-trash" title="Delete attachment"></div>
+        </div>
+    </div>
+
+    <div class="actionButtonTemplate">
+        <div class="actionButton list-group-item flex-container flexGap5" style="align-items: center;" title="">
+            <i class="actionButtonIcon"></i>
+            <img class="actionButtonImg"/>
+            <span class="actionButtonText"></span>
+        </div>
+    </div>
+
+    <div class="actionButtonsModal popper-modal options-content list-group"></div>
+</div>

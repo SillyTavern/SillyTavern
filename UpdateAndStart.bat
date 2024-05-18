@@ -11,7 +11,8 @@ if %errorlevel% neq 0 (
         echo There were errors while updating. Please download the latest version manually.
     )
 )
-call npm install
+set NODE_ENV=production
+call npm install --no-audit --no-fund --quiet --omit=dev
 node server.js %*
 pause
 popd

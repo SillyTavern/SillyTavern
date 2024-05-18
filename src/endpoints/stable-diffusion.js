@@ -3,7 +3,7 @@ const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
 const { getBasicAuthHeader, delay, getHexString } = require('../util.js');
 const fs = require('fs');
-const { DIRECTORIES } = require('../constants.js');
+const path = require('path');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser } = require('../express-common');
 const { readSecret, SECRET_KEYS } = require('./secrets.js');
@@ -43,9 +43,14 @@ function removePattern(x, pattern) {
     return x;
 }
 
-function getComfyWorkflows() {
+/**
+ * Gets the comfy workflows.
+ * @param {import('../users.js').UserDirectoryList} directories
+ * @returns {string[]} List of comfy workflows
+ */
+function getComfyWorkflows(directories) {
     return fs
-        .readdirSync(DIRECTORIES.comfyWorkflows)
+        .readdirSync(directories.comfyWorkflows)
         .filter(file => file[0] != '.' && file.toLowerCase().endsWith('.json'))
         .sort(Intl.Collator().compare);
 }
@@ -448,7 +453,7 @@ comfy.post('/vaes', jsonParser, async (request, response) => {
 
 comfy.post('/workflows', jsonParser, async (request, response) => {
     try {
-        const data = getComfyWorkflows();
+        const data = getComfyWorkflows(request.user.directories);
         return response.send(data);
     } catch (error) {
         console.log(error);
@@ -458,14 +463,11 @@ comfy.post('/workflows', jsonParser, async (request, response) => {
 
 comfy.post('/workflow', jsonParser, async (request, response) => {
     try {
-        let path = `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`;
-        if (!fs.existsSync(path)) {
-            path = `${DIRECTORIES.comfyWorkflows}/Default_Comfy_Workflow.json`;
+        let filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
+        if (!fs.existsSync(filePath)) {
+            filePath = path.join(request.user.directories.comfyWorkflows, 'Default_Comfy_Workflow.json');
         }
-        const data = fs.readFileSync(
-            path,
-            { encoding: 'utf-8' },
-        );
+        const data = fs.readFileSync(filePath, { encoding: 'utf-8' });
         return response.send(JSON.stringify(data));
     } catch (error) {
         console.log(error);
@@ -475,12 +477,9 @@ comfy.post('/workflow', jsonParser, async (request, response) => {
 
 comfy.post('/save-workflow', jsonParser, async (request, response) => {
     try {
-        writeFileAtomicSync(
-            `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`,
-            request.body.workflow,
-            'utf8',
-        );
-        const data = getComfyWorkflows();
+        const filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
+        writeFileAtomicSync(filePath, request.body.workflow, 'utf8');
+        const data = getComfyWorkflows(request.user.directories);
         return response.send(data);
     } catch (error) {
         console.log(error);
@@ -490,9 +489,9 @@ comfy.post('/save-workflow', jsonParser, async (request, response) => {
 
 comfy.post('/delete-workflow', jsonParser, async (request, response) => {
     try {
-        let path = `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`;
-        if (fs.existsSync(path)) {
-            fs.unlinkSync(path);
+        const filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
         }
         return response.sendStatus(200);
     } catch (error) {
@@ -548,9 +547,9 @@ comfy.post('/generate', jsonParser, async (request, response) => {
 
 const together = express.Router();
 
-together.post('/models', jsonParser, async (_, response) => {
+together.post('/models', jsonParser, async (request, response) => {
     try {
-        const key = readSecret(SECRET_KEYS.TOGETHERAI);
+        const key = readSecret(request.user.directories, SECRET_KEYS.TOGETHERAI);
 
         if (!key) {
             console.log('TogetherAI key not found.');
@@ -589,7 +588,7 @@ together.post('/models', jsonParser, async (_, response) => {
 
 together.post('/generate', jsonParser, async (request, response) => {
     try {
-        const key = readSecret(SECRET_KEYS.TOGETHERAI);
+        const key = readSecret(request.user.directories, SECRET_KEYS.TOGETHERAI);
 
         if (!key) {
             console.log('TogetherAI key not found.');
@@ -638,7 +637,121 @@ together.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
+const drawthings = express.Router();
+
+drawthings.post('/ping', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/';
+
+        const result = await fetch(url, {
+            method: 'HEAD',
+        });
+
+        if (!result.ok) {
+            throw new Error('SD DrawThings API returned an error.');
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+drawthings.post('/get-model', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/';
+
+        const result = await fetch(url, {
+            method: 'GET',
+        });
+        const data = await result.json();
+
+        return response.send(data['model']);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+drawthings.post('/generate', jsonParser, async (request, response) => {
+    try {
+        console.log('SD DrawThings API request:', request.body);
+
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/txt2img';
+
+        const body = { ...request.body };
+        const auth = getBasicAuthHeader(request.body.auth);
+        delete body.url;
+        delete body.auth;
+
+        const result = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': auth,
+            },
+            timeout: 0,
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            throw new Error('SD DrawThings API returned an error.', { cause: text });
+        }
+
+        const data = await result.json();
+        return response.send(data);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+const pollinations = express.Router();
+
+pollinations.post('/generate', jsonParser, async (request, response) => {
+    try {
+        const promptUrl = new URL(`https://image.pollinations.ai/prompt/${encodeURIComponent(request.body.prompt)}`);
+        const params = new URLSearchParams({
+            model: String(request.body.model),
+            negative_prompt: String(request.body.negative_prompt),
+            seed: String(Math.floor(Math.random() * 10_000_000)),
+            enhance: String(request.body.enhance ?? false),
+            refine: String(request.body.refine ?? false),
+            width: String(request.body.width ?? 1024),
+            height: String(request.body.height ?? 1024),
+            nologo: String(true),
+            nofeed: String(true),
+            referer: 'sillytavern',
+        });
+        promptUrl.search = params.toString();
+
+        console.log('Pollinations request URL:', promptUrl.toString());
+
+        const result = await fetch(promptUrl);
+
+        if (!result.ok) {
+            console.log('Pollinations returned an error.', result.status, result.statusText);
+            throw new Error('Pollinations request failed.');
+        }
+
+        const buffer = await result.buffer();
+        const base64 = buffer.toString('base64');
+
+        return response.send({ image: base64 });
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.use('/comfy', comfy);
 router.use('/together', together);
+router.use('/drawthings', drawthings);
+router.use('/pollinations', pollinations);
 
 module.exports = { router };

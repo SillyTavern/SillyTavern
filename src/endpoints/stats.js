@@ -8,11 +8,15 @@ const readFile = fs.promises.readFile;
 const readdir = fs.promises.readdir;
 
 const { jsonParser } = require('../express-common');
-const { DIRECTORIES } = require('../constants');
+const { getAllUserHandles, getUserDirectories } = require('../users');
 
-let charStats = {};
+const STATS_FILE = 'stats.json';
+
+/**
+ * @type {Map<string, Object>} The stats object for each user.
+ */
+const STATS = new Map();
 let lastSaveTimestamp = 0;
-const statsFilePath = 'public/stats.json';
 
 /**
  * Convert a timestamp to an integer timestamp.
@@ -26,19 +30,19 @@ const statsFilePath = 'public/stats.json';
  * the Unix Epoch, which can be converted to a JavaScript Date object with new Date().
  *
  * @param {string|number} timestamp - The timestamp to convert.
- * @returns {number|null} The timestamp in milliseconds since the Unix Epoch, or null if the input cannot be parsed.
+ * @returns {number} The timestamp in milliseconds since the Unix Epoch, or 0 if the input cannot be parsed.
  *
  * @example
  * // Unix timestamp
  * timestampToMoment(1609459200);
  * // ST humanized timestamp
- * timestampToMoment("2021-01-01 @00h 00m 00s 000ms");
+ * timestampToMoment("2021-01-01 \@00h 00m 00s 000ms");
  * // Date string
  * timestampToMoment("January 1, 2021 12:00am");
  */
 function timestampToMoment(timestamp) {
     if (!timestamp) {
-        return null;
+        return 0;
     }
 
     if (typeof timestamp === 'number') {
@@ -66,7 +70,7 @@ function timestampToMoment(timestamp) {
         )}:${second.padStart(2, '0')}.${millisecond.padStart(3, '0')}Z`;
     };
     const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
-    if (!isNaN(new Date(isoTimestamp1))) {
+    if (!isNaN(Number(new Date(isoTimestamp1)))) {
         return new Date(isoTimestamp1).getTime();
     }
 
@@ -100,11 +104,11 @@ function timestampToMoment(timestamp) {
         )}:00Z`;
     };
     const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
-    if (!isNaN(new Date(isoTimestamp2))) {
+    if (!isNaN(Number(new Date(isoTimestamp2)))) {
         return new Date(isoTimestamp2).getTime();
     }
 
-    return null;
+    return 0;
 }
 
 /**
@@ -112,7 +116,7 @@ function timestampToMoment(timestamp) {
  *
  * @param {string} chatsPath - The path to the directory containing the chat files.
  * @param {string} charactersPath - The path to the directory containing the character files.
- * @returns {Object} The aggregated stats object.
+ * @returns {Promise<Object>} The aggregated stats object.
  */
 async function collectAndCreateStats(chatsPath, charactersPath) {
     console.log('Collecting and creating stats...');
@@ -120,8 +124,8 @@ async function collectAndCreateStats(chatsPath, charactersPath) {
 
     const pngFiles = files.filter((file) => file.endsWith('.png'));
 
-    let processingPromises = pngFiles.map((file, index) =>
-        calculateStats(chatsPath, file, index),
+    let processingPromises = pngFiles.map((file) =>
+        calculateStats(chatsPath, file),
     );
     const statsArr = await Promise.all(processingPromises);
 
@@ -134,8 +138,15 @@ async function collectAndCreateStats(chatsPath, charactersPath) {
     return finalStats;
 }
 
-async function recreateStats(chatsPath, charactersPath) {
-    charStats = await collectAndCreateStats(chatsPath, charactersPath);
+/**
+ * Recreates the stats object for a user.
+ * @param {string} handle User handle
+ * @param {string} chatsPath Path to the directory containing the chat files.
+ * @param {string} charactersPath Path to the directory containing the character files.
+ */
+async function recreateStats(handle, chatsPath, charactersPath) {
+    const stats = await collectAndCreateStats(chatsPath, charactersPath);
+    STATS.set(handle, stats);
     await saveStatsToFile();
     console.debug('Stats (re)created and saved to file.');
 }
@@ -146,15 +157,24 @@ async function recreateStats(chatsPath, charactersPath) {
  */
 async function init() {
     try {
-        const statsFileContent = await readFile(statsFilePath, 'utf-8');
-        charStats = JSON.parse(statsFileContent);
-    } catch (err) {
-        // If the file doesn't exist or is invalid, initialize stats
-        if (err.code === 'ENOENT' || err instanceof SyntaxError) {
-            recreateStats(DIRECTORIES.chats, DIRECTORIES.characters);
-        } else {
-            throw err; // Rethrow the error if it's something we didn't expect
+        const userHandles = await getAllUserHandles();
+        for (const handle of userHandles) {
+            const directories = getUserDirectories(handle);
+            try {
+                const statsFilePath = path.join(directories.root, STATS_FILE);
+                const statsFileContent = await readFile(statsFilePath, 'utf-8');
+                STATS.set(handle, JSON.parse(statsFileContent));
+            } catch (err) {
+                // If the file doesn't exist or is invalid, initialize stats
+                if (err.code === 'ENOENT' || err instanceof SyntaxError) {
+                    recreateStats(handle, directories.chats, directories.characters);
+                } else {
+                    throw err; // Rethrow the error if it's something we didn't expect
+                }
+            }
         }
+    } catch (err) {
+        console.error('Failed to initialize stats:', err);
     }
     // Save stats every 5 minutes
     setInterval(saveStatsToFile, 5 * 60 * 1000);
@@ -163,16 +183,19 @@ async function init() {
  * Saves the current state of charStats to a file, only if the data has changed since the last save.
  */
 async function saveStatsToFile() {
-    if (charStats.timestamp > lastSaveTimestamp) {
-        //console.debug("Saving stats to file...");
-        try {
-            await writeFileAtomic(statsFilePath, JSON.stringify(charStats));
-            lastSaveTimestamp = Date.now();
-        } catch (error) {
-            console.log('Failed to save stats to file.', error);
+    const userHandles = await getAllUserHandles();
+    for (const handle of userHandles) {
+        const charStats = STATS.get(handle) || {};
+        if (charStats.timestamp > lastSaveTimestamp) {
+            try {
+                const directories = getUserDirectories(handle);
+                const statsFilePath = path.join(directories.root, STATS_FILE);
+                await writeFileAtomic(statsFilePath, JSON.stringify(charStats));
+                lastSaveTimestamp = Date.now();
+            } catch (error) {
+                console.log('Failed to save stats to file.', error);
+            }
         }
-    } else {
-        //console.debug('Stats have not changed since last save. Skipping file write.');
     }
 }
 
@@ -216,7 +239,7 @@ function readAndParseFile(filepath) {
 function calculateGenTime(gen_started, gen_finished) {
     let startDate = new Date(gen_started);
     let endDate = new Date(gen_finished);
-    return endDate - startDate;
+    return Number(endDate) - Number(startDate);
 }
 
 /**
@@ -233,12 +256,12 @@ function countWordsInString(str) {
 /**
  * calculateStats - Calculate statistics for a given character chat directory.
  *
- * @param  {string} char_dir The directory containing the chat files.
+ * @param  {string} chatsPath The directory containing the chat files.
  * @param  {string} item     The name of the character.
  * @return {object}          An object containing the calculated statistics.
  */
-const calculateStats = (chatsPath, item, index) => {
-    const char_dir = path.join(chatsPath, item.replace('.png', ''));
+const calculateStats = (chatsPath, item) => {
+    const chatDir = path.join(chatsPath, item.replace('.png', ''));
     const stats = {
         total_gen_time: 0,
         user_word_count: 0,
@@ -252,12 +275,12 @@ const calculateStats = (chatsPath, item, index) => {
     };
     let uniqueGenStartTimes = new Set();
 
-    if (fs.existsSync(char_dir)) {
-        const chats = fs.readdirSync(char_dir);
+    if (fs.existsSync(chatDir)) {
+        const chats = fs.readdirSync(chatDir);
         if (Array.isArray(chats) && chats.length) {
             for (const chat of chats) {
                 const result = calculateTotalGenTimeAndWordCount(
-                    char_dir,
+                    chatDir,
                     chat,
                     uniqueGenStartTimes,
                 );
@@ -268,7 +291,7 @@ const calculateStats = (chatsPath, item, index) => {
                 stats.non_user_msg_count += result.nonUserMsgCount || 0;
                 stats.total_swipe_count += result.totalSwipeCount || 0;
 
-                const chatStat = fs.statSync(path.join(char_dir, chat));
+                const chatStat = fs.statSync(path.join(chatDir, chat));
                 stats.chat_size += chatStat.size;
                 stats.date_last_chat = Math.max(
                     stats.date_last_chat,
@@ -286,36 +309,29 @@ const calculateStats = (chatsPath, item, index) => {
 };
 
 /**
- * Returns the current charStats object.
- * @returns {Object} The current charStats object.
- **/
-function getCharStats() {
-    return charStats;
-}
-
-/**
  * Sets the current charStats object.
+ * @param {string} handle - The user handle.
  * @param {Object} stats - The new charStats object.
  **/
-function setCharStats(stats) {
-    charStats = stats;
-    charStats.timestamp = Date.now();
+function setCharStats(handle, stats) {
+    stats.timestamp = Date.now();
+    STATS.set(handle, stats);
 }
 
 /**
  * Calculates the total generation time and word count for a chat with a character.
  *
- * @param {string} char_dir - The directory path where character chat files are stored.
+ * @param {string} chatDir - The directory path where character chat files are stored.
  * @param {string} chat - The name of the chat file.
  * @returns {Object} - An object containing the total generation time, user word count, and non-user word count.
  * @throws Will throw an error if the file cannot be read or parsed.
  */
 function calculateTotalGenTimeAndWordCount(
-    char_dir,
+    chatDir,
     chat,
     uniqueGenStartTimes,
 ) {
-    let filepath = path.join(char_dir, chat);
+    let filepath = path.join(chatDir, chat);
     let lines = readAndParseFile(filepath);
 
     let totalGenTime = 0;
@@ -416,29 +432,18 @@ const router = express.Router();
 
 /**
  * Handle a POST request to get the stats object
- *
- * This function returns the stats object that was calculated by the `calculateStats` function.
- *
- *
- * @param {Object} request - The HTTP request object.
- * @param {Object} response - The HTTP response object.
- * @returns {void}
  */
 router.post('/get', jsonParser, function (request, response) {
-    response.send(JSON.stringify(getCharStats()));
+    const stats = STATS.get(request.user.profile.handle) || {};
+    response.send(stats);
 });
 
 /**
  * Triggers the recreation of statistics from chat files.
- * - If successful: returns a 200 OK status.
- * - On failure: returns a 500 Internal Server Error status.
- *
- * @param {Object} request - Express request object.
- * @param {Object} response - Express response object.
  */
 router.post('/recreate', jsonParser, async function (request, response) {
     try {
-        await recreateStats(DIRECTORIES.chats, DIRECTORIES.characters);
+        await recreateStats(request.user.profile.handle, request.user.directories.chats, request.user.directories.characters);
         return response.sendStatus(200);
     } catch (error) {
         console.error(error);
@@ -446,25 +451,18 @@ router.post('/recreate', jsonParser, async function (request, response) {
     }
 });
 
-
 /**
  * Handle a POST request to update the stats object
- *
- * This function updates the stats object with the data from the request body.
- *
- * @param {Object} request - The HTTP request object.
- * @param {Object} response - The HTTP response object.
- * @returns {void}
- *
 */
 router.post('/update', jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
-    setCharStats(request.body);
+    setCharStats(request.user.profile.handle, request.body);
     return response.sendStatus(200);
 });
 
 module.exports = {
     router,
+    recreateStats,
     init,
     onExit,
 };

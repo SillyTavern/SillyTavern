@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const commandExistsSync = require('command-exists').sync;
+const writeFileAtomicSync = require('write-file-atomic').sync;
 const _ = require('lodash');
 const yauzl = require('yauzl');
 const mime = require('mime-types');
@@ -8,45 +9,36 @@ const yaml = require('yaml');
 const { default: simpleGit } = require('simple-git');
 const { Readable } = require('stream');
 
-const { DIRECTORIES } = require('./constants');
+const { PUBLIC_DIRECTORIES } = require('./constants');
+
+/**
+ * Parsed config object.
+ */
+let CACHED_CONFIG = null;
 
 /**
  * Returns the config object from the config.yaml file.
  * @returns {object} Config object
  */
 function getConfig() {
-    function getNewConfig() {
-        try {
-            const config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
-            return config;
-        } catch (error) {
-            console.warn('Failed to read config.yaml');
-            return {};
-        }
+    if (CACHED_CONFIG) {
+        return CACHED_CONFIG;
     }
 
-    function getLegacyConfig() {
-        try {
-            console.log(color.yellow('WARNING: config.conf is deprecated. Please run "npm run postinstall" to convert to config.yaml'));
-            const config = require(path.join(process.cwd(), './config.conf'));
-            return config;
-        } catch (error) {
-            console.warn('Failed to read config.conf');
-            return {};
-        }
+    if (!fs.existsSync('./config.yaml')) {
+        console.error(color.red('No config file found. Please create a config.yaml file. The default config file can be found in the /default folder.'));
+        console.error(color.red('The program will now exit.'));
+        process.exit(1);
     }
 
-    if (fs.existsSync('./config.yaml')) {
-        return getNewConfig();
+    try {
+        const config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
+        CACHED_CONFIG = config;
+        return config;
+    } catch (error) {
+        console.warn('Failed to read config.yaml');
+        return {};
     }
-
-    if (fs.existsSync('./config.conf')) {
-        return getLegacyConfig();
-    }
-
-    console.error(color.red('No config file found. Please create a config.yaml file. The default config file can be found in the /default folder.'));
-    console.error(color.red('The program will now exit.'));
-    process.exit(1);
 }
 
 /**
@@ -58,6 +50,19 @@ function getConfig() {
 function getConfigValue(key, defaultValue = null) {
     const config = getConfig();
     return _.get(config, key, defaultValue);
+}
+
+/**
+ * Sets a value for the given key in the config object and writes it to the config.yaml file.
+ * @param {string} key Key to set
+ * @param {any} value Value to set
+ */
+function setConfigValue(key, value) {
+    // Reset cache so that the next getConfig call will read the updated config file
+    CACHED_CONFIG = null;
+    const config = getConfig();
+    _.set(config, key, value);
+    writeFileAtomicSync('./config.yaml', yaml.stringify(config));
 }
 
 /**
@@ -73,19 +78,31 @@ function getBasicAuthHeader(auth) {
 /**
  * Returns the version of the running instance. Get the version from the package.json file and the git revision.
  * Also returns the agent string for the Horde API.
- * @returns {Promise<{agent: string, pkgVersion: string, gitRevision: string | null, gitBranch: string | null}>} Version info object
+ * @returns {Promise<{agent: string, pkgVersion: string, gitRevision: string | null, gitBranch: string | null, commitDate: string | null, isLatest: boolean}>} Version info object
  */
 async function getVersion() {
     let pkgVersion = 'UNKNOWN';
     let gitRevision = null;
     let gitBranch = null;
+    let commitDate = null;
+    let isLatest = true;
+
     try {
         const pkgJson = require(path.join(process.cwd(), './package.json'));
         pkgVersion = pkgJson.version;
         if (!process['pkg'] && commandExistsSync('git')) {
             const git = simpleGit();
-            gitRevision = await git.cwd(process.cwd()).revparse(['--short', 'HEAD']);
-            gitBranch = await git.cwd(process.cwd()).revparse(['--abbrev-ref', 'HEAD']);
+            const cwd = process.cwd();
+            gitRevision = await git.cwd(cwd).revparse(['--short', 'HEAD']);
+            gitBranch = await git.cwd(cwd).revparse(['--abbrev-ref', 'HEAD']);
+            commitDate = await git.cwd(cwd).show(['-s', '--format=%ci', gitRevision]);
+
+            const trackingBranch = await git.cwd(cwd).revparse(['--abbrev-ref', '@{u}']);
+
+            // Might fail, but exception is caught. Just don't run anything relevant after in this block...
+            const localLatest = await git.cwd(cwd).revparse(['HEAD']);
+            const remoteLatest = await git.cwd(cwd).revparse([trackingBranch]);
+            isLatest = localLatest === remoteLatest;
         }
     }
     catch {
@@ -93,7 +110,7 @@ async function getVersion() {
     }
 
     const agent = `SillyTavern:${pkgVersion}:Cohee#1207`;
-    return { agent, pkgVersion, gitRevision, gitBranch };
+    return { agent, pkgVersion, gitRevision, gitBranch, commitDate: commitDate?.trim() ?? null, isLatest };
 }
 
 /**
@@ -307,13 +324,18 @@ function tryParse(str) {
 }
 
 /**
- * Takes a path to a client-accessible file in the `public` folder and converts it to a relative URL segment that the
- * client can fetch it from. This involves stripping the `public/` prefix and always using `/` as the separator.
+ * Takes a path to a client-accessible file in the data folder and converts it to a relative URL segment that the
+ * client can fetch it from. This involves stripping the data root path prefix and always using `/` as the separator.
+ * @param {string} root The root directory of the user data folder.
  * @param {string} inputPath The path to be converted.
  * @returns The relative URL path from which the client can access the file.
  */
-function clientRelativePath(inputPath) {
-    return path.normalize(inputPath).split(path.sep).slice(1).join('/');
+function clientRelativePath(root, inputPath) {
+    if (!inputPath.startsWith(root)) {
+        throw new Error('Input path does not start with the root directory');
+    }
+
+    return inputPath.slice(root.length).split(path.sep).join('/');
 }
 
 /**
@@ -341,11 +363,11 @@ function generateTimestamp() {
  * @param {string} prefix
  */
 function removeOldBackups(prefix) {
-    const MAX_BACKUPS = 25;
+    const MAX_BACKUPS = 50;
 
-    let files = fs.readdirSync(DIRECTORIES.backups).filter(f => f.startsWith(prefix));
+    let files = fs.readdirSync(PUBLIC_DIRECTORIES.backups).filter(f => f.startsWith(prefix));
     if (files.length > MAX_BACKUPS) {
-        files = files.map(f => path.join(DIRECTORIES.backups, f));
+        files = files.map(f => path.join(PUBLIC_DIRECTORIES.backups, f));
         files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
 
         fs.rmSync(files[0]);
@@ -583,6 +605,7 @@ class Cache {
 module.exports = {
     getConfig,
     getConfigValue,
+    setConfigValue,
     getVersion,
     getBasicAuthHeader,
     extractFileFromZipBuffer,

@@ -3,30 +3,62 @@ const path = require('path');
 const express = require('express');
 const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
-const { getConfigValue } = require('../util');
+const { getConfigValue, color } = require('../util');
 const { jsonParser } = require('../express-common');
+const writeFileAtomicSync = require('write-file-atomic').sync;
 const contentDirectory = path.join(process.cwd(), 'default/content');
-const contentLogPath = path.join(contentDirectory, 'content.log');
+const scaffoldDirectory = path.join(process.cwd(), 'default/scaffold');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
-const { DIRECTORIES } = require('../constants');
-const presetFolders = [DIRECTORIES.koboldAI_Settings, DIRECTORIES.openAI_Settings, DIRECTORIES.novelAI_Settings, DIRECTORIES.textGen_Settings];
+const scaffoldIndexPath = path.join(scaffoldDirectory, 'index.json');
 const characterCardParser = require('../character-card-parser.js');
+
+const WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES = getConfigValue('whitelistImportDomains', []);
+
+/**
+ * @typedef {Object} ContentItem
+ * @property {string} filename
+ * @property {string} type
+ * @property {string} [name]
+ * @property {string|null} [folder]
+ */
+
+/**
+ * @typedef {string} ContentType
+ * @enum {string}
+ */
+const CONTENT_TYPES = {
+    SETTINGS: 'settings',
+    CHARACTER: 'character',
+    SPRITES: 'sprites',
+    BACKGROUND: 'background',
+    WORLD: 'world',
+    AVATAR: 'avatar',
+    THEME: 'theme',
+    WORKFLOW: 'workflow',
+    KOBOLD_PRESET: 'kobold_preset',
+    OPENAI_PRESET: 'openai_preset',
+    NOVEL_PRESET: 'novel_preset',
+    TEXTGEN_PRESET: 'textgen_preset',
+    INSTRUCT: 'instruct',
+    CONTEXT: 'context',
+    MOVING_UI: 'moving_ui',
+    QUICK_REPLIES: 'quick_replies',
+};
 
 /**
  * Gets the default presets from the content directory.
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {object[]} Array of default presets
  */
-function getDefaultPresets() {
+function getDefaultPresets(directories) {
     try {
-        const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
-        const contentIndex = JSON.parse(contentIndexText);
-
+        const contentIndex = getContentIndex();
         const presets = [];
 
         for (const contentItem of contentIndex) {
-            if (contentItem.type.endsWith('_preset')) {
+            if (contentItem.type.endsWith('_preset') || contentItem.type === 'instruct' || contentItem.type === 'context') {
                 contentItem.name = path.parse(contentItem.filename).name;
-                contentItem.folder = getTargetByType(contentItem.type);
+                contentItem.folder = getTargetByType(contentItem.type, directories);
                 presets.push(contentItem);
             }
         }
@@ -59,112 +91,183 @@ function getDefaultPresetFile(filename) {
     }
 }
 
-function migratePresets() {
-    for (const presetFolder of presetFolders) {
-        const presetPath = path.join(process.cwd(), presetFolder);
-        const presetFiles = fs.readdirSync(presetPath);
+/**
+ * Seeds content for a user.
+ * @param {ContentItem[]} contentIndex Content index
+ * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {string[]} forceCategories List of categories to force check (even if content check is skipped)
+ * @returns {Promise<boolean>} Whether any content was added
+ */
+async function seedContentForUser(contentIndex, directories, forceCategories) {
+    let anyContentAdded = false;
 
-        for (const presetFile of presetFiles) {
-            const presetFilePath = path.join(presetPath, presetFile);
-            const newFileName = presetFile.replace('.settings', '.json');
-            const newFilePath = path.join(presetPath, newFileName);
-            const backupFileName = presetFolder.replace('/', '_') + '_' + presetFile;
-            const backupFilePath = path.join(DIRECTORIES.backups, backupFileName);
-
-            if (presetFilePath.endsWith('.settings')) {
-                if (!fs.existsSync(newFilePath)) {
-                    fs.cpSync(presetFilePath, backupFilePath);
-                    fs.cpSync(presetFilePath, newFilePath);
-                    console.log(`Migrated ${presetFilePath} to ${newFilePath}`);
-                }
-            }
-        }
+    if (!fs.existsSync(directories.root)) {
+        fs.mkdirSync(directories.root, { recursive: true });
     }
+
+    const contentLogPath = path.join(directories.root, 'content.log');
+    const contentLog = getContentLog(contentLogPath);
+
+    for (const contentItem of contentIndex) {
+        // If the content item is already in the log, skip it
+        if (contentLog.includes(contentItem.filename) && !forceCategories?.includes(contentItem.type)) {
+            continue;
+        }
+
+        if (!contentItem.folder) {
+            console.log(`Content file ${contentItem.filename} has no parent folder`);
+            continue;
+        }
+
+        const contentPath = path.join(contentItem.folder, contentItem.filename);
+
+        if (!fs.existsSync(contentPath)) {
+            console.log(`Content file ${contentItem.filename} is missing`);
+            continue;
+        }
+
+        const contentTarget = getTargetByType(contentItem.type, directories);
+
+        if (!contentTarget) {
+            console.log(`Content file ${contentItem.filename} has unknown type ${contentItem.type}`);
+            continue;
+        }
+
+        const basePath = path.parse(contentItem.filename).base;
+        const targetPath = path.join(contentTarget, basePath);
+        contentLog.push(contentItem.filename);
+
+        if (fs.existsSync(targetPath)) {
+            console.log(`Content file ${contentItem.filename} already exists in ${contentTarget}`);
+            continue;
+        }
+
+        fs.cpSync(contentPath, targetPath, { recursive: true, force: false });
+        console.log(`Content file ${contentItem.filename} copied to ${contentTarget}`);
+        anyContentAdded = true;
+    }
+
+    writeFileAtomicSync(contentLogPath, contentLog.join('\n'));
+    return anyContentAdded;
 }
 
-function checkForNewContent() {
+/**
+ * Checks for new content and seeds it for all users.
+ * @param {import('../users').UserDirectoryList[]} directoriesList List of user directories
+ * @param {string[]} forceCategories List of categories to force check (even if content check is skipped)
+ * @returns {Promise<void>}
+ */
+async function checkForNewContent(directoriesList, forceCategories = []) {
     try {
-        migratePresets();
-
-        if (getConfigValue('skipContentCheck', false)) {
+        const contentCheckSkip = getConfigValue('skipContentCheck', false);
+        if (contentCheckSkip && forceCategories?.length === 0) {
             return;
         }
 
-        const contentLog = getContentLog();
-        const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
-        const contentIndex = JSON.parse(contentIndexText);
+        const contentIndex = getContentIndex();
+        let anyContentAdded = false;
 
-        for (const contentItem of contentIndex) {
-            // If the content item is already in the log, skip it
-            if (contentLog.includes(contentItem.filename)) {
-                continue;
+        for (const directories of directoriesList) {
+            const seedResult = await seedContentForUser(contentIndex, directories, forceCategories);
+
+            if (seedResult) {
+                anyContentAdded = true;
             }
-
-            contentLog.push(contentItem.filename);
-            const contentPath = path.join(contentDirectory, contentItem.filename);
-
-            if (!fs.existsSync(contentPath)) {
-                console.log(`Content file ${contentItem.filename} is missing`);
-                continue;
-            }
-
-            const contentTarget = getTargetByType(contentItem.type);
-
-            if (!contentTarget) {
-                console.log(`Content file ${contentItem.filename} has unknown type ${contentItem.type}`);
-                continue;
-            }
-
-            const basePath = path.parse(contentItem.filename).base;
-            const targetPath = path.join(process.cwd(), contentTarget, basePath);
-
-            if (fs.existsSync(targetPath)) {
-                console.log(`Content file ${contentItem.filename} already exists in ${contentTarget}`);
-                continue;
-            }
-
-            fs.cpSync(contentPath, targetPath, { recursive: true, force: false });
-            console.log(`Content file ${contentItem.filename} copied to ${contentTarget}`);
         }
 
-        fs.writeFileSync(contentLogPath, contentLog.join('\n'));
+        if (anyContentAdded && !contentCheckSkip && forceCategories?.length === 0) {
+            console.log();
+            console.log(`${color.blue('If you don\'t want to receive content updates in the future, set')} ${color.yellow('skipContentCheck')} ${color.blue('to true in the config.yaml file.')}`);
+            console.log();
+        }
     } catch (err) {
         console.log('Content check failed', err);
     }
 }
 
-function getTargetByType(type) {
+/**
+ * Gets combined content index from the content and scaffold directories.
+ * @returns {ContentItem[]} Array of content index
+ */
+function getContentIndex() {
+    const result = [];
+
+    if (fs.existsSync(scaffoldIndexPath)) {
+        const scaffoldIndexText = fs.readFileSync(scaffoldIndexPath, 'utf8');
+        const scaffoldIndex = JSON.parse(scaffoldIndexText);
+        if (Array.isArray(scaffoldIndex)) {
+            scaffoldIndex.forEach((item) => {
+                item.folder = scaffoldDirectory;
+            });
+            result.push(...scaffoldIndex);
+        }
+    }
+
+    if (fs.existsSync(contentIndexPath)) {
+        const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
+        const contentIndex = JSON.parse(contentIndexText);
+        if (Array.isArray(contentIndex)) {
+            contentIndex.forEach((item) => {
+                item.folder = contentDirectory;
+            });
+            result.push(...contentIndex);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Gets the target directory for the specified asset type.
+ * @param {ContentType} type Asset type
+ * @param {import('../users').UserDirectoryList} directories User directories
+ * @returns {string | null} Target directory
+ */
+function getTargetByType(type, directories) {
     switch (type) {
-        case 'character':
-            return DIRECTORIES.characters;
-        case 'sprites':
-            return DIRECTORIES.characters;
-        case 'background':
-            return DIRECTORIES.backgrounds;
-        case 'world':
-            return DIRECTORIES.worlds;
-        case 'sound':
-            return DIRECTORIES.sounds;
-        case 'avatar':
-            return DIRECTORIES.avatars;
-        case 'theme':
-            return DIRECTORIES.themes;
-        case 'workflow':
-            return DIRECTORIES.comfyWorkflows;
-        case 'kobold_preset':
-            return DIRECTORIES.koboldAI_Settings;
-        case 'openai_preset':
-            return DIRECTORIES.openAI_Settings;
-        case 'novel_preset':
-            return DIRECTORIES.novelAI_Settings;
-        case 'textgen_preset':
-            return DIRECTORIES.textGen_Settings;
+        case CONTENT_TYPES.SETTINGS:
+            return directories.root;
+        case CONTENT_TYPES.CHARACTER:
+            return directories.characters;
+        case CONTENT_TYPES.SPRITES:
+            return directories.characters;
+        case CONTENT_TYPES.BACKGROUND:
+            return directories.backgrounds;
+        case CONTENT_TYPES.WORLD:
+            return directories.worlds;
+        case CONTENT_TYPES.AVATAR:
+            return directories.avatars;
+        case CONTENT_TYPES.THEME:
+            return directories.themes;
+        case CONTENT_TYPES.WORKFLOW:
+            return directories.comfyWorkflows;
+        case CONTENT_TYPES.KOBOLD_PRESET:
+            return directories.koboldAI_Settings;
+        case CONTENT_TYPES.OPENAI_PRESET:
+            return directories.openAI_Settings;
+        case CONTENT_TYPES.NOVEL_PRESET:
+            return directories.novelAI_Settings;
+        case CONTENT_TYPES.TEXTGEN_PRESET:
+            return directories.textGen_Settings;
+        case CONTENT_TYPES.INSTRUCT:
+            return directories.instruct;
+        case CONTENT_TYPES.CONTEXT:
+            return directories.context;
+        case CONTENT_TYPES.MOVING_UI:
+            return directories.movingUI;
+        case CONTENT_TYPES.QUICK_REPLIES:
+            return directories.quickreplies;
         default:
             return null;
     }
 }
 
-function getContentLog() {
+/**
+ * Gets the content log from the content log file.
+ * @param {string} contentLogPath Path to the content log file
+ * @returns {string[]} Array of content log lines
+ */
+function getContentLog(contentLogPath) {
     if (!fs.existsSync(contentLogPath)) {
         return [];
     }
@@ -286,7 +389,7 @@ function parseChubUrl(str) {
     let domainIndex = -1;
 
     splitStr.forEach((part, index) => {
-        if (part === 'www.chub.ai' || part === 'chub.ai') {
+        if (part === 'www.chub.ai' || part === 'chub.ai' || part === 'www.characterhub.org' || part === 'characterhub.org') {
             domainIndex = index;
         }
     });
@@ -341,6 +444,71 @@ async function downloadJannyCharacter(uuid) {
     throw new Error('Failed to download character');
 }
 
+//Download Character Cards from AICharactersCards.com (AICC) API.
+async function downloadAICCCharacter(id) {
+    const apiURL = `https://aicharactercards.com/wp-json/pngapi/v1/image/${id}`;
+    try {
+        const response = await fetch(apiURL);
+        if (!response.ok) {
+            throw new Error(`Failed to download character: ${response.statusText}`);
+        }
+
+        const contentType = response.headers.get('content-type') || 'image/png'; // Default to 'image/png' if header is missing
+        const buffer = await response.buffer();
+        const fileName = `${sanitize(id)}.png`; // Assuming PNG, but adjust based on actual content or headers
+
+        return {
+            buffer: buffer,
+            fileName: fileName,
+            fileType: contentType,
+        };
+    } catch (error) {
+        console.error('Error downloading character:', error);
+        throw error;
+    }
+}
+
+/**
+ * Parses an aicharactercards URL to extract the path.
+ * @param {string} url URL to parse
+ * @returns {string | null} AICC path
+ */
+function parseAICC(url) {
+    const pattern = /^https?:\/\/aicharactercards\.com\/character-cards\/([^/]+)\/([^/]+)\/?$|([^/]+)\/([^/]+)$/;
+    const match = url.match(pattern);
+    if (match) {
+        // Match group 1 & 2 for full URL, 3 & 4 for relative path
+        return match[1] && match[2] ? `${match[1]}/${match[2]}` : `${match[3]}/${match[4]}`;
+    }
+    return null;
+}
+
+/**
+ * Download character card from generic url.
+ * @param {String} url
+ */
+async function downloadGenericPng(url) {
+    try {
+        const result = await fetch(url);
+
+        if (result.ok) {
+            const buffer = await result.buffer();
+            const fileName = sanitize(result.url.split('?')[0].split('/').reverse()[0]);
+            const contentType = result.headers.get('content-type') || 'image/png'; //yoink it from AICC function lol
+
+            return {
+                buffer: buffer,
+                fileName: fileName,
+                fileType: contentType,
+            };
+        }
+    } catch (error) {
+        console.error('Error downloading file: ', error);
+        throw error;
+    }
+    return null;
+}
+
 /**
 * @param {String} url
 * @returns {String | null } UUID of the character
@@ -355,20 +523,47 @@ function getUuidFromUrl(url) {
     return uuid;
 }
 
+/**
+ * Filter to get the domain host of a url instead of a blanket string search.
+ * @param {String} url URL to strip
+ * @returns {String} Domain name
+ */
+function getHostFromUrl(url) {
+    try {
+        const urlObj = new URL(url);
+        return urlObj.hostname;
+    } catch {
+        return '';
+    }
+}
+
+/**
+ * Checks if host is part of generic download source whitelist.
+ * @param {String} host Host to check
+ * @returns {boolean} If the host is on the whitelist.
+ */
+function isHostWhitelisted(host) {
+    return WHITELIST_GENERIC_URL_DOWNLOAD_SOURCES.includes(host);
+}
+
 const router = express.Router();
 
-router.post('/import', jsonParser, async (request, response) => {
+router.post('/importURL', jsonParser, async (request, response) => {
     if (!request.body.url) {
         return response.sendStatus(400);
     }
 
     try {
         const url = request.body.url;
+        const host = getHostFromUrl(url);
         let result;
         let type;
 
-        const isJannnyContent = url.includes('janitorai');
-        const isPygmalionContent = url.includes('pygmalion.chat');
+        const isChub = host.includes('chub.ai') || host.includes('characterhub.org');
+        const isJannnyContent = host.includes('janitorai');
+        const isPygmalionContent = host.includes('pygmalion.chat');
+        const isAICharacterCardsContent = host.includes('aicharactercards.com');
+        const isGeneric = isHostWhitelisted(host);
 
         if (isPygmalionContent) {
             const uuid = getUuidFromUrl(url);
@@ -386,7 +581,14 @@ router.post('/import', jsonParser, async (request, response) => {
 
             type = 'character';
             result = await downloadJannyCharacter(uuid);
-        } else {
+        } else if (isAICharacterCardsContent) {
+            const AICCParsed = parseAICC(url);
+            if (!AICCParsed) {
+                return response.sendStatus(404);
+            }
+            type = 'character';
+            result = await downloadAICCCharacter(AICCParsed);
+        } else if (isChub) {
             const chubParsed = parseChubUrl(url);
             type = chubParsed?.type;
 
@@ -401,10 +603,20 @@ router.post('/import', jsonParser, async (request, response) => {
             else {
                 return response.sendStatus(404);
             }
+        } else if (isGeneric) {
+            console.log('Downloading from generic url.');
+            type = 'character';
+            result = await downloadGenericPng(url);
+        } else {
+            return response.sendStatus(404);
+        }
+
+        if (!result) {
+            return response.sendStatus(404);
         }
 
         if (result.fileType) response.set('Content-Type', result.fileType);
-        response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
+        response.set('Content-Disposition', `attachment; filename="${encodeURI(result.fileName)}"`);
         response.set('X-Custom-Content-Type', type);
         return response.send(result.buffer);
     } catch (error) {
@@ -413,7 +625,56 @@ router.post('/import', jsonParser, async (request, response) => {
     }
 });
 
+router.post('/importUUID', jsonParser, async (request, response) => {
+    if (!request.body.url) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const uuid = request.body.url;
+        let result;
+
+        const isJannny = uuid.includes('_character');
+        const isPygmalion = (!isJannny && uuid.length == 36);
+        const isAICC = uuid.startsWith('AICC/');
+        const uuidType = uuid.includes('lorebook') ? 'lorebook' : 'character';
+
+        if (isPygmalion) {
+            console.log('Downloading Pygmalion character:', uuid);
+            result = await downloadPygmalionCharacter(uuid);
+        } else if (isJannny) {
+            console.log('Downloading Janitor character:', uuid.split('_')[0]);
+            result = await downloadJannyCharacter(uuid.split('_')[0]);
+        } else if (isAICC) {
+            const [, author, card] = uuid.split('/');
+            console.log('Downloading AICC character:', `${author}/${card}`);
+            result = await downloadAICCCharacter(`${author}/${card}`);
+        } else {
+            if (uuidType === 'character') {
+                console.log('Downloading chub character:', uuid);
+                result = await downloadChubCharacter(uuid);
+            }
+            else if (uuidType === 'lorebook') {
+                console.log('Downloading chub lorebook:', uuid);
+                result = await downloadChubLorebook(uuid);
+            }
+            else {
+                return response.sendStatus(404);
+            }
+        }
+
+        if (result.fileType) response.set('Content-Type', result.fileType);
+        response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
+        response.set('X-Custom-Content-Type', uuidType);
+        return response.send(result.buffer);
+    } catch (error) {
+        console.log('Importing custom content failed', error);
+        return response.sendStatus(500);
+    }
+});
+
 module.exports = {
+    CONTENT_TYPES,
     checkForNewContent,
     getDefaultPresets,
     getDefaultPresetFile,

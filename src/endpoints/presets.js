@@ -3,30 +3,30 @@ const path = require('path');
 const express = require('express');
 const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const { DIRECTORIES } = require('../constants');
 const { getDefaultPresetFile, getDefaultPresets } = require('./content-manager');
 const { jsonParser } = require('../express-common');
 
 /**
  * Gets the folder and extension for the preset settings based on the API source ID.
  * @param {string} apiId API source ID
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {object} Object containing the folder and extension for the preset settings
  */
-function getPresetSettingsByAPI(apiId) {
+function getPresetSettingsByAPI(apiId, directories) {
     switch (apiId) {
         case 'kobold':
         case 'koboldhorde':
-            return { folder: DIRECTORIES.koboldAI_Settings, extension: '.json' };
+            return { folder: directories.koboldAI_Settings, extension: '.json' };
         case 'novel':
-            return { folder: DIRECTORIES.novelAI_Settings, extension: '.json' };
+            return { folder: directories.novelAI_Settings, extension: '.json' };
         case 'textgenerationwebui':
-            return { folder: DIRECTORIES.textGen_Settings, extension: '.json' };
+            return { folder: directories.textGen_Settings, extension: '.json' };
         case 'openai':
-            return { folder: DIRECTORIES.openAI_Settings, extension: '.json' };
+            return { folder: directories.openAI_Settings, extension: '.json' };
         case 'instruct':
-            return { folder: DIRECTORIES.instruct, extension: '.json' };
+            return { folder: directories.instruct, extension: '.json' };
         case 'context':
-            return { folder: DIRECTORIES.context, extension: '.json' };
+            return { folder: directories.context, extension: '.json' };
         default:
             return { folder: null, extension: null };
     }
@@ -40,7 +40,7 @@ router.post('/save', jsonParser, function (request, response) {
         return response.sendStatus(400);
     }
 
-    const settings = getPresetSettingsByAPI(request.body.apiId);
+    const settings = getPresetSettingsByAPI(request.body.apiId, request.user.directories);
     const filename = name + settings.extension;
 
     if (!settings.folder) {
@@ -58,7 +58,7 @@ router.post('/delete', jsonParser, function (request, response) {
         return response.sendStatus(400);
     }
 
-    const settings = getPresetSettingsByAPI(request.body.apiId);
+    const settings = getPresetSettingsByAPI(request.body.apiId, request.user.directories);
     const filename = name + settings.extension;
 
     if (!settings.folder) {
@@ -77,9 +77,9 @@ router.post('/delete', jsonParser, function (request, response) {
 
 router.post('/restore', jsonParser, function (request, response) {
     try {
-        const settings = getPresetSettingsByAPI(request.body.apiId);
+        const settings = getPresetSettingsByAPI(request.body.apiId, request.user.directories);
         const name = sanitize(request.body.name);
-        const defaultPresets = getDefaultPresets();
+        const defaultPresets = getDefaultPresets(request.user.directories);
 
         const defaultPreset = defaultPresets.find(p => p.name === name && p.folder === settings.folder);
 
@@ -104,7 +104,7 @@ router.post('/save-openai', jsonParser, function (request, response) {
     if (!name) return response.sendStatus(400);
 
     const filename = `${name}.json`;
-    const fullpath = path.join(DIRECTORIES.openAI_Settings, filename);
+    const fullpath = path.join(request.user.directories.openAI_Settings, filename);
     writeFileAtomicSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
     return response.send({ name });
 });
@@ -116,7 +116,7 @@ router.post('/delete-openai', jsonParser, function (request, response) {
     }
 
     const name = request.body.name;
-    const pathToFile = path.join(DIRECTORIES.openAI_Settings, `${name}.json`);
+    const pathToFile = path.join(request.user.directories.openAI_Settings, `${name}.json`);
 
     if (fs.existsSync(pathToFile)) {
         fs.rmSync(pathToFile);

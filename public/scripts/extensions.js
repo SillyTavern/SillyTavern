@@ -1,6 +1,7 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate, animation_duration } from '../script.js';
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, animation_duration } from '../script.js';
 import { hideLoader, showLoader } from './loader.js';
-import { isSubsetOf } from './utils.js';
+import { renderTemplate, renderTemplateAsync } from './templates.js';
+import { isSubsetOf, setValueByPath } from './utils.js';
 export {
     getContext,
     getApiUrl,
@@ -50,15 +51,29 @@ export function saveMetadataDebounced() {
 }
 
 /**
- * Provides an ability for extensions to render HTML templates.
+ * Provides an ability for extensions to render HTML templates synchronously.
  * Templates sanitation and localization is forced.
  * @param {string} extensionName Extension name
  * @param {string} templateId Template ID
  * @param {object} templateData Additional data to pass to the template
  * @returns {string} Rendered HTML
+ *
+ * @deprecated Use renderExtensionTemplateAsync instead.
  */
 export function renderExtensionTemplate(extensionName, templateId, templateData = {}, sanitize = true, localize = true) {
     return renderTemplate(`scripts/extensions/${extensionName}/${templateId}.html`, templateData, sanitize, localize, true);
+}
+
+/**
+ * Provides an ability for extensions to render HTML templates asynchronously.
+ * Templates sanitation and localization is forced.
+ * @param {string} extensionName Extension name
+ * @param {string} templateId Template ID
+ * @param {object} templateData Additional data to pass to the template
+ * @returns {Promise<string>} Rendered HTML
+ */
+export function renderExtensionTemplateAsync(extensionName, templateId, templateData = {}, sanitize = true, localize = true) {
+    return renderTemplateAsync(`scripts/extensions/${extensionName}/${templateId}.html`, templateData, sanitize, localize, true);
 }
 
 // Disables parallel updates
@@ -130,6 +145,18 @@ const extension_settings = {
     variables: {
         global: {},
     },
+    /**
+     * @type {import('./chats.js').FileAttachment[]}
+     */
+    attachments: [],
+    /**
+     * @type {Record<string, import('./chats.js').FileAttachment[]>}
+     */
+    character_attachments: {},
+    /**
+     * @type {string[]}
+     */
+    disabled_attachments: [],
 };
 
 let modules = [];
@@ -604,7 +631,7 @@ async function showExtensionsDetails() {
             ${htmlDefault}
             ${htmlExternal}
         `;
-        popupPromise = callPopup(`<div class="extensions_info">${html}</div>`, 'text');
+        popupPromise = callPopup(`<div class="extensions_info">${html}</div>`, 'text', '', { okButton: 'Close', wide: true, large: true });
     } catch (error) {
         toastr.error('Error loading extensions. See browser console for details.');
         console.error(error);
@@ -881,6 +908,55 @@ async function runGenerationInterceptors(chat, contextSize) {
     }
 
     return aborted;
+}
+
+/**
+ * Writes a field to the character's data extensions object.
+ * @param {number} characterId Index in the character array
+ * @param {string} key Field name
+ * @param {any} value Field value
+ * @returns {Promise<void>} When the field is written
+ */
+export async function writeExtensionField(characterId, key, value) {
+    const context = getContext();
+    const character = context.characters[characterId];
+    if (!character) {
+        console.warn('Character not found', characterId);
+        return;
+    }
+    const path = `data.extensions.${key}`;
+    setValueByPath(character, path, value);
+
+    // Process JSON data
+    if (character.json_data) {
+        const jsonData = JSON.parse(character.json_data);
+        setValueByPath(jsonData, path, value);
+        character.json_data = JSON.stringify(jsonData);
+
+        // Make sure the data doesn't get lost when saving the current character
+        if (Number(characterId) === Number(context.characterId)) {
+            $('#character_json_data').val(character.json_data);
+        }
+    }
+
+    // Save data to the server
+    const saveDataRequest = {
+        avatar: character.avatar,
+        data: {
+            extensions: {
+                [key]: value,
+            },
+        },
+    };
+    const mergeResponse = await fetch('/api/characters/merge-attributes', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(saveDataRequest),
+    });
+
+    if (!mergeResponse.ok) {
+        console.error('Failed to save extension field', mergeResponse.statusText);
+    }
 }
 
 jQuery(function () {

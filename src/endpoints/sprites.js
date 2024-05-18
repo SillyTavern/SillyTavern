@@ -5,17 +5,18 @@ const express = require('express');
 const mime = require('mime-types');
 const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const { DIRECTORIES, UPLOADS_PATH } = require('../constants');
+const { UPLOADS_PATH } = require('../constants');
 const { getImageBuffers } = require('../util');
 const { jsonParser, urlencodedParser } = require('../express-common');
 
 /**
  * Gets the path to the sprites folder for the provided character name
+ * @param {import('../users').UserDirectoryList} directories - User directories
  * @param {string} name - The name of the character
  * @param {boolean} isSubfolder - Whether the name contains a subfolder
  * @returns {string | null} The path to the sprites folder. Null if the name is invalid.
  */
-function getSpritesPath(name, isSubfolder) {
+function getSpritesPath(directories, name, isSubfolder) {
     if (isSubfolder) {
         const nameParts = name.split('/');
         const characterName = sanitize(nameParts[0]);
@@ -25,7 +26,7 @@ function getSpritesPath(name, isSubfolder) {
             return null;
         }
 
-        return path.join(DIRECTORIES.characters, characterName, subfolderName);
+        return path.join(directories.characters, characterName, subfolderName);
     }
 
     name = sanitize(name);
@@ -34,15 +35,18 @@ function getSpritesPath(name, isSubfolder) {
         return null;
     }
 
-    return path.join(DIRECTORIES.characters, name);
+    return path.join(directories.characters, name);
 }
 
 /**
  * Imports base64 encoded sprites from RisuAI character data.
+ * The sprites are saved in the character's sprites folder.
+ * The additionalAssets and emotions are removed from the data.
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @param {object} data RisuAI character data
  * @returns {void}
  */
-function importRisuSprites(data) {
+function importRisuSprites(directories, data) {
     try {
         const name = data?.data?.name;
         const risuData = data?.data?.extensions?.risuai;
@@ -68,7 +72,7 @@ function importRisuSprites(data) {
         }
 
         // Create sprites folder if it doesn't exist
-        const spritesPath = path.join(DIRECTORIES.characters, name);
+        const spritesPath = path.join(directories.characters, name);
         if (!fs.existsSync(spritesPath)) {
             fs.mkdirSync(spritesPath);
         }
@@ -108,7 +112,7 @@ const router = express.Router();
 router.get('/get', jsonParser, function (request, response) {
     const name = String(request.query.name);
     const isSubfolder = name.includes('/');
-    const spritesPath = getSpritesPath(name, isSubfolder);
+    const spritesPath = getSpritesPath(request.user.directories, name, isSubfolder);
     let sprites = [];
 
     try {
@@ -142,7 +146,7 @@ router.post('/delete', jsonParser, async (request, response) => {
     }
 
     try {
-        const spritesPath = path.join(DIRECTORIES.characters, name);
+        const spritesPath = path.join(request.user.directories.characters, name);
 
         // No sprites folder exists, or not a directory
         if (!fs.existsSync(spritesPath) || !fs.statSync(spritesPath).isDirectory()) {
@@ -174,7 +178,7 @@ router.post('/upload-zip', urlencodedParser, async (request, response) => {
     }
 
     try {
-        const spritesPath = path.join(DIRECTORIES.characters, name);
+        const spritesPath = path.join(request.user.directories.characters, name);
 
         // Create sprites folder if it doesn't exist
         if (!fs.existsSync(spritesPath)) {
@@ -222,7 +226,7 @@ router.post('/upload', urlencodedParser, async (request, response) => {
     }
 
     try {
-        const spritesPath = path.join(DIRECTORIES.characters, name);
+        const spritesPath = path.join(request.user.directories.characters, name);
 
         // Create sprites folder if it doesn't exist
         if (!fs.existsSync(spritesPath)) {
