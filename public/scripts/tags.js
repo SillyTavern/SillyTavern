@@ -707,7 +707,7 @@ function createNewTag(tagName) {
         create_date: Date.now(),
     };
     tags.push(tag);
-    console.debug('Created new tag', tag.name, 'with id', id);
+    console.debug('Created new tag', tag.name, 'with id', tag.id);
     return tag;
 }
 
