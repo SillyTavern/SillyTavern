@@ -3,7 +3,6 @@
     "kobldpresets": "Préréglages de Kobold",
     "guikoboldaisettings": "Paramètres de l'interface utilisateur de KoboldAI",
     "novelaipreserts": "Préréglages de NovelAI",
-    "default": "Par défaut",
     "openaipresets": "Préréglages d'OpenAI",
     "text gen webio(ooba) presets": "Préréglages de WebUI(ooba)",
     "response legth(tokens)": "Longueur de la réponse (en tokens)",
@@ -205,7 +204,7 @@
     "Scale API Key": "Clé API Scale",
     "Alt Method": "Méthode alternative",
     "AI21 API Key": "Clé API AI21",
-    "AI21 Model": "Modèle AI21",    
+    "AI21 Model": "Modèle AI21",
     "View API Usage Metrics": "Afficher les mesures d'utilisation de l'API",
     "Show External models (provided by API)": "Afficher les modèles externes (fournis par l'API)",
     "Bot": "Bot",
@@ -494,7 +493,6 @@
     "Global Lore First": "Lore global d'abord",
     "Recursive Scan": "Analyse récursive",
     "Case Sensitive": "Sensible à la casse",
-    "Match whole words": "Correspondre aux mots entiers",
     "Alert On Overflow": "Alerte en cas de dépassement",
     "World/Lore Editor": "Éditeur de monde/lore",
     "--- None ---": "--- Aucun ---",
@@ -914,5 +912,5 @@
     "Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.": "Utilisez le tokenizer approprié pour les modèles Google via leur API. Traitement des invitations plus lent, mais offre un décompte de jetons beaucoup plus précis.",
     "Load koboldcpp order": "Charger l'ordre koboldcpp",
     "Use Google Tokenizer": "Utiliser le tokenizer Google"
-    
+
 }

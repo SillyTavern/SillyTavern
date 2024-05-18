@@ -3,7 +3,6 @@
     "kobldpresets": "코볼드 사전 설정",
     "guikoboldaisettings": "KoboldAI 인터페이스 설정",
     "novelaipreserts": "NovelAI 사전 설정",
-    "default": "기본값",
     "openaipresets": "OpenAI 사전 설정",
     "text gen webio(ooba) presets": "텍스트 생성 WebUI(ooba) 사전 설정",
     "response legth(tokens)": "응답 길이 (토큰)",
@@ -495,7 +494,6 @@
     "Global Lore First": "글로벌 로어 우선",
     "Recursive Scan": "재귀 스캔",
     "Case Sensitive": "대소문자 구분",
-    "Match whole words": "전체 단어 일치",
     "Alert On Overflow": "오버플로우 알림",
     "World/Lore Editor": "월드/로어 편집기",
     "--- None ---": "--- 없음 ---",
@@ -939,5 +937,5 @@
     "Account": "계정",
     "Theme Colors": "테마 색상",
     "# Messages to Load": "로딩할 메시지 수"
-    
+
 }

@@ -3,7 +3,6 @@
     "kobldpresets": "Fyrir stillingar Kobold",
     "guikoboldaisettings": "Stillingar fyrir KoboldAI viðmót",
     "novelaipreserts": "Fyrir stillingar NovelAI",
-    "default": "Sjálfgefið",
     "openaipresets": "Fyrir stillingar OpenAI",
     "text gen webio(ooba) presets": "Fyrir stillingar WebUI(ooba) textagerðar",
     "response legth(tokens)": "Lengd svars (í táknum eða stöfum)",
@@ -62,7 +61,7 @@
     "Temperature": "Hitastig",
     "Frequency Penalty": "Tíðnarefning",
     "Presence Penalty": "Tilkoma refning",
-    "Top-p": "Topp-p",    
+    "Top-p": "Topp-p",
     "Display bot response text chunks as they are generated": "Birta bætir svarborðstextabrot þegar þau eru búnar til",
     "Top A": "Topp A",
     "Typical Sampling": "Venjuleg úrtaka",
@@ -495,7 +494,6 @@
     "Global Lore First": "Fyrst heimsfræði",
     "Recursive Scan": "Endurkvæm skoðun",
     "Case Sensitive": "Skilgreiningarfræðilegt",
-    "Match whole words": "Nákvæm samræmi",
     "Alert On Overflow": "Viðvörun um flæði",
     "World/Lore Editor": "Heims-/fræðiritari",
     "--- None ---": "--- Engin ---",
@@ -915,5 +913,5 @@
     "Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.": "Notaðu rétta tokenizer fyrir Google módel með þeirra API. Hægri umhvörf fyrir hvöttavinnslu, en býður upp á miklu nákvæmari talningu á táknunum.",
     "Load koboldcpp order": "Hlaðið inn færslu af koboldcpp",
     "Use Google Tokenizer": "Notaðu Google Tokenizer"
-    
+
 }

@@ -103,7 +103,8 @@
 }
 
 #bulkTagsList,
-#tagList .tag {
+#tagList .tag,
+#groupTagList .tag {
     opacity: 0.6;
 }
 

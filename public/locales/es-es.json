@@ -3,7 +3,6 @@
     "kobldpresets": "Preajustes de Kobold",
     "guikoboldaisettings": "Ajustes de interfaz de KoboldAI",
     "novelaipreserts": "Preajustes de NovelAI",
-    "default": "Predeterminado",
     "openaipresets": "Preajustes de OpenAI",
     "text gen webio(ooba) presets": "Preajustes de Text Gen WebUI(ooba)",
     "response legth(tokens)": "Longitud de respuesta (tokens)",
@@ -494,7 +493,6 @@
     "Global Lore First": "Historia Global Primero",
     "Recursive Scan": "Escaneo Recursiva",
     "Case Sensitive": "Sensible a mayúsculas y minúsculas",
-    "Match whole words": "Coincidir palabras completas",
     "Alert On Overflow": "Alerta en Desbordamiento",
     "World/Lore Editor": "Editor de Mundo/Historia",
     "--- None ---": "--- Ninguno ---",
@@ -891,6 +889,7 @@
     "Chat API": " API de chat",
     "and pick a character": "y elige un personaje",
     "in the chat bar": "en la barra de chat",
+    "You can browse a list of bundled characters in the Download Extensions & Assets menu within": "Puedes explorar una lista de personajes incluidos en el menú de Download Extensions & Assets dentro de ",
     "Confused or lost?": "¿Confundido o perdido?",
     "click these icons!": "¡Haz clic en estos iconos!",
     "SillyTavern Documentation Site": "Sitio de documentación de SillyTavern",
@@ -914,7 +913,4 @@
     "Use the appropriate tokenizer for Google models via their API. Slower prompt processing, but offers much more accurate token counting.": "Usa el tokenizador apropiado para los modelos de Google a través de su API. Procesamiento de indicaciones más lento, pero ofrece un recuento de tokens mucho más preciso.",
     "Load koboldcpp order": "Cargar orden de koboldcpp",
     "Use Google Tokenizer": "Usar Tokenizador de Google"
-
-
-    
 }

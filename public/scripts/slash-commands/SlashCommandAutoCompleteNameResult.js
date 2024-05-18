@@ -58,6 +58,9 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
                 return new RegExp('=(.*)');
             }
         }
+        if (!Array.isArray(this.executor.command?.namedArgumentList)) {
+            return null;
+        }
         const notProvidedNamedArguments = this.executor.command.namedArgumentList.filter(arg=>!this.executor.namedArgumentList.find(it=>it.name == arg.name));
         let name;
         let value;
@@ -130,6 +133,9 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
     }
 
     getUnnamedArgumentAt(text, index, isSelect) {
+        if (!Array.isArray(this.executor.command?.unnamedArgumentList)) {
+            return null;
+        }
         const lastArgIsBlank = this.executor.unnamedArgumentList.slice(-1)[0]?.value == '';
         const notProvidedArguments = this.executor.command.unnamedArgumentList.slice(this.executor.unnamedArgumentList.length - (lastArgIsBlank ? 1 : 0));
         let value;

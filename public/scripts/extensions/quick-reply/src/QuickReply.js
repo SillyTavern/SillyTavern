@@ -342,6 +342,16 @@ export class QuickReply {
             message.addEventListener('scroll', (evt)=>{
                 updateScrollDebounced();
             });
+            /** @type {any} */
+            const resizeListener = debounce((evt) => {
+                updateSyntax();
+                updateScrollDebounced(evt);
+                if (document.activeElement == message) {
+                    message.blur();
+                    message.focus();
+                }
+            });
+            window.addEventListener('resize', resizeListener);
             message.style.color = 'transparent';
             message.style.background = 'transparent';
             message.style.setProperty('text-shadow', 'none', 'important');
@@ -514,6 +524,8 @@ export class QuickReply {
             });
 
             await popupResult;
+
+            window.removeEventListener('resize', resizeListener);
         } else {
             warn('failed to fetch qrEditor template');
         }
