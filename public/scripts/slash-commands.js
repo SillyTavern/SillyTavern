@@ -704,6 +704,19 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'addswipe',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'abort',
     callback: abortCallback,
+    namedArgumentList: [
+        SlashCommandNamedArgument.fromProps({ name: 'quiet',
+            description: 'Whether to suppress the toast message notifying about the /abort call.',
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            defaultValue: 'true',
+            enumList: ['true', 'false'],
+        }),
+    ],
+    unnamedArgumentList: [
+        SlashCommandArgument.fromProps({ description: 'The reason for aborting command execution. Shown when quiet=false',
+            typeList: [ARGUMENT_TYPE.STRING],
+        }),
+    ],
     helpString: 'Aborts the slash command batch execution.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'fuzzy',
@@ -1421,9 +1434,15 @@ async function runCallback(args, name) {
     }
 }
 
-function abortCallback() {
-    $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
-    throw new Error('/abort command executed', { cause: 'abort' });
+/**
+ *
+ * @param {object} param0
+ * @param {SlashCommandAbortController} param0._abortController
+ * @param {string} [param0.quiet]
+ * @param {string} [reason]
+ */
+function abortCallback({ _abortController, quiet }, reason) {
+    _abortController.abort((reason ?? '').toString().length == 0 ? '/abort command executed' : reason, !isFalseBoolean(quiet ?? 'true'));
 }
 
 async function delayCallback(_, amount) {
@@ -2786,7 +2805,7 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
 
     let closure;
     try {
-        closure = parser.parse(text, true, options.parserFlags, options.abortController);
+        closure = parser.parse(text, true, options.parserFlags, options.abortController ?? new SlashCommandAbortController());
         closure.scope.parent = options.scope;
         closure.onProgress = options.onProgress;
     } catch (e) {
@@ -2813,7 +2832,7 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
 
     try {
         const result = await closure.execute();
-        if (result.isAborted) {
+        if (result.isAborted && !result.isQuietlyAborted) {
             toastr.warning(result.abortReason, 'Command execution aborted');
         }
         return result;
