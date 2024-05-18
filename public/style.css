@@ -2068,6 +2068,7 @@ input[type="file"] {
     gap: 5px;
     justify-content: center;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .bulk_select_checkbox {
