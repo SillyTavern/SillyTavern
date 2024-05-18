@@ -25,12 +25,12 @@ class GSVITtsProvider {
     }
 
     languageLabels = {
-        '多语种混合': '多语种混合',
-        '中文': '中文',
-        '英文': '英文',
-        '日文': '日文',
-        '中英混合': '中英混合',
-        '日英混合': '日英混合',
+        'Multilingual': '多语种混合',
+        'Chinese': '中文',
+        'English': '英文',
+        'Japanese': '日文',
+        'Chinese-English': '中英混合',
+        'Japanese-English': '日英混合',
     };
     defaultSettings = {
         provider_endpoint: 'http://127.0.0.1:5000',
@@ -51,8 +51,7 @@ class GSVITtsProvider {
         stream_chunk_size: 100,
     };
 
-
-    // 新增获取角色和情绪的方法
+    // Added new methods to obtain characters and emotions
     async fetchCharacterList() {
         const response = await fetch(this.settings.provider_endpoint + '/character_list');
         if (!response.ok) {
@@ -85,26 +84,23 @@ class GSVITtsProvider {
         <label>GSVI Settings:</label><br/>
         <label for="gsvi_tts_endpoint">Provider Endpoint:</label>
         <input id="gsvi_tts_endpoint" type="text" class="text_pole" maxlength="250" value="${this.defaultSettings.provider_endpoint}"/>
-        
-        
-        
-        <div>Goto <a target="_blank" href="https://www.yuque.com/xter/zibxlp/knu8p82lb5ipufqy">API Document</a>.</div>
+
 
         <label for="gsvi_speed">Speed: <span id="gsvi_tts_speed_output">${this.defaultSettings.speed}</span></label>
         <input id="gsvi_speed" type="range" value="${this.defaultSettings.speed}" min="0.5" max="2" step="0.01" />
-        
+
         <label for="gsvi_top_k">Top K: <span id="gsvi_top_k_output">${this.defaultSettings.top_k}</span></label>
         <input id="gsvi_top_k" type="range" value="${this.defaultSettings.top_k}" min="0" max="100" step="1" />
-        
+
         <label for="gsvi_top_p">Top P: <span id="gsvi_top_p_output">${this.defaultSettings.top_p}</span></label>
         <input id="gsvi_top_p" type="range" value="${this.defaultSettings.top_p}" min="0" max="1" step="0.01" />
-        
+
         <label for="gsvi_temperature">Temperature: <span id="gsvi_tts_temperature_output">${this.defaultSettings.temperature}</span></label>
         <input id="gsvi_temperature" type="range" value="${this.defaultSettings.temperature}" min="0.01" max="1" step="0.01" />
 
         <label for="gsvi_batch_size">Batch Size: <span id="gsvi_batch_size_output">${this.defaultSettings.batch_size}</span></label>
         <input id="gsvi_batch_size" type="range" value="${this.defaultSettings.batch_size}" min="1" max="35" step="1" />
-        
+
         <label for="gsvi_tts_streaming" class="checkbox_label">
             <input id="gsvi_tts_streaming" type="checkbox" ${this.defaultSettings.stream ? 'checked' : ''}/>
             <span>Streaming</span>
@@ -112,13 +108,8 @@ class GSVITtsProvider {
 
         <label for="gsvi_stream_chunk_size">Stream Chunk Size: <span id="gsvi_stream_chunk_size_output">${this.defaultSettings.stream_chunk_size}</span></label>
         <input id="gsvi_stream_chunk_size" type="range" value="${this.defaultSettings.stream_chunk_size}" min="100" max="400" step="1" />
-        <title>About GSVI (GPT-Sovits Inference)</title>
         <p>
-        GSVI (GPT-Sovits Inference) is an inference enhancement project based on 
-            <a href="https://github.com/RVC-Boss/GPT-SoVITS" target="_blank">GPT-Sovits</a>, allowing you to run an API interface locally, offering emotion-rich speech-to-text and convenient model management features.
-        </p>
-        <p>
-            For more information, visit the 
+            For more information, visit the
             <a href="https://github.com/X-T-E-R/GPT-SoVITS-Inference" target="_blank">GSVI project page</a>.
         </p>
         `;
@@ -263,9 +254,9 @@ class GSVITtsProvider {
         params.append('temperature', this.settings.temperature.toString());
         params.append('stream', this.settings.stream.toString());
 
-        
+
         return `${this.settings.provider_endpoint}/tts?${params.toString()}`;
-       
+
     }
 
     // Interface not used by GSVI TTS
