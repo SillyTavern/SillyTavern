@@ -17,6 +17,7 @@ import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, Filte
 import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
 import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight } from './utils.js';
 import { power_user } from './power-user.js';
+import { debounce_timeout } from './constants.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -63,7 +64,7 @@ export const tag_filter_types = {
 const ACTIONABLE_TAGS = {
     FAV: { id: '1', sort_order: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
     GROUP: { id: '0', sort_order: 2, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
-    FOLDER: { id: '4', sort_order: 3, name: 'Always show folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
+    FOLDER: { id: '4', sort_order: 3, name: 'Show only folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
     VIEW: { id: '2', sort_order: 4, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
     HINT: { id: '3', sort_order: 5, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
     UNFILTER: { id: '5', sort_order: 6, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
@@ -174,9 +175,8 @@ function filterByTagState(entities, { globalDisplayFilters = false, subForEntity
             }
 
             // Hide folders that have 0 visible sub entities after the first filtering round
-            const alwaysFolder = isFilterState(entitiesFilter.getFilterData(FILTER_TYPES.FOLDER), FILTER_STATES.SELECTED);
             if (entity.type === 'tag') {
-                return alwaysFolder || entity.entities.length > 0;
+                return entity.entities.length > 0;
             }
 
             return true;
@@ -322,6 +322,13 @@ function filterByGroups(filterHelper) {
  * @param {FilterHelper} filterHelper Instance of FilterHelper class.
  */
 function filterByFolder(filterHelper) {
+    if (!power_user.bogus_folders) {
+        $('#bogus_folders').prop('checked', true).trigger('input');
+        onViewTagsListClick();
+        flashHighlight($('#dialogue_popup .tag_as_folder, #dialogue_popup .tag_folder_indicator'));
+        return;
+    }
+
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.FOLDER.filter_state = state;
     filterHelper.setFilterData(FILTER_TYPES.FOLDER, state);
@@ -883,8 +890,9 @@ function printTagFilters(type = tag_filter_types.character) {
     const FILTER_SELECTOR = type === tag_filter_types.character ? CHARACTER_FILTER_SELECTOR : GROUP_FILTER_SELECTOR;
     $(FILTER_SELECTOR).empty();
 
-    // Print all action tags. (Exclude folder if that setting isn't chosen)
-    const actionTags = Object.values(ACTIONABLE_TAGS).filter(tag => power_user.bogus_folders || tag.id != ACTIONABLE_TAGS.FOLDER.id);
+    // Print all action tags. (Rework 'Folder' button to some kind of onboarding if no folders are enabled yet)
+    const actionTags = Object.values(ACTIONABLE_TAGS);
+    actionTags.find(x => x == ACTIONABLE_TAGS.FOLDER).name = power_user.bogus_folders ? 'Show only folders' : 'Enable \'Tags as Folder\'\n\nAllows characters to be grouped in folders by their assigned tags.\nTags have to be explicitly chosen as folder to show up.\n\nClick here to start';
     printTagList($(FILTER_SELECTOR), { empty: false, sort: false, tags: actionTags, tagActionSelector: tag => tag.action, tagOptions: { isGeneralList: true } });
 
     const inListActionTags = Object.values(InListActionable);

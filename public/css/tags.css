@@ -193,7 +193,8 @@
     filter: brightness(75%) saturate(0.6);
 }
 
-.tag_as_folder:hover {
+.tag_as_folder:hover,
+.tag_as_folder.flash {
     filter: brightness(150%) saturate(0.6) !important;
 }
 

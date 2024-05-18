@@ -32,7 +32,6 @@ import {
     this_chid,
 } from '../script.js';
 import { selected_group } from './group-chats.js';
-import { registerSlashCommand } from './slash-commands.js';
 
 import {
     chatCompletionDefaultPrompts,
@@ -51,6 +50,7 @@ import {
     download,
     getBase64Async,
     getFileText,
+    getImageSizeFromDataURL,
     getSortableDelay,
     isDataURL,
     parseJsonFile,
@@ -66,6 +66,9 @@ import {
 } from './instruct-mode.js';
 import { isMobile } from './RossAscends-mods.js';
 import { saveLogprobsForActiveMessage } from './logprobs.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
 
 export {
     openai_messages_count,
@@ -263,6 +266,7 @@ const default_settings = {
     show_external_models: false,
     proxy_password: '',
     assistant_prefill: '',
+    assistant_impersonation: '',
     human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
@@ -271,6 +275,7 @@ const default_settings = {
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
+    inline_image_quality: 'low',
     bypass_status_check: false,
     continue_prefill: false,
     names_behavior: character_names_behavior.NONE,
@@ -338,6 +343,7 @@ const oai_settings = {
     show_external_models: false,
     proxy_password: '',
     assistant_prefill: '',
+    assistant_impersonation: '',
     human_sysprompt_message: default_claude_human_sysprompt_message,
     use_ai21_tokenizer: false,
     use_google_tokenizer: false,
@@ -346,6 +352,7 @@ const oai_settings = {
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
+    inline_image_quality: 'low',
     bypass_status_check: false,
     continue_prefill: false,
     names_behavior: character_names_behavior.NONE,
@@ -1762,7 +1769,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['human_sysprompt_message'] = substituteParams(oai_settings.human_sysprompt_message);
         // Don't add a prefill on quiet gens (summarization)
         if (!isQuiet) {
-            generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
+            generate_data['assistant_prefill'] = isImpersonate ? substituteParams(oai_settings.assistant_impersonation) : substituteParams(oai_settings.assistant_prefill);
         }
     }
 
@@ -1841,6 +1848,8 @@ async function sendOpenAIRequest(type, messages, signal) {
     if ((isOAI || isOpenRouter || isMistral || isCustom || isCohere) && oai_settings.seed >= 0) {
         generate_data['seed'] = oai_settings.seed;
     }
+
+    await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
     const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
@@ -2186,12 +2195,47 @@ class Message {
             }
         }
 
+        const quality = oai_settings.inline_image_quality || default_settings.inline_image_quality;
         this.content = [
             { type: 'text', text: textContent },
-            { type: 'image_url', image_url: { 'url': image, 'detail': 'low' } },
+            { type: 'image_url', image_url: { 'url': image, 'detail': quality } },
         ];
 
-        this.tokens += Message.tokensPerImage;
+        const tokens = await this.getImageTokenCost(image, quality);
+        this.tokens += tokens;
+    }
+
+    async getImageTokenCost(dataUrl, quality) {
+        if (quality === 'low') {
+            return Message.tokensPerImage;
+        }
+
+        const size = await getImageSizeFromDataURL(dataUrl);
+
+        // If the image is small enough, we can use the low quality token cost
+        if (quality === 'auto' && size.width <= 512 && size.height <= 512) {
+            return Message.tokensPerImage;
+        }
+
+        /*
+        * Images are first scaled to fit within a 2048 x 2048 square, maintaining their aspect ratio.
+        * Then, they are scaled such that the shortest side of the image is 768px long.
+        * Finally, we count how many 512px squares the image consists of.
+        * Each of those squares costs 170 tokens. Another 85 tokens are always added to the final total.
+        * https://platform.openai.com/docs/guides/vision/calculating-costs
+        */
+
+        const scale = 2048 / Math.min(size.width, size.height);
+        const scaledWidth = Math.round(size.width * scale);
+        const scaledHeight = Math.round(size.height * scale);
+
+        const finalScale = 768 / Math.min(scaledWidth, scaledHeight);
+        const finalWidth = Math.round(scaledWidth * finalScale);
+        const finalHeight = Math.round(scaledHeight * finalScale);
+
+        const squares = Math.ceil(finalWidth / 512) * Math.ceil(finalHeight / 512);
+        const tokens = squares * 170 + 85;
+        return tokens;
     }
 
     /**
@@ -2718,8 +2762,10 @@ function loadOpenAISettings(data, settings) {
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
     oai_settings.proxy_password = settings.proxy_password ?? default_settings.proxy_password;
     oai_settings.assistant_prefill = settings.assistant_prefill ?? default_settings.assistant_prefill;
+    oai_settings.assistant_impersonation = settings.assistant_impersonation ?? default_settings.assistant_impersonation;
     oai_settings.human_sysprompt_message = settings.human_sysprompt_message ?? default_settings.human_sysprompt_message;
     oai_settings.image_inlining = settings.image_inlining ?? default_settings.image_inlining;
+    oai_settings.inline_image_quality = settings.inline_image_quality ?? default_settings.inline_image_quality;
     oai_settings.bypass_status_check = settings.bypass_status_check ?? default_settings.bypass_status_check;
     oai_settings.seed = settings.seed ?? default_settings.seed;
     oai_settings.n = settings.n ?? default_settings.n;
@@ -2753,9 +2799,13 @@ function loadOpenAISettings(data, settings) {
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
+    $('#claude_assistant_impersonation').val(oai_settings.assistant_impersonation);
     $('#claude_human_sysprompt_textarea').val(oai_settings.human_sysprompt_message);
     $('#openai_image_inlining').prop('checked', oai_settings.image_inlining);
     $('#openai_bypass_status_check').prop('checked', oai_settings.bypass_status_check);
+
+    $('#openai_inline_image_quality').val(oai_settings.inline_image_quality);
+    $(`#openai_inline_image_quality option[value="${oai_settings.inline_image_quality}"]`).prop('selected', true);
 
     $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
@@ -3069,6 +3119,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         api_url_scale: settings.api_url_scale,
         show_external_models: settings.show_external_models,
         assistant_prefill: settings.assistant_prefill,
+        assistant_impersonation: settings.assistant_impersonation,
         human_sysprompt_message: settings.human_sysprompt_message,
         use_ai21_tokenizer: settings.use_ai21_tokenizer,
         use_google_tokenizer: settings.use_google_tokenizer,
@@ -3077,6 +3128,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
+        inline_image_quality: settings.inline_image_quality,
         bypass_status_check: settings.bypass_status_check,
         continue_prefill: settings.continue_prefill,
         continue_postfix: settings.continue_postfix,
@@ -3454,6 +3506,7 @@ function onSettingsPresetChange() {
         show_external_models: ['#openai_show_external_models', 'show_external_models', true],
         proxy_password: ['#openai_proxy_password', 'proxy_password', false],
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
+        assistant_impersonation: ['#claude_assistant_impersonation', 'assistant_impersonation', false],
         human_sysprompt_message: ['#claude_human_sysprompt_textarea', 'human_sysprompt_message', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', true],
         use_google_tokenizer: ['#use_google_tokenizer', 'use_google_tokenizer', true],
@@ -3462,6 +3515,7 @@ function onSettingsPresetChange() {
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
         image_inlining: ['#openai_image_inlining', 'image_inlining', true],
+        inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false],
         continue_prefill: ['#continue_prefill', 'continue_prefill', true],
         continue_postfix: ['#continue_postfix', 'continue_postfix', false],
         seed: ['#seed_openai', 'seed', false],
@@ -3476,6 +3530,11 @@ function onSettingsPresetChange() {
     // Migrate old settings
     if (preset.names_in_completion === true && preset.names_behavior === undefined) {
         preset.names_behavior = character_names_behavior.COMPLETION;
+    }
+
+    // Claude: Assistant Impersonation Prefill = Inherit from Assistant Prefill
+    if (preset.assistant_prefill !== undefined && preset.assistant_impersonation === undefined) {
+        preset.assistant_impersonation = preset.assistant_prefill;
     }
 
     const updateInput = (selector, value) => $(selector).val(value).trigger('input');
@@ -3513,7 +3572,7 @@ function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
     }
-    else if (value.includes('gpt-4-turbo') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
+    else if (value.includes('gpt-4-turbo') || value.includes('gpt-4o') || value.includes('gpt-4-1106') || value.includes('gpt-4-0125') || value.includes('gpt-4-vision')) {
         return max_128k;
     }
     else if (value.includes('gpt-3.5-turbo-1106')) {
@@ -3677,7 +3736,7 @@ async function onModelChange() {
     if (oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE) {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', max_1mil);
-        } else if (value === 'gemini-1.5-pro-latest') {
+        } else if (value === 'gemini-1.5-pro-latest' || value.includes('gemini-1.5-flash')) {
             $('#openai_max_context').attr('max', max_1mil);
         } else if (value === 'gemini-ultra' || value === 'gemini-1.0-pro-latest' || value === 'gemini-pro' || value === 'gemini-1.0-ultra-latest') {
             $('#openai_max_context').attr('max', max_32k);
@@ -4237,11 +4296,14 @@ export function isImageInliningSupported() {
     // gultra just isn't being offered as multimodal, thanks google.
     const visionSupportedModels = [
         'gpt-4-vision',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-flash',
         'gemini-1.0-pro-vision-latest',
         'gemini-1.5-pro-latest',
         'gemini-pro-vision',
         'claude-3',
         'gpt-4-turbo',
+        'gpt-4o',
     ];
 
     switch (oai_settings.chat_completion_source) {
@@ -4383,7 +4445,18 @@ function runProxyCallback(_, value) {
     return foundName;
 }
 
-registerSlashCommand('proxy', runProxyCallback, [], '<span class="monospace">(name)</span> – sets a proxy preset by name');
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'proxy',
+    callback: runProxyCallback,
+    returns: 'current proxy',
+    namedArgumentList: [],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'name', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Sets a proxy preset by name.',
+}));
+
 
 $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
@@ -4659,6 +4732,11 @@ $(document).ready(async function () {
         saveSettingsDebounced();
     });
 
+    $('#claude_assistant_impersonation').on('input', function () {
+        oai_settings.assistant_impersonation = String($(this).val());
+        saveSettingsDebounced();
+    });
+
     $('#claude_human_sysprompt_textarea').on('input', function () {
         oai_settings.human_sysprompt_message = String($('#claude_human_sysprompt_textarea').val());
         saveSettingsDebounced();
@@ -4691,6 +4769,11 @@ $(document).ready(async function () {
 
     $('#openai_image_inlining').on('input', function () {
         oai_settings.image_inlining = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#openai_inline_image_quality').on('input', function () {
+        oai_settings.inline_image_quality = String($(this).val());
         saveSettingsDebounced();
     });
 

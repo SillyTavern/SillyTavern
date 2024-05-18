@@ -231,6 +231,7 @@
     "api_url_scale": "",
     "show_external_models": false,
     "assistant_prefill": "",
+    "assistant_impersonation": "",
     "human_sysprompt_message": "Let's get started. Please generate your response based on the information and instructions provided above.",
     "use_ai21_tokenizer": false,
     "use_google_tokenizer": false,

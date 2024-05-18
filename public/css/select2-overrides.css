@@ -171,3 +171,78 @@
 .select2-results__option.select2-results__message::before {
     display: none;
 }
+
+.select2-selection__choice__display {
+    /* Fix weird alignment on the left side */
+    margin-left: 1px;
+}
+
+/* Styling for choice remove icon */
+span.select2.select2-container .select2-selection__choice__remove {
+    cursor: pointer;
+    transition: background-color 0.3s;
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--black50a);
+}
+
+span.select2.select2-container .select2-selection__choice__remove:hover {
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--white30a);
+}
+
+/* Custom class to support styling to show clickable choice options */
+.select2_choice_clickable+span.select2-container .select2-selection__choice__display {
+    cursor: pointer;
+}
+.select2_choice_clickable_buttonstyle+span.select2-container .select2-selection__choice__display {
+    cursor: pointer;
+    transition: background-color 0.3s;
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--black50a);
+}
+
+.select2_choice_clickable_buttonstyle+span.select2-container .select2-selection__choice__display:hover {
+    background-color: var(--white30a);
+}
+
+/* Custom class to support same line multi inputs of select2 controls */
+.select2_multi_sameline+span.select2-container .select2-selection--multiple {
+    display: flex;
+    flex-wrap: wrap;
+}.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search--inline {
+    /* Allow search placeholder to take up all space if needed */
+    flex-grow: 1;
+}
+
+.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__rendered {
+    /* Fix weird styling choice or huge margin around selected options */
+    margin-block-start: 2px;
+    margin-block-end: 2px;
+}
+
+.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search__field {
+    /* Min height to reserve spacing */
+    min-height: calc(var(--mainFontSize) + 13px);
+    /* Min width to be clickable */
+    min-width: 4em;
+    align-content: center;
+    /* Fix search textarea alignment issue with UL elements */
+    margin-top: 0px;
+    height: unset;
+    /* Prevent height from jumping around when input is focused */
+    line-height: 1;
+}
+
+.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__rendered {
+    /* Min height to reserve spacing */
+    min-height: calc(var(--mainFontSize) + 13px);
+}
+
+/* Make search bar invisible unless the select2 is active, to save space */
+.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search--inline {
+    height: 1px;
+}
+
+.select2_multi_sameline+span.select2-container.select2-container--focus .select2-selection--multiple .select2-search--inline {
+    height: unset;
+}

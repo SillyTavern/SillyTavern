@@ -1,6 +1,7 @@
 [
     { "lang": "ar-sa",  "display": "عربي (Arabic)" },
     { "lang": "zh-cn",  "display": "简体中文 (Chinese) (Simplified)" },
+    { "lang": "zh-tw",  "display": "繁體中文 (Chinese) (Taiwan)" },
     { "lang": "nl-nl",  "display": "Nederlands (Dutch)" },
     { "lang": "de-de",  "display": "Deutsch (German)" },
     { "lang": "fr-fr",  "display": "Français (French)" },
