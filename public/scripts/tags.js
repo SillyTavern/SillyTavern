@@ -14,7 +14,7 @@ import {
 // eslint-disable-next-line no-unused-vars
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
-import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
+import { groupCandidatesFilter, groups, select_group_chats, selected_group } from './group-chats.js';
 import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
@@ -1530,7 +1530,9 @@ function registerTagsSlashCommands() {
      * @returns {string?} - The char/group key, or null if none found
      */
     function paraGetCharKey(charName) {
-        const entity = charName ? characters.find(x => x.name === charName) || groups.find(x => x.name == charName) : characters[this_chid] || groups[selected_group];
+        const entity = charName
+            ? (characters.find(x => x.name === charName) || groups.find(x => x.name == charName))
+            : (selected_group ? groups.find(x => x.id == selected_group) : characters[this_chid]);
         const key = getTagKeyForEntity(entity);
         if (!key) {
             toastr.warning(`Character ${charName} not found.`);
@@ -1547,7 +1549,7 @@ function registerTagsSlashCommands() {
      */
     function paraGetTag(tagName, { allowCreate = false } = {}) {
         if (!tagName) {
-            toastr.warning(`Tag name must be provided.`);
+            toastr.warning('Tag name must be provided.');
             return null;
         }
         let tag = tags.find(t => t.name === tagName);
@@ -1561,6 +1563,21 @@ function registerTagsSlashCommands() {
         return tag;
     }
 
+    function updateTagsList() {
+        switch (menu_type) {
+            case 'characters':
+                printTagFilters(tag_filter_types.character);
+                printTagFilters(tag_filter_types.group_member);
+                break;
+            case 'character_edit':
+                applyTagsOnCharacterSelect();
+                break;
+            case 'group_edit':
+                select_group_chats(selected_group, true);
+                break;
+        }
+    }
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'tag-add',
         returns: 'true/false - Whether the tag was added or was assigned already',
@@ -1571,6 +1588,7 @@ function registerTagsSlashCommands() {
             const tag = paraGetTag(tagName, { allowCreate: true });
             if (!tag) return 'false';
             const result = addTagToEntity(tag, key);
+            updateTagsList();
             return String(result);
         },
         namedArgumentList: [
@@ -1605,6 +1623,7 @@ function registerTagsSlashCommands() {
             const tag = paraGetTag(tagName);
             if (!tag) return 'false';
             const result = removeTagFromEntity(tag, key);
+            updateTagsList();
             return String(result);
         },
         namedArgumentList: [
