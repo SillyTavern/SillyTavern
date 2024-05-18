@@ -1,3 +1,4 @@
+{
     " messages": " 訊息",
     " words": " 文字",
     "# Messages to Load": "個要載入的訊息數量",
@@ -197,7 +198,7 @@
     "Bypass status check": "繞過狀態檢查",
     "Can be used to automatically activate Quick Replies": "可用於自動啟用快速回覆",
     "Can help with bad responses by queueing only the approved workers. May slowdown the response time.": "僅將已批准的 worker 排隊，可以幫助處理不良回應。可能會延長回應時間。",
-    "Cancel": "取消",,
+    "Cancel": "取消",
     "Case Sensitive": "區分大小寫",
     "Case-Sensitive": "區分大小寫",
     "CFG Prompt Cascading": "CFG 提示級聯",
@@ -342,7 +343,7 @@
     "Debug Warning": "偵錯警告",
     "Default (completions compatible)": "預設（相容補充）",
     "Default Author's Note": "預設作者註釋",
-    "default": "預設",
+    "Default": "預設",
     "Delay until recursion (this entry can only be activated on recursive checking)": "延遲遞迴（此條目只能在遞迴檢查時啟用）",
     "Delete a theme": "刪除主題",
     "Delete Character": "刪除角色",
@@ -388,7 +389,7 @@
     "Duplicate": "複製",
     "DYN": "動態",
     "Dynamic Temperature": "動態溫度",
-    "DynaTemp": "動態溫度",,
+    "DynaTemp": "動態溫度",
     "Each article will be saved as a separate file.": "每篇文章將另存為一個檔案。",
     "Early Stopping": "提前停止",
     "Edit summarization prompt, insertion position, etc.": "編輯摘要提示、插入位置等。",
@@ -1188,5 +1189,4 @@
     "Your Persona": "您的玩家角色",
     "Z-A": "Z-A",
     "Zen Sliders": "Zen 滑桿"
-{
 }
