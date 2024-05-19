@@ -2889,6 +2889,9 @@ class StreamingProcessor {
         this.onErrorStreaming();
     }
 
+    /**
+     * @returns {Generator<{ text: string, swipes: string[], logprobs: import('./scripts/logprobs.js').TokenLogprobs }, void, void>}
+     */
     *nullStreamingGeneration() {
         throw new Error('Generation function for streaming is not hooked up');
     }
@@ -2916,7 +2919,7 @@ class StreamingProcessor {
                 }
 
                 this.result = text;
-                this.swipes = swipes;
+                this.swipes = Array.from(swipes ?? []);
                 if (logprobs) {
                     this.messageLogprobs.push(...(Array.isArray(logprobs) ? logprobs : [logprobs]));
                 }
