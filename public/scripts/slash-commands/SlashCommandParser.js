@@ -114,7 +114,6 @@ export class SlashCommandParser {
 
 
     constructor() {
-        //TODO should not be re-registered from every instance
         // add dummy commands for help strings / autocomplete
         if (!Object.keys(this.commands).includes('parser-flag')) {
             const help = {};
