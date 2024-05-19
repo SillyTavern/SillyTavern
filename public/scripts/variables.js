@@ -410,16 +410,31 @@ async function timesCallback(args, value) {
     return result?.pipe ?? '';
 }
 
-async function ifCallback(args, command) {
+/**
+ *
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+ * @param {(string|SlashCommandClosure)[]} value
+ */
+async function ifCallback(args, value) {
     const { a, b, rule } = parseBooleanOperands(args);
     const result = evalBoolean(rule, a, b);
+
+    /**@type {string|SlashCommandClosure} */
+    let command;
+    if (value) {
+        if (value[0] instanceof SlashCommandClosure) {
+            command = value[0];
+        } else {
+            command = value.join(' ');
+        }
+    }
 
     let commandResult;
     if (result && command) {
         if (command instanceof SlashCommandClosure) return (await command.execute()).pipe;
         commandResult = await executeSubCommands(command, args._scope, args._parserFlags, args._abortController);
     } else if (!result && args.else && ((typeof args.else === 'string' && args.else !== '') || args.else instanceof SlashCommandClosure)) {
-        if (args.else instanceof SlashCommandClosure) return (await args.else.execute(args._scope)).pipe;
+        if (args.else instanceof SlashCommandClosure) return (await args.else.execute()).pipe;
         commandResult = await executeSubCommands(args.else, args._scope, args._parserFlags, args._abortController);
     }
 
@@ -1134,6 +1149,7 @@ export function registerVariableCommands() {
                 'command to execute if true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], true,
             ),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Compares the value of the left operand <code>a</code> with the value of the right operand <code>b</code>,
