@@ -316,14 +316,21 @@ function listVariablesCallback() {
     sendSystemMessage(system_message_types.GENERIC, htmlMessage);
 }
 
-async function whileCallback(args, command) {
+/**
+ *
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+ * @param {(string|SlashCommandClosure)[]} value
+ */
+async function whileCallback(args, value) {
     const isGuardOff = isFalseBoolean(args.guard);
     const iterations = isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS;
-    if (command) {
-        if (command[0] instanceof SlashCommandClosure) {
-            command = command[0];
+    /**@type {string|SlashCommandClosure} */
+    let command;
+    if (value) {
+        if (value[0] instanceof SlashCommandClosure) {
+            command = value[0];
         } else {
-            command = command.join(' ');
+            command = value.join(' ');
         }
     }
 
