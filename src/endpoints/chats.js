@@ -6,7 +6,7 @@ const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { DIRECTORIES, UPLOADS_PATH } = require('../constants');
+const { PUBLIC_DIRECTORIES, UPLOADS_PATH } = require('../constants');
 const { getConfigValue, humanizedISO8601DateTime, tryParse, generateTimestamp, removeOldBackups } = require('../util');
 
 /**
@@ -22,14 +22,14 @@ function backupChat(name, chat) {
             return;
         }
 
-        if (!fs.existsSync(DIRECTORIES.backups)) {
-            fs.mkdirSync(DIRECTORIES.backups);
+        if (!fs.existsSync(PUBLIC_DIRECTORIES.backups)) {
+            fs.mkdirSync(PUBLIC_DIRECTORIES.backups);
         }
 
         // replace non-alphanumeric characters with underscores
         name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-        const backupFile = path.join(DIRECTORIES.backups, `chat_${name}_${generateTimestamp()}.jsonl`);
+        const backupFile = path.join(PUBLIC_DIRECTORIES.backups, `chat_${name}_${generateTimestamp()}.jsonl`);
         writeFileAtomicSync(backupFile, chat, 'utf-8');
 
         removeOldBackups(`chat_${name}_`);
@@ -38,18 +38,25 @@ function backupChat(name, chat) {
     }
 }
 
-function importOobaChat(user_name, ch_name, jsonData, avatar_url) {
+/**
+ * Imports a chat from Ooba's format.
+ * @param {string} userName User name
+ * @param {string} characterName Character name
+ * @param {object} jsonData JSON data
+ * @returns {string} Chat data
+ */
+function importOobaChat(userName, characterName, jsonData) {
     /** @type {object[]} */
     const chat = [{
-        user_name: user_name,
-        character_name: ch_name,
+        user_name: userName,
+        character_name: characterName,
         create_date: humanizedISO8601DateTime(),
     }];
 
     for (const arr of jsonData.data_visible) {
         if (arr[0]) {
             const userMessage = {
-                name: user_name,
+                name: userName,
                 is_user: true,
                 send_date: humanizedISO8601DateTime(),
                 mes: arr[0],
@@ -58,7 +65,7 @@ function importOobaChat(user_name, ch_name, jsonData, avatar_url) {
         }
         if (arr[1]) {
             const charMessage = {
-                name: ch_name,
+                name: characterName,
                 is_user: false,
                 send_date: humanizedISO8601DateTime(),
                 mes: arr[1],
@@ -68,21 +75,28 @@ function importOobaChat(user_name, ch_name, jsonData, avatar_url) {
     }
 
     const chatContent = chat.map(obj => JSON.stringify(obj)).join('\n');
-    writeFileAtomicSync(`${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chatContent, 'utf8');
+    return chatContent;
 }
 
-function importAgnaiChat(user_name, ch_name, jsonData, avatar_url) {
+/**
+ * Imports a chat from Agnai's format.
+ * @param {string} userName User name
+ * @param {string} characterName Character name
+ * @param {object} jsonData Chat data
+ * @returns {string} Chat data
+ */
+function importAgnaiChat(userName, characterName, jsonData) {
     /** @type {object[]} */
     const chat = [{
-        user_name: user_name,
-        character_name: ch_name,
+        user_name: userName,
+        character_name: characterName,
         create_date: humanizedISO8601DateTime(),
     }];
 
     for (const message of jsonData.messages) {
         const isUser = !!message.userId;
         chat.push({
-            name: isUser ? user_name : ch_name,
+            name: isUser ? userName : characterName,
             is_user: isUser,
             send_date: humanizedISO8601DateTime(),
             mes: message.msg,
@@ -90,60 +104,54 @@ function importAgnaiChat(user_name, ch_name, jsonData, avatar_url) {
     }
 
     const chatContent = chat.map(obj => JSON.stringify(obj)).join('\n');
-    writeFileAtomicSync(`${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chatContent, 'utf8');
+    return chatContent;
 }
 
-function importCAIChat(user_name, ch_name, jsonData, avatar_url) {
-    const chat = {
-        from(history) {
-            return [
-                {
-                    user_name: user_name,
-                    character_name: ch_name,
-                    create_date: humanizedISO8601DateTime(),
-                },
-                ...history.msgs.map(
-                    (message) => ({
-                        name: message.src.is_human ? user_name : ch_name,
-                        is_user: message.src.is_human,
-                        send_date: humanizedISO8601DateTime(),
-                        mes: message.text,
-                    }),
-                ),
-            ];
-        },
-    };
+/**
+ * Imports a chat from CAI Tools format.
+ * @param {string} userName User name
+ * @param {string} characterName Character name
+ * @param {object} jsonData JSON data
+ * @returns {string[]} Converted data
+ */
+function importCAIChat(userName, characterName, jsonData) {
+    /**
+     * Converts the chat data to suitable format.
+     * @param {object} history Imported chat data
+     * @returns {object[]} Converted chat data
+     */
+    function convert(history) {
+        const starter = {
+            user_name: userName,
+            character_name: characterName,
+            create_date: humanizedISO8601DateTime(),
+        };
 
-    const newChats = [];
-    (jsonData.histories.histories ?? []).forEach((history) => {
-        newChats.push(chat.from(history));
-    });
+        const historyData = history.msgs.map((msg) => ({
+            name: msg.src.is_human ? userName : characterName,
+            is_user: msg.src.is_human,
+            send_date: humanizedISO8601DateTime(),
+            mes: msg.text,
+        }));
 
-    const errors = [];
-
-    for (const chat of newChats) {
-        const filePath = `${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`;
-        const fileContent = chat.map(tryParse).filter(x => x).join('\n');
-
-        try {
-            writeFileAtomicSync(filePath, fileContent, 'utf8');
-        } catch (err) {
-            errors.push(err);
-        }
+        return [starter, ...historyData];
     }
 
-    return errors;
+    const newChats = (jsonData.histories.histories ?? []).map(history => newChats.push(convert(history).map(obj => JSON.stringify(obj)).join('\n')));
+    return newChats;
 }
 
 const router = express.Router();
 
 router.post('/save', jsonParser, function (request, response) {
     try {
-        var dir_name = String(request.body.avatar_url).replace('.png', '');
-        let chat_data = request.body.chat;
-        let jsonlData = chat_data.map(JSON.stringify).join('\n');
-        writeFileAtomicSync(`${DIRECTORIES.chats + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
-        backupChat(dir_name, jsonlData);
+        const directoryName = String(request.body.avatar_url).replace('.png', '');
+        const chatData = request.body.chat;
+        const jsonlData = chatData.map(JSON.stringify).join('\n');
+        const fileName = `${sanitize(String(request.body.file_name))}.jsonl`;
+        const filePath = path.join(request.user.directories.chats, directoryName, fileName);
+        writeFileAtomicSync(filePath, jsonlData, 'utf8');
+        backupChat(directoryName, jsonlData);
         return response.send({ result: 'ok' });
     } catch (error) {
         response.send(error);
@@ -154,11 +162,12 @@ router.post('/save', jsonParser, function (request, response) {
 router.post('/get', jsonParser, function (request, response) {
     try {
         const dirName = String(request.body.avatar_url).replace('.png', '');
-        const chatDirExists = fs.existsSync(DIRECTORIES.chats + dirName);
+        const directoryPath = path.join(request.user.directories.chats, dirName);
+        const chatDirExists = fs.existsSync(directoryPath);
 
         //if no chat dir for the character is found, make one with the character name
         if (!chatDirExists) {
-            fs.mkdirSync(DIRECTORIES.chats + dirName);
+            fs.mkdirSync(directoryPath);
             return response.send({});
         }
 
@@ -166,7 +175,7 @@ router.post('/get', jsonParser, function (request, response) {
             return response.send({});
         }
 
-        const fileName = `${DIRECTORIES.chats + dirName}/${sanitize(String(request.body.file_name))}.jsonl`;
+        const fileName = path.join(directoryPath, `${sanitize(String(request.body.file_name))}.jsonl`);
         const chatFileExists = fs.existsSync(fileName);
 
         if (!chatFileExists) {
@@ -192,8 +201,8 @@ router.post('/rename', jsonParser, async function (request, response) {
     }
 
     const pathToFolder = request.body.is_group
-        ? DIRECTORIES.groupChats
-        : path.join(DIRECTORIES.chats, String(request.body.avatar_url).replace('.png', ''));
+        ? request.user.directories.groupChats
+        : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
     const pathToOriginalFile = path.join(pathToFolder, request.body.original_file);
     const pathToRenamedFile = path.join(pathToFolder, request.body.renamed_file);
     console.log('Old chat name', pathToOriginalFile);
@@ -204,13 +213,13 @@ router.post('/rename', jsonParser, async function (request, response) {
         return response.status(400).send({ error: true });
     }
 
+    fs.copyFileSync(pathToOriginalFile, pathToRenamedFile);
+    fs.rmSync(pathToOriginalFile);
     console.log('Successfully renamed.');
-    fs.renameSync(pathToOriginalFile, pathToRenamedFile);
     return response.send({ ok: true });
 });
 
 router.post('/delete', jsonParser, function (request, response) {
-    console.log('/api/chats/delete entered');
     if (!request.body) {
         console.log('no request body seen');
         return response.sendStatus(400);
@@ -222,18 +231,15 @@ router.post('/delete', jsonParser, function (request, response) {
     }
 
     const dirName = String(request.body.avatar_url).replace('.png', '');
-    const fileName = `${DIRECTORIES.chats + dirName}/${sanitize(String(request.body.chatfile))}`;
+    const fileName = path.join(request.user.directories.chats, dirName, sanitize(String(request.body.chatfile)));
     const chatFileExists = fs.existsSync(fileName);
 
     if (!chatFileExists) {
         console.log(`Chat file not found '${fileName}'`);
         return response.sendStatus(400);
     } else {
-        console.log('found the chat file: ' + fileName);
-        /* fs.unlinkSync(fileName); */
         fs.rmSync(fileName);
-        console.log('deleted chat file: ' + fileName);
-
+        console.log('Deleted chat file: ' + fileName);
     }
 
     return response.send('ok');
@@ -244,8 +250,8 @@ router.post('/export', jsonParser, async function (request, response) {
         return response.sendStatus(400);
     }
     const pathToFolder = request.body.is_group
-        ? DIRECTORIES.groupChats
-        : path.join(DIRECTORIES.chats, String(request.body.avatar_url).replace('.png', ''));
+        ? request.user.directories.groupChats
+        : path.join(request.user.directories.chats, String(request.body.avatar_url).replace('.png', ''));
     let filename = path.join(pathToFolder, request.body.file);
     let exportfilename = request.body.exportfilename;
     if (!fs.existsSync(filename)) {
@@ -321,7 +327,7 @@ router.post('/group/import', urlencodedParser, function (request, response) {
 
         const chatname = humanizedISO8601DateTime();
         const pathToUpload = path.join(UPLOADS_PATH, filedata.filename);
-        const pathToNewFile = path.join(DIRECTORIES.groupChats, `${chatname}.jsonl`);
+        const pathToNewFile = path.join(request.user.directories.groupChats, `${chatname}.jsonl`);
         fs.copyFileSync(pathToUpload, pathToNewFile);
         fs.unlinkSync(pathToUpload);
         return response.send({ res: chatname });
@@ -334,35 +340,42 @@ router.post('/group/import', urlencodedParser, function (request, response) {
 router.post('/import', urlencodedParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
-    var format = request.body.file_type;
-    let filedata = request.file;
-    let avatar_url = (request.body.avatar_url).replace('.png', '');
-    let ch_name = request.body.character_name;
-    let user_name = request.body.user_name || 'You';
+    const format = request.body.file_type;
+    const avatarUrl = (request.body.avatar_url).replace('.png', '');
+    const characterName = request.body.character_name;
+    const userName = request.body.user_name || 'You';
 
-    if (!filedata) {
+    if (!request.file) {
         return response.sendStatus(400);
     }
 
     try {
-        const data = fs.readFileSync(path.join(UPLOADS_PATH, filedata.filename), 'utf8');
+        const data = fs.readFileSync(path.join(UPLOADS_PATH, request.file.filename), 'utf8');
 
         if (format === 'json') {
             const jsonData = JSON.parse(data);
             if (jsonData.histories !== undefined) {
                 // CAI Tools format
-                const errors = importCAIChat(user_name, ch_name, jsonData, avatar_url);
-                if (0 < errors.length) {
-                    return response.send('Errors occurred while writing character files. Errors: ' + JSON.stringify(errors));
+                const chats = importCAIChat(userName, characterName, jsonData);
+                for (const chat of chats) {
+                    const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
+                    const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
+                    writeFileAtomicSync(filePath, chat, 'utf8');
                 }
                 return response.send({ res: true });
             } else if (Array.isArray(jsonData.data_visible)) {
                 // oobabooga's format
-                importOobaChat(user_name, ch_name, jsonData, avatar_url);
+                const chat = importOobaChat(userName, characterName, jsonData);
+                const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
+                const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
+                writeFileAtomicSync(filePath, chat, 'utf8');
                 return response.send({ res: true });
             } else if (Array.isArray(jsonData.messages)) {
                 // Agnai format
-                importAgnaiChat(user_name, ch_name, jsonData, avatar_url);
+                const chat = importAgnaiChat(userName, characterName, jsonData);
+                const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
+                const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
+                writeFileAtomicSync(filePath, chat, 'utf8');
                 return response.send({ res: true });
             } else {
                 console.log('Incorrect chat format .json');
@@ -373,10 +386,12 @@ router.post('/import', urlencodedParser, function (request, response) {
         if (format === 'jsonl') {
             const line = data.split('\n')[0];
 
-            let jsonData = JSON.parse(line);
+            const jsonData = JSON.parse(line);
 
             if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
-                fs.copyFileSync(path.join(UPLOADS_PATH, filedata.filename), (`${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`));
+                const fileName = `${characterName} - ${humanizedISO8601DateTime()} imported.jsonl`;
+                const filePath = path.join(request.user.directories.chats, avatarUrl, fileName);
+                fs.copyFileSync(path.join(UPLOADS_PATH, request.file.filename), filePath);
                 response.send({ res: true });
             } else {
                 console.log('Incorrect chat format .jsonl');
@@ -395,7 +410,7 @@ router.post('/group/get', jsonParser, (request, response) => {
     }
 
     const id = request.body.id;
-    const pathToFile = path.join(DIRECTORIES.groupChats, `${id}.jsonl`);
+    const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
 
     if (fs.existsSync(pathToFile)) {
         const data = fs.readFileSync(pathToFile, 'utf8');
@@ -415,7 +430,7 @@ router.post('/group/delete', jsonParser, (request, response) => {
     }
 
     const id = request.body.id;
-    const pathToFile = path.join(DIRECTORIES.groupChats, `${id}.jsonl`);
+    const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
 
     if (fs.existsSync(pathToFile)) {
         fs.rmSync(pathToFile);
@@ -431,10 +446,10 @@ router.post('/group/save', jsonParser, (request, response) => {
     }
 
     const id = request.body.id;
-    const pathToFile = path.join(DIRECTORIES.groupChats, `${id}.jsonl`);
+    const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
 
-    if (!fs.existsSync(DIRECTORIES.groupChats)) {
-        fs.mkdirSync(DIRECTORIES.groupChats);
+    if (!fs.existsSync(request.user.directories.groupChats)) {
+        fs.mkdirSync(request.user.directories.groupChats);
     }
 
     let chat_data = request.body.chat;

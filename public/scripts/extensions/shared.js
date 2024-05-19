@@ -23,7 +23,6 @@ export async function getMultimodalCaption(base64Img, prompt) {
     // OpenRouter has a payload limit of ~2MB. Google is 4MB, but we love democracy.
     // Ooba requires all images to be JPEGs. Koboldcpp just asked nicely.
     const isGoogle = extension_settings.caption.multimodal_api === 'google';
-    const isClaude = extension_settings.caption.multimodal_api === 'anthropic';
     const isOllama = extension_settings.caption.multimodal_api === 'ollama';
     const isLlamaCpp = extension_settings.caption.multimodal_api === 'llamacpp';
     const isCustom = extension_settings.caption.multimodal_api === 'custom';

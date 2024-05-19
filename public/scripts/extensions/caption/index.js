@@ -5,7 +5,9 @@ import { getMessageTimeStamp } from '../../RossAscends-mods.js';
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getMultimodalCaption } from '../shared.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
-import { registerSlashCommand } from '../../slash-commands.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -254,6 +256,19 @@ async function onSelectImage(e, prompt, quiet) {
         return '';
     }
 
+    const caption = await getCaptionForFile(file, prompt, quiet);
+    form && form.reset();
+    return caption;
+}
+
+/**
+ * Gets a caption for an image file.
+ * @param {File} file Input file
+ * @param {string} prompt Caption prompt
+ * @param {boolean} quiet Suppresses sending a message
+ * @returns {Promise<string>} Generated caption
+ */
+async function getCaptionForFile(file, prompt, quiet) {
     try {
         setSpinnerIcon();
         const context = getContext();
@@ -273,7 +288,6 @@ async function onSelectImage(e, prompt, quiet) {
         return '';
     }
     finally {
-        form && form.reset();
         setImageIcon();
     }
 }
@@ -288,9 +302,26 @@ function onRefineModeInput() {
  * @param {object} args Named parameters
  * @param {string} prompt Caption prompt
  */
-function captionCommandCallback(args, prompt) {
+async function captionCommandCallback(args, prompt) {
+    const quiet = isTrueBoolean(args?.quiet);
+    const id = args?.id;
+
+    if (!isNaN(Number(id))) {
+        const message = getContext().chat[id];
+        if (message?.extra?.image) {
+            try {
+                const fetchResult = await fetch(message.extra.image);
+                const blob = await fetchResult.blob();
+                const file = new File([blob], 'image.jpg', { type: blob.type });
+                return await getCaptionForFile(file, prompt, quiet);
+            } catch (error) {
+                toastr.error('Failed to get image from the message. Make sure the image is accessible.');
+                return '';
+            }
+        }
+    }
+
     return new Promise(resolve => {
-        const quiet = isTrueBoolean(args?.quiet);
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
@@ -310,14 +341,8 @@ jQuery(function () {
             <div class="fa-solid fa-image extensionsMenuExtensionButton"></div>
             Generate Caption
         </div>`);
-        const attachFileButton = $(`
-        <div id="attachFile" class="list-group-item flex-container flexGap5">
-            <div class="fa-solid fa-paperclip extensionsMenuExtensionButton"></div>
-            Attach a File
-        </div>`);
 
         $('#extensionsMenu').prepend(sendButton);
-        $('#extensionsMenu').prepend(attachFileButton);
         $(sendButton).on('click', () => {
             const hasCaptionModule =
                 (modules.includes('caption') && extension_settings.caption.source === 'extras') ||
@@ -410,12 +435,17 @@ jQuery(function () {
                             <select id="caption_multimodal_model" class="flex1 text_pole">
                                 <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                                 <option data-type="openai" value="gpt-4-turbo">gpt-4-turbo</option>
+                                <option data-type="openai" value="gpt-4o">gpt-4o</option>
                                 <option data-type="anthropic" value="claude-3-opus-20240229">claude-3-opus-20240229</option>
                                 <option data-type="anthropic" value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                 <option data-type="anthropic" value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                                 <option data-type="google" value="gemini-pro-vision">gemini-pro-vision</option>
+                                <option data-type="google" value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
                                 <option data-type="openrouter" value="openai/gpt-4-vision-preview">openai/gpt-4-vision-preview</option>
+                                <option data-type="openrouter" value="openai/gpt-4o">openai/gpt-4o</option>
+                                <option data-type="openrouter" value="openai/gpt-4-turbo">openai/gpt-4-turbo</option>
                                 <option data-type="openrouter" value="haotian-liu/llava-13b">haotian-liu/llava-13b</option>
+                                <option data-type="openrouter" value="fireworks/firellava-13b">fireworks/firellava-13b</option>
                                 <option data-type="openrouter" value="anthropic/claude-3-haiku">anthropic/claude-3-haiku</option>
                                 <option data-type="openrouter" value="anthropic/claude-3-sonnet">anthropic/claude-3-sonnet</option>
                                 <option data-type="openrouter" value="anthropic/claude-3-opus">anthropic/claude-3-opus</option>
@@ -424,6 +454,8 @@ jQuery(function () {
                                 <option data-type="openrouter" value="anthropic/claude-3-opus:beta">anthropic/claude-3-opus:beta</option>
                                 <option data-type="openrouter" value="nousresearch/nous-hermes-2-vision-7b">nousresearch/nous-hermes-2-vision-7b</option>
                                 <option data-type="openrouter" value="google/gemini-pro-vision">google/gemini-pro-vision</option>
+                                <option data-type="openrouter" value="google/gemini-flash-1.5">google/gemini-flash-1.5</option>
+                                <option data-type="openrouter" value="liuhaotian/llava-yi-34b">liuhaotian/llava-yi-34b</option>
                                 <option data-type="ollama" value="ollama_current">[Currently selected]</option>
                                 <option data-type="ollama" value="bakllava:latest">bakllava:latest</option>
                                 <option data-type="ollama" value="llava:latest">llava:latest</option>
@@ -498,5 +530,35 @@ jQuery(function () {
         saveSettingsDebounced();
     });
 
-    registerSlashCommand('caption', captionCommandCallback, [], '<span class="monospace">quiet=true/false [prompt]</span> - caption an image with an optional prompt and passes the caption down the pipe. Only multimodal sources support custom prompts. Set the "quiet" argument to true to suppress sending a captioned message, default: false.', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'caption',
+        callback: captionCommandCallback,
+        returns: 'caption',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'quiet', 'suppress sending a captioned message', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['true', 'false'],
+            ),
+            new SlashCommandNamedArgument(
+                'id', 'get image from a message with this ID', [ARGUMENT_TYPE.NUMBER], false, false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'prompt', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Caption an image with an optional prompt and passes the caption down the pipe.
+            </div>
+            <div>
+                Only multimodal sources support custom prompts.
+            </div>
+            <div>
+                Provide a message ID to get an image from a message instead of uploading one.
+            </div>
+            <div>
+                Set the "quiet" argument to true to suppress sending a captioned message, default: false.
+            </div>
+        `,
+    }));
 });

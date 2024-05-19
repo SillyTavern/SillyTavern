@@ -14,9 +14,12 @@ import {
 // eslint-disable-next-line no-unused-vars
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
-import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay } from './utils.js';
+import { groupCandidatesFilter, groups, select_group_chats, selected_group } from './group-chats.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight } from './utils.js';
 import { power_user } from './power-user.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -63,7 +66,7 @@ export const tag_filter_types = {
 const ACTIONABLE_TAGS = {
     FAV: { id: '1', sort_order: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: filterByFav, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
     GROUP: { id: '0', sort_order: 2, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
-    FOLDER: { id: '4', sort_order: 3, name: 'Always show folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
+    FOLDER: { id: '4', sort_order: 3, name: 'Show only folders', color: 'rgba(120, 120, 120, 0.5)', action: filterByFolder, icon: 'fa-solid fa-folder-plus', class: 'filterByFolder' },
     VIEW: { id: '2', sort_order: 4, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
     HINT: { id: '3', sort_order: 5, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
     UNFILTER: { id: '5', sort_order: 6, name: 'Clear all filters', action: onClearAllFiltersClick, icon: 'fa-solid fa-filter-circle-xmark', class: 'clearAllFilters' },
@@ -174,9 +177,8 @@ function filterByTagState(entities, { globalDisplayFilters = false, subForEntity
             }
 
             // Hide folders that have 0 visible sub entities after the first filtering round
-            const alwaysFolder = isFilterState(entitiesFilter.getFilterData(FILTER_TYPES.FOLDER), FILTER_STATES.SELECTED);
             if (entity.type === 'tag') {
-                return alwaysFolder || entity.entities.length > 0;
+                return entity.entities.length > 0;
             }
 
             return true;
@@ -322,6 +324,13 @@ function filterByGroups(filterHelper) {
  * @param {FilterHelper} filterHelper Instance of FilterHelper class.
  */
 function filterByFolder(filterHelper) {
+    if (!power_user.bogus_folders) {
+        $('#bogus_folders').prop('checked', true).trigger('input');
+        onViewTagsListClick();
+        flashHighlight($('#dialogue_popup .tag_as_folder, #dialogue_popup .tag_folder_indicator'));
+        return;
+    }
+
     const state = toggleTagThreeState($(this));
     ACTIONABLE_TAGS.FOLDER.filter_state = state;
     filterHelper.setFilterData(FILTER_TYPES.FOLDER, state);
@@ -350,18 +359,20 @@ function createTagMapFromList(listElement, key) {
  * If you have an entity, you can get it's key easily via `getTagKeyForEntity(entity)`.
  *
  * @param {string} key - The key for which to get tags via the tag map
+ * @param {boolean} [sort=true] - Whether the tag list should be sorted
  * @returns {Tag[]} A list of tags
  */
-function getTagsList(key) {
+function getTagsList(key, sort = true) {
     if (!Array.isArray(tag_map[key])) {
         tag_map[key] = [];
         return [];
     }
 
-    return tag_map[key]
+    const list = tag_map[key]
         .map(x => tags.find(y => y.id === x))
-        .filter(x => x)
-        .sort(compareTagsForSort);
+        .filter(x => x);
+    if (sort) list.sort(compareTagsForSort);
+    return list;
 }
 
 function getInlineListSelector() {
@@ -384,7 +395,7 @@ function getTagKey() {
         return selected_group;
     }
 
-    if (this_chid && menu_type === 'character_edit') {
+    if (this_chid !== undefined && menu_type === 'character_edit') {
         return characters[this_chid].avatar;
     }
 
@@ -454,35 +465,122 @@ export function getTagKeyForEntityElement(element) {
     return undefined;
 }
 
+/**
+ * Adds a tag to a given entity
+ * @param {Tag} tag - The tag to add
+ * @param {string|string[]} entityId - The entity to add this tag to. Has to be the entity key (e.g. `addTagToEntity`). (Also allows multiple entities to be passed in)
+ * @param {object} [options={}] - Optional arguments
+ * @param {JQuery<HTMLElement>|string?} [options.tagListSelector=null] - An optional selector if a specific list should be updated with the new tag too (for example because the add was triggered for that function)
+ * @param {PrintTagListOptions} [options.tagListOptions] - Optional parameters for printing the tag list. Can be set to be consistent with the expected behavior of tags in the list that was defined before.
+ * @returns {boolean} Whether at least one tag was added
+ */
+export function addTagToEntity(tag, entityId, { tagListSelector = null, tagListOptions = {} } = {}) {
+    let result = false;
+    // Add tags to the map
+    if (Array.isArray(entityId)) {
+        entityId.forEach((id) => result = addTagToMap(tag.id, id) || result);
+    } else {
+        result = addTagToMap(tag.id, entityId);
+    }
+
+    // Save and redraw
+    printCharactersDebounced();
+    saveSettingsDebounced();
+
+    // We should manually add the selected tag to the print tag function, so we cover places where the tag list did not automatically include it
+    tagListOptions.addTag = tag;
+
+    // add tag to the UI and internal map - we reprint so sorting and new markup is done correctly
+    if (tagListSelector) printTagList(tagListSelector, tagListOptions);
+    const inlineSelector = getInlineListSelector();
+    if (inlineSelector) {
+        printTagList($(inlineSelector), tagListOptions);
+    }
+
+    return result;
+}
+
+/**
+ * Removes a tag from a given entity
+ * @param {Tag} tag - The tag to remove
+ * @param {string|string[]} entityId - The entity to remove this tag from. Has to be the entity key (e.g. `addTagToEntity`). (Also allows multiple entities to be passed in)
+ * @param {object} [options={}] - Optional arguments
+ * @param {JQuery<HTMLElement>|string?} [options.tagListSelector=null] - An optional selector if a specific list should be updated with the tag removed too (for example because the add was triggered for that function)
+ * @param {JQuery<HTMLElement>?} [options.tagElement=null] - Optionally a direct html element of the tag to be removed, so it can be removed from the UI
+ * @returns {boolean} Whether at least one tag was removed
+ */
+export function removeTagFromEntity(tag, entityId, { tagListSelector = null, tagElement = null } = {}) {
+    let result = false;
+    // Remove tag from the map
+    if (Array.isArray(entityId)) {
+        entityId.forEach((id) => result = removeTagFromMap(tag.id, id) || result);
+    } else {
+        result = removeTagFromMap(tag.id, entityId);
+    }
+
+    // Save and redraw
+    printCharactersDebounced();
+    saveSettingsDebounced();
+
+    // We don't reprint the lists, we can just remove the html elements from them.
+    if (tagListSelector) {
+        const $selector = (typeof tagListSelector === 'string') ? $(tagListSelector) : tagListSelector;
+        $selector.find(`.tag[id="${tag.id}"]`).remove();
+    }
+    if (tagElement) tagElement.remove();
+    $(`${getInlineListSelector()} .tag[id="${tag.id}"]`).remove();
+
+    return result;
+}
+
+/**
+ * Adds a tag from a given character. If no character is provided, adds it from the currently active one.
+ * @param {string} tagId - The id of the tag
+ * @param {string} characterId - The id/key of the character or group
+ * @returns {boolean} Whether the tag was added or not
+ */
 function addTagToMap(tagId, characterId = null) {
     const key = characterId !== null && characterId !== undefined ? getTagKeyForEntity(characterId) : getTagKey();
 
     if (!key) {
-        return;
+        return false;
     }
 
     if (!Array.isArray(tag_map[key])) {
         tag_map[key] = [tagId];
+        return true;
     }
     else {
+        if (tag_map[key].includes(tagId))
+            return false;
+
         tag_map[key].push(tagId);
         tag_map[key] = tag_map[key].filter(onlyUnique);
+        return true;
     }
 }
 
+/**
+ * Removes a tag from a given character. If no character is provided, removes it from the currently active one.
+ * @param {string} tagId - The id of the tag
+ * @param {string} characterId - The id/key of the character or group
+ * @returns {boolean} Whether the tag was removed or not
+ */
 function removeTagFromMap(tagId, characterId = null) {
     const key = characterId !== null && characterId !== undefined ? getTagKeyForEntity(characterId) : getTagKey();
 
     if (!key) {
-        return;
+        return false;
     }
 
     if (!Array.isArray(tag_map[key])) {
         tag_map[key] = [];
+        return false;
     }
     else {
         const indexOf = tag_map[key].indexOf(tagId);
         tag_map[key].splice(indexOf, 1);
+        return indexOf !== -1;
     }
 }
 
@@ -526,24 +624,7 @@ function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
     const characterData = event.target.closest('#bulk_tags_div')?.dataset.characters;
     const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
 
-    if (characterIds) {
-        characterIds.forEach((characterId) => addTagToMap(tag.id, characterId));
-    } else {
-        addTagToMap(tag.id);
-    }
-
-    printCharactersDebounced();
-    saveSettingsDebounced();
-
-    // We should manually add the selected tag to the print tag function, so we cover places where the tag list did not automatically include it
-    tagListOptions.addTag = tag;
-
-    // add tag to the UI and internal map - we reprint so sorting and new markup is done correctly
-    printTagList(listSelector, tagListOptions);
-    const inlineSelector = getInlineListSelector();
-    if (inlineSelector) {
-        printTagList($(inlineSelector), tagListOptions);
-    }
+    addTagToEntity(tag, characterIds, { tagListSelector: listSelector, tagListOptions: tagListOptions });
 
     // need to return false to keep the input clear
     return false;
@@ -626,6 +707,7 @@ function createNewTag(tagName) {
         create_date: Date.now(),
     };
     tags.push(tag);
+    console.debug('Created new tag', tag.name, 'with id', tag.id);
     return tag;
 }
 
@@ -644,6 +726,7 @@ function createNewTag(tagName) {
  * @property {Tag} [addTag=undefined] - Optionally provide a tag that should be manually added to this print. Either to the overriden tag list or the found tags based on the entity/key. Will respect the tag exists check.
  * @property {object|number|string} [forEntityOrKey=undefined] - Optional override for the chosen entity, otherwise the currently selected is chosen. Can be an entity with id property (character, group, tag), or directly an id or tag key.
  * @property {boolean|string} [empty=true] - Whether the list should be initially empty. If a string string is provided, 'always' will always empty the list, otherwise it'll evaluate to a boolean.
+ * @property {boolean} [sort=true] - Whether the tags should be sorted via the sort function, or kept as is.
  * @property {function(object): function} [tagActionSelector=undefined] - An optional override for the action property that can be assigned to each tag via tagOptions.
  * If set, the selector is executed on each tag as input argument. This allows a list of tags to be provided and each tag can have it's action based on the tag object itself.
  * @property {TagOptions} [tagOptions={}] - Options for tag behavior. (Same object will be passed into "appendTagToList")
@@ -655,10 +738,10 @@ function createNewTag(tagName) {
  * @param {JQuery<HTMLElement>|string} element - The container element where the tags are to be printed. (Optionally can also be a string selector for the element, which will then be resolved)
  * @param {PrintTagListOptions} [options] - Optional parameters for printing the tag list.
  */
-function printTagList(element, { tags = undefined, addTag = undefined, forEntityOrKey = undefined, empty = true, tagActionSelector = undefined, tagOptions = {} } = {}) {
+function printTagList(element, { tags = undefined, addTag = undefined, forEntityOrKey = undefined, empty = true, sort = true, tagActionSelector = undefined, tagOptions = {} } = {}) {
     const $element = (typeof element === 'string') ? $(element) : element;
     const key = forEntityOrKey !== undefined ? getTagKeyForEntity(forEntityOrKey) : getTagKey();
-    let printableTags = tags ? (typeof tags === 'function' ? tags() : tags) : getTagsList(key);
+    let printableTags = tags ? (typeof tags === 'function' ? tags() : tags) : getTagsList(key, sort);
 
     if (empty === 'always' || (empty && (printableTags?.length > 0 || key))) {
         $element.empty();
@@ -669,7 +752,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
     }
 
     // one last sort, because we might have modified the tag list or manually retrieved it from a function
-    printableTags = printableTags.sort(compareTagsForSort);
+    if (sort) printableTags = printableTags.sort(compareTagsForSort);
 
     const customAction = typeof tagActionSelector === 'function' ? tagActionSelector : null;
 
@@ -677,11 +760,21 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
     const expanded = $element.hasClass('tags-expanded') || (expanded_tags_cache.length && expanded_tags_cache.indexOf(key ?? getTagKeyForEntityElement(element)) >= 0);
 
     // We prepare some stuff. No matter which list we have, there is a maximum value of tags we are going to display
-    const TAGS_LIMIT = 50;
-    const MAX_TAGS = !expanded ? TAGS_LIMIT : Number.MAX_SAFE_INTEGER;
-    let totalPrinted = 0;
-    let hiddenTags = 0;
-    const filterActive = (/** @type {Tag} */ tag) => tag.filter_state && !isFilterState(tag.filter_state, FILTER_STATES.UNDEFINED);
+    // Constants to define tag printing limits
+    const DEFAULT_TAGS_LIMIT = 50;
+    const tagsDisplayLimit = expanded ? Number.MAX_SAFE_INTEGER : DEFAULT_TAGS_LIMIT;
+
+    // Functions to determine tag properties
+    const isFilterActive = (/** @type {Tag} */ tag) => tag.filter_state && !isFilterState(tag.filter_state, FILTER_STATES.UNDEFINED);
+    const shouldPrintTag = (/** @type {Tag} */ tag) => isBogusFolder(tag) || isFilterActive(tag);
+
+    // Calculating the number of tags to print
+    const mandatoryPrintTagsCount = printableTags.filter(shouldPrintTag).length;
+    const availableSlotsForAdditionalTags = Math.max(tagsDisplayLimit - mandatoryPrintTagsCount, 0);
+
+    // Counters for printed and hidden tags
+    let additionalTagsPrinted = 0;
+    let tagsSkipped = 0;
 
     for (const tag of printableTags) {
         // If we have a custom action selector, we override that tag options for each tag
@@ -695,16 +788,16 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
         }
 
         // Check if we should print this tag
-        if (totalPrinted++ < MAX_TAGS || filterActive(tag)) {
+        if (shouldPrintTag(tag) || additionalTagsPrinted++ < availableSlotsForAdditionalTags) {
             appendTagToList($element, tag, tagOptions);
         } else {
-            hiddenTags++;
+            tagsSkipped++;
         }
     }
 
     // After the loop, check if we need to add the placeholder.
     // The placehold if clicked expands the tags and remembers either via class or cache array which was expanded, so it'll stay expanded until the next reload.
-    if (hiddenTags > 0) {
+    if (tagsSkipped > 0) {
         const id = 'placeholder_' + uuidv4();
 
         // Add click event
@@ -723,7 +816,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
 
         // Print the placeholder object with its styling and action to show the remaining tags
         /** @type {Tag} */
-        const placeholderTag = { id: id, name: '...', title: `${hiddenTags} tags not displayed.\n\nClick to expand remaining tags.`, color: 'transparent', action: showHiddenTags, class: 'placeholder-expander' };
+        const placeholderTag = { id: id, name: '...', title: `${tagsSkipped} tags not displayed.\n\nClick to expand remaining tags.`, color: 'transparent', action: showHiddenTags, class: 'placeholder-expander' };
         // It should never be marked as a removable tag, because it's just an expander action
         /** @type {TagOptions} */
         const placeholderTagOptions = { ...tagOptions, removable: false };
@@ -870,12 +963,13 @@ function printTagFilters(type = tag_filter_types.character) {
     const FILTER_SELECTOR = type === tag_filter_types.character ? CHARACTER_FILTER_SELECTOR : GROUP_FILTER_SELECTOR;
     $(FILTER_SELECTOR).empty();
 
-    // Print all action tags. (Exclude folder if that setting isn't chosen)
-    const actionTags = Object.values(ACTIONABLE_TAGS).filter(tag => power_user.bogus_folders || tag.id != ACTIONABLE_TAGS.FOLDER.id);
-    printTagList($(FILTER_SELECTOR), { empty: false, tags: actionTags, tagActionSelector: tag => tag.action, tagOptions: { isGeneralList: true } });
+    // Print all action tags. (Rework 'Folder' button to some kind of onboarding if no folders are enabled yet)
+    const actionTags = Object.values(ACTIONABLE_TAGS);
+    actionTags.find(x => x == ACTIONABLE_TAGS.FOLDER).name = power_user.bogus_folders ? 'Show only folders' : 'Enable \'Tags as Folder\'\n\nAllows characters to be grouped in folders by their assigned tags.\nTags have to be explicitly chosen as folder to show up.\n\nClick here to start';
+    printTagList($(FILTER_SELECTOR), { empty: false, sort: false, tags: actionTags, tagActionSelector: tag => tag.action, tagOptions: { isGeneralList: true } });
 
     const inListActionTags = Object.values(InListActionable);
-    printTagList($(FILTER_SELECTOR), { empty: false, tags: inListActionTags, tagActionSelector: tag => tag.action, tagOptions: { isGeneralList: true } });
+    printTagList($(FILTER_SELECTOR), { empty: false, sort: false, tags: inListActionTags, tagActionSelector: tag => tag.action, tagOptions: { isGeneralList: true } });
 
     const characterTagIds = Object.values(tag_map).flat();
     const tagsToDisplay = tags.filter(x => characterTagIds.includes(x.id)).sort(compareTagsForSort);
@@ -911,8 +1005,8 @@ function updateTagFilterIndicator() {
 
 function onTagRemoveClick(event) {
     event.stopPropagation();
-    const tag = $(this).closest('.tag');
-    const tagId = tag.attr('id');
+    const tagElement = $(this).closest('.tag');
+    const tagId = tagElement.attr('id');
 
     // Check if we are inside the drilldown. If so, we call remove on the bogus folder
     if ($(this).closest('.rm_tag_bogus_drilldown').length > 0) {
@@ -921,24 +1015,13 @@ function onTagRemoveClick(event) {
         return;
     }
 
+    const tag = tags.find(t => t.id === tagId);
+
     // Optional, check for multiple character ids being present.
     const characterData = event.target.closest('#bulk_tags_div')?.dataset.characters;
     const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
 
-    tag.remove();
-
-    if (characterIds) {
-        characterIds.forEach((characterId) => removeTagFromMap(tagId, characterId));
-    } else {
-        removeTagFromMap(tagId);
-    }
-
-    $(`${getInlineListSelector()} .tag[id="${tagId}"]`).remove();
-
-    printCharactersDebounced();
-    saveSettingsDebounced();
-
-
+    removeTagFromEntity(tag, characterIds, { tagElement: tagElement });
 }
 
 // @ts-ignore
@@ -964,7 +1047,7 @@ function onGroupCreateClick() {
 
 export function applyTagsOnCharacterSelect() {
     //clearTagsFilter();
-    const chid = Number($(this).attr('chid'));
+    const chid = Number(this_chid);
     printTagList($('#tagList'), { forEntityOrKey: chid, tagOptions: { removable: true } });
 }
 
@@ -992,11 +1075,11 @@ export function createTagInput(inputSelector, listSelector, tagListOptions = {})
 }
 
 function onViewTagsListClick() {
-    $('#dialogue_popup').addClass('large_dialogue_popup');
-    const list = $(document.createElement('div'));
-    list.attr('id', 'tag_view_list');
-    const everything = Object.values(tag_map).flat();
-    $(list).append(`
+    const popup = $('#dialogue_popup');
+    popup.addClass('large_dialogue_popup');
+    const html = $(document.createElement('div'));
+    html.attr('id', 'tag_view_list');
+    html.append(`
     <div class="title_restorable alignItemsBaseline">
         <h3>Tag Management</h3>
         <div class="flex-container alignItemsBaseline">
@@ -1017,25 +1100,57 @@ function onViewTagsListClick() {
     </div>
     <div class="justifyLeft m-b-1">
         <small>
-            Drag the handle to reorder.<br>
+            Drag handle to reorder. Click name to rename. Click color to change display.<br>
             ${(power_user.bogus_folders ? 'Click on the folder icon to use this tag as a folder.<br>' : '')}
-            Click on the tag name to edit it.<br>
-            Click on color box to assign new color.
+            <label class="checkbox flex-container alignitemscenter flexNoGap m-t-1" for="auto_sort_tags">
+                <input type="checkbox" id="auto_sort_tags" name="auto_sort_tags" ${power_user.auto_sort_tags ? ' checked' : ''} />
+                <span data-i18n="Use alphabetical sorting">
+                    Use alphabetical sorting
+                    <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]If enabled, tags will automatically be sorted alphabetically on creation or rename.\nIf disabled, new tags will be appended at the end.\n\nIf a tag is manually reordered by dragging, automatic sorting will be disabled."
+                        title="If enabled, tags will automatically be sorted alphabetically on creation or rename.\nIf disabled, new tags will be appended at the end.\n\nIf a tag is manually reordered by dragging, automatic sorting will be disabled.">
+                    </div>
+                </span>
+            </label>
         </small>
     </div>`);
 
     const tagContainer = $('<div class="tag_view_list_tags ui-sortable"></div>');
-    list.append(tagContainer);
+    html.append(tagContainer);
 
-    const sortedTags = sortTags(tags);
+    callPopup(html, 'text', null, { allowVerticalScrolling: true });
 
-    for (const tag of sortedTags) {
-        appendViewTagToList(tagContainer, tag, everything);
-    }
-
+    printViewTagList();
     makeTagListDraggable(tagContainer);
 
-    callPopup(list, 'text');
+    $('#dialogue_popup  .tag-color').on('change', (evt) => onTagColorize(evt));
+    $('#dialogue_popup  .tag-color2').on('change', (evt) => onTagColorize2(evt));
+}
+
+/**
+ * Print the list of tags in the tag management view
+ * @param {Event} event Event that triggered the color change
+ * @param {boolean} toggle State of the toggle
+ */
+function toggleAutoSortTags(event, toggle) {
+    if (toggle === power_user.auto_sort_tags) return;
+
+    // Ask user to confirm if enabling and it was manually sorted before
+    if (toggle && isManuallySorted() && !confirm('Are you sure you want to automatically sort alphabetically?')) {
+        if (event.target instanceof HTMLInputElement) {
+            event.target.checked = false;
+        }
+        return;
+    }
+
+    power_user.auto_sort_tags = toggle;
+
+    printCharactersDebounced();
+    saveSettingsDebounced();
+}
+
+/** This function goes over all existing tags and checks whether they were reorderd in the past. @returns {boolean} */
+function isManuallySorted() {
+    return tags.some((tag, index) => tag.sort_order !== index);
 }
 
 function makeTagListDraggable(tagContainer) {
@@ -1066,6 +1181,13 @@ function makeTagListDraggable(tagContainer) {
                 $(`.bogus_folder_select[tagid="${id}"] .avatar`).css(property, color);
             }
         });
+
+        // If tags were dragged manually, we have to disable auto sorting
+        if (power_user.auto_sort_tags) {
+            power_user.auto_sort_tags = false;
+            $('#dialogue_popup input[name="auto_sort_tags"]').prop('checked', false);
+            toastr.info('Automatic sorting of tags deactivated.');
+        }
 
         // If the order of tags in display has changed, we need to redraw some UI elements. Do it debounced so it doesn't block and you can drag multiple tags.
         printCharactersDebounced();
@@ -1098,6 +1220,11 @@ function sortTags(tags) {
  * @returns {number} The compare result
  */
 function compareTagsForSort(a, b) {
+    const defaultSort = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+    if (power_user.auto_sort_tags) {
+        return defaultSort;
+    }
+
     if (a.sort_order !== undefined && b.sort_order !== undefined) {
         return a.sort_order - b.sort_order;
     } else if (a.sort_order !== undefined) {
@@ -1105,7 +1232,7 @@ function compareTagsForSort(a, b) {
     } else if (b.sort_order !== undefined) {
         return 1;
     } else {
-        return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        return defaultSort;
     }
 }
 
@@ -1208,7 +1335,10 @@ function onTagsBackupClick() {
 
 function onTagCreateClick() {
     const tag = createNewTag('New Tag');
-    appendViewTagToList($('#tag_view_list .tag_view_list_tags'), tag, []);
+    printViewTagList();
+
+    const tagElement = ($('#dialogue_popup .tag_view_list_tags')).find(`.tag_view_item[id="${tag.id}"]`);
+    flashHighlight(tagElement);
 
     printCharactersDebounced();
     saveSettingsDebounced();
@@ -1247,18 +1377,6 @@ function appendViewTagToList(list, tag, everything) {
     template.find('.tag_as_folder').attr('id', tagAsFolderId);
 
     list.append(template);
-
-    setTimeout(function () {
-        document.querySelector(`.tag-color[id="${colorPickerId}"`).addEventListener('change', (evt) => {
-            onTagColorize(evt);
-        });
-    }, 100);
-
-    setTimeout(function () {
-        document.querySelector(`.tag-color2[id="${colorPicker2Id}"`).addEventListener('change', (evt) => {
-            onTagColorize2(evt);
-        });
-    }, 100);
 
     updateDrawTagFolder(template, tag);
 
@@ -1394,14 +1512,211 @@ function copyTags(data) {
     tag_map[data.newAvatar] = Array.from(new Set([...prevTagMap, ...newTagMap]));
 }
 
+function printViewTagList(empty = true) {
+    const tagContainer = $('#dialogue_popup .tag_view_list_tags');
+
+    if (empty) tagContainer.empty();
+    const everything = Object.values(tag_map).flat();
+    const sortedTags = sortTags(tags);
+    for (const tag of sortedTags) {
+        appendViewTagToList(tagContainer, tag, everything);
+    }
+}
+
+function registerTagsSlashCommands() {
+    /**
+     * Gets the key for char/group for a slash command. If none can be found, a toastr will be shown and null returned.
+     * @param {string?} [charName] The optionally provided char name
+     * @returns {string?} - The char/group key, or null if none found
+     */
+    function paraGetCharKey(charName) {
+        const entity = charName
+            ? (characters.find(x => x.name === charName) || groups.find(x => x.name == charName))
+            : (selected_group ? groups.find(x => x.id == selected_group) : characters[this_chid]);
+        const key = getTagKeyForEntity(entity);
+        if (!key) {
+            toastr.warning(`Character ${charName} not found.`);
+            return null;
+        }
+        return key;
+    }
+    /**
+     * Gets a tag by its name. Optionally can create the tag if it does not exist.
+     * @param {string} tagName - The name of the tag
+     * @param {object} options - Optional arguments
+     * @param {boolean} [options.allowCreate=false] - Whether a new tag should be created if no tag with the name exists
+     * @returns {Tag?} The tag, or null if not found
+     */
+    function paraGetTag(tagName, { allowCreate = false } = {}) {
+        if (!tagName) {
+            toastr.warning('Tag name must be provided.');
+            return null;
+        }
+        let tag = tags.find(t => t.name === tagName);
+        if (allowCreate && !tag) {
+            tag = createNewTag(tagName);
+        }
+        if (!tag) {
+            toastr.warning(`Tag ${tagName} not found.`);
+            return null;
+        }
+        return tag;
+    }
+
+    function updateTagsList() {
+        switch (menu_type) {
+            case 'characters':
+                printTagFilters(tag_filter_types.character);
+                printTagFilters(tag_filter_types.group_member);
+                break;
+            case 'character_edit':
+                applyTagsOnCharacterSelect();
+                break;
+            case 'group_edit':
+                select_group_chats(selected_group, true);
+                break;
+        }
+    }
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tag-add',
+        returns: 'true/false - Whether the tag was added or was assigned already',
+        /** @param {{name: string}} namedArgs @param {string} tagName @returns {string} */
+        callback: ({ name }, tagName) => {
+            const key = paraGetCharKey(name);
+            if (!key) return 'false';
+            const tag = paraGetTag(tagName, { allowCreate: true });
+            if (!tag) return 'false';
+            const result = addTagToEntity(tag, key);
+            updateTagsList();
+            return String(result);
+        },
+        namedArgumentList: [
+            new SlashCommandNamedArgument('name', 'Character name', [ARGUMENT_TYPE.STRING], false, false, '{{char}}'),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument('tag name', [ARGUMENT_TYPE.STRING], true),
+        ],
+        helpString: `
+        <div>
+            Adds a tag to the character. If no character is provided, it adds it to the current character (<code>{{char}}</code>).
+            If the tag doesn't exist, it is created.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/tag-add name="Chloe" scenario</code></pre>
+                    will add the tag "scenario" to the character named Chloe.
+                </li>
+            </ul>
+        </div>
+    `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tag-remove',
+        returns: 'true/false - Whether the tag was removed or wasn\'t assigned already',
+        /** @param {{name: string}} namedArgs @param {string} tagName @returns {string} */
+        callback: ({ name }, tagName) => {
+            const key = paraGetCharKey(name);
+            if (!key) return 'false';
+            const tag = paraGetTag(tagName);
+            if (!tag) return 'false';
+            const result = removeTagFromEntity(tag, key);
+            updateTagsList();
+            return String(result);
+        },
+        namedArgumentList: [
+            new SlashCommandNamedArgument('name', 'Character name', [ARGUMENT_TYPE.STRING], false, false, '{{char}}'),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument('tag name', [ARGUMENT_TYPE.STRING], true),
+        ],
+        helpString: `
+        <div>
+            Removes a tag from the character. If no character is provided, it removes it from the current character (<code>{{char}}</code>).
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/tag-remove name="Chloe" scenario</code></pre>
+                    will remove the tag "scenario" from the character named Chloe.
+                </li>
+            </ul>
+        </div>
+    `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tag-exists',
+        returns: 'true/false - Whether the given tag name is assigned to the character',
+        /** @param {{name: string}} namedArgs @param {string} tagName @returns {string} */
+        callback: ({ name }, tagName) => {
+            const key = paraGetCharKey(name);
+            if (!key) return 'false';
+            const tag = paraGetTag(tagName);
+            if (!tag) return 'false';
+            return String(tag_map[key].includes(tag.id));
+        },
+        namedArgumentList: [
+            new SlashCommandNamedArgument('name', 'Character name', [ARGUMENT_TYPE.STRING], false, false, '{{char}}'),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument('tag name', [ARGUMENT_TYPE.STRING], true),
+        ],
+        helpString: `
+        <div>
+            Checks whether the given tag is assigned to the character. If no character is provided, it checks the current character (<code>{{char}}</code>).
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/tag-exists name="Chloe" scenario</code></pre>
+                    will return true if the character named Chloe has the tag "scenario".
+                </li>
+            </ul>
+        </div>
+    `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'tag-list',
+        returns: 'Comma-separated list of all assigned tags',
+        /** @param {{name: string}} namedArgs @returns {string} */
+        callback: ({ name }) => {
+            const key = paraGetCharKey(name);
+            if (!key) return '';
+            const tags = getTagsList(key);
+            return tags.map(x => x.name).join(', ');
+        },
+        namedArgumentList: [
+            new SlashCommandNamedArgument('name', 'Character name', [ARGUMENT_TYPE.STRING], false, false, '{{char}}'),
+        ],
+        helpString: `
+        <div>
+            Lists all assigned tags of the character. If no character is provided, it uses the current character (<code>{{char}}</code>).
+            <br />
+            Note that there is no special handling for tags containing commas, they will be printed as-is.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/tag-list name="Chloe"</code></pre>
+                    could return something like <code>OC, scenario, edited, funny</code>
+                </li>
+            </ul>
+        </div>
+    `,
+    }));
+}
+
 export function initTags() {
     createTagInput('#tagInput', '#tagList', { tagOptions: { removable: true } });
     createTagInput('#groupTagInput', '#groupTagList', { tagOptions: { removable: true } });
 
     $(document).on('click', '#rm_button_create', onCharacterCreateClick);
     $(document).on('click', '#rm_button_group_chats', onGroupCreateClick);
-    $(document).on('click', '.character_select', applyTagsOnCharacterSelect);
-    $(document).on('click', '.group_select', applyTagsOnGroupSelect);
     $(document).on('click', '.tag_remove', onTagRemoveClick);
     $(document).on('input', '.tag_input', onTagInput);
     $(document).on('click', '.tags_view', onViewTagsListClick);
@@ -1412,4 +1727,34 @@ export function initTags() {
     $(document).on('click', '.tag_view_backup', onTagsBackupClick);
     $(document).on('click', '.tag_view_restore', onBackupRestoreClick);
     eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
+    eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
+
+    $(document).on('input', '#dialogue_popup input[name="auto_sort_tags"]', (evt) => {
+        const toggle = $(evt.target).is(':checked');
+        toggleAutoSortTags(evt.originalEvent, toggle);
+        printViewTagList();
+    });
+    $(document).on('focusout', '#dialogue_popup .tag_view_name', (evt) => {
+        // Remember the order, so we can flash highlight if it changed after reprinting
+        const tagId = $(evt.target).parent('.tag_view_item').attr('id');
+        const oldOrder = $('#dialogue_popup .tag_view_item').map((_, el) => el.id).get();
+
+        printViewTagList();
+
+        const newOrder = $('#dialogue_popup .tag_view_item').map((_, el) => el.id).get();
+        const orderChanged = !oldOrder.every((id, index) => id === newOrder[index]);
+        if (orderChanged) {
+            flashHighlight($(`#dialogue_popup .tag_view_item[id="${tagId}"]`));
+        }
+    });
+
+    // Initialize auto sort setting based on whether it was sorted before
+    if (power_user.auto_sort_tags === undefined || power_user.auto_sort_tags === null) {
+        power_user.auto_sort_tags = !isManuallySorted();
+        if (power_user.auto_sort_tags) {
+            printCharactersDebounced();
+        }
+    }
+
+    registerTagsSlashCommands();
 }

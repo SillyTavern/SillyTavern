@@ -22,6 +22,7 @@ import {
     ANIMATION_DURATION_DEFAULT,
     setActiveGroup,
     setActiveCharacter,
+    entitiesFilter,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -34,13 +35,17 @@ import {
     selectInstructPreset,
 } from './instruct-mode.js';
 
-import { registerSlashCommand } from './slash-commands.js';
-import { tag_map, tags } from './tags.js';
+import { getTagsList, tag_map, tags } from './tags.js';
 import { tokenizers } from './tokenizers.js';
 import { BIAS_CACHE } from './logit-bias.js';
 import { renderTemplateAsync } from './templates.js';
 
-import { countOccurrences, debounce, delay, download, getFileText, isOdd, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { countOccurrences, debounce, delay, download, getFileText, isOdd, onlyUnique, resetScrollHeight, shuffle, sortMoments, stringToRange, timestampToMoment } from './utils.js';
+import { FILTER_TYPES } from './filters.js';
+import { PARSER_FLAG, SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
+import { AUTOCOMPLETE_WIDTH } from './autocomplete/AutoComplete.js';
 
 export {
     loadPowerUserSettings,
@@ -178,6 +183,7 @@ let power_user = {
     timestamps_enabled: true,
     timestamp_model_icon: false,
     mesIDDisplay_enabled: false,
+    hideChatAvatars_enabled: false,
     max_context_unlocked: false,
     message_token_count_enabled: false,
     expand_message_actions: false,
@@ -250,12 +256,30 @@ let power_user = {
     zoomed_avatar_magnification: false,
     show_tag_filters: false,
     aux_field: 'character_version',
+    stscript: {
+        matching: 'fuzzy',
+        autocomplete: {
+            autoHide: false,
+            style: 'theme',
+            font: {
+                scale: 0.8,
+            },
+            width: {
+                left: AUTOCOMPLETE_WIDTH.CHAT,
+                right: AUTOCOMPLETE_WIDTH.CHAT,
+            },
+        },
+        parser: {
+            /**@type {Object.<PARSER_FLAG,boolean>} */
+            flags: {},
+        },
+    },
     restore_user_input: true,
     reduced_motion: false,
     compact_input_area: true,
     auto_connect: false,
     auto_load_chat: false,
-    forbid_external_images: false,
+    forbid_external_media: true,
     external_media_allowed_overrides: [],
     external_media_forbidden_overrides: [],
 };
@@ -295,6 +319,7 @@ const storage_keys = {
     timestamps_enabled: 'TimestampsEnabled',
     timestamp_model_icon: 'TimestampModelIcon',
     mesIDDisplay_enabled: 'mesIDDisplayEnabled',
+    hideChatAvatars_enabled: 'hideChatAvatarsEnabled',
     message_token_count_enabled: 'MessageTokenCountEnabled',
     expand_message_actions: 'ExpandMessageActions',
     enableZenSliders: 'enableZenSliders',
@@ -323,7 +348,7 @@ const contextControls = [
 let browser_has_focus = true;
 const debug_functions = [];
 
-const setHotswapsDebounced = debounce(favsToHotswap, 500);
+const setHotswapsDebounced = debounce(favsToHotswap);
 
 export function switchSimpleMode() {
     $('[data-newbie-hidden]').each(function () {
@@ -462,6 +487,17 @@ function switchMesIDDisplay() {
         poweruser after:${power_user.mesIDDisplay_enabled}`) */
     $('body').toggleClass('no-mesIDDisplay', !power_user.mesIDDisplay_enabled);
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
+}
+
+function switchHideChatAvatars() {
+    const value = localStorage.getItem(storage_keys.hideChatAvatars_enabled);
+    power_user.hideChatAvatars_enabled = value === null ? false : value == 'true';
+    /*console.log(`
+        localstorage value:${value},
+        poweruser after:${power_user.hideChatAvatars_enabled}`)
+    */
+    $('body').toggleClass('hideChatAvatars', power_user.hideChatAvatars_enabled);
+    $('#hideChatAvatarsEnabled').prop('checked', power_user.hideChatAvatars_enabled);
 }
 
 function switchMessageActions() {
@@ -819,7 +855,7 @@ async function CreateZenSliders(elmnt) {
                         isManualInput = true;
                         //allow enter to trigger slider update
                         if (e.key === 'Enter') {
-                            e.preventDefault;
+                            e.preventDefault();
                             handle.trigger('blur');
                         }
                     })
@@ -1270,6 +1306,13 @@ async function applyTheme(name) {
             },
         },
         {
+            key: 'hideChatAvatars_enabled',
+            action: async () => {
+                localStorage.setItem(storage_keys.hideChatAvatars_enabled, Boolean(power_user.hideChatAvatars_enabled));
+                switchHideChatAvatars();
+            },
+        },
+        {
             key: 'expand_message_actions',
             action: async () => {
                 localStorage.setItem(storage_keys.expand_message_actions, Boolean(power_user.expand_message_actions));
@@ -1391,6 +1434,7 @@ switchTimer();
 switchTimestamps();
 switchIcons();
 switchMesIDDisplay();
+switchHideChatAvatars();
 switchTokenCount();
 switchMessageActions();
 
@@ -1407,9 +1451,30 @@ function getExampleMessagesBehavior() {
 }
 
 function loadPowerUserSettings(settings, data) {
+    const defaultStscript = JSON.parse(JSON.stringify(power_user.stscript));
     // Load from settings.json
     if (settings.power_user !== undefined) {
         Object.assign(power_user, settings.power_user);
+    }
+
+    if (power_user.stscript === undefined) {
+        power_user.stscript = defaultStscript;
+    } else {
+        if (power_user.stscript.autocomplete === undefined) {
+            power_user.stscript.autocomplete = defaultStscript.autocomplete;
+        } else {
+            if (power_user.stscript.autocomplete.width === undefined) {
+                power_user.stscript.autocomplete.width = defaultStscript.autocomplete.width;
+            }
+            if (power_user.stscript.autocomplete.font === undefined) {
+                power_user.stscript.autocomplete.font = defaultStscript.autocomplete.font;
+            }
+        }
+        if (power_user.stscript.parser === undefined) {
+            power_user.stscript.parser = defaultStscript.parser;
+        } else if (power_user.stscript.parser.flags === undefined) {
+            power_user.stscript.parser.flags = defaultStscript.parser.flags;
+        }
     }
 
     if (data.themes !== undefined) {
@@ -1433,6 +1498,7 @@ function loadPowerUserSettings(settings, data) {
     const timer = localStorage.getItem(storage_keys.timer_enabled);
     const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
     const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
+    const hideChatAvatars = localStorage.getItem(storage_keys.hideChatAvatars_enabled);
     const expandMessageActions = localStorage.getItem(storage_keys.expand_message_actions);
     const enableZenSliders = localStorage.getItem(storage_keys.enableZenSliders);
     const enableLabMode = localStorage.getItem(storage_keys.enableLabMode);
@@ -1456,6 +1522,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.timer_enabled = timer === null ? true : timer == 'true';
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == 'true';
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == 'true';
+    power_user.hideChatAvatars_enabled = hideChatAvatars === null ? true : hideChatAvatars == 'true';
     power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == 'true';
     power_user.enableZenSliders = enableZenSliders === null ? false : enableZenSliders == 'true';
     power_user.enableLabMode = enableLabMode === null ? false : enableLabMode == 'true';
@@ -1541,6 +1608,7 @@ function loadPowerUserSettings(settings, data) {
     $('#messageTimestampsEnabled').prop('checked', power_user.timestamps_enabled);
     $('#messageModelIconEnabled').prop('checked', power_user.timestamp_model_icon);
     $('#mesIDDisplayEnabled').prop('checked', power_user.mesIDDisplay_enabled);
+    $('#hideChatAvatarsEndabled').prop('checked', power_user.hideChatAvatars_enabled);
     $('#prefer_character_prompt').prop('checked', power_user.prefer_character_prompt);
     $('#prefer_character_jailbreak').prop('checked', power_user.prefer_character_jailbreak);
     $('#enableZenSliders').prop('checked', power_user.enableZenSliders).trigger('input');
@@ -1550,6 +1618,21 @@ function loadPowerUserSettings(settings, data) {
     $('#chat_width_slider').val(power_user.chat_width);
     $('#token_padding').val(power_user.token_padding);
     $('#aux_field').val(power_user.aux_field);
+
+    $('#stscript_autocomplete_autoHide').prop('checked', power_user.stscript.autocomplete.autoHide ?? false).trigger('input');
+    $('#stscript_matching').val(power_user.stscript.matching ?? 'fuzzy');
+    $('#stscript_autocomplete_style').val(power_user.stscript.autocomplete_style ?? 'theme');
+    document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete_style);
+    $('#stscript_parser_flag_strict_escaping').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] ?? false);
+    $('#stscript_parser_flag_replace_getvar').prop('checked', power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] ?? false);
+    $('#stscript_autocomplete_font_scale').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
+    $('#stscript_autocomplete_font_scale_counter').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
+    document.body.style.setProperty('--ac-font-scale', power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale.toString());
+    $('#stscript_autocomplete_width_left').val(power_user.stscript.autocomplete.width.left ?? AUTOCOMPLETE_WIDTH.CHAT);
+    document.querySelector('#stscript_autocomplete_width_left').dispatchEvent(new Event('input', { bubbles:true }));
+    $('#stscript_autocomplete_width_right').val(power_user.stscript.autocomplete.width.right ?? AUTOCOMPLETE_WIDTH.CHAT);
+    document.querySelector('#stscript_autocomplete_width_right').dispatchEvent(new Event('input', { bubbles:true }));
+
     $('#restore_user_input').prop('checked', power_user.restore_user_input);
 
     $('#chat_truncation').val(power_user.chat_truncation);
@@ -1584,7 +1667,7 @@ function loadPowerUserSettings(settings, data) {
     $('#reduced_motion').prop('checked', power_user.reduced_motion);
     $('#auto-connect-checkbox').prop('checked', power_user.auto_connect);
     $('#auto-load-chat-checkbox').prop('checked', power_user.auto_load_chat);
-    $('#forbid_external_images').prop('checked', power_user.forbid_external_images);
+    $('#forbid_external_media').prop('checked', power_user.forbid_external_media);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -1836,10 +1919,17 @@ function highlightDefaultContext() {
     $('#context_delete_preset').toggleClass('disabled', power_user.default_context === power_user.context.preset);
 }
 
+/**
+ * Fuzzy search characters by a search term
+ * @param {string} searchValue - The search term
+ * @returns {FuseResult[]} Results as items with their score
+ */
 export function fuzzySearchCharacters(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(characters, {
         keys: [
-            { name: 'data.name', weight: 8 },
+            { name: 'data.name', weight: 20 },
+            { name: '#tags', weight: 10, getFn: (character) => getTagsList(character.avatar).map(x => x.name).join('||') },
             { name: 'data.description', weight: 3 },
             { name: 'data.mes_example', weight: 3 },
             { name: 'data.scenario', weight: 2 },
@@ -1852,82 +1942,114 @@ export function fuzzySearchCharacters(searchValue) {
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Characters fuzzy search results for ' + searchValue, results);
-    const indices = results.map(x => x.refIndex);
-    return indices;
+    return results;
 }
 
+/**
+ * Fuzzy search world info entries by a search term
+ * @param {*[]} data - WI items data array
+ * @param {string} searchValue - The search term
+ * @returns {FuseResult[]} Results as items with their score
+ */
 export function fuzzySearchWorldInfo(data, searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'key', weight: 3 },
+            { name: 'key', weight: 20 },
+            { name: 'group', weight: 15 },
+            { name: 'comment', weight: 10 },
+            { name: 'keysecondary', weight: 10 },
             { name: 'content', weight: 3 },
-            { name: 'comment', weight: 2 },
-            { name: 'keysecondary', weight: 2 },
             { name: 'uid', weight: 1 },
+            { name: 'automationId', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('World Info fuzzy search results for ' + searchValue, results);
-    return results.map(x => x.item?.uid);
+    return results;
 }
 
+/**
+ * Fuzzy search persona entries by a search term
+ * @param {*[]} data - persona data array
+ * @param {string} searchValue - The search term
+ * @returns {FuseResult[]} Results as items with their score
+ */
 export function fuzzySearchPersonas(data, searchValue) {
-    data = data.map(x => ({ key: x, description: power_user.persona_descriptions[x]?.description ?? '', name: power_user.personas[x] ?? '' }));
+    data = data.map(x => ({ key: x, name: power_user.personas[x] ?? '', description: power_user.persona_descriptions[x]?.description ?? '' }));
+    // @ts-ignore
     const fuse = new Fuse(data, {
         keys: [
-            { name: 'name', weight: 4 },
-            { name: 'description', weight: 1 },
+            { name: 'name', weight: 20 },
+            { name: 'description', weight: 3 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Personas fuzzy search results for ' + searchValue, results);
-    return results.map(x => x.item?.key);
+    return results;
 }
 
+/**
+ * Fuzzy search tags by a search term
+ * @param {string} searchValue - The search term
+ * @returns {FuseResult[]} Results as items with their score
+ */
 export function fuzzySearchTags(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(tags, {
         keys: [
             { name: 'name', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Tags fuzzy search results for ' + searchValue, results);
-    const ids = results.map(x => String(x.item?.id)).filter(x => x);
-    return ids;
+    return results;
 }
 
+/**
+ * Fuzzy search groups by a search term
+ * @param {string} searchValue - The search term
+ * @returns {FuseResult[]} Results as items with their score
+ */
 export function fuzzySearchGroups(searchValue) {
+    // @ts-ignore
     const fuse = new Fuse(groups, {
         keys: [
-            { name: 'name', weight: 3 },
-            { name: 'members', weight: 1 },
+            { name: 'name', weight: 20 },
+            { name: 'members', weight: 15 },
+            { name: '#tags', weight: 10, getFn: (group) => getTagsList(group.id).map(x => x.name).join('||') },
+            { name: 'id', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
+        useExtendedSearch: true,
         threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
     console.debug('Groups fuzzy search results for ' + searchValue, results);
-    const ids = results.map(x => String(x.item?.id)).filter(x => x);
-    return ids;
+    return results;
 }
 
 /**
@@ -2002,13 +2124,22 @@ function sortEntitiesList(entities) {
         return;
     }
 
+    const isSearch = $('#character_sort_order option[data-field="search"]').is(':selected');
+
     entities.sort((a, b) => {
+        // Sort tags/folders will always be at the top
         if (a.type === 'tag' && b.type !== 'tag') {
             return -1;
         }
-
         if (a.type !== 'tag' && b.type === 'tag') {
             return 1;
+        }
+
+        // If we have search sorting, we take scores and use those
+        if (isSearch) {
+            const aScore = entitiesFilter.getScore(FILTER_TYPES.SEARCH, `${a.type}.${a.id}`);
+            const bScore = entitiesFilter.getScore(FILTER_TYPES.SEARCH, `${b.type}.${b.id}`);
+            return (aScore - bScore);
         }
 
         return sortFunc(a.item, b.item);
@@ -2150,6 +2281,7 @@ async function saveTheme(name = undefined) {
         timestamp_model_icon: power_user.timestamp_model_icon,
 
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
+        hideChatAvatars_enabled: power_user.hideChatAvatars_enabled,
         message_token_count_enabled: power_user.message_token_count_enabled,
         expand_message_actions: power_user.expand_message_actions,
         enableZenSliders: power_user.enableZenSliders,
@@ -2264,12 +2396,14 @@ async function resetMovablePanels(type) {
         'cfgConfig',
     ];
 
+    /**
+     * @type {HTMLElement[]} Generic panels that don't have a known ID
+     */
+    const draggedElements = Array.from(document.querySelectorAll('[data-dragged]'));
+    const allDraggable = panelIds.map(id => document.getElementById(id)).concat(draggedElements).filter(onlyUnique);
+
     const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin'];
-
-    panelIds.forEach((id) => {
-        console.log(id);
-        const panel = document.getElementById(id);
-
+    allDraggable.forEach((panel) => {
         if (panel) {
             $(panel).addClass('resizing');
             panelStyles.forEach((style) => {
@@ -2278,7 +2412,10 @@ async function resetMovablePanels(type) {
         }
     });
 
-    const zoomedAvatars = document.querySelectorAll('.zoomed_avatar');
+    /**
+     * @type {HTMLElement[]} Zoomed avatars that are currently being resized
+     */
+    const zoomedAvatars = Array.from(document.querySelectorAll('.zoomed_avatar'));
     if (zoomedAvatars.length > 0) {
         zoomedAvatars.forEach((avatar) => {
             avatar.classList.add('resizing');
@@ -2373,7 +2510,7 @@ async function doRandomChat(_, tagName) {
             .map(x => x[0]) // Map the character avatar
             .filter(x => characters.find(y => y.avatar === x)); // Filter out characters that don't exist
         const randomCharacter = taggedCharacters[Math.floor(Math.random() * taggedCharacters.length)];
-        const randomIndex =  characters.findIndex(x => x.avatar === randomCharacter);
+        const randomIndex = characters.findIndex(x => x.avatar === randomCharacter);
         if (randomIndex === -1) {
             return;
         }
@@ -2720,6 +2857,7 @@ function setAvgBG() {
 }
 
 async function setThemeCallback(_, text) {
+    // @ts-ignore
     const fuse = new Fuse(themes, {
         keys: [
             { name: 'name', weight: 1 },
@@ -2742,6 +2880,7 @@ async function setThemeCallback(_, text) {
 }
 
 async function setmovingUIPreset(_, text) {
+    // @ts-ignore
     const fuse = new Fuse(movingUIPresets, {
         keys: [
             { name: 'name', weight: 1 },
@@ -3183,9 +3322,13 @@ $(document).ready(() => {
     });
 
     $('#character_sort_order').on('change', function () {
-        power_user.sort_field = $(this).find(':selected').data('field');
-        power_user.sort_order = $(this).find(':selected').data('order');
-        power_user.sort_rule = $(this).find(':selected').data('rule');
+        const field = String($(this).find(':selected').data('field'));
+        // Save sort order, but do not save search sorting, as this is a temporary sorting option
+        if (field !== 'search') {
+            power_user.sort_field = field;
+            power_user.sort_order = $(this).find(':selected').data('order');
+            power_user.sort_rule = $(this).find(':selected').data('rule');
+        }
         printCharactersDebounced();
         saveSettingsDebounced();
     });
@@ -3376,6 +3519,13 @@ $(document).ready(() => {
         switchMesIDDisplay();
     });
 
+    $('#hideChatAvatarsEnabled').on('input', function () {
+        const value = !!$(this).prop('checked');
+        power_user.hideChatAvatars_enabled = value;
+        localStorage.setItem(storage_keys.hideChatAvatars_enabled, Boolean(power_user.hideChatAvatars_enabled));
+        switchHideChatAvatars();
+    });
+
     $('#hotswapEnabled').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.hotswap_enabled = value;
@@ -3498,6 +3648,69 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#stscript_autocomplete_autoHide').on('input', function () {
+        power_user.stscript.autocomplete.autoHide = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_matching').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.stscript.matching = String(value);
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_autocomplete_style').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.stscript.autocomplete_style = String(value);
+        document.body.setAttribute('data-stscript-style', power_user.stscript.autocomplete_style);
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_autocomplete_font_scale').on('input', function () {
+        const value = $(this).val();
+        $('#stscript_autocomplete_font_scale_counter').val(value);
+        power_user.stscript.autocomplete.font.scale = Number(value);
+        document.body.style.setProperty('--ac-font-scale', value.toString());
+        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        saveSettingsDebounced();
+    });
+    $('#stscript_autocomplete_font_scale_counter').on('input', function () {
+        const value = $(this).val();
+        $('#stscript_autocomplete_font_scale').val(value);
+        power_user.stscript.autocomplete.font.scale = Number(value);
+        document.body.style.setProperty('--ac-font-scale', value.toString());
+        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_autocomplete_width_left').on('input', function () {
+        const value = $(this).val();
+        power_user.stscript.autocomplete.width.left = Number(value);
+        /**@type {HTMLElement}*/(this.closest('.doubleRangeInputContainer')).style.setProperty('--value', value.toString());
+        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_autocomplete_width_right').on('input', function () {
+        const value = $(this).val();
+        power_user.stscript.autocomplete.width.right = Number(value);
+        /**@type {HTMLElement}*/(this.closest('.doubleRangeInputContainer')).style.setProperty('--value', value.toString());
+        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_parser_flag_strict_escaping').on('click', function () {
+        const value = $(this).prop('checked');
+        power_user.stscript.parser.flags[PARSER_FLAG.STRICT_ESCAPING] = value;
+        saveSettingsDebounced();
+    });
+
+    $('#stscript_parser_flag_replace_getvar').on('click', function () {
+        const value = $(this).prop('checked');
+        power_user.stscript.parser.flags[PARSER_FLAG.REPLACE_GETVAR] = value;
+        saveSettingsDebounced();
+    });
+
     $('#restore_user_input').on('input', function () {
         power_user.restore_user_input = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -3527,8 +3740,8 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#forbid_external_images').on('input', function () {
-        power_user.forbid_external_images = !!$(this).prop('checked');
+    $('#forbid_external_media').on('input', function () {
+        power_user.forbid_external_media = !!$(this).prop('checked');
         saveSettingsDebounced();
         reloadCurrentChat();
     });
@@ -3576,13 +3789,84 @@ $(document).ready(() => {
         browser_has_focus = false;
     });
 
-    registerSlashCommand('vn', toggleWaifu, [], '– swaps Visual Novel Mode On/Off', false, true);
-    registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
-    registerSlashCommand('random', doRandomChat, [], '<span class="monospace">(optional tag name)</span> – start a new chat with a random character. If an argument is provided, only considers characters that have the specified tag.', true, true);
-    registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes last N messages if numeric argument is provided', true, true);
-    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive! Returns the text of cut messages separated by a newline.', true, true);
-    registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
-    registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
-    registerSlashCommand('theme', setThemeCallback, [], '<span class="monospace">(name)</span> – sets a UI theme by name', true, true);
-    registerSlashCommand('movingui', setmovingUIPreset, [], '<span class="monospace">(name)</span> – activates a movingUI preset by name', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'vn',
+        callback: toggleWaifu,
+        helpString: 'Swaps Visual Novel Mode On/Off',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'newchat',
+        callback: doNewChat,
+        helpString: 'Start a new chat with the current character',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'random',
+        callback: doRandomChat,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'optional tag name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: 'Start a new chat with a random character. If an argument is provided, only considers characters that have the specified tag.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delmode',
+        callback: doDelMode,
+        aliases: ['del'],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'optional number', [ARGUMENT_TYPE.NUMBER], false,
+            ),
+        ],
+        helpString: 'Enter message deletion mode, and auto-deletes last N messages if numeric argument is provided.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'cut',
+        callback: doMesCut,
+        returns: 'the text of cut messages separated by a newline',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'number or range', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.RANGE], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Cuts the specified message or continuous chunk from the chat.
+            </div>
+            <div>
+                Ranges are inclusive!
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/cut 0-10</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+        aliases: [],
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'resetpanels',
+        callback: doResetPanels,
+        helpString: 'resets UI panels to original state',
+        aliases: ['resetui'],
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'bgcol',
+        callback: setAvgBG,
+        helpString: '– WIP test of auto-bg avg coloring',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'theme',
+        callback: setThemeCallback,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: 'sets a UI theme by name',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'movingui',
+        callback: setmovingUIPreset,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: 'activates a movingUI preset by name',
+    }));
 });

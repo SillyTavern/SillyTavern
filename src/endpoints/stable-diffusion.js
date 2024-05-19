@@ -3,7 +3,7 @@ const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
 const { getBasicAuthHeader, delay, getHexString } = require('../util.js');
 const fs = require('fs');
-const { DIRECTORIES } = require('../constants.js');
+const path = require('path');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser } = require('../express-common');
 const { readSecret, SECRET_KEYS } = require('./secrets.js');
@@ -43,9 +43,14 @@ function removePattern(x, pattern) {
     return x;
 }
 
-function getComfyWorkflows() {
+/**
+ * Gets the comfy workflows.
+ * @param {import('../users.js').UserDirectoryList} directories
+ * @returns {string[]} List of comfy workflows
+ */
+function getComfyWorkflows(directories) {
     return fs
-        .readdirSync(DIRECTORIES.comfyWorkflows)
+        .readdirSync(directories.comfyWorkflows)
         .filter(file => file[0] != '.' && file.toLowerCase().endsWith('.json'))
         .sort(Intl.Collator().compare);
 }
@@ -448,7 +453,7 @@ comfy.post('/vaes', jsonParser, async (request, response) => {
 
 comfy.post('/workflows', jsonParser, async (request, response) => {
     try {
-        const data = getComfyWorkflows();
+        const data = getComfyWorkflows(request.user.directories);
         return response.send(data);
     } catch (error) {
         console.log(error);
@@ -458,14 +463,11 @@ comfy.post('/workflows', jsonParser, async (request, response) => {
 
 comfy.post('/workflow', jsonParser, async (request, response) => {
     try {
-        let path = `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`;
-        if (!fs.existsSync(path)) {
-            path = `${DIRECTORIES.comfyWorkflows}/Default_Comfy_Workflow.json`;
+        let filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
+        if (!fs.existsSync(filePath)) {
+            filePath = path.join(request.user.directories.comfyWorkflows, 'Default_Comfy_Workflow.json');
         }
-        const data = fs.readFileSync(
-            path,
-            { encoding: 'utf-8' },
-        );
+        const data = fs.readFileSync(filePath, { encoding: 'utf-8' });
         return response.send(JSON.stringify(data));
     } catch (error) {
         console.log(error);
@@ -475,12 +477,9 @@ comfy.post('/workflow', jsonParser, async (request, response) => {
 
 comfy.post('/save-workflow', jsonParser, async (request, response) => {
     try {
-        writeFileAtomicSync(
-            `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`,
-            request.body.workflow,
-            'utf8',
-        );
-        const data = getComfyWorkflows();
+        const filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
+        writeFileAtomicSync(filePath, request.body.workflow, 'utf8');
+        const data = getComfyWorkflows(request.user.directories);
         return response.send(data);
     } catch (error) {
         console.log(error);
@@ -490,9 +489,9 @@ comfy.post('/save-workflow', jsonParser, async (request, response) => {
 
 comfy.post('/delete-workflow', jsonParser, async (request, response) => {
     try {
-        let path = `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`;
-        if (fs.existsSync(path)) {
-            fs.unlinkSync(path);
+        const filePath = path.join(request.user.directories.comfyWorkflows, sanitize(String(request.body.file_name)));
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
         }
         return response.sendStatus(200);
     } catch (error) {
@@ -548,9 +547,9 @@ comfy.post('/generate', jsonParser, async (request, response) => {
 
 const together = express.Router();
 
-together.post('/models', jsonParser, async (_, response) => {
+together.post('/models', jsonParser, async (request, response) => {
     try {
-        const key = readSecret(SECRET_KEYS.TOGETHERAI);
+        const key = readSecret(request.user.directories, SECRET_KEYS.TOGETHERAI);
 
         if (!key) {
             console.log('TogetherAI key not found.');
@@ -589,7 +588,7 @@ together.post('/models', jsonParser, async (_, response) => {
 
 together.post('/generate', jsonParser, async (request, response) => {
     try {
-        const key = readSecret(SECRET_KEYS.TOGETHERAI);
+        const key = readSecret(request.user.directories, SECRET_KEYS.TOGETHERAI);
 
         if (!key) {
             console.log('TogetherAI key not found.');

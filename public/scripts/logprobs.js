@@ -129,8 +129,8 @@ function addKeyboardProps(element) {
  * selected token highlighted. If no token is selected, the subview is hidden.
  */
 function renderTopLogprobs() {
+    $('#logprobs_top_logprobs_hint').hide();
     const view = $('.logprobs_candidate_list');
-    const hint = $('#logprobs_top_logprobs_hint').hide();
     view.empty();
 
     if (!state.selectedTokenLogprobs) {
@@ -475,7 +475,7 @@ function convertTokenIdLogprobsToText(input) {
 }
 
 export function initLogprobs() {
-    const debouncedRender = debounce(renderAlternativeTokensView, 500);
+    const debouncedRender = debounce(renderAlternativeTokensView);
     $('#logprobsViewerClose').click(onToggleLogprobsPanel);
     $('#option_toggle_logprobs').click(onToggleLogprobsPanel);
     eventSource.on(event_types.CHAT_CHANGED, debouncedRender);

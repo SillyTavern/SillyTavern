@@ -7,8 +7,39 @@ let mancerModels = [];
 let togetherModels = [];
 let infermaticAIModels = [];
 let dreamGenModels = [];
+let vllmModels = [];
 let aphroditeModels = [];
 export let openRouterModels = [];
+
+/**
+ * List of OpenRouter providers.
+ * @type {string[]}
+ */
+const OPENROUTER_PROVIDERS = [
+    'OpenAI',
+    'Anthropic',
+    'HuggingFace',
+    'Google',
+    'Mancer',
+    'Mancer 2',
+    'Together',
+    'DeepInfra',
+    'Azure',
+    'Modal',
+    'AnyScale',
+    'Replicate',
+    'Perplexity',
+    'Recursal',
+    'Fireworks',
+    'Mistral',
+    'Groq',
+    'Cohere',
+    'Lepton',
+    'OctoAI',
+    'Novita',
+    'Lynn',
+    'Lynn 2',
+];
 
 export async function loadOllamaModels(data) {
     if (!Array.isArray(data)) {
@@ -156,6 +187,28 @@ export async function loadOpenRouterModels(data) {
     calculateOpenRouterCost();
 }
 
+export async function loadVllmModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid vLLM models data', data);
+        return;
+    }
+
+    vllmModels = data;
+
+    if (!data.find(x => x.id === textgen_settings.vllm_model)) {
+        textgen_settings.vllm_model = data[0]?.id || '';
+    }
+
+    $('#vllm_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.id;
+        option.selected = model.id === textgen_settings.vllm_model;
+        $('#vllm_model').append(option);
+    }
+}
+
 export async function loadAphroditeModels(data) {
     if (!Array.isArray(data)) {
         console.error('Invalid Aphrodite models data', data);
@@ -184,7 +237,7 @@ function onMancerModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
 
     const limits = mancerModels.find(x => x.id === modelId)?.limits;
-    setGenerationParamsFromPreset({ max_length: limits.context, genamt: limits.completion }, true);
+    setGenerationParamsFromPreset({ max_length: limits.context });
 }
 
 function onTogetherModelSelect() {
@@ -222,6 +275,12 @@ function onOpenRouterModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
     const model = openRouterModels.find(x => x.id === modelId);
     setGenerationParamsFromPreset({ max_length: model.context_length });
+}
+
+function onVllmModelSelect() {
+    const modelId = String($('#vllm_model').val());
+    textgen_settings.vllm_model = modelId;
+    $('#api_button_textgenerationwebui').trigger('click');
 }
 
 function onAphroditeModelSelect() {
@@ -306,6 +365,20 @@ function getOpenRouterModelTemplate(option) {
     return $((`
         <div class="flex-container flexFlowColumn" title="${DOMPurify.sanitize(model.id)}">
             <div><strong>${DOMPurify.sanitize(model.name)}</strong> | ${model.context_length} ctx | <small>${price}</small></div>
+        </div>
+    `));
+}
+
+function getVllmModelTemplate(option) {
+    const model = vllmModels.find(x => x.id === option?.element?.value);
+
+    if (!option.id || !model) {
+        return option.text;
+    }
+
+    return $((`
+        <div class="flex-container flexFlowColumn">
+            <div><strong>${DOMPurify.sanitize(model.id)}</strong></div>
         </div>
     `));
 }
@@ -397,6 +470,10 @@ export function getCurrentOpenRouterModelTokenizer() {
     switch (model?.architecture?.tokenizer) {
         case 'Llama2':
             return tokenizers.LLAMA;
+        case 'Llama3':
+            return tokenizers.LLAMA3;
+        case 'Yi':
+            return tokenizers.YI;
         case 'Mistral':
             return tokenizers.MISTRAL;
         default:
@@ -426,7 +503,16 @@ jQuery(function () {
     $('#ollama_model').on('change', onOllamaModelSelect);
     $('#openrouter_model').on('change', onOpenRouterModelSelect);
     $('#ollama_download_model').on('click', downloadOllamaModel);
+    $('#vllm_model').on('change', onVllmModelSelect);
     $('#aphrodite_model').on('change', onAphroditeModelSelect);
+
+    const providersSelect = $('.openrouter_providers');
+    for (const provider of OPENROUTER_PROVIDERS) {
+        providersSelect.append($('<option>', {
+            value: provider,
+            text: provider,
+        }));
+    }
 
     if (!isMobile()) {
         $('#mancer_model').select2({
@@ -470,12 +556,34 @@ jQuery(function () {
             width: '100%',
             templateResult: getOpenRouterModelTemplate,
         });
+        $('#vllm_model').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getVllmModelTemplate,
+        });
         $('#aphrodite_model').select2({
             placeholder: 'Select a model',
             searchInputPlaceholder: 'Search models...',
             searchInputCssClass: 'text_pole',
             width: '100%',
             templateResult: getAphroditeModelTemplate,
+        });
+        providersSelect.select2({
+            sorter: data => data.sort((a, b) => a.text.localeCompare(b.text)),
+            placeholder: 'Select providers. No selection = all providers.',
+            searchInputPlaceholder: 'Search providers...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+        });
+        providersSelect.on('select2:select', function (/** @type {any} */ evt) {
+            const element = evt.params.data.element;
+            const $element = $(element);
+
+            $element.detach();
+            $(this).append($element);
+            $(this).trigger('change');
         });
     }
 });

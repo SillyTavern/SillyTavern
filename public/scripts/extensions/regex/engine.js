@@ -1,5 +1,6 @@
 import { substituteParams } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
+import { regexFromString } from '../../utils.js';
 export {
     regex_placement,
     getRegexedString,
@@ -17,30 +18,9 @@ const regex_placement = {
     USER_INPUT: 1,
     AI_OUTPUT: 2,
     SLASH_COMMAND: 3,
+    // 4 - sendAs (legacy)
+    WORLD_INFO: 5,
 };
-
-/**
- * Instantiates a regular expression from a string.
- * @param {string} input The input string.
- * @returns {RegExp} The regular expression instance.
- * @copyright Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
- */
-function regexFromString(input) {
-    try {
-        // Parse input
-        var m = input.match(/(\/?)(.+)\1([a-z]*)/i);
-
-        // Invalid flags
-        if (m[3] && !/^(?!.*?(.).*?\1)[gmixXsuUAJ]+$/.test(m[3])) {
-            return RegExp(input);
-        }
-
-        // Create the regular expression
-        return new RegExp(m[2], m[3]);
-    } catch {
-        return;
-    }
-}
 
 /**
  * Parent function to fetch a regexed version of a raw string

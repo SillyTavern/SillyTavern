@@ -1,8 +1,10 @@
 import { callPopup, main_api } from '../../../script.js';
 import { getContext } from '../../extensions.js';
-import { registerSlashCommand } from '../../slash-commands.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { getFriendlyTokenizerName, getTextTokens, getTokenCountAsync, tokenizers } from '../../tokenizers.js';
 import { resetScrollHeight, debounce } from '../../utils.js';
+import { debounce_timeout } from '../../constants.js';
 
 function rgb2hex(rgb) {
     rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
@@ -58,7 +60,7 @@ async function doTokenCounter() {
 
         resetScrollHeight($('#token_counter_textarea'));
         resetScrollHeight($('#token_counter_ids'));
-    }, 1000);
+    }, debounce_timeout.relaxed);
     dialog.find('#token_counter_textarea').on('input', () => countDebounced());
 
     $('#dialogue_popup').addClass('wide_dialogue_popup');
@@ -131,5 +133,10 @@ jQuery(() => {
         </div>`;
     $('#extensionsMenu').prepend(buttonHtml);
     $('#token_counter').on('click', doTokenCounter);
-    registerSlashCommand('count', doCount, [], '– counts the number of tokens in the current chat', true, false);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'count',
+        callback: doCount,
+        returns: 'number of tokens',
+        helpString: 'Counts the number of tokens in the current chat.',
+    }));
+
 });

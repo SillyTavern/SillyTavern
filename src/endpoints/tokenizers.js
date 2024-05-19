@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const { SentencePieceProcessor } = require('@agnai/sentencepiece-js');
-const tiktoken = require('@dqbd/tiktoken');
+const tiktoken = require('tiktoken');
 const { Tokenizer } = require('@agnai/web-tokenizers');
 const { convertClaudePrompt, convertGooglePrompt } = require('../prompt-converters');
 const { readSecret, SECRET_KEYS } = require('./secrets');
@@ -11,7 +11,11 @@ const { jsonParser } = require('../express-common');
 const { setAdditionalHeaders } = require('../additional-headers');
 
 /**
- * @type {{[key: string]: import("@dqbd/tiktoken").Tiktoken}} Tokenizers cache
+ * @typedef { (req: import('express').Request, res: import('express').Response) => Promise<any> } TokenizationHandler
+ */
+
+/**
+ * @type {{[key: string]: import('tiktoken').Tiktoken}} Tokenizers cache
  */
 const tokenizersCache = {};
 
@@ -48,16 +52,30 @@ const TEXT_COMPLETION_MODELS = [
 
 const CHARS_PER_TOKEN = 3.35;
 
+/**
+ * Sentencepiece tokenizer for tokenizing text.
+ */
 class SentencePieceTokenizer {
+    /**
+     * @type {import('@agnai/sentencepiece-js').SentencePieceProcessor} Sentencepiece tokenizer instance
+     */
     #instance;
+    /**
+     * @type {string} Path to the tokenizer model
+     */
     #model;
 
+    /**
+     * Creates a new Sentencepiece tokenizer.
+     * @param {string} model Path to the tokenizer model
+     */
     constructor(model) {
         this.#model = model;
     }
 
     /**
      * Gets the Sentencepiece tokenizer instance.
+     * @returns {Promise<import('@agnai/sentencepiece-js').SentencePieceProcessor|null>} Sentencepiece tokenizer instance
      */
     async get() {
         if (this.#instance) {
@@ -76,18 +94,62 @@ class SentencePieceTokenizer {
     }
 }
 
-const spp_llama = new SentencePieceTokenizer('src/sentencepiece/llama.model');
-const spp_nerd = new SentencePieceTokenizer('src/sentencepiece/nerdstash.model');
-const spp_nerd_v2 = new SentencePieceTokenizer('src/sentencepiece/nerdstash_v2.model');
-const spp_mistral = new SentencePieceTokenizer('src/sentencepiece/mistral.model');
-const spp_yi = new SentencePieceTokenizer('src/sentencepiece/yi.model');
-let claude_tokenizer;
+/**
+ * Web tokenizer for tokenizing text.
+ */
+class WebTokenizer {
+    /**
+     * @type {Tokenizer} Web tokenizer instance
+     */
+    #instance;
+    /**
+     * @type {string} Path to the tokenizer model
+     */
+    #model;
+
+    /**
+     * Creates a new Web tokenizer.
+     * @param {string} model Path to the tokenizer model
+     */
+    constructor(model) {
+        this.#model = model;
+    }
+
+    /**
+     * Gets the Web tokenizer instance.
+     * @returns {Promise<Tokenizer|null>} Web tokenizer instance
+     */
+    async get() {
+        if (this.#instance) {
+            return this.#instance;
+        }
+
+        try {
+            const arrayBuffer = fs.readFileSync(this.#model).buffer;
+            this.#instance = await Tokenizer.fromJSON(arrayBuffer);
+            console.log('Instantiated the tokenizer for', path.parse(this.#model).name);
+            return this.#instance;
+        } catch (error) {
+            console.error('Web tokenizer failed to load: ' + this.#model, error);
+            return null;
+        }
+    }
+}
+
+const spp_llama = new SentencePieceTokenizer('src/tokenizers/llama.model');
+const spp_nerd = new SentencePieceTokenizer('src/tokenizers/nerdstash.model');
+const spp_nerd_v2 = new SentencePieceTokenizer('src/tokenizers/nerdstash_v2.model');
+const spp_mistral = new SentencePieceTokenizer('src/tokenizers/mistral.model');
+const spp_yi = new SentencePieceTokenizer('src/tokenizers/yi.model');
+const claude_tokenizer = new WebTokenizer('src/tokenizers/claude.json');
+const llama3_tokenizer = new WebTokenizer('src/tokenizers/llama3.json');
 
 const sentencepieceTokenizers = [
     'llama',
     'nerdstash',
     'nerdstash_v2',
     'mistral',
+    'yi',
 ];
 
 /**
@@ -110,6 +172,10 @@ function getSentencepiceTokenizer(model) {
 
     if (model.includes('nerdstash_v2')) {
         return spp_nerd_v2;
+    }
+
+    if (model.includes('yi')) {
+        return spp_yi;
     }
 
     return null;
@@ -168,13 +234,23 @@ async function getTiktokenChunks(tokenizer, ids) {
     return chunks;
 }
 
-async function getWebTokenizersChunks(tokenizer, ids) {
+/**
+ * Gets the token chunks for the given token IDs using the Web tokenizer.
+ * @param {Tokenizer} tokenizer Web tokenizer instance
+ * @param {number[]} ids Token IDs
+ * @returns {string[]} Token chunks
+ */
+function getWebTokenizersChunks(tokenizer, ids) {
     const chunks = [];
 
-    for (let i = 0; i < ids.length; i++) {
-        const id = ids[i];
-        const chunkText = await tokenizer.decode(new Uint32Array([id]));
+    for (let i = 0, lastProcessed = 0; i < ids.length; i++) {
+        const chunkIds = ids.slice(lastProcessed, i + 1);
+        const chunkText = tokenizer.decode(new Int32Array(chunkIds));
+        if (chunkText === '�') {
+            continue;
+        }
         chunks.push(chunkText);
+        lastProcessed = i + 1;
     }
 
     return chunks;
@@ -186,6 +262,10 @@ async function getWebTokenizersChunks(tokenizer, ids) {
  * @returns {string} Tokenizer model to use
  */
 function getTokenizerModel(requestModel) {
+    if (requestModel.includes('gpt-4o')) {
+        return 'gpt-4o';
+    }
+
     if (requestModel.includes('gpt-4-32k')) {
         return 'gpt-4-32k';
     }
@@ -208,6 +288,10 @@ function getTokenizerModel(requestModel) {
 
     if (requestModel.includes('claude')) {
         return 'claude';
+    }
+
+    if (requestModel.includes('llama3') || requestModel.includes('llama-3')) {
+        return 'llama3';
     }
 
     if (requestModel.includes('llama')) {
@@ -237,18 +321,13 @@ function getTiktokenTokenizer(model) {
     return tokenizer;
 }
 
-async function loadClaudeTokenizer(modelPath) {
-    try {
-        const arrayBuffer = fs.readFileSync(modelPath).buffer;
-        const instance = await Tokenizer.fromJSON(arrayBuffer);
-        return instance;
-    } catch (error) {
-        console.error('Claude tokenizer failed to load: ' + modelPath, error);
-        return null;
-    }
-}
-
-function countClaudeTokens(tokenizer, messages) {
+/**
+ * Counts the tokens for the given messages using the WebTokenizer and Claude prompt conversion.
+ * @param {Tokenizer} tokenizer Web tokenizer
+ * @param {object[]} messages Array of messages
+ * @returns {number} Number of tokens
+ */
+function countWebTokenizerTokens(tokenizer, messages) {
     // Should be fine if we use the old conversion method instead of the messages API one i think?
     const convertedPrompt = convertClaudePrompt(messages, false, '', false, false, '', false);
 
@@ -264,9 +343,14 @@ function countClaudeTokens(tokenizer, messages) {
 /**
  * Creates an API handler for encoding Sentencepiece tokens.
  * @param {SentencePieceTokenizer} tokenizer Sentencepiece tokenizer
- * @returns {any} Handler function
+ * @returns {TokenizationHandler} Handler function
  */
 function createSentencepieceEncodingHandler(tokenizer) {
+    /**
+     * Request handler for encoding Sentencepiece tokens.
+     * @param {import('express').Request} request
+     * @param {import('express').Response} response
+     */
     return async function (request, response) {
         try {
             if (!request.body) {
@@ -276,7 +360,7 @@ function createSentencepieceEncodingHandler(tokenizer) {
             const text = request.body.text || '';
             const instance = await tokenizer?.get();
             const { ids, count } = await countSentencepieceTokens(tokenizer, text);
-            const chunks = await instance?.encodePieces(text);
+            const chunks = instance?.encodePieces(text);
             return response.send({ ids, count, chunks });
         } catch (error) {
             console.log(error);
@@ -288,9 +372,14 @@ function createSentencepieceEncodingHandler(tokenizer) {
 /**
  * Creates an API handler for decoding Sentencepiece tokens.
  * @param {SentencePieceTokenizer} tokenizer Sentencepiece tokenizer
- * @returns {any} Handler function
+ * @returns {TokenizationHandler} Handler function
  */
 function createSentencepieceDecodingHandler(tokenizer) {
+    /**
+     * Request handler for decoding Sentencepiece tokens.
+     * @param {import('express').Request} request
+     * @param {import('express').Response} response
+     */
     return async function (request, response) {
         try {
             if (!request.body) {
@@ -299,6 +388,7 @@ function createSentencepieceDecodingHandler(tokenizer) {
 
             const ids = request.body.ids || [];
             const instance = await tokenizer?.get();
+            if (!instance) throw new Error('Failed to load the Sentencepiece tokenizer');
             const ops = ids.map(id => instance.decodeIds([id]));
             const chunks = await Promise.all(ops);
             const text = chunks.join('');
@@ -313,9 +403,14 @@ function createSentencepieceDecodingHandler(tokenizer) {
 /**
  * Creates an API handler for encoding Tiktoken tokens.
  * @param {string} modelId Tiktoken model ID
- * @returns {any} Handler function
+ * @returns {TokenizationHandler} Handler function
  */
 function createTiktokenEncodingHandler(modelId) {
+    /**
+     * Request handler for encoding Tiktoken tokens.
+     * @param {import('express').Request} request
+     * @param {import('express').Response} response
+     */
     return async function (request, response) {
         try {
             if (!request.body) {
@@ -337,9 +432,14 @@ function createTiktokenEncodingHandler(modelId) {
 /**
  * Creates an API handler for decoding Tiktoken tokens.
  * @param {string} modelId Tiktoken model ID
- * @returns {any} Handler function
+ * @returns {TokenizationHandler} Handler function
  */
 function createTiktokenDecodingHandler(modelId) {
+    /**
+     * Request handler for decoding Tiktoken tokens.
+     * @param {import('express').Request} request
+     * @param {import('express').Response} response
+     */
     return async function (request, response) {
         try {
             if (!request.body) {
@@ -359,23 +459,77 @@ function createTiktokenDecodingHandler(modelId) {
 }
 
 /**
- * Loads the model tokenizers.
- * @returns {Promise<void>} Promise that resolves when the tokenizers are loaded
+ * Creates an API handler for encoding WebTokenizer tokens.
+ * @param {WebTokenizer} tokenizer WebTokenizer instance
+ * @returns {TokenizationHandler} Handler function
  */
-async function loadTokenizers() {
-    claude_tokenizer = await loadClaudeTokenizer('src/claude.json');
+function createWebTokenizerEncodingHandler(tokenizer) {
+    /**
+     * Request handler for encoding WebTokenizer tokens.
+     * @param {import('express').Request} request
+     * @param {import('express').Response} response
+     */
+    return async function (request, response) {
+        try {
+            if (!request.body) {
+                return response.sendStatus(400);
+            }
+
+            const text = request.body.text || '';
+            const instance = await tokenizer?.get();
+            if (!instance) throw new Error('Failed to load the Web tokenizer');
+            const tokens = Array.from(instance.encode(text));
+            const chunks = getWebTokenizersChunks(instance, tokens);
+            return response.send({ ids: tokens, count: tokens.length, chunks });
+        } catch (error) {
+            console.log(error);
+            return response.send({ ids: [], count: 0, chunks: [] });
+        }
+    };
+}
+
+/**
+ * Creates an API handler for decoding WebTokenizer tokens.
+ * @param {WebTokenizer} tokenizer WebTokenizer instance
+ * @returns {TokenizationHandler} Handler function
+ */
+function createWebTokenizerDecodingHandler(tokenizer) {
+    /**
+     * Request handler for decoding WebTokenizer tokens.
+     * @param {import('express').Request} request
+     * @param {import('express').Response} response
+     * @returns {Promise<any>}
+     */
+    return async function (request, response) {
+        try {
+            if (!request.body) {
+                return response.sendStatus(400);
+            }
+
+            const ids = request.body.ids || [];
+            const instance = await tokenizer?.get();
+            if (!instance) throw new Error('Failed to load the Web tokenizer');
+            const chunks = getWebTokenizersChunks(instance, ids);
+            const text = instance.decode(new Int32Array(ids));
+            return response.send({ text, chunks });
+        } catch (error) {
+            console.log(error);
+            return response.send({ text: '', chunks: [] });
+        }
+    };
 }
 
 const router = express.Router();
 
 router.post('/ai21/count', jsonParser, async function (req, res) {
     if (!req.body) return res.sendStatus(400);
+    const key = readSecret(req.user.directories, SECRET_KEYS.AI21);
     const options = {
         method: 'POST',
         headers: {
             accept: 'application/json',
             'content-type': 'application/json',
-            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`,
+            Authorization: `Bearer ${key}`,
         },
         body: JSON.stringify({ text: req.body[0].content }),
     };
@@ -401,7 +555,8 @@ router.post('/google/count', jsonParser, async function (req, res) {
         body: JSON.stringify({ contents: convertGooglePrompt(req.body, String(req.query.model)).contents }),
     };
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${req.query.model}:countTokens?key=${readSecret(SECRET_KEYS.MAKERSUITE)}`, options);
+        const key = readSecret(req.user.directories, SECRET_KEYS.MAKERSUITE);
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${req.query.model}:countTokens?key=${key}`, options);
         const data = await response.json();
         return res.send({ 'token_count': data?.totalTokens || 0 });
     } catch (err) {
@@ -416,16 +571,25 @@ router.post('/nerdstash_v2/encode', jsonParser, createSentencepieceEncodingHandl
 router.post('/mistral/encode', jsonParser, createSentencepieceEncodingHandler(spp_mistral));
 router.post('/yi/encode', jsonParser, createSentencepieceEncodingHandler(spp_yi));
 router.post('/gpt2/encode', jsonParser, createTiktokenEncodingHandler('gpt2'));
+router.post('/claude/encode', jsonParser, createWebTokenizerEncodingHandler(claude_tokenizer));
+router.post('/llama3/encode', jsonParser, createWebTokenizerEncodingHandler(llama3_tokenizer));
 router.post('/llama/decode', jsonParser, createSentencepieceDecodingHandler(spp_llama));
 router.post('/nerdstash/decode', jsonParser, createSentencepieceDecodingHandler(spp_nerd));
 router.post('/nerdstash_v2/decode', jsonParser, createSentencepieceDecodingHandler(spp_nerd_v2));
 router.post('/mistral/decode', jsonParser, createSentencepieceDecodingHandler(spp_mistral));
 router.post('/yi/decode', jsonParser, createSentencepieceDecodingHandler(spp_yi));
 router.post('/gpt2/decode', jsonParser, createTiktokenDecodingHandler('gpt2'));
+router.post('/claude/decode', jsonParser, createWebTokenizerDecodingHandler(claude_tokenizer));
+router.post('/llama3/decode', jsonParser, createWebTokenizerDecodingHandler(llama3_tokenizer));
 
 router.post('/openai/encode', jsonParser, async function (req, res) {
     try {
         const queryModel = String(req.query.model || '');
+
+        if (queryModel.includes('llama3') || queryModel.includes('llama-3')) {
+            const handler = createWebTokenizerEncodingHandler(llama3_tokenizer);
+            return handler(req, res);
+        }
 
         if (queryModel.includes('llama')) {
             const handler = createSentencepieceEncodingHandler(spp_llama);
@@ -443,10 +607,8 @@ router.post('/openai/encode', jsonParser, async function (req, res) {
         }
 
         if (queryModel.includes('claude')) {
-            const text = req.body.text || '';
-            const tokens = Object.values(claude_tokenizer.encode(text));
-            const chunks = await getWebTokenizersChunks(claude_tokenizer, tokens);
-            return res.send({ ids: tokens, count: tokens.length, chunks });
+            const handler = createWebTokenizerEncodingHandler(claude_tokenizer);
+            return handler(req, res);
         }
 
         const model = getTokenizerModel(queryModel);
@@ -461,6 +623,11 @@ router.post('/openai/encode', jsonParser, async function (req, res) {
 router.post('/openai/decode', jsonParser, async function (req, res) {
     try {
         const queryModel = String(req.query.model || '');
+
+        if (queryModel.includes('llama3') || queryModel.includes('llama-3')) {
+            const handler = createWebTokenizerDecodingHandler(llama3_tokenizer);
+            return handler(req, res);
+        }
 
         if (queryModel.includes('llama')) {
             const handler = createSentencepieceDecodingHandler(spp_llama);
@@ -478,9 +645,8 @@ router.post('/openai/decode', jsonParser, async function (req, res) {
         }
 
         if (queryModel.includes('claude')) {
-            const ids = req.body.ids || [];
-            const chunkText = await claude_tokenizer.decode(new Uint32Array(ids));
-            return res.send({ text: chunkText });
+            const handler = createWebTokenizerDecodingHandler(claude_tokenizer);
+            return handler(req, res);
         }
 
         const model = getTokenizerModel(queryModel);
@@ -501,7 +667,16 @@ router.post('/openai/count', jsonParser, async function (req, res) {
         const model = getTokenizerModel(queryModel);
 
         if (model === 'claude') {
-            num_tokens = countClaudeTokens(claude_tokenizer, req.body);
+            const instance = await claude_tokenizer.get();
+            if (!instance) throw new Error('Failed to load the Claude tokenizer');
+            num_tokens = countWebTokenizerTokens(instance, req.body);
+            return res.send({ 'token_count': num_tokens });
+        }
+
+        if (model === 'llama3' || model === 'llama-3') {
+            const instance = await llama3_tokenizer.get();
+            if (!instance) throw new Error('Failed to load the Llama3 tokenizer');
+            num_tokens = countWebTokenizerTokens(instance, req.body);
             return res.send({ 'token_count': num_tokens });
         }
 
@@ -629,6 +804,8 @@ router.post('/remote/textgenerationwebui/encode', jsonParser, async function (re
                     url += '/tokenize';
                     args.body = JSON.stringify({ 'content': text });
                     break;
+                case TEXTGEN_TYPES.VLLM:
+                    return response.send({ error: true });
                 case TEXTGEN_TYPES.APHRODITE:
                     url += '/v1/tokenize';
                     args.body = JSON.stringify({ 'prompt': text });
@@ -662,8 +839,7 @@ module.exports = {
     TEXT_COMPLETION_MODELS,
     getTokenizerModel,
     getTiktokenTokenizer,
-    countClaudeTokens,
-    loadTokenizers,
+    countWebTokenizerTokens,
     getSentencepiceTokenizer,
     sentencepieceTokenizers,
     router,

@@ -1,33 +1,61 @@
-const DIRECTORIES = {
-    worlds: 'public/worlds/',
-    user: 'public/user',
-    avatars: 'public/User Avatars',
+const PUBLIC_DIRECTORIES = {
     images: 'public/img/',
-    userImages: 'public/user/images/',
-    groups: 'public/groups/',
-    groupChats: 'public/group chats',
-    chats: 'public/chats/',
-    characters: 'public/characters/',
-    backgrounds: 'public/backgrounds',
-    novelAI_Settings: 'public/NovelAI Settings',
-    koboldAI_Settings: 'public/KoboldAI Settings',
-    openAI_Settings: 'public/OpenAI Settings',
-    textGen_Settings: 'public/TextGen Settings',
-    thumbnails: 'thumbnails/',
-    thumbnailsBg: 'thumbnails/bg/',
-    thumbnailsAvatar: 'thumbnails/avatar/',
-    themes: 'public/themes',
-    movingUI: 'public/movingUI',
-    extensions: 'public/scripts/extensions',
-    instruct: 'public/instruct',
-    context: 'public/context',
     backups: 'backups/',
-    quickreplies: 'public/QuickReplies',
-    assets: 'public/assets',
-    comfyWorkflows: 'public/user/workflows',
-    files: 'public/user/files',
     sounds: 'public/sounds',
+    extensions: 'public/scripts/extensions',
 };
+
+const DEFAULT_AVATAR = '/img/ai4.png';
+const SETTINGS_FILE = 'settings.json';
+
+/**
+ * @type {import('./users').UserDirectoryList}
+ * @readonly
+ * @enum {string}
+ */
+const USER_DIRECTORY_TEMPLATE = Object.freeze({
+    root: '',
+    thumbnails: 'thumbnails',
+    thumbnailsBg: 'thumbnails/bg',
+    thumbnailsAvatar: 'thumbnails/avatar',
+    worlds: 'worlds',
+    user: 'user',
+    avatars: 'User Avatars',
+    userImages: 'user/images',
+    groups: 'groups',
+    groupChats: 'group chats',
+    chats: 'chats',
+    characters: 'characters',
+    backgrounds: 'backgrounds',
+    novelAI_Settings: 'NovelAI Settings',
+    koboldAI_Settings: 'KoboldAI Settings',
+    openAI_Settings: 'OpenAI Settings',
+    textGen_Settings: 'TextGen Settings',
+    themes: 'themes',
+    movingUI: 'movingUI',
+    extensions: 'extensions',
+    instruct: 'instruct',
+    context: 'context',
+    quickreplies: 'QuickReplies',
+    assets: 'assets',
+    comfyWorkflows: 'user/workflows',
+    files: 'user/files',
+    vectors: 'vectors',
+});
+
+/**
+ * @type {import('./users').User}
+ * @readonly
+ */
+const DEFAULT_USER = Object.freeze({
+    handle: 'default-user',
+    name: 'User',
+    created: Date.now(),
+    password: '',
+    admin: true,
+    enabled: true,
+    salt: '',
+});
 
 const UNSAFE_EXTENSIONS = [
     '.php',
@@ -164,6 +192,7 @@ const CHAT_COMPLETION_SOURCES = {
     CUSTOM: 'custom',
     COHERE: 'cohere',
     PERPLEXITY: 'perplexity',
+    GROQ: 'groq',
 };
 
 const UPLOADS_PATH = './uploads';
@@ -172,6 +201,7 @@ const UPLOADS_PATH = './uploads';
 const TEXTGEN_TYPES = {
     OOBA: 'ooba',
     MANCER: 'mancer',
+    VLLM: 'vllm',
     APHRODITE: 'aphrodite',
     TABBY: 'tabby',
     KOBOLDCPP: 'koboldcpp',
@@ -268,10 +298,58 @@ const OPENROUTER_KEYS = [
     'stream',
     'prompt',
     'stop',
+    'provider',
+];
+
+// https://github.com/vllm-project/vllm/blob/0f8a91401c89ac0a8018def3756829611b57727f/vllm/entrypoints/openai/protocol.py#L220
+const VLLM_KEYS = [
+    'model',
+    'prompt',
+    'best_of',
+    'echo',
+    'frequency_penalty',
+    'logit_bias',
+    'logprobs',
+    'max_tokens',
+    'n',
+    'presence_penalty',
+    'seed',
+    'stop',
+    'stream',
+    'suffix',
+    'temperature',
+    'top_p',
+    'user',
+
+    'use_beam_search',
+    'top_k',
+    'min_p',
+    'repetition_penalty',
+    'length_penalty',
+    'early_stopping',
+    'stop_token_ids',
+    'ignore_eos',
+    'min_tokens',
+    'skip_special_tokens',
+    'spaces_between_special_tokens',
+    'truncate_prompt_tokens',
+
+    'include_stop_str_in_output',
+    'response_format',
+    'guided_json',
+    'guided_regex',
+    'guided_choice',
+    'guided_grammar',
+    'guided_decoding_backend',
+    'guided_whitespace_pattern',
 ];
 
 module.exports = {
-    DIRECTORIES,
+    DEFAULT_USER,
+    DEFAULT_AVATAR,
+    SETTINGS_FILE,
+    PUBLIC_DIRECTORIES,
+    USER_DIRECTORY_TEMPLATE,
     UNSAFE_EXTENSIONS,
     UPLOADS_PATH,
     GEMINI_SAFETY,
@@ -286,4 +364,5 @@ module.exports = {
     DREAMGEN_KEYS,
     OPENROUTER_HEADERS,
     OPENROUTER_KEYS,
+    VLLM_KEYS,
 };

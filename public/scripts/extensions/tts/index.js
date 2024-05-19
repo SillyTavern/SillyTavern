@@ -8,11 +8,13 @@ import { CoquiTtsProvider } from './coqui.js';
 import { SystemTtsProvider } from './system.js';
 import { NovelTtsProvider } from './novel.js';
 import { power_user } from '../../power-user.js';
-import { registerSlashCommand } from '../../slash-commands.js';
 import { OpenAITtsProvider } from './openai.js';
 import { XTTSTtsProvider } from './xtts.js';
 import { AllTalkTtsProvider } from './alltalk.js';
 import { SpeechT5TtsProvider } from './speecht5.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
@@ -259,6 +261,7 @@ async function playAudioData(audioJob) {
     audioElement.addEventListener('ended', completeCurrentAudioJob);
     audioElement.addEventListener('canplay', () => {
         console.debug('Starting TTS playback');
+        audioElement.playbackRate = extension_settings.tts.playback_rate;
         audioElement.play();
     });
 }
@@ -527,6 +530,10 @@ function loadSettings() {
     $('#tts_pass_asterisks').prop('checked', extension_settings.tts.pass_asterisks);
     $('#tts_skip_codeblocks').prop('checked', extension_settings.tts.skip_codeblocks);
     $('#tts_skip_tags').prop('checked', extension_settings.tts.skip_tags);
+    $('#playback_rate').val(extension_settings.tts.playback_rate);
+    $('#playback_rate_counter').val(Number(extension_settings.tts.playback_rate).toFixed(2));
+    $('#playback_rate_block').toggle(extension_settings.tts.currentProvider !== 'System');
+
     $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
 
@@ -536,6 +543,7 @@ const defaultSettings = {
     currentProvider: 'ElevenLabs',
     auto_generation: true,
     narrate_user: false,
+    playback_rate: 1,
 };
 
 function setTtsStatus(status, success) {
@@ -647,6 +655,7 @@ async function loadTtsProvider(provider) {
 function onTtsProviderChange() {
     const ttsProviderSelection = $('#tts_provider').val();
     extension_settings.tts.currentProvider = ttsProviderSelection;
+    $('#playback_rate_block').toggle(extension_settings.tts.currentProvider !== 'System');
     loadTtsProvider(ttsProviderSelection);
 }
 
@@ -1020,6 +1029,20 @@ $(document).ready(function () {
                         <small>Pass Asterisks to TTS Engine</small>
                         </label>
                     </div>
+                    <div id="playback_rate_block" class="range-block">
+                        <hr>
+                        <div class="range-block-title justifyLeft" data-i18n="Audio Playback Speed">
+                            <small>Audio Playback Speed</small>
+                        </div>
+                        <div class="range-block-range-and-counter">
+                            <div class="range-block-range">
+                                <input type="range" id="playback_rate" name="volume" min="0" max="3" step="0.05">
+                            </div>
+                            <div class="range-block-counter">
+                                <input type="number" min="0" max="3" step="0.05" data-for="playback_rate" id="playback_rate_counter">
+                            </div>
+                        </div>
+                    </div>
                     <div id="tts_voicemap_block">
                     </div>
                     <hr>
@@ -1044,6 +1067,15 @@ $(document).ready(function () {
         $('#tts_pass_asterisks').on('click', onPassAsterisksClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
         $('#tts_narrate_user').on('click', onNarrateUserClick);
+
+        $('#playback_rate').on('input', function () {
+            const value = $(this).val();
+            const formattedValue = Number(value).toFixed(2);
+            extension_settings.tts.playback_rate = value;
+            $('#playback_rate_counter').val(formattedValue);
+            saveSettingsDebounced();
+        });
+
         $('#tts_voices').on('click', onTtsVoicesClick);
         for (const provider in ttsProviders) {
             $('#tts_provider').append($('<option />').val(provider).text(provider));
@@ -1061,8 +1093,38 @@ $(document).ready(function () {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.on(event_types.MESSAGE_DELETED, onMessageDeleted);
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged);
-    eventSource.on(event_types.MESSAGE_SENT, onMessageEvent);
-    eventSource.on(event_types.MESSAGE_RECEIVED, onMessageEvent);
-    registerSlashCommand('speak', onNarrateText, ['narrate', 'tts'], '<span class="monospace">(text)</span>  – narrate any text using currently selected character\'s voice. Use voice="Character Name" argument to set other voice from the voice map, example: <tt>/speak voice="Donald Duck" Quack!</tt>', true, true);
+    eventSource.makeLast(event_types.CHARACTER_MESSAGE_RENDERED, onMessageEvent);
+    eventSource.makeLast(event_types.USER_MESSAGE_RENDERED, onMessageEvent);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'speak',
+        callback: onNarrateText,
+        aliases: ['narrate', 'tts'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'voice', 'character voice name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'text', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Narrate any text using currently selected character's voice.
+            </div>
+            <div>
+                Use <code>voice="Character Name"</code> argument to set other voice from the voice map.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/speak voice="Donald Duck" Quack!</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+
     document.body.appendChild(audioElement);
 });

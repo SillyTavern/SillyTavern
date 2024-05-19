@@ -204,3 +204,7 @@ input.extension_missing[type="checkbox"] {
 #extensionsMenu>#translate_chat {
     order: 7;
 }
+
+#extensionsMenu>#translate_input_message {
+    order: 8;
+}

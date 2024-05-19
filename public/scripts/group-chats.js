@@ -14,6 +14,7 @@ import {
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from './RossAscends-mods.js';
 import { power_user, loadMovingUIState, sortEntitiesList } from './power-user.js';
+import { debounce_timeout } from './constants.js';
 
 import {
     chat,
@@ -118,9 +119,9 @@ export const group_generation_mode = {
 
 const DEFAULT_AUTO_MODE_DELAY = 5;
 
-export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, 100));
+export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, debounce_timeout.quick));
 let autoModeWorker = null;
-const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), 500);
+const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), debounce_timeout.relaxed);
 
 function setAutoModeWorker() {
     clearInterval(autoModeWorker);
@@ -636,7 +637,7 @@ function isValidImageUrl(url) {
     if (Object.keys(url).length === 0) {
         return false;
     }
-    return isDataURL(url) || (url && url.startsWith('user'));
+    return isDataURL(url) || (url && (url.startsWith('user') || url.startsWith('/user')));
 }
 
 function getGroupAvatar(group) {
@@ -787,7 +788,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             }
         }
         else if (type === 'impersonate') {
-            $('#send_textarea').attr('disabled', true);
             activatedMembers = activateImpersonate(group.members);
         }
         else if (activationStrategy === group_activation_strategy.NATURAL) {
@@ -804,7 +804,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             const bias = getBiasStrings(userInput, type);
             await sendMessageAsUser(userInput, bias.messageBias);
             await saveChatConditional();
-            $('#send_textarea').val('').trigger('input');
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
         }
 
         // now the real generation begins: cycle through every activated character
@@ -839,7 +839,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         typingIndicator.hide();
 
         is_group_generating = false;
-        $('#send_textarea').attr('disabled', false);
         setSendButtonState(false);
         setCharacterId(undefined);
         setCharacterName('');
@@ -1419,6 +1418,10 @@ function select_group_chats(groupId, skipAnimation) {
  * @returns {Promise<void>} - A promise that resolves when the processing and upload is complete.
  */
 async function uploadGroupAvatar(event) {
+    if (!(event.target instanceof HTMLInputElement) || !event.target.files.length) {
+        return;
+    }
+
     const file = event.target.files[0];
 
     if (!file) {

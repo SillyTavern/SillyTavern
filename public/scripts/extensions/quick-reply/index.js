@@ -1,4 +1,4 @@
-import { chat_metadata, eventSource, event_types, getRequestHeaders } from '../../../script.js';
+import { chat, chat_metadata, eventSource, event_types, getRequestHeaders } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { QuickReplyApi } from './api/QuickReplyApi.js';
 import { AutoExecuteHandler } from './src/AutoExecuteHandler.js';
@@ -183,14 +183,16 @@ const init = async () => {
             ;
         if (!qr) {
             let [setName, ...qrName] = name.split('.');
-            name = qrName.join('.');
+            qrName = qrName.join('.');
             let qrs = QuickReplySet.get(setName);
             if (qrs) {
-                qr = qrs.qrList.find(it=>it.label == name);
+                qr = qrs.qrList.find(it=>it.label == qrName);
             }
         }
         if (qr && qr.onExecute) {
-            return await qr.execute(args);
+            return await qr.execute(args, false, true);
+        } else {
+            throw new Error(`No Quick Reply found for "${name}".`);
         }
     };
 
@@ -238,7 +240,12 @@ const onUserMessage = async () => {
 };
 eventSource.on(event_types.USER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onUserMessage, args));
 
-const onAiMessage = async () => {
+const onAiMessage = async (messageId) => {
+    if (['...'].includes(chat[messageId]?.mes)) {
+        log('QR auto-execution suppressed for swiped message');
+        return;
+    }
+
     await autoExec.handleAi();
 };
 eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (...args)=>executeIfReadyElseQueue(onAiMessage, args));

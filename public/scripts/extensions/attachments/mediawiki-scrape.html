@@ -1,0 +1,54 @@
+<div>
+    <div class="flex-container flexFlowColumn">
+        <label for="scrapeInput" data-i18n="Enter a base URL of the MediaWiki to scrape.">
+            Enter a <strong>base URL</strong> of the MediaWiki to scrape.
+        </label>
+        <i data-i18n="Don't include the page name!">
+            Don't include the page name!
+        </i>
+        <small>
+            <span data-i18n="Examples:">Examples:</span>
+            <code>https://streetcat.wiki/index.php</code>
+            <span data-i18n="or">or</span>
+            <code>https://tcrf.net</code>
+        </small>
+        <input type="text" id="scrapeInput" name="scrapeInput" class="text_pole" placeholder="">
+    </div>
+    <div class="flex-container flexFlowColumn">
+        <label for="scrapeFilter">
+            Optional regex to pick the content by its title:
+        </label>
+        <small>
+            <span data-i18n="Example:">Example:</span>
+            <code>/Mr. (Fresh|Snack)/gi</code>
+        </small>
+        <input type="text" id="scrapeFilter" name="scrapeFilter" class="text_pole" placeholder="">
+    </div>
+    <div class="flex-container flexFlowColumn">
+        <label>
+            Output format:
+        </label>
+        <label class="checkbox_label justifyLeft" for="scrapeOutputSingle">
+            <input id="scrapeOutputSingle" type="radio" name="scrapeOutput" value="single" checked>
+            <div class="flex-container flexFlowColumn flexNoGap">
+                <span data-i18n="Single file">
+                    Single file
+                </span>
+                <small data-i18n="All articles will be concatenated into a single file.">
+                    All articles will be concatenated into a single file.
+                </small>
+            </div>
+        </label>
+        <label class="checkbox_label justifyLeft" for="scrapeOutputMulti">
+            <input id="scrapeOutputMulti" type="radio" name="scrapeOutput" value="multi">
+            <div class="flex-container flexFlowColumn flexNoGap">
+                <span data-i18n="File per article">
+                    File per article
+                </span>
+                <small data-i18n="Each article will be saved as a separate file.">
+                    Not recommended. Each article will be saved as a separate file.
+                </small>
+            </div>
+        </label>
+    </div>
+</div>

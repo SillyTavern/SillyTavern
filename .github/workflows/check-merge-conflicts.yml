@@ -6,6 +6,7 @@ on:
     - staging
 jobs:
   check-conflicts:
+    if: github.repository == 'SillyTavern/SillyTavern'
     runs-on: ubuntu-latest
     steps:
       - uses: mschilde/auto-label-merge-conflicts@master

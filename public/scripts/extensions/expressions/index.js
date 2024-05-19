@@ -2,10 +2,13 @@ import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHea
 import { dragElement, isMobile } from '../../RossAscends-mods.js';
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
 import { loadMovingUIState, power_user } from '../../power-user.js';
-import { registerSlashCommand } from '../../slash-commands.js';
 import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from '../../utils.js';
 import { hideMutedSprites } from '../../group-chats.js';
 import { isJsonSchemaSupported } from '../../textgen-settings.js';
+import { debounce_timeout } from '../../constants.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -94,7 +97,7 @@ async function forceUpdateVisualNovelMode() {
     }
 }
 
-const updateVisualNovelModeDebounced = debounce(forceUpdateVisualNovelMode, 100);
+const updateVisualNovelModeDebounced = debounce(forceUpdateVisualNovelMode, debounce_timeout.quick);
 
 async function updateVisualNovelMode(name, expression) {
     const container = $('#visual-novel-wrapper');
@@ -507,6 +510,10 @@ async function loadTalkingHead() {
                 },
                 body: JSON.stringify(emotionsSettings),
             });
+
+            if (!apiResult.ok) {
+                throw new Error(apiResult.statusText);
+            }
         }
         catch (error) {
             // it's ok if not supported
@@ -539,6 +546,10 @@ async function loadTalkingHead() {
                 },
                 body: JSON.stringify(animatorSettings),
             });
+
+            if (!apiResult.ok) {
+                throw new Error(apiResult.statusText);
+            }
         }
         catch (error) {
             // it's ok if not supported
@@ -897,8 +908,10 @@ async function setSpriteSetCommand(_, folder) {
 
     $('#expression_override').val(folder.trim());
     onClickExpressionOverrideButton();
-    removeExpression();
-    moduleWorker();
+    // removeExpression();
+    // moduleWorker();
+    const vnMode = isVisualNovelMode();
+    await sendExpressionCall(folder, lastExpression, true, vnMode);
 }
 
 async function classifyCommand(_, text) {
@@ -963,8 +976,8 @@ function sampleClassifyText(text) {
         return text;
     }
 
-    // Remove asterisks and quotes
-    let result = text.replace(/[*"]/g, '');
+    // Replace macros, remove asterisks and quotes
+    let result = substituteParams(text).replace(/[*"]/g, '');
 
     const SAMPLE_THRESHOLD = 500;
     const HALF_SAMPLE_THRESHOLD = SAMPLE_THRESHOLD / 2;
@@ -1007,12 +1020,12 @@ function parseLlmResponse(emotionResponse, labels) {
         const parsedEmotion = JSON.parse(emotionResponse);
         return parsedEmotion?.emotion ?? fallbackExpression;
     } catch {
-        const fuse = new Fuse([emotionResponse]);
-        for (const label of labels) {
-            const result = fuse.search(label);
-            if (result.length > 0) {
-                return label;
-            }
+        const fuse = new Fuse(labels, { includeScore: true });
+        console.debug('Using fuzzy search in labels:', labels);
+        const result = fuse.search(emotionResponse);
+        if (result.length > 0) {
+            console.debug(`fuzzy search found: ${result[0].item} as closest for the LLM response:`, emotionResponse);
+            return result[0].item;
         }
     }
 
@@ -1262,13 +1275,10 @@ async function getExpressionsList() {
      * @returns {Promise<string[]>}
      */
     async function resolveExpressionsList() {
-        // get something for offline mode (default images)
-        if (!modules.includes('classify') && extension_settings.expressions.api == EXPRESSION_API.extras) {
-            return DEFAULT_EXPRESSIONS;
-        }
-
+        // See if we can retrieve a specific expression list from the API
         try {
-            if (extension_settings.expressions.api == EXPRESSION_API.extras) {
+            // Check Extras api first, if enabled and that module active
+            if (extension_settings.expressions.api == EXPRESSION_API.extras && modules.includes('classify')) {
                 const url = new URL(getApiUrl());
                 url.pathname = '/api/classify/labels';
 
@@ -1283,7 +1293,10 @@ async function getExpressionsList() {
                     expressionsList = data.labels;
                     return expressionsList;
                 }
-            } else {
+            }
+
+            // If running the local classify model (not using the LLM), we ask that one
+            if (extension_settings.expressions.api == EXPRESSION_API.local) {
                 const apiResult = await fetch('/api/extra/classify/labels', {
                     method: 'POST',
                     headers: getRequestHeaders(),
@@ -1295,11 +1308,12 @@ async function getExpressionsList() {
                     return expressionsList;
                 }
             }
-        }
-        catch (error) {
+        } catch (error) {
             console.log(error);
-            return [];
         }
+
+        // If there was no specific list, or an error, just return the default expressions
+        return DEFAULT_EXPRESSIONS;
     }
 
     const result = await resolveExpressionsList();
@@ -1957,9 +1971,61 @@ function migrateSettings() {
     });
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
-    registerSlashCommand('sprite', setSpriteSlashCommand, ['emote'], '<span class="monospace">(spriteId)</span> – force sets the sprite for the current character', true, true);
-    registerSlashCommand('spriteoverride', setSpriteSetCommand, ['costume'], '<span class="monospace">(optional folder)</span> – sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.', true, true);
-    registerSlashCommand('lastsprite', (_, value) => lastExpression[value.trim()] ?? '', [], '<span class="monospace">(charName)</span> – Returns the last set sprite / expression for the named character.', true, true);
-    registerSlashCommand('th', toggleTalkingHeadCommand, ['talkinghead'], '– Character Expressions: toggles <i>Image Type - talkinghead (extras)</i> on/off.', true, true);
-    registerSlashCommand('classify', classifyCommand, [], '<span class="monospace">(text)</span> – performs an emotion classification of the given text and returns a label.', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'sprite',
+        aliases: ['emote'],
+        callback: setSpriteSlashCommand,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'spriteId', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: 'Force sets the sprite for the current character.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'spriteoverride',
+        aliases: ['costume'],
+        callback: setSpriteSetCommand,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'optional folder', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: 'Sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lastsprite',
+        callback: (_, value) => lastExpression[value.trim()] ?? '',
+        returns: 'sprite',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'charName', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: 'Returns the last set sprite / expression for the named character.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'th',
+        callback: toggleTalkingHeadCommand,
+        aliases: ['talkinghead'],
+        helpString: 'Character Expressions: toggles <i>Image Type - talkinghead (extras)</i> on/off.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'classify',
+        callback: classifyCommand,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'text', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        returns: 'emotion classification label for the given text',
+        helpString: `
+            <div>
+                Performs an emotion classification of the given text and returns a label.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/classify I am so happy today!</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
 })();

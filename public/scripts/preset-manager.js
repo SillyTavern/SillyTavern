@@ -20,7 +20,9 @@ import { groups, selected_group } from './group-chats.js';
 import { instruct_presets } from './instruct-mode.js';
 import { kai_settings } from './kai-settings.js';
 import { context_presets, getContextSettings, power_user } from './power-user.js';
-import { registerSlashCommand } from './slash-commands.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from './slash-commands/SlashCommandArgument.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import {
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
@@ -112,7 +114,9 @@ class PresetManager {
      * @returns {any} Preset value
      */
     findPreset(name) {
-        return $(this.select).find(`option:contains(${name})`).val();
+        return $(this.select).find('option').filter(function() {
+            return $(this).text() === name;
+        }).val();
     }
 
     /**
@@ -309,6 +313,7 @@ class PresetManager {
             'mancer_model',
             'togetherai_model',
             'ollama_model',
+            'vllm_model',
             'aphrodite_model',
             'server_urls',
             'type',
@@ -318,6 +323,7 @@ class PresetManager {
             'dreamgen_model',
             'openrouter_model',
             'max_tokens_second',
+            'openrouter_providers',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
@@ -470,7 +476,33 @@ async function waitForConnection() {
 export async function initPresetManager() {
     eventSource.on(event_types.CHAT_CHANGED, autoSelectPreset);
     registerPresetManagers();
-    registerSlashCommand('preset', presetCommandCallback, [], '<span class="monospace">(name)</span> – sets a preset by name for the current API. Gets the current preset if no name is provided', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'preset',
+        callback: presetCommandCallback,
+        returns: 'current preset',
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Sets a preset by name for the current API. Gets the current preset if no name is provided.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/preset myPreset</code></pre>
+                    </li>
+                    <li>
+                        <pre><code>/preset</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+
 
     $(document).on('click', '[data-preset-manager-update]', async function () {
         const apiId = $(this).data('preset-manager-update');

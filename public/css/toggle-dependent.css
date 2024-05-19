@@ -19,7 +19,8 @@ body.no-timer .mes_timer,
 body.no-timestamps .timestamp,
 body.no-tokenCount .tokenCounterDisplay,
 body.no-mesIDDisplay .mesIDDisplay,
-body.no-modelIcons .icon-svg {
+body.no-modelIcons .icon-svg,
+body.hideChatAvatars .mesAvatarWrapper .avatar {
     display: none !important;
 }
 
@@ -123,9 +124,15 @@ body.charListGrid #rm_print_characters_block .bogus_folder_select_back .avatar {
 }
 
 /* Hack for keeping the spacing */
+/*
 body.charListGrid #rm_print_characters_block .ch_add_placeholder {
     display: flex !important;
     opacity: 0;
+}
+*/
+
+body.charListGrid #rm_print_characters_block .ch_additional_info {
+    display: none;
 }
 
 /*big avatars mode page-wide changes*/
@@ -431,14 +438,6 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtons {
 
 body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
     display: none !important;
-}
-
-#openai_image_inlining:not(:checked)~#image_inlining_hint {
-    display: none;
-}
-
-#openai_image_inlining:checked~#image_inlining_hint {
-    display: block;
 }
 
 #smooth_streaming:not(:checked)~#smooth_streaming_speed_control {

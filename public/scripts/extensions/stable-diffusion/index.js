@@ -25,7 +25,10 @@ import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.j
 import { SECRET_KEYS, secret_state } from '../../secrets.js';
 import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from '../../nai-settings.js';
 import { getMultimodalCaption } from '../shared.js';
-import { registerSlashCommand } from '../../slash-commands.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { resolveVariable } from '../../variables.js';
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -589,15 +592,17 @@ async function expandPrompt(prompt) {
  * Modifies prompt based on auto-expansion and user inputs.
  * @param {string} prompt Prompt to refine
  * @param {boolean} allowExpand Whether to allow auto-expansion
+ * @param {boolean} isNegative Whether the prompt is a negative one
  * @returns {Promise<string>} Refined prompt
  */
-async function refinePrompt(prompt, allowExpand) {
+async function refinePrompt(prompt, allowExpand, isNegative = false) {
     if (allowExpand && extension_settings.sd.expand) {
         prompt = await expandPrompt(prompt);
     }
 
     if (extension_settings.sd.refine_mode) {
-        const refinedPrompt = await callPopup('<h3>Review and edit the prompt:</h3>Press "Cancel" to abort the image generation.', 'input', prompt.trim(), { rows: 5, okButton: 'Generate' });
+        const text = isNegative ? '<h3>Review and edit the <i>negative</i> prompt:</h3>' : '<h3>Review and edit the prompt:</h3>';
+        const refinedPrompt = await callPopup(text + 'Press "Cancel" to abort the image generation.', 'input', prompt.trim(), { rows: 5, okButton: 'Continue' });
 
         if (refinedPrompt) {
             return refinedPrompt;
@@ -1658,6 +1663,10 @@ async function loadNovelModels() {
             text: 'NAI Diffusion Anime V1 (Curated)',
         },
         {
+            value: 'nai-diffusion-furry-3',
+            text: 'NAI Diffusion Furry V3',
+        },
+        {
             value: 'nai-diffusion-furry',
             text: 'NAI Diffusion Furry',
         },
@@ -1939,7 +1948,7 @@ async function generatePicture(args, trigger, message, callback) {
     }
 
     if (!isValidState()) {
-        toastr.warning('Extensions API is not connected or doesn\'t provide SD module. Enable Stable Horde to generate images.');
+        toastr.warning('Image generation is not available. Check your settings and try again.');
         return;
     }
 
@@ -1963,9 +1972,9 @@ async function generatePicture(args, trigger, message, callback) {
             eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
 
             if (typeof callbackOriginal === 'function') {
-                callbackOriginal(prompt, imagePath, generationType);
+                callbackOriginal(prompt, imagePath, generationType, negativePromptPrefix);
             } else {
-                sendMessage(prompt, imagePath, generationType);
+                sendMessage(prompt, imagePath, generationType, negativePromptPrefix);
             }
         };
     }
@@ -1974,6 +1983,7 @@ async function generatePicture(args, trigger, message, callback) {
         callback = () => { };
     }
 
+    const negativePromptPrefix = resolveVariable(args?.negative) || '';
     const dimensions = setTypeSpecificDimensions(generationType);
     let imagePath = '';
 
@@ -1984,7 +1994,7 @@ async function generatePicture(args, trigger, message, callback) {
         context.deactivateSendButtons();
         hideSwipeButtons();
 
-        imagePath = await sendGenerationRequest(generationType, prompt, characterName, callback);
+        imagePath = await sendGenerationRequest(generationType, prompt, negativePromptPrefix, characterName, callback);
     } catch (err) {
         console.trace(err);
         throw new Error('SD prompt text generation failed.');
@@ -2179,17 +2189,26 @@ async function generatePrompt(quietPrompt) {
     return processedReply;
 }
 
-async function sendGenerationRequest(generationType, prompt, characterName = null, callback) {
+/**
+ * Sends a request to image generation endpoint and processes the result.
+ * @param {number} generationType Type of image generation
+ * @param {string} prompt Prompt to be used for image generation
+ * @param {string} additionalNegativePrefix Additional negative prompt to be used for image generation
+ * @param {string} [characterName] Name of the character
+ * @param {function} [callback] Callback function to be called after image generation
+ * @returns
+ */
+async function sendGenerationRequest(generationType, prompt, additionalNegativePrefix, characterName = null, callback) {
     const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL];
     const prefix = noCharPrefix.includes(generationType)
         ? extension_settings.sd.prompt_prefix
         : combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix());
-
-    const prefixedPrompt = combinePrefixes(prefix, prompt, '{prompt}');
-
-    const negativePrompt = noCharPrefix.includes(generationType)
+    const negativePrefix = noCharPrefix.includes(generationType)
         ? extension_settings.sd.negative_prompt
         : combinePrefixes(extension_settings.sd.negative_prompt, getCharacterNegativePrefix());
+
+    const prefixedPrompt = substituteParams(combinePrefixes(prefix, prompt, '{prompt}'));
+    const negativePrompt = substituteParams(combinePrefixes(additionalNegativePrefix, negativePrefix));
 
     let result = { format: '', data: '' };
     const currentChatId = getCurrentChatId();
@@ -2245,7 +2264,7 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
 
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
-    callback ? callback(prompt, base64Image, generationType) : sendMessage(prompt, base64Image, generationType);
+    callback ? callback(prompt, base64Image, generationType, additionalNegativePrefix) : sendMessage(prompt, base64Image, generationType, additionalNegativePrefix);
     return base64Image;
 }
 
@@ -2718,6 +2737,9 @@ async function onComfyOpenWorkflowEditorClick() {
         $('#sd_comfy_workflow_editor_placeholder_list_custom').append(el);
         el.find('.sd_comfy_workflow_editor_custom_find').val(placeholder.find);
         el.find('.sd_comfy_workflow_editor_custom_find').on('input', function () {
+            if (!(this instanceof HTMLInputElement)) {
+                return;
+            }
             placeholder.find = this.value;
             el.find('.sd_comfy_workflow_editor_custom_final').text(`"%${this.value}%"`);
             el.attr('data-placeholder', `${this.value}`);
@@ -2726,6 +2748,9 @@ async function onComfyOpenWorkflowEditorClick() {
         });
         el.find('.sd_comfy_workflow_editor_custom_replace').val(placeholder.replace);
         el.find('.sd_comfy_workflow_editor_custom_replace').on('input', function () {
+            if (!(this instanceof HTMLInputElement)) {
+                return;
+            }
             placeholder.replace = this.value;
             saveSettingsDebounced();
         });
@@ -2815,7 +2840,14 @@ async function onComfyDeleteWorkflowClick() {
     onComfyWorkflowChange();
 }
 
-async function sendMessage(prompt, image, generationType) {
+/**
+ * Sends a chat message with the generated image.
+ * @param {string} prompt Prompt used for the image generation
+ * @param {string} image Base64 encoded image
+ * @param {number} generationType Generation type of the image
+ * @param {string} additionalNegativePrefix Additional negative prompt used for the image generation
+ */
+async function sendMessage(prompt, image, generationType, additionalNegativePrefix) {
     const context = getContext();
     const messageText = `[${context.name2} sends a picture that contains: ${prompt}]`;
     const message = {
@@ -2828,6 +2860,7 @@ async function sendMessage(prompt, image, generationType) {
             image: image,
             title: prompt,
             generationType: generationType,
+            negative: additionalNegativePrefix,
         },
     };
     context.chat.push(message);
@@ -2948,6 +2981,7 @@ async function sdMessageButton(e) {
     const characterFileName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
     const messageText = message?.mes;
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
+    const hasSavedNegative = message?.extra?.negative;
 
     if ($icon.hasClass(busyClass)) {
         console.log('Previous image is still being generated...');
@@ -2959,13 +2993,14 @@ async function sdMessageButton(e) {
     try {
         setBusyIcon(true);
         if (hasSavedImage) {
-            const prompt = await refinePrompt(message.extra.title, false);
+            const prompt = await refinePrompt(message.extra.title, false, false);
+            const negative = hasSavedNegative ? await refinePrompt(message.extra.negative, false, true) : '';
             message.extra.title = prompt;
 
             const generationType = message?.extra?.generationType ?? generationMode.FREE;
             console.log('Regenerating an image, using existing prompt:', prompt);
             dimensions = setTypeSpecificDimensions(generationType);
-            await sendGenerationRequest(generationType, prompt, characterFileName, saveGeneratedImage);
+            await sendGenerationRequest(generationType, prompt, negative, characterFileName, saveGeneratedImage);
         }
         else {
             console.log('doing /sd raw last');
@@ -2983,7 +3018,7 @@ async function sdMessageButton(e) {
         }
     }
 
-    function saveGeneratedImage(prompt, image, generationType) {
+    function saveGeneratedImage(prompt, image, generationType, negative) {
         // Some message sources may not create the extra object
         if (typeof message.extra !== 'object') {
             message.extra = {};
@@ -2994,6 +3029,7 @@ async function sdMessageButton(e) {
         message.extra.image = image;
         message.extra.title = prompt;
         message.extra.generationType = generationType;
+        message.extra.negative = negative;
         appendMediaToMessage(message, $mes);
 
         context.saveChat();
@@ -3021,8 +3057,43 @@ $('#sd_dropdown [id]').on('click', function () {
 });
 
 jQuery(async () => {
-    registerSlashCommand('imagine', generatePicture, ['sd', 'img', 'image'], helpString, true, true);
-    registerSlashCommand('imagine-comfy-workflow', changeComfyWorkflow, ['icw'], '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <tt>/imagine-comfy-workflow MyWorkflow</tt>');
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'imagine',
+        callback: generatePicture,
+        aliases: ['sd', 'img', 'image'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'quiet', 'whether to post the generated image to chat', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['false', 'true'],
+            ),
+            new SlashCommandNamedArgument(
+                'negative', 'negative prompt prefix', [ARGUMENT_TYPE.STRING], false, false, '',
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'argument', [ARGUMENT_TYPE.STRING], false, false, null, Object.values(triggerWords).flat(),
+            ),
+        ],
+        helpString: `
+            <div>
+                Requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments: <code>${Object.values(triggerWords).flat().join(', ')}</code>.
+            </div>
+            <div>
+                Anything else would trigger a "free mode" to make generate whatever you prompted. Example: <code>/imagine apple tree</code> would generate a picture of an apple tree. Returns a link to the generated image.
+            </div>
+        `,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'imagine-comfy-workflow',
+        callback: changeComfyWorkflow,
+        aliases: ['icw'],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'workflowName', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: '(workflowName) - change the workflow to be used for image generation with ComfyUI, e.g. <pre><code>/imagine-comfy-workflow MyWorkflow</code></pre>',
+    }));
+
 
     const template = await renderExtensionTemplateAsync('stable-diffusion', 'settings', defaultSettings);
     $('#extensions_settings').append(template);

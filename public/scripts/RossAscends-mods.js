@@ -32,10 +32,11 @@ import {
     SECRET_KEYS,
     secret_state,
 } from './secrets.js';
-import { debounce, delay, getStringHash, isValidUrl } from './utils.js';
+import { debounce, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
+import { debounce_timeout } from './constants.js';
 
 import Bowser from '../lib/bowser.min.js';
 
@@ -54,7 +55,7 @@ var retry_delay = 500;
 let counterNonce = Date.now();
 
 const observerConfig = { childList: true, subtree: true };
-const countTokensDebounced = debounce(RA_CountCharTokens, 1000);
+const countTokensDebounced = debounce(RA_CountCharTokens, debounce_timeout.relaxed);
 
 const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
@@ -377,6 +378,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.MISTRALAI] && oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI)
                     || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
                     || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
+                    || (secret_state[SECRET_KEYS.GROQ] && oai_settings.chat_completion_source == chat_completion_sources.GROQ)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                 ) {
                     $('#api_button_openai').trigger('click');
@@ -422,7 +424,7 @@ function restoreUserInput() {
 
     const userInput = LoadLocal('userInput');
     if (userInput) {
-        $('#send_textarea').val(userInput).trigger('input');
+        $('#send_textarea').val(userInput)[0].dispatchEvent(new Event('input', { bubbles:true }));
     }
 }
 
@@ -700,12 +702,12 @@ const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
  */
 function autoFitSendTextArea() {
     const originalScrollBottom = chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
-    if (sendTextArea.scrollHeight == sendTextArea.offsetHeight) {
+    if (Math.ceil(sendTextArea.scrollHeight + 3) >= Math.floor(sendTextArea.offsetHeight)) {
         // Needs to be pulled dynamically because it is affected by font size changes
         const sendTextAreaMinHeight = window.getComputedStyle(sendTextArea).getPropertyValue('min-height');
         sendTextArea.style.height = sendTextAreaMinHeight;
     }
-    sendTextArea.style.height = sendTextArea.scrollHeight + 0.3 + 'px';
+    sendTextArea.style.height = sendTextArea.scrollHeight + 3 + 'px';
 
     if (!isFirefox) {
         const newScrollTop = Math.round(chatBlock.scrollHeight - (chatBlock.offsetHeight + originalScrollBottom));
@@ -1128,6 +1130,11 @@ export function initRossMods() {
 
             if ($('#character_popup').is(':visible')) {
                 $('#character_cross').trigger('click');
+                return;
+            }
+
+            if ($('#dialogue_del_mes_cancel').is(':visible')) {
+                $('#dialogue_del_mes_cancel').trigger('click');
                 return;
             }
 

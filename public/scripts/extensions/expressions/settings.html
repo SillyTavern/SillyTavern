@@ -64,10 +64,6 @@
                     <input id="expression_override" type="text" class="text_pole" placeholder="Override folder name" />
                     <input id="expression_override_button" class="menu_button" type="submit" value="Submit" />
                 </div>
-                <h3 id="image_list_header">
-                    <strong>Sprite set:</strong>&nbsp;<span id="image_list_header_name"></span>
-                </h3>
-                <div id="image_list"></div>
                 <div class="expression_buttons flex-container spaceEvenly">
                     <div id="expression_upload_pack_button" class="menu_button">
                         <i class="fa-solid fa-file-zipper"></i>
@@ -78,8 +74,13 @@
                         <span>Remove all image overrides</span>
                     </div>
                 </div>
-                <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character.
+                <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>/characters/</b> folder of your user data directory and name it as the name of the character.
                 Put images with expressions there. File names should follow the pattern: <tt>[expression_label].[image_format]</tt></i></p>
+                <h3 id="image_list_header">
+                    <strong>Sprite set:</strong>&nbsp;<span id="image_list_header_name"></span>
+                </h3>
+                <div id="image_list"></div>
+
             </div>
         </div>
     </div>

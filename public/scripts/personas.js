@@ -1,30 +1,228 @@
 import {
     callPopup,
     characters,
+    chat,
     chat_metadata,
+    crop_data,
     default_avatar,
     eventSource,
     event_types,
+    getCropPopup,
     getRequestHeaders,
     getThumbnailUrl,
-    getUserAvatars,
     name1,
+    reloadCurrentChat,
+    saveChatConditional,
     saveMetadata,
     saveSettingsDebounced,
-    setUserAvatar,
     setUserName,
     this_chid,
-    user_avatar,
 } from '../script.js';
 import { persona_description_positions, power_user } from './power-user.js';
 import { getTokenCountAsync } from './tokenizers.js';
-import { debounce, delay, download, parseJsonFile } from './utils.js';
+import { PAGINATION_TEMPLATE, debounce, delay, download, ensureImageFormatSupported, flashHighlight, getBase64Async, parseJsonFile } from './utils.js';
+import { debounce_timeout } from './constants.js';
+import { FILTER_TYPES, FilterHelper } from './filters.js';
+import { selected_group } from './group-chats.js';
 
+let savePersonasPage = 0;
 const GRID_STORAGE_KEY = 'Personas_GridView';
+export let user_avatar = '';
+export const personasFilter = new FilterHelper(debounce(getUserAvatars, debounce_timeout.quick));
 
 function switchPersonaGridView() {
     const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
     $('#user_avatar_block').toggleClass('gridView', state);
+}
+
+/**
+ * Returns the URL of the avatar for the given user avatar Id.
+ * @param {string} avatarImg User avatar Id
+ * @returns {string} User avatar URL
+ */
+export function getUserAvatar(avatarImg) {
+    return `User Avatars/${avatarImg}`;
+}
+
+export function initUserAvatar(avatar) {
+    user_avatar = avatar;
+    reloadUserAvatar();
+    highlightSelectedAvatar();
+}
+
+/**
+ * Sets a user avatar file
+ * @param {string} imgfile Link to an image file
+ */
+export function setUserAvatar(imgfile) {
+    user_avatar = imgfile && typeof imgfile === 'string' ? imgfile : $(this).attr('imgfile');
+    reloadUserAvatar();
+    highlightSelectedAvatar();
+    selectCurrentPersona();
+    saveSettingsDebounced();
+    $('.zoomed_avatar[forchar]').remove();
+}
+
+function highlightSelectedAvatar() {
+    $('#user_avatar_block .avatar-container').removeClass('selected');
+    $(`#user_avatar_block .avatar-container[imgfile="${user_avatar}"]`).addClass('selected');
+}
+
+function reloadUserAvatar(force = false) {
+    $('.mes').each(function () {
+        const avatarImg = $(this).find('.avatar img');
+        if (force) {
+            avatarImg.attr('src', avatarImg.attr('src'));
+        }
+
+        if ($(this).attr('is_user') == 'true' && $(this).attr('force_avatar') == 'false') {
+            avatarImg.attr('src', getUserAvatar(user_avatar));
+        }
+    });
+}
+
+/**
+ * Sort the given personas
+ * @param {string[]} personas - The persona names to sort
+ * @returns {string[]} The sorted persona names arrray, same reference as passed in
+ */
+function sortPersonas(personas) {
+    const option = $('#persona_sort_order').find(':selected');
+    if (option.attr('value') === 'search') {
+        personas.sort((a, b) => {
+            const aScore = personasFilter.getScore(FILTER_TYPES.PERSONA_SEARCH, a);
+            const bScore = personasFilter.getScore(FILTER_TYPES.PERSONA_SEARCH, b);
+            return (aScore - bScore);
+        });
+    } else {
+        personas.sort((a, b) => {
+            const aName = String(power_user.personas[a] || a);
+            const bName = String(power_user.personas[b] || b);
+            return power_user.persona_sort_order === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
+        });
+    }
+
+    return personas;
+}
+
+/** Checks the state of the current search, and adds/removes the search sorting option accordingly */
+function verifyPersonaSearchSortRule() {
+    const searchTerm = personasFilter.getFilterData(FILTER_TYPES.PERSONA_SEARCH);
+    const searchOption = $('#persona_sort_order option[value="search"]');
+    const selector = $('#persona_sort_order');
+    const isHidden = searchOption.attr('hidden') !== undefined;
+
+    // If we have a search term, we are displaying the sorting option for it
+    if (searchTerm && isHidden) {
+        searchOption.removeAttr('hidden');
+        selector.val(searchOption.attr('value'));
+        flashHighlight(selector);
+    }
+    // If search got cleared, we make sure to hide the option and go back to the one before
+    if (!searchTerm && !isHidden) {
+        searchOption.attr('hidden', '');
+        selector.val(power_user.persona_sort_order);
+    }
+}
+
+/**
+ * Gets a rendered avatar block.
+ * @param {string} name Avatar file name
+ * @returns {JQuery<HTMLElement>} Avatar block
+ */
+function getUserAvatarBlock(name) {
+    const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    const template = $('#user_avatar_template .avatar-container').clone();
+    const personaName = power_user.personas[name];
+    const personaDescription = power_user.persona_descriptions[name]?.description;
+    template.find('.ch_name').text(personaName || '[Unnamed Persona]');
+    template.find('.ch_description').text(personaDescription || $('#user_avatar_block').attr('no_desc_text')).toggleClass('text_muted', !personaDescription);
+    template.attr('imgfile', name);
+    template.find('.avatar').attr('imgfile', name).attr('title', name);
+    template.toggleClass('default_persona', name === power_user.default_persona);
+    let avatarUrl = getUserAvatar(name);
+    if (isFirefox) {
+        avatarUrl += '?t=' + Date.now();
+    }
+    template.find('img').attr('src', avatarUrl);
+    $('#user_avatar_block').append(template);
+    return template;
+}
+
+/**
+ * Gets a list of user avatars.
+ * @param {boolean} doRender Whether to render the list
+ * @param {string} openPageAt Item to be opened at
+ * @returns {Promise<string[]>} List of avatar file names
+ */
+export async function getUserAvatars(doRender = true, openPageAt = '') {
+    const response = await fetch('/api/avatars/get', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+    if (response.ok) {
+        const allEntities = await response.json();
+
+        if (!Array.isArray(allEntities)) {
+            return [];
+        }
+
+        if (!doRender) {
+            return allEntities;
+        }
+
+        // Before printing the personas, we check if we should enable/disable search sorting
+        verifyPersonaSearchSortRule();
+
+        let entities = personasFilter.applyFilters(allEntities);
+        entities = sortPersonas(entities);
+
+        const storageKey = 'Personas_PerPage';
+        const listId = '#user_avatar_block';
+        const perPage = Number(localStorage.getItem(storageKey)) || 5;
+
+        $('#persona_pagination_container').pagination({
+            dataSource: entities,
+            pageSize: perPage,
+            sizeChangerOptions: [5, 10, 25, 50, 100, 250, 500, 1000],
+            pageRange: 1,
+            pageNumber: savePersonasPage || 1,
+            position: 'top',
+            showPageNumbers: false,
+            showSizeChanger: true,
+            prevText: '<',
+            nextText: '>',
+            formatNavigator: PAGINATION_TEMPLATE,
+            showNavigator: true,
+            callback: function (data) {
+                $(listId).empty();
+                for (const item of data) {
+                    $(listId).append(getUserAvatarBlock(item));
+                }
+                highlightSelectedAvatar();
+            },
+            afterSizeSelectorChange: function (e) {
+                localStorage.setItem(storageKey, e.target.value);
+            },
+            afterPaging: function (e) {
+                savePersonasPage = e;
+            },
+            afterRender: function () {
+                $(listId).scrollTop(0);
+            },
+        });
+
+        if (openPageAt) {
+            const avatarIndex = entities.indexOf(openPageAt);
+            const page = Math.floor(avatarIndex / perPage) + 1;
+
+            if (avatarIndex !== -1) {
+                $('#persona_pagination_container').pagination('go', page);
+            }
+        }
+
+        return allEntities;
+    }
 }
 
 /**
@@ -56,6 +254,73 @@ async function uploadUserAvatar(url, name) {
             await getUserAvatars(true, name);
         },
     });
+}
+
+async function changeUserAvatar(e) {
+    const form = document.getElementById('form_upload_avatar');
+
+    if (!(form instanceof HTMLFormElement)) {
+        console.error('Form not found');
+        return;
+    }
+
+    const file = e.target.files[0];
+
+    if (!file) {
+        form.reset();
+        return;
+    }
+
+    const formData = new FormData(form);
+    const dataUrl = await getBase64Async(file);
+    let url = '/api/avatars/upload';
+
+    if (!power_user.never_resize_avatars) {
+        const confirmation = await callPopup(getCropPopup(dataUrl), 'avatarToCrop', '', { okButton: 'Crop', large: true, wide: true });
+        if (!confirmation) {
+            return;
+        }
+
+        if (crop_data !== undefined) {
+            url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
+        }
+    }
+
+    const rawFile = formData.get('avatar');
+    if (rawFile instanceof File) {
+        const convertedFile = await ensureImageFormatSupported(rawFile);
+        formData.set('avatar', convertedFile);
+    }
+
+    jQuery.ajax({
+        type: 'POST',
+        url: url,
+        data: formData,
+        beforeSend: () => { },
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: async function (data) {
+            // If the user uploaded a new avatar, we want to make sure it's not cached
+            const name = formData.get('overwrite_name');
+            if (name) {
+                await fetch(getUserAvatar(String(name)), { cache: 'no-cache' });
+                reloadUserAvatar(true);
+            }
+
+            if (!name && data.path) {
+                await getUserAvatars();
+                await delay(500);
+                await createPersona(data.path);
+            }
+
+            await getUserAvatars(true, name || data.path);
+        },
+        error: (jqXHR, exception) => { },
+    });
+
+    // Will allow to select the same file twice in a row
+    form.reset();
 }
 
 /**
@@ -175,7 +440,7 @@ const countPersonaDescriptionTokens = debounce(async () => {
     const description = String($('#persona_description').val());
     const count = await getTokenCountAsync(description);
     $('#persona_description_token_count').text(String(count));
-}, 1000);
+}, debounce_timeout.relaxed);
 
 export function setPersonaDescription() {
     if (power_user.persona_description_position === persona_description_positions.AFTER_CHAR) {
@@ -205,7 +470,7 @@ export function autoSelectPersona(name) {
  * @param {string} avatarId User avatar id
  * @param {string} newName New name for the persona
  */
-export async function updatePersonaNameIfExists(avatarId, newName) {
+async function updatePersonaNameIfExists(avatarId, newName) {
     if (avatarId in power_user.personas) {
         power_user.personas[avatarId] = newName;
         await getUserAvatars(true, avatarId);
@@ -266,7 +531,7 @@ async function bindUserNameToPersona(e) {
     setPersonaDescription();
 }
 
-export function selectCurrentPersona() {
+function selectCurrentPersona() {
     const personaName = power_user.personas[user_avatar];
     if (personaName) {
         const lockedPersona = chat_metadata['persona'];
@@ -622,6 +887,30 @@ async function onPersonasRestoreInput(e) {
     $('#personas_restore_input').val('');
 }
 
+async function syncUserNameToPersona() {
+    const confirmation = await callPopup(`<h3>Are you sure?</h3>All user-sent messages in this chat will be attributed to ${name1}.`, 'confirm');
+
+    if (!confirmation) {
+        return;
+    }
+
+    for (const mes of chat) {
+        if (mes.is_user) {
+            mes.name = name1;
+            mes.force_avatar = getUserAvatar(user_avatar);
+        }
+    }
+
+    await saveChatConditional();
+    await reloadCurrentChat();
+}
+
+export function retriggerFirstMessageOnEmptyChat() {
+    if (this_chid >= 0 && !selected_group && chat.length === 1) {
+        $('#firstmessage_textarea').trigger('input');
+    }
+}
+
 export function initPersonas() {
     $(document).on('click', '.bind_user_name', bindUserNameToPersona);
     $(document).on('click', '.set_default_persona', setDefaultPersona);
@@ -634,7 +923,9 @@ export function initPersonas() {
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);
     $('#persona_sort_order').val(power_user.persona_sort_order).on('input', function () {
-        power_user.persona_sort_order = String($(this).val());
+        const value = String($(this).val());
+        // Save sort order, but do not save search sorting, as this is a temporary sorting option
+        if (value !== 'search') power_user.persona_sort_order = value;
         getUserAvatars(true, user_avatar);
         saveSettingsDebounced();
     });
@@ -642,6 +933,51 @@ export function initPersonas() {
         const state = localStorage.getItem(GRID_STORAGE_KEY) === 'true';
         localStorage.setItem(GRID_STORAGE_KEY, String(!state));
         switchPersonaGridView();
+    });
+
+    const debouncedPersonaSearch = debounce((searchQuery) => {
+        personasFilter.setFilterData(FILTER_TYPES.PERSONA_SEARCH, searchQuery);
+    });
+
+    $('#persona_search_bar').on('input', function () {
+        const searchQuery = String($(this).val());
+        debouncedPersonaSearch(searchQuery);
+    });
+
+    $('#sync_name_button').on('click', syncUserNameToPersona);
+    $('#avatar_upload_file').on('change', changeUserAvatar);
+
+    $(document).on('click', '#user_avatar_block .avatar-container', function () {
+        const imgfile = $(this).attr('imgfile');
+        setUserAvatar(imgfile);
+
+        // force firstMes {{user}} update on persona switch
+        retriggerFirstMessageOnEmptyChat();
+    });
+
+    $('#your_name_button').click(async function () {
+        const userName = String($('#your_name').val()).trim();
+        setUserName(userName);
+        await updatePersonaNameIfExists(user_avatar, userName);
+        retriggerFirstMessageOnEmptyChat();
+    });
+
+    $(document).on('click', '#user_avatar_block .avatar_upload', function () {
+        $('#avatar_upload_overwrite').val('');
+        $('#avatar_upload_file').trigger('click');
+    });
+
+    $(document).on('click', '#user_avatar_block .set_persona_image', function (e) {
+        e.stopPropagation();
+        const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
+
+        if (!avatarId) {
+            console.log('no imgfile');
+            return;
+        }
+
+        $('#avatar_upload_overwrite').val(avatarId);
+        $('#avatar_upload_file').trigger('click');
     });
 
     eventSource.on('charManagementDropdown', (target) => {

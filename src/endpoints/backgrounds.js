@@ -4,16 +4,15 @@ const express = require('express');
 const sanitize = require('sanitize-filename');
 
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { DIRECTORIES, UPLOADS_PATH } = require('../constants');
+const { UPLOADS_PATH } = require('../constants');
 const { invalidateThumbnail } = require('./thumbnails');
 const { getImages } = require('../util');
 
 const router = express.Router();
 
 router.post('/all', jsonParser, function (request, response) {
-    var images = getImages('public/backgrounds');
+    var images = getImages(request.user.directories.backgrounds);
     response.send(JSON.stringify(images));
-
 });
 
 router.post('/delete', jsonParser, function (request, response) {
@@ -24,7 +23,7 @@ router.post('/delete', jsonParser, function (request, response) {
         return response.sendStatus(403);
     }
 
-    const fileName = path.join('public/backgrounds/', sanitize(request.body.bg));
+    const fileName = path.join(request.user.directories.backgrounds, sanitize(request.body.bg));
 
     if (!fs.existsSync(fileName)) {
         console.log('BG file not found');
@@ -32,15 +31,15 @@ router.post('/delete', jsonParser, function (request, response) {
     }
 
     fs.rmSync(fileName);
-    invalidateThumbnail('bg', request.body.bg);
+    invalidateThumbnail(request.user.directories, 'bg', request.body.bg);
     return response.send('ok');
 });
 
 router.post('/rename', jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
-    const oldFileName = path.join(DIRECTORIES.backgrounds, sanitize(request.body.old_bg));
-    const newFileName = path.join(DIRECTORIES.backgrounds, sanitize(request.body.new_bg));
+    const oldFileName = path.join(request.user.directories.backgrounds, sanitize(request.body.old_bg));
+    const newFileName = path.join(request.user.directories.backgrounds, sanitize(request.body.new_bg));
 
     if (!fs.existsSync(oldFileName)) {
         console.log('BG file not found');
@@ -52,8 +51,9 @@ router.post('/rename', jsonParser, function (request, response) {
         return response.sendStatus(400);
     }
 
-    fs.renameSync(oldFileName, newFileName);
-    invalidateThumbnail('bg', request.body.old_bg);
+    fs.copyFileSync(oldFileName, newFileName);
+    fs.rmSync(oldFileName);
+    invalidateThumbnail(request.user.directories, 'bg', request.body.old_bg);
     return response.send('ok');
 });
 
@@ -64,8 +64,9 @@ router.post('/upload', urlencodedParser, function (request, response) {
     const filename = request.file.originalname;
 
     try {
-        fs.renameSync(img_path, path.join('public/backgrounds/', filename));
-        invalidateThumbnail('bg', filename);
+        fs.copyFileSync(img_path, path.join(request.user.directories.backgrounds, filename));
+        fs.rmSync(img_path);
+        invalidateThumbnail(request.user.directories, 'bg', filename);
         response.send(filename);
     } catch (err) {
         console.error(err);

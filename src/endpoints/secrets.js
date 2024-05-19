@@ -5,10 +5,11 @@ const { getConfigValue } = require('../util');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { jsonParser } = require('../express-common');
 
-const SECRETS_FILE = path.join(process.cwd(), './secrets.json');
+const SECRETS_FILE = 'secrets.json';
 const SECRET_KEYS = {
     HORDE: 'api_key_horde',
     MANCER: 'api_key_mancer',
+    VLLM: 'api_key_vllm',
     APHRODITE: 'api_key_aphrodite',
     TABBY: 'api_key_tabby',
     OPENAI: 'api_key_openai',
@@ -37,6 +38,7 @@ const SECRET_KEYS = {
     LLAMACPP: 'api_key_llamacpp',
     COHERE: 'api_key_cohere',
     PERPLEXITY: 'api_key_perplexity',
+    GROQ: 'api_key_groq',
 };
 
 // These are the keys that are safe to expose, even if allowKeysExposure is false
@@ -49,57 +51,74 @@ const EXPORTABLE_KEYS = [
 
 /**
  * Writes a secret to the secrets file
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @param {string} key Secret key
  * @param {string} value Secret value
  */
-function writeSecret(key, value) {
-    if (!fs.existsSync(SECRETS_FILE)) {
+function writeSecret(directories, key, value) {
+    const filePath = path.join(directories.root, SECRETS_FILE);
+
+    if (!fs.existsSync(filePath)) {
         const emptyFile = JSON.stringify({});
-        writeFileAtomicSync(SECRETS_FILE, emptyFile, 'utf-8');
+        writeFileAtomicSync(filePath, emptyFile, 'utf-8');
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
+    const fileContents = fs.readFileSync(filePath, 'utf-8');
     const secrets = JSON.parse(fileContents);
     secrets[key] = value;
-    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets, null, 4), 'utf-8');
+    writeFileAtomicSync(filePath, JSON.stringify(secrets, null, 4), 'utf-8');
 }
 
-function deleteSecret(key) {
-    if (!fs.existsSync(SECRETS_FILE)) {
+/**
+ * Deletes a secret from the secrets file
+ * @param {import('../users').UserDirectoryList} directories User directories
+ * @param {string} key Secret key
+ * @returns
+ */
+function deleteSecret(directories, key) {
+    const filePath = path.join(directories.root, SECRETS_FILE);
+
+    if (!fs.existsSync(filePath)) {
         return;
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
+    const fileContents = fs.readFileSync(filePath, 'utf-8');
     const secrets = JSON.parse(fileContents);
     delete secrets[key];
-    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets, null, 4), 'utf-8');
+    writeFileAtomicSync(filePath, JSON.stringify(secrets, null, 4), 'utf-8');
 }
 
 /**
  * Reads a secret from the secrets file
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @param {string} key Secret key
  * @returns {string} Secret value
  */
-function readSecret(key) {
-    if (!fs.existsSync(SECRETS_FILE)) {
+function readSecret(directories, key) {
+    const filePath = path.join(directories.root, SECRETS_FILE);
+
+    if (!fs.existsSync(filePath)) {
         return '';
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
+    const fileContents = fs.readFileSync(filePath, 'utf-8');
     const secrets = JSON.parse(fileContents);
     return secrets[key];
 }
 
 /**
  * Reads the secret state from the secrets file
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {object} Secret state
  */
-function readSecretState() {
-    if (!fs.existsSync(SECRETS_FILE)) {
+function readSecretState(directories) {
+    const filePath = path.join(directories.root, SECRETS_FILE);
+
+    if (!fs.existsSync(filePath)) {
         return {};
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf8');
+    const fileContents = fs.readFileSync(filePath, 'utf8');
     const secrets = JSON.parse(fileContents);
     const state = {};
 
@@ -111,74 +130,19 @@ function readSecretState() {
 }
 
 /**
- * Migrates secrets from settings.json to secrets.json
- * @param {string} settingsFile Path to settings.json
- * @returns {void}
- */
-function migrateSecrets(settingsFile) {
-    const palmKey = readSecret('api_key_palm');
-    if (palmKey) {
-        console.log('Migrating Palm key...');
-        writeSecret(SECRET_KEYS.MAKERSUITE, palmKey);
-        deleteSecret('api_key_palm');
-    }
-
-    if (!fs.existsSync(settingsFile)) {
-        console.log('Settings file does not exist');
-        return;
-    }
-
-    try {
-        let modified = false;
-        const fileContents = fs.readFileSync(settingsFile, 'utf8');
-        const settings = JSON.parse(fileContents);
-        const oaiKey = settings?.api_key_openai;
-        const hordeKey = settings?.horde_settings?.api_key;
-        const novelKey = settings?.api_key_novel;
-
-        if (typeof oaiKey === 'string') {
-            console.log('Migrating OpenAI key...');
-            writeSecret(SECRET_KEYS.OPENAI, oaiKey);
-            delete settings.api_key_openai;
-            modified = true;
-        }
-
-        if (typeof hordeKey === 'string') {
-            console.log('Migrating Horde key...');
-            writeSecret(SECRET_KEYS.HORDE, hordeKey);
-            delete settings.horde_settings.api_key;
-            modified = true;
-        }
-
-        if (typeof novelKey === 'string') {
-            console.log('Migrating Novel key...');
-            writeSecret(SECRET_KEYS.NOVEL, novelKey);
-            delete settings.api_key_novel;
-            modified = true;
-        }
-
-        if (modified) {
-            console.log('Writing updated settings.json...');
-            const settingsContent = JSON.stringify(settings, null, 4);
-            writeFileAtomicSync(settingsFile, settingsContent, 'utf-8');
-        }
-    }
-    catch (error) {
-        console.error('Could not migrate secrets file. Proceed with caution.');
-    }
-}
-
-/**
  * Reads all secrets from the secrets file
+ * @param {import('../users').UserDirectoryList} directories User directories
  * @returns {Record<string, string> | undefined} Secrets
  */
-function getAllSecrets() {
-    if (!fs.existsSync(SECRETS_FILE)) {
+function getAllSecrets(directories) {
+    const filePath = path.join(directories.root, SECRETS_FILE);
+
+    if (!fs.existsSync(filePath)) {
         console.log('Secrets file does not exist');
         return undefined;
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf8');
+    const fileContents = fs.readFileSync(filePath, 'utf8');
     const secrets = JSON.parse(fileContents);
     return secrets;
 }
@@ -189,13 +153,13 @@ router.post('/write', jsonParser, (request, response) => {
     const key = request.body.key;
     const value = request.body.value;
 
-    writeSecret(key, value);
+    writeSecret(request.user.directories, key, value);
     return response.send('ok');
 });
 
-router.post('/read', jsonParser, (_, response) => {
+router.post('/read', jsonParser, (request, response) => {
     try {
-        const state = readSecretState();
+        const state = readSecretState(request.user.directories);
         return response.send(state);
     } catch (error) {
         console.error(error);
@@ -203,7 +167,7 @@ router.post('/read', jsonParser, (_, response) => {
     }
 });
 
-router.post('/view', jsonParser, async (_, response) => {
+router.post('/view', jsonParser, async (request, response) => {
     const allowKeysExposure = getConfigValue('allowKeysExposure', false);
 
     if (!allowKeysExposure) {
@@ -212,7 +176,7 @@ router.post('/view', jsonParser, async (_, response) => {
     }
 
     try {
-        const secrets = getAllSecrets();
+        const secrets = getAllSecrets(request.user.directories);
 
         if (!secrets) {
             return response.sendStatus(404);
@@ -235,7 +199,7 @@ router.post('/find', jsonParser, (request, response) => {
     }
 
     try {
-        const secret = readSecret(key);
+        const secret = readSecret(request.user.directories, key);
 
         if (!secret) {
             response.sendStatus(404);
@@ -251,8 +215,8 @@ router.post('/find', jsonParser, (request, response) => {
 module.exports = {
     writeSecret,
     readSecret,
+    deleteSecret,
     readSecretState,
-    migrateSecrets,
     getAllSecrets,
     SECRET_KEYS,
     router,

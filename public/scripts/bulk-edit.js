@@ -1,4 +1,4 @@
-import { characters, getCharacters, handleDeleteCharacter, callPopup, characterGroupOverlay } from '../script.js';
+import { characterGroupOverlay } from '../script.js';
 import { BulkEditOverlay, BulkEditOverlayState } from './BulkEditOverlay.js';
 
 
@@ -67,15 +67,6 @@ function onSelectAllButtonClick() {
             }
         }
     }
-}
-
-/**
- * Deletes the character with the given chid.
- *
- * @param {string} this_chid - The chid of the character to delete.
- */
-async function deleteCharacter(this_chid) {
-    await handleDeleteCharacter('del_ch', this_chid, false);
 }
 
 /**

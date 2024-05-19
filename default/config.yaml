@@ -1,10 +1,16 @@
-# -- NETWORK CONFIGURATION --
+# -- DATA CONFIGURATION --
+# Root directory for user data storage
+dataRoot: ./data
+# -- SERVER CONFIGURATION --
 # Listen for incoming connections
 listen: false
 # Server port
 port: 8000
+# -- SECURITY CONFIGURATION --
 # Toggle whitelist mode
 whitelistMode: true
+# Whitelist will also verify IP in X-Forwarded-For / X-Real-IP headers
+enableForwardedWhitelist: true
 # Whitelist of allowed IP addresses
 whitelist:
   - 127.0.0.1
@@ -16,7 +22,15 @@ basicAuthUser:
   password: "password"
 # Enables CORS proxy middleware
 enableCorsProxy: false
-# Disable security checks - NOT RECOMMENDED
+# Enable multi-user mode
+enableUserAccounts: false
+# Enable discreet login mode: hides user list on the login screen
+enableDiscreetLogin: false
+# Used to sign session cookies. Will be auto-generated if not set
+cookieSecret: ''
+# Disable CSRF protection - NOT RECOMMENDED
+disableCsrfProtection: false
+# Disable startup security checks - NOT RECOMMENDED
 securityOverride: false
 # -- ADVANCED CONFIGURATION --
 # Open the browser automatically
@@ -34,6 +48,12 @@ allowKeysExposure: false
 skipContentCheck: false
 # Disable automatic chats backup
 disableChatBackup: false
+# Allowed hosts for card downloads
+whitelistImportDomains:
+  - localhost
+  - cdn.discordapp.com
+  - files.catbox.moe
+  - raw.githubusercontent.com
 # API request overrides (for KoboldAI and Text Completion APIs)
 ## Note: host includes the port number if it's not the default (80 or 443)
 ## Format is an array of objects:

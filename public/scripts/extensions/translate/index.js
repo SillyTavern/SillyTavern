@@ -424,6 +424,24 @@ function createEventHandler(translateFunction, shouldTranslateFunction) {
     };
 }
 
+async function onTranslateInputMessageClick() {
+    const textarea = document.getElementById('send_textarea');
+
+    if (!(textarea instanceof HTMLTextAreaElement)) {
+        return;
+    }
+
+    if (!textarea.value) {
+        toastr.warning('Enter a message first');
+        return;
+    }
+
+    const toast = toastr.info('Input Message is translating', 'Please wait...');
+    const translatedText = await translate(textarea.value, extension_settings.translate.internal_language);
+    textarea.value = translatedText;
+    toastr.clear(toast);
+}
+
 // Prevents the chat from being translated in parallel
 let translateChatExecuting = false;
 
@@ -555,10 +573,16 @@ jQuery(() => {
         <div id="translate_chat" class="list-group-item flex-container flexGap5">
             <div class="fa-solid fa-language extensionsMenuExtensionButton" /></div>
             Translate Chat
-        </div>`;
+        </div>
+        <div id="translate_input_message" class="list-group-item flex-container flexGap5">
+            <div class="fa-solid fa-keyboard extensionsMenuExtensionButton" /></div>
+            Translate Input
+        </div>
+        `;
     $('#extensionsMenu').append(buttonHtml);
     $('#extensions_settings2').append(html);
     $('#translate_chat').on('click', onTranslateChatClick);
+    $('#translate_input_message').on('click', onTranslateInputMessageClick);
     $('#translation_clear').on('click', onTranslationsClearClick);
 
     for (const [key, value] of Object.entries(languageCodes)) {
@@ -618,9 +642,9 @@ jQuery(() => {
 
     loadSettings();
 
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleIncomingMessage);
+    eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, handleIncomingMessage);
+    eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
     eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
     eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
     eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdit);
 

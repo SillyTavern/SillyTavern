@@ -5,24 +5,23 @@ const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
 const { jsonParser } = require('../express-common');
-const { DIRECTORIES } = require('../constants');
 const { humanizedISO8601DateTime } = require('../util');
 
 const router = express.Router();
 
-router.post('/all', jsonParser, (_, response) => {
+router.post('/all', jsonParser, (request, response) => {
     const groups = [];
 
-    if (!fs.existsSync(DIRECTORIES.groups)) {
-        fs.mkdirSync(DIRECTORIES.groups);
+    if (!fs.existsSync(request.user.directories.groups)) {
+        fs.mkdirSync(request.user.directories.groups);
     }
 
-    const files = fs.readdirSync(DIRECTORIES.groups).filter(x => path.extname(x) === '.json');
-    const chats = fs.readdirSync(DIRECTORIES.groupChats).filter(x => path.extname(x) === '.jsonl');
+    const files = fs.readdirSync(request.user.directories.groups).filter(x => path.extname(x) === '.json');
+    const chats = fs.readdirSync(request.user.directories.groupChats).filter(x => path.extname(x) === '.jsonl');
 
     files.forEach(function (file) {
         try {
-            const filePath = path.join(DIRECTORIES.groups, file);
+            const filePath = path.join(request.user.directories.groups, file);
             const fileContents = fs.readFileSync(filePath, 'utf8');
             const group = JSON.parse(fileContents);
             const groupStat = fs.statSync(filePath);
@@ -35,7 +34,7 @@ router.post('/all', jsonParser, (_, response) => {
             if (Array.isArray(group.chats) && Array.isArray(chats)) {
                 for (const chat of chats) {
                     if (group.chats.includes(path.parse(chat).name)) {
-                        const chatStat = fs.statSync(path.join(DIRECTORIES.groupChats, chat));
+                        const chatStat = fs.statSync(path.join(request.user.directories.groupChats, chat));
                         chat_size += chatStat.size;
                         date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
                     }
@@ -77,11 +76,11 @@ router.post('/create', jsonParser, (request, response) => {
         generation_mode_join_prefix: request.body.generation_mode_join_prefix ?? '',
         generation_mode_join_suffix: request.body.generation_mode_join_suffix ?? '',
     };
-    const pathToFile = path.join(DIRECTORIES.groups, `${id}.json`);
+    const pathToFile = path.join(request.user.directories.groups, `${id}.json`);
     const fileData = JSON.stringify(groupMetadata);
 
-    if (!fs.existsSync(DIRECTORIES.groups)) {
-        fs.mkdirSync(DIRECTORIES.groups);
+    if (!fs.existsSync(request.user.directories.groups)) {
+        fs.mkdirSync(request.user.directories.groups);
     }
 
     writeFileAtomicSync(pathToFile, fileData);
@@ -93,7 +92,7 @@ router.post('/edit', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
     const id = request.body.id;
-    const pathToFile = path.join(DIRECTORIES.groups, `${id}.json`);
+    const pathToFile = path.join(request.user.directories.groups, `${id}.json`);
     const fileData = JSON.stringify(request.body);
 
     writeFileAtomicSync(pathToFile, fileData);
@@ -106,7 +105,7 @@ router.post('/delete', jsonParser, async (request, response) => {
     }
 
     const id = request.body.id;
-    const pathToGroup = path.join(DIRECTORIES.groups, sanitize(`${id}.json`));
+    const pathToGroup = path.join(request.user.directories.groups, sanitize(`${id}.json`));
 
     try {
         // Delete group chats
@@ -115,7 +114,7 @@ router.post('/delete', jsonParser, async (request, response) => {
         if (group && Array.isArray(group.chats)) {
             for (const chat of group.chats) {
                 console.log('Deleting group chat', chat);
-                const pathToFile = path.join(DIRECTORIES.groupChats, `${id}.jsonl`);
+                const pathToFile = path.join(request.user.directories.groupChats, `${id}.jsonl`);
 
                 if (fs.existsSync(pathToFile)) {
                     fs.rmSync(pathToFile);

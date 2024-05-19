@@ -33,7 +33,14 @@ If you insist on installing via a zip, here is the tedious process for doing the
 2. Unzip it into a folder OUTSIDE of your current ST installation.
 3. Do the usual setup procedure for your OS to install the NodeJS requirements.
 
-4. Copy the following files/folders as necessary(*) from your old ST installation:
+4a. Updating 1.12.0 and above
+
+Copy the user data directory from your data root into the data root of the new install.
+
+By default: /data/default-user
+
+4a. Migrating from <1.12.0 to >=1.20.0
+Copy the following files/folders as necessary(*) from your old ST installation:
 
   - Assets
   - Backgrounds
@@ -54,16 +61,15 @@ If you insist on installing via a zip, here is the tedious process for doing the
   - Worlds
   - User
   - settings.json
-  - secrets.json <---- this one is in the base folder, not /public/
+  - secrets.json <---- This one is in the base folder, not /public/
 
   (*) 'As necessary' = "If you made any custom content related to those folders".
   None of the folders are mandatory, so only copy what you need.
 
   **NB: DO NOT COPY THE ENTIRE /PUBLIC/ FOLDER.**
   Doing so could break the new install and prevent new features from being present.
+  Paste those items into the /data/default-user folder of the new install.
 
-5. Paste those items into the /Public/ folder of the new install.
+5. Start SillyTavern once again with the method appropriate to your OS, and pray you got it right.
 
-6. Start SillyTavern once again with the method appropriate to your OS, and pray you got it right.
-
-7. If everything shows up, you can safely delete the old ST folder.
+6. If everything shows up, you can safely delete the old ST folder.

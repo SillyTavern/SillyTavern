@@ -6,6 +6,11 @@ import { saveTtsProviderSettings } from './index.js';
 
 export { EdgeTtsProvider };
 
+const EDGE_TTS_PROVIDER = {
+    extras: 'extras',
+    plugin: 'plugin',
+};
+
 class EdgeTtsProvider {
     //########//
     // Config //
@@ -19,18 +24,26 @@ class EdgeTtsProvider {
     defaultSettings = {
         voiceMap: {},
         rate: 0,
+        provider: EDGE_TTS_PROVIDER.extras,
     };
 
     get settingsHtml() {
-        let html = `Microsoft Edge TTS Provider<br>
+        let html = `Microsoft Edge TTS<br>
+        <label for="edge_tts_provider">Provider</label>
+        <select id="edge_tts_provider">
+            <option value="${EDGE_TTS_PROVIDER.extras}">Extras</option>
+            <option value="${EDGE_TTS_PROVIDER.plugin}">Plugin</option>
+        </select>
         <label for="edge_tts_rate">Rate: <span id="edge_tts_rate_output"></span></label>
-        <input id="edge_tts_rate" type="range" value="${this.defaultSettings.rate}" min="-100" max="100" step="1" />`;
+        <input id="edge_tts_rate" type="range" value="${this.defaultSettings.rate}" min="-100" max="100" step="1" />
+        `;
         return html;
     }
 
     onSettingsChange() {
         this.settings.rate = Number($('#edge_tts_rate').val());
         $('#edge_tts_rate_output').text(this.settings.rate);
+        this.settings.provider = String($('#edge_tts_provider').val());
         saveTtsProviderSettings();
     }
 
@@ -53,16 +66,19 @@ class EdgeTtsProvider {
 
         $('#edge_tts_rate').val(this.settings.rate || 0);
         $('#edge_tts_rate_output').text(this.settings.rate || 0);
-        $('#edge_tts_rate').on('input', () => {this.onSettingsChange();});
+        $('#edge_tts_rate').on('input', () => { this.onSettingsChange(); });
+        $('#edge_tts_provider').val(this.settings.provider || EDGE_TTS_PROVIDER.extras);
+        $('#edge_tts_provider').on('change', () => { this.onSettingsChange(); });
         await this.checkReady();
 
         console.debug('EdgeTTS: Settings loaded');
     }
 
-
-    // Perform a simple readiness check by trying to fetch voiceIds
-    async checkReady(){
-        throwIfModuleMissing();
+    /**
+    * Perform a simple readiness check by trying to fetch voiceIds
+    */
+    async checkReady() {
+        await this.throwIfModuleMissing();
         await this.fetchTtsVoiceObjects();
     }
 
@@ -74,6 +90,11 @@ class EdgeTtsProvider {
     //  TTS Interfaces //
     //#################//
 
+    /**
+     * Get a voice from the TTS provider.
+     * @param {string} voiceName Voice name to get
+     * @returns {Promise<Object>} Voice object
+     */
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
             this.voices = await this.fetchTtsVoiceObjects();
@@ -87,6 +108,12 @@ class EdgeTtsProvider {
         return match;
     }
 
+    /**
+     * Generate TTS for a given text.
+     * @param {string} text Text to generate TTS for
+     * @param {string} voiceId Voice ID to use
+     * @returns {Promise<Response>} Fetch response
+     */
     async generateTts(text, voiceId) {
         const response = await this.fetchTtsGeneration(text, voiceId);
         return response;
@@ -96,11 +123,10 @@ class EdgeTtsProvider {
     // API CALLS //
     //###########//
     async fetchTtsVoiceObjects() {
-        throwIfModuleMissing();
+        await this.throwIfModuleMissing();
 
-        const url = new URL(getApiUrl());
-        url.pathname = '/api/edge-tts/list';
-        const response = await doExtrasFetch(url);
+        const url = this.getVoicesUrl();
+        const response = await this.doFetch(url);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
@@ -111,7 +137,10 @@ class EdgeTtsProvider {
         return responseJson;
     }
 
-
+    /**
+     * Preview TTS for a given voice ID.
+     * @param {string} id Voice ID
+     */
     async previewTtsVoice(id) {
         this.audioElement.pause();
         this.audioElement.currentTime = 0;
@@ -128,13 +157,18 @@ class EdgeTtsProvider {
         this.audioElement.play();
     }
 
+    /**
+     * Fetch TTS generation from the API.
+     * @param {string} inputText Text to generate TTS for
+     * @param {string} voiceId Voice ID to use
+     * @returns {Promise<Response>} Fetch response
+     */
     async fetchTtsGeneration(inputText, voiceId) {
-        throwIfModuleMissing();
+        await this.throwIfModuleMissing();
 
         console.info(`Generating new TTS for voice_id ${voiceId}`);
-        const url = new URL(getApiUrl());
-        url.pathname = '/api/edge-tts/generate';
-        const response = await doExtrasFetch(url,
+        const url = this.getGenerateUrl();
+        const response = await this.doFetch(url,
             {
                 method: 'POST',
                 headers: getRequestHeaders(),
@@ -151,12 +185,85 @@ class EdgeTtsProvider {
         }
         return response;
     }
-}
-function throwIfModuleMissing() {
-    if (!modules.includes('edge-tts')) {
-        const message = 'Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.';
-        // toastr.error(message)
-        throw new Error(message);
+
+    /**
+     * Perform a fetch request using the configured provider.
+     * @param {string} url URL string
+     * @param {any} options Request options
+     * @returns {Promise<Response>} Fetch response
+     */
+    doFetch(url, options) {
+        if (this.settings.provider === EDGE_TTS_PROVIDER.extras) {
+            return doExtrasFetch(url, options);
+        }
+
+        if (this.settings.provider === EDGE_TTS_PROVIDER.plugin) {
+            return fetch(url, options);
+        }
+
+        throw new Error('Invalid TTS Provider');
+    }
+
+    /**
+     * Get the URL for the TTS generation endpoint.
+     * @returns {string} URL string
+     */
+    getGenerateUrl() {
+        if (this.settings.provider === EDGE_TTS_PROVIDER.extras) {
+            const url = new URL(getApiUrl());
+            url.pathname = '/api/edge-tts/generate';
+            return url.toString();
+        }
+
+        if (this.settings.provider === EDGE_TTS_PROVIDER.plugin) {
+            return '/api/plugins/edge-tts/generate';
+        }
+
+        throw new Error('Invalid TTS Provider');
+    }
+
+    /**
+     * Get the URL for the TTS voices endpoint.
+     * @returns {string} URL object or string
+     */
+    getVoicesUrl() {
+        if (this.settings.provider === EDGE_TTS_PROVIDER.extras) {
+            const url = new URL(getApiUrl());
+            url.pathname = '/api/edge-tts/list';
+            return url.toString();
+        }
+
+        if (this.settings.provider === EDGE_TTS_PROVIDER.plugin) {
+            return '/api/plugins/edge-tts/list';
+        }
+
+        throw new Error('Invalid TTS Provider');
+    }
+
+    async throwIfModuleMissing() {
+        if (this.settings.provider === EDGE_TTS_PROVIDER.extras && !modules.includes('edge-tts')) {
+            const message = 'Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.';
+            // toastr.error(message)
+            throw new Error(message);
+        }
+
+        if (this.settings.provider === EDGE_TTS_PROVIDER.plugin && !this.isPluginAvailable()) {
+            const message = 'Edge TTS Server plugin not loaded. Install it from https://github.com/SillyTavern/SillyTavern-EdgeTTS-Plugin and restart the SillyTavern server.';
+            // toastr.error(message)
+            throw new Error(message);
+        }
+    }
+
+    async isPluginAvailable() {
+        try {
+            const result = await fetch('/api/plugins/edge-tts/probe', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+            });
+            return result.ok;
+        } catch (e) {
+            return false;
+        }
     }
 }
 

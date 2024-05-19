@@ -1,9 +1,16 @@
 import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchPersonas, fuzzySearchTags, fuzzySearchWorldInfo, power_user } from './power-user.js';
 import { tag_map } from './tags.js';
+import { includesIgnoreCaseAndAccents } from './utils.js';
+
+
+/**
+ * @typedef FilterType The filter type possible for this filter helper
+ * @type {'search'|'tag'|'folder'|'fav'|'group'|'world_info_search'|'persona_search'}
+ */
 
 /**
  * The filter types
- * @type {{ SEARCH: string, TAG: string, FOLDER: string, FAV: string, GROUP: string, WORLD_INFO_SEARCH: string, PERSONA_SEARCH: string, [key: string]: string }}
+ * @type {{ SEARCH: 'search', TAG: 'tag', FOLDER: 'folder', FAV: 'fav', GROUP: 'group', WORLD_INFO_SEARCH: 'world_info_search', PERSONA_SEARCH: 'persona_search'}}
  */
 export const FILTER_TYPES = {
     SEARCH: 'search',
@@ -56,12 +63,52 @@ export function isFilterState(a, b) {
  * data = filterHelper.applyFilters(data);
  */
 export class FilterHelper {
+
+    /**
+     * Cache fuzzy search weighting scores for re-usability, sorting and stuff
+     *
+     * Contains maps of weighting numbers assigned to their uid/id, for each of the different `FILTER_TYPES`
+     * @type {Map<FilterType, Map<string|number,number>>}
+     */
+    scoreCache;
+
     /**
      * Creates a new FilterHelper
      * @param {Function} onDataChanged Callback to trigger when the filter data changes
      */
     constructor(onDataChanged) {
         this.onDataChanged = onDataChanged;
+        this.scoreCache = new Map();
+    }
+
+    /**
+     * Checks if the filter data has any values.
+     * @returns {boolean} Whether the filter data has any values
+     */
+    hasAnyFilter() {
+        /**
+         * Checks if the object has any values.
+         * @param {object} obj The object to check for values
+         * @returns {boolean} Whether the object has any values
+         */
+        function checkRecursive(obj) {
+            if (typeof obj === 'string' && obj.length > 0 && obj !== 'UNDEFINED') {
+                return true;
+            } else if (typeof obj === 'boolean' && obj) {
+                return true;
+            } else if (Array.isArray(obj) && obj.length > 0) {
+                return true;
+            } else if (typeof obj === 'object' && obj !== null && Object.keys(obj.length > 0)) {
+                for (const key in obj) {
+                    if (checkRecursive(obj[key])) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        return checkRecursive(this.filterData);
     }
 
     /**
@@ -105,7 +152,10 @@ export class FilterHelper {
         }
 
         const fuzzySearchResults = fuzzySearchWorldInfo(data, term);
-        return data.filter(entity => fuzzySearchResults.includes(entity.uid));
+        this.cacheScores(FILTER_TYPES.WORLD_INFO_SEARCH, new Map(fuzzySearchResults.map(i => [i.item?.uid, i.score])));
+
+        const filteredData = data.filter(entity => fuzzySearchResults.find(x => x.item === entity));
+        return filteredData;
     }
 
     /**
@@ -121,7 +171,10 @@ export class FilterHelper {
         }
 
         const fuzzySearchResults = fuzzySearchPersonas(data, term);
-        return data.filter(entity => fuzzySearchResults.includes(entity));
+        this.cacheScores(FILTER_TYPES.PERSONA_SEARCH, new Map(fuzzySearchResults.map(i => [i.item.key, i.score])));
+
+        const filteredData = data.filter(name => fuzzySearchResults.find(x => x.item.key === name));
+        return filteredData;
     }
 
     /**
@@ -205,9 +258,8 @@ export class FilterHelper {
      */
     folderFilter(data) {
         const state = this.filterData[FILTER_TYPES.FOLDER];
-        // Slightly different than the other filters, as a positive folder filter means it doesn't filter anything (folders get "not hidden" at another place),
-        // while a negative state should then filter out all folders.
-        const isFolder = entity => isFilterState(state, FILTER_STATES.SELECTED) ? true : entity.type === 'tag';
+        // Filter directly on folder. Special rules on still displaying characters with active folder filter are implemented in 'getEntitiesList' directly.
+        const isFolder = entity => entity.type === 'tag';
 
         return this.filterDataByState(data, state, isFolder);
     }
@@ -233,29 +285,28 @@ export class FilterHelper {
             return data;
         }
 
-        const searchValue = this.filterData[FILTER_TYPES.SEARCH].trim().toLowerCase();
-        const fuzzySearchCharactersResults = power_user.fuzzy_search ? fuzzySearchCharacters(searchValue) : [];
-        const fuzzySearchGroupsResults = power_user.fuzzy_search ? fuzzySearchGroups(searchValue) : [];
-        const fuzzySearchTagsResult = power_user.fuzzy_search ? fuzzySearchTags(searchValue) : [];
+        const searchValue = this.filterData[FILTER_TYPES.SEARCH];
 
+        // Save fuzzy search results and scores if enabled
+        if (power_user.fuzzy_search) {
+            const fuzzySearchCharactersResults = fuzzySearchCharacters(searchValue);
+            const fuzzySearchGroupsResults = fuzzySearchGroups(searchValue);
+            const fuzzySearchTagsResult = fuzzySearchTags(searchValue);
+            this.cacheScores(FILTER_TYPES.SEARCH, new Map(fuzzySearchCharactersResults.map(i => [`character.${i.refIndex}`, i.score])));
+            this.cacheScores(FILTER_TYPES.SEARCH, new Map(fuzzySearchGroupsResults.map(i => [`group.${i.item.id}`, i.score])));
+            this.cacheScores(FILTER_TYPES.SEARCH, new Map(fuzzySearchTagsResult.map(i => [`tag.${i.item.id}`, i.score])));
+        }
+
+        const _this = this;
         function getIsValidSearch(entity) {
-            const isGroup = entity.type === 'group';
-            const isCharacter = entity.type === 'character';
-            const isTag = entity.type === 'tag';
-
             if (power_user.fuzzy_search) {
-                if (isCharacter) {
-                    return fuzzySearchCharactersResults.includes(parseInt(entity.id));
-                } else if (isGroup) {
-                    return fuzzySearchGroupsResults.includes(String(entity.id));
-                } else if (isTag) {
-                    return fuzzySearchTagsResult.includes(String(entity.id));
-                } else {
-                    return false;
-                }
+                // We can filter easily by checking if we have saved a score
+                const score = _this.getScore(FILTER_TYPES.SEARCH, `${entity.type}.${entity.id}`);
+                return score !== undefined;
             }
             else {
-                return entity.item?.name?.toLowerCase()?.includes(searchValue) || false;
+                // Compare insensitive and without accents
+                return includesIgnoreCaseAndAccents(entity.item?.name, searchValue);
             }
         }
 
@@ -280,7 +331,7 @@ export class FilterHelper {
 
     /**
      * Gets the filter data for the given filter type.
-     * @param {string} filterType The filter type to get data for.
+     * @param {FilterType} filterType The filter type to get data for.
      */
     getFilterData(filterType) {
         return this.filterData[filterType];
@@ -288,11 +339,76 @@ export class FilterHelper {
 
     /**
      * Applies all filters to the given data.
-     * @param {any[]} data The data to filter.
+     * @param {any[]} data - The data to filter.
+     * @param {object} options - Optional call parameters
+     * @param {boolean} [options.clearScoreCache=true] - Whether the score cache should be cleared.
+     * @param {Object.<FilterType, any>} [options.tempOverrides={}] - Temporarily override specific filters for this filter application
      * @returns {any[]} The filtered data.
      */
-    applyFilters(data) {
-        return Object.values(this.filterFunctions)
-            .reduce((data, fn) => fn(data), data);
+    applyFilters(data, { clearScoreCache = true, tempOverrides = {} } = {}) {
+        if (clearScoreCache) this.clearScoreCache();
+
+        // Save original filter states
+        const originalStates = {};
+        for (const key in tempOverrides) {
+            originalStates[key] = this.filterData[key];
+            this.filterData[key] = tempOverrides[key];
+        }
+
+        try {
+            const result = Object.values(this.filterFunctions)
+                .reduce((data, fn) => fn(data), data);
+
+            // Restore original filter states
+            for (const key in originalStates) {
+                this.filterData[key] = originalStates[key];
+            }
+
+            return result;
+        } catch (error) {
+            // Restore original filter states in case of an error
+            for (const key in originalStates) {
+                this.filterData[key] = originalStates[key];
+            }
+            throw error;
+        }
+    }
+
+
+    /**
+     * Cache scores for a specific filter type
+     * @param {FilterType} type - The type of data being cached
+     * @param {Map<string|number, number>} results - The search results containing mapped item identifiers and their scores
+     */
+    cacheScores(type, results) {
+        /** @type {Map<string|number, number>} */
+        const typeScores = this.scoreCache.get(type) || new Map();
+        for (const [uid, score] of results) {
+            typeScores.set(uid, score);
+        }
+        this.scoreCache.set(type, typeScores);
+        console.debug('search scores chached', type, typeScores);
+    }
+
+    /**
+     * Get the cached score for an item by type and its identifier
+     * @param {FilterType} type The type of data
+     * @param {string|number} uid The unique identifier for an item
+     * @returns {number|undefined} The cached score, or `undefined` if no score is present
+     */
+    getScore(type, uid) {
+        return this.scoreCache.get(type)?.get(uid) ?? undefined;
+    }
+
+    /**
+     * Clear the score cache for a specific type, or completely if no type is specified
+     * @param {FilterType} [type] The type of data to clear scores for. Clears all if unspecified.
+     */
+    clearScoreCache(type) {
+        if (type) {
+            this.scoreCache.set(type, new Map());
+        } else {
+            this.scoreCache = new Map();
+        }
     }
 }

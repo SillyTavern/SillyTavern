@@ -159,7 +159,7 @@ router.post('/task-status', jsonParser, async (request, response) => {
 });
 
 router.post('/generate-text', jsonParser, async (request, response) => {
-    const apiKey = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+    const apiKey = readSecret(request.user.directories, SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
     const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
     const agent = await getClientAgent();
 
@@ -213,7 +213,7 @@ router.post('/sd-models', jsonParser, async (_, response) => {
 
 router.post('/caption-image', jsonParser, async (request, response) => {
     try {
-        const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+        const api_key_horde = readSecret(request.user.directories, SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
         const ai_horde = await getHordeClient();
         const result = await ai_horde.postAsyncInterrogate({
             source_image: request.body.image,
@@ -263,8 +263,8 @@ router.post('/caption-image', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/user-info', jsonParser, async (_, response) => {
-    const api_key_horde = readSecret(SECRET_KEYS.HORDE);
+router.post('/user-info', jsonParser, async (request, response) => {
+    const api_key_horde = readSecret(request.user.directories, SECRET_KEYS.HORDE);
 
     if (!api_key_horde) {
         return response.send({ anonymous: true });
@@ -307,7 +307,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
             request.body.prompt = sanitized;
         }
 
-        const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+        const api_key_horde = readSecret(request.user.directories, SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
         console.log('Stable Horde request:', request.body);
 
         const ai_horde = await getHordeClient();

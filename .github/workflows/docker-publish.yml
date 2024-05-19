@@ -21,6 +21,7 @@ env:
 
 jobs:
   build:
+    if: github.repository == 'SillyTavern/SillyTavern'
     runs-on: ubuntu-latest
 
     steps:

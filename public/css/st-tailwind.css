@@ -102,6 +102,14 @@
     justify-content: space-between;
 }
 
+.justifySpaceEvenly {
+    justify-content: space-evenly;
+}
+
+.justifySpaceAround {
+    justify-content: space-around;
+}
+
 .alignitemsflexstart {
     align-items: flex-start !important;
 }
@@ -352,6 +360,14 @@
     flex: 2 !important;
 }
 
+.flex3 {
+    flex: 3;
+}
+
+.flex4 {
+    flex: 4;
+}
+
 .flexFlowColumn {
     flex-flow: column;
 }
@@ -489,6 +505,10 @@ textarea:disabled {
 
 .fontsize120p {
     font-size: calc(var(--mainFontSize) * 1.2) !important;
+}
+
+.fontsize90p {
+    font-size: calc(var(--mainFontSize) * 0.9) !important;
 }
 
 .fontsize80p {

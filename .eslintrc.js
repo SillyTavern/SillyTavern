@@ -42,11 +42,22 @@ module.exports = {
                 showdownKatex: 'readonly',
                 SVGInject: 'readonly',
                 toastr: 'readonly',
+                Readability: 'readonly',
+                isProbablyReaderable: 'readonly',
+                ePub: 'readonly',
             },
         },
     ],
     // There are various vendored libraries that shouldn't be linted
-    ignorePatterns: ['public/lib/**/*', '*.min.js', 'src/ai_horde/**/*'],
+    ignorePatterns: [
+        'public/lib/**/*',
+        '*.min.js',
+        'src/ai_horde/**/*',
+        'plugins/**/*',
+        'data/**/*',
+        'backups/**/*',
+        'node_modules/**/*',
+    ],
     rules: {
         'no-unused-vars': ['error', { args: 'none' }],
         'no-control-regex': 'off',
