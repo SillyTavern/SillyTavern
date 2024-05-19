@@ -393,11 +393,15 @@ async function timesCallback(args, value) {
         if (command instanceof SlashCommandClosure) {
             command.scope.setMacro('timesIndex', i);
             result = await command.execute();
+            // don't suppress potentially loud /abort (need to bubble up to executeSlashCommandsWithOptions for toast)
+            if (result.isAborted) break;
         }
         else {
-            result = await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i.toString()), args._scope, args._parserFlags);
+            result = await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i.toString()), args._scope, args._parserFlags, args._abortController);
             if (result.isAborted) {
-                args._abortController.abort(result.abortReason, true);
+                // abort toast (if loud) is already shown in subcommand execution,
+                // overwrite signal to quiet to prevent second toast from ancestor executions
+                args._abortController.signal.isQuiet = true;
                 break;
             }
         }
