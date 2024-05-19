@@ -1029,7 +1029,7 @@ function parseLlmResponse(emotionResponse, labels) {
         if (emotionResponse.includes('\n') && !emotionResponse.startsWith('\n')) {
             emotionResponse = emotionResponse.split("\n")[0]
         }
-        const result = fuse.search(emotionResponse.toLowerCase());
+        const result = fuse.search(emotionResponse);
         if (result.length > 0) {
             console.debug(`fuzzy search found: ${result[0].item} as closest for the LLM response:`, emotionResponse);
             return result[0].item;
