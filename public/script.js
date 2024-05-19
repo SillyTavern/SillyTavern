@@ -154,6 +154,7 @@ import {
     isValidUrl,
     ensureImageFormatSupported,
     flashHighlight,
+    identity,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -2396,9 +2397,10 @@ export function getStoppingStrings(isImpersonate, isContinue) {
  * @param {string} quietImage Image to use for the quiet prompt
  * @param {string} quietName Name to use for the quiet prompt (defaults to "System:")
  * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
- * @returns
+ * @param {Function} [promptPreprocessing] Function to preprocess the prompt before sending it to the AI
+ * @param {Function} [chatPreprocessing] Function to preprocess the chat before sending it to the AI * @returns
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, promptPreprocessing = identity, chatPreprocessing = identity) {
     console.log('got into genQuietPrompt');
     const responseLengthCustomized = typeof responseLength === 'number' && responseLength > 0;
     let originalResponseLength = -1;
@@ -2411,6 +2413,8 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
             force_name2: true,
             quietImage: quietImage,
             quietName: quietName,
+            promptPreprocessing: promptPreprocessing,
+            chatPreprocessing: chatPreprocessing,
         };
         originalResponseLength = responseLengthCustomized ? saveResponseLength(main_api, responseLength) : -1;
         const generateFinished = await Generate('quiet', options);
@@ -3082,10 +3086,16 @@ function restoreResponseLength(api, responseLength) {
  * @param {GenerateOptions} options Generation options
  * @param {boolean} dryRun Whether to actually generate a message or just assemble the prompt
  * @returns {Promise<any>} Returns a promise that resolves when the text is done generating.
- * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, maxLoops?: number, quietName?: string }} GenerateOptions
+ * @typedef {{automatic_trigger?: boolean, force_name2?: boolean, quiet_prompt?: string, quietToLoud?: boolean, skipWIAN?: boolean, force_chid?: number, signal?: AbortSignal, quietImage?: string, maxLoops?: number, quietName?: string, promptPreprocessing?: Function, chatPreprocessing?: Function }} GenerateOptions
  */
-export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName } = {}, dryRun = false) {
+export async function Generate(type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops, quietName, promptPreprocessing, chatPreprocessing } = {}, dryRun = false) {
     console.log('Generate entered');
+    if (chatPreprocessing === undefined) {
+        chatPreprocessing = identity;
+    }
+    if (promptPreprocessing === undefined) {
+        promptPreprocessing = identity;
+    }
     eventSource.emit(event_types.GENERATION_STARTED, type, { automatic_trigger, force_name2, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage, maxLoops }, dryRun);
     setGenerationProgress(0);
     generation_started = new Date();
@@ -3594,6 +3604,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         }
     }
 
+    chat2 = chatPreprocessing(chat2)
+
     for (let i = 0; i < chat2.length; i++) {
         // not needed for OAI prompting
         if (main_api == 'openai') {
@@ -3962,6 +3974,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     let finalPrompt = getCombinedPrompt(false);
+    finalPrompt = promptPreprocessing(finalPrompt);
 
     let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
     let thisPromptBits = [];

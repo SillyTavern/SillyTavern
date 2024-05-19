@@ -1,14 +1,31 @@
-import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, saveSettingsDebounced, substituteParams } from '../../../script.js';
-import { dragElement, isMobile } from '../../RossAscends-mods.js';
-import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
-import { loadMovingUIState, power_user } from '../../power-user.js';
-import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from '../../utils.js';
-import { hideMutedSprites } from '../../group-chats.js';
-import { isJsonSchemaSupported } from '../../textgen-settings.js';
-import { debounce_timeout } from '../../constants.js';
-import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
-import { SlashCommand } from '../../slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
+import {
+    callPopup,
+    event_types,
+    eventSource,
+    generateQuietPrompt,
+    getRequestHeaders,
+    saveSettingsDebounced,
+    substituteParams
+} from '../../../script.js';
+import {dragElement, isMobile} from '../../RossAscends-mods.js';
+import {
+    doExtrasFetch,
+    extension_settings,
+    getApiUrl,
+    getContext,
+    modules,
+    ModuleWorkerWrapper,
+    renderExtensionTemplateAsync
+} from '../../extensions.js';
+import {loadMovingUIState, power_user} from '../../power-user.js';
+import {debounce, getCharaFilename, onlyUnique, trimToEndSentence, trimToStartSentence} from '../../utils.js';
+import {hideMutedSprites} from '../../group-chats.js';
+import {isJsonSchemaSupported} from '../../textgen-settings.js';
+import {debounce_timeout} from '../../constants.js';
+import {SlashCommandParser} from '../../slash-commands/SlashCommandParser.js';
+import {SlashCommand} from '../../slash-commands/SlashCommand.js';
+import {ARGUMENT_TYPE, SlashCommandArgument} from '../../slash-commands/SlashCommandArgument.js';
+
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -1015,14 +1032,20 @@ async function getLlmPrompt(labels) {
  */
 function parseLlmResponse(emotionResponse, labels) {
     const fallbackExpression = getFallbackExpression();
-
+    if (emotionResponse === undefined) {
+        return fallbackExpression;
+    }
     try {
         const parsedEmotion = JSON.parse(emotionResponse);
         return parsedEmotion?.emotion ?? fallbackExpression;
     } catch {
         const fuse = new Fuse(labels, { includeScore: true });
         console.debug('Using fuzzy search in labels:', labels);
-        const result = fuse.search(emotionResponse);
+        // sometimes LLM returns the emotion and then continues with the story on next line
+        if (emotionResponse.includes('\n') && !emotionResponse.startsWith('\n')) {
+            emotionResponse = emotionResponse.split("\n")[0]
+        }
+        const result = fuse.search(emotionResponse.toLowerCase());
         if (result.length > 0) {
             console.debug(`fuzzy search found: ${result[0].item} as closest for the LLM response:`, emotionResponse);
             return result[0].item;
@@ -1058,6 +1081,22 @@ function onTextGenSettingsReady(args) {
     }
 }
 
+function expressionPromptPreprocessing(prompt) {
+    if (extension_settings.expressions.llmOnlyConversation && (power_user.context.chat_start !== "")) {
+        return prompt.split(power_user.context.chat_start).pop();
+    } else {
+        return prompt;
+    }
+}
+
+function expressionChatPreprocessing(chat) {
+    if (extension_settings.expressions.llmLastMessages > 0) {
+        return chat.slice(0, extension_settings.expressions.llmLastMessages);
+    } else {
+        return chat;
+    }
+}
+
 async function getExpressionLabel(text) {
     // Return if text is undefined, saving a costly fetch request
     if ((!modules.includes('classify') && extension_settings.expressions.api == EXPRESSION_API.extras) || !text) {
@@ -1090,7 +1129,7 @@ async function getExpressionLabel(text) {
                 const expressionsList = await getExpressionsList();
                 const prompt = await getLlmPrompt(expressionsList);
                 eventSource.once(event_types.TEXT_COMPLETION_SETTINGS_READY, onTextGenSettingsReady);
-                const emotionResponse = await generateQuietPrompt(prompt, false, false);
+                const emotionResponse = await generateQuietPrompt(prompt, false, true, null, null, null, expressionPromptPreprocessing, expressionChatPreprocessing );
                 return parseLlmResponse(emotionResponse, expressionsList);
             }
             // Extras
@@ -1831,6 +1870,16 @@ function migrateSettings() {
         extension_settings.expressions.llmPrompt = DEFAULT_LLM_PROMPT;
         saveSettingsDebounced();
     }
+
+    if (extension_settings.expressions.llmLastMessages === undefined) {
+        extension_settings.expressions.llmLastMessages = 0;
+        saveSettingsDebounced();
+    }
+
+    if (extension_settings.expressions.llmOnlyConversation === undefined) {
+        extension_settings.expressions.llmOnlyConversation = false;
+        saveSettingsDebounced();
+    }
 }
 
 (async function () {
@@ -1894,7 +1943,15 @@ function migrateSettings() {
             extension_settings.expressions.llmPrompt = DEFAULT_LLM_PROMPT;
             saveSettingsDebounced();
         });
-
+        $("#expression_llm_last_messages").val(extension_settings.expressions.llmLastMessages ?? 0);
+        $("#expression_llm_last_messages").on('input', function () {
+            extension_settings.expressions.llmLastMessages = Number($(this).val());
+            saveSettingsDebounced();
+        });
+        $('#expression_llm_only_conversation').prop('checked', extension_settings.expressions.llmOnlyConversation).on('input', function () {
+            extension_settings.expressions.llmOnlyConversation = !!$(this).prop('checked');
+            saveSettingsDebounced();
+        });
         $('#expression_custom_add').on('click', onClickExpressionAddCustom);
         $('#expression_custom_remove').on('click', onClickExpressionRemoveCustom);
         $('#expression_fallback').on('change', onExpressionFallbackChanged);

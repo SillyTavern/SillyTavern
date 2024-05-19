@@ -36,6 +36,18 @@
                 </label>
                 <small>Will be used if the API doesn't support JSON schemas.</small>
                 <textarea id="expression_llm_prompt" type="text" class="text_pole textarea_compact" rows="2" placeholder="Use &lcub;&lcub;labels&rcub;&rcub; special macro."></textarea>
+                <label for="expression_llm_last_messages" class="title_restorable">
+                    <span>Use last N messages.</span>
+                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#token-padding" class="notes-link" target="_blank">
+                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                    </a>
+                </label>
+                <small>If 0, it's ignored and whole chat history is used. If > 0, only that number of last messages is used. Can greatly lower number of tokens.</small>
+                <input id="expression_llm_last_messages" class="text_pole textarea_compact" type="number" min="0" max="1000" />
+                <label class="checkbox_label" for="expression_llm_only_conversation">
+                    <input id="expression_llm_only_conversation" type="checkbox">
+                    <span>Use only the conversation, omitting all world info, author's note and character description. Works only if chat_start is not empty.</span>
+                </label>
             </div>
             <div class="expression_fallback_block m-b-1 m-t-1">
                 <label for="expression_fallback">Default / Fallback Expression</label>
