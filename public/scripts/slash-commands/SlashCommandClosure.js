@@ -224,6 +224,15 @@ export class SlashCommandClosure {
                         ?.replace(/\\\{/g, '{')
                         ?.replace(/\\\}/g, '}')
                     ;
+                } else if (Array.isArray(value)) {
+                    value = value.map(v=>{
+                        if (typeof v == 'string') {
+                            return v
+                                ?.replace(/\\\{/g, '{')
+                                ?.replace(/\\\}/g, '}');
+                        }
+                        return v;
+                    });
                 }
 
                 let abortResult = await this.testAbortController();
