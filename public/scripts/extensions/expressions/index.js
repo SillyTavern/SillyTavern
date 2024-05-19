@@ -1113,7 +1113,7 @@ async function getExpressionLabel(text) {
                 const expressionsList = await getExpressionsList();
                 const prompt = await getLlmPrompt(expressionsList);
                 eventSource.once(event_types.TEXT_COMPLETION_SETTINGS_READY, onTextGenSettingsReady);
-                const emotionResponse = await generateQuietPrompt(prompt, false, true, null, null, null, expressionPromptPreprocessing, expressionChatPreprocessing );
+                const emotionResponse = await generateQuietPrompt(prompt, false, false, null, null, null, expressionPromptPreprocessing, expressionChatPreprocessing );
                 return parseLlmResponse(emotionResponse, expressionsList);
             }
             // Extras
