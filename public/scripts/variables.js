@@ -342,13 +342,16 @@ async function whileCallback(args, value) {
         if (result && command) {
             if (command instanceof SlashCommandClosure) {
                 commandResult = await command.execute();
+                // don't suppress potentially loud /abort (need to bubble up to executeSlashCommandsWithOptions for toast)
+                if (commandResult.isAborted) break;
             } else {
                 commandResult = await executeSubCommands(command, args._scope, args._parserFlags, args._abortController);
-            }
-
-            if (commandResult.isAborted) {
-                args._abortController.abort(commandResult.abortReason, true);
-                break;
+                if (commandResult.isAborted) {
+                    // abort toast (if loud) is already shown in subcommand execution,
+                    // overwrite signal to quiet to prevent second toast from ancestor executions
+                    args._abortController.signal.isQuiet = true;
+                    break;
+                }
             }
         } else {
             break;
