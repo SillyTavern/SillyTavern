@@ -1,4 +1,4 @@
-import { substituteParams } from '../../../script.js';
+import { characters, substituteParams, this_chid } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { regexFromString } from '../../utils.js';
 export {
@@ -42,7 +42,8 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
         return finalString;
     }
 
-    extension_settings.regex.forEach((script) => {
+    let regex_arr = [...extension_settings.regex, ...characters[this_chid].data.extensions.regex_scripts];
+    regex_arr.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown
             (script.markdownOnly && isMarkdown) ||
@@ -95,7 +96,7 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     }
 
     // Run replacement. Currently does not support the Overlay strategy
-    newString = rawString.replace(findRegex, function(match) {
+    newString = rawString.replace(findRegex, function (match) {
         const args = [...arguments];
         const replaceString = regexScript.replaceString.replace(/{{match}}/gi, '$0');
         const replaceWithGroups = replaceString.replaceAll(/\$(\d+)/g, (_, num) => {
