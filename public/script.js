@@ -4132,6 +4132,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let messageChunk = '';
 
         if (data.error) {
+            unblockGeneration(type);
             generatedPromptCache = '';
 
             if (data?.response) {
