@@ -575,7 +575,7 @@ function evalBoolean(rule, a, b) {
  * Executes a slash command from a string (may be enclosed in quotes) and returns the result.
  * @param {string} command Command to execute. May contain escaped macro and batch separators.
  * @param {SlashCommandScope} [scope] The scope to use.
- * @param {PARSER_FLAG[]} [parserFlags] The parser flags to use.
+ * @param {{[id:PARSER_FLAG]:boolean}} [parserFlags] The parser flags to use.
  * @param {SlashCommandAbortController} [abortController] The abort controller to use.
  * @returns {Promise<SlashCommandClosureResult>} Closure execution result
  */
