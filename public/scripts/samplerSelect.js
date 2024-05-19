@@ -194,7 +194,7 @@ async function showSamplerSelectPopup() {
 
 function setSamplerListListeners() {
     // Goal 2: hide unchecked samplers from DOM
-    let listContainer = $('#apiSamplersList')
+    let listContainer = $('#apiSamplersList');
     listContainer.find('input').off('change').on('change', async function () {
 
         const samplerName = this.name.replace('_checkbox', '');
@@ -353,6 +353,9 @@ async function listSamplers(main_api, arrayOnly = false) {
 export async function validateDisabledSamplers(redraw = false) {
     const APISamplers = await listSamplers(main_api, true);
 
+    if (!Array.isArray(APISamplers)) {
+        return;
+    }
 
     for (const sampler of APISamplers) {
         let relatedDOMElement = $(`#${sampler}_${main_api}`).parent();
