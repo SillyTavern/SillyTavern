@@ -1,30 +1,14 @@
-import {
-    callPopup,
-    event_types,
-    eventSource,
-    generateQuietPrompt,
-    getRequestHeaders,
-    saveSettingsDebounced,
-    substituteParams
-} from '../../../script.js';
-import {dragElement, isMobile} from '../../RossAscends-mods.js';
-import {
-    doExtrasFetch,
-    extension_settings,
-    getApiUrl,
-    getContext,
-    modules,
-    ModuleWorkerWrapper,
-    renderExtensionTemplateAsync
-} from '../../extensions.js';
-import {loadMovingUIState, power_user} from '../../power-user.js';
-import {debounce, getCharaFilename, onlyUnique, trimToEndSentence, trimToStartSentence} from '../../utils.js';
-import {hideMutedSprites} from '../../group-chats.js';
-import {isJsonSchemaSupported} from '../../textgen-settings.js';
-import {debounce_timeout} from '../../constants.js';
-import {SlashCommandParser} from '../../slash-commands/SlashCommandParser.js';
-import {SlashCommand} from '../../slash-commands/SlashCommand.js';
-import {ARGUMENT_TYPE, SlashCommandArgument} from '../../slash-commands/SlashCommandArgument.js';
+import { callPopup, eventSource, event_types, generateQuietPrompt, getRequestHeaders, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { dragElement, isMobile } from '../../RossAscends-mods.js';
+import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplateAsync } from '../../extensions.js';
+import { loadMovingUIState, power_user } from '../../power-user.js';
+import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from '../../utils.js';
+import { hideMutedSprites } from '../../group-chats.js';
+import { isJsonSchemaSupported } from '../../textgen-settings.js';
+import { debounce_timeout } from '../../constants.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from '../../slash-commands/SlashCommandArgument.js';
 
 export { MODULE_NAME };
 
