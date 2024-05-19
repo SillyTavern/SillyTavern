@@ -417,15 +417,18 @@ async function ifCallback(args, command) {
     let commandResult;
     if (result && command) {
         if (command instanceof SlashCommandClosure) return (await command.execute()).pipe;
-        commandResult = await executeSubCommands(command, args._scope, args._parserFlags);
+        commandResult = await executeSubCommands(command, args._scope, args._parserFlags, args._abortController);
     } else if (!result && args.else && ((typeof args.else === 'string' && args.else !== '') || args.else instanceof SlashCommandClosure)) {
         if (args.else instanceof SlashCommandClosure) return (await args.else.execute(args._scope)).pipe;
-        commandResult = await executeSubCommands(args.else, args._scope, args._parserFlags);
+        commandResult = await executeSubCommands(args.else, args._scope, args._parserFlags, args._abortController);
     }
 
+    // this is only reached by subcommands, not by closures, so this is fine
     if (commandResult) {
         if (commandResult.isAborted) {
-            args._abortController.abort(commandResult.abortReason, true);
+            // abort toast (if loud) is already shown in subcommand execution,
+            // overwrite signal to quiet to prevent second toast from ancestor executions
+            args._abortController.signal.isQuiet = true;
         }
         return commandResult.pipe;
     }
