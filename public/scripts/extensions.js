@@ -122,6 +122,7 @@ const extension_settings = {
         custom: [],
     },
     dice: {},
+    /** @type {import('./char-data.js').RegexScriptData[]} */
     regex: [],
     tts: {},
     sd: {
