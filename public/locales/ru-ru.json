@@ -1260,5 +1260,13 @@
     "Rename background": "Переименовать фон",
     "Lock": "Закрепить",
     "Unlock": "Открепить",
-    "Delete background": "Удалить фон"
+    "Delete background": "Удалить фон",
+    "Export all": "Экспортировать всё",
+    "Export all your prompts to a file": "Экспортировать все промпты в виде файла",
+    "Don't add character names.": "Не добавлять имя персонажа",
+    "Add character names to completion objects.": "Добавлять имя персонажа как часть Completion object",
+    "Message Content": "Внутри сообщения",
+    "Prepend character names to message contents.": "Предварять сообщения именем персонажа.",
+    "Character Names Behavior": "Вставка имени персонажа",
+    "Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google.": "Только латинские буквы, цифры и знак подчёркивания. Работает не для всех бэкендов, в частности для Claude, MistralAI, Google."
 }

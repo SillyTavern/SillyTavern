@@ -205,7 +205,7 @@ import {
     instruct_presets,
     selectContextPreset,
 } from './scripts/instruct-mode.js';
-import { initLocales, applyLocale } from './scripts/i18n.js';
+import { initLocales } from './scripts/i18n.js';
 import { getFriendlyTokenizerName, getTokenCount, getTokenCountAsync, getTokenizerModel, initTokenizers, saveTokenCache } from './scripts/tokenizers.js';
 import {
     user_avatar,
@@ -10370,16 +10370,7 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.external_import_button, #external_import_button', async () => {
-        const html = applyLocale(`<h3 data-i18n="Enter the URL of the content to import">Enter the URL of the content to import</h3>
-        <span data-i18n="Supported sources:">Supported sources:</span><br>
-        <ul class="justifyLeft">
-            <li><span data-i18n="char_import_1">Chub Character (Direct Link or ID)</span><br><span data-i18n="char_import_example">Example:</span> <tt>Anonymous/example-character</tt></li>
-            <li><span data-i18n="char_import_2">Chub Lorebook (Direct Link or ID)</span><br><span data-i18n="char_import_example">Example:</span> <tt>lorebooks/bartleby/example-lorebook</tt></li>
-            <li><span data-i18n="char_import_3">JanitorAI Character (Direct Link or UUID)</span><br><span data-i18n="char_import_example">Example:</span> <tt>ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
-            <li><span data-i18n="char_import_4">Pygmalion.chat Character (Direct Link or UUID)</span><br><span data-i18n="char_import_example">Example:</span> <tt>a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
-            <li><span data-i18n="char_import_5">AICharacterCard.com Character (Direct Link or ID)</span><br><span data-i18n="char_import_example">Example:</span> <tt>AICC/aicharcards/the-game-master</tt></li>
-            <li><span data-i18n="char_import_6">Direct PNG Link (refer to</span> <code>config.yaml</code><span data-i18n="char_import_7"> for allowed hosts)</span><br><span data-i18n="char_import_example">Example:</span> <tt>https://files.catbox.moe/notarealfile.png</tt></li>
-        <ul>`);
+        const html = await renderTemplateAsync('importCharacters');
         const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: $('#shadow_popup_template').attr('popup_text_import'), rows: 4 });
 
         if (!input) {

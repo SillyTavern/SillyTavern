@@ -6,7 +6,7 @@ import { Message, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
 import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
 import { debounce_timeout } from './constants.js';
-import { applyLocale } from './i18n.js'
+import { renderTemplateAsync } from './templates.js'
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -703,16 +703,14 @@ class PromptManager {
                 this.tryGenerate().finally(() => {
                     this.profileEnd('filling context');
                     this.profileStart('render');
-                    this.renderPromptManager();
-                    this.renderPromptManagerListItems();
+                    this.renderPromptManager().then(() => this.renderPromptManagerListItems());
                     this.makeDraggable();
                     this.profileEnd('render');
                 });
             } else {
                 // Executed during live communication
                 this.profileStart('render');
-                this.renderPromptManager();
-                this.renderPromptManagerListItems();
+                this.renderPromptManager().then(() => this.renderPromptManagerListItems());
                 this.makeDraggable();
                 this.profileEnd('render');
             }
@@ -1098,12 +1096,12 @@ class PromptManager {
     createQuickEdit(identifier, title) {
         const prompt = this.getPromptById(identifier);
         const textareaIdentifier = `${identifier}_prompt_quick_edit_textarea`;
-        const html = applyLocale(`<div class="range-block m-t-1">
+        const html = `<div class="range-block m-t-1">
                         <div class="justifyLeft" data-i18n="${title}">${title}</div>
                         <div class="wide100p">
                             <textarea id="${textareaIdentifier}" class="text_pole textarea_compact" rows="6" placeholder="">${prompt.content}</textarea>
                         </div>
-                    </div>`);
+                    </div>`;
 
         const quickEditContainer = document.getElementById('quick-edit-container');
         quickEditContainer.insertAdjacentHTML('afterbegin', html);
@@ -1339,7 +1337,7 @@ class PromptManager {
     /**
      * Empties, then re-assembles the container containing the prompt list.
      */
-    renderPromptManager() {
+    async renderPromptManager() {
         let selectedPromptIndex = 0;
         const existingAppendSelect = document.getElementById(`${this.configuration.prefix}prompt_manager_footer_append_prompt`);
         if (existingAppendSelect instanceof HTMLSelectElement) {
@@ -1355,19 +1353,9 @@ class PromptManager {
         `;
 
         const totalActiveTokens = this.tokenUsage;
-
-        promptManagerDiv.insertAdjacentHTML('beforeend', applyLocale(`
-            <div class="range-block">
-                ${this.error ? errorDiv : ''}
-                <div class="${this.configuration.prefix}prompt_manager_header">
-                    <div class="${this.configuration.prefix}prompt_manager_header_advanced">
-                        <span data-i18n="Prompts">Prompts</span>
-                    </div>
-                    <div><span data-i18n="Total Tokens:">Total Tokens:</span> ${totalActiveTokens} </div>
-                </div>
-                <ul id="${this.configuration.prefix}prompt_manager_list" class="text_pole"></ul>
-            </div>
-        `));
+        
+        const headerHtml = await renderTemplateAsync('promptManagerHeader', {error: this.error, errorDiv, prefix: this.configuration.prefix, totalActiveTokens});
+        promptManagerDiv.insertAdjacentHTML('beforeend', headerHtml);
 
         this.listElement = promptManagerDiv.querySelector(`#${this.configuration.prefix}prompt_manager_list`);
 
@@ -1385,22 +1373,9 @@ class PromptManager {
                 selectedPromptIndex = 0;
             }
 
-            const footerHtml = applyLocale(`
-                <div class="${this.configuration.prefix}prompt_manager_footer">
-                    <select id="${this.configuration.prefix}prompt_manager_footer_append_prompt" class="text_pole" name="append-prompt">
-                        ${promptsHtml}
-                    </select>
-                    <a class="menu_button fa-chain fa-solid" title="Insert prompt" data-i18n="[title]Insert prompt"></a>
-                    <a class="caution menu_button fa-x fa-solid" title="Delete prompt" data-i18n="[title]Delete prompt"></a>
-                    <a class="menu_button fa-file-import fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="[title]Import a prompt list"></a>
-                    <a class="menu_button fa-file-export fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="[title]Export this prompt list"></a>
-                    <a class="menu_button fa-undo fa-solid" id="prompt-manager-reset-character" title="Reset current character" data-i18n="[title]Reset current character"></a>
-                    <a class="menu_button fa-plus-square fa-solid" title="New prompt" data-i18n="[title]New prompt"></a>
-                </div>
-            `);
-
             const rangeBlockDiv = promptManagerDiv.querySelector('.range-block');
             const headerDiv = promptManagerDiv.querySelector('.completion_prompt_manager_header');
+            const footerHtml = await renderTemplateAsync('promptManagerFooter', {promptsHtml, prefix: this.configuration.prefix});
             headerDiv.insertAdjacentHTML('afterend', footerHtml);
             rangeBlockDiv.querySelector('#prompt-manager-reset-character').addEventListener('click', this.handleCharacterReset);
 
@@ -1411,23 +1386,9 @@ class PromptManager {
             footerDiv.querySelector('select').selectedIndex = selectedPromptIndex;
 
             // Add prompt export dialogue and options
-            const exportForCharacter = applyLocale(`
-            <div class="row">
-                <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
-                <span class="tooltip fa-solid fa-info-circle" title="Export prompts for this character, including their order."></span>
-            </div>`);
-            const exportPopup = applyLocale(`
-                    <div id="prompt-manager-export-format-popup" class="list-group">
-                        <div class="prompt-manager-export-format-popup-flex">
-                            <div class="row">
-                                <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
-                                <span class="tooltip fa-solid fa-info-circle" title="Export all your prompts to a file"></span>
-                            </div>
-                            ${'global' === this.configuration.promptOrder.strategy ? '' : exportForCharacter}
-                        </div>
-                </div>
-                `);
-
+            
+            const exportForCharacter = await renderTemplateAsync('promptManagerExportForCharacter');
+            let exportPopup = await renderTemplateAsync('promptManagerExportPopup', {isGlobalStrategy: 'global' === this.configuration.promptOrder.strategy, exportForCharacter});
             rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
 
             // Destroy previous popper instance if it exists
@@ -1461,43 +1422,36 @@ class PromptManager {
     /**
      * Empties, then re-assembles the prompt list
      */
-    renderPromptManagerListItems() {
+    async renderPromptManagerListItems() {
         if (!this.serviceSettings.prompts) return;
 
         const promptManagerList = this.listElement;
         promptManagerList.innerHTML = '';
 
         const { prefix } = this.configuration;
-
-        let listItemHtml = applyLocale(`
-            <li class="${prefix}prompt_manager_list_head">
-                <span data-i18n="Name">Name</span>
-                <span></span>
-                <span class="prompt_manager_prompt_tokens" data-i18n="Tokens;prompt_manager_tokens">Tokens</span>
-            </li>
-            <li class="${prefix}prompt_manager_list_separator">
-                <hr>
-            </li>
-        `);
-
-        this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
+        
+        const that = this;
+        
+        let listItem = await renderTemplateAsync('promptManagerListHeader', {prefix});
+        
+        this.getPromptsForCharacter(this.activeCharacter).forEach(async function(prompt) {
             if (!prompt) return;
 
-            const listEntry = this.getPromptOrderEntry(this.activeCharacter, prompt.identifier);
+            const listEntry = that.getPromptOrderEntry(that.activeCharacter, prompt.identifier);
             const enabledClass = listEntry.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
             const draggableClass = `${prefix}prompt_manager_prompt_draggable`;
             const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
-            const tokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
+            const tokens = that.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
 
             // Warn the user if the chat history goes below certain token thresholds.
             let warningClass = '';
             let warningTitle = '';
 
-            const tokenBudget = this.serviceSettings.openai_max_context - this.serviceSettings.openai_max_tokens;
-            if (this.tokenUsage > tokenBudget * 0.8 &&
+            const tokenBudget = that.serviceSettings.openai_max_context - that.serviceSettings.openai_max_tokens;
+            if (that.tokenUsage > tokenBudget * 0.8 &&
                 'chatHistory' === prompt.identifier) {
-                const warningThreshold = this.configuration.warningTokenThreshold;
-                const dangerThreshold = this.configuration.dangerTokenThreshold;
+                const warningThreshold = that.configuration.warningTokenThreshold;
+                const dangerThreshold = that.configuration.dangerTokenThreshold;
 
                 if (tokens <= dangerThreshold) {
                     warningClass = 'fa-solid tooltip fa-triangle-exclamation text_danger';
@@ -1511,7 +1465,7 @@ class PromptManager {
             const calculatedTokens = tokens ? tokens : '-';
 
             let detachSpanHtml = '';
-            if (this.isPromptDeletionAllowed(prompt)) {
+            if (that.isPromptDeletionAllowed(prompt)) {
                 detachSpanHtml = `
                     <span title="Remove" class="prompt-manager-detach-action caution fa-solid fa-chain-broken"></span>
                 `;
@@ -1520,7 +1474,7 @@ class PromptManager {
             }
 
             let editSpanHtml = '';
-            if (this.isPromptEditAllowed(prompt)) {
+            if (that.isPromptEditAllowed(prompt)) {
                 editSpanHtml = `
                     <span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil"></span>
                 `;
@@ -1529,7 +1483,7 @@ class PromptManager {
             }
 
             let toggleSpanHtml = '';
-            if (this.isPromptToggleAllowed(prompt)) {
+            if (that.isPromptToggleAllowed(prompt)) {
                 toggleSpanHtml = `
                     <span class="prompt-manager-toggle-action ${listEntry.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
                 `;
@@ -1542,9 +1496,9 @@ class PromptManager {
             const isImportantPrompt = !prompt.marker && prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE  && prompt.forbid_overrides;
             const isUserPrompt = !prompt.marker && !prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
             const isInjectionPrompt = !prompt.marker && prompt.injection_position === INJECTION_POSITION.ABSOLUTE;
-            const isOverriddenPrompt = Array.isArray(this.overriddenPrompts) && this.overriddenPrompts.includes(prompt.identifier);
+            const isOverriddenPrompt = Array.isArray(that.overriddenPrompts) && that.overriddenPrompts.includes(prompt.identifier);
             const importantClass = isImportantPrompt ? `${prefix}prompt_manager_important` : '';
-            listItemHtml += `
+            listItem += `
                 <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass} ${importantClass}" data-pm-identifier="${prompt.identifier}">
                     <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${encodedName}">
                         ${prompt.marker ? '<span class="fa-fw fa-solid fa-thumb-tack" title="Marker"></span>' : ''}
@@ -1552,7 +1506,7 @@ class PromptManager {
                         ${isImportantPrompt ? '<span class="fa-fw fa-solid fa-star" title="Important Prompt"></span>' : ''}
                         ${isUserPrompt ? '<span class="fa-fw fa-solid fa-user" title="User Prompt"></span>' : ''}
                         ${isInjectionPrompt ? '<span class="fa-fw fa-solid fa-syringe" title="In-Chat Injection"></span>' : ''}
-                        ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${encodedName}</a>` : encodedName}
+                        ${that.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${encodedName}</a>` : encodedName}
                         ${isInjectionPrompt ? `<small class="prompt-manager-injection-depth">@ ${prompt.injection_depth}</small>` : ''}
                         ${isOverriddenPrompt ? '<small class="fa-solid fa-address-card prompt-manager-overridden" title="Pulled from a character card"></small>' : ''}
                     </span>
@@ -1569,7 +1523,7 @@ class PromptManager {
             `;
         });
 
-        promptManagerList.insertAdjacentHTML('beforeend', listItemHtml);
+        promptManagerList.insertAdjacentHTML('beforeend', listItem);
 
         // Now that the new elements are in the DOM, you can add the event listeners.
         Array.from(promptManagerList.getElementsByClassName('prompt-manager-detach-action')).forEach(el => {
