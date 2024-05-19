@@ -1341,11 +1341,7 @@ export async function extractTextFromHTML(blob, textSelector = 'body') {
  */
 export async function extractTextFromMarkdown(blob) {
     const markdown = await blob.text();
-    const converter = new showdown.Converter();
-    const html = converter.makeHtml(markdown);
-    const domParser = new DOMParser();
-    const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
-    const text = postProcessText(document.body.textContent, false);
+    const text = postProcessText(markdown, false);
     return text;
 }
 
