@@ -229,6 +229,8 @@
 
 
 #qr--qrOptions {
+	display: flex;
+	flex-direction: column;
 	> #qr--ctxEditor {
 		.qr--ctxItem {
 			display: flex;
@@ -244,11 +246,16 @@
 @media screen and (max-width: 750px) {
 	body .dialogue_popup:has(#qr--modalEditor) .dialogue_popup_text > #qr--modalEditor {
 		flex-direction: column;
+		overflow: auto;
+		> #qr--main {
+			flex: 0 0 auto;
+		}
 		> #qr--main > .qr--labels {
 			flex-direction: column;
 		}
-		> #qr--main > .qr--modal-messageContainer > #qr--modal-message {
-			min-height: 90svh;
+		> #qr--main > .qr--modal-messageContainer > #qr--modal-messageHolder {
+			min-height: 50svh;
+			height: 50svh;
 		}
 	}
 }

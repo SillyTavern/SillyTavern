@@ -75,6 +75,24 @@ function getFiles(dir, files = []) {
     return files;
 }
 
+/**
+ * Ensure that the asset folders exist.
+ * @param {import('../users').UserDirectoryList} directories - The user's directories
+ */
+function ensureFoldersExist(directories) {
+    const folderPath = path.join(directories.assets);
+
+    for (const category of VALID_CATEGORIES) {
+        const assetCategoryPath = path.join(folderPath, category);
+        if (fs.existsSync(assetCategoryPath) && !fs.statSync(assetCategoryPath).isDirectory()) {
+            fs.unlinkSync(assetCategoryPath);
+        }
+        if (!fs.existsSync(assetCategoryPath)) {
+            fs.mkdirSync(assetCategoryPath, { recursive: true });
+        }
+    }
+}
+
 const router = express.Router();
 
 /**
@@ -92,15 +110,7 @@ router.post('/get', jsonParser, async (request, response) => {
     try {
         if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
 
-            for (const category of VALID_CATEGORIES) {
-                const assetCategoryPath = path.join(folderPath, category);
-                if (fs.existsSync(assetCategoryPath) && !fs.statSync(assetCategoryPath).isDirectory()) {
-                    fs.unlinkSync(assetCategoryPath);
-                }
-                if (!fs.existsSync(assetCategoryPath)) {
-                    fs.mkdirSync(assetCategoryPath);
-                }
-            }
+            ensureFoldersExist(request.user.directories);
 
             const folders = fs.readdirSync(folderPath, { withFileTypes: true })
                 .filter(file => file.isDirectory());
@@ -193,6 +203,7 @@ router.post('/download', jsonParser, async (request, response) => {
     }
 
     // Validate filename
+    ensureFoldersExist(request.user.directories);
     const validation = validateAssetFileName(request.body.filename);
     if (validation.error)
         return response.status(400).send(validation.message);

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const { SentencePieceProcessor } = require('@agnai/sentencepiece-js');
-const tiktoken = require('@dqbd/tiktoken');
+const tiktoken = require('tiktoken');
 const { Tokenizer } = require('@agnai/web-tokenizers');
 const { convertClaudePrompt, convertGooglePrompt } = require('../prompt-converters');
 const { readSecret, SECRET_KEYS } = require('./secrets');
@@ -15,7 +15,7 @@ const { setAdditionalHeaders } = require('../additional-headers');
  */
 
 /**
- * @type {{[key: string]: import("@dqbd/tiktoken").Tiktoken}} Tokenizers cache
+ * @type {{[key: string]: import('tiktoken').Tiktoken}} Tokenizers cache
  */
 const tokenizersCache = {};
 
@@ -262,6 +262,10 @@ function getWebTokenizersChunks(tokenizer, ids) {
  * @returns {string} Tokenizer model to use
  */
 function getTokenizerModel(requestModel) {
+    if (requestModel.includes('gpt-4o')) {
+        return 'gpt-4o';
+    }
+
     if (requestModel.includes('gpt-4-32k')) {
         return 'gpt-4-32k';
     }

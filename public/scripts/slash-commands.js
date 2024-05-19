@@ -447,8 +447,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'unhide',
     ],
     helpString: 'Unhides a message from the prompt.',
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'disable',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-disable',
     callback: disableGroupMemberCallback,
+    aliases: ['disable', 'disablemember', 'memberdisable'],
     unnamedArgumentList: [
         new SlashCommandArgument(
             'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
@@ -456,7 +457,8 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'disable',
     ],
     helpString: 'Disables a group member from being drafted for replies.',
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'enable',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-enable',
+    aliases: ['enable', 'enablemember', 'memberenable'],
     callback: enableGroupMemberCallback,
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -465,9 +467,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'enable',
     ],
     helpString: 'Enables a group member to be drafted for replies.',
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberadd',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-add',
     callback: addGroupMemberCallback,
-    aliases: ['addmember'],
+    aliases: ['addmember', 'memberadd'],
     unnamedArgumentList: [
         new SlashCommandArgument(
             'character name', [ARGUMENT_TYPE.STRING], true,
@@ -481,15 +483,15 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberadd',
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/memberadd John Doe</code></pre>
+                    <pre><code>/member-add John Doe</code></pre>
                 </li>
             </ul>
         </div>
     `,
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberremove',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-remove',
     callback: removeGroupMemberCallback,
-    aliases: ['removemember'],
+    aliases: ['removemember', 'memberremove'],
     unnamedArgumentList: [
         new SlashCommandArgument(
             'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
@@ -503,16 +505,16 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberremove
             <strong>Example:</strong>
             <ul>
                 <li>
-                    <pre><code>/memberremove 2</code></pre>
-                    <pre><code>/memberremove John Doe</code></pre>
+                    <pre><code>/member-remove 2</code></pre>
+                    <pre><code>/member-remove John Doe</code></pre>
                 </li>
             </ul>
         </div>
     `,
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberup',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-up',
     callback: moveGroupMemberUpCallback,
-    aliases: ['upmember'],
+    aliases: ['upmember', 'memberup'],
     unnamedArgumentList: [
         new SlashCommandArgument(
             'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
@@ -520,9 +522,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberup',
     ],
     helpString: 'Moves a group member up in the group chat list.',
 }));
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'memberdown',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'member-down',
     callback: moveGroupMemberDownCallback,
-    aliases: ['downmember'],
+    aliases: ['downmember', 'memberdown'],
     unnamedArgumentList: [
         new SlashCommandArgument(
             'member index or name', [ARGUMENT_TYPE.NUMBER, ARGUMENT_TYPE.STRING], true,
@@ -702,6 +704,19 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'addswipe',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'abort',
     callback: abortCallback,
+    namedArgumentList: [
+        SlashCommandNamedArgument.fromProps({ name: 'quiet',
+            description: 'Whether to suppress the toast message notifying about the /abort call.',
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+            defaultValue: 'true',
+            enumList: ['true', 'false'],
+        }),
+    ],
+    unnamedArgumentList: [
+        SlashCommandArgument.fromProps({ description: 'The reason for aborting command execution. Shown when quiet=false',
+            typeList: [ARGUMENT_TYPE.STRING],
+        }),
+    ],
     helpString: 'Aborts the slash command batch execution.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'fuzzy',
@@ -847,6 +862,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'messages',
         new SlashCommandNamedArgument(
             'names', 'show message author names', [ARGUMENT_TYPE.BOOLEAN], false, false, 'off', ['off', 'on'],
         ),
+        new SlashCommandNamedArgument(
+            'hidden', 'include hidden messages', [ARGUMENT_TYPE.BOOLEAN], false, false, 'on', ['off', 'on'],
+        ),
+        new SlashCommandNamedArgument(
+            'role', 'filter messages by role' , [ARGUMENT_TYPE.STRING], false, false, null, ['system', 'assistant', 'user'],
+        ),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -857,6 +878,12 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'messages',
     helpString: `
         <div>
             Returns the specified message or range of messages as a string.
+        </div>
+        <div>
+            Use the <code>hidden=off</code> argument to exclude hidden messages.
+        </div>
+        <div>
+            Use the <code>role</code> argument to filter messages by role. Possible values are: system, assistant, user.
         </div>
         <div>
             <strong>Examples:</strong>
@@ -1310,12 +1337,36 @@ async function popupCallback(args, value) {
 
 function getMessagesCallback(args, value) {
     const includeNames = !isFalseBoolean(args?.names);
+    const includeHidden = isTrueBoolean(args?.hidden);
+    const role = args?.role;
     const range = stringToRange(value, 0, chat.length - 1);
 
     if (!range) {
-        console.warn(`WARN: Invalid range provided for /getmessages command: ${value}`);
+        console.warn(`WARN: Invalid range provided for /messages command: ${value}`);
         return '';
     }
+
+    const filterByRole = (mes) => {
+        if (!role) {
+            return true;
+        }
+
+        const isNarrator = mes.extra?.type === system_message_types.NARRATOR;
+
+        if (role === 'system') {
+            return isNarrator && !mes.is_user;
+        }
+
+        if (role === 'assistant') {
+            return !isNarrator && !mes.is_user;
+        }
+
+        if (role === 'user') {
+            return !isNarrator && mes.is_user;
+        }
+
+        throw new Error(`Invalid role provided. Expected one of: system, assistant, user. Got: ${role}`);
+    };
 
     const messages = [];
 
@@ -1326,7 +1377,13 @@ function getMessagesCallback(args, value) {
             continue;
         }
 
-        if (message.is_system) {
+        if (role && !filterByRole(message)) {
+            console.debug(`/messages: Skipping message with ID ${messageId} due to role filter`);
+            continue;
+        }
+
+        if (!includeHidden && message.is_system) {
+            console.debug(`/messages: Skipping hidden message with ID ${messageId}`);
             continue;
         }
 
@@ -1377,9 +1434,15 @@ async function runCallback(args, name) {
     }
 }
 
-function abortCallback() {
-    $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
-    throw new Error('/abort command executed');
+/**
+ *
+ * @param {object} param0
+ * @param {SlashCommandAbortController} param0._abortController
+ * @param {string} [param0.quiet]
+ * @param {string} [reason]
+ */
+function abortCallback({ _abortController, quiet }, reason) {
+    _abortController.abort((reason ?? '').toString().length == 0 ? '/abort command executed' : reason, !isFalseBoolean(quiet ?? 'true'));
 }
 
 async function delayCallback(_, amount) {
@@ -2645,7 +2708,7 @@ const clearCommandProgressDebounced = debounce(clearCommandProgress);
  * @prop {boolean} [handleParserErrors] (true) Whether to handle parser errors (show toast on error) or throw.
  * @prop {SlashCommandScope} [scope] (null) The scope to be used when executing the commands.
  * @prop {boolean} [handleExecutionErrors] (false) Whether to handle execution errors (show toast on error) or throw
- * @prop {PARSER_FLAG[]} [parserFlags] (null) Parser flags to apply
+ * @prop {{[id:PARSER_FLAG]:boolean}} [parserFlags] (null) Parser flags to apply
  * @prop {SlashCommandAbortController} [abortController] (null) Controller used to abort or pause command execution
  * @prop {(done:number, total:number)=>void} [onProgress] (null) Callback to handle progress events
  */
@@ -2653,7 +2716,7 @@ const clearCommandProgressDebounced = debounce(clearCommandProgress);
 /**
  * @typedef ExecuteSlashCommandsOnChatInputOptions
  * @prop {SlashCommandScope} [scope] (null) The scope to be used when executing the commands.
- * @prop {PARSER_FLAG[]} [parserFlags] (null) Parser flags to apply
+ * @prop {{[id:PARSER_FLAG]:boolean}} [parserFlags] (null) Parser flags to apply
  * @prop {boolean} [clearChatInput] (false) Whether to clear the chat input textarea
  */
 
@@ -2705,10 +2768,12 @@ export async function executeSlashCommandsOnChatInput(text, options = {}) {
         }
     } catch (e) {
         document.querySelector('#form_sheld').classList.add('script_error');
-        toastr.error(e.message);
         result = new SlashCommandClosureResult();
         result.isError = true;
         result.errorMessage = e.message;
+        if (e.cause !== 'abort') {
+            toastr.error(e.message);
+        }
     } finally {
         delay(1000).then(()=>clearCommandProgressDebounced());
 
@@ -2740,7 +2805,7 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
 
     let closure;
     try {
-        closure = parser.parse(text, true, options.parserFlags, options.abortController);
+        closure = parser.parse(text, true, options.parserFlags, options.abortController ?? new SlashCommandAbortController());
         closure.scope.parent = options.scope;
         closure.onProgress = options.onProgress;
     } catch (e) {
@@ -2767,8 +2832,9 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
 
     try {
         const result = await closure.execute();
-        if (result.isAborted) {
+        if (result.isAborted && !result.isQuietlyAborted) {
             toastr.warning(result.abortReason, 'Command execution aborted');
+            closure.abortController.signal.isQuiet = true;
         }
         return result;
     } catch (e) {

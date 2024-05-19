@@ -3,7 +3,6 @@
     "kobldpresets": "Kobold voorinstellingen",
     "guikoboldaisettings": "KoboldAI-interface-instellingen",
     "novelaipreserts": "NovelAI-voorinstellingen",
-    "default": "Standaard",
     "openaipresets": "OpenAI-voorinstellingen",
     "text gen webio(ooba) presets": "WebUI(ooba)-voorinstellingen voor tekstgeneratie",
     "response legth(tokens)": "Reactielengte (tokens)",
@@ -495,7 +494,6 @@
     "Global Lore First": "Globale Lore Eerst",
     "Recursive Scan": "Recursieve Scan",
     "Case Sensitive": "Hoofdlettergevoelig",
-    "Match whole words": "Hele woorden matchen",
     "Alert On Overflow": "Waarschuwing bij overloop",
     "World/Lore Editor": "Wereld/Lore Editor",
     "--- None ---": "--- Geen ---",
@@ -917,5 +915,5 @@
     "Use Google Tokenizer": "Google Tokenizer gebruiken"
 
 
-    
+
 }

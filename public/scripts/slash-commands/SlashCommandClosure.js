@@ -161,6 +161,7 @@ export class SlashCommandClosure {
                 let args = {
                     _scope: this.scope,
                     _parserFlags: executor.parserFlags,
+                    _abortController: this.abortController,
                 };
                 let value;
                 // substitute named arguments
@@ -223,6 +224,15 @@ export class SlashCommandClosure {
                         ?.replace(/\\\{/g, '{')
                         ?.replace(/\\\}/g, '}')
                     ;
+                } else if (Array.isArray(value)) {
+                    value = value.map(v=>{
+                        if (typeof v == 'string') {
+                            return v
+                                ?.replace(/\\\{/g, '{')
+                                ?.replace(/\\\}/g, '}');
+                        }
+                        return v;
+                    });
                 }
 
                 let abortResult = await this.testAbortController();
@@ -254,6 +264,7 @@ export class SlashCommandClosure {
         if (this.abortController?.signal?.aborted) {
             const result = new SlashCommandClosureResult();
             result.isAborted = true;
+            result.isQuietlyAborted = this.abortController.signal.isQuiet;
             result.abortReason = this.abortController.signal.reason.toString();
             return result;
         }

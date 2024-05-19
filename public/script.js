@@ -191,7 +191,7 @@ import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, sh
 import { registerPromptManagerMigration } from './scripts/PromptManager.js';
 import { getRegexedString, regex_placement } from './scripts/extensions/regex/engine.js';
 import { initLogprobs, saveLogprobsForActiveMessage } from './scripts/logprobs.js';
-import { FILTER_TYPES, FilterHelper } from './scripts/filters.js';
+import { FILTER_STATES, FILTER_TYPES, FilterHelper, isFilterState } from './scripts/filters.js';
 import { getCfgPrompt, getGuidanceScale, initCfg } from './scripts/cfg-scale.js';
 import {
     force_output_sequence,
@@ -231,6 +231,7 @@ import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.
 import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './scripts/slash-commands/SlashCommandArgument.js';
 import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
+import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
 
 //exporting functions and vars for mods
 export {
@@ -384,6 +385,7 @@ export const event_types = {
     MESSAGE_RECEIVED: 'message_received',
     MESSAGE_EDITED: 'message_edited',
     MESSAGE_DELETED: 'message_deleted',
+    MESSAGE_UPDATED: 'message_updated',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
     GENERATION_STARTED: 'generation_started',
@@ -415,6 +417,7 @@ export const event_types = {
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
+    CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
@@ -1386,7 +1389,7 @@ function verifyCharactersSearchSortRule() {
  * @typedef {object} Entity - Object representing a display entity
  * @property {Character|Group|import('./scripts/tags.js').Tag|*} item - The item
  * @property {string|number} id - The id
- * @property {string} type - The type of this entity (character, group, tag)
+ * @property {'character'|'group'|'tag'} type - The type of this entity (character, group, tag)
  * @property {Entity[]} [entities] - An optional list of entities relevant for this item
  * @property {number} [hidden] - An optional number representing how many hidden entities this entity contains
  */
@@ -1461,7 +1464,11 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
             const subCount = subEntities.length;
             subEntities = filterByTagState(entities, { subForEntity: entity });
             if (doFilter) {
-                subEntities = entitiesFilter.applyFilters(subEntities, { clearScoreCache: false });
+                // sub entities filter "hacked" because folder filter should not be applied there, so even in "only folders" mode characters show up
+                subEntities = entitiesFilter.applyFilters(subEntities, { clearScoreCache: false, tempOverrides: { [FILTER_TYPES.FOLDER]: FILTER_STATES.UNDEFINED } });
+            }
+            if (doSort) {
+                sortEntitiesList(subEntities);
             }
             entity.entities = subEntities;
             entity.hidden = subCount - subEntities.length;
@@ -1470,8 +1477,13 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
 
     // Second run filters, hiding whatever should be filtered later
     if (doFilter) {
-        entities = filterByTagState(entities, { globalDisplayFilters: true });
-        entities = entitiesFilter.applyFilters(entities);
+        const beforeFinalEntities = filterByTagState(entities, { globalDisplayFilters: true });
+        entities = entitiesFilter.applyFilters(beforeFinalEntities);
+
+        // Magic for folder filter. If that one is enabled, and no folders are display anymore, we remove that filter to actually show the characters.
+        if (isFilterState(entitiesFilter.getFilterData(FILTER_TYPES.FOLDER), FILTER_STATES.SELECTED) && entities.filter(x => x.type == 'tag').length == 0) {
+            entities = entitiesFilter.applyFilters(beforeFinalEntities, { tempOverrides: { [FILTER_TYPES.FOLDER]: FILTER_STATES.UNDEFINED } });
+        }
     }
 
     if (doSort) {
@@ -1521,6 +1533,18 @@ function getCharacterSource(chId = this_chid) {
 
     if (pygmalionId) {
         return `https://pygmalion.chat/${pygmalionId}`;
+    }
+
+    const githubRepo = characters[chId]?.data?.extensions?.github_repo;
+
+    if (githubRepo) {
+        return `https://github.com/${githubRepo}`;
+    }
+
+    const sourceUrl = characters[chId]?.data?.extensions?.source_url;
+
+    if (sourceUrl) {
+        return sourceUrl;
     }
 
     return '';
@@ -2695,7 +2719,7 @@ class StreamingProcessor {
         let messageId = -1;
 
         if (this.type == 'impersonate') {
-            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
             await saveReply(this.type, text, true);
@@ -2731,7 +2755,7 @@ class StreamingProcessor {
         }
 
         if (isImpersonate) {
-            $('#send_textarea').val(processedText)[0].dispatchEvent(new Event('input', { bubbles:true }));
+            $('#send_textarea').val(processedText)[0].dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
             let currentTime = new Date();
@@ -2865,6 +2889,9 @@ class StreamingProcessor {
         this.onErrorStreaming();
     }
 
+    /**
+     * @returns {Generator<{ text: string, swipes: string[], logprobs: import('./scripts/logprobs.js').TokenLogprobs }, void, void>}
+     */
     *nullStreamingGeneration() {
         throw new Error('Generation function for streaming is not hooked up');
     }
@@ -2892,7 +2919,7 @@ class StreamingProcessor {
                 }
 
                 this.result = text;
-                this.swipes = swipes;
+                this.swipes = Array.from(swipes ?? []);
                 if (logprobs) {
                     this.messageLogprobs.push(...(Array.isArray(logprobs) ? logprobs : [logprobs]));
                 }
@@ -3110,7 +3137,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (!pingResult) {
             unblockGeneration(type);
-            toastr.error('Verify that the server is running and accessible.', 'ST Server cannot be reached' );
+            toastr.error('Verify that the server is running and accessible.', 'ST Server cannot be reached');
             throw new Error('Server unreachable');
         }
 
@@ -3173,7 +3200,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun) {
         is_send_press = true;
         textareaText = String($('#send_textarea').val());
-        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
+        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
     } else {
         textareaText = '';
         if (chat.length && chat[chat.length - 1]['is_user']) {
@@ -4108,6 +4135,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let messageChunk = '';
 
         if (data.error) {
+            unblockGeneration(type);
             generatedPromptCache = '';
 
             if (data?.response) {
@@ -4135,7 +4163,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (getMessage.length > 0) {
             if (isImpersonate) {
-                $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles:true }));
+                $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
                 generatedPromptCache = '';
                 await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
             }
@@ -5910,7 +5938,7 @@ export function changeMainAPI() {
         getStatusHorde();
         getHordeModels(true);
     }
-
+    validateDisabledSamplers()
     setupChatCompletionPromptManager(oai_settings);
     forceCharacterEditorTokenize();
 }
@@ -6064,6 +6092,7 @@ export async function getSettings() {
         // TextGen
         loadTextGenSettings(data, settings);
 
+
         // OpenAI
         loadOpenAISettings(data, settings.oai_settings ?? settings);
 
@@ -6109,6 +6138,7 @@ export async function getSettings() {
         );
         changeMainAPI();
 
+
         //Load User's Name and Avatar
         initUserAvatar(settings.user_avatar);
         setPersonaDescription();
@@ -6139,7 +6169,7 @@ export async function getSettings() {
             firstRun = false;
         }
     }
-
+    await validateDisabledSamplers()
     settingsReady = true;
     eventSource.emit(event_types.SETTINGS_LOADED);
 }
@@ -6203,20 +6233,14 @@ export async function saveSettings(type) {
     });
 }
 
-export function setGenerationParamsFromPreset(preset, isMancerChange = null) {
+export function setGenerationParamsFromPreset(preset) {
     const needsUnlock = (preset.max_length ?? max_context) > MAX_CONTEXT_DEFAULT || (preset.genamt ?? amount_gen) > MAX_RESPONSE_DEFAULT;
     $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
 
     if (preset.genamt !== undefined) {
         amount_gen = preset.genamt;
-        if (isMancerChange) {
-            $('#amount_gen').attr('max', amount_gen);
-            $('#amount_gen_counter').val($('#amount_gen').val());
-        }
-        else {
-            $('#amount_gen').val(amount_gen);
-            $('#amount_gen_counter').val(amount_gen);
-        }
+        $('#amount_gen').val(amount_gen);
+        $('#amount_gen_counter').val(amount_gen);
     }
 
     if (preset.max_length !== undefined) {
@@ -6273,6 +6297,8 @@ function updateMessage(div) {
     } else {
         mes.extra.bias = null;
     }
+
+    chat_metadata['tainted'] = true;
 
     return { mesBlock, text, mes, bias };
 }
@@ -6342,6 +6368,7 @@ async function messageEditDone(div) {
 
     this_edit_mes_id = undefined;
     await saveChatConditional();
+    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
 }
 
 /**
@@ -7566,6 +7593,7 @@ window['SillyTavern'].getContext = function () {
         getCurrentChatId: getCurrentChatId,
         getRequestHeaders: getRequestHeaders,
         reloadCurrentChat: reloadCurrentChat,
+        renameChat: renameChat,
         saveSettingsDebounced: saveSettingsDebounced,
         onlineStatus: online_status,
         maxContext: Number(max_context),
@@ -8288,6 +8316,75 @@ async function doDeleteChat() {
     $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
 }
 
+async function doRenameChat(_, chatName) {
+    if (!chatName) {
+        toastr.warning('Name must be provided as an argument to rename this chat.');
+        return;
+    }
+
+    const currentChatName = getCurrentChatId();
+    if (!currentChatName) {
+        toastr.warning('No chat selected that can be renamed.');
+        return;
+    }
+
+    await renameChat(currentChatName, chatName);
+
+    toastr.success(`Successfully renamed chat to: ${chatName}`);
+}
+
+/**
+ * Renames the currently selected chat.
+ * @param {string} oldFileName Old name of the chat (no JSONL extension)
+ * @param {string} newName New name for the chat (no JSONL extension)
+ */
+export async function renameChat(oldFileName, newName) {
+    const body = {
+        is_group: !!selected_group,
+        avatar_url: characters[this_chid]?.avatar,
+        original_file: `${oldFileName}.jsonl`,
+        renamed_file: `${newName}.jsonl`,
+    };
+
+    try {
+        showLoader();
+        const response = await fetch('/api/chats/rename', {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: getRequestHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Unsuccessful request.');
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error('Server returned an error.');
+        }
+
+        if (selected_group) {
+            await renameGroupChat(selected_group, oldFileName, newName);
+        }
+        else {
+            if (characters[this_chid].chat == oldFileName) {
+                characters[this_chid].chat = newName;
+                $('#selected_chat_pole').val(characters[this_chid].chat);
+                await createOrEditCharacter();
+            }
+        }
+
+        await reloadCurrentChat();
+    } catch {
+        hideLoader();
+        await delay(500);
+        await callPopup('An error has occurred. Chat was not renamed.', 'text');
+    } finally {
+        hideLoader();
+    }
+}
+
 /**
  * /getchatname` slash command
  */
@@ -8474,11 +8571,13 @@ jQuery(async function () {
         toastr.success('Chat and settings saved.');
     }
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'dupe',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'dupe',
         callback: DupeChar,
         helpString: 'Duplicates the currently selected character.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'api',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'api',
         callback: connectAPISlash,
         namedArgumentList: [],
         unnamedArgumentList: [
@@ -8501,7 +8600,8 @@ jQuery(async function () {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'impersonate',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'impersonate',
         callback: doImpersonate,
         aliases: ['imp'],
         unnamedArgumentList: [
@@ -8523,29 +8623,45 @@ jQuery(async function () {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delchat',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'delchat',
         callback: doDeleteChat,
         helpString: 'Deletes the current chat.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatname',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'renamechat',
+        callback: doRenameChat,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'new chat name', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: 'Renames the current chat.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'getchatname',
         callback: doGetChatName,
         returns: 'chat file name',
         helpString: 'Returns the name of the current chat file into the pipe.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'closechat',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'closechat',
         callback: doCloseChat,
         helpString: 'Closes the current chat.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'panels',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'panels',
         callback: doTogglePanels,
         aliases: ['togglepanels'],
         helpString: 'Toggle UI panels on/off',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'forcesave',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'forcesave',
         callback: doForceSave,
         helpString: 'Forces a save of the current chat and settings',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'instruct',
         callback: selectInstructCallback,
         returns: 'current preset',
         namedArgumentList: [],
@@ -8568,15 +8684,18 @@ jQuery(async function () {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct-on',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'instruct-on',
         callback: enableInstructCallback,
         helpString: 'Enables instruct mode.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct-off',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'instruct-off',
         callback: disableInstructCallback,
         helpString: 'Disables instruct mode',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'context',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'context',
         callback: selectContextCallback,
         returns: 'template name',
         unnamedArgumentList: [
@@ -8586,7 +8705,8 @@ jQuery(async function () {
         ],
         helpString: 'Selects context template by name. Gets the current template if no name is provided',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'chat-manager',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'chat-manager',
         callback: () => $('#option_select_chat').trigger('click'),
         aliases: ['chat-history', 'manage-chats'],
         helpString: 'Opens the chat manager for the current character/group.',
@@ -8966,69 +9086,26 @@ jQuery(async function () {
 
     $(document).on('click', '.renameChatButton', async function (e) {
         e.stopPropagation();
-        const old_filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
-        const old_filename = old_filenamefull.replace('.jsonl', '');
+        const oldFileNameFull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
+        const oldFileName = oldFileNameFull.replace('.jsonl', '');
 
         const popupText = `<h3>Enter the new name for the chat:<h3>
         <small>!!Using an existing filename will produce an error!!<br>
         This will break the link between checkpoint chats.<br>
         No need to add '.jsonl' at the end.<br>
         </small>`;
-        const newName = await callPopup(popupText, 'input', old_filename);
+        const newName = await callPopup(popupText, 'input', oldFileName);
 
-        if (!newName || newName == old_filename) {
+        if (!newName || newName == oldFileName) {
             console.log('no new name found, aborting');
             return;
         }
 
-        const body = {
-            is_group: !!selected_group,
-            avatar_url: characters[this_chid]?.avatar,
-            original_file: `${old_filename}.jsonl`,
-            renamed_file: `${newName}.jsonl`,
-        };
+        await renameChat(oldFileName, newName);
 
-        try {
-            showLoader();
-            const response = await fetch('/api/chats/rename', {
-                method: 'POST',
-                body: JSON.stringify(body),
-                headers: getRequestHeaders(),
-            });
-
-            if (!response.ok) {
-                throw new Error('Unsuccessful request.');
-            }
-
-            const data = await response.json();
-
-            if (data.error) {
-                throw new Error('Server returned an error.');
-            }
-
-            if (selected_group) {
-                await renameGroupChat(selected_group, old_filename, newName);
-            }
-            else {
-                if (characters[this_chid].chat == old_filename) {
-                    characters[this_chid].chat = newName;
-                    $('#selected_chat_pole').val(characters[this_chid].chat);
-                    await createOrEditCharacter();
-                }
-            }
-
-            await reloadCurrentChat();
-
-            await delay(250);
-            $('#option_select_chat').trigger('click');
-            $('#options').hide();
-        } catch {
-            hideLoader();
-            await delay(500);
-            await callPopup('An error has occurred. Chat was not renamed.', 'text');
-        } finally {
-            hideLoader();
-        }
+        await delay(250);
+        $('#option_select_chat').trigger('click');
+        $('#options').hide();
     });
 
     $(document).on('click', '.exportChatButton, .exportRawChatButton', async function (e) {
@@ -10281,6 +10358,9 @@ jQuery(async function () {
                     $('#character_replace_file').off('change').on('change', uploadReplacementCard).trigger('click');
                 }
             } break;
+            case 'import_tags': {
+                await importTags(characters[this_chid]);
+            } break;
             /*case 'delete_button':
                 popup_type = "del_ch";
                 callPopup(`
@@ -10477,4 +10557,6 @@ jQuery(async function () {
     eventSource.on(event_types.GROUP_CHAT_DELETED, async (name) => {
         await deleteItemizedPrompts(name);
     });
+
+    initCustomSelectedSamplers();
 });

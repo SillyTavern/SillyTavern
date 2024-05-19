@@ -166,7 +166,7 @@ export let textgenerationwebui_banned_in_macros = [];
 export let textgenerationwebui_presets = [];
 export let textgenerationwebui_preset_names = [];
 
-const setting_names = [
+export const setting_names = [
     'temp',
     'temperature_last',
     'rep_pen',
@@ -659,7 +659,7 @@ jQuery(function () {
             'no_repeat_ngram_size_textgenerationwebui': 0,
             'min_length_textgenerationwebui': 0,
             'num_beams_textgenerationwebui': 1,
-            'length_penalty_textgenerationwebui': 0,
+            'length_penalty_textgenerationwebui': 1,
             'penalty_alpha_textgenerationwebui': 0,
             'typical_p_textgenerationwebui': 1, // Added entry
             'guidance_scale_textgenerationwebui': 1,
@@ -991,7 +991,7 @@ export function getTextGenModel() {
 }
 
 export function isJsonSchemaSupported() {
-    return settings.type === TABBY && main_api === 'textgenerationwebui';
+    return [TABBY, LLAMACPP].includes(settings.type) && main_api === 'textgenerationwebui';
 }
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
@@ -1065,7 +1065,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
         'grammar_string': settings.grammar_string,
-        'json_schema': settings.type === TABBY ? settings.json_schema : undefined,
+        'json_schema': [TABBY, LLAMACPP].includes(settings.type) ? settings.json_schema : undefined,
         // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
         'repeat_penalty': settings.rep_pen,
         'tfs_z': settings.tfs,
@@ -1149,6 +1149,16 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
     }
 
     eventSource.emitAndWait(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
+
+    // Grammar conflicts with with json_schema
+    if (settings.type === LLAMACPP) {
+        if (params.json_schema && Object.keys(params.json_schema).length > 0) {
+            delete params.grammar_string;
+            delete params.grammar;
+        } else {
+            delete params.json_schema;
+        }
+    }
 
     return params;
 }

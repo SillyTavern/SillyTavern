@@ -109,7 +109,7 @@ function downloadAssetsList(url) {
                         </div>`);
                     }
 
-                    for (const i in availableAssets[assetType]) {
+                    for (const i in availableAssets[assetType].sort((a, b) => a?.name && b?.name && a['name'].localeCompare(b['name']))) {
                         const asset = availableAssets[assetType][i];
                         const elemId = `assets_install_${assetType}_${i}`;
                         let element = $('<div />', { id: elemId, class: 'asset-download-button right_menu_button' });
@@ -200,6 +200,9 @@ function downloadAssetsList(url) {
                                      </div>`);
 
                         if (assetType === 'character') {
+                            if (asset.highlight) {
+                                assetBlock.find('.asset-name').append('<i class="fa-solid fa-sm fa-trophy"></i>');
+                            }
                             assetBlock.find('.asset-name').prepend(`<div class="avatar"><img src="${asset['url']}" alt="${displayName}"></div>`);
                         }
 

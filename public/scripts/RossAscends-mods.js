@@ -702,7 +702,7 @@ const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
  */
 function autoFitSendTextArea() {
     const originalScrollBottom = chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
-    if (sendTextArea.scrollHeight + 3 == sendTextArea.offsetHeight) {
+    if (Math.ceil(sendTextArea.scrollHeight + 3) >= Math.floor(sendTextArea.offsetHeight)) {
         // Needs to be pulled dynamically because it is affected by font size changes
         const sendTextAreaMinHeight = window.getComputedStyle(sendTextArea).getPropertyValue('min-height');
         sendTextArea.style.height = sendTextAreaMinHeight;
@@ -1130,6 +1130,11 @@ export function initRossMods() {
 
             if ($('#character_popup').is(':visible')) {
                 $('#character_cross').trigger('click');
+                return;
+            }
+
+            if ($('#dialogue_del_mes_cancel').is(':visible')) {
+                $('#dialogue_del_mes_cancel').trigger('click');
                 return;
             }
 

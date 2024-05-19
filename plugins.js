@@ -15,6 +15,12 @@ if (command === 'update') {
     updatePlugins();
 }
 
+if (command === 'install') {
+    const pluginName = process.argv[3];
+    console.log('Installing a new plugin', color.green(pluginName));
+    installPlugin(pluginName);
+}
+
 async function updatePlugins() {
     const directories = fs.readdirSync(pluginsPath)
         .filter(file => !file.startsWith('.'))
@@ -50,4 +56,20 @@ async function updatePlugins() {
 
     console.log(color.magenta('All plugins updated!'));
 
+}
+
+async function installPlugin(pluginName) {
+    try {
+        const pluginPath = path.join(pluginsPath, path.basename(pluginName, '.git'));
+
+        if (fs.existsSync(pluginPath)) {
+            return console.log(color.yellow(`Directory already exists at ${pluginPath}`));
+        }
+
+        await git().clone(pluginName, pluginPath, { '--depth': 1 });
+        console.log(`Plugin ${color.green(pluginName)} installed to ${color.cyan(pluginPath)}`);
+    }
+    catch (error) {
+        console.error(color.red(`Failed to install plugin ${pluginName}`), error);
+    }
 }

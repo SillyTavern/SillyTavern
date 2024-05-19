@@ -237,7 +237,7 @@ function onMancerModelSelect() {
     $('#api_button_textgenerationwebui').trigger('click');
 
     const limits = mancerModels.find(x => x.id === modelId)?.limits;
-    setGenerationParamsFromPreset({ max_length: limits.context, genamt: limits.completion }, true);
+    setGenerationParamsFromPreset({ max_length: limits.context });
 }
 
 function onTogetherModelSelect() {

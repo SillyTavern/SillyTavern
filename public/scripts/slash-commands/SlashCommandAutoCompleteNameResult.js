@@ -50,6 +50,17 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
     }
 
     getNamedArgumentAt(text, index, isSelect) {
+        function getSplitRegex() {
+            try {
+                return new RegExp('(?<==)');
+            } catch {
+                // For browsers that don't support lookbehind
+                return new RegExp('=(.*)');
+            }
+        }
+        if (!Array.isArray(this.executor.command?.namedArgumentList)) {
+            return null;
+        }
         const notProvidedNamedArguments = this.executor.command.namedArgumentList.filter(arg=>!this.executor.namedArgumentList.find(it=>it.name == arg.name));
         let name;
         let value;
@@ -62,7 +73,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
             // cursor is somewhere within the named arguments (including final space)
             argAssign = this.executor.namedArgumentList.find(it=>it.start <= index && it.end >= index);
             if (argAssign) {
-                const [argName, ...v] = text.slice(argAssign.start, index).split(/(?<==)/);
+                const [argName, ...v] = text.slice(argAssign.start, index).split(getSplitRegex());
                 name = argName;
                 value = v.join('');
                 start = argAssign.start;
@@ -99,7 +110,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
                 const result = new AutoCompleteSecondaryNameResult(
                     value,
                     start + name.length,
-                    cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(it)),
+                    cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(this.executor.command, it)),
                     true,
                 );
                 result.isRequired = true;
@@ -122,6 +133,9 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
     }
 
     getUnnamedArgumentAt(text, index, isSelect) {
+        if (!Array.isArray(this.executor.command?.unnamedArgumentList)) {
+            return null;
+        }
         const lastArgIsBlank = this.executor.unnamedArgumentList.slice(-1)[0]?.value == '';
         const notProvidedArguments = this.executor.command.unnamedArgumentList.slice(this.executor.unnamedArgumentList.length - (lastArgIsBlank ? 1 : 0));
         let value;
@@ -154,7 +168,7 @@ export class SlashCommandAutoCompleteNameResult extends AutoCompleteNameResult {
         const result = new AutoCompleteSecondaryNameResult(
             value,
             start,
-            cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(it)),
+            cmdArg.enumList.map(it=>new SlashCommandEnumAutoCompleteOption(this.executor.command, it)),
             false,
         );
         const isCompleteValue = cmdArg.enumList.find(it=>it.value == value);

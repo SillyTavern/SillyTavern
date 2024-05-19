@@ -116,7 +116,7 @@
                                 </h4>
                                 <div class="flex-container flexNoGap">
                                     <select id="settings_preset_novel" class="flex1 text_pole" data-preset-manager-for="novel">
-                                        <option value="gui" data-i18n="default">Default</option>
+                                        <option value="gui" data-i18n="Default">Default</option>
                                     </select>
                                     <div class="flex-container marginLeft5 ">
                                         <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings">
@@ -134,7 +134,7 @@
                                     <h4 class="margin0"><span data-i18n="openaipresets">Chat Completion Presets</span></h4>
                                     <div class="flex-container flexNoGap">
                                         <select id="settings_preset_openai" class="flex1 text_pole" data-preset-manager-for="openai">
-                                            <option value="gui" data-i18n="default">Default</option>
+                                            <option value="gui" data-i18n="Default">Default</option>
                                         </select>
                                         <div class="flex-container marginLeft5 ">
                                             <input id="openai_preset_import_file" type="file" accept=".json,.settings" hidden />
@@ -246,7 +246,7 @@
                                     </div>
                                 </div>
                                 <div class="range-block">
-                                    <div class="range-block-title" data-i18n="temperature">
+                                    <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
                                     <div class="range-block-range-and-counter">
@@ -942,7 +942,7 @@
                                     </div>
                                 </div>
                                 <div class="range-block">
-                                    <div class="range-block-title title_restorable">
+                                    <div id="logit_bias_novel" class="range-block-title title_restorable">
                                         <span data-i18n="Logit Bias">Logit Bias</span>
                                         <div id="novelai_logit_bias_new_entry" class="menu_button menu_button_icon">
                                             <i class="fa-xs fa-solid fa-plus"></i>
@@ -1131,6 +1131,11 @@
                                         <div id="samplerResetButton" class="menu_button whitespacenowrap" data-i18n="Neutralize Samplers">Neutralize Samplers</div>
                                         <div class="fa-solid fa-circle-info opacity50p" title="Set all samplers to their neutral/disabled state." data-i18n="[title]Set all samplers to their neutral/disabled state."></div>
                                     </small>
+
+                                    <small class="flex-container alignitemscenter">
+                                        <div id="samplerSelectButton" class="menu_button whitespacenowrap" data-i18n="Sampler Select">Sampler Select</div>
+                                        <div class="fa-solid fa-circle-info opacity50p" title="Customize displayed samplers or add custom samplers." data-i18n="[title]Customize displayed samplers or add custom samplers."></div>
+                                    </small>
                                 </div>
                                 <div data-newbie-hidden data-tg-type="mancer, vllm, aphrodite" class="flex-container flexFlowColumn alignitemscenter flexBasis100p flexGrow flexShrink gap0">
                                     <small data-i18n="Multiple swipes per generation">Multiple swipes per generation</small>
@@ -1267,14 +1272,13 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba, mancer, koboldcpp, tabby, llamacpp, aphrodite" name="dynaTempBlock" class="wide100p">
-                                        <h4 class="wide100p textAlignCenter" data-i18n="DynaTemp">
-                                            <div class="flex-container alignitemscenter" style="justify-content: center;">
+                                    <div data-newbie-hidden data-tg-type="ooba, mancer, koboldcpp, tabby, llamacpp, aphrodite" id="dynatemp_block_ooba" class="wide100p">
+                                        <h4 class="wide100p textAlignCenter">
+                                            <div class="flex-container alignitemscenter justifyCenter">
                                                 <div class="checkbox_label" for="dynatemp_textgenerationwebui">
                                                     <input type="checkbox" id="dynatemp_textgenerationwebui" />
-                                                    <small data-i18n="dynatemp"></small>
                                                 </div>
-                                                <span style="text-align: center;" data-i18n="Dynamic Temperature">Dynamic Temperature</span>
+                                                <span class="textAlignCenter" data-i18n="Dynamic Temperature">Dynamic Temperature</span>
                                                 <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Scale Temperature dynamically per token, based on the variation of probabilities" title="Scale Temperature dynamically per token, based on the variation of probabilities."></div>
                                             </div>
                                         </h4>
@@ -1296,7 +1300,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden name="miroStatBlock" class="wide100p">
+                                    <div data-newbie-hidden id="mirostat_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat is a thermostat for output perplexity" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
@@ -1325,7 +1329,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba" name="beamSearchBlock" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="ooba, vllm" name="beamSearchBlock" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label>
                                                 <span data-i18n="Beam search">Beam Search</span>
@@ -1408,11 +1412,11 @@
                                             </label>
                                         </div>
                                     </div>
-                                    <div data-tg-type="mancer, ooba, koboldcpp, aphrodite, llamaccp, ollama" data-newbie-hidden class="flex-container flexFlowColumn alignitemscenter flexBasis48p flexGrow flexShrink gap0">
+                                    <div data-tg-type="mancer, ooba, koboldcpp, vllm, aphrodite, llamacpp, ollama" data-newbie-hidden class="flex-container flexFlowColumn alignitemscenter flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Seed" class="textAlignCenter">Seed</small>
                                         <input type="number" id="seed_textgenerationwebui" class="text_pole textAlignCenter" min="-1" value="-1" maxlength="100" />
                                     </div>
-                                    <div data-newbie-hidden class="wide100p">
+                                    <div id="banned_tokens_block_ooba" data-newbie-hidden class="wide100p">
                                         <hr data-newbie-hidden class="width100p">
                                         <h4 class="range-block-title justifyCenter">
                                             <span data-i18n="Banned Tokens">Banned Tokens</span>
@@ -1423,7 +1427,7 @@
                                         </div>
                                     </div>
                                     <div class="range-block wide100p">
-                                        <div class="range-block-title title_restorable">
+                                        <div id="logit_bias_textgenerationwebui" class="range-block-title title_restorable">
                                             <span data-i18n="Logit Bias">Logit Bias</span>
                                             <div id="textgen_logit_bias_new_entry" class="menu_button menu_button_icon">
                                                 <i class="fa-xs fa-solid fa-plus"></i>
@@ -1437,7 +1441,7 @@
                                             <div class="logit_bias_list"></div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba, tabby" class="wide100p">
+                                    <div id="cfg_block_ooba" data-newbie-hidden data-tg-type="ooba, tabby" class="wide100p">
                                         <hr class="width100p">
                                         <h4 data-i18n="CFG" class="textAlignCenter">CFG
                                             <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]Classifier Free Guidance. More helpful tip coming soon" title="Classifier Free Guidance. More helpful tip coming soon."></div>
@@ -1459,7 +1463,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden id="json_schema_block" data-tg-type="tabby" class="wide100p">
+                                    <div data-newbie-hidden id="json_schema_block" data-tg-type="tabby, llamacpp" class="wide100p">
                                         <hr class="wide100p">
                                         <h4 class="wide100p textAlignCenter"><span data-i18n="JSON Schema">JSON Schema</span>
                                             <a href="https://json-schema.org/learn/getting-started-step-by-step" target="_blank">
@@ -1485,7 +1489,7 @@
                                         </h4>
                                         <textarea id="grammar_string_textgenerationwebui" rows="4" class="text_pole textarea_compact monospace" data-i18n="[placeholder]Type in the desired custom grammar" placeholder="Type in the desired custom grammar"></textarea>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="koboldcpp" class="range-block flexFlowColumn wide100p">
+                                    <div id="sampler_order_block" data-newbie-hidden data-tg-type="koboldcpp" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
                                         <div class="range-block-title">
                                             <span data-i18n="Samplers Order">Samplers Order</span>
@@ -1680,7 +1684,7 @@
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom">
-                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
+                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand marginBot10">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
@@ -1689,6 +1693,16 @@
                                                 <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                             </div>
                                         </label>
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter">
+                                            <label for="openai_inline_image_quality">
+                                                Inline Image Quality
+                                            </label>
+                                            <select id="openai_inline_image_quality">
+                                                <option value="auto">Auto</option>
+                                                <option value="low">Low</option>
+                                                <option value="high">High</option>
+                                            </select>
+                                        </div>
                                     </div>
                                     <div class="range-block" data-source="ai21">
                                         <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
@@ -1709,8 +1723,9 @@
                                     <div class="range-block" data-source="makersuite">
                                         <label for="use_makersuite_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="use_makersuite_sysprompt" type="checkbox" />
-                                            <span data-i18n="Use system prompt (Gemini 1.5 pro+ only)">
-                                                Use system prompt (Gemini 1.5 pro+ only)
+                                            <span>
+                                                <span data-i18n="Use system prompt">Use system prompt</span><br>
+                                                <small data-i18n="(Gemini 1.5 Pro/Flash only)">(Gemini 1.5 Pro/Flash only)</small>
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
@@ -1723,6 +1738,8 @@
                                         <div class="wide100p">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                             <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <span id="claude_assistant_impersonation_text" data-i18n="Assistant Impersonation Prefill">Assistant Impersonation Prefill</span>
+                                            <textarea id="claude_assistant_impersonation" class="text_pole textarea_compact" name="assistant_impersonation autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                         <label for="claude_use_sysprompt" class="checkbox_label widthFreeExpand">
                                             <input id="claude_use_sysprompt" type="checkbox" />
@@ -1747,7 +1764,7 @@
                                     </div>
                                 </div>
                                 <div data-newbie-hidden class="range-block m-t-1" data-source="openai,openrouter,scale">
-                                    <div class="range-block-title openai_restorable" data-i18n="Logit Bias">
+                                    <div id="logit_bias_openai" class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
                                     <div class="toggle-description justifyLeft" data-i18n="Helps to ban or reenforce the usage of certain words">
@@ -2405,6 +2422,10 @@
                                         <option value="gpt-4-32k-0613">gpt-4-32k-0613 (2023)</option>
                                         <option value="gpt-4-32k-0314">gpt-4-32k-0314 (2023)</option>
                                     </optgroup>
+                                    <optgroup label="GPT-4o">
+                                        <option value="gpt-4o">gpt-4o</option>
+                                        <option value="gpt-4o-2024-05-13">gpt-4o-2024-05-13</option>
+                                    </optgroup>
                                     <optgroup label="GPT-4 Turbo">
                                         <option value="gpt-4-turbo">gpt-4-turbo</option>
                                         <option value="gpt-4-turbo-2024-04-09">gpt-4-turbo-2024-04-09</option>
@@ -2634,6 +2655,8 @@
                                 <h4 data-i18n="Google Model">Google Model</h4>
                                 <select id="model_google_select">
                                     <optgroup label="Latest">
+                                        <!-- Doesn't work without "latest". Maybe my key is scuffed? -->
+                                        <option value="gemini-1.5-flash-latest">Gemini 1.5 Flash</option>
                                         <!-- Points to 1.0, no default 1.5 endpoint -->
                                         <option value="gemini-pro">Gemini Pro</option>
                                         <option value="gemini-pro-vision">Gemini Pro Vision</option>
@@ -3310,7 +3333,7 @@
                             <span data-i18n="Active World(s) for all chats"><small>Active World(s) for all chats</small></span>
                         </div>
                         <div class="range-block-range">
-                            <select id="world_info" multiple>
+                            <select id="world_info" class="select2_multi_sameline" multiple>
                                 <option value="" data-i18n="-- World Info not found --">-- World Info not found -- </option>
                             </select>
                         </div>
@@ -3426,8 +3449,8 @@
                                     </label>
                                     <label title="If the entry key consists of only one word, it would not be matched as part of other words" data-i18n="[title]If the entry key consists of only one word, it would not be matched as part of other words" class="checkbox_label flex1">
                                         <input id="world_info_match_whole_words" type="checkbox" />
-                                        <small data-i18n="Match whole words" class="whitespacenowrap flex1">
-                                            Match whole words
+                                        <small data-i18n="Match Whole Words" class="whitespacenowrap flex1">
+                                            Match Whole Words
                                         </small>
                                     </label>
                                     <label title="Only the entries with the most number of key matches will be selected for Inclusion Group filtering" data-i18n="[title]Only the entries with the most number of key matches will be selected for Inclusion Group filtering" class="checkbox_label flex1">
@@ -3580,7 +3603,7 @@
                                 <div class="flex-container">
                                     <span data-i18n="Chat Style:">Chat Style:</span><br>
                                     <select id="chat_display" class="widthNatural flex1 margin0">
-                                        <option value="0" data-i18n="Default">Flat</span>
+                                        <option value="0" data-i18n="Flat">Flat</span>
                                         <option value="1" data-i18n="Bubbles">Bubbles</option>
                                         <option value="2" data-i18n="Document">Document</option>
                                     </select>
@@ -3981,8 +4004,8 @@
 
                                             <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]The number of chat history messages to load before pagination." title="The number of chat history messages to load before pagination."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="chat_truncation" name="chat_truncation" min="0" max="1000" step="25">
-                                        <input class="neo-range-input" type="number" min="0" max="1000" step="25" data-for="chat_truncation" id="chat_truncation_counter">
+                                        <input class="neo-range-slider" type="range" id="chat_truncation" name="chat_truncation" min="0" max="1000" step="5">
+                                        <input class="neo-range-input" type="number" min="0" max="1000" step="5" data-for="chat_truncation" id="chat_truncation_counter">
                                         <small data-i18n="(0 = All)">(0 = All)</small>
                                     </div>
 
@@ -4065,7 +4088,7 @@
                                         <small class="fa-solid fa-circle-question note-link-small"></small>
                                     </a>
                                 </label>
-                                <label class="checkbox_label" for="forbid_external_media" title="Disalow embedded media from other domains in chat messages." data-i18n="[title]Disalow embedded media from other domains in chat messages">
+                                <label class="checkbox_label" for="forbid_external_media" title="Disallow embedded media from other domains in chat messages." data-i18n="[title]Disallow embedded media from other domains in chat messages">
                                     <input id="forbid_external_media" type="checkbox" />
                                     <small data-i18n="Forbid External Media">Forbid External Media</small>
                                 </label>
@@ -4116,6 +4139,12 @@
                             </div>
                             <div name="AutoCompleteToggle">
                                 <h4 data-i18n="AutoComplete Settings">AutoComplete Settings</h4>
+                                <label data-newbie-hidden class="checkbox_label" for="stscript_autocomplete_autoHide">
+                                    <input id="stscript_autocomplete_autoHide" type="checkbox" />
+                                    <small data-i18n="Automatically hide details">
+                                        Automatically hide details
+                                    </small>
+                                </label>
                                 <div class="flex-container">
                                     <div class="flex1" title="Determines how entries are found for autocomplete." data-i18n="[title]Determines how entries are found for autocomplete.">
                                         <label for="stscript_matching" data-i18n="Autocomplete Matching"><small>Matching</small></label>
@@ -4171,14 +4200,14 @@
                                     <label class="checkbox_label" title="Switch to stricter escaping, allowing all delimiting characters to be escaped with a backslash, and backslashes to be escaped as well." data-i18n="[title]Switch to stricter escaping, allowing all dellimiting characters to be escaped with a backslash, and backslashes to be escaped as well.">
                                         <input id="stscript_parser_flag_strict_escaping" type="checkbox" />
                                         <span data-i18n="STRICT_ESCAPING"><small>STRICT_ESCAPING</small></span>
-                                        <a href="https://docs.sillytavern.app/" target="_blank" class="notes-link">
+                                        <a href="https://docs.sillytavern.app/usage/st-script/#strict-escaping" target="_blank" class="notes-link">
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </label>
                                     <label class="checkbox_label" title="Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution." data-i18n="[title]Replace all {{getvar::}} and {{getglobalvar::}} macros with scoped variables to avoid double macro substitution.">
                                         <input id="stscript_parser_flag_replace_getvar" type="checkbox" />
                                         <span data-i18n="REPLACE_GETVAR"><small>REPLACE_GETVAR</small></span>
-                                        <a href="https://docs.sillytavern.app/" target="_blank" class="notes-link">
+                                        <a href="https://docs.sillytavern.app/usage/st-script/#replace-variable-macros" target="_blank" class="notes-link">
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </label>
@@ -4472,6 +4501,9 @@
                                                 </option>
                                                 <option id="replace_update" data-i18n="Replace / Update">
                                                     Replace / Update
+                                                </option>
+                                                <option id="import_tags" data-i18n="Import Tags">
+                                                    Import Tags
                                                 </option>
                                                 <!--<option id="dupe_button">
                                                         Duplicate
@@ -5184,7 +5216,11 @@
                                         </span>
                                     </small>
                                     <small class="textAlignCenter" data-i18n="Primary Keywords">Primary Keywords</small>
-                                    <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="2000"></textarea>
+                                    <select class="keyprimaryselect keyselect select2_multi_sameline" name="key" data-i18n="[placeholder]Keywords or Regexes" placeholder="Keywords or Regexes" multiple="multiple"></select>
+                                    <textarea class="text_pole keyprimarytextpole mobile" name="key" rows="1" data-i18n="[placeholder]Comma separated list" placeholder="Comma separated list" maxlength="2000" style="display: none;"></textarea>
+                                    <button type="button" class="switch_input_type_icon" tabindex="-1" title="Switch to plaintext mode" data-icon-on="✨" data-icon-off="⌨️" data-tooltip-on="Switch to fancy mode" data-tooltip-off="Switch to plaintext mode">
+                                        ⌨️
+                                    </button>
                                 </div>
                                 <div class="world_entry_form_control">
                                     <small class="textAlignCenter" data-i18n="Logic">Logic</small>
@@ -5202,9 +5238,11 @@
                                         </span>
                                     </small>
                                     <small class="textAlignCenter" data-i18n="Optional Filter">Optional Filter</small>
-                                    <div class="flex-container flexFlowRow alignitemscenter">
-                                        <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="2000"></textarea>
-                                    </div>
+                                    <select class="keysecondaryselect keyselect select2_multi_sameline" name="keysecondary" data-i18n="[placeholder]Keywords or Regexes (ignored if empty)" placeholder="Keywords or Regexes (ignored if empty)" multiple="multiple"></select>
+                                    <textarea class="text_pole keysecondarytextpole mobile" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated list (ignored if empty)" placeholder="Comma separated list (ignored if empty)" maxlength="2000" style="display: none;"></textarea>
+                                    <button type="button" class="switch_input_type_icon" tabindex="-1" title="Switch to plaintext mode" data-icon-on="✨" data-icon-off="⌨️" data-tooltip-on="Switch to fancy mode" data-tooltip-off="Switch to plaintext mode">
+                                        ⌨️
+                                    </button>
                                 </div>
                             </div>
                             <div name="perEntryOverridesBlock" class="flex-container wide100p alignitemscenter">
@@ -5266,6 +5304,12 @@
                                                             Prevent further recursion (this entry will not activate others)
                                                         </span>
                                                     </label>
+                                                    <label class="checkbox flex-container alignitemscenter flexNoGap">
+                                                        <input type="checkbox" name="delay_until_recursion" />
+                                                        <span data-i18n="Delay until recursion (this entry can only be activated on recursive checking)">
+                                                            Delay until recursion (this entry can only be activated on recursive checking)
+                                                        </span>
+                                                    </label>
                                                 </div>
                                             </span>
                                         </small>
@@ -5295,7 +5339,7 @@
                                     </label>
                                 </div>
                                 <div class="range-block-range">
-                                    <select name="characterFilter" multiple>
+                                    <select name="characterFilter" class="select2_multi_sameline" multiple>
                                         <option value="">
                                             <span data-i18n="-- Characters not found --">-- Characters not found --</span>
                                         </option>
@@ -5306,7 +5350,7 @@
                                 <div class="flex-container justifySpaceBetween">
                                     <small for="group" data-i18n="Inclusion Group">
                                         Inclusion Group
-                                        <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#inclusion-group" class="notes-link" target="_blank" title="Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group" data-i18n="[title]Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group">
+                                        <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#inclusion-group" class="notes-link" target="_blank" title="Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;Supports multiple comma-separated groups.&#13;&#13;Documentation: World Info - Inclusion Group" data-i18n="[title]Inclusion Groups ensure only one entry from a group is activated at a time, if multiple are triggered.&#13;&#13;Documentation: World Info - Inclusion Group">
                                             <span class="fa-solid fa-circle-question note-link-span"></span>
                                         </a>
                                     </small>
@@ -6316,6 +6360,9 @@
     <script type="module" src="lib/swiped-events.js"></script>
     <script type="module" src="lib/eventemitter.js"></script>
     <script type="module" src="scripts/i18n.js"></script>
+    <script type="module" src="scripts/bulk-edit.js"></script>
+    <script type="module" src="scripts/setting-search.js"></script>
+    <script type="module" src="scripts/server-history.js"></script>
     <script type="module" src="script.js"></script>
     <script>
         // Configure toast library:

@@ -435,12 +435,17 @@ jQuery(function () {
                             <select id="caption_multimodal_model" class="flex1 text_pole">
                                 <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                                 <option data-type="openai" value="gpt-4-turbo">gpt-4-turbo</option>
+                                <option data-type="openai" value="gpt-4o">gpt-4o</option>
                                 <option data-type="anthropic" value="claude-3-opus-20240229">claude-3-opus-20240229</option>
                                 <option data-type="anthropic" value="claude-3-sonnet-20240229">claude-3-sonnet-20240229</option>
                                 <option data-type="anthropic" value="claude-3-haiku-20240307">claude-3-haiku-20240307</option>
                                 <option data-type="google" value="gemini-pro-vision">gemini-pro-vision</option>
+                                <option data-type="google" value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
                                 <option data-type="openrouter" value="openai/gpt-4-vision-preview">openai/gpt-4-vision-preview</option>
+                                <option data-type="openrouter" value="openai/gpt-4o">openai/gpt-4o</option>
+                                <option data-type="openrouter" value="openai/gpt-4-turbo">openai/gpt-4-turbo</option>
                                 <option data-type="openrouter" value="haotian-liu/llava-13b">haotian-liu/llava-13b</option>
+                                <option data-type="openrouter" value="fireworks/firellava-13b">fireworks/firellava-13b</option>
                                 <option data-type="openrouter" value="anthropic/claude-3-haiku">anthropic/claude-3-haiku</option>
                                 <option data-type="openrouter" value="anthropic/claude-3-sonnet">anthropic/claude-3-sonnet</option>
                                 <option data-type="openrouter" value="anthropic/claude-3-opus">anthropic/claude-3-opus</option>
@@ -449,6 +454,8 @@ jQuery(function () {
                                 <option data-type="openrouter" value="anthropic/claude-3-opus:beta">anthropic/claude-3-opus:beta</option>
                                 <option data-type="openrouter" value="nousresearch/nous-hermes-2-vision-7b">nousresearch/nous-hermes-2-vision-7b</option>
                                 <option data-type="openrouter" value="google/gemini-pro-vision">google/gemini-pro-vision</option>
+                                <option data-type="openrouter" value="google/gemini-flash-1.5">google/gemini-flash-1.5</option>
+                                <option data-type="openrouter" value="liuhaotian/llava-yi-34b">liuhaotian/llava-yi-34b</option>
                                 <option data-type="ollama" value="ollama_current">[Currently selected]</option>
                                 <option data-type="ollama" value="bakllava:latest">bakllava:latest</option>
                                 <option data-type="ollama" value="llava:latest">llava:latest</option>

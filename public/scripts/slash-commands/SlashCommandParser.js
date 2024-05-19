@@ -114,7 +114,6 @@ export class SlashCommandParser {
 
 
     constructor() {
-        //TODO should not be re-registered from every instance
         // add dummy commands for help strings / autocomplete
         if (!Object.keys(this.commands).includes('parser-flag')) {
             const help = {};
@@ -186,6 +185,15 @@ export class SlashCommandParser {
             relevance: 0,
         };
 
+        function getQuotedRunRegex() {
+            try {
+                return new RegExp('(".+?(?<!\\\\)")|(\\S+?)');
+            } catch {
+                // fallback for browsers that don't support lookbehind
+                return /(".+?")|(\S+?)/;
+            }
+        }
+
         const COMMENT = {
             scope: 'comment',
             begin: /\/[/#]/,
@@ -225,7 +233,7 @@ export class SlashCommandParser {
         const RUN = {
             match: [
                 /\/:/,
-                /(".+?(?<!\\)") |(\S+?) /,
+                getQuotedRunRegex(),
             ],
             className: {
                 1: 'variable.language',
@@ -362,7 +370,6 @@ export class SlashCommandParser {
             ;
             if (childClosure !== null) return null;
             const macro = this.macroIndex.findLast(it=>it.start <= index && it.end >= index);
-            console.log(macro);
             if (macro) {
                 const frag = document.createRange().createContextualFragment(await (await fetch('/scripts/templates/macros.html')).text());
                 const options = [...frag.querySelectorAll('ul:nth-of-type(2n+1) > li')].map(li=>new MacroAutoCompleteOption(
@@ -821,6 +828,7 @@ export class SlashCommandParser {
                     assignment.start = this.index;
                     value = '';
                 }
+                assignment.start = this.index;
                 assignment.value = this.parseClosure();
                 assignment.end = this.index;
                 listValues.push(assignment);

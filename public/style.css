@@ -129,7 +129,7 @@ body {
     height: 100vh;
     height: 100svh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
-    height: calc(var(--doc-height) - 1px);
+    /*height: calc(var(--doc-height) - 1px);*/
     background-color: var(--greyCAIbg);
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -698,7 +698,7 @@ body .panelControlBar {
             display: flex;
         }
     }
-    &.paused {
+    &.script_paused {
         #rightSendForm > div:not(.mes_send).stscript_btn {
             &.stscript_pause {
                 display: none;
@@ -872,7 +872,8 @@ body .panelControlBar {
 }
 
 #chat .mes.selected{
-    background-color: rgb(from var(--SmartThemeQuoteColor) r g b / .5);
+    /* background-color: rgb(from var(--SmartThemeQuoteColor) r g b / .5); */
+    background-color: rgb(102, 0, 0);
 }
 
 .mes q:before,
@@ -1112,8 +1113,8 @@ select {
 }
 
 #send_textarea {
-    min-height: calc(var(--bottomFormBlockSize) + 3px);
-    height: calc(var(--bottomFormBlockSize) + 3px);
+    min-height: calc(var(--bottomFormBlockSize) + 2px);
+    height: calc(var(--bottomFormBlockSize) + 2px);
     max-height: 50vh;
     max-height: 50svh;
     word-wrap: break-word;
@@ -2067,6 +2068,7 @@ input[type="file"] {
     gap: 5px;
     justify-content: center;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .bulk_select_checkbox {
@@ -2373,16 +2375,16 @@ input[type=search]::-webkit-search-cancel-button {
     height: 1em;
     width: 1em;
     border-radius: 50em;
-    background: url('/img/times-circle.svg') no-repeat 50% 50%;
+    background-color: var(--SmartThemeBodyColor);
+    mask: url('/img/times-circle.svg') no-repeat 50% 50%;
     background-size: contain;
-    backdrop-filter: invert(1) contrast(9);
     opacity: 0;
     pointer-events: none;
     cursor: pointer;
 }
 
 input[type=search]:focus::-webkit-search-cancel-button {
-    opacity: .3;
+    opacity: .5;
     pointer-events: all;
 }
 
@@ -2813,7 +2815,7 @@ grammarly-extension {
 #result_info_text {
     display: flex;
     flex-direction: column;
-    line-height: 1;
+    line-height: 0.9;
     text-align: right;
 }
 
@@ -4883,3 +4885,12 @@ body:not(.movingUI) .drawer-content.maximized {
         z-index: 9999;
     }
 }
+
+/* CSS styles using a consistent pastel color palette */
+.regex-brackets { color: #FFB347; } /* Pastel Orange */
+.regex-special { color: #B0E0E6; } /* Powder Blue */
+.regex-quantifier { color: #DDA0DD; } /* Plum */
+.regex-operator { color: #FFB6C1; } /* Light Pink */
+.regex-flags { color: #98FB98; } /* Pale Green */
+.regex-delimiter { font-weight: bold; color: #FF6961; } /* Pastel Red */
+.regex-highlight { color: #FAF8F6; } /* Pastel White */

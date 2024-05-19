@@ -24,6 +24,7 @@
  * @property {boolean} group_override - Overrides any existing group assignment for the extension.
  * @property {number} group_weight - A value used for prioritizing extensions within the same group.
  * @property {boolean} prevent_recursion - Completely disallows recursive application of the extension.
+ * @property {boolean} delay_until_recursion - Will only be checked during recursion.
  * @property {number} scan_depth - The maximum depth to search for matches when applying the extension.
  * @property {boolean} match_whole_words - Specifies if only entire words should be matched during extension application.
  * @property {boolean} use_group_scoring - Indicates if group weight is considered when selecting extensions.
@@ -69,6 +70,8 @@
  * @property {"system" | "user" | "assistant"} depth_prompt.role - The role the character takes on during the prompted interaction (system, user, or assistant).
  * // Non-standard extensions added by external tools
  * @property {string} [pygmalion_id] - The unique identifier assigned to the character by the Pygmalion.chat.
+ * @property {string} [github_repo] - The gitHub repository associated with the character.
+ * @property {string} [source_url] - The source URL associated with the character.
  * @property {{full_path: string}} [chub] - The Chub-specific data associated with the character.
  */
 
