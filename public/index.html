@@ -942,7 +942,7 @@
                                     </div>
                                 </div>
                                 <div class="range-block">
-                                    <div class="range-block-title title_restorable">
+                                    <div id="logit_bias_novel" class="range-block-title title_restorable">
                                         <span data-i18n="Logit Bias">Logit Bias</span>
                                         <div id="novelai_logit_bias_new_entry" class="menu_button menu_button_icon">
                                             <i class="fa-xs fa-solid fa-plus"></i>
@@ -1131,6 +1131,11 @@
                                         <div id="samplerResetButton" class="menu_button whitespacenowrap" data-i18n="Neutralize Samplers">Neutralize Samplers</div>
                                         <div class="fa-solid fa-circle-info opacity50p" title="Set all samplers to their neutral/disabled state." data-i18n="[title]Set all samplers to their neutral/disabled state."></div>
                                     </small>
+
+                                    <small class="flex-container alignitemscenter">
+                                        <div id="samplerSelectButton" class="menu_button whitespacenowrap" data-i18n="Sampler Select">Sampler Select</div>
+                                        <div class="fa-solid fa-circle-info opacity50p" title="Customize displayed samplers or add custom samplers." data-i18n="[title]Customize displayed samplers or add custom samplers."></div>
+                                    </small>
                                 </div>
                                 <div data-newbie-hidden data-tg-type="mancer, vllm, aphrodite" class="flex-container flexFlowColumn alignitemscenter flexBasis100p flexGrow flexShrink gap0">
                                     <small data-i18n="Multiple swipes per generation">Multiple swipes per generation</small>
@@ -1267,7 +1272,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba, mancer, koboldcpp, tabby, llamacpp, aphrodite" name="dynaTempBlock" class="wide100p">
+                                    <div data-newbie-hidden data-tg-type="ooba, mancer, koboldcpp, tabby, llamacpp, aphrodite" id="dynatemp_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <div class="flex-container alignitemscenter justifyCenter">
                                                 <div class="checkbox_label" for="dynatemp_textgenerationwebui">
@@ -1295,7 +1300,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden name="miroStatBlock" class="wide100p">
+                                    <div data-newbie-hidden id="mirostat_block_ooba" class="wide100p">
                                         <h4 class="wide100p textAlignCenter">
                                             <label data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat</label>
                                             <div class=" fa-solid fa-circle-info opacity50p " data-i18n="[title]Mirostat is a thermostat for output perplexity" title="Mirostat is a thermostat for output perplexity.&#13;Mirostat matches the output perplexity to that of the input, thus avoiding the repetition trap&#13;(where, as the autoregressive inference produces text, the perplexity of the output tends toward zero)&#13;and the confusion trap (where the perplexity diverges).&#13;For details, see the paper Mirostat: A Neural Text Decoding Algorithm that Directly Controls Perplexity by Basu et al. (2020).&#13;Mode chooses the Mirostat version. 0=disable, 1=Mirostat 1.0 (llama.cpp only), 2=Mirostat 2.0."></div>
@@ -1411,7 +1416,7 @@
                                         <small data-i18n="Seed" class="textAlignCenter">Seed</small>
                                         <input type="number" id="seed_textgenerationwebui" class="text_pole textAlignCenter" min="-1" value="-1" maxlength="100" />
                                     </div>
-                                    <div data-newbie-hidden class="wide100p">
+                                    <div id="banned_tokens_block_ooba" data-newbie-hidden class="wide100p">
                                         <hr data-newbie-hidden class="width100p">
                                         <h4 class="range-block-title justifyCenter">
                                             <span data-i18n="Banned Tokens">Banned Tokens</span>
@@ -1422,7 +1427,7 @@
                                         </div>
                                     </div>
                                     <div class="range-block wide100p">
-                                        <div class="range-block-title title_restorable">
+                                        <div id="logit_bias_textgenerationwebui" class="range-block-title title_restorable">
                                             <span data-i18n="Logit Bias">Logit Bias</span>
                                             <div id="textgen_logit_bias_new_entry" class="menu_button menu_button_icon">
                                                 <i class="fa-xs fa-solid fa-plus"></i>
@@ -1436,7 +1441,7 @@
                                             <div class="logit_bias_list"></div>
                                         </div>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="ooba, tabby" class="wide100p">
+                                    <div id="cfg_block_ooba" data-newbie-hidden data-tg-type="ooba, tabby" class="wide100p">
                                         <hr class="width100p">
                                         <h4 data-i18n="CFG" class="textAlignCenter">CFG
                                             <div class="margin5 fa-solid fa-circle-info opacity50p " data-i18n="[title]Classifier Free Guidance. More helpful tip coming soon" title="Classifier Free Guidance. More helpful tip coming soon."></div>
@@ -1484,7 +1489,7 @@
                                         </h4>
                                         <textarea id="grammar_string_textgenerationwebui" rows="4" class="text_pole textarea_compact monospace" data-i18n="[placeholder]Type in the desired custom grammar" placeholder="Type in the desired custom grammar"></textarea>
                                     </div>
-                                    <div data-newbie-hidden data-tg-type="koboldcpp" class="range-block flexFlowColumn wide100p">
+                                    <div id="sampler_order_block" data-newbie-hidden data-tg-type="koboldcpp" class="range-block flexFlowColumn wide100p">
                                         <hr class="wide100p">
                                         <div class="range-block-title">
                                             <span data-i18n="Samplers Order">Samplers Order</span>
@@ -1759,7 +1764,7 @@
                                     </div>
                                 </div>
                                 <div data-newbie-hidden class="range-block m-t-1" data-source="openai,openrouter,scale">
-                                    <div class="range-block-title openai_restorable" data-i18n="Logit Bias">
+                                    <div id="logit_bias_openai" class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
                                     <div class="toggle-description justifyLeft" data-i18n="Helps to ban or reenforce the usage of certain words">

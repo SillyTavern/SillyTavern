@@ -166,7 +166,7 @@ export let textgenerationwebui_banned_in_macros = [];
 export let textgenerationwebui_presets = [];
 export let textgenerationwebui_preset_names = [];
 
-const setting_names = [
+export const setting_names = [
     'temp',
     'temperature_last',
     'rep_pen',
