@@ -2398,7 +2398,8 @@ export function getStoppingStrings(isImpersonate, isContinue) {
  * @param {string} quietName Name to use for the quiet prompt (defaults to "System:")
  * @param {number} [responseLength] Maximum response length. If unset, the global default value is used.
  * @param {Function} [promptPreprocessing] Function to preprocess the prompt before sending it to the AI
- * @param {Function} [chatPreprocessing] Function to preprocess the chat before sending it to the AI * @returns
+ * @param {Function} [chatPreprocessing] Function to preprocess the chat before sending it to the AI
+ * @returns
  */
 export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null, quietName = null, responseLength = null, promptPreprocessing = identity, chatPreprocessing = identity) {
     console.log('got into genQuietPrompt');
