@@ -1629,14 +1629,30 @@ export function highlightRegex(regexStr) {
     regexStr = escapeHtml(regexStr);
 
     // Patterns that we want to highlight only if they are not escaped
-    const patterns = {
-        brackets: /(?<!\\)\[.*?\]/g,  // Non-escaped squary brackets
-        quantifiers: /(?<!\\)[*+?{}]/g,  // Non-escaped quantifiers
-        operators: /(?<!\\)[|.^$()]/g,  // Non-escaped operators like | and ()
-        specialChars: /\\./g,
-        flags: /(?<=\/)([gimsuy]*)$/g,  // Match trailing flags
-        delimiters: /^\/|(?<![\\<])\//g,  // Match leading or trailing delimiters
-    };
+    function getPatterns() {
+        try {
+            return {
+                brackets: new RegExp('(?<!\\\\)\\[.*?\\]', 'g'),  // Non-escaped square brackets
+                quantifiers: new RegExp('(?<!\\\\)[*+?{}]', 'g'),  // Non-escaped quantifiers
+                operators: new RegExp('(?<!\\\\)[|.^$()]', 'g'),  // Non-escaped operators like | and ()
+                specialChars: new RegExp('\\\\.', 'g'),
+                flags: new RegExp('(?<=\\/)([gimsuy]*)$', 'g'),  // Match trailing flags
+                delimiters: new RegExp('^\\/|(?<![\\\\<])\\/', 'g'),  // Match leading or trailing delimiters
+            };
+
+        } catch (error) {
+            return {
+                brackets: new RegExp('(\\\\)?\\[.*?\\]', 'g'),  // Non-escaped square brackets
+                quantifiers: new RegExp('(\\\\)?[*+?{}]', 'g'),  // Non-escaped quantifiers
+                operators: new RegExp('(\\\\)?[|.^$()]', 'g'),  // Non-escaped operators like | and ()
+                specialChars: new RegExp('\\\\.', 'g'),
+                flags: new RegExp('/([gimsuy]*)$', 'g'),  // Match trailing flags
+                delimiters: new RegExp('^/|[^\\\\](/)', 'g'),  // Match leading or trailing delimiters
+            };
+        }
+    }
+
+    const patterns = getPatterns();
 
     // Function to replace each pattern with a highlighted HTML span
     const wrapPattern = (pattern, className) => {
