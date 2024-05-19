@@ -2834,6 +2834,7 @@ async function executeSlashCommandsWithOptions(text, options = {}) {
         const result = await closure.execute();
         if (result.isAborted && !result.isQuietlyAborted) {
             toastr.warning(result.abortReason, 'Command execution aborted');
+            closure.abortController.signal.isQuiet = true;
         }
         return result;
     } catch (e) {

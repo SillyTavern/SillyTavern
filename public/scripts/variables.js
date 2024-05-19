@@ -342,17 +342,10 @@ async function whileCallback(args, value) {
         if (result && command) {
             if (command instanceof SlashCommandClosure) {
                 commandResult = await command.execute();
-                // don't suppress potentially loud /abort (need to bubble up to executeSlashCommandsWithOptions for toast)
-                if (commandResult.isAborted) break;
             } else {
                 commandResult = await executeSubCommands(command, args._scope, args._parserFlags, args._abortController);
-                if (commandResult.isAborted) {
-                    // abort toast (if loud) is already shown in subcommand execution,
-                    // overwrite signal to quiet to prevent second toast from ancestor executions
-                    args._abortController.signal.isQuiet = true;
-                    break;
-                }
             }
+            if (commandResult.isAborted) break;
         } else {
             break;
         }
@@ -393,18 +386,11 @@ async function timesCallback(args, value) {
         if (command instanceof SlashCommandClosure) {
             command.scope.setMacro('timesIndex', i);
             result = await command.execute();
-            // don't suppress potentially loud /abort (need to bubble up to executeSlashCommandsWithOptions for toast)
-            if (result.isAborted) break;
         }
         else {
             result = await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i.toString()), args._scope, args._parserFlags, args._abortController);
-            if (result.isAborted) {
-                // abort toast (if loud) is already shown in subcommand execution,
-                // overwrite signal to quiet to prevent second toast from ancestor executions
-                args._abortController.signal.isQuiet = true;
-                break;
-            }
         }
+        if (result.isAborted) break;
     }
 
     return result?.pipe ?? '';
@@ -438,13 +424,7 @@ async function ifCallback(args, value) {
         commandResult = await executeSubCommands(args.else, args._scope, args._parserFlags, args._abortController);
     }
 
-    // this is only reached by subcommands, not by closures, so this is fine
     if (commandResult) {
-        if (commandResult.isAborted) {
-            // abort toast (if loud) is already shown in subcommand execution,
-            // overwrite signal to quiet to prevent second toast from ancestor executions
-            args._abortController.signal.isQuiet = true;
-        }
         return commandResult.pipe;
     }
     return '';
