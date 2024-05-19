@@ -337,11 +337,12 @@ async function whileCallback(args, command) {
                 commandResult = await command.execute();
             } else {
                 commandResult = await executeSubCommands(command, args._scope, args._parserFlags, args._abortController);
-                if (commandResult.isAborted) {
-                    args._abortController.abort(commandResult.abortReason, true);
-                }
             }
-            break;
+
+            if (commandResult.isAborted) {
+                args._abortController.abort(commandResult.abortReason, true);
+                break;
+            }
         } else {
             break;
         }
@@ -558,20 +559,20 @@ function evalBoolean(rule, a, b) {
  * @param {string} command Command to execute. May contain escaped macro and batch separators.
  * @param {SlashCommandScope} [scope] The scope to use.
  * @param {PARSER_FLAG[]} [parserFlags] The parser flags to use.
+ * @param {SlashCommandAbortController} [abortController] The abort controller to use.
  * @returns {Promise<SlashCommandClosureResult>} Closure execution result
  */
-async function executeSubCommands(command, scope = null, parserFlags = null) {
+async function executeSubCommands(command, scope = null, parserFlags = null, abortController = null) {
     if (command.startsWith('"') && command.endsWith('"')) {
         command = command.slice(1, -1);
     }
 
-    const abortController = new SlashCommandAbortController();
     const result = await executeSlashCommandsWithOptions(command, {
         handleExecutionErrors: false,
         handleParserErrors: false,
         parserFlags,
         scope,
-        abortController,
+        abortController: abortController ?? new SlashCommandAbortController(),
     });
 
     return result;
@@ -1644,7 +1645,7 @@ export function registerVariableCommands() {
         returns: 'length of the provided value',
         unnamedArgumentList: [
             new SlashCommandArgument(
-                'value', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], true
+                'value', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], true,
             ),
         ],
         helpString: `
