@@ -339,9 +339,9 @@ async function whileCallback(args, command) {
                 commandResult = await executeSubCommands(command, args._scope, args._parserFlags, args._abortController);
                 if (commandResult.isAborted) {
                     args._abortController.abort(commandResult.abortReason, true);
+                    break;
                 }
             }
-            break;
         } else {
             break;
         }
