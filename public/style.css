@@ -698,7 +698,7 @@ body .panelControlBar {
             display: flex;
         }
     }
-    &.paused {
+    &.script_paused {
         #rightSendForm > div:not(.mes_send).stscript_btn {
             &.stscript_pause {
                 display: none;

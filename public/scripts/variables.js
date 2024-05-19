@@ -316,14 +316,21 @@ function listVariablesCallback() {
     sendSystemMessage(system_message_types.GENERIC, htmlMessage);
 }
 
-async function whileCallback(args, command) {
+/**
+ *
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+ * @param {(string|SlashCommandClosure)[]} value
+ */
+async function whileCallback(args, value) {
     const isGuardOff = isFalseBoolean(args.guard);
     const iterations = isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS;
-    if (command) {
-        if (command[0] instanceof SlashCommandClosure) {
-            command = command[0];
+    /**@type {string|SlashCommandClosure} */
+    let command;
+    if (value) {
+        if (value[0] instanceof SlashCommandClosure) {
+            command = value[0];
         } else {
-            command = command.join(' ');
+            command = value.join(' ');
         }
     }
 
@@ -338,11 +345,7 @@ async function whileCallback(args, command) {
             } else {
                 commandResult = await executeSubCommands(command, args._scope, args._parserFlags, args._abortController);
             }
-
-            if (commandResult.isAborted) {
-                args._abortController.abort(commandResult.abortReason, true);
-                break;
-            }
+            if (commandResult.isAborted) break;
         } else {
             break;
         }
@@ -385,34 +388,43 @@ async function timesCallback(args, value) {
             result = await command.execute();
         }
         else {
-            result = await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i.toString()), args._scope, args._parserFlags);
-            if (result.isAborted) {
-                args._abortController.abort(result.abortReason, true);
-                break;
-            }
+            result = await executeSubCommands(command.replace(/\{\{timesIndex\}\}/g, i.toString()), args._scope, args._parserFlags, args._abortController);
         }
+        if (result.isAborted) break;
     }
 
     return result?.pipe ?? '';
 }
 
-async function ifCallback(args, command) {
+/**
+ *
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args
+ * @param {(string|SlashCommandClosure)[]} value
+ */
+async function ifCallback(args, value) {
     const { a, b, rule } = parseBooleanOperands(args);
     const result = evalBoolean(rule, a, b);
+
+    /**@type {string|SlashCommandClosure} */
+    let command;
+    if (value) {
+        if (value[0] instanceof SlashCommandClosure) {
+            command = value[0];
+        } else {
+            command = value.join(' ');
+        }
+    }
 
     let commandResult;
     if (result && command) {
         if (command instanceof SlashCommandClosure) return (await command.execute()).pipe;
-        commandResult = await executeSubCommands(command, args._scope, args._parserFlags);
+        commandResult = await executeSubCommands(command, args._scope, args._parserFlags, args._abortController);
     } else if (!result && args.else && ((typeof args.else === 'string' && args.else !== '') || args.else instanceof SlashCommandClosure)) {
-        if (args.else instanceof SlashCommandClosure) return (await args.else.execute(args._scope)).pipe;
-        commandResult = await executeSubCommands(args.else, args._scope, args._parserFlags);
+        if (args.else instanceof SlashCommandClosure) return (await args.else.execute()).pipe;
+        commandResult = await executeSubCommands(args.else, args._scope, args._parserFlags, args._abortController);
     }
 
     if (commandResult) {
-        if (commandResult.isAborted) {
-            args._abortController.abort(commandResult.abortReason, true);
-        }
         return commandResult.pipe;
     }
     return '';
@@ -558,7 +570,7 @@ function evalBoolean(rule, a, b) {
  * Executes a slash command from a string (may be enclosed in quotes) and returns the result.
  * @param {string} command Command to execute. May contain escaped macro and batch separators.
  * @param {SlashCommandScope} [scope] The scope to use.
- * @param {PARSER_FLAG[]} [parserFlags] The parser flags to use.
+ * @param {{[id:PARSER_FLAG]:boolean}} [parserFlags] The parser flags to use.
  * @param {SlashCommandAbortController} [abortController] The abort controller to use.
  * @returns {Promise<SlashCommandClosureResult>} Closure execution result
  */
@@ -1117,6 +1129,7 @@ export function registerVariableCommands() {
                 'command to execute if true', [ARGUMENT_TYPE.CLOSURE, ARGUMENT_TYPE.SUBCOMMAND], true,
             ),
         ],
+        splitUnnamedArgument: true,
         helpString: `
             <div>
                 Compares the value of the left operand <code>a</code> with the value of the right operand <code>b</code>,
