@@ -73,6 +73,7 @@
  * @property {string} [github_repo] - The gitHub repository associated with the character.
  * @property {string} [source_url] - The source URL associated with the character.
  * @property {{full_path: string}} [chub] - The Chub-specific data associated with the character.
+ * @property {{source: string[]}} [risuai] - The RisuAI-specific data associated with the character.
  */
 
 /**

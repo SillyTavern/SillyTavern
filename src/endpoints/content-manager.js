@@ -510,6 +510,39 @@ async function downloadGenericPng(url) {
 }
 
 /**
+ * Parse Risu Realm URL to extract the UUID.
+ * @param {string} url Risu Realm URL
+ * @returns {string | null} UUID of the character
+ */
+function parseRisuUrl(url) {
+    // Example: https://realm.risuai.net/character/7adb0ed8d81855c820b3506980fb40f054ceef010ff0c4bab73730c0ebe92279
+    const pattern = /^https?:\/\/realm\.risuai\.net\/character\/([a-f0-9]{64})$/;
+    const match = url.match(pattern);
+    return match ? match[1] : null;
+}
+
+/**
+ * Download RisuAI character card
+ * @param {string} uuid UUID of the character
+ * @returns {Promise<{buffer: Buffer, fileName: string, fileType: string}>}
+ */
+async function downloadRisuCharacter(uuid) {
+    const result = await fetch(`https://realm.risuai.net/api/v1/download/png-v3/${uuid}?non_commercial=true`);
+
+    if (!result.ok) {
+        const text = await result.text();
+        console.log('RisuAI returned error', result.statusText, text);
+        throw new Error('Failed to download character');
+    }
+
+    const buffer = await result.buffer();
+    const fileName = `${sanitize(uuid)}.png`;
+    const fileType = 'image/png';
+
+    return { buffer, fileName, fileType };
+}
+
+/**
 * @param {String} url
 * @returns {String | null } UUID of the character
 */
@@ -563,6 +596,7 @@ router.post('/importURL', jsonParser, async (request, response) => {
         const isJannnyContent = host.includes('janitorai');
         const isPygmalionContent = host.includes('pygmalion.chat');
         const isAICharacterCardsContent = host.includes('aicharactercards.com');
+        const isRisu = host.includes('realm.risuai.net');
         const isGeneric = isHostWhitelisted(host);
 
         if (isPygmalionContent) {
@@ -603,6 +637,14 @@ router.post('/importURL', jsonParser, async (request, response) => {
             else {
                 return response.sendStatus(404);
             }
+        } else if (isRisu) {
+            const uuid = parseRisuUrl(url);
+            if (!uuid) {
+                return response.sendStatus(404);
+            }
+
+            type = 'character';
+            result = await downloadRisuCharacter(uuid);
         } else if (isGeneric) {
             console.log('Downloading from generic url.');
             type = 'character';

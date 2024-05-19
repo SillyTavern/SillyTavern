@@ -709,6 +709,13 @@ body .panelControlBar {
         }
     }
 }
+
+@supports not selector(&) {
+    .stscript_btn {
+        display: none;
+    }
+}
+
 #rightSendForm > div:not(.mes_send) {
     &.stscript_btn {
         padding-right: 2px;
