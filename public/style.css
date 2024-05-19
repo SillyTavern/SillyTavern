@@ -710,7 +710,7 @@ body .panelControlBar {
     }
 }
 
-@supports not selector(& .foo) {
+@supports not selector(&) {
     .stscript_btn {
         display: none;
     }
