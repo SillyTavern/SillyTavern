@@ -10,6 +10,7 @@ import { NovelTtsProvider } from './novel.js';
 import { power_user } from '../../power-user.js';
 import { OpenAITtsProvider } from './openai.js';
 import { XTTSTtsProvider } from './xtts.js';
+import { GSVITtsProvider } from './gsvi.js';
 import { AllTalkTtsProvider } from './alltalk.js';
 import { SpeechT5TtsProvider } from './speecht5.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -74,6 +75,7 @@ const ttsProviders = {
     ElevenLabs: ElevenLabsTtsProvider,
     Silero: SileroTtsProvider,
     XTTSv2: XTTSTtsProvider,
+    GSVI: GSVITtsProvider,
     System: SystemTtsProvider,
     Coqui: CoquiTtsProvider,
     Edge: EdgeTtsProvider,

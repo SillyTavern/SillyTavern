@@ -1389,7 +1389,7 @@ async function applyTheme(name) {
 }
 
 async function applyMovingUIPreset(name) {
-    resetMovablePanels('quiet');
+    await resetMovablePanels('quiet');
     const movingUIPreset = movingUIPresets.find(x => x.name == name);
 
     if (!movingUIPreset) {
@@ -1401,6 +1401,7 @@ async function applyMovingUIPreset(name) {
 
     console.log('MovingUI Preset applied: ' + name);
     loadMovingUIState();
+    saveSettingsDebounced()
 }
 
 /**
@@ -1629,9 +1630,9 @@ function loadPowerUserSettings(settings, data) {
     $('#stscript_autocomplete_font_scale_counter').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
     document.body.style.setProperty('--ac-font-scale', power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale.toString());
     $('#stscript_autocomplete_width_left').val(power_user.stscript.autocomplete.width.left ?? AUTOCOMPLETE_WIDTH.CHAT);
-    document.querySelector('#stscript_autocomplete_width_left').dispatchEvent(new Event('input', { bubbles:true }));
+    document.querySelector('#stscript_autocomplete_width_left').dispatchEvent(new Event('input', { bubbles: true }));
     $('#stscript_autocomplete_width_right').val(power_user.stscript.autocomplete.width.right ?? AUTOCOMPLETE_WIDTH.CHAT);
-    document.querySelector('#stscript_autocomplete_width_right').dispatchEvent(new Event('input', { bubbles:true }));
+    document.querySelector('#stscript_autocomplete_width_right').dispatchEvent(new Event('input', { bubbles: true }));
 
     $('#restore_user_input').prop('checked', power_user.restore_user_input);
 
@@ -3671,7 +3672,7 @@ $(document).ready(() => {
         $('#stscript_autocomplete_font_scale_counter').val(value);
         power_user.stscript.autocomplete.font.scale = Number(value);
         document.body.style.setProperty('--ac-font-scale', value.toString());
-        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        window.dispatchEvent(new Event('resize', { bubbles: true }));
         saveSettingsDebounced();
     });
     $('#stscript_autocomplete_font_scale_counter').on('input', function () {
@@ -3679,7 +3680,7 @@ $(document).ready(() => {
         $('#stscript_autocomplete_font_scale').val(value);
         power_user.stscript.autocomplete.font.scale = Number(value);
         document.body.style.setProperty('--ac-font-scale', value.toString());
-        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        window.dispatchEvent(new Event('resize', { bubbles: true }));
         saveSettingsDebounced();
     });
 
@@ -3687,7 +3688,7 @@ $(document).ready(() => {
         const value = $(this).val();
         power_user.stscript.autocomplete.width.left = Number(value);
         /**@type {HTMLElement}*/(this.closest('.doubleRangeInputContainer')).style.setProperty('--value', value.toString());
-        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        window.dispatchEvent(new Event('resize', { bubbles: true }));
         saveSettingsDebounced();
     });
 
@@ -3695,7 +3696,7 @@ $(document).ready(() => {
         const value = $(this).val();
         power_user.stscript.autocomplete.width.right = Number(value);
         /**@type {HTMLElement}*/(this.closest('.doubleRangeInputContainer')).style.setProperty('--value', value.toString());
-        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        window.dispatchEvent(new Event('resize', { bubbles: true }));
         saveSettingsDebounced();
     });
 
@@ -3789,15 +3790,18 @@ $(document).ready(() => {
         browser_has_focus = false;
     });
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'vn',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vn',
         callback: toggleWaifu,
         helpString: 'Swaps Visual Novel Mode On/Off',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'newchat',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'newchat',
         callback: doNewChat,
         helpString: 'Start a new chat with the current character',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'random',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'random',
         callback: doRandomChat,
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -3806,7 +3810,8 @@ $(document).ready(() => {
         ],
         helpString: 'Start a new chat with a random character. If an argument is provided, only considers characters that have the specified tag.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delmode',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'delmode',
         callback: doDelMode,
         aliases: ['del'],
         unnamedArgumentList: [
@@ -3816,7 +3821,8 @@ $(document).ready(() => {
         ],
         helpString: 'Enter message deletion mode, and auto-deletes last N messages if numeric argument is provided.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'cut',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'cut',
         callback: doMesCut,
         returns: 'the text of cut messages separated by a newline',
         unnamedArgumentList: [
@@ -3842,16 +3848,19 @@ $(document).ready(() => {
         `,
         aliases: [],
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'resetpanels',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'resetpanels',
         callback: doResetPanels,
         helpString: 'resets UI panels to original state',
         aliases: ['resetui'],
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'bgcol',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'bgcol',
         callback: setAvgBG,
         helpString: '– WIP test of auto-bg avg coloring',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'theme',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'theme',
         callback: setThemeCallback,
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -3860,7 +3869,8 @@ $(document).ready(() => {
         ],
         helpString: 'sets a UI theme by name',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'movingui',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'movingui',
         callback: setmovingUIPreset,
         unnamedArgumentList: [
             new SlashCommandArgument(

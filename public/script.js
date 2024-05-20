@@ -1547,6 +1547,13 @@ function getCharacterSource(chId = this_chid) {
         return sourceUrl;
     }
 
+    const risuId = characters[chId]?.data?.extensions?.risuai?.source;
+
+    if (Array.isArray(risuId) && risuId.length && typeof risuId[0] === 'string' && risuId[0].startsWith('risurealm:')) {
+        const realmId = risuId[0].split(':')[1];
+        return `https://realm.risuai.net/character/${realmId}`;
+    }
+
     return '';
 }
 
@@ -5938,7 +5945,7 @@ export function changeMainAPI() {
         getStatusHorde();
         getHordeModels(true);
     }
-    validateDisabledSamplers()
+    validateDisabledSamplers();
     setupChatCompletionPromptManager(oai_settings);
     forceCharacterEditorTokenize();
 }
@@ -6169,7 +6176,7 @@ export async function getSettings() {
             firstRun = false;
         }
     }
-    await validateDisabledSamplers()
+    await validateDisabledSamplers();
     settingsReady = true;
     eventSource.emit(event_types.SETTINGS_LOADED);
 }
@@ -10240,18 +10247,7 @@ jQuery(async function () {
 
             if (power_user.zoomed_avatar_magnification) {
                 $('.zoomed_avatar_container').izoomify();
-            } else {
-                $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
             }
-
-            $('.zoomed_avatar').on('mouseup', (e) => {
-                if (e.target.closest('.drag-grabber') || e.button !== 0) {
-                    return;
-                }
-                $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
-                    $(`.zoomed_avatar[forChar="${charname}"]`).remove();
-                });
-            });
 
             $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
                 if (e.target.closest('.dragClose')) {
