@@ -473,12 +473,18 @@ export function autoSelectPersona(name) {
 async function updatePersonaNameIfExists(avatarId, newName) {
     if (avatarId in power_user.personas) {
         power_user.personas[avatarId] = newName;
-        await getUserAvatars(true, avatarId);
-        saveSettingsDebounced();
         console.log(`Updated persona name for ${avatarId} to ${newName}`);
     } else {
-        console.log(`Persona name ${avatarId} was not updated because it does not exist`);
+        power_user.personas[avatarId] = newName;
+        power_user.persona_descriptions[avatarId] = {
+            description: '',
+            position: persona_description_positions.IN_PROMPT,
+        };
+        console.log(`Created persona name for ${avatarId} as ${newName}`);
     }
+
+    await getUserAvatars(true, avatarId);
+    saveSettingsDebounced();
 }
 
 async function bindUserNameToPersona(e) {
