@@ -231,6 +231,7 @@ import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.
 import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './scripts/slash-commands/SlashCommandArgument.js';
 import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
+import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
 
 //exporting functions and vars for mods
 export {
@@ -466,6 +467,7 @@ let chat_create_date = '';
 let firstRun = false;
 let settingsReady = false;
 let currentVersion = '0.0.0';
+let displayVersion = 'SillyTavern';
 
 export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
@@ -599,7 +601,7 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplateAsync('welcome'),
+            mes: await renderTemplateAsync('welcome', { displayVersion }),
         },
         group: {
             name: systemUserName,
@@ -660,7 +662,7 @@ async function getClientVersion() {
         const response = await fetch('/version');
         const data = await response.json();
         CLIENT_VERSION = data.agent;
-        let displayVersion = `SillyTavern ${data.pkgVersion}`;
+        displayVersion = `SillyTavern ${data.pkgVersion}`;
         currentVersion = data.pkgVersion;
 
         if (data.gitRevision && data.gitBranch) {
@@ -856,12 +858,12 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    await getSystemMessages();
-    sendSystemMessage(system_message_types.WELCOME);
     await getClientVersion();
     await readSecretState();
-    await getSettings();
     initLocales();
+    await getSystemMessages();
+    sendSystemMessage(system_message_types.WELCOME);
+    await getSettings();
     initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
@@ -1544,6 +1546,13 @@ function getCharacterSource(chId = this_chid) {
 
     if (sourceUrl) {
         return sourceUrl;
+    }
+
+    const risuId = characters[chId]?.data?.extensions?.risuai?.source;
+
+    if (Array.isArray(risuId) && risuId.length && typeof risuId[0] === 'string' && risuId[0].startsWith('risurealm:')) {
+        const realmId = risuId[0].split(':')[1];
+        return `https://realm.risuai.net/character/${realmId}`;
     }
 
     return '';
@@ -2718,7 +2727,7 @@ class StreamingProcessor {
         let messageId = -1;
 
         if (this.type == 'impersonate') {
-            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
             await saveReply(this.type, text, true);
@@ -2754,7 +2763,7 @@ class StreamingProcessor {
         }
 
         if (isImpersonate) {
-            $('#send_textarea').val(processedText)[0].dispatchEvent(new Event('input', { bubbles:true }));
+            $('#send_textarea').val(processedText)[0].dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
             let currentTime = new Date();
@@ -2888,6 +2897,9 @@ class StreamingProcessor {
         this.onErrorStreaming();
     }
 
+    /**
+     * @returns {Generator<{ text: string, swipes: string[], logprobs: import('./scripts/logprobs.js').TokenLogprobs }, void, void>}
+     */
     *nullStreamingGeneration() {
         throw new Error('Generation function for streaming is not hooked up');
     }
@@ -2915,7 +2927,7 @@ class StreamingProcessor {
                 }
 
                 this.result = text;
-                this.swipes = swipes;
+                this.swipes = Array.from(swipes ?? []);
                 if (logprobs) {
                     this.messageLogprobs.push(...(Array.isArray(logprobs) ? logprobs : [logprobs]));
                 }
@@ -3133,7 +3145,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (!pingResult) {
             unblockGeneration(type);
-            toastr.error('Verify that the server is running and accessible.', 'ST Server cannot be reached' );
+            toastr.error('Verify that the server is running and accessible.', 'ST Server cannot be reached');
             throw new Error('Server unreachable');
         }
 
@@ -3196,7 +3208,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun) {
         is_send_press = true;
         textareaText = String($('#send_textarea').val());
-        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
+        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
     } else {
         textareaText = '';
         if (chat.length && chat[chat.length - 1]['is_user']) {
@@ -4131,6 +4143,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let messageChunk = '';
 
         if (data.error) {
+            unblockGeneration(type);
             generatedPromptCache = '';
 
             if (data?.response) {
@@ -4158,7 +4171,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (getMessage.length > 0) {
             if (isImpersonate) {
-                $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles:true }));
+                $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
                 generatedPromptCache = '';
                 await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
             }
@@ -5933,7 +5946,7 @@ export function changeMainAPI() {
         getStatusHorde();
         getHordeModels(true);
     }
-
+    validateDisabledSamplers();
     setupChatCompletionPromptManager(oai_settings);
     forceCharacterEditorTokenize();
 }
@@ -6087,6 +6100,7 @@ export async function getSettings() {
         // TextGen
         loadTextGenSettings(data, settings);
 
+
         // OpenAI
         loadOpenAISettings(data, settings.oai_settings ?? settings);
 
@@ -6132,6 +6146,7 @@ export async function getSettings() {
         );
         changeMainAPI();
 
+
         //Load User's Name and Avatar
         initUserAvatar(settings.user_avatar);
         setPersonaDescription();
@@ -6162,7 +6177,7 @@ export async function getSettings() {
             firstRun = false;
         }
     }
-
+    await validateDisabledSamplers();
     settingsReady = true;
     eventSource.emit(event_types.SETTINGS_LOADED);
 }
@@ -8564,11 +8579,13 @@ jQuery(async function () {
         toastr.success('Chat and settings saved.');
     }
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'dupe',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'dupe',
         callback: DupeChar,
         helpString: 'Duplicates the currently selected character.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'api',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'api',
         callback: connectAPISlash,
         namedArgumentList: [],
         unnamedArgumentList: [
@@ -8591,7 +8608,8 @@ jQuery(async function () {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'impersonate',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'impersonate',
         callback: doImpersonate,
         aliases: ['imp'],
         unnamedArgumentList: [
@@ -8613,7 +8631,8 @@ jQuery(async function () {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delchat',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'delchat',
         callback: doDeleteChat,
         helpString: 'Deletes the current chat.',
     }));
@@ -8627,25 +8646,30 @@ jQuery(async function () {
         ],
         helpString: 'Renames the current chat.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatname',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'getchatname',
         callback: doGetChatName,
         returns: 'chat file name',
         helpString: 'Returns the name of the current chat file into the pipe.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'closechat',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'closechat',
         callback: doCloseChat,
         helpString: 'Closes the current chat.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'panels',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'panels',
         callback: doTogglePanels,
         aliases: ['togglepanels'],
         helpString: 'Toggle UI panels on/off',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'forcesave',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'forcesave',
         callback: doForceSave,
         helpString: 'Forces a save of the current chat and settings',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'instruct',
         callback: selectInstructCallback,
         returns: 'current preset',
         namedArgumentList: [],
@@ -8668,15 +8692,18 @@ jQuery(async function () {
             </div>
         `,
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct-on',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'instruct-on',
         callback: enableInstructCallback,
         helpString: 'Enables instruct mode.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'instruct-off',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'instruct-off',
         callback: disableInstructCallback,
         helpString: 'Disables instruct mode',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'context',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'context',
         callback: selectContextCallback,
         returns: 'template name',
         unnamedArgumentList: [
@@ -8686,7 +8713,8 @@ jQuery(async function () {
         ],
         helpString: 'Selects context template by name. Gets the current template if no name is provided',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'chat-manager',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'chat-manager',
         callback: () => $('#option_select_chat').trigger('click'),
         aliases: ['chat-history', 'manage-chats'],
         helpString: 'Opens the chat manager for the current character/group.',
@@ -10220,18 +10248,7 @@ jQuery(async function () {
 
             if (power_user.zoomed_avatar_magnification) {
                 $('.zoomed_avatar_container').izoomify();
-            } else {
-                $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
             }
-
-            $('.zoomed_avatar').on('mouseup', (e) => {
-                if (e.target.closest('.drag-grabber') || e.button !== 0) {
-                    return;
-                }
-                $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
-                    $(`.zoomed_avatar[forChar="${charname}"]`).remove();
-                });
-            });
 
             $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
                 if (e.target.closest('.dragClose')) {
@@ -10338,7 +10355,7 @@ jQuery(async function () {
                     $('#character_replace_file').off('change').on('change', uploadReplacementCard).trigger('click');
                 }
             } break;
-            case 'import_tags':{
+            case 'import_tags': {
                 await importTags(characters[this_chid]);
             } break;
             /*case 'delete_button':
@@ -10430,17 +10447,8 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.external_import_button, #external_import_button', async () => {
-        const html = `<h3>Enter the URL of the content to import</h3>
-        Supported sources:<br>
-        <ul class="justifyLeft">
-            <li>Chub Character (Direct Link or ID)<br>Example: <tt>Anonymous/example-character</tt></li>
-            <li>Chub Lorebook (Direct Link or ID)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
-            <li>JanitorAI Character (Direct Link or UUID)<br>Example: <tt>ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
-            <li>Pygmalion.chat Character (Direct Link or UUID)<br>Example: <tt>a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
-            <li>AICharacterCard.com Character (Direct Link or ID)<br>Example: <tt>AICC/aicharcards/the-game-master</tt></li>
-            <li>Direct PNG Link (refer to <code>config.yaml</code> for allowed hosts)<br>Example: <tt>https://files.catbox.moe/notarealfile.png</tt></li>
-        <ul>`;
-        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: 'Import', rows: 4 });
+        const html = await renderTemplateAsync('importCharacters');
+        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: $('#shadow_popup_template').attr('popup_text_import'), rows: 4 });
 
         if (!input) {
             console.debug('Custom content import cancelled');
@@ -10546,4 +10554,6 @@ jQuery(async function () {
     eventSource.on(event_types.GROUP_CHAT_DELETED, async (name) => {
         await deleteItemizedPrompts(name);
     });
+
+    initCustomSelectedSamplers();
 });

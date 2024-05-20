@@ -424,7 +424,7 @@ function restoreUserInput() {
 
     const userInput = LoadLocal('userInput');
     if (userInput) {
-        $('#send_textarea').val(userInput)[0].dispatchEvent(new Event('input', { bubbles:true }));
+        $('#send_textarea').val(userInput)[0].dispatchEvent(new Event('input', { bubbles: true }));
     }
 }
 
@@ -435,8 +435,6 @@ function saveUserInput() {
 const saveUserInputDebounced = debounce(saveUserInput);
 
 // Make the DIV element draggable:
-
-// THIRD UPDATE, prevent resize window breaks and smartly handle saving
 
 export function dragElement(elmnt) {
     var hasBeenDraggedByUser = false;
@@ -479,8 +477,8 @@ export function dragElement(elmnt) {
         }
         //console.debug(left + width, winWidth, hasBeenDraggedByUser, isMouseDown)
         const style = getComputedStyle(target); //use computed values because not all CSS are set by default
-        height = target.offsetHeight;
-        width = target.offsetWidth;
+        height = parseInt(style.height) //target.offsetHeight;
+        width = parseInt(style.width) //target.offsetWidth;
         top = parseInt(style.top);
         left = parseInt(style.left);
         right = parseInt(style.right);
@@ -494,19 +492,20 @@ export function dragElement(elmnt) {
         const topbarstyle = getComputedStyle(topbar);
         topBarFirstX = parseInt(topbarstyle.marginInline);
         topBarLastY = parseInt(topbarstyle.height);
-
-        /*console.log(`
-        winWidth: ${winWidth}, winHeight: ${winHeight}
-        sheldWidth: ${sheldWidth}
-        X: ${$(elmnt).css('left')}
-        Y: ${$(elmnt).css('top')}
-        MaxX: ${maxX}, MaxY: ${maxY}
-        height: ${height}
-        width: ${width}
-        Topbar 1st X: ${topBarFirstX}
-        TopBar lastX: ${topBarLastX}
-        `);*/
-
+        /*
+                console.log(`
+                Observer
+                 winWidth: ${winWidth}, winHeight: ${winHeight}
+                 sheldWidth: sheldWidth
+                 X: ${$(elmnt).css('left')}
+                 Y: ${$(elmnt).css('top')}
+                 MaxX: ${maxX}, MaxY: ${maxY}
+                 height: ${height}
+                 width: ${width}
+                 Topbar 1st X: ${topBarFirstX}
+                 TopBar lastX: topBarLastX
+                 `);
+        */
 
         //prepare an empty poweruser object for the item being altered if we don't have one already
         if (!power_user.movingUIState[elmntName]) {
@@ -524,24 +523,38 @@ export function dragElement(elmnt) {
         }
 
         //handle resizing
-        if (!hasBeenDraggedByUser && isMouseDown) {
-            console.debug('saw resize, NOT header drag');
+        if (!hasBeenDraggedByUser && isMouseDown) { //if user is dragging the resize handle (not in header)
+            //console.debug('saw resize, NOT header drag');
+            let imgHeight, imgWidth, imageAspectRatio;
+            let containerAspectRatio = elmnt.height() / elmnt.width();
+
+            //force the zoomed avatar container to always be the same aspect ratio as the inner image
+            if ($(elmnt).attr('id').startsWith('zoomFor_')) {
+                let zoomedAvatarImage = $(elmnt).find('.zoomed_avatar_img');
+                imgHeight = zoomedAvatarImage.height();
+                imgWidth = zoomedAvatarImage.width();
+                imageAspectRatio = imgHeight / imgWidth;
+            }
+
+            if (containerAspectRatio !== imageAspectRatio) {
+                elmnt.css('height', imgHeight);
+            }
 
             //prevent resizing offscreen
             if (top + elmnt.height() >= winHeight) {
-                console.debug('resizing height to prevent offscreen');
+                //console.debug('resizing height to prevent offscreen');
                 elmnt.css('height', winHeight - top - 1 + 'px');
             }
 
             if (left + elmnt.width() >= winWidth) {
-                console.debug('resizing width to prevent offscreen');
+                //console.debug('resizing width to prevent offscreen');
                 elmnt.css('width', winWidth - left - 1 + 'px');
             }
 
             //prevent resizing from top left into the top bar
             if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX
             ) {
-                console.debug('prevent topbar underlap resize');
+                //console.debug('prevent topbar underlap resize');
                 elmnt.css('width', width - 1 + 'px');
             }
 
@@ -647,19 +660,20 @@ export function dragElement(elmnt) {
         // and will defaults to shrink to min value of 100px set in CSS file
         elmnt.css('height', height);
         elmnt.css('width', width);
-        /*
-                console.log(`
-                             winWidth: ${winWidth}, winHeight: ${winHeight}
-                             sheldWidth: ${sheldWidth}
-                             X: ${$(elmnt).css('left')}
-                             Y: ${$(elmnt).css('top')}
-                             MaxX: ${maxX}, MaxY: ${maxY}
-                             height: ${height}
-                             width: ${width}
-                             Topbar 1st X: ${topBarFirstX}
-                             TopBar lastX: ${topBarLastX}
-                             `);
-                             */
+
+        /*console.log(`
+elementDrag:
+winWidth: ${winWidth}, winHeight: ${winHeight}
+sheldWidth: sheldWidth
+X: ${$(elmnt).css('left')}
+Y: ${$(elmnt).css('top')}
+MaxX: ${maxX}, MaxY: ${maxY}
+height: ${height}
+width: ${width}
+Topbar 1st X: ${topBarFirstX}
+TopBar lastX: topBarLastX
+`);*/
+
 
         return;
     }

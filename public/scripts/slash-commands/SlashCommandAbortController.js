@@ -5,7 +5,8 @@ export class SlashCommandAbortController {
     constructor() {
         this.signal = new SlashCommandAbortSignal();
     }
-    abort(reason = 'No reason.') {
+    abort(reason = 'No reason.', isQuiet = false) {
+        this.signal.isQuiet = isQuiet;
         this.signal.aborted = true;
         this.signal.reason = reason;
     }
@@ -20,8 +21,8 @@ export class SlashCommandAbortController {
 }
 
 export class SlashCommandAbortSignal {
+    /**@type {boolean}*/ isQuiet = false;
     /**@type {boolean}*/ paused = false;
     /**@type {boolean}*/ aborted = false;
     /**@type {string}*/ reason = null;
-
 }

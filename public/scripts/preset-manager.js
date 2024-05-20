@@ -114,7 +114,9 @@ class PresetManager {
      * @returns {any} Preset value
      */
     findPreset(name) {
-        return $(this.select).find(`option:contains(${name})`).val();
+        return $(this.select).find('option').filter(function() {
+            return $(this).text() === name;
+        }).val();
     }
 
     /**
