@@ -476,7 +476,8 @@ function addPromptTemplates() {
     for (const [name, prompt] of Object.entries(extension_settings.sd.prompts)) {
         const label = $('<label></label>')
             .text(modeLabels[name])
-            .attr('for', `sd_prompt_${name}`);
+            .attr('for', `sd_prompt_${name}`)
+			.attr('data-i18n', `sd_prompt_${name}`);
         const textarea = $('<textarea></textarea>')
             .addClass('textarea_compact text_pole')
             .attr('id', `sd_prompt_${name}`)
@@ -488,6 +489,7 @@ function addPromptTemplates() {
         const button = $('<button></button>')
             .addClass('menu_button fa-solid fa-undo')
             .attr('title', 'Restore default')
+			.attr('data-i18n', 'Restore default')
             .on('click', () => {
                 textarea.val(promptTemplates[name]);
                 extension_settings.sd.prompts[name] = promptTemplates[name];
