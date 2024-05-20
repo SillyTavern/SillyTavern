@@ -10247,8 +10247,6 @@ jQuery(async function () {
 
             if (power_user.zoomed_avatar_magnification) {
                 $('.zoomed_avatar_container').izoomify();
-            } else {
-                $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
             }
 
             $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
