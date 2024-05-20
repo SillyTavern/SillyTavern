@@ -93,5 +93,6 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         run: |
           IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          docker pull $IMAGE_NAME:${{ github.ref_name }}
           docker tag $IMAGE_NAME:${{ github.ref_name }} $IMAGE_NAME:latest
           docker push $IMAGE_NAME:latest
