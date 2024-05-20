@@ -95,5 +95,5 @@ jobs:
       - name: Docker tag latest and push
         if: ${{ github.event_name == 'release' }}
         run: |
-            docker tag ${{ env.IMAGE_NAME }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
