@@ -1266,5 +1266,12 @@
     "Message Content": "Внутри сообщения",
     "Prepend character names to message contents.": "Предварять сообщения именем персонажа.",
     "Character Names Behavior": "Вставка имени персонажа",
-    "Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google.": "Только латинские буквы, цифры и знак подчёркивания. Работает не для всех бэкендов, в частности для Claude, MistralAI, Google."
+    "Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google.": "Только латинские буквы, цифры и знак подчёркивания. Работает не для всех бэкендов, в частности для Claude, MistralAI, Google.",
+    "and pick a character.": "и выберите персонажа.",
+    "Record a snapshot of your current settings.": "Сделать снимок текущих настроек.",
+    "Restore this snapshot": "Откатиться к этому снимку",
+    "To change your user avatar, use the buttons below or select a default persona in the Persona Management menu.": "Чтобы сменить аватарку, используйте кнопки ниже, либо выберите персону по умолчанию в меню управления персоной.",
+    "These characters are the winners of character design contests and have outstandable quality.": "Персонажи наивысшего качества, одержавшие победу в конкурсе персонажей.",
+    "Featured Characters": "Рекомендуемые персонажи",
+    "These characters are the finalists of character design contests and have remarkable quality.": "Персонажи отличного качества, финалисты конкурса персонажей."
 }
