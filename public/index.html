@@ -751,7 +751,7 @@
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Top K">Top K</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Top K sets a maximum amount of top tokens that can be chosen from" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="top_k" name="volume" min="0" max="100" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="top_k" id="top_k_counter">
@@ -759,7 +759,7 @@
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             Top P
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top P (a.k.a. nucleus sampling) adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Top P (a.k.a. nucleus sampling)" title="Top P (a.k.a. nucleus sampling) adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="top_p" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p" id="top_p_counter">
@@ -767,7 +767,7 @@
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Typical P">Typical P</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="typical_p" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="typical_p" id="typical_p_counter">
@@ -775,7 +775,7 @@
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Min P">Min P</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Min P sets a base minimum probability" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="min_p" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="min_p" id="min_p_counter">
@@ -783,7 +783,7 @@
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Top A">Top A</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Top A sets a threshold for token selection based on the square of the highest token probability" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="top_a" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="top_a" id="top_a_counter">
@@ -791,7 +791,7 @@
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small>
                                             <span data-i18n="Tail Free Sampling">TFS</span>
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Tail-Free Sampling (TFS) searches for a tail of low-probability tokens in the distribution,&#13;by analyzing the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;The closer to 0, the more discarded tokens. Set to 1.0 to disable."></div>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Tail-Free Sampling (TFS)" title="Tail-Free Sampling (TFS) searches for a tail of low-probability tokens in the distribution,&#13;by analyzing the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;The closer to 0, the more discarded tokens. Set to 1.0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="tfs" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="tfs" id="tfs_counter">
@@ -868,7 +868,7 @@
                                                 </small>
                                             </a>
                                         </h4>
-                                        <textarea id="grammar" rows="4" class="text_pole textarea_compact monospace" placeholder="Type in the desired custom grammar"></textarea>
+                                        <textarea id="grammar" rows="4" class="text_pole textarea_compact monospace" data-i18n="[placeholder]Type in the desired custom grammar" placeholder="Type in the desired custom grammar"></textarea>
                                     </div>
                                     <div data-newbie-hidden name="KoboldSamplerOrderBlock" class="range-block flexFlowColumn">
                                         <hr class="wide100p">
@@ -1605,7 +1605,7 @@
                                             <label class="checkbox_label flexWrap alignItemsCenter" for="character_names_completion">
                                                 <input type="radio" id="character_names_completion" name="character_names" value="1">
                                                 <span data-i18n="Completion">Completion Object</span>
-                                                <i class="right_menu_button fa-solid fa-circle-exclamation" title="Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google."></i>
+                                                <i class="right_menu_button fa-solid fa-circle-exclamation" data-i18n="[title]Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google." title="Restrictions apply: only Latin alphanumerics and underscores. Doesn't work for all sources, notably: Claude, MistralAI, Google."></i>
                                                 <small class="flexBasis100p" data-i18n="Add character names to completion objects.">
                                                     Add character names to completion objects.
                                                 </small>
@@ -1688,9 +1688,9 @@
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                                Sends images in prompts if the model supports it (e.g. GPT-4V, Claude 3 or Llava 13B).
-                                                Use the <code><i class="fa-solid fa-paperclip"></i></code> action on any message or the
-                                                <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image file to the chat.
+                                                <span data-i18n="image_inlining_hint_1">Sends images in prompts if the model supports it (e.g. GPT-4V, Claude 3 or Llava 13B).
+                                                Use the</span> <code><i class="fa-solid fa-paperclip"></i></code> <span data-i18n="image_inlining_hint_2">action on any message or the</span>
+                                                <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                             </div>
                                         </label>
                                         <div class="flex-container flexFlowColumn wide100p textAlignCenter">
@@ -3873,7 +3873,7 @@
                                 Character Handling
                             </h4>
                             <div title="If set in the advanced character definitions, this field will be displayed in the characters list." data-i18n="[title]If set in the advanced character definitions, this field will be displayed in the characters list.">
-                                <label for="aux_field" data-i18n="Char List Subheader"><small>Char List Subheader</small></label>
+                                <label for="aux_field"><small data-i18n="Char List Subheader">Char List Subheader</small></label>
                                 <select id="aux_field">
                                     <option data-i18n="Character Version" value="character_version">Character Version</option>
                                     <option data-i18n="Created by" value="creator">Created by</option>
@@ -4776,7 +4776,7 @@
         </div>
     </div>
     <!-- various fullscreen popups -->
-    <template id="shadow_popup_template">
+    <template id="shadow_popup_template" data-i18n="[popup_text_save]popup_text_save;[popup_text_yes]popup_text_yes;[popup_text_no]popup_text_no;[popup_text_cancel]popup_text_cancel;[popup_text_import]popup_text_import" popup_text_save="Save" popup_text_yes="Yes" popup_text_no="No" popup_text_cancel="Cancel" popup_text_import="Import"> <!-- localization data holder for popups -->
         <div class="shadow_popup">
             <div class="dialogue_popup">
                 <div class="dialogue_popup_holder">
@@ -5015,11 +5015,11 @@
     </div>
     <div id="background_template" class="template_element">
         <div class="bg_example flex-container" bgfile="" class="bg_example_img" title="">
-            <div title="Copy to system backgrounds" class="bg_button bg_example_copy fa-solid fa-file-arrow-up"></div>
-            <div title="Rename background" class="bg_button bg_example_edit fa-solid fa-pencil"></div>
-            <div title="Lock" class="bg_button bg_example_lock fa-solid fa-lock"></div>
-            <div title="Unlock" class="bg_button bg_example_unlock fa-solid fa-lock-open"></div>
-            <div title="Delete background" class="bg_button bg_example_cross fa-solid fa-circle-xmark"></div>
+            <div title="Copy to system backgrounds" data-i18n="[title]Copy to system backgrounds" class="bg_button bg_example_copy fa-solid fa-file-arrow-up"></div>
+            <div title="Rename background" data-i18n="[title]Rename background" class="bg_button bg_example_edit fa-solid fa-pencil"></div>
+            <div title="Lock" data-i18n="[title]Lock" class="bg_button bg_example_lock fa-solid fa-lock"></div>
+            <div title="Unlock" data-i18n="[title]Unlock" class="bg_button bg_example_unlock fa-solid fa-lock-open"></div>
+            <div title="Delete background" data-i18n="[title]Delete background" class="bg_button bg_example_cross fa-solid fa-circle-xmark"></div>
             <div class="BGSampleTitle">
             </div>
         </div>
@@ -5460,45 +5460,45 @@
             </div>
         </div>
         <div id="completion_prompt_manager_popup_edit">
-            <h3>Edit</h3>
+            <h3 data-i18n="prompt_manager_edit">Edit</h3>
             <div class="completion_prompt_manager_popup_entry">
                 <form class="completion_prompt_manager_popup_entry_form">
                     <div class="flex-container gap10px">
                         <div class="completion_prompt_manager_popup_entry_form_control flex1">
                             <label for="completion_prompt_manager_popup_entry_form_name">
-                                <span>Name</span>
+                                <span data-i18n="prompt_manager_name">Name</span>
                             </label>
-                            <div class="text_muted">A name for this prompt.</div>
+                            <div class="text_muted" data-i18n="A name for this prompt.">A name for this prompt.</div>
                             <input id="completion_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
                         </div>
                         <div class="completion_prompt_manager_popup_entry_form_control flex1">
                             <label for="completion_prompt_manager_popup_entry_form_role">
-                                <span>Role</span>
+                                <span data-i18n="Role">Role</span>
                             </label>
-                            <div class="text_muted">To whom this message will be attributed.</div>
+                            <div class="text_muted" data-i18n="To whom this message will be attributed.">To whom this message will be attributed.</div>
                             <select id="completion_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
-                                <option value="system">System</option>
-                                <option value="user">User</option>
-                                <option value="assistant">AI Assistant</option>
+                                <option data-i18n="System" value="system">System</option>
+                                <option data-i18n="User" value="user">User</option>
+                                <option data-i18n="AI Assistant" value="assistant">AI Assistant</option>
                             </select>
                         </div>
                     </div>
                     <div class="flex-container gap10px">
                         <div class="completion_prompt_manager_popup_entry_form_control flex1">
                             <label for="completion_prompt_manager_popup_entry_form_injection_position">
-                                <span>Position</span>
+                                <span data-i18n="prompt_manager_position">Position</span>
                             </label>
-                            <div class="text_muted">Injection position. Next to other prompts (relative) or in-chat (absolute).</div>
+                            <div class="text_muted" data-i18n="Injection position. Next to other prompts (relative) or in-chat (absolute).">Injection position. Next to other prompts (relative) or in-chat (absolute).</div>
                             <select id="completion_prompt_manager_popup_entry_form_injection_position" class="text_pole" name="injection_position">
-                                <option value="0">Relative</option>
-                                <option value="1">Absolute</option>
+                                <option data-i18n="prompt_manager_relative" value="0">Relative</option>
+                                <option data-i18n="prompt_manager_absolute" value="1">Absolute</option>
                             </select>
                         </div>
                         <div id="completion_prompt_manager_depth_block" class="completion_prompt_manager_popup_entry_form_control flex1">
                             <label for="completion_prompt_manager_popup_entry_form_injection_depth">
-                                <span>Depth</span>
+                                <span data-i18n="prompt_manager_depth">Depth</span>
                             </label>
-                            <div class="text_muted">Injection depth. 0 = after the last message, 1 = before the last message, etc.</div>
+                            <div class="text_muted" data-i18n="Injection depth. 0 = after the last message, 1 = before the last message, etc.">Injection depth. 0 = after the last message, 1 = before the last message, etc.</div>
                             <input id="completion_prompt_manager_popup_entry_form_injection_depth" class="text_pole" type="number" name="injection_depth" min="0" max="999" value="4" />
                         </div>
                     </div>
@@ -5506,14 +5506,14 @@
                         <div class="flex-container alignItemsCenter">
                             <div class="flex1">
                                 <label for="completion_prompt_manager_popup_entry_form_prompt">
-                                    <span>Prompt</span>
+                                    <span data-i18n="Prompt">Prompt</span>
                                 </label>
-                                <div class="text_muted">The prompt to be sent.</div>
+                                <div class="text_muted" data-i18n="The prompt to be sent.">The prompt to be sent.</div>
                             </div>
                             <div id="completion_prompt_manager_forbid_overrides_block">
-                                <label class="checkbox_label" for="completion_prompt_manager_popup_entry_form_forbid_overrides" title="This prompt cannot be overridden by character cards, even if overrides are preferred.">
+                                <label class="checkbox_label" for="completion_prompt_manager_popup_entry_form_forbid_overrides" data-i18n="[title]This prompt cannot be overridden by character cards, even if overrides are preferred." title="This prompt cannot be overridden by character cards, even if overrides are preferred.">
                                     <input type="checkbox" id="completion_prompt_manager_popup_entry_form_forbid_overrides" name="forbid_overrides" />
-                                    <span>Forbid Overrides</span>
+                                    <span data-i18n="prompt_manager_forbid_overrides">Forbid Overrides</span>
                                 </label>
                             </div>
                         </div>
@@ -5622,6 +5622,12 @@
                 <li><span data-i18n="welcome_message_part_4">Type</span> <code>/help</code> <span data-i18n="welcome_message_part_5">in chat for commands and macros.</span></li>
                 <li><span data-i18n="welcome_message_part_6">Join the</span> <a href="https://discord.gg/sillytavern" data-i18n="Discord server" target="_blank">Discord server</a> <span data-i18n="welcome_message_part_7">for info and announcements.</span></li>
             </ul>
+            <div id="onboarding-UI-language-block" class="flex-container alignItemsBaseline">
+                <span data-i18n="UI Language">Language:</span>
+                <select id="onboarding_ui_language_select" class="flex1 margin0">
+                    <option value="en">English</option>
+                </select>
+            </div>
             <b data-i18n="SillyTavern is aimed at advanced users.">
                 SillyTavern is aimed at advanced users.
             </b>
@@ -5647,7 +5653,7 @@
                 <span>
                     <span class="menu_button menu_button_icon external_import_button">
                         <i class="fa-solid fa-cloud-arrow-down"></i>
-                        <span>Import</span>
+                        <span data-i18n="onboarding_import">Import</span>
                     </span>
                     <span data-i18n="from supported sources or view">
                         from supported sources or view

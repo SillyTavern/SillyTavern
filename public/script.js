@@ -467,6 +467,7 @@ let chat_create_date = '';
 let firstRun = false;
 let settingsReady = false;
 let currentVersion = '0.0.0';
+let displayVersion = 'SillyTavern';
 
 export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
@@ -600,7 +601,7 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplateAsync('welcome'),
+            mes: await renderTemplateAsync('welcome', { displayVersion }),
         },
         group: {
             name: systemUserName,
@@ -661,7 +662,7 @@ async function getClientVersion() {
         const response = await fetch('/version');
         const data = await response.json();
         CLIENT_VERSION = data.agent;
-        let displayVersion = `SillyTavern ${data.pkgVersion}`;
+        displayVersion = `SillyTavern ${data.pkgVersion}`;
         currentVersion = data.pkgVersion;
 
         if (data.gitRevision && data.gitBranch) {
@@ -857,12 +858,12 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    await getSystemMessages();
-    sendSystemMessage(system_message_types.WELCOME);
     await getClientVersion();
     await readSecretState();
-    await getSettings();
     initLocales();
+    await getSystemMessages();
+    sendSystemMessage(system_message_types.WELCOME);
+    await getSettings();
     initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
@@ -10446,17 +10447,8 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.external_import_button, #external_import_button', async () => {
-        const html = `<h3>Enter the URL of the content to import</h3>
-        Supported sources:<br>
-        <ul class="justifyLeft">
-            <li>Chub Character (Direct Link or ID)<br>Example: <tt>Anonymous/example-character</tt></li>
-            <li>Chub Lorebook (Direct Link or ID)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
-            <li>JanitorAI Character (Direct Link or UUID)<br>Example: <tt>ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
-            <li>Pygmalion.chat Character (Direct Link or UUID)<br>Example: <tt>a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
-            <li>AICharacterCard.com Character (Direct Link or ID)<br>Example: <tt>AICC/aicharcards/the-game-master</tt></li>
-            <li>Direct PNG Link (refer to <code>config.yaml</code> for allowed hosts)<br>Example: <tt>https://files.catbox.moe/notarealfile.png</tt></li>
-        <ul>`;
-        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: 'Import', rows: 4 });
+        const html = await renderTemplateAsync('importCharacters');
+        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: $('#shadow_popup_template').attr('popup_text_import'), rows: 4 });
 
         if (!input) {
             console.debug('Custom content import cancelled');
