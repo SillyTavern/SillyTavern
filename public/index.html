@@ -4381,7 +4381,22 @@
                                         <option value="0" data-i18n="In Story String / Prompt Manager">In Story String / Prompt Manager</option>
                                         <option value="2" data-i18n="Top of Author's Note">Top of Author's Note</option>
                                         <option value="3" data-i18n="Bottom of Author's Note">Bottom of Author's Note</option>
+                                        <option value="4" data-i18n="In-chat @ Depth">In-chat @ Depth</option>
                                     </select>
+                                    <div id="persona_depth_position_settings" class="flex-container">
+                                        <div class="flex1">
+                                            <label for="persona_depth_value" data-i18n="Depth:">Depth:</label>
+                                            <input id="persona_depth_value" class="text_pole" type="number" min="0" max="999" step="1">
+                                        </div>
+                                        <div class="flex1">
+                                            <label for="persona_depth_role" data-i18n="Role:">Role:</label>
+                                            <select id="persona_depth_role" class="text_pole">
+                                                <option data-i18n="System" value="0">System</option>
+                                                <option data-i18n="User" value="1">User</option>
+                                                <option data-i18n="Assistant" value="2">Assistant</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="range-block">

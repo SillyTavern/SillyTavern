@@ -102,6 +102,7 @@ export const persona_description_positions = {
     AFTER_CHAR: 1,
     TOP_AN: 2,
     BOTTOM_AN: 3,
+    AT_DEPTH: 4,
 };
 
 let power_user = {
@@ -244,6 +245,8 @@ let power_user = {
 
     persona_description: '',
     persona_description_position: persona_description_positions.IN_PROMPT,
+    persona_description_role: 0,
+    persona_description_depth: 2,
     persona_show_notifications: true,
     persona_sort_order: 'asc',
 
@@ -1401,7 +1404,7 @@ async function applyMovingUIPreset(name) {
 
     console.log('MovingUI Preset applied: ' + name);
     loadMovingUIState();
-    saveSettingsDebounced()
+    saveSettingsDebounced();
 }
 
 /**
