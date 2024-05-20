@@ -62,6 +62,9 @@
         },
         "@zeldafan0225/ai_horde": {
             "esbuild": "npm:dry-uninstall"
+        },
+        "node-fetch": {
+            "whatwg-url": "^14.0.0"
         }
     },
     "name": "sillytavern",
