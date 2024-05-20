@@ -68,8 +68,7 @@ jobs:
           # Release version tag if the workflow is triggered by a release
           # Branch name tag if the workflow is triggered by a push
           tags: |
-            ${{ github.event_name == 'release' && github.ref_name }}
-            ${{ github.event_name != 'release' && env.BRANCH_NAME }}
+            ${{ github.event_name == 'release' && github.ref_name || env.BRANCH_NAME }}
 
       # Login into package repository as the person who created the release
       - name: Log in to the Container registry
@@ -96,5 +95,5 @@ jobs:
       - name: Docker tag latest and push
         if: ${{ github.event_name == 'release' }}
         run: |
-          docker tag $IMAGE_NAME:${{ github.ref_name }} $IMAGE_NAME:latest
-          docker push $IMAGE_NAME:latest
+            docker tag ${{ env.IMAGE_NAME }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
