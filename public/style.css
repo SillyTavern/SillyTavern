@@ -4877,7 +4877,6 @@ body:not(.movingUI) .drawer-content.maximized {
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
     padding: 5px;
-    border: 1px solid red;
 }
 
 .zoomed_avatar {
