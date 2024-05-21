@@ -469,7 +469,6 @@ let settingsReady = false;
 let currentVersion = '0.0.0';
 let displayVersion = 'SillyTavern';
 
-export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
 let generation_started = new Date();
 /** @type {import('scripts/char-data.js').v1CharData[]} */
@@ -5785,8 +5784,10 @@ async function getChatResult() {
     name2 = characters[this_chid].name;
     if (chat.length === 0) {
         const message = getFirstMessage();
-        chat.push(message);
-        await saveChatConditional();
+        if (message.mes) {
+            chat.push(message);
+            await saveChatConditional();
+        }
     }
     await loadItemizedPrompts(getCurrentChatId());
     await printMessages();
@@ -5802,7 +5803,7 @@ async function getChatResult() {
 }
 
 function getFirstMessage() {
-    const firstMes = characters[this_chid].first_mes || default_ch_mes;
+    const firstMes = characters[this_chid].first_mes || '';
     const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
 
     const message = {
@@ -5816,10 +5817,17 @@ function getFirstMessage() {
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
         const swipes = [message.mes, ...(alternateGreetings.map(greeting => getRegexedString(greeting, regex_placement.AI_OUTPUT)))];
+
+        if (!message.mes) {
+            swipes.shift();
+            message.mes = swipes[0];
+        }
+
         message['swipe_id'] = 0;
         message['swipes'] = swipes;
         message['swipe_info'] = [];
     }
+
     return message;
 }
 
@@ -6381,9 +6389,9 @@ async function messageEditDone(div) {
     appendMediaToMessage(mes, div.closest('.mes'));
     addCopyToCodeBlocks(div.closest('.mes'));
 
+    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
     this_edit_mes_id = undefined;
     await saveChatConditional();
-    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
 }
 
 /**
@@ -7400,8 +7408,8 @@ function openAlternateGreetings() {
     template.find('.add_alternate_greeting').on('click', function () {
         const array = getArray();
         const index = array.length;
-        array.push(default_ch_mes);
-        addAlternateGreeting(template, default_ch_mes, index, getArray);
+        array.push('');
+        addAlternateGreeting(template, '', index, getArray);
         updateAlternateGreetingsHintVisibility(template);
     });
 
@@ -7572,15 +7580,20 @@ async function createOrEditCharacter(e) {
                 eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: this_chid, character: characters[this_chid] } });
 
                 // Recreate the chat if it hasn't been used at least once (i.e. with continue).
-                if (chat.length === 1 && !selected_group && !chat_metadata['tainted']) {
-                    const firstMessage = getFirstMessage();
-                    chat[0] = firstMessage;
+                const message = getFirstMessage();
+                const shouldRegenerateMessage =
+                    message.mes &&
+                    !selected_group &&
+                    !chat_metadata['tainted'] &&
+                    (chat.length === 0 || (chat.length === 1 && !chat[0].is_user && !chat[0].is_system));
 
-                    const chat_id = (chat.length - 1);
-                    await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
+                if (shouldRegenerateMessage) {
+                    chat.splice(0, chat.length, message);
+                    const messageId = (chat.length - 1);
+                    await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
                     await clearChat();
                     await printMessages();
-                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId);
                     await saveChatConditional();
                 }
             },
