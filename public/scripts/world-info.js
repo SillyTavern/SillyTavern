@@ -186,7 +186,7 @@ class WorldInfoBuffer {
             result += '\n' + this.#recurseBuffer.join('\n');
         }
 
-        return this.#transformString(result, entry);
+        return result;
     }
 
     /**
@@ -204,6 +204,7 @@ class WorldInfoBuffer {
         }
 
         // Otherwise we do normal matching of plaintext with the chosen entry settings
+        haystack = this.#transformString(haystack, entry);
         const transformedString = this.#transformString(needle, entry);
         const matchWholeWords = entry.matchWholeWords ?? world_info_match_whole_words;
 

@@ -30,7 +30,7 @@ jobs:
         run: |
           echo "IMAGE_NAME=${REPO,,}" >> ${GITHUB_ENV}
 
-      # Using the following workaround because currently GitHub Actions 
+      # Using the following workaround because currently GitHub Actions
       # does not support logical AND/OR operations on triggers
       # It's currently not possible to have `branches` under the `schedule` trigger
       - name: Checkout the release branch (on release)
@@ -65,7 +65,10 @@ jobs:
         id: metadata
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: ${{ env.BRANCH_NAME }}
+          # Release version tag if the workflow is triggered by a release
+          # Branch name tag if the workflow is triggered by a push
+          tags: |
+            ${{ github.event_name == 'release' && github.ref_name || env.BRANCH_NAME }}
 
       # Login into package repository as the person who created the release
       - name: Log in to the Container registry
@@ -92,5 +95,6 @@ jobs:
       - name: Docker tag latest and push
         if: ${{ github.event_name == 'release' }}
         run: |
-          docker tag $IMAGE_NAME:${{ github.ref_name }} $IMAGE_NAME:latest
-          docker push $IMAGE_NAME:latest
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

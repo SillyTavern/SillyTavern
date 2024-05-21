@@ -467,6 +467,7 @@ let chat_create_date = '';
 let firstRun = false;
 let settingsReady = false;
 let currentVersion = '0.0.0';
+let displayVersion = 'SillyTavern';
 
 export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
@@ -600,7 +601,7 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplateAsync('welcome'),
+            mes: await renderTemplateAsync('welcome', { displayVersion }),
         },
         group: {
             name: systemUserName,
@@ -661,7 +662,7 @@ async function getClientVersion() {
         const response = await fetch('/version');
         const data = await response.json();
         CLIENT_VERSION = data.agent;
-        let displayVersion = `SillyTavern ${data.pkgVersion}`;
+        displayVersion = `SillyTavern ${data.pkgVersion}`;
         currentVersion = data.pkgVersion;
 
         if (data.gitRevision && data.gitBranch) {
@@ -1545,6 +1546,13 @@ function getCharacterSource(chId = this_chid) {
 
     if (sourceUrl) {
         return sourceUrl;
+    }
+
+    const risuId = characters[chId]?.data?.extensions?.risuai?.source;
+
+    if (Array.isArray(risuId) && risuId.length && typeof risuId[0] === 'string' && risuId[0].startsWith('risurealm:')) {
+        const realmId = risuId[0].split(':')[1];
+        return `https://realm.risuai.net/character/${realmId}`;
     }
 
     return '';
@@ -2543,6 +2551,9 @@ function cleanGroupMessage(getMessage) {
 }
 
 function addPersonaDescriptionExtensionPrompt() {
+    const INJECT_TAG = 'PERSONA_DESCRIPTION';
+    setExtensionPrompt(INJECT_TAG, '', extension_prompt_types.IN_PROMPT, 0);
+
     if (!power_user.persona_description) {
         return;
     }
@@ -2556,6 +2567,10 @@ function addPersonaDescriptionExtensionPrompt() {
             : `${originalAN}\n${power_user.persona_description}`;
 
         setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
+    }
+
+    if (power_user.persona_description_position === persona_description_positions.AT_DEPTH) {
+        setExtensionPrompt(INJECT_TAG, power_user.persona_description, extension_prompt_types.IN_CHAT, power_user.persona_description_depth, true, power_user.persona_description_role);
     }
 }
 
@@ -3381,6 +3396,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Extension added strings
     // Set non-WI AN
     setFloatingPrompt();
+    // Add persona description to prompt
+    addPersonaDescriptionExtensionPrompt();
 
     // Add WI to prompt (and also inject WI to AN value via hijack)
     // Make quiet prompt available for WIAN
@@ -3498,8 +3515,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         userAlignmentMessage = formatMessageHistoryItem(alignmentMessage, isInstruct, false);
     }
 
-    // Add persona description to prompt
-    addPersonaDescriptionExtensionPrompt();
     // Call combined AN into Generate
     const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
     const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
@@ -5938,7 +5953,7 @@ export function changeMainAPI() {
         getStatusHorde();
         getHordeModels(true);
     }
-    validateDisabledSamplers()
+    validateDisabledSamplers();
     setupChatCompletionPromptManager(oai_settings);
     forceCharacterEditorTokenize();
 }
@@ -6169,7 +6184,7 @@ export async function getSettings() {
             firstRun = false;
         }
     }
-    await validateDisabledSamplers()
+    await validateDisabledSamplers();
     settingsReady = true;
     eventSource.emit(event_types.SETTINGS_LOADED);
 }
@@ -10240,18 +10255,7 @@ jQuery(async function () {
 
             if (power_user.zoomed_avatar_magnification) {
                 $('.zoomed_avatar_container').izoomify();
-            } else {
-                $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
             }
-
-            $('.zoomed_avatar').on('mouseup', (e) => {
-                if (e.target.closest('.drag-grabber') || e.button !== 0) {
-                    return;
-                }
-                $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
-                    $(`.zoomed_avatar[forChar="${charname}"]`).remove();
-                });
-            });
 
             $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
                 if (e.target.closest('.dragClose')) {

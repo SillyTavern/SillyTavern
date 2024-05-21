@@ -68,10 +68,9 @@ export class Popup {
         if (allowHorizontalScrolling) dlg.classList.add('horizontal_scrolling_dialogue_popup');
         if (allowVerticalScrolling) dlg.classList.add('vertical_scrolling_dialogue_popup');
 
-        const localeDataHolder = $('#shadow_popup_template');
         this.ok.textContent = okButton ?? 'OK';
-        this.cancel.textContent = cancelButton ?? localeDataHolder.attr('popup_text_cancel');
-        
+        this.cancel.textContent = cancelButton ?? template.getAttribute('popup_text_cancel');
+
         switch (type) {
             case POPUP_TYPE.TEXT: {
                 this.input.style.display = 'none';
@@ -80,13 +79,13 @@ export class Popup {
             }
             case POPUP_TYPE.CONFIRM: {
                 this.input.style.display = 'none';
-                this.ok.textContent = okButton ?? localeDataHolder.attr('popup_text_yes');
-                this.cancel.textContent = cancelButton ?? localeDataHolder.attr('popup_text_no');
+                this.ok.textContent = okButton ?? template.getAttribute('popup_text_yes');
+                this.cancel.textContent = cancelButton ?? template.getAttribute('popup_text_no');
                 break;
             }
             case POPUP_TYPE.INPUT: {
                 this.input.style.display = 'block';
-                this.ok.textContent = okButton ?? localeDataHolder.attr('popup_text_save');
+                this.ok.textContent = okButton ?? template.getAttribute('popup_text_save');
                 break;
             }
             default: {
