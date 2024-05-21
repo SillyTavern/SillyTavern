@@ -1885,7 +1885,7 @@ function processReply(str) {
     str = str.replaceAll('“', '');
     str = str.replaceAll('.', ',');
     str = str.replaceAll('\n', ', ');
-    str = str.replace(/[^a-zA-Z0-9,:(){}\-']+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
+    str = str.replace(/[^a-zA-Z0-9,:_(){}[\]\-']+/g, ' ');
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
 
