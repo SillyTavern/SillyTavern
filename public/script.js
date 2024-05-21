@@ -9971,6 +9971,7 @@ jQuery(async function () {
             a.setAttribute('download', filename);
             document.body.appendChild(a);
             a.click();
+            URL.revokeObjectURL(a.href);
             document.body.removeChild(a);
         }
 
