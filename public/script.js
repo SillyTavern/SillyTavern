@@ -6381,9 +6381,9 @@ async function messageEditDone(div) {
     appendMediaToMessage(mes, div.closest('.mes'));
     addCopyToCodeBlocks(div.closest('.mes'));
 
+    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
     this_edit_mes_id = undefined;
     await saveChatConditional();
-    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
 }
 
 /**
