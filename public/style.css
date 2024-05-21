@@ -4904,7 +4904,7 @@ body:not(.movingUI) .drawer-content.maximized {
 
 .zoomed_avatar_container {
     width: 100%;
-    margin-inline: 10px;
+    /* margin-inline: 10px; */
     max-height: 90vh;
     max-width: 90svh;
 }
