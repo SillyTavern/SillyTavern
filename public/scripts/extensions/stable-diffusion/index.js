@@ -31,10 +31,6 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { resolveVariable } from '../../variables.js';
 export { MODULE_NAME };
 
-// Wraps a string into monospace font-face span
-const m = x => `<span class="monospace">${x}</span>`;
-// Joins an array of strings with ' / '
-const j = a => a.join(' / ');
 // Wraps a string into paragraph block
 const p = a => `<p>${a}</p>`;
 
@@ -150,11 +146,6 @@ const promptTemplates = {
     [generationMode.CHARACTER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
     [generationMode.USER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
 };
-
-const helpString = [
-    `${m('[quiet=false/true] (argument)')} – requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments: ${m(j(Object.values(triggerWords).flat()))}.`,
-    'Anything else would trigger a "free mode" to make generate whatever you prompted. Example: \'/imagine apple tree\' would generate a picture of an apple tree. Returns a link to the generated image.',
-].join(' ');
 
 const defaultPrefix = 'best quality, absurdres, aesthetic,';
 const defaultNegative = 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry';
@@ -1897,7 +1888,7 @@ function processReply(str) {
     str = str.replaceAll('“', '');
     str = str.replaceAll('.', ',');
     str = str.replaceAll('\n', ', ');
-    str = str.replace(/[^a-zA-Z0-9,:()\-']+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
+    str = str.replace(/[^a-zA-Z0-9,:(){}\-']+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
 
