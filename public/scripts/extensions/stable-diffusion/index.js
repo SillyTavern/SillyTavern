@@ -31,9 +31,6 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { resolveVariable } from '../../variables.js';
 export { MODULE_NAME };
 
-// Wraps a string into paragraph block
-const p = a => `<p>${a}</p>`;
-
 const MODULE_NAME = 'sd';
 const UPDATE_INTERVAL = 1000;
 // This is a 1x1 transparent PNG
@@ -2840,18 +2837,20 @@ async function onComfyDeleteWorkflowClick() {
  */
 async function sendMessage(prompt, image, generationType, additionalNegativePrefix) {
     const context = getContext();
-    const messageText = `[${context.name2} sends a picture that contains: ${prompt}]`;
+    const name = context.groupId ? systemUserName : context.name2;
+    const messageText = `[${name} sends a picture that contains: ${prompt}]`;
     const message = {
-        name: context.groupId ? systemUserName : context.name2,
+        name: name,
         is_user: false,
         is_system: true,
         send_date: getMessageTimeStamp(),
-        mes: context.groupId ? p(messageText) : messageText,
+        mes: messageText,
         extra: {
             image: image,
             title: prompt,
             generationType: generationType,
             negative: additionalNegativePrefix,
+            inline_image: false,
         },
     };
     context.chat.push(message);
