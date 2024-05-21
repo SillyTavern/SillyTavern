@@ -200,6 +200,33 @@ We have a comprehensive guide on installing SillyTavern [here](http://docs.silly
 5. Start the install launcher with: `chmod +x install.sh && ./install.sh` and choose what you wanna install
 6. After installation start the launcher with: `chmod +x launcher.sh && ./launcher.sh`
 
+## Installing via Docker
+These instructions assume you have installed Docker, are able to access your command line for the installation of containers, and familiar with their general operation.
+
+### Using the GitHub Container Registry (easiest)
+
+You will need two mandatory directory mappings and a port mapping to allow SillyTavern to function. In the command, replace your selections in the following places:
+
+#### Container Variables
+##### Volume Mappings
+- [config] - The directory where SillyTavern configuration files will be stored on your host machine
+- [data] - The directory where SillyTavern user data (including characters) will be stored on your host machine
+- [plugins] - (optional) The directory where SillyTavern server plugins will be stored on your host machine
+
+##### Port Mappings
+- [PublicPort] - The port to expose the traffic on. This is mandatory, as you will be accessing the instance from outside of its virtual machine container. DO NOT expose this to the internet without implementing a separate service for security.
+
+##### Additional Settings
+- [TimeZone] - The timezone your instance should use. This is useful for making logs match your local time for easier troubleshooting. Use your TZ Identifier. (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+- [DockerNet] - The docker network that the container should be created with a connection to. If you don't know what it is, see the [official Docker documentation](https://docs.docker.com/reference/cli/docker/network/).
+- [version] - On the right-hand side of this GitHub page, you'll see "Packages". Select the "sillytavern" package and you'll see the image versions. The image tag "latest" will keep you up-to-date with the current release. You can also utilize "staging" and "release" tags that point to the nightly images of the respective branches, but this may not be appropriate, if you are utilizing extensions that could be broken, and may need time to update.
+
+#### Install command
+1. Open your Command Line
+2. Run the following command `docker create --name='sillytavern' --net='[DockerNet]' -e TZ="[TimeZone]" -p '8000:8000/tcp' -v '[plugins]':'/home/node/app/plugins':'rw' -v '[config]':'/home/node/app/config':'rw' -v '[data]':'/home/node/app/data':'rw' 'ghcr.io/sillytavern/sillytavern:[version]' `
+
+> Note that 8000 is a default listening port. Don't forget to use an appropriate port if you change it in the config.
+
 ## 📱 Mobile - Installing via termux
 
 > \[!NOTE]
@@ -351,6 +378,7 @@ GNU Affero General Public License for more details.**
 * Korean translation by @doloroushyeonse
 * k_euler_a support for Horde by <https://github.com/Teashrock>
 * Chinese translation by [@XXpE3](https://github.com/XXpE3), 中文 ISSUES 可以联系 @XXpE3
+* Docker guide by [@mrguymiah](https://github.com/mrguymiah)
 
 <!-- LINK GROUP -->
 [back-to-top]: https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square
