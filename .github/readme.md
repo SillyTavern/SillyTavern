@@ -196,6 +196,28 @@ For MacOS / Linux all of these will be done in a Terminal.
 5. Start the install launcher with: `chmod +x install.sh && ./install.sh` and choose what you wanna install
 6. After installation start the launcher with: `chmod +x launcher.sh && ./launcher.sh`
 
+## Installing via Docker
+Installing via Docker is perhaps the easiest way to do it. These instructions assume you have installed Docker, are able to access your command line for the installation of containers, and familiar with their general operation.
+
+You will need three directory mappings and a port mapping to allow SillyTavern to function. In the command, replace your selections in the following places
+### Container Variables
+#### Volume Mappings
+- [extensions] - The directory where SillyTavern extensions will be stored on your host machine. ex: /mnt/user/
+- [config] - The directory where SillyTavern configuration files will be stored on your host machine
+- [user] - The directory where SillyTavern user data (including characters) will be stored on your host machine
+
+#### Port Mappings
+- [PublicPort] - The port to expose the traffic on. This is mandatory, as you will be accessing the instance from outside of its virtual machine container. DO NOT expose this to the internet without implementing a separate service for security.
+
+#### Additional Settings
+- [TimeZone] - The timezone your instance should use. This is useful for making logs match your local time for easier troubleshooting. Use your TZ Identifier. (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+- [DockerNet] - The docker network that the container should be created with a connection to.
+- [Version] - On the right hand side of this github page, you'll see "Packages". Select the "SillyTavern" package and you'll see the image versions. The image tag "latest" will keep you up-to-date always, but this may not be appropriate, if you are utilizing extensions that could be broken, and may need time to upddate.
+
+### Install command
+1. Open your Command Line
+2. Run the following command `docker create --name='silly-tavern' --net='[DockerNet]' -e TZ="[TimeZone]" -p '8000:8000/tcp' -v '[extensions]':'/home/node/app/public/scripts/extensions/third-party':'rw' -v '[config]':'/home/node/app/config':'rw' -v '[user]':'/home/node/app/public/user':'rw' 'ghcr.io/sillytavern/sillytavern:[version]' `
+
 ## 📱 Mobile - Installing via termux
 
 > \[!NOTE]
