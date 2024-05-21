@@ -683,6 +683,7 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             tables: true,
             parseImgDimensions: true,
             simpleLineBreaks: true,
+            strikethrough: true,
             extensions: [
                 showdownKatex(
                     {
@@ -702,6 +703,7 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             tables: true,
             underline: true,
             simpleLineBreaks: true,
+            strikethrough: true,
             extensions: [markdownUnderscoreExt()],
         });
     }
