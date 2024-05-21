@@ -33,8 +33,8 @@ SillyTavern is a fork of TavernAI 1.2.8 which is under more active development a
 
 SillyTavern is being developed using a two-branch system to ensure a smooth experience for all users.
 
-- release -🌟 **Recommended for most users.** This is the most stable and recommended branch, updated only when major releases are pushed. It's suitable for the majority of users.
-- staging - ⚠️ **Not recommended for casual use.** This branch has the latest features, but be cautious as it may break at any time. Only for power users and enthusiasts.
+* release -🌟 **Recommended for most users.** This is the most stable and recommended branch, updated only when major releases are pushed. It's suitable for the majority of users.
+* staging - ⚠️ **Not recommended for casual use.** This branch has the latest features, but be cautious as it may break at any time. Only for power users and enthusiasts.
 
 If you're not familiar with using the git CLI or don't understand what a branch is, don't worry! The release branch is always the preferable option for you.
 
@@ -51,95 +51,91 @@ Since SillyTavern is only a user interface, it has tiny hardware requirements, i
 ### We now have a community Discord server
 
 | [![][discord-shield-badge]][discord-link] | [Join our Discord community!](https://discord.gg/sillytavern) Get support, share favorite characters and prompts. |
-| :---------------------------------------- | :---------------------------------------------------------------------------------------------------------------- |
+| :---------------------------------------- | :----------------------------------------------------------------------------------------------------------------- |
 
 Or get in touch with the developers directly:
 
-- Discord: cohee or rossascends
-- Reddit: [/u/RossAscends](https://www.reddit.com/user/RossAscends/) or [/u/sillylossy](https://www.reddit.com/user/sillylossy/)
-- [Post a GitHub issue](https://github.com/SillyTavern/SillyTavern/issues)
+* Discord: cohee or rossascends
+* Reddit: [/u/RossAscends](https://www.reddit.com/user/RossAscends/) or [/u/sillylossy](https://www.reddit.com/user/sillylossy/)
+* [Post a GitHub issue](https://github.com/SillyTavern/SillyTavern/issues)
 
 ## This version includes
 
-- A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
-- Swipes
-- Group chats: multi-bot rooms for characters to talk to you or each other
-- Chat checkpoints / branching
-- Advanced KoboldAI / TextGen generation settings with a lot of community-made presets
-- World Info support: create rich lore or save tokens on your character card
-- [OpenRouter](https://openrouter.ai) connection for various APIs (Claude, GPT-4/3.5 and more)
-- [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
-- [AI Horde](https://horde.koboldai.net/) connection
-- Prompt generation formatting tweaking
+* A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
+* Swipes
+* Group chats: multi-bot rooms for characters to talk to you or each other
+* Chat checkpoints / branching
+* Advanced KoboldAI / TextGen generation settings with a lot of community-made presets
+* World Info support: create rich lore or save tokens on your character card
+* [OpenRouter](https://openrouter.ai) connection for various APIs (Claude, GPT-4/3.5 and more)
+* [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
+* [AI Horde](https://horde.koboldai.net/) connection
+* Prompt generation formatting tweaking
 
 ## Extensions
 
 SillyTavern has extensibility support, with some additional AI modules hosted via [SillyTavern Extras API](https://github.com/SillyTavern/SillyTavern-extras)
 
-- Author's Note / Character Bias
-- Character emotional expressions (sprites)
-- Auto-Summary of the chat history
-- Sending images to chat, and the AI interpreting the content
-- Stable Diffusion image generation (5 chat-related presets plus 'free mode')
-- Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
+* Author's Note / Character Bias
+* Character emotional expressions (sprites)
+* Auto-Summary of the chat history
+* Sending images to chat, and the AI interpreting the content
+* Stable Diffusion image generation (5 chat-related presets plus 'free mode')
+* Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
 
 A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/).
 
 ## UI/CSS/Quality of Life tweaks by RossAscends
 
-- Mobile UI optimized for iOS, and supports saving a shortcut to the home screen and opening in fullscreen mode.
-- HotKeys
+* Mobile UI optimized for iOS, and supports saving a shortcut to the home screen and opening in fullscreen mode.
+* HotKeys
+  * Up = Edit last message in chat
+  * Ctrl+Up = Edit last USER message in chat
+  * Left = swipe left
+  * Right = swipe right (NOTE: swipe hotkeys are disabled when the chat bar has something typed into it)
+  * Ctrl+Left = view locally stored variables (in the browser console window)
+  * Enter (with chat bar selected) = send your message to AI
+  * Ctrl+Enter = Regenerate the last AI response
 
-  - Up = Edit last message in chat
-  - Ctrl+Up = Edit last USER message in chat
-  - Left = swipe left
-  - Right = swipe right (NOTE: swipe hotkeys are disabled when the chat bar has something typed into it)
-  - Ctrl+Left = view locally stored variables (in the browser console window)
-  - Enter (with chat bar selected) = send your message to AI
-  - Ctrl+Enter = Regenerate the last AI response
+* User Name Changes and Character Deletion no longer force the page to refresh.
 
-- User Name Changes and Character Deletion no longer force the page to refresh.
+* Toggle option to automatically connect to API on page load.
+* Toggle option to automatically load the most recently viewed character on page load.
+* Better Token Counter - works on unsaved characters, and shows both permanent and temporary tokens.
 
-- Toggle option to automatically connect to API on page load.
-- Toggle option to automatically load the most recently viewed character on page load.
-- Better Token Counter - works on unsaved characters, and shows both permanent and temporary tokens.
+* Better Past Chats View
+  * New Chat filenames are saved in a readable format of "(character) - (when it was created)"
+  * Chat preview increased from 40 characters to 300.
+  * Multiple options for characters list sorting (by name, creation date, chat sizes).
 
-- Better Past Chats View
+* By default the left and right settings panel will close when you click away from it.
+* Clicking the Lock on the nav panel will hold the panel open, and this setting be remembered across sessions.
+* Nav panel status of open or closed will also be saved across sessions.
 
-  - New Chat filenames are saved in a readable format of "(character) - (when it was created)"
-  - Chat preview increased from 40 characters to 300.
-  - Multiple options for characters list sorting (by name, creation date, chat sizes).
-
-- By default the left and right settings panel will close when you click away from it.
-- Clicking the Lock on the nav panel will hold the panel open, and this setting be remembered across sessions.
-- Nav panel status of open or closed will also be saved across sessions.
-
-- Customizable chat UI:
-  - Play a sound when a new message arrives
-  - Switch between round or rectangle avatar styles
-  - Have a wider chat window on the desktop
-  - Optional semi-transparent glass-like panels
-  - Customizable page colors for 'main text', 'quoted text', and 'italics text'.
-  - Customizable UI background color and blur amount
+* Customizable chat UI:
+  * Play a sound when a new message arrives
+  * Switch between round or rectangle avatar styles
+  * Have a wider chat window on the desktop
+  * Optional semi-transparent glass-like panels
+  * Customizable page colors for 'main text', 'quoted text', and 'italics text'.
+  * Customizable UI background color and blur amount
 
 # ⌛ Installation
 
 > \[!WARNING]
->
-> - DO NOT INSTALL INTO ANY WINDOWS CONTROLLED FOLDER (Program Files, System32, etc).
-> - DO NOT RUN START.BAT WITH ADMIN PERMISSIONS
-> - INSTALLATION ON WINDOWS 7 IS IMPOSSIBLE AS IT CAN NOT RUN NODEJS 18.16
+> * DO NOT INSTALL INTO ANY WINDOWS CONTROLLED FOLDER (Program Files, System32, etc).
+> * DO NOT RUN START.BAT WITH ADMIN PERMISSIONS
+> * INSTALLATION ON WINDOWS 7 IS IMPOSSIBLE AS IT CAN NOT RUN NODEJS 18.16
 
 ## 🪟 Windows
 
 ## Installing via Git
-
-1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
-2. Install [Git for Windows](https://gitforwindows.org/)
-3. Open Windows Explorer (`Win+E`)
-4. Browse to or Create a folder that is not controlled or monitored by Windows. (ex: C:\MySpecialFolder\)
-5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
-6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
+  1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
+  2. Install [Git for Windows](https://gitforwindows.org/)
+  3. Open Windows Explorer (`Win+E`)
+  4. Browse to or Create a folder that is not controlled or monitored by Windows. (ex: C:\MySpecialFolder\)
+  5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
+  6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
 
 - for Release Branch: `git clone https://github.com/SillyTavern/SillyTavern -b release`
 - for Staging Branch: `git clone https://github.com/SillyTavern/SillyTavern -b staging`
@@ -148,27 +144,24 @@ A full list of included extensions and tutorials on how to use them can be found
   8. The server will then start, and SillyTavern will pop up in your browser.
 
 ## Installing via SillyTavern Launcher
-
-1.  Install [Git for Windows](https://gitforwindows.org/)
-2.  Open Windows Explorer (`Win+E`) and make or choose a folder where you wanna install the launcher to
-3.  Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
-4.  When you see a black box, insert the following command: `git clone https://github.com/SillyTavern/SillyTavern-Launcher.git`
-5.  Double-click on `installer.bat` and choose what you wanna install
-6.  After installation double-click on `launcher.bat`
+ 1. Install [Git for Windows](https://gitforwindows.org/)
+ 2. Open Windows Explorer (`Win+E`) and make or choose a folder where you wanna install the launcher to
+ 3. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
+ 4. When you see a black box, insert the following command: `git clone https://github.com/SillyTavern/SillyTavern-Launcher.git`
+ 5. Double-click on `installer.bat` and choose what you wanna install
+ 6. After installation double-click on `launcher.bat`
 
 ## Installing via GitHub Desktop
-
 (This allows git usage **only** in GitHub Desktop, if you want to use `git` on the command line too, you also need to install [Git for Windows](https://gitforwindows.org/))
-
-1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
-2. Install [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32)
-3. After installing GitHub Desktop, click on `Clone a repository from the internet....` (Note: You **do NOT need** to create a GitHub account for this step)
-4. On the menu, click the URL tab, enter this URL `https://github.com/SillyTavern/SillyTavern`, and click Clone. You can change the Local path to change where SillyTavern is going to be downloaded.
-5. To open SillyTavern, use Windows Explorer to browse into the folder where you cloned the repository. By default, the repository will be cloned here: `C:\Users\[Your Windows Username]\Documents\GitHub\SillyTavern`
-6. Double-click on the `start.bat` file. (Note: the `.bat` part of the file name might be hidden by your OS, in that case, it will look like a file called "`Start`". This is what you double-click to run SillyTavern)
-7. After double-clicking, a large black command console window should open and SillyTavern will begin to install what it needs to operate.
-8. After the installation process, if everything is working, the command console window should look like this and a SillyTavern tab should be open in your browser:
-9. Connect to any of the [supported APIs](https://docs.sillytavern.app/usage/api-connections/) and start chatting!
+  1. Install [NodeJS](https://nodejs.org/en) (latest LTS version is recommended)
+  2. Install [GitHub Desktop](https://central.github.com/deployments/desktop/desktop/latest/win32)
+  3. After installing GitHub Desktop, click on `Clone a repository from the internet....` (Note: You **do NOT need** to create a GitHub account for this step)
+  4. On the menu, click the URL tab, enter this URL `https://github.com/SillyTavern/SillyTavern`, and click Clone. You can change the Local path to change where SillyTavern is going to be downloaded.
+  6. To open SillyTavern, use Windows Explorer to browse into the folder where you cloned the repository. By default, the repository will be cloned here: `C:\Users\[Your Windows Username]\Documents\GitHub\SillyTavern`
+  7. Double-click on the `start.bat` file. (Note: the `.bat` part of the file name might be hidden by your OS, in that case, it will look like a file called "`Start`". This is what you double-click to run SillyTavern)
+  8. After double-clicking, a large black command console window should open and SillyTavern will begin to install what it needs to operate.
+  9. After the installation process, if everything is working, the command console window should look like this and a SillyTavern tab should be open in your browser:
+  10. Connect to any of the [supported APIs](https://docs.sillytavern.app/usage/api-connections/) and start chatting!
 
 ## 🐧 Linux & 🍎 MacOS
 
@@ -186,14 +179,13 @@ For MacOS / Linux all of these will be done in a Terminal.
 - `./start.sh`
 - `bash start.sh`
 
-## 🐋 Docker
+## 🐋Docker
 
 We have a comprehensive guide on installing SillyTavern [here](http://docs.sillytavern.app/installation/docker/) which covers installations on Windows, macOS and Linux! Give it a read if you wish to install SillyTavern via Docker.
 
 ## Installing via SillyTavern Launcher
 
 ### For Linux users
-
 1. Open your favorite terminal and install git
 2. Download Sillytavern Launcher with: `git clone https://github.com/SillyTavern/SillyTavern-Launcher.git`
 3. Navigate to the SillyTavern-Launcher with: `cd SillyTavern-Launcher`
@@ -201,7 +193,6 @@ We have a comprehensive guide on installing SillyTavern [here](http://docs.silly
 5. After installation start the launcher with: `chmod +x launcher.sh && ./launcher.sh`
 
 ### For Mac users
-
 1. Open a terminal and install brew with: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 2. Then install git with: `brew install git`
 3. Download Sillytavern Launcher with: `git clone https://github.com/SillyTavern/SillyTavern-Launcher.git`
@@ -213,8 +204,8 @@ We have a comprehensive guide on installing SillyTavern [here](http://docs.silly
 
 > \[!NOTE]
 > **SillyTavern can be run natively on Android phones using Termux. Please refer to this guide by ArroganceComplex#2659:**
->
-> - <https://rentry.org/STAI-Termux>
+> * <https://rentry.org/STAI-Termux>
+
 
 ## API keys management
 
@@ -237,10 +228,10 @@ However, it can be used to allow remote connections from anywhere as well.
 
 ### 1. Managing whitelisted IPs
 
-- Create a new text file inside your SillyTavern base install folder called `whitelist.txt`.
-- Open the file in a text editor, and add a list of IPs you want to be allowed to connect.
+* Create a new text file inside your SillyTavern base install folder called `whitelist.txt`.
+* Open the file in a text editor, and add a list of IPs you want to be allowed to connect.
 
-_Both individual IPs and wildcard IP ranges are accepted. Examples:_
+*Both individual IPs and wildcard IP ranges are accepted. Examples:*
 
 ```txt
 192.168.0.1
@@ -257,12 +248,12 @@ or
 
 CIDR masks are also accepted (eg. 10.0.0.0/24).
 
-- Save the `whitelist.txt` file.
-- Restart your ST server.
+* Save the `whitelist.txt` file.
+* Restart your ST server.
 
 Now devices which have the IP specified in the file will be able to connect.
 
-_Note: `config.yaml` also has a `whitelist` array, which you can use in the same way, but this array will be ignored if `whitelist.txt` exists._
+*Note: `config.yaml` also has a `whitelist` array, which you can use in the same way, but this array will be ignored if `whitelist.txt` exists.*
 
 ### 2. Getting the IP for the ST host machine
 
@@ -270,11 +261,11 @@ After the whitelist has been setup, you'll need the IP of the ST-hosting device.
 
 If the ST-hosting device is on the same wifi network, you will use the ST-host's internal wifi IP:
 
-- For Windows: windows button > type `cmd.exe` in the search bar > type `ipconfig` in the console, hit Enter > look for `IPv4` listing.
+* For Windows: windows button > type `cmd.exe` in the search bar > type `ipconfig` in the console, hit Enter > look for `IPv4` listing.
 
 If you (or someone else) want to connect to your hosted ST while not being on the same network, you will need the public IP of your ST-hosting device.
 
-- While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for `IPv4`. This is what you would use to connect from the remote device.
+* While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for `IPv4`. This is what you would use to connect from the remote device.
 
 ### 3. Connect the remote device to the ST host machine
 
@@ -300,8 +291,8 @@ After restarting your ST server, any device will be able to connect to it, regar
 
 ### Still Unable To Connect?
 
-- Create an inbound/outbound firewall rule for the port found in `config.yaml`. Do NOT mistake this for port-forwarding on your router, otherwise, someone could find your chat logs and that's a big no-no.
-- Enable the Private Network profile type in Settings > Network and Internet > Ethernet. This is VERY important for Windows 11, otherwise, you would be unable to connect even with the aforementioned firewall rules.
+* Create an inbound/outbound firewall rule for the port found in `config.yaml`. Do NOT mistake this for port-forwarding on your router, otherwise, someone could find your chat logs and that's a big no-no.
+* Enable the Private Network profile type in Settings > Network and Internet > Ethernet. This is VERY important for Windows 11, otherwise, you would be unable to connect even with the aforementioned firewall rules.
 
 ## Performance issues?
 
@@ -329,37 +320,39 @@ You can find them archived here:
 
 <https://files.catbox.moe/1xevnc.zip>
 
+
+
+
 ## License and credits
 
 **This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Affero General Public License for more details.**
 
-- TAI Base by Humi: MIT
-- Cohee's modifications and derived code: AGPL v3
-- RossAscends' additions: AGPL v3
-- Portions of CncAnon's TavernAITurbo mod: Unknown license
-- kingbri's various commits and suggestions (<https://github.com/bdashore3>)
-- city_unit's extensions and various QoL features (<https://github.com/city-unit>)
-- StefanDanielSchwarz's various commits and bug reports (<https://github.com/StefanDanielSchwarz>)
-- Waifu mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
-- Thanks Pygmalion University for being awesome testers and suggesting cool features!
-- Thanks oobabooga for compiling presets for TextGen
-- KoboldAI Presets from KAI Lite: <https://lite.koboldai.net/>
-- Noto Sans font by Google (OFL license)
-- Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
-- AI Horde client library by ZeldaFan0225: <https://github.com/ZeldaFan0225/ai_horde>
-- Linux startup script by AlpinDale
-- Thanks paniphons for providing a FAQ document
-- 10K Discord Users Celebratory Background by @kallmeflocc
-- Default content (characters and lore books) provided by @OtisAlejandro, @RossAscends and @kallmeflocc
-- Korean translation by @doloroushyeonse
-- k_euler_a support for Horde by <https://github.com/Teashrock>
-- Chinese translation by [@XXpE3](https://github.com/XXpE3), 中文 ISSUES 可以联系 @XXpE3
+* TAI Base by Humi: MIT
+* Cohee's modifications and derived code: AGPL v3
+* RossAscends' additions: AGPL v3
+* Portions of CncAnon's TavernAITurbo mod: Unknown license
+* kingbri's various commits and suggestions (<https://github.com/bdashore3>)
+* city_unit's extensions and various QoL features (<https://github.com/city-unit>)
+* StefanDanielSchwarz's various commits and bug reports (<https://github.com/StefanDanielSchwarz>)
+* Waifu mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
+* Thanks Pygmalion University for being awesome testers and suggesting cool features!
+* Thanks oobabooga for compiling presets for TextGen
+* KoboldAI Presets from KAI Lite: <https://lite.koboldai.net/>
+* Noto Sans font by Google (OFL license)
+* Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
+* AI Horde client library by ZeldaFan0225: <https://github.com/ZeldaFan0225/ai_horde>
+* Linux startup script by AlpinDale
+* Thanks paniphons for providing a FAQ document
+* 10K Discord Users Celebratory Background by @kallmeflocc
+* Default content (characters and lore books) provided by @OtisAlejandro, @RossAscends and @kallmeflocc
+* Korean translation by @doloroushyeonse
+* k_euler_a support for Horde by <https://github.com/Teashrock>
+* Chinese translation by [@XXpE3](https://github.com/XXpE3), 中文 ISSUES 可以联系 @XXpE3
 
 <!-- LINK GROUP -->
-
 [back-to-top]: https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square
 [cover]: https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4
 [discord-link]: https://discord.gg/sillytavern
