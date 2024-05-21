@@ -225,12 +225,15 @@ You will need two mandatory directory mappings and a port mapping to allow Silly
 
 > Note that 8000 is a default listening port. Don't forget to use an appropriate port if you change it in the config.
 
+## ⚡ One-Click Deployment
+
+[![Deploy to RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/?app_id=277)
+
 ## 📱 Mobile - Installing via termux
 
 > \[!NOTE]
 > **SillyTavern can be run natively on Android phones using Termux. Please refer to this guide by ArroganceComplex#2659:**
 > * <https://rentry.org/STAI-Termux>
-
 
 ## API keys management
 
