@@ -566,6 +566,7 @@ export function dragElement(elmnt) {
 
                 containerAspectRatio = null;
                 imageAspectRatio = null;
+                $(window).off('mouseup');
             });
         }
 
