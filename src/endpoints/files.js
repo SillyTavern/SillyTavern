@@ -16,7 +16,6 @@ router.post('/sanitize-filename', jsonParser, async (request, response) => {
         }
 
         const sanitizedFilename = sanitize(fileName);
-        console.debug(`Sanitized fileName: ${fileName} -> ${sanitizedFilename}`);
         return response.send({ fileName: sanitizedFilename });
     } catch (error) {
         console.log(error);
