@@ -154,6 +154,7 @@ import {
     isValidUrl,
     ensureImageFormatSupported,
     flashHighlight,
+    checkOverwriteExistingData,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -6465,7 +6466,8 @@ export async function getChatsFromFiles(data, isGroupChat) {
  * @param {null|number} [characterId=null] - When set, the function will use this character id instead of this_chid.
  *
  * @returns {Promise<Array>} - An array containing metadata of all past chats of the character, sorted
- * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
+ * in descending order by file name. Returns an empty array if the fetch request is unsuccessful or the
+ * response is an object with an `error` property set to `true`.
  */
 export async function getPastCharacterChats(characterId = null) {
     characterId = characterId ?? this_chid;
@@ -6481,10 +6483,13 @@ export async function getPastCharacterChats(characterId = null) {
         return [];
     }
 
-    let data = await response.json();
-    data = Object.values(data);
-    data = data.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
-    return data;
+    const data = await response.json();
+    if (typeof data === 'object' && data.error === true) {
+        return [];
+    }
+
+    const chats = Object.values(data);
+    return chats.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
 }
 
 /**
@@ -8455,11 +8460,28 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
         return;
     }
 
-    const avatar = characters[this_chid].avatar;
-    const name = characters[this_chid].name;
-    const pastChats = await getPastCharacterChats();
+    await deleteCharacter(characters[this_chid].avatar, { deleteChats: delete_chats });
+}
 
-    const msg = { avatar_url: avatar, delete_chats: delete_chats };
+/**
+ * Deletes a character completely, including associated chats if specified
+ *
+ * @param {string} characterKey - The key (avatar) of the character to be deleted
+ * @param {Object} [options] - Optional parameters for the deletion
+ * @param {boolean} [options.deleteChats=true] - Whether to delete associated chats or not
+ * @return {Promise<void>} - A promise that resolves when the character is successfully deleted
+ */
+export async function deleteCharacter(characterKey, { deleteChats = true } = {}) {
+    const character = characters.find(x => x.avatar == characterKey);
+    if (!character) {
+        toastr.warning(`Character ${characterKey} not found. Cannot be deleted.`);
+        return;
+    }
+
+    const chid = characters.indexOf(character);
+    const pastChats = await getPastCharacterChats(chid);
+
+    const msg = { avatar_url: character.avatar, delete_chats: deleteChats };
 
     const response = await fetch('/api/characters/delete', {
         method: 'POST',
@@ -8468,17 +8490,17 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
         cache: 'no-cache',
     });
 
-    if (response.ok) {
-        await deleteCharacter(name, avatar);
+    if (!response.ok) {
+        throw new Error(`Failed to delete character: ${response.status} ${response.statusText}`);
+    }
 
-        if (delete_chats) {
-            for (const chat of pastChats) {
-                const name = chat.file_name.replace('.jsonl', '');
-                await eventSource.emit(event_types.CHAT_DELETED, name);
-            }
+    await removeCharacterFromUI(character.name, character.avatar);
+
+    if (deleteChats) {
+        for (const chat of pastChats) {
+            const name = chat.file_name.replace('.jsonl', '');
+            await eventSource.emit(event_types.CHAT_DELETED, name);
         }
-    } else {
-        console.error('Failed to delete character: ', response.status, response.statusText);
     }
 }
 
@@ -8495,7 +8517,7 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
  * @param {string} avatar - The avatar URL of the character to be deleted.
  * @param {boolean} reloadCharacters - Whether the character list should be refreshed after deletion.
  */
-export async function deleteCharacter(name, avatar, reloadCharacters = true) {
+async function removeCharacterFromUI(name, avatar, reloadCharacters = true) {
     await clearChat();
     $('#character_cross').click();
     this_chid = undefined;
