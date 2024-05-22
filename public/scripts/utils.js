@@ -1470,22 +1470,46 @@ export function flashHighlight(element, timespan = 2000) {
 }
 
 /**
+ * A common base function for case-insensitive and accent-insensitive string comparisons.
+ *
+ * @param {string} a - The first string to compare.
+ * @param {string} b - The second string to compare.
+ * @param {(a:string,b:string)=>boolean} comparisonFunction - The function to use for the comparison.
+ * @returns {*} - The result of the comparison.
+ */
+export function compareIgnoreCaseAndAccents(a, b, comparisonFunction) {
+    if (!a || !b) return comparisonFunction(a, b); // Return the comparison result if either string is empty
+
+    // Normalize and remove diacritics, then convert to lower case
+    const normalizedA = a.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normalizedB = b.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+    // Check if the normalized strings are equal
+    return comparisonFunction(normalizedA, normalizedB);
+}
+
+/**
  * Performs a case-insensitive and accent-insensitive substring search.
  * This function normalizes the strings to remove diacritical marks and converts them to lowercase to ensure the search is insensitive to case and accents.
  *
- * @param {string} text - The text in which to search for the substring.
- * @param {string} searchTerm - The substring to search for in the text.
- * @returns {boolean} - Returns true if the searchTerm is found within the text, otherwise returns false.
+ * @param {string} text - The text in which to search for the substring
+ * @param {string} searchTerm - The substring to search for in the text
+ * @returns {boolean} true if the searchTerm is found within the text, otherwise returns false
  */
 export function includesIgnoreCaseAndAccents(text, searchTerm) {
-    if (!text || !searchTerm) return false; // Return false if either string is empty
+    return compareIgnoreCaseAndAccents(text, searchTerm, (a, b) => a?.includes(b) === true);
+}
 
-    // Normalize and remove diacritics, then convert to lower case
-    const normalizedText = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const normalizedSearchTerm = searchTerm.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
-    // Check if the normalized text includes the normalized search term
-    return normalizedText.includes(normalizedSearchTerm);
+/**
+ * Performs a case-insensitive and accent-insensitive equality check.
+ * This function normalizes the strings to remove diacritical marks and converts them to lowercase to ensure the search is insensitive to case and accents.
+ *
+ * @param {string} a - The first string to compare
+ * @param {string} b - The second string to compare
+ * @returns {boolean} true if the strings are equal, otherwise returns false
+ */
+export function equalsIgnoreCaseAndAccents(a, b) {
+    return compareIgnoreCaseAndAccents(a, b, (a, b) => a === b);
 }
 
 /**
