@@ -20,6 +20,7 @@ import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
+import { isMobile } from './RossAscends-mods.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -1421,15 +1422,47 @@ function updateDrawTagFolder(element, tag) {
     indicator.css('font-size', `calc(var(--mainFontSize) * ${tagFolder.size})`);
 }
 
-function onTagDeleteClick() {
-    if (!confirm('Are you sure?')) {
+async function onTagDeleteClick() {
+    const id = $(this).closest('.tag_view_item').attr('id');
+    const tag = tags.find(x => x.id === id);
+    const otherTags = sortTags(tags.filter(x => x.id !== id).map(x => ({ id: x.id, name: x.name })));
+    const popupText = `
+        <h3>Delete Tag</h3>
+        <p>${`Are you sure you want to delete the tag '${tag.name}'?`}</p>
+        <p>If you want to merge all references to this tag into another tag, select it below:</p>
+        <select id="merge_tag_select">
+            <option value=""> - None - </option>
+            ${otherTags.map(x => `<option value="${x.id}">${x.name}</option>`).join('')}
+        </select>`;
+    const result = callPopup(popupText, 'confirm');
+
+    // Make the select control more fancy on not mobile
+    if (!isMobile()) {
+        // Delete the empty option in the dropdown, and make the select2 be empty by default
+        $('#merge_tag_select option[value=""]').remove();
+        $('#merge_tag_select').select2({
+            width: '50%',
+            placeholder: 'Select tag to merge into',
+            allowClear: true,
+        }).val(null).trigger('change');
+    }
+
+    const confirm = await result;
+    if (!confirm) {
         return;
     }
 
-    const id = $(this).closest('.tag_view_item').attr('id');
+    const mergeTagId = $('#merge_tag_select').val() ? String($('#merge_tag_select').val()) : null;
+
+    // Remove the tag from all entities that use it
+    // If we have a replacement tag, add that one instead
     for (const key of Object.keys(tag_map)) {
-        tag_map[key] = tag_map[key].filter(x => x !== id);
+        if (tag_map[key].includes(id)) {
+            tag_map[key] = tag_map[key].filter(x => x !== id);
+            if (mergeTagId) tag_map[key].push(mergeTagId);
+        }
     }
+
     const index = tags.findIndex(x => x.id === id);
     tags.splice(index, 1);
     $(`.tag[id="${id}"]`).remove();
