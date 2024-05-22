@@ -1224,6 +1224,11 @@
                                         <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="-1" max="8192" step="1">
                                         <input class="neo-range-input" type="number" min="-1" max="8192" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
                                     </div>
+                                    <div data-tg-type="tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                        <small data-i18n="rep.pen decay">Rep Pen Decay</small>
+                                        <input class="neo-range-slider" type="range" id="rep_pen_decay_textgenerationwebui" name="volume" min="-1" max="8192" step="1">
+                                        <input class="neo-range-input" type="number" min="-1" max="8192" step="1" data-for="rep_pen_decay_textgenerationwebui" id="rep_pen_decay_counter_textgenerationwebui">
+                                    </div>
                                     <div data-tg-type="ooba" data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small data-i18n="Encoder Rep. Pen.">Encoder Penalty</small>
                                         <input class="neo-range-slider" type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
@@ -1243,6 +1248,11 @@
                                         <small data-i18n="No Repeat Ngram Size">No Repeat Ngram Size</small>
                                         <input class="neo-range-slider" type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-newbie-hidden data-tg-type="tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                        <small data-i18n="Skew">Skew</small>
+                                        <input class="neo-range-slider" type="range" id="skew_textgenerationwebui" name="volume" min="-5" max="5" step="0.01" />
+                                        <input class="neo-range-input" type="number" min="-5" max="5" step="0.01" data-for="skew_textgenerationwebui" id="skew_counter_textgenerationwebui">
                                     </div>
                                     <div data-newbie-hidden data-tg-type="mancer, ooba, tabby, dreamgen" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small data-i18n="Min Length">Min Length</small>
@@ -1442,6 +1452,13 @@
                                                 <label>
                                                     <small data-i18n="Temperature Last">Temperature Last</small>
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Use the temperature sampler last" title="Use the temperature sampler last. This is almost always the sensible thing to do.&#13;When enabled: sample the set of plausible tokens first, then apply temperature to adjust their relative probabilities (technically, logits).&#13;When disabled: apply temperature to adjust the relative probabilities of ALL tokens first, then sample plausible tokens from that.&#13;Disabling Temperature Last boosts the probabilities in the tail of the distribution, which tends to amplify the chances of getting an incoherent response."></div>
+                                                </label>
+                                            </label>
+                                            <label data-tg-type="tabby" class="checkbox_label  flexGrow flexShrink" for="speculative_ngram_textgenerationwebui">
+                                                <input type="checkbox" id="speculative_ngram_textgenerationwebui" />
+                                                <label>
+                                                    <small data-i18n="Speculative Ngram">Speculative Ngram</small>
+                                                    <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Use a different speculative decoding method without a draft model" title="Use a different speculative decoding method without a draft model.&#13;Using a draft model is preferred. Speculative ngram is not as effective."></div>
                                                 </label>
                                             </label>
 
