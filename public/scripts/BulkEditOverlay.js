@@ -4,7 +4,6 @@ import {
     characterGroupOverlay,
     callPopup,
     characters,
-    deleteCharacter,
     event_types,
     eventSource,
     getCharacters,
@@ -13,6 +12,7 @@ import {
     buildAvatarList,
     characterToEntity,
     printCharactersDebounced,
+    deleteCharacter,
 } from '../script.js';
 
 import { favsToHotswap } from './RossAscends-mods.js';
@@ -115,24 +115,7 @@ class CharacterContextMenu {
     static delete = async (characterId, deleteChats = false) => {
         const character = CharacterContextMenu.#getCharacter(characterId);
 
-        return fetch('/api/characters/delete', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ avatar_url: character.avatar, delete_chats: deleteChats }),
-            cache: 'no-cache',
-        }).then(response => {
-            if (response.ok) {
-                eventSource.emit(event_types.CHARACTER_DELETED, { id: characterId, character: character });
-                return deleteCharacter(character.name, character.avatar, false).then(() => {
-                    if (deleteChats) getPastCharacterChats(characterId).then(pastChats => {
-                        for (const chat of pastChats) {
-                            const name = chat.file_name.replace('.jsonl', '');
-                            eventSource.emit(event_types.CHAT_DELETED, name);
-                        }
-                    });
-                });
-            }
-        });
+        await deleteCharacter(character.avatar, { deleteChats: deleteChats });
     };
 
     static #getCharacter = (characterId) => characters[characterId] ?? null;

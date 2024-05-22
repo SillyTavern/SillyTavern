@@ -1,5 +1,5 @@
 import { getContext } from './extensions.js';
-import { getRequestHeaders } from '../script.js';
+import { callPopup, getRequestHeaders } from '../script.js';
 import { isMobile } from './RossAscends-mods.js';
 import { collapseNewlines } from './power-user.js';
 import { debounce_timeout } from './constants.js';
@@ -1719,4 +1719,39 @@ export function highlightRegex(regexStr) {
     wrapPattern(patterns.delimiters, 'regex-delimiter');
 
     return `<span class="regex-highlight">${regexStr}</span>`;
+}
+
+/**
+ * Confirms if the user wants to overwrite an existing data object (like character, world info, etc) if one exists.
+ * If no data with the name exists, this simply returns true.
+ *
+ * @param {string} type - The type of the check ("World Info", "Character", etc)
+ * @param {string[]} existingNames - The list of existing names to check against
+ * @param {string} name - The new name
+ * @param {object} options - Optional parameters
+ * @param {boolean} [options.interactive=false] - Whether to show a confirmation dialog when needing to overwrite an existing data object
+ * @param {string} [options.actionName='overwrite'] - The action name to display in the confirmation dialog
+ * @param {(existingName:string)=>void} [options.deleteAction=null] - Optional action to execute wen deleting an existing data object on overwrite
+ * @returns {Promise<boolean>} True if the user confirmed the overwrite or there is no overwrite needed, false otherwise
+ */
+export async function checkOverwriteExistingData(type, existingNames, name, { interactive = false, actionName = 'Overwrite', deleteAction = null } = {}) {
+    const existing = existingNames.find(x => equalsIgnoreCaseAndAccents(x, name));
+    if (!existing) {
+        return true;
+    }
+
+    const overwrite = interactive ? await callPopup(`<h3>${type} ${actionName}</h3><p>A ${type.toLowerCase()} with the same name already exists:<br />${existing}</p>Do you want to overwrite it?`, 'confirm') : false;
+    if (!overwrite) {
+        toastr.warning(`${type} ${actionName.toLowerCase()} cancelled. A ${type.toLowerCase()} with the same name already exists:<br />${existing}`, `${type} ${actionName}`, { escapeHtml: false });
+        return false;
+    }
+
+    toastr.info(`Overwriting Existing ${type}:<br />${existing}`, `${type} ${actionName}`, { escapeHtml: false });
+
+    // If there is an action to delete the existing data, do it, as the name might be slightly different so file name would not be the same
+    if (deleteAction) {
+        deleteAction(existing);
+    }
+
+    return true;
 }
