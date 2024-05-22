@@ -746,7 +746,8 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'rep_pen_slope' ||
         sliderID == 'smoothing_factor_textgenerationwebui' ||
         sliderID == 'smoothing_curve_textgenerationwebui' ||
-        sliderID == 'min_length_textgenerationwebui') {
+        sliderID == 'min_length_textgenerationwebui' ||
+        sliderID == 'skew_textgenerationwebui') {
         offVal = 0;
     }
     if (sliderID == 'rep_pen_textgenerationwebui' ||
