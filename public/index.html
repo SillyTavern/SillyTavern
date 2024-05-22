@@ -1405,6 +1405,13 @@
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Use the temperature sampler last" title="Use the temperature sampler last. This is almost always the sensible thing to do.&#13;When enabled: sample the set of plausible tokens first, then apply temperature to adjust their relative probabilities (technically, logits).&#13;When disabled: apply temperature to adjust the relative probabilities of ALL tokens first, then sample plausible tokens from that.&#13;Disabling Temperature Last boosts the probabilities in the tail of the distribution, which tends to amplify the chances of getting an incoherent response."></div>
                                                 </label>
                                             </label>
+                                            <label data-tg-type="tabby" class="checkbox_label  flexGrow flexShrink" for="speculative_ngram_textgenerationwebui">
+                                                <input type="checkbox" id="speculative_ngram_textgenerationwebui" />
+                                                <label>
+                                                    <small data-i18n="Speculative Ngram">Speculative Ngram</small>
+                                                    <div class="fa-solid fa-circle-info opacity50p " data-i18n="[title]Use a different speculative decoding method without a draft model" title="Use a different speculative decoding method without a draft model.&#13;Using a draft model is preferred. Speculative ngram is not as effective."></div>
+                                                </label>
+                                            </label>
 
                                             <label data-tg-type="vllm, aphrodite" class="checkbox_label" for="spaces_between_special_tokens_textgenerationwebui">
                                                 <input type="checkbox" id="spaces_between_special_tokens_textgenerationwebui" />
