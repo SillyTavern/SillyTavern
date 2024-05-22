@@ -263,8 +263,14 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
     const PNG_PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
     const visionSupportedModels = [
-        'gemini-1.0-pro-vision-latest',
+        'gemini-1.5-flash-latest',
         'gemini-1.5-pro-latest',
+        'gemini-1.0-pro-vision-latest',
+        'gemini-pro-vision',
+    ];
+
+    const dummyRequiredModels = [
+        'gemini-1.0-pro-vision-latest',
         'gemini-pro-vision',
     ];
 
@@ -343,7 +349,7 @@ function convertGooglePrompt(messages, model, useSysPrompt = false, charName = '
     });
 
     // pro 1.5 doesn't require a dummy image to be attached, other vision models do
-    if (isMultimodal && model !== 'gemini-1.5-pro-latest' && !hasImage) {
+    if (isMultimodal && dummyRequiredModels.includes(model) && !hasImage) {
         contents[0].parts.push({
             inlineData: {
                 mimeType: 'image/png',
