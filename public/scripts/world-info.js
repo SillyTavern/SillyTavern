@@ -1057,6 +1057,34 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         return;
     }
 
+    // Regardless of whether success is displayed or not. Make sure the delete button is available.
+    // Do not put this code behind.
+    $('#world_popup_delete').off('click').on('click', async () => {
+        const confirmation = await callPopup(`<h3>Delete the World/Lorebook: "${name}"?</h3>This action is irreversible!`, 'confirm');
+
+        if (!confirmation) {
+            return;
+        }
+
+        if (world_info.charLore) {
+            world_info.charLore.forEach((charLore, index) => {
+                if (charLore.extraBooks?.includes(name)) {
+                    const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
+                    if (tempCharLore.length === 0) {
+                        world_info.charLore.splice(index, 1);
+                    } else {
+                        charLore.extraBooks = tempCharLore;
+                    }
+                }
+            });
+
+            saveSettingsDebounced();
+        }
+
+        // Selected world_info automatically refreshes
+        await deleteWorldInfo(name);
+    });
+
     // Before printing the WI, we check if we should enable/disable search sorting
     verifyWorldInfoSearchSortRule();
 
@@ -1223,32 +1251,6 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
                 hideWorldEditor();
             }
         }
-    });
-
-    $('#world_popup_delete').off('click').on('click', async () => {
-        const confirmation = await callPopup(`<h3>Delete the World/Lorebook: "${name}"?</h3>This action is irreversible!`, 'confirm');
-
-        if (!confirmation) {
-            return;
-        }
-
-        if (world_info.charLore) {
-            world_info.charLore.forEach((charLore, index) => {
-                if (charLore.extraBooks?.includes(name)) {
-                    const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
-                    if (tempCharLore.length === 0) {
-                        world_info.charLore.splice(index, 1);
-                    } else {
-                        charLore.extraBooks = tempCharLore;
-                    }
-                }
-            });
-
-            saveSettingsDebounced();
-        }
-
-        // Selected world_info automatically refreshes
-        await deleteWorldInfo(name);
     });
 
     // Check if a sortable instance exists
