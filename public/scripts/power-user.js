@@ -679,6 +679,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'mirostat_mode_kobold' ||
         sliderID == 'rep_pen_range' ||
         sliderID == 'dry_allowed_length_textgenerationwebui' ||
+        sliderID == 'rep_pen_decay_textgenerationwebui' ||
         sliderID == 'dry_penalty_last_n_textgenerationwebui' ||
         sliderID == 'max_tokens_second_textgenerationwebui') {
         decimals = 0;
@@ -1769,12 +1770,15 @@ function switchMaxContextSize() {
         $('#rep_pen_range_counter_textgenerationwebui'),
         $('#dry_penalty_last_n_textgenerationwebui'),
         $('#dry_penalty_last_n_counter_textgenerationwebui'),
+        $('#rep_pen_decay_textgenerationwebui'),
+        $('#rep_pen_decay_counter_textgenerationwebui'),
     ];
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
     const minValue = power_user.max_context_unlocked ? maxContextMin : maxContextMin;
     const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : maxContextStep;
     $('#rep_pen_range_textgenerationwebui_zenslider').remove(); //unsure why, but this is necessary.
     $('#dry_penalty_last_n_textgenerationwebui_zenslider').remove();
+    $('#rep_pen_decay_textgenerationwebui_zenslider').remove();
     for (const element of elements) {
         const id = element.attr('id');
         element.attr('max', maxValue);
@@ -1805,6 +1809,8 @@ function switchMaxContextSize() {
         CreateZenSliders($('#rep_pen_range_textgenerationwebui'));
         $('#dry_penalty_last_n_textgenerationwebui_zenslider').remove();
         CreateZenSliders($('#dry_penalty_last_n_textgenerationwebui'));
+        $('#rep_pen_decay_textgenerationwebui_zenslider').remove();
+        CreateZenSliders($('#rep_pen_decay_textgenerationwebui'));
     }
 }
 
