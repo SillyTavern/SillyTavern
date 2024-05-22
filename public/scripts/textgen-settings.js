@@ -678,6 +678,7 @@ jQuery(function () {
             'dry_allowed_length_textgenerationwebui': 2,
             'dry_multiplier_textgenerationwebui': 0,
             'dry_base_textgenerationwebui': 1.75,
+            'dry_penalty_last_n_textgenerationwebui': 0,
         };
 
         for (const [id, value] of Object.entries(inputs)) {
