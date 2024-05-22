@@ -3160,7 +3160,9 @@ jQuery(async () => {
     }
 
     eventSource.on(event_types.EXTRAS_CONNECTED, async () => {
-        await loadSettingOptions();
+        if (extension_settings.sd.source === sources.extras) {
+            await loadSettingOptions();
+        }
     });
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
