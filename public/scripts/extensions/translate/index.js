@@ -642,11 +642,11 @@ jQuery(() => {
 
     loadSettings();
 
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleIncomingMessage);
+    eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, handleIncomingMessage);
+    eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
     eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
     eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
-    eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdit);
+    eventSource.on(event_types.MESSAGE_UPDATED, handleMessageEdit);
 
     document.body.classList.add('translate');
 });

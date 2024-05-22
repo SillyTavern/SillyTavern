@@ -139,6 +139,7 @@ export function download(content, fileName, contentType) {
     a.href = URL.createObjectURL(file);
     a.download = fileName;
     a.click();
+    URL.revokeObjectURL(a.href);
 }
 
 /**
@@ -612,8 +613,8 @@ const dateCache = new Map();
 /**
  * Cached version of moment() to avoid re-parsing the same date strings.
  * Important: Moment objects are mutable, so use clone() before modifying them!
- * @param {any} timestamp String or number representing a date.
- * @returns {*} Moment object
+ * @param {string|number} timestamp String or number representing a date.
+ * @returns {moment.Moment} Moment object
  */
 export function timestampToMoment(timestamp) {
     if (dateCache.has(timestamp)) {
@@ -663,8 +664,8 @@ function parseTimestamp(timestamp) {
 
 /**
  * Compare two moment objects for sorting.
- * @param {*} a The first moment object.
- * @param {*} b The second moment object.
+ * @param {moment.Moment} a The first moment object.
+ * @param {moment.Moment} b The second moment object.
  * @returns {number} A negative number if a is before b, a positive number if a is after b, or 0 if they are equal.
  */
 export function sortMoments(a, b) {
@@ -732,6 +733,24 @@ export function isDataURL(str) {
     return regex.test(str);
 }
 
+/**
+ * Gets the size of an image from a data URL.
+ * @param {string} dataUrl Image data URL
+ * @returns {Promise<{ width: number, height: number }>} Image size
+ */
+export function getImageSizeFromDataURL(dataUrl) {
+    const image = new Image();
+    image.src = dataUrl;
+    return new Promise((resolve, reject) => {
+        image.onload = function () {
+            resolve({ width: image.width, height: image.height });
+        };
+        image.onerror = function () {
+            reject(new Error('Failed to load image'));
+        };
+    });
+}
+
 export function getCharaFilename(chid) {
     const context = getContext();
     const fileName = context.characters[chid ?? context.characterId].avatar;
@@ -771,6 +790,29 @@ export function extractAllWords(value) {
  */
 export function escapeRegex(string) {
     return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+/**
+ * Instantiates a regular expression from a string.
+ * @param {string} input The input string.
+ * @returns {RegExp} The regular expression instance.
+ * @copyright Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
+ */
+export function regexFromString(input) {
+    try {
+        // Parse input
+        var m = input.match(/(\/?)(.+)\1([a-z]*)/i);
+
+        // Invalid flags
+        if (m[3] && !/^(?!.*?(.).*?\1)[gmixXsuUAJ]+$/.test(m[3])) {
+            return RegExp(input);
+        }
+
+        // Create the regular expression
+        return new RegExp(m[2], m[3]);
+    } catch {
+        return;
+    }
 }
 
 export class Stopwatch {
@@ -1300,11 +1342,7 @@ export async function extractTextFromHTML(blob, textSelector = 'body') {
  */
 export async function extractTextFromMarkdown(blob) {
     const markdown = await blob.text();
-    const converter = new showdown.Converter();
-    const html = converter.makeHtml(markdown);
-    const domParser = new DOMParser();
-    const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
-    const text = postProcessText(document.body.textContent, false);
+    const text = postProcessText(markdown, false);
     return text;
 }
 
@@ -1448,4 +1486,183 @@ export function includesIgnoreCaseAndAccents(text, searchTerm) {
 
     // Check if the normalized text includes the normalized search term
     return normalizedText.includes(normalizedSearchTerm);
+}
+
+/**
+ * @typedef {object} Select2Option The option object for select2 controls
+ * @property {string} id - The unique ID inside this select
+ * @property {string} text - The text for this option
+ * @property {number?} [count] - Optionally show the count how often that option was chosen already
+ */
+
+/**
+ * Returns a unique hash as ID for a select2 option text
+ *
+ * @param {string} option - The option
+ * @returns {string} A hashed version of that option
+ */
+export function getSelect2OptionId(option) {
+    return String(getStringHash(option));
+}
+
+/**
+ * Modifies the select2 options by adding not existing one and optionally selecting them
+ *
+ * @param {JQuery<HTMLElement>} element - The "select" element to add the options to
+ * @param {string[]|Select2Option[]} items - The option items to build, add or select
+ * @param {object} [options] - Optional arguments
+ * @param {boolean} [options.select=false] - Whether the options should be selected right away
+ * @param {object} [options.changeEventArgs=null] - Optional event args being passed into the "change" event when its triggered because a new options is selected
+ */
+export function select2ModifyOptions(element, items, { select = false, changeEventArgs = null } = {}) {
+    if (!items.length) return;
+    /** @type {Select2Option[]} */
+    const dataItems = items.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
+
+    const existingValues = [];
+    dataItems.forEach(item => {
+        // Set the value, creating a new option if necessary
+        if (element.find('option[value=\'' + item.id + '\']').length) {
+            if (select) existingValues.push(item.id);
+        } else {
+            // Create a DOM Option and optionally pre-select by default
+            var newOption = new Option(item.text, item.id, select, select);
+            // Append it to the select
+            element.append(newOption);
+            if (select) element.trigger('change', changeEventArgs);
+        }
+        if (existingValues.length) element.val(existingValues).trigger('change', changeEventArgs);
+    });
+}
+
+/**
+ * Returns the ajax settings that can be used on the select2 ajax property to dynamically get the data.
+ * Can be used on a single global array, querying data from the server or anything similar.
+ *
+ * @param {function():Select2Option[]} dataProvider - The provider/function to retrieve the data - can be as simple as "() => myData" for arrays
+ * @return {{transport: (params, success, failure) => any}} The ajax object with the transport function to use on the select2 ajax property
+ */
+export function dynamicSelect2DataViaAjax(dataProvider) {
+    function dynamicSelect2DataTransport(params, success, failure) {
+        var items = dataProvider();
+        // fitering if params.data.q available
+        if (params.data && params.data.q) {
+            items = items.filter(function (item) {
+                return includesIgnoreCaseAndAccents(item.text, params.data.q);
+            });
+        }
+        var promise = new Promise(function (resolve, reject) {
+            resolve({ results: items });
+        });
+        promise.then(success);
+        promise.catch(failure);
+    }
+    const ajax = {
+        transport: dynamicSelect2DataTransport,
+    };
+    return ajax;
+}
+
+/**
+ * Checks whether a given control is a select2 choice element - meaning one of the results being displayed in the select multi select box
+ * @param {JQuery<HTMLElement>|HTMLElement} element - The element to check
+ * @returns {boolean} Whether this is a choice element
+ */
+export function isSelect2ChoiceElement(element) {
+    const $element = $(element);
+    return ($element.hasClass('select2-selection__choice__display') || $element.parents('.select2-selection__choice__display').length > 0);
+}
+
+/**
+ * Subscribes a 'click' event handler to the choice elements of a select2 multi-select control
+ *
+ * @param {JQuery<HTMLElement>} control The original control the select2 was applied to
+ * @param {function(HTMLElement):void} action - The action to execute when a choice element is clicked
+ * @param {object} options - Optional parameters
+ * @param {boolean} [options.buttonStyle=false] - Whether the choices should be styles as a clickable button with color and hover transition, instead of just changed cursor
+ * @param {boolean} [options.closeDrawer=false] - Whether the drawer should be closed and focus removed after the choice item was clicked
+ * @param {boolean} [options.openDrawer=false] - Whether the drawer should be opened, even if this click would normally close it
+ */
+export function select2ChoiceClickSubscribe(control, action, { buttonStyle = false, closeDrawer = false, openDrawer = false } = {}) {
+    // Add class for styling (hover color, changed cursor, etc)
+    control.addClass('select2_choice_clickable');
+    if (buttonStyle) control.addClass('select2_choice_clickable_buttonstyle');
+
+    // Get the real container below and create a click handler on that one
+    const select2Container = control.next('span.select2-container');
+    select2Container.on('click', function (event) {
+        const isChoice = isSelect2ChoiceElement(event.target);
+        if (isChoice) {
+            event.preventDefault();
+
+            // select2 still bubbles the event to open the dropdown. So we close it here and remove focus if we want that
+            if (closeDrawer) {
+                control.select2('close');
+                setTimeout(() => select2Container.find('textarea').trigger('blur'), debounce_timeout.quick);
+            }
+            if (openDrawer) {
+                control.select2('open');
+            }
+
+            // Now execute the actual action that was subscribed
+            action(event.target);
+        }
+    });
+}
+
+/**
+ * Applies syntax highlighting to a given regex string by generating HTML with classes
+ *
+ * @param {string} regexStr - The javascript compatible regex string
+ * @returns {string} The html representation of the highlighted regex
+ */
+export function highlightRegex(regexStr) {
+    // Function to escape HTML special characters for safety
+    const escapeHtml = (str) => str.replace(/[&<>"']/g, match => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;',
+    })[match]);
+
+    // Replace special characters with their HTML-escaped forms
+    regexStr = escapeHtml(regexStr);
+
+    // Patterns that we want to highlight only if they are not escaped
+    function getPatterns() {
+        try {
+            return {
+                brackets: new RegExp('(?<!\\\\)\\[.*?\\]', 'g'),  // Non-escaped square brackets
+                quantifiers: new RegExp('(?<!\\\\)[*+?{}]', 'g'),  // Non-escaped quantifiers
+                operators: new RegExp('(?<!\\\\)[|.^$()]', 'g'),  // Non-escaped operators like | and ()
+                specialChars: new RegExp('\\\\.', 'g'),
+                flags: new RegExp('(?<=\\/)([gimsuy]*)$', 'g'),  // Match trailing flags
+                delimiters: new RegExp('^\\/|(?<![\\\\<])\\/', 'g'),  // Match leading or trailing delimiters
+            };
+
+        } catch (error) {
+            return {
+                brackets: new RegExp('(\\\\)?\\[.*?\\]', 'g'),  // Non-escaped square brackets
+                quantifiers: new RegExp('(\\\\)?[*+?{}]', 'g'),  // Non-escaped quantifiers
+                operators: new RegExp('(\\\\)?[|.^$()]', 'g'),  // Non-escaped operators like | and ()
+                specialChars: new RegExp('\\\\.', 'g'),
+                flags: new RegExp('/([gimsuy]*)$', 'g'),  // Match trailing flags
+                delimiters: new RegExp('^/|[^\\\\](/)', 'g'),  // Match leading or trailing delimiters
+            };
+        }
+    }
+
+    const patterns = getPatterns();
+
+    // Function to replace each pattern with a highlighted HTML span
+    const wrapPattern = (pattern, className) => {
+        regexStr = regexStr.replace(pattern, match => `<span class="${className}">${match}</span>`);
+    };
+
+    // Apply highlighting patterns
+    wrapPattern(patterns.brackets, 'regex-brackets');
+    wrapPattern(patterns.quantifiers, 'regex-quantifier');
+    wrapPattern(patterns.operators, 'regex-operator');
+    wrapPattern(patterns.specialChars, 'regex-special');
+    wrapPattern(patterns.flags, 'regex-flags');
+    wrapPattern(patterns.delimiters, 'regex-delimiter');
+
+    return `<span class="regex-highlight">${regexStr}</span>`;
 }

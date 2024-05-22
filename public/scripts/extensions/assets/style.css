@@ -105,3 +105,54 @@
         transform: rotate(1turn);
     }
 }
+
+.characterAssetList {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
+}
+
+.characterAsset {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    gap: 10px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    background-color: var(--black30a);
+    border-radius: 10px;
+    width: 17%;
+    min-width: 150px;
+    margin: 5px;
+    overflow: hidden;
+}
+
+.characterAssetName {
+    font-size: 1.2em;
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.characterAssetImage {
+    max-height: 140px;
+    object-fit: scale-down;
+    border-radius: 5px;
+}
+
+.characterAssetDescription {
+    font-size: 0.75em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    flex: 1;
+}
+
+.characterAssetButtons {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: center;
+}

@@ -283,6 +283,7 @@ app.use('/api/users', require('./src/endpoints/users-public').router);
 
 // Everything below this line requires authentication
 app.use(userModule.requireLoginMiddleware);
+app.get('/api/ping', (_, response) => response.sendStatus(204));
 
 // File uploads
 app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single('avatar'));
@@ -517,6 +518,9 @@ app.use('/api/backends/scale-alt', require('./src/endpoints/backends/scale-alt')
 
 // Speech (text-to-speech and speech-to-text)
 app.use('/api/speech', require('./src/endpoints/speech').router);
+
+// Azure TTS
+app.use('/api/azure', require('./src/endpoints/azure').router);
 
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +

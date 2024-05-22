@@ -3,7 +3,6 @@
     "kobldpresets": "Kobold-Einstellungen von vorher",
     "guikoboldaisettings": "KoboldAI-Einstellungen für das Menü",
     "novelaipreserts": "NovelAI-Einstellungen von früher",
-    "default": "Normal",
     "openaipresets": "OpenAI-Einstellungen von vorher",
     "text gen webio(ooba) presets": "WebUI(ooba)-Einstellungen für Texterstellung",
     "response legth(tokens)": "Länge der Antwort (Tokens)",
@@ -494,7 +493,6 @@
     "Global Lore First": "Globale Lore zuerst",
     "Recursive Scan": "Rekursive Suche",
     "Case Sensitive": "Groß-/Kleinschreibung beachten",
-    "Match whole words": "Ganze Wörter abgleichen",
     "Alert On Overflow": "Warnung bei Überlauf",
     "World/Lore Editor": "Welt-/Lore-Editor",
     "--- None ---": "--- Keine ---",
@@ -917,5 +915,5 @@
 
 
 
-    
+
 }

@@ -148,6 +148,7 @@ const settings = {
     infermaticai_model: '',
     ollama_model: '',
     openrouter_model: 'openrouter/auto',
+    openrouter_providers: [],
     vllm_model: '',
     aphrodite_model: '',
     dreamgen_model: 'opus-v1-xl/text',
@@ -165,7 +166,7 @@ export let textgenerationwebui_banned_in_macros = [];
 export let textgenerationwebui_presets = [];
 export let textgenerationwebui_preset_names = [];
 
-const setting_names = [
+export const setting_names = [
     'temp',
     'temperature_last',
     'rep_pen',
@@ -327,15 +328,20 @@ function getTokenizerForTokenIds() {
 }
 
 /**
- * @returns {string} String with comma-separated banned token IDs
+ * @typedef {{banned_tokens: string, banned_strings: string[]}} TokenBanResult
+ * @returns {TokenBanResult} String with comma-separated banned token IDs
  */
 function getCustomTokenBans() {
     if (!settings.banned_tokens && !textgenerationwebui_banned_in_macros.length) {
-        return '';
+        return {
+            banned_tokens: '',
+            banned_strings: [],
+        };
     }
 
     const tokenizer = getTokenizerForTokenIds();
-    const result = [];
+    const banned_tokens = [];
+    const banned_strings = [];
     const sequences = settings.banned_tokens
         .split('\n')
         .concat(textgenerationwebui_banned_in_macros)
@@ -357,24 +363,31 @@ function getCustomTokenBans() {
                 const tokens = JSON.parse(line);
 
                 if (Array.isArray(tokens) && tokens.every(t => Number.isInteger(t))) {
-                    result.push(...tokens);
+                    banned_tokens.push(...tokens);
                 } else {
                     throw new Error('Not an array of integers');
                 }
             } catch (err) {
                 console.log(`Failed to parse bad word token list: ${line}`, err);
             }
+        } else if (line.startsWith('"') && line.endsWith('"')) {
+            // Remove the enclosing quotes
+
+            banned_strings.push(line.slice(1, -1));
         } else {
             try {
                 const tokens = getTextTokens(tokenizer, line);
-                result.push(...tokens);
+                banned_tokens.push(...tokens);
             } catch {
                 console.log(`Could not tokenize raw text: ${line}`);
             }
         }
     }
 
-    return result.filter(onlyUnique).map(x => String(x)).join(',');
+    return {
+        banned_tokens: banned_tokens.filter(onlyUnique).map(x => String(x)).join(','),
+        banned_strings: banned_strings,
+    };
 }
 
 /**
@@ -454,6 +467,7 @@ function loadTextGenSettings(data, loadedSettings) {
     }
 
     $('#textgen_type').val(settings.type);
+    $('#openrouter_providers_text').val(settings.openrouter_providers).trigger('change');
     showTypeSpecificControls(settings.type);
     BIAS_CACHE.delete(BIAS_KEY);
     displayLogitBias(settings.logit_bias, BIAS_KEY);
@@ -578,7 +592,7 @@ jQuery(function () {
         const type = String($(this).val());
         settings.type = type;
 
-        if (settings.type === textgen_types.VLLM || settings.type === textgen_types.APHRODITE) {
+        if ([VLLM, APHRODITE, INFERMATICAI].includes(settings.type)) {
             $('#mirostat_mode_textgenerationwebui').attr('step', 2); //Aphro disallows mode 1
             $('#do_sample_textgenerationwebui').prop('checked', true); //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
             $('#ban_eos_token_textgenerationwebui').prop('checked', false); //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
@@ -619,7 +633,7 @@ jQuery(function () {
     $('#samplerResetButton').off('click').on('click', function () {
         const inputs = {
             'temp_textgenerationwebui': 1,
-            'top_k_textgenerationwebui': 0,
+            'top_k_textgenerationwebui': [INFERMATICAI, APHRODITE, VLLM].includes(settings.type) ? -1 : 0,
             'top_p_textgenerationwebui': 1,
             'min_p_textgenerationwebui': 0,
             'rep_pen_textgenerationwebui': 1,
@@ -645,7 +659,7 @@ jQuery(function () {
             'no_repeat_ngram_size_textgenerationwebui': 0,
             'min_length_textgenerationwebui': 0,
             'num_beams_textgenerationwebui': 1,
-            'length_penalty_textgenerationwebui': 0,
+            'length_penalty_textgenerationwebui': 1,
             'penalty_alpha_textgenerationwebui': 0,
             'typical_p_textgenerationwebui': 1, // Added entry
             'guidance_scale_textgenerationwebui': 1,
@@ -695,10 +709,7 @@ jQuery(function () {
                 $(`#${id}_counter_textgenerationwebui`).val(value);
                 settings[id] = value;
                 //special handling for vLLM/Aphrodite using -1 as disabled instead of 0
-                if ($(this).attr('id') === 'top_k_textgenerationwebui' &&
-                    (settings.type === textgen_types.VLLM ||
-                    settings.type === textgen_types.APHRODITE) &&
-                    value === 0) {
+                if ($(this).attr('id') === 'top_k_textgenerationwebui' && [INFERMATICAI, APHRODITE, VLLM].includes(settings.type) && value === 0) {
                     settings[id] = -1;
                     $(this).val(-1);
                 }
@@ -708,6 +719,19 @@ jQuery(function () {
     }
 
     $('#textgen_logit_bias_new_entry').on('click', () => createNewLogitBiasEntry(settings.logit_bias, BIAS_KEY));
+
+    $('#openrouter_providers_text').on('change', function () {
+        const selectedProviders = $(this).val();
+
+        // Not a multiple select?
+        if (!Array.isArray(selectedProviders)) {
+            return;
+        }
+
+        settings.openrouter_providers = selectedProviders;
+
+        saveSettingsDebounced();
+    });
 });
 
 function showTypeSpecificControls(type) {
@@ -932,7 +956,7 @@ function toIntArray(string) {
     return string.split(',').map(x => parseInt(x)).filter(x => !isNaN(x));
 }
 
-function getModel() {
+export function getTextGenModel() {
     switch (settings.type) {
         case OOBA:
             if (settings.custom_model) {
@@ -967,14 +991,16 @@ function getModel() {
 }
 
 export function isJsonSchemaSupported() {
-    return settings.type === TABBY && main_api === 'textgenerationwebui';
+    return [TABBY, LLAMACPP].includes(settings.type) && main_api === 'textgenerationwebui';
 }
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
     const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
+    const { banned_tokens, banned_strings } = getCustomTokenBans();
+
     let params = {
         'prompt': finalPrompt,
-        'model': getModel(),
+        'model': getTextGenModel(),
         'max_new_tokens': maxTokens,
         'max_tokens': maxTokens,
         'logprobs': power_user.request_token_probabilities ? 10 : undefined,
@@ -1018,8 +1044,9 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'mirostat_tau': settings.mirostat_tau,
         'mirostat_eta': settings.mirostat_eta,
         'custom_token_bans': [APHRODITE, MANCER].includes(settings.type) ?
-            toIntArray(getCustomTokenBans()) :
-            getCustomTokenBans(),
+            toIntArray(banned_tokens) :
+            banned_tokens,
+        'banned_strings': banned_strings,
         'api_type': settings.type,
         'api_server': getTextGenServer(),
         'legacy_api': settings.legacy_api && (settings.type === OOBA || settings.type === APHRODITE),
@@ -1038,7 +1065,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'guidance_scale': cfgValues?.guidanceScale?.value ?? settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(settings.negative_prompt) ?? '',
         'grammar_string': settings.grammar_string,
-        'json_schema': settings.type === TABBY ? settings.json_schema : undefined,
+        'json_schema': [TABBY, LLAMACPP].includes(settings.type) ? settings.json_schema : undefined,
         // llama.cpp aliases. In case someone wants to use LM Studio as Text Completion API
         'repeat_penalty': settings.rep_pen,
         'tfs_z': settings.tfs,
@@ -1065,6 +1092,10 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         //'logprobs': settings.log_probs_aphrodite,
         //'prompt_logprobs': settings.prompt_log_probs_aphrodite,
     };
+
+    if (settings.type === OPENROUTER) {
+        params.provider = settings.openrouter_providers;
+    }
 
     if (settings.type === KOBOLDCPP) {
         params.grammar = settings.grammar_string;
@@ -1106,7 +1137,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         const logitBiasArray = (params.logit_bias && typeof params.logit_bias === 'object' && Object.keys(params.logit_bias).length > 0)
             ? Object.entries(params.logit_bias).map(([key, value]) => [Number(key), value])
             : [];
-        const tokenBans = toIntArray(getCustomTokenBans());
+        const tokenBans = toIntArray(banned_tokens);
         logitBiasArray.push(...tokenBans.map(x => [Number(x), false]));
         const llamaCppParams = {
             'logit_bias': logitBiasArray,
@@ -1118,6 +1149,16 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
     }
 
     eventSource.emitAndWait(event_types.TEXT_COMPLETION_SETTINGS_READY, params);
+
+    // Grammar conflicts with with json_schema
+    if (settings.type === LLAMACPP) {
+        if (params.json_schema && Object.keys(params.json_schema).length > 0) {
+            delete params.grammar_string;
+            delete params.grammar;
+        } else {
+            delete params.json_schema;
+        }
+    }
 
     return params;
 }

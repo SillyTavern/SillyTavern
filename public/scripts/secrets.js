@@ -26,6 +26,8 @@ export const SECRET_KEYS = {
     LLAMACPP: 'api_key_llamacpp',
     COHERE: 'api_key_cohere',
     PERPLEXITY: 'api_key_perplexity',
+    GROQ: 'api_key_groq',
+    AZURE_TTS: 'api_key_azure_tts',
 };
 
 const INPUT_MAP = {
@@ -53,6 +55,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.LLAMACPP]: '#api_key_llamacpp',
     [SECRET_KEYS.COHERE]: '#api_key_cohere',
     [SECRET_KEYS.PERPLEXITY]: '#api_key_perplexity',
+    [SECRET_KEYS.GROQ]: '#api_key_groq',
 };
 
 async function clearSecret() {

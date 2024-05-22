@@ -916,6 +916,28 @@ async function onVectorizeAllFilesClick() {
         const chatAttachments = getContext().chat.filter(x => x.extra?.file).map(x => x.extra.file);
         const allFiles = [...dataBank, ...chatAttachments];
 
+        /**
+         * Gets the chunk size for a file attachment.
+         * @param file {import('../../chats.js').FileAttachment} File attachment
+         * @returns {number} Chunk size for the file
+         */
+        function getChunkSize(file) {
+            if (chatAttachments.includes(file)) {
+                // Convert kilobytes to string length
+                const thresholdLength = settings.size_threshold * 1024;
+                return file.size > thresholdLength ? settings.chunk_size : -1;
+            }
+
+            if (dataBank.includes(file)) {
+                // Convert kilobytes to string length
+                const thresholdLength = settings.size_threshold_db * 1024;
+                // Use chunk size from settings if file is larger than threshold
+                return file.size > thresholdLength ? settings.chunk_size_db : -1;
+            }
+
+            return -1;
+        }
+
         let allSuccess = true;
 
         for (const file of allFiles) {
@@ -928,7 +950,8 @@ async function onVectorizeAllFilesClick() {
                 continue;
             }
 
-            const result = await vectorizeFile(text, file.name, collectionId, settings.chunk_size);
+            const chunkSize = getChunkSize(file);
+            const result = await vectorizeFile(text, file.name, collectionId, chunkSize);
 
             if (!result) {
                 allSuccess = false;

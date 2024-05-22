@@ -2,7 +2,6 @@
     "dependencies": {
         "@agnai/sentencepiece-js": "^1.1.1",
         "@agnai/web-tokenizers": "^0.1.3",
-        "@dqbd/tiktoken": "^1.0.13",
         "@zeldafan0225/ai_horde": "^4.0.1",
         "archiver": "^7.0.1",
         "bing-translate-api": "^2.9.1",
@@ -16,7 +15,6 @@
         "express": "^4.19.2",
         "form-data": "^4.0.0",
         "google-translate-api-browser": "^3.0.1",
-        "gpt3-tokenizer": "^1.1.5",
         "he": "^1.2.0",
         "helmet": "^7.1.0",
         "ip-matching": "^2.1.2",
@@ -36,6 +34,7 @@
         "sanitize-filename": "^1.6.3",
         "sillytavern-transformers": "^2.14.6",
         "simple-git": "^3.19.1",
+        "tiktoken": "^1.0.15",
         "vectra": "^0.2.2",
         "wavefile": "^11.0.0",
         "write-file-atomic": "^5.0.1",
@@ -43,6 +42,9 @@
         "yaml": "^2.3.4",
         "yargs": "^17.7.1",
         "yauzl": "^2.10.0"
+    },
+    "engines": {
+      "node": ">= 18"
     },
     "overrides": {
         "parse-bmfont-xml": {
@@ -59,6 +61,9 @@
         },
         "@zeldafan0225/ai_horde": {
             "esbuild": "npm:dry-uninstall"
+        },
+        "node-fetch": {
+            "whatwg-url": "^14.0.0"
         }
     },
     "name": "sillytavern",
@@ -68,13 +73,15 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.12.0-preview",
+    "version": "1.12.0",
     "scripts": {
         "start": "node server.js",
-        "start-multi": "node server.js --disableCsrf",
+        "start:no-csrf": "node server.js --disableCsrf",
         "postinstall": "node post-install.js",
         "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js",
-        "lint-fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix"
+        "lint:fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./*.js --fix",
+        "plugins:update": "node plugins update",
+        "plugins:install": "node plugins install"
     },
     "bin": {
         "sillytavern": "./server.js"

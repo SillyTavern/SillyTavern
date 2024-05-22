@@ -34,6 +34,7 @@ import {
     checkEmbeddedWorld,
     setWorldInfoButtonClass,
     importWorldInfo,
+    wi_anchor_position,
 } from './scripts/world-info.js';
 
 import {
@@ -157,7 +158,7 @@ import {
 import { debounce_timeout } from './scripts/constants.js';
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, renderExtensionTemplate, renderExtensionTemplateAsync, runGenerationInterceptors, saveMetadataDebounced, writeExtensionField } from './scripts/extensions.js';
-import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from './scripts/slash-commands.js';
+import { COMMENT_NAME_DEFAULT, executeSlashCommands, executeSlashCommandsOnChatInput, getSlashCommandsHelp, isExecutingCommandsFromChatInput, pauseScriptExecution, processChatSlashCommands, registerSlashCommand, stopScriptExecution } from './scripts/slash-commands.js';
 import {
     tag_map,
     tags,
@@ -190,7 +191,7 @@ import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, sh
 import { registerPromptManagerMigration } from './scripts/PromptManager.js';
 import { getRegexedString, regex_placement } from './scripts/extensions/regex/engine.js';
 import { initLogprobs, saveLogprobsForActiveMessage } from './scripts/logprobs.js';
-import { FILTER_TYPES, FilterHelper } from './scripts/filters.js';
+import { FILTER_STATES, FILTER_TYPES, FilterHelper, isFilterState } from './scripts/filters.js';
 import { getCfgPrompt, getGuidanceScale, initCfg } from './scripts/cfg-scale.js';
 import {
     force_output_sequence,
@@ -223,9 +224,14 @@ import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, de
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
-import { callGenericPopup } from './scripts/popup.js';
+import { POPUP_TYPE, callGenericPopup } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
+import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
+import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument } from './scripts/slash-commands/SlashCommandArgument.js';
+import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
+import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
 
 //exporting functions and vars for mods
 export {
@@ -285,6 +291,11 @@ DOMPurify.addHook('uponSanitizeAttribute', (_, data, config) => {
 DOMPurify.addHook('uponSanitizeElement', (node, _, config) => {
     if (!config['MESSAGE_SANITIZE']) {
         return;
+    }
+
+    // Replace line breaks with <br> in unknown elements
+    if (node instanceof HTMLUnknownElement) {
+        node.innerHTML = node.innerHTML.replaceAll('\n', '<br>');
     }
 
     const isMediaAllowed = isExternalMediaAllowed();
@@ -374,6 +385,7 @@ export const event_types = {
     MESSAGE_RECEIVED: 'message_received',
     MESSAGE_EDITED: 'message_edited',
     MESSAGE_DELETED: 'message_deleted',
+    MESSAGE_UPDATED: 'message_updated',
     IMPERSONATE_READY: 'impersonate_ready',
     CHAT_CHANGED: 'chat_id_changed',
     GENERATION_STARTED: 'generation_started',
@@ -405,6 +417,7 @@ export const event_types = {
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
+    CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
@@ -412,6 +425,7 @@ export const event_types = {
     SMOOTH_STREAM_TOKEN_RECEIVED: 'smooth_stream_token_received',
     FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
     WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
+    OPEN_CHARACTER_LIBRARY: 'open_character_library',
 };
 
 export const eventSource = new EventEmitter();
@@ -422,8 +436,6 @@ export const characterGroupOverlay = new BulkEditOverlay();
 const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
 eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
 console.debug('Character context menu initialized', characterContextMenu);
-
-hljs.addPlugin({ 'before:highlightElement': ({ el }) => { el.textContent = el.innerText; } });
 
 // Markdown converter
 export let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
@@ -451,14 +463,15 @@ let safetychat = [
 let chatSaveTimeout;
 let importFlashTimeout;
 export let isChatSaving = false;
-let chat_create_date = 0;
+let chat_create_date = '';
 let firstRun = false;
 let settingsReady = false;
 let currentVersion = '0.0.0';
+let displayVersion = 'SillyTavern';
 
-export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
 let generation_started = new Date();
+/** @type {import('scripts/char-data.js').v1CharData[]} */
 export let characters = [];
 export let this_chid;
 let saveCharactersPage = 0;
@@ -587,7 +600,7 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplateAsync('welcome'),
+            mes: await renderTemplateAsync('welcome', { displayVersion }),
         },
         group: {
             name: systemUserName,
@@ -648,7 +661,7 @@ async function getClientVersion() {
         const response = await fetch('/version');
         const data = await response.json();
         CLIENT_VERSION = data.agent;
-        let displayVersion = `SillyTavern ${data.pkgVersion}`;
+        displayVersion = `SillyTavern ${data.pkgVersion}`;
         currentVersion = data.pkgVersion;
 
         if (data.gitRevision && data.gitBranch) {
@@ -670,6 +683,7 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             tables: true,
             parseImgDimensions: true,
             simpleLineBreaks: true,
+            strikethrough: true,
             disableForced4SpacesIndentedSublists: true,
             extensions: [
                 showdownKatex(
@@ -690,6 +704,7 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             tables: true,
             underline: true,
             simpleLineBreaks: true,
+            strikethrough: true,
             disableForced4SpacesIndentedSublists: true,
             extensions: [markdownUnderscoreExt()],
         });
@@ -786,7 +801,6 @@ export let novelai_setting_names;
 let abortController;
 
 //css
-var css_mes_bg = $('<div class="mes"></div>').css('background');
 var css_send_form_display = $('<div id=send_form></div>').css('display');
 const MAX_GENERATION_LOOPS = 5;
 
@@ -814,6 +828,28 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
     xhr.setRequestHeader('X-CSRF-Token', token);
 });
 
+/**
+ * Pings the STserver to check if it is reachable.
+ * @returns {Promise<boolean>} True if the server is reachable, false otherwise.
+ */
+export async function pingServer() {
+    try {
+        const result = await fetch('api/ping', {
+            method: 'GET',
+            headers: getRequestHeaders(),
+        });
+
+        if (!result.ok) {
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error pinging server', error);
+        return false;
+    }
+}
+
 async function firstLoadInit() {
     try {
         const tokenResponse = await fetch('/csrf-token');
@@ -825,12 +861,12 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    await getSystemMessages();
-    sendSystemMessage(system_message_types.WELCOME);
     await getClientVersion();
     await readSecretState();
-    await getSettings();
     initLocales();
+    await getSystemMessages();
+    sendSystemMessage(system_message_types.WELCOME);
+    await getSettings();
     initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
@@ -1357,7 +1393,7 @@ function verifyCharactersSearchSortRule() {
  * @typedef {object} Entity - Object representing a display entity
  * @property {Character|Group|import('./scripts/tags.js').Tag|*} item - The item
  * @property {string|number} id - The id
- * @property {string} type - The type of this entity (character, group, tag)
+ * @property {'character'|'group'|'tag'} type - The type of this entity (character, group, tag)
  * @property {Entity[]} [entities] - An optional list of entities relevant for this item
  * @property {number} [hidden] - An optional number representing how many hidden entities this entity contains
  */
@@ -1432,7 +1468,11 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
             const subCount = subEntities.length;
             subEntities = filterByTagState(entities, { subForEntity: entity });
             if (doFilter) {
-                subEntities = entitiesFilter.applyFilters(subEntities, { clearScoreCache: false });
+                // sub entities filter "hacked" because folder filter should not be applied there, so even in "only folders" mode characters show up
+                subEntities = entitiesFilter.applyFilters(subEntities, { clearScoreCache: false, tempOverrides: { [FILTER_TYPES.FOLDER]: FILTER_STATES.UNDEFINED } });
+            }
+            if (doSort) {
+                sortEntitiesList(subEntities);
             }
             entity.entities = subEntities;
             entity.hidden = subCount - subEntities.length;
@@ -1441,8 +1481,13 @@ export function getEntitiesList({ doFilter = false, doSort = true } = {}) {
 
     // Second run filters, hiding whatever should be filtered later
     if (doFilter) {
-        entities = filterByTagState(entities, { globalDisplayFilters: true });
-        entities = entitiesFilter.applyFilters(entities);
+        const beforeFinalEntities = filterByTagState(entities, { globalDisplayFilters: true });
+        entities = entitiesFilter.applyFilters(beforeFinalEntities);
+
+        // Magic for folder filter. If that one is enabled, and no folders are display anymore, we remove that filter to actually show the characters.
+        if (isFilterState(entitiesFilter.getFilterData(FILTER_TYPES.FOLDER), FILTER_STATES.SELECTED) && entities.filter(x => x.type == 'tag').length == 0) {
+            entities = entitiesFilter.applyFilters(beforeFinalEntities, { tempOverrides: { [FILTER_TYPES.FOLDER]: FILTER_STATES.UNDEFINED } });
+        }
     }
 
     if (doSort) {
@@ -1492,6 +1537,25 @@ function getCharacterSource(chId = this_chid) {
 
     if (pygmalionId) {
         return `https://pygmalion.chat/${pygmalionId}`;
+    }
+
+    const githubRepo = characters[chId]?.data?.extensions?.github_repo;
+
+    if (githubRepo) {
+        return `https://github.com/${githubRepo}`;
+    }
+
+    const sourceUrl = characters[chId]?.data?.extensions?.source_url;
+
+    if (sourceUrl) {
+        return sourceUrl;
+    }
+
+    const risuId = characters[chId]?.data?.extensions?.risuai?.source;
+
+    if (Array.isArray(risuId) && risuId.length && typeof risuId[0] === 'string' && risuId[0].startsWith('risurealm:')) {
+        const realmId = risuId[0].split(':')[1];
+        return `https://realm.risuai.net/character/${realmId}`;
     }
 
     return '';
@@ -1692,6 +1756,7 @@ export async function reloadCurrentChat() {
  */
 export function sendTextareaMessage() {
     if (is_send_press) return;
+    if (isExecutingCommandsFromChatInput) return;
 
     let generateType;
     // "Continue on send" is activated when the user hits "send" (or presses enter) on an empty chat box, and the last
@@ -1914,7 +1979,7 @@ function getMessageFromTemplate({
     timestamp,
     tokenCount,
     extra,
-} = {}) {
+}) {
     const mes = messageTemplate.clone();
     mes.attr({
         'mesid': mesId,
@@ -2100,7 +2165,6 @@ export function addOneMessage(mes, { type = 'normal', insertAfter = null, scroll
 
     const newMessage = $(`#chat [mesid="${newMessageId}"]`);
     const isSmallSys = mes?.extra?.isSmallSys;
-    newMessage.data('isSystem', isSystem);
 
     if (isSmallSys === true) {
         newMessage.addClass('smallSysMes');
@@ -2281,6 +2345,8 @@ export function substituteParams(content, _name1, _name2, _original, _group, _re
         environment.scenario = fields.scenario || '';
         environment.persona = fields.persona || '';
         environment.mesExamples = fields.mesExamples || '';
+        environment.charVersion = fields.version || '';
+        environment.char_version = fields.version || '';
     }
 
     // Must be substituted last so that they're replaced inside {{description}}
@@ -2372,30 +2438,14 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
  * @param {string} message Text to be sent
  * @returns {Promise<boolean>} Whether the message sending was interrupted
  */
-async function processCommands(message) {
+export async function processCommands(message) {
     if (!message || !message.trim().startsWith('/')) {
         return false;
     }
-
-    const previousText = String($('#send_textarea').val());
-    const result = await executeSlashCommands(message);
-
-    if (!result || typeof result !== 'object') {
-        return false;
-    }
-
-    const currentText = String($('#send_textarea').val());
-
-    if (previousText === currentText) {
-        $('#send_textarea').val(result.newText).trigger('input');
-    }
-
-    // interrupt generation if the input was nothing but a command
-    if (message.length > 0 && result?.newText.length === 0) {
-        return true;
-    }
-
-    return result?.interrupt;
+    await executeSlashCommandsOnChatInput(message, {
+        clearChatInput: true,
+    });
+    return true;
 }
 
 export function sendSystemMessage(type, text, extra = {}) {
@@ -2425,6 +2475,14 @@ export function sendSystemMessage(type, text, extra = {}) {
     chat.push(newMessage);
     addOneMessage(newMessage);
     is_send_press = false;
+    if (type == system_message_types.SLASH_COMMANDS) {
+        const browser = new SlashCommandBrowser();
+        const spinner = document.querySelector('#chat .last_mes .custom-slashHelp');
+        const parent = spinner.parentElement;
+        spinner.remove();
+        browser.renderInto(parent);
+        browser.search.focus();
+    }
 }
 
 /**
@@ -2496,6 +2554,9 @@ function cleanGroupMessage(getMessage) {
 }
 
 function addPersonaDescriptionExtensionPrompt() {
+    const INJECT_TAG = 'PERSONA_DESCRIPTION';
+    setExtensionPrompt(INJECT_TAG, '', extension_prompt_types.IN_PROMPT, 0);
+
     if (!power_user.persona_description) {
         return;
     }
@@ -2509,6 +2570,10 @@ function addPersonaDescriptionExtensionPrompt() {
             : `${originalAN}\n${power_user.persona_description}`;
 
         setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
+    }
+
+    if (power_user.persona_description_position === persona_description_positions.AT_DEPTH) {
+        setExtensionPrompt(INJECT_TAG, power_user.persona_description, extension_prompt_types.IN_CHAT, power_user.persona_description_depth, true, power_user.persona_description_role);
     }
 }
 
@@ -2578,10 +2643,10 @@ export function baseChatReplace(value, name1, name2) {
 
 /**
  * Returns the character card fields for the current character.
- * @returns {{system: string, mesExamples: string, description: string, personality: string, persona: string, scenario: string, jailbreak: string}}
+ * @returns {{system: string, mesExamples: string, description: string, personality: string, persona: string, scenario: string, jailbreak: string, version: string}}
  */
 export function getCharacterCardFields() {
-    const result = { system: '', mesExamples: '', description: '', personality: '', persona: '', scenario: '', jailbreak: '' };
+    const result = { system: '', mesExamples: '', description: '', personality: '', persona: '', scenario: '', jailbreak: '', version: '' };
     const character = characters[this_chid];
 
     if (!character) {
@@ -2596,6 +2661,7 @@ export function getCharacterCardFields() {
     result.persona = baseChatReplace(power_user.persona_description?.trim(), name1, name2);
     result.system = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
     result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
+    result.version = characters[this_chid].data?.character_version ?? '';
 
     if (selected_group) {
         const groupCards = getGroupCharacterCards(selected_group, Number(this_chid));
@@ -2671,7 +2737,7 @@ class StreamingProcessor {
         let messageId = -1;
 
         if (this.type == 'impersonate') {
-            $('#send_textarea').val('').trigger('input');
+            $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
             await saveReply(this.type, text, true);
@@ -2707,7 +2773,7 @@ class StreamingProcessor {
         }
 
         if (isImpersonate) {
-            $('#send_textarea').val(processedText).trigger('input');
+            $('#send_textarea').val(processedText)[0].dispatchEvent(new Event('input', { bubbles: true }));
         }
         else {
             let currentTime = new Date();
@@ -2841,6 +2907,9 @@ class StreamingProcessor {
         this.onErrorStreaming();
     }
 
+    /**
+     * @returns {Generator<{ text: string, swipes: string[], logprobs: import('./scripts/logprobs.js').TokenLogprobs }, void, void>}
+     */
     *nullStreamingGeneration() {
         throw new Error('Generation function for streaming is not hooked up');
     }
@@ -2868,7 +2937,7 @@ class StreamingProcessor {
                 }
 
                 this.result = text;
-                this.swipes = swipes;
+                this.swipes = Array.from(swipes ?? []);
                 if (logprobs) {
                     this.messageLogprobs.push(...(Array.isArray(logprobs) ? logprobs : [logprobs]));
                 }
@@ -3054,7 +3123,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         const interruptedByCommand = await processCommands(String($('#send_textarea').val()));
 
         if (interruptedByCommand) {
-            //$("#send_textarea").val('').trigger('input');
+            //$("#send_textarea").val('')[0].dispatchEvent(new Event('input', { bubbles:true }));
             unblockGeneration(type);
             return Promise.resolve();
         }
@@ -3081,6 +3150,15 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     if (!dryRun) {
+        // Ping server to make sure it is still alive
+        const pingResult = await pingServer();
+
+        if (!pingResult) {
+            unblockGeneration(type);
+            toastr.error('Verify that the server is running and accessible.', 'ST Server cannot be reached');
+            throw new Error('Server unreachable');
+        }
+
         // Hide swipes if not in a dry run.
         hideSwipeButtons();
         // If generated any message, set the flag to indicate it can't be recreated again.
@@ -3140,7 +3218,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun) {
         is_send_press = true;
         textareaText = String($('#send_textarea').val());
-        $('#send_textarea').val('').trigger('input');
+        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
     } else {
         textareaText = '';
         if (chat.length && chat[chat.length - 1]['is_user']) {
@@ -3225,32 +3303,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth, extension_settings.note.allowWIScan, depthPromptRole);
     }
 
-    // Parse example messages
-    if (!mesExamples.startsWith('<START>')) {
-        mesExamples = '<START>\n' + mesExamples.trim();
-    }
-    if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
-        mesExamples = '';
-    }
-    const mesExamplesRaw = mesExamples;
-    /**
-     * Adds a block heading to the examples string.
-     * @param {string} examplesStr
-     * @returns {string[]} Examples array with block heading
-     */
-    function addBlockHeading(examplesStr) {
-        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
-        const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
-        return examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
-    }
-
-    let mesExamplesArray = addBlockHeading(mesExamples);
-    let mesExamplesRawArray = addBlockHeading(mesExamplesRaw);
-
-    if (mesExamplesArray && isInstruct) {
-        mesExamplesArray = formatInstructModeExamples(mesExamplesArray, name1, name2);
-    }
-
     // First message in fresh 1-on-1 chat reacts to user/character settings changes
     if (chat.length) {
         chat[0].mes = substituteParams(chat[0].mes);
@@ -3319,14 +3371,69 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         force_name2 = false;
     }
 
+    // TODO (kingbri): Migrate to a utility function
+    /**
+     * Parses an examples string.
+     * @param {string} examplesStr
+     * @returns {string[]} Examples array with block heading
+     */
+    function parseMesExamples(examplesStr) {
+        if (examplesStr.length === 0) {
+            return [];
+        }
+
+        if (!examplesStr.startsWith('<START>')) {
+            examplesStr = '<START>\n' + examplesStr.trim();
+        }
+
+        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
+        const blockHeading = main_api === 'openai' ? '<START>\n' : (exampleSeparator || (isInstruct ? '<START>\n' : ''));
+        const splitExamples = examplesStr.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+
+        return splitExamples;
+    }
+
+    let mesExamplesArray = parseMesExamples(mesExamples);
+
     //////////////////////////////////
     // Extension added strings
     // Set non-WI AN
     setFloatingPrompt();
-    // Add WI to prompt (and also inject WI to AN value via hijack)
+    // Add persona description to prompt
+    addPersonaDescriptionExtensionPrompt();
 
+    // Add WI to prompt (and also inject WI to AN value via hijack)
+    // Make quiet prompt available for WIAN
+    setExtensionPrompt('QUIET_PROMPT', quiet_prompt || '', extension_prompt_types.IN_PROMPT, 0, true);
     const chatForWI = coreChat.map(x => `${x.name}: ${x.mes}`).reverse();
-    let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun);
+    const { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoExamples, worldInfoDepth } = await getWorldInfoPrompt(chatForWI, this_max_context, dryRun);
+    setExtensionPrompt('QUIET_PROMPT', '', extension_prompt_types.IN_PROMPT, 0, true);
+
+    // Add message example WI
+    for (const example of worldInfoExamples) {
+        const exampleMessage = example.content;
+
+        if (exampleMessage.length === 0) {
+            continue;
+        }
+
+        const formattedExample = baseChatReplace(exampleMessage, name1, name2);
+        const cleanedExample = parseMesExamples(formattedExample);
+
+        // Insert depending on before or after position
+        if (example.position === wi_anchor_position.before) {
+            mesExamplesArray.unshift(...cleanedExample);
+        } else {
+            mesExamplesArray.push(...cleanedExample);
+        }
+    }
+
+    // At this point, the raw message examples can be created
+    const mesExamplesRawArray = [...mesExamplesArray];
+
+    if (mesExamplesArray && isInstruct) {
+        mesExamplesArray = formatInstructModeExamples(mesExamplesArray, name1, name2);
+    }
 
     if (skipWIAN !== true) {
         console.log('skipWIAN not active, adding WIAN');
@@ -3411,8 +3518,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         userAlignmentMessage = formatMessageHistoryItem(alignmentMessage, isInstruct, false);
     }
 
-    // Add persona description to prompt
-    addPersonaDescriptionExtensionPrompt();
     // Call combined AN into Generate
     const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
     const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
@@ -4048,6 +4153,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let messageChunk = '';
 
         if (data.error) {
+            unblockGeneration(type);
             generatedPromptCache = '';
 
             if (data?.response) {
@@ -4075,7 +4181,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
         if (getMessage.length > 0) {
             if (isImpersonate) {
-                $('#send_textarea').val(getMessage).trigger('input');
+                $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
                 generatedPromptCache = '';
                 await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
             }
@@ -4256,7 +4362,6 @@ function unblockGeneration(type) {
     setGenerationProgress(0);
     flushEphemeralStoppingStrings();
     flushWIDepthInjections();
-    $('#send_textarea').removeAttr('disabled');
 }
 
 export function getNextMessageId(type) {
@@ -4387,7 +4492,8 @@ function formatMessageHistoryItem(chatItem, isInstruct, forceOutputSequence) {
     const itemName = chatItem.is_user ? chatItem['name'] : characterName;
     const shouldPrependName = !isNarratorType;
 
-    let textResult = shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
+    // Don't include a name if it's empty
+    let textResult = chatItem?.name && shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
 
     if (isInstruct) {
         textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar, name1, name2, forceOutputSequence);
@@ -4410,14 +4516,16 @@ export function removeMacros(str) {
  * @param {string} messageText Message text.
  * @param {string} messageBias Message bias.
  * @param {number} [insertAt] Optional index to insert the message at.
- * @params {boolean} [compact] Send as a compact display message.
+ * @param {boolean} [compact] Send as a compact display message.
+ * @param {string} [name] Name of the user sending the message. Defaults to name1.
+ * @param {string} [avatar] Avatar of the user sending the message. Defaults to user_avatar.
  * @returns {Promise<void>} A promise that resolves when the message is inserted.
  */
-export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false) {
+export async function sendMessageAsUser(messageText, messageBias, insertAt = null, compact = false, name = name1, avatar = user_avatar) {
     messageText = getRegexedString(messageText, regex_placement.USER_INPUT);
 
     const message = {
-        name: name1,
+        name: name,
         is_user: true,
         is_system: false,
         send_date: getMessageTimeStamp(),
@@ -4432,8 +4540,8 @@ export async function sendMessageAsUser(messageText, messageBias, insertAt = nul
     }
 
     // Lock user avatar to a persona.
-    if (user_avatar in power_user.personas) {
-        message.force_avatar = getUserAvatar(user_avatar);
+    if (avatar in power_user.personas) {
+        message.force_avatar = getUserAvatar(avatar);
     }
 
     if (messageBias) {
@@ -5262,7 +5370,6 @@ export function activateSendButtons() {
     is_send_press = false;
     $('#send_but').removeClass('displayNone');
     $('#mes_continue').removeClass('displayNone');
-    $('#send_textarea').attr('disabled', false);
     $('.mes_buttons:last').show();
     hideStopButton();
 }
@@ -5681,8 +5788,10 @@ async function getChatResult() {
     name2 = characters[this_chid].name;
     if (chat.length === 0) {
         const message = getFirstMessage();
-        chat.push(message);
-        await saveChatConditional();
+        if (message.mes) {
+            chat.push(message);
+            await saveChatConditional();
+        }
     }
     await loadItemizedPrompts(getCurrentChatId());
     await printMessages();
@@ -5698,7 +5807,7 @@ async function getChatResult() {
 }
 
 function getFirstMessage() {
-    const firstMes = characters[this_chid].first_mes || default_ch_mes;
+    const firstMes = characters[this_chid].first_mes || '';
     const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
 
     const message = {
@@ -5712,10 +5821,17 @@ function getFirstMessage() {
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
         const swipes = [message.mes, ...(alternateGreetings.map(greeting => getRegexedString(greeting, regex_placement.AI_OUTPUT)))];
+
+        if (!message.mes) {
+            swipes.shift();
+            message.mes = swipes[0];
+        }
+
         message['swipe_id'] = 0;
         message['swipes'] = swipes;
         message['swipe_info'] = [];
     }
+
     return message;
 }
 
@@ -5849,7 +5965,7 @@ export function changeMainAPI() {
         getStatusHorde();
         getHordeModels(true);
     }
-
+    validateDisabledSamplers();
     setupChatCompletionPromptManager(oai_settings);
     forceCharacterEditorTokenize();
 }
@@ -5872,7 +5988,7 @@ async function doOnboarding(avatarId) {
     template.find('input[name="enable_simple_mode"]').on('input', function () {
         simpleUiMode = $(this).is(':checked');
     });
-    let userName = await callPopup(template, 'input', currentUser?.name || name1);
+    let userName = await callGenericPopup(template, POPUP_TYPE.INPUT, currentUser?.name || name1, { rows: 2 });
 
     if (userName) {
         userName = userName.replace('\n', ' ');
@@ -6003,6 +6119,7 @@ export async function getSettings() {
         // TextGen
         loadTextGenSettings(data, settings);
 
+
         // OpenAI
         loadOpenAISettings(data, settings.oai_settings ?? settings);
 
@@ -6048,17 +6165,9 @@ export async function getSettings() {
         );
         changeMainAPI();
 
+
         //Load User's Name and Avatar
         initUserAvatar(settings.user_avatar);
-
-        firstRun = !!settings.firstRun;
-
-        if (firstRun) {
-            hideLoader();
-            await doOnboarding(user_avatar);
-            firstRun = false;
-        }
-
         setPersonaDescription();
 
         //Load the active character and group
@@ -6078,8 +6187,16 @@ export async function getSettings() {
             await loadExtensionSettings(settings, isVersionChanged);
             eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
         }
-    }
 
+        firstRun = !!settings.firstRun;
+
+        if (firstRun) {
+            hideLoader();
+            await doOnboarding(user_avatar);
+            firstRun = false;
+        }
+    }
+    await validateDisabledSamplers();
     settingsReady = true;
     eventSource.emit(event_types.SETTINGS_LOADED);
 }
@@ -6143,20 +6260,14 @@ export async function saveSettings(type) {
     });
 }
 
-export function setGenerationParamsFromPreset(preset, isMancerChange = null) {
+export function setGenerationParamsFromPreset(preset) {
     const needsUnlock = (preset.max_length ?? max_context) > MAX_CONTEXT_DEFAULT || (preset.genamt ?? amount_gen) > MAX_RESPONSE_DEFAULT;
     $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
 
     if (preset.genamt !== undefined) {
         amount_gen = preset.genamt;
-        if (isMancerChange) {
-            $('#amount_gen').attr('max', amount_gen);
-            $('#amount_gen_counter').val($('#amount_gen').val());
-        }
-        else {
-            $('#amount_gen').val(amount_gen);
-            $('#amount_gen_counter').val(amount_gen);
-        }
+        $('#amount_gen').val(amount_gen);
+        $('#amount_gen_counter').val(amount_gen);
     }
 
     if (preset.max_length !== undefined) {
@@ -6213,6 +6324,8 @@ function updateMessage(div) {
     } else {
         mes.extra.bias = null;
     }
+
+    chat_metadata['tainted'] = true;
 
     return { mesBlock, text, mes, bias };
 }
@@ -6280,6 +6393,7 @@ async function messageEditDone(div) {
     appendMediaToMessage(mes, div.closest('.mes'));
     addCopyToCodeBlocks(div.closest('.mes'));
 
+    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
     this_edit_mes_id = undefined;
     await saveChatConditional();
 }
@@ -6479,7 +6593,7 @@ export async function displayPastChats() {
                 $('#select_chat_div').append(template);
 
                 if (currentChat === fileName.toString().replace('.jsonl', '')) {
-                    $('#select_chat_div').find('.select_chat_block:last').attr('highlight', true);
+                    $('#select_chat_div').find('.select_chat_block:last').attr('highlight', String(true));
                 }
             }
         }
@@ -6660,7 +6774,7 @@ export function select_selected_character(chid) {
     $('#description_textarea').val(characters[chid].description);
     $('#character_world').val(characters[chid].data?.extensions?.world || '');
     $('#creator_notes_textarea').val(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
-    $('#creator_notes_spoiler').html(DOMPurify.sanitize(converter.makeHtml(characters[chid].data?.creator_notes || characters[chid].creatorcomment), { MESSAGE_SANITIZE: true }));
+    $('#creator_notes_spoiler').html(DOMPurify.sanitize(converter.makeHtml(substituteParams(characters[chid].data?.creator_notes) || characters[chid].creatorcomment), { MESSAGE_SANITIZE: true }));
     $('#character_version_textarea').val(characters[chid].data?.character_version || '');
     $('#system_prompt_textarea').val(characters[chid].data?.system_prompt || '');
     $('#post_history_instructions_textarea').val(characters[chid].data?.post_history_instructions || '');
@@ -7172,7 +7286,7 @@ function openCharacterWorldPopup() {
             if (previousValue && !name) {
                 try {
                     // Dirty hack to remove embedded lorebook from character JSON data.
-                    const data = JSON.parse($('#character_json_data').val());
+                    const data = JSON.parse(String($('#character_json_data').val()));
 
                     if (data?.data?.character_book) {
                         data.data.character_book = undefined;
@@ -7298,8 +7412,8 @@ function openAlternateGreetings() {
     template.find('.add_alternate_greeting').on('click', function () {
         const array = getArray();
         const index = array.length;
-        array.push(default_ch_mes);
-        addAlternateGreeting(template, default_ch_mes, index, getArray);
+        array.push('');
+        addAlternateGreeting(template, '', index, getArray);
         updateAlternateGreetingsHintVisibility(template);
     });
 
@@ -7329,7 +7443,7 @@ function addAlternateGreeting(template, greeting, index, getArray) {
 async function createOrEditCharacter(e) {
     $('#rm_info_avatar').html('');
     const formData = new FormData($('#form_create').get(0));
-    formData.set('fav', fav_ch_checked);
+    formData.set('fav', String(fav_ch_checked));
 
     const rawFile = formData.get('avatar');
     if (rawFile instanceof File) {
@@ -7338,7 +7452,7 @@ async function createOrEditCharacter(e) {
     }
 
     if ($('#form_create').attr('actiontype') == 'createcharacter') {
-        if ($('#character_name_pole').val().length > 0) {
+        if (String($('#character_name_pole').val()).length > 0) {
             if (is_group_generating || is_send_press) {
                 toastr.error('Cannot create characters while generating. Stop the request and try again.', 'Creation aborted');
                 throw new Error('Cannot import character while generating');
@@ -7363,7 +7477,7 @@ async function createOrEditCharacter(e) {
                 url: url,
                 data: formData,
                 beforeSend: function () {
-                    $('#create_button').attr('disabled', true);
+                    $('#create_button').attr('disabled', String(true));
                     $('#create_button').attr('value', '⏳');
                 },
                 cache: false,
@@ -7450,7 +7564,7 @@ async function createOrEditCharacter(e) {
             url: url,
             data: formData,
             beforeSend: function () {
-                $('#create_button').attr('disabled', true);
+                $('#create_button').attr('disabled', String(true));
                 $('#create_button').attr('value', 'Save');
             },
             cache: false,
@@ -7470,15 +7584,20 @@ async function createOrEditCharacter(e) {
                 eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: this_chid, character: characters[this_chid] } });
 
                 // Recreate the chat if it hasn't been used at least once (i.e. with continue).
-                if (chat.length === 1 && !selected_group && !chat_metadata['tainted']) {
-                    const firstMessage = getFirstMessage();
-                    chat[0] = firstMessage;
+                const message = getFirstMessage();
+                const shouldRegenerateMessage =
+                    message.mes &&
+                    !selected_group &&
+                    !chat_metadata['tainted'] &&
+                    (chat.length === 0 || (chat.length === 1 && !chat[0].is_user && !chat[0].is_system));
 
-                    const chat_id = (chat.length - 1);
-                    await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
+                if (shouldRegenerateMessage) {
+                    chat.splice(0, chat.length, message);
+                    const messageId = (chat.length - 1);
+                    await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
                     await clearChat();
                     await printMessages();
-                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId);
                     await saveChatConditional();
                 }
             },
@@ -7506,6 +7625,7 @@ window['SillyTavern'].getContext = function () {
         getCurrentChatId: getCurrentChatId,
         getRequestHeaders: getRequestHeaders,
         reloadCurrentChat: reloadCurrentChat,
+        renameChat: renameChat,
         saveSettingsDebounced: saveSettingsDebounced,
         onlineStatus: online_status,
         maxContext: Number(max_context),
@@ -8003,6 +8123,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_openai',
         source: chat_completion_sources.PERPLEXITY,
     },
+    'groq': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.GROQ,
+    },
     'infermaticai': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -8223,6 +8348,75 @@ async function doDeleteChat() {
     $('#dialogue_popup_ok').trigger('click', { fromSlashCommand: true });
 }
 
+async function doRenameChat(_, chatName) {
+    if (!chatName) {
+        toastr.warning('Name must be provided as an argument to rename this chat.');
+        return;
+    }
+
+    const currentChatName = getCurrentChatId();
+    if (!currentChatName) {
+        toastr.warning('No chat selected that can be renamed.');
+        return;
+    }
+
+    await renameChat(currentChatName, chatName);
+
+    toastr.success(`Successfully renamed chat to: ${chatName}`);
+}
+
+/**
+ * Renames the currently selected chat.
+ * @param {string} oldFileName Old name of the chat (no JSONL extension)
+ * @param {string} newName New name for the chat (no JSONL extension)
+ */
+export async function renameChat(oldFileName, newName) {
+    const body = {
+        is_group: !!selected_group,
+        avatar_url: characters[this_chid]?.avatar,
+        original_file: `${oldFileName}.jsonl`,
+        renamed_file: `${newName}.jsonl`,
+    };
+
+    try {
+        showLoader();
+        const response = await fetch('/api/chats/rename', {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: getRequestHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Unsuccessful request.');
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error('Server returned an error.');
+        }
+
+        if (selected_group) {
+            await renameGroupChat(selected_group, oldFileName, newName);
+        }
+        else {
+            if (characters[this_chid].chat == oldFileName) {
+                characters[this_chid].chat = newName;
+                $('#selected_chat_pole').val(characters[this_chid].chat);
+                await createOrEditCharacter();
+            }
+        }
+
+        await reloadCurrentChat();
+    } catch {
+        hideLoader();
+        await delay(500);
+        await callPopup('An error has occurred. Chat was not renamed.', 'text');
+    } finally {
+        hideLoader();
+    }
+}
+
 /**
  * /getchatname` slash command
  */
@@ -8409,19 +8603,146 @@ jQuery(async function () {
         toastr.success('Chat and settings saved.');
     }
 
-    registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
-    registerSlashCommand('api', connectAPISlash, [], `<span class="monospace">(${Object.keys(CONNECT_API_MAP).join(', ')})</span> – connect to an API`, true, true);
-    registerSlashCommand('impersonate', doImpersonate, ['imp'], '<span class="monospace">[prompt]</span> – calls an impersonation response, with an optional additional prompt', true, true);
-    registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
-    registerSlashCommand('getchatname', doGetChatName, [], '– returns the name of the current chat file into the pipe', false, true);
-    registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
-    registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
-    registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
-    registerSlashCommand('instruct', selectInstructCallback, [], '<span class="monospace">(name)</span> – selects instruct mode preset by name. Gets the current instruct if no name is provided', true, true);
-    registerSlashCommand('instruct-on', enableInstructCallback, [], '– enables instruct mode', true, true);
-    registerSlashCommand('instruct-off', disableInstructCallback, [], '– disables instruct mode', true, true);
-    registerSlashCommand('context', selectContextCallback, [], '<span class="monospace">(name)</span> – selects context template by name. Gets the current template if no name is provided', true, true);
-    registerSlashCommand('chat-manager', () => $('#option_select_chat').trigger('click'), ['chat-history', 'manage-chats'], '– opens the chat manager for the current character/group', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'dupe',
+        callback: DupeChar,
+        helpString: 'Duplicates the currently selected character.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'api',
+        callback: connectAPISlash,
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'API to connect to',
+                [ARGUMENT_TYPE.STRING],
+                true,
+                false,
+                null,
+                Object.keys(CONNECT_API_MAP),
+            ),
+        ],
+        helpString: `
+            <div>
+                Connect to an API.
+            </div>
+            <div>
+                <strong>Available APIs:</strong>
+                <pre><code>${Object.keys(CONNECT_API_MAP).join(', ')}</code></pre>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'impersonate',
+        callback: doImpersonate,
+        aliases: ['imp'],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'prompt', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Calls an impersonation response, with an optional additional prompt.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/impersonate What is the meaning of life?</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'delchat',
+        callback: doDeleteChat,
+        helpString: 'Deletes the current chat.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'renamechat',
+        callback: doRenameChat,
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'new chat name', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: 'Renames the current chat.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'getchatname',
+        callback: doGetChatName,
+        returns: 'chat file name',
+        helpString: 'Returns the name of the current chat file into the pipe.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'closechat',
+        callback: doCloseChat,
+        helpString: 'Closes the current chat.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'panels',
+        callback: doTogglePanels,
+        aliases: ['togglepanels'],
+        helpString: 'Toggle UI panels on/off',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'forcesave',
+        callback: doForceSave,
+        helpString: 'Forces a save of the current chat and settings',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'instruct',
+        callback: selectInstructCallback,
+        returns: 'current preset',
+        namedArgumentList: [],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Selects instruct mode preset by name. Gets the current instruct if no name is provided.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code class="language-stscript">/instruct creative</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'instruct-on',
+        callback: enableInstructCallback,
+        helpString: 'Enables instruct mode.',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'instruct-off',
+        callback: disableInstructCallback,
+        helpString: 'Disables instruct mode',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'context',
+        callback: selectContextCallback,
+        returns: 'template name',
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: 'Selects context template by name. Gets the current template if no name is provided',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'chat-manager',
+        callback: () => $('#option_select_chat').trigger('click'),
+        aliases: ['chat-history', 'manage-chats'],
+        helpString: 'Opens the chat manager for the current character/group.',
+    }));
 
     setTimeout(function () {
         $('#groupControlsToggle').trigger('click');
@@ -8551,19 +8872,17 @@ jQuery(async function () {
         }
         $('.mes').children('.del_checkbox').each(function () {
             $(this).prop('checked', false);
-            $(this).parent().css('background', css_mes_bg);
+            $(this).parent().removeClass('selected');
         });
-        $(this).css('background', '#600'); //sets the bg of the mes selected for deletion
+        $(this).addClass('selected'); //sets the bg of the mes selected for deletion
         var i = Number($(this).attr('mesid')); //checks the message ID in the chat
         this_del_mes = i;
+        //as long as the current message ID is less than the total chat length
         while (i < chat.length) {
-            //as long as the current message ID is less than the total chat length
-            $('.mes[mesid=\'' + i + '\']').css('background', '#600'); //sets the bg of the all msgs BELOW the selected .mes
-            $('.mes[mesid=\'' + i + '\']')
-                .children('.del_checkbox')
-                .prop('checked', true);
+            //sets the bg of the all msgs BELOW the selected .mes
+            $(`.mes[mesid="${i}"]`).addClass('selected');
+            $(`.mes[mesid="${i}"]`).children('.del_checkbox').prop('checked', true);
             i++;
-            //console.log(i);
         }
     });
 
@@ -8571,8 +8890,7 @@ jQuery(async function () {
         e.stopPropagation();
         chat_file_for_del = $(this).attr('file_name');
         console.debug('detected cross click for' + chat_file_for_del);
-        popup_type = 'del_chat';
-        callPopup('<h3>Delete the Chat File?</h3>');
+        callPopup('<h3>Delete the Chat File?</h3>', 'del_chat');
     });
 
     $('#advanced_div').click(function () {
@@ -8800,69 +9118,26 @@ jQuery(async function () {
 
     $(document).on('click', '.renameChatButton', async function (e) {
         e.stopPropagation();
-        const old_filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
-        const old_filename = old_filenamefull.replace('.jsonl', '');
+        const oldFileNameFull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
+        const oldFileName = oldFileNameFull.replace('.jsonl', '');
 
         const popupText = `<h3>Enter the new name for the chat:<h3>
         <small>!!Using an existing filename will produce an error!!<br>
         This will break the link between checkpoint chats.<br>
         No need to add '.jsonl' at the end.<br>
         </small>`;
-        const newName = await callPopup(popupText, 'input', old_filename);
+        const newName = await callPopup(popupText, 'input', oldFileName);
 
-        if (!newName || newName == old_filename) {
+        if (!newName || newName == oldFileName) {
             console.log('no new name found, aborting');
             return;
         }
 
-        const body = {
-            is_group: !!selected_group,
-            avatar_url: characters[this_chid]?.avatar,
-            original_file: `${old_filename}.jsonl`,
-            renamed_file: `${newName}.jsonl`,
-        };
+        await renameChat(oldFileName, newName);
 
-        try {
-            showLoader();
-            const response = await fetch('/api/chats/rename', {
-                method: 'POST',
-                body: JSON.stringify(body),
-                headers: getRequestHeaders(),
-            });
-
-            if (!response.ok) {
-                throw new Error('Unsuccessful request.');
-            }
-
-            const data = await response.json();
-
-            if (data.error) {
-                throw new Error('Server returned an error.');
-            }
-
-            if (selected_group) {
-                await renameGroupChat(selected_group, old_filename, newName);
-            }
-            else {
-                if (characters[this_chid].chat == old_filename) {
-                    characters[this_chid].chat = newName;
-                    $('#selected_chat_pole').val(characters[this_chid].chat);
-                    await createOrEditCharacter();
-                }
-            }
-
-            await reloadCurrentChat();
-
-            await delay(250);
-            $('#option_select_chat').trigger('click');
-            $('#options').hide();
-        } catch {
-            hideLoader();
-            await delay(500);
-            await callPopup('An error has occurred. Chat was not renamed.', 'text');
-        } finally {
-            hideLoader();
-        }
+        await delay(250);
+        $('#option_select_chat').trigger('click');
+        $('#options').hide();
     });
 
     $(document).on('click', '.exportChatButton, .exportRawChatButton', async function (e) {
@@ -9168,7 +9443,7 @@ jQuery(async function () {
         $('.del_checkbox').each(function () {
             $(this).css('display', 'none');
             $(this).parent().children('.for_checkbox').css('display', 'block');
-            $(this).parent().css('background', css_mes_bg);
+            $(this).parent().removeClass('selected');
             $(this).prop('checked', false);
         });
         showSwipeButtons();
@@ -9183,22 +9458,19 @@ jQuery(async function () {
         $('.del_checkbox').each(function () {
             $(this).css('display', 'none');
             $(this).parent().children('.for_checkbox').css('display', 'block');
-            $(this).parent().css('background', css_mes_bg);
+            $(this).parent().removeClass('selected');
             $(this).prop('checked', false);
         });
 
         if (this_del_mes >= 0) {
-            $('.mes[mesid=\'' + this_del_mes + '\']')
-                .nextAll('div')
-                .remove();
-            $('.mes[mesid=\'' + this_del_mes + '\']').remove();
+            $(`.mes[mesid="${this_del_mes}"]`).nextAll('div').remove();
+            $(`.mes[mesid="${this_del_mes}"]`).remove();
             chat.length = this_del_mes;
             await saveChatConditional();
-            var $textchat = $('#chat');
-            $textchat.scrollTop($textchat[0].scrollHeight);
+            chatElement.scrollTop(chatElement[0].scrollHeight);
             eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+            $('#chat .mes').removeClass('last_mes');
             $('#chat .mes').last().addClass('last_mes');
-            $('#chat .mes').eq(-2).removeClass('last_mes');
         } else {
             console.log('this_del_mes is not >= 0, not deleting');
         }
@@ -9322,14 +9594,9 @@ jQuery(async function () {
     else {
         $(document).on('pointerup', '.mes_copy', function () {
             if (this_chid !== undefined || selected_group) {
-                const message = $(this).closest('.mes');
-
-                if (message.data('isSystem')) {
-                    return;
-                }
                 try {
-                    var edit_mes_id = $(this).closest('.mes').attr('mesid');
-                    var text = chat[edit_mes_id]['mes'];
+                    const messageId = $(this).closest('.mes').attr('mesid');
+                    const text = chat[messageId]['mes'];
                     navigator.clipboard.writeText(text);
                     toastr.info('Copied!', '', { timeOut: 2000 });
                 } catch (err) {
@@ -9436,10 +9703,10 @@ jQuery(async function () {
             edit_textarea.height(edit_textarea[0].scrollHeight);
             edit_textarea.focus();
             edit_textarea[0].setSelectionRange(     //this sets the cursor at the end of the text
-                edit_textarea.val().length,
-                edit_textarea.val().length,
+                String(edit_textarea.val()).length,
+                String(edit_textarea.val()).length,
             );
-            if (this_edit_mes_id == chat.length - 1) {
+            if (Number(this_edit_mes_id) === chat.length - 1) {
                 $('#chat').scrollTop(chatScrollPosition);
             }
 
@@ -9588,8 +9855,8 @@ jQuery(async function () {
         }
 
         hideSwipeButtons();
-        let oldScroll = $('#chat')[0].scrollTop;
-        const clone = JSON.parse(JSON.stringify(chat[this_edit_mes_id])); // quick and dirty clone
+        const oldScroll = chatElement[0].scrollTop;
+        const clone = structuredClone(chat[this_edit_mes_id]);
         clone.send_date = Date.now();
         clone.mes = $(this).closest('.mes').find('.edit_textarea').val();
 
@@ -9602,7 +9869,7 @@ jQuery(async function () {
 
         updateViewMessageIds();
         await saveChatConditional();
-        $('#chat')[0].scrollTop = oldScroll;
+        chatElement[0].scrollTop = oldScroll;
         showSwipeButtons();
     });
 
@@ -9662,6 +9929,11 @@ jQuery(async function () {
 
     $('#character_import_file').on('change', async function (e) {
         $('#rm_info_avatar').html('');
+
+        if (!(e.target instanceof HTMLInputElement)) {
+            return;
+        }
+
         if (!e.target.files.length) {
             return;
         }
@@ -9701,6 +9973,7 @@ jQuery(async function () {
             a.setAttribute('download', filename);
             document.body.appendChild(a);
             a.click();
+            URL.revokeObjectURL(a.href);
             document.body.removeChild(a);
         }
 
@@ -9795,7 +10068,7 @@ jQuery(async function () {
     $(document).on('click', '.mes_create_branch', async function () {
         var selected_mes_id = $(this).closest('.mes').attr('mesid');
         if (selected_mes_id !== undefined) {
-            branchChat(selected_mes_id);
+            branchChat(Number(selected_mes_id));
         }
     });
 
@@ -9805,11 +10078,22 @@ jQuery(async function () {
             streamingProcessor = null;
         }
         if (abortController) {
-            abortController.abort();
+            abortController.abort('Clicked stop button');
             hideStopButton();
         }
         eventSource.emit(event_types.GENERATION_STOPPED);
-        activateSendButtons();
+    });
+
+    $(document).on('click', '#form_sheld .stscript_continue', function () {
+        pauseScriptExecution();
+    });
+
+    $(document).on('click', '#form_sheld .stscript_pause', function () {
+        pauseScriptExecution();
+    });
+
+    $(document).on('click', '#form_sheld .stscript_stop', function () {
+        stopScriptExecution();
     });
 
     $('.drawer-toggle').on('click', function () {
@@ -9901,7 +10185,7 @@ jQuery(async function () {
 
         var targetParentHasOpenDrawer = clickTarget.parents('.openDrawer').length;
         if (clickTarget.hasClass('drawer-icon') == false && !clickTarget.hasClass('openDrawer')) {
-            if (jQuery.find('.openDrawer').length !== 0) {
+            if ($('.openDrawer').length !== 0) {
                 if (targetParentHasOpenDrawer === 0) {
                     //console.log($('.openDrawer').not('.pinnedOpen').length);
                     $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, 'swing', function () {
@@ -9989,18 +10273,7 @@ jQuery(async function () {
 
             if (power_user.zoomed_avatar_magnification) {
                 $('.zoomed_avatar_container').izoomify();
-            } else {
-                $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
             }
-
-            $('.zoomed_avatar').on('mouseup', (e) => {
-                if (e.target.closest('.drag-grabber') || e.button !== 0) {
-                    return;
-                }
-                $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
-                    $(`.zoomed_avatar[forChar="${charname}"]`).remove();
-                });
-            });
 
             $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
                 if (e.target.closest('.dragClose')) {
@@ -10107,6 +10380,9 @@ jQuery(async function () {
                     $('#character_replace_file').off('change').on('change', uploadReplacementCard).trigger('click');
                 }
             } break;
+            case 'import_tags': {
+                await importTags(characters[this_chid]);
+            } break;
             /*case 'delete_button':
                 popup_type = "del_ch";
                 callPopup(`
@@ -10146,10 +10422,10 @@ jQuery(async function () {
             const masterSelector = '#' + $(this).data('for');
             const masterElement = $(masterSelector);
             if (e.key === 'Enter') {
-                let manualInput = parseFloat($(this).val());
+                let manualInput = Number($(this).val());
                 if (isManualInput) {
                     //disallow manual inputs outside acceptable range
-                    if (manualInput >= $(this).attr('min') && manualInput <= $(this).attr('max')) {
+                    if (manualInput >= Number($(this).attr('min')) && manualInput <= Number($(this).attr('max'))) {
                         //if value is ok, assign to slider and update handle text and position
                         //newSlider.val(manualInput)
                         //handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
@@ -10174,10 +10450,10 @@ jQuery(async function () {
         .on('mouseup blur', function () {
             const masterSelector = '#' + $(this).data('for');
             const masterElement = $(masterSelector);
-            let manualInput = parseFloat($(this).val());
+            let manualInput = Number($(this).val());
             if (isManualInput) {
                 //if value is between correct range for the slider
-                if (manualInput >= $(this).attr('min') && manualInput <= $(this).attr('max')) {
+                if (manualInput >= Number($(this).attr('min')) && manualInput <= Number($(this).attr('max'))) {
                     valueBeforeManualInput = manualInput;
                     //set the slider value to input value
                     $(masterElement).val($(this).val()).trigger('input');
@@ -10195,18 +10471,9 @@ jQuery(async function () {
         userStatsHandler();
     });
 
-    $('#external_import_button').on('click', async () => {
-        const html = `<h3>Enter the URL of the content to import</h3>
-        Supported sources:<br>
-        <ul class="justifyLeft">
-            <li>Chub Character (Direct Link or ID)<br>Example: <tt>Anonymous/example-character</tt></li>
-            <li>Chub Lorebook (Direct Link or ID)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
-            <li>JanitorAI Character (Direct Link or UUID)<br>Example: <tt>ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
-            <li>Pygmalion.chat Character (Direct Link or UUID)<br>Example: <tt>a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
-            <li>AICharacterCard.com Character (Direct Link or ID)<br>Example: <tt>AICC/aicharcards/the-game-master</tt></li>
-            <li>Direct PNG Link (refer to <code>config.yaml</code> for allowed hosts)<br>Example: <tt>https://files.catbox.moe/notarealfile.png</tt></li>
-        <ul>`;
-        const input = await callPopup(html, 'input', '', { okButton: 'Import', rows: 4 });
+    $(document).on('click', '.external_import_button, #external_import_button', async () => {
+        const html = await renderTemplateAsync('importCharacters');
+        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: $('#shadow_popup_template').attr('popup_text_import'), rows: 4 });
 
         if (!input) {
             console.debug('Custom content import cancelled');
@@ -10296,6 +10563,11 @@ jQuery(async function () {
         showMoreMessages();
     });
 
+    $(document).on('click', '.open_characters_library', async function () {
+        await getCharacters();
+        eventSource.emit(event_types.OPEN_CHARACTER_LIBRARY);
+    });
+
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
     await firstLoadInit();
 
@@ -10307,4 +10579,6 @@ jQuery(async function () {
     eventSource.on(event_types.GROUP_CHAT_DELETED, async (name) => {
         await deleteItemizedPrompts(name);
     });
+
+    initCustomSelectedSamplers();
 });

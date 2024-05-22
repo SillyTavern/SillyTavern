@@ -4,7 +4,7 @@ import { chat_completion_sources, model_list, oai_settings } from './openai.js';
 import { groups, selected_group } from './group-chats.js';
 import { getStringHash } from './utils.js';
 import { kai_flags } from './kai-settings.js';
-import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
+import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer, getTextGenModel } from './textgen-settings.js';
 import { getCurrentDreamGenModelTokenizer, getCurrentOpenRouterModelTokenizer, openRouterModels } from './textgen-models.js';
 
 const { OOBA, TABBY, KOBOLDCPP, APHRODITE, LLAMACPP, OPENROUTER, DREAMGEN } = textgen_types;
@@ -24,6 +24,8 @@ export const tokenizers = {
     YI: 8,
     API_TEXTGENERATIONWEBUI: 9,
     API_KOBOLD: 10,
+    CLAUDE: 11,
+    LLAMA3: 12,
     BEST_MATCH: 99,
 };
 
@@ -31,6 +33,7 @@ export const SENTENCEPIECE_TOKENIZERS = [
     tokenizers.LLAMA,
     tokenizers.MISTRAL,
     tokenizers.YI,
+    tokenizers.LLAMA3,
     // uncomment when NovelAI releases Kayra and Clio weights, lol
     //tokenizers.NERD,
     //tokenizers.NERD2,
@@ -77,6 +80,16 @@ const TOKENIZER_URLS = {
         encode: '/api/tokenizers/yi/encode',
         decode: '/api/tokenizers/yi/decode',
         count: '/api/tokenizers/yi/encode',
+    },
+    [tokenizers.CLAUDE]: {
+        encode: '/api/tokenizers/claude/encode',
+        decode: '/api/tokenizers/claude/decode',
+        count: '/api/tokenizers/claude/encode',
+    },
+    [tokenizers.LLAMA3]: {
+        encode: '/api/tokenizers/llama3/encode',
+        decode: '/api/tokenizers/llama3/decode',
+        count: '/api/tokenizers/llama3/encode',
     },
     [tokenizers.API_TEXTGENERATIONWEBUI]: {
         encode: '/api/tokenizers/remote/textgenerationwebui/encode',
@@ -208,6 +221,16 @@ export function getTokenizerBestMatch(forApi) {
             }
             if (forApi === 'textgenerationwebui' && textgen_settings.type === DREAMGEN) {
                 return getCurrentDreamGenModelTokenizer();
+            }
+        }
+
+        if (forApi === 'textgenerationwebui') {
+            const model = String(getTextGenModel() || online_status).toLowerCase();
+            if (model.includes('llama3') || model.includes('llama-3')) {
+                return tokenizers.LLAMA3;
+            }
+            if (model.includes('mistral') || model.includes('mixtral')) {
+                return tokenizers.MISTRAL;
             }
         }
 
@@ -421,6 +444,7 @@ export function getTokenizerModel() {
     const gpt2Tokenizer = 'gpt2';
     const claudeTokenizer = 'claude';
     const llamaTokenizer = 'llama';
+    const llama3Tokenizer = 'llama3';
     const mistralTokenizer = 'mistral';
     const yiTokenizer = 'yi';
 
@@ -457,6 +481,9 @@ export function getTokenizerModel() {
 
         if (model?.architecture?.tokenizer === 'Llama2') {
             return llamaTokenizer;
+        }
+        else if (model?.architecture?.tokenizer === 'Llama3') {
+            return llama3Tokenizer;
         }
         else if (model?.architecture?.tokenizer === 'Mistral') {
             return mistralTokenizer;
@@ -498,10 +525,22 @@ export function getTokenizerModel() {
     }
 
     if (oai_settings.chat_completion_source === chat_completion_sources.PERPLEXITY)  {
+        if (oai_settings.perplexity_model.includes('llama-3') || oai_settings.perplexity_model.includes('llama3')) {
+            return llama3Tokenizer;
+        }
         if (oai_settings.perplexity_model.includes('llama')) {
             return llamaTokenizer;
         }
-        if (oai_settings.perplexity_model.includes('mistral')) {
+        if (oai_settings.perplexity_model.includes('mistral') || oai_settings.perplexity_model.includes('mixtral')) {
+            return mistralTokenizer;
+        }
+    }
+
+    if (oai_settings.chat_completion_source === chat_completion_sources.GROQ) {
+        if (oai_settings.groq_model.includes('llama-3') || oai_settings.groq_model.includes('llama3')) {
+            return llama3Tokenizer;
+        }
+        if (oai_settings.groq_model.includes('mistral') || oai_settings.groq_model.includes('mixtral')) {
             return mistralTokenizer;
         }
     }

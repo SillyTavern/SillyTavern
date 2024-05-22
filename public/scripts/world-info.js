@@ -1,8 +1,7 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
-import { registerSlashCommand } from './slash-commands.js';
 import { isMobile } from './RossAscends-mods.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { getTokenCountAsync } from './tokenizers.js';
@@ -10,6 +9,10 @@ import { power_user } from './power-user.js';
 import { getTagKeyForEntity } from './tags.js';
 import { resolveVariable } from './variables.js';
 import { debounce_timeout } from './constants.js';
+import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 
 export {
     world_info,
@@ -57,6 +60,7 @@ let world_info_recursive = false;
 let world_info_overflow_alert = false;
 let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
+let world_info_use_group_scoring = false;
 let world_info_character_strategy = world_info_insertion_strategy.character_first;
 let world_info_budget_cap = 0;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), debounce_timeout.relaxed);
@@ -65,7 +69,7 @@ const saveSettingsDebounced = debounce(() => {
     saveSettings();
 }, debounce_timeout.relaxed);
 const sortFn = (a, b) => b.order - a.order;
-let updateEditor = (navigation) => { console.debug('Triggered WI navigation', navigation); };
+let updateEditor = (navigation, flashOnNav = true) => { console.debug('Triggered WI navigation', navigation, flashOnNav); };
 
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 const worldInfoFilter = new FilterHelper(() => updateEditor());
@@ -73,6 +77,7 @@ const SORT_ORDER_KEY = 'world_info_sort_order';
 const METADATA_KEY = 'world_info';
 
 const DEFAULT_DEPTH = 4;
+const DEFAULT_WEIGHT = 100;
 const MAX_SCAN_DEPTH = 1000;
 
 /**
@@ -80,7 +85,17 @@ const MAX_SCAN_DEPTH = 1000;
  */
 class WorldInfoBuffer {
     // Typedef area
-    /** @typedef {{scanDepth?: number, caseSensitive?: boolean, matchWholeWords?: boolean}} WIScanEntry The entry that triggered the scan */
+    /**
+     * @typedef {object} WIScanEntry The entry that triggered the scan
+     * @property {number} [scanDepth] The depth of the scan
+     * @property {boolean} [caseSensitive] If the scan is case sensitive
+     * @property {boolean} [matchWholeWords] If the scan should match whole words
+     * @property {boolean} [useGroupScoring] If the scan should use group scoring
+     * @property {number} [uid] The UID of the entry that triggered the scan
+     * @property {string[]} [key] The primary keys to scan for
+     * @property {string[]} [keysecondary] The secondary keys to scan for
+     * @property {number} [selectiveLogic] The logic to use for selective activation
+     */
     // End typedef area
 
     /**
@@ -171,7 +186,7 @@ class WorldInfoBuffer {
             result += '\n' + this.#recurseBuffer.join('\n');
         }
 
-        return this.#transformString(result, entry);
+        return result;
     }
 
     /**
@@ -182,6 +197,14 @@ class WorldInfoBuffer {
      * @returns {boolean} True if the string was found in the buffer
      */
     matchKeys(haystack, needle, entry) {
+        // If the needle is a regex, we do regex pattern matching and override all the other options
+        const keyRegex = parseRegexFromString(needle);
+        if (keyRegex) {
+            return keyRegex.test(haystack);
+        }
+
+        // Otherwise we do normal matching of plaintext with the chosen entry settings
+        haystack = this.#transformString(haystack, entry);
         const transformedString = this.#transformString(needle, entry);
         const matchWholeWords = entry.matchWholeWords ?? world_info_match_whole_words;
 
@@ -244,6 +267,58 @@ class WorldInfoBuffer {
     cleanExternalActivations() {
         WorldInfoBuffer.externalActivations.splice(0, WorldInfoBuffer.externalActivations.length);
     }
+
+    /**
+     * Gets the match score for the given entry.
+     * @param {WIScanEntry} entry Entry to check
+     * @returns {number} The number of key activations for the given entry
+     */
+    getScore(entry) {
+        const bufferState = this.get(entry);
+        let numberOfPrimaryKeys = 0;
+        let numberOfSecondaryKeys = 0;
+        let primaryScore = 0;
+        let secondaryScore = 0;
+
+        // Increment score for every key found in the buffer
+        if (Array.isArray(entry.key)) {
+            numberOfPrimaryKeys = entry.key.length;
+            for (const key of entry.key) {
+                if (this.matchKeys(bufferState, key, entry)) {
+                    primaryScore++;
+                }
+            }
+        }
+
+        // Increment score for every secondary key found in the buffer
+        if (Array.isArray(entry.keysecondary)) {
+            numberOfSecondaryKeys = entry.keysecondary.length;
+            for (const key of entry.keysecondary) {
+                if (this.matchKeys(bufferState, key, entry)) {
+                    secondaryScore++;
+                }
+            }
+        }
+
+        // No keys == no score
+        if (!numberOfPrimaryKeys) {
+            return 0;
+        }
+
+        // Only positive logic influences the score
+        if (numberOfSecondaryKeys > 0) {
+            switch (entry.selectiveLogic) {
+                // AND_ANY: Add both scores
+                case world_info_logic.AND_ANY:
+                    return primaryScore + secondaryScore;
+                // AND_ALL: Add both scores if all secondary keys are found, otherwise only primary score
+                case world_info_logic.AND_ALL:
+                    return secondaryScore === numberOfSecondaryKeys ? primaryScore + secondaryScore : primaryScore;
+            }
+        }
+
+        return primaryScore;
+    }
 }
 
 export function getWorldInfoSettings() {
@@ -259,6 +334,7 @@ export function getWorldInfoSettings() {
         world_info_match_whole_words,
         world_info_character_strategy,
         world_info_budget_cap,
+        world_info_use_group_scoring,
     };
 }
 
@@ -268,6 +344,13 @@ const world_info_position = {
     ANTop: 2,
     ANBottom: 3,
     atDepth: 4,
+    EMTop: 5,
+    EMBottom: 6,
+};
+
+export const wi_anchor_position = {
+    before: 0,
+    after: 1,
 };
 
 const worldInfoCache = {};
@@ -277,7 +360,7 @@ const worldInfoCache = {};
  * @param {string[]} chat The chat messages to scan.
  * @param {number} maxContext The maximum context size of the generation.
  * @param {boolean} isDryRun If true, the function will not emit any events.
- * @typedef {{worldInfoString: string, worldInfoBefore: string, worldInfoAfter: string, worldInfoDepth: any[]}} WIPromptResult
+ * @typedef {{worldInfoString: string, worldInfoBefore: string, worldInfoAfter: string, worldInfoExamples: any[], worldInfoDepth: any[]}} WIPromptResult
  * @returns {Promise<WIPromptResult>} The world info string and depth.
  */
 async function getWorldInfoPrompt(chat, maxContext, isDryRun) {
@@ -297,7 +380,8 @@ async function getWorldInfoPrompt(chat, maxContext, isDryRun) {
         worldInfoString,
         worldInfoBefore,
         worldInfoAfter,
-        worldInfoDepth: activatedWorldInfo.WIDepthEntries,
+        worldInfoExamples: activatedWorldInfo.EMEntries ?? [],
+        worldInfoDepth: activatedWorldInfo.WIDepthEntries ?? [],
     };
 }
 
@@ -322,10 +406,16 @@ function setWorldInfoSettings(settings, data) {
         world_info_character_strategy = Number(settings.world_info_character_strategy);
     if (settings.world_info_budget_cap !== undefined)
         world_info_budget_cap = Number(settings.world_info_budget_cap);
+    if (settings.world_info_use_group_scoring !== undefined)
+        world_info_use_group_scoring = Boolean(settings.world_info_use_group_scoring);
 
     // Migrate old settings
     if (world_info_budget > 100) {
         world_info_budget = 25;
+    }
+
+    if (world_info_use_group_scoring === undefined) {
+        world_info_use_group_scoring = false;
     }
 
     // Reset selected world from old string and delete old keys
@@ -357,6 +447,7 @@ function setWorldInfoSettings(settings, data) {
     $('#world_info_overflow_alert').prop('checked', world_info_overflow_alert);
     $('#world_info_case_sensitive').prop('checked', world_info_case_sensitive);
     $('#world_info_match_whole_words').prop('checked', world_info_match_whole_words);
+    $('#world_info_use_group_scoring').prop('checked', world_info_use_group_scoring);
 
     $(`#world_info_character_strategy option[value='${world_info_character_strategy}']`).prop('selected', true);
     $('#world_info_character_strategy').val(world_info_character_strategy);
@@ -456,6 +547,19 @@ function registerWorldInfoSlashCommands() {
 
         if (!entries) {
             return '';
+        }
+
+        if (typeof newEntryTemplate[field] === 'boolean') {
+            const isTrue = isTrueBoolean(value);
+            const isFalse = isFalseBoolean(value);
+
+            if (isTrue) {
+                value = String(true);
+            }
+
+            if (isFalse) {
+                value = String(false);
+            }
         }
 
         const fuse = new Fuse(entries, {
@@ -593,12 +697,161 @@ function registerWorldInfoSlashCommands() {
         return '';
     }
 
-    registerSlashCommand('world', onWorldInfoChange, [], '<span class="monospace">[optional state=off|toggle] [optional silent=true] (optional name)</span> – sets active World, or unsets if no args provided, use <code>state=off</code> and <code>state=toggle</code> to deactivate or toggle a World, use <code>silent=true</code> to suppress toast messages', true, true);
-    registerSlashCommand('getchatbook', getChatBookCallback, ['getchatlore', 'getchatwi'], '– get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe', true, true);
-    registerSlashCommand('findentry', findBookEntryCallback, ['findlore', 'findwi'], '<span class="monospace">(file=bookName field=field [texts])</span> – find a UID of the record from the specified book using the fuzzy match of a field value (default: key) and pass it down the pipe, e.g. <tt>/findentry file=chatLore field=key Shadowfang</tt>', true, true);
-    registerSlashCommand('getentryfield', getEntryFieldCallback, ['getlorefield', 'getwifield'], '<span class="monospace">(file=bookName field=field [UID])</span> – get a field value (default: content) of the record with the UID from the specified book and pass it down the pipe, e.g. <tt>/getentryfield file=chatLore field=content 123</tt>', true, true);
-    registerSlashCommand('createentry', createEntryCallback, ['createlore', 'createwi'], '<span class="monospace">(file=bookName key=key [content])</span> – create a new record in the specified book with the key and content (both are optional) and pass the UID down the pipe, e.g. <tt>/createentry file=chatLore key=Shadowfang The sword of the king</tt>', true, true);
-    registerSlashCommand('setentryfield', setEntryFieldCallback, ['setlorefield', 'setwifield'], '<span class="monospace">(file=bookName uid=UID field=field [value])</span> – set a field value (default: content) of the record with the UID from the specified book. To set multiple values for key fields, use comma-delimited list as a value, e.g. <tt>/setentryfield file=chatLore uid=123 field=key Shadowfang,sword,weapon</tt>', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'world',
+        callback: onWorldInfoChange,
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'state', 'set world state', [ARGUMENT_TYPE.STRING], false, false, null, ['off', 'toggle'],
+            ),
+            new SlashCommandNamedArgument(
+                'silent', 'suppress toast messages', [ARGUMENT_TYPE.BOOLEAN], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'name', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Sets active World, or unsets if no args provided, use <code>state=off</code> and <code>state=toggle</code> to deactivate or toggle a World, use <code>silent=true</code> to suppress toast messages.
+            </div>
+        `,
+        aliases: [],
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getchatbook',
+        callback: getChatBookCallback,
+        returns: 'lorebook name',
+        helpString: 'Get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe.',
+        aliases: ['getchatlore', 'getchatwi'],
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'findentry',
+        aliases: ['findlore', 'findwi'],
+        returns: 'UID',
+        callback: findBookEntryCallback,
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'file', 'bookName', ARGUMENT_TYPE.STRING, true,
+            ),
+            new SlashCommandNamedArgument(
+                'field', 'field value for fuzzy match (default: key)', ARGUMENT_TYPE.STRING, false, false, 'key',
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'texts', ARGUMENT_TYPE.STRING, true, true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Find a UID of the record from the specified book using the fuzzy match of a field value (default: key) and pass it down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/findentry file=chatLore field=key Shadowfang</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'getentryfield',
+        aliases: ['getlorefield', 'getwifield'],
+        callback: getEntryFieldCallback,
+        returns: 'field value',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'file', 'bookName', ARGUMENT_TYPE.STRING, true,
+            ),
+            new SlashCommandNamedArgument(
+                'field', 'field to retrieve (default: content)', ARGUMENT_TYPE.STRING, false, false, 'content',
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'UID', ARGUMENT_TYPE.STRING, true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Get a field value (default: content) of the record with the UID from the specified book and pass it down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/getentryfield file=chatLore field=content 123</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'createentry',
+        callback: createEntryCallback,
+        aliases: ['createlore', 'createwi'],
+        returns: 'UID of the new record',
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'file', 'book name', [ARGUMENT_TYPE.STRING], true,
+            ),
+            new SlashCommandNamedArgument(
+                'key', 'record key', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'content', [ARGUMENT_TYPE.STRING], false,
+            ),
+        ],
+        helpString: `
+            <div>
+                Create a new record in the specified book with the key and content (both are optional) and pass the UID down the pipe.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/createentry file=chatLore key=Shadowfang The sword of the king</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'setentryfield',
+        callback: setEntryFieldCallback,
+        aliases: ['setlorefield', 'setwifield'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'file', 'book name', [ARGUMENT_TYPE.STRING], true,
+            ),
+            new SlashCommandNamedArgument(
+                'uid', 'record UID', [ARGUMENT_TYPE.STRING], true,
+            ),
+            new SlashCommandNamedArgument(
+                'field', 'field name', [ARGUMENT_TYPE.STRING], true, false, 'content',
+            ),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument(
+                'value', [ARGUMENT_TYPE.STRING], true,
+            ),
+        ],
+        helpString: `
+            <div>
+                Set a field value (default: content) of the record with the UID from the specified book. To set multiple values for key fields, use comma-delimited list as a value.
+            </div>
+            <div>
+                <strong>Example:</strong>
+                <ul>
+                    <li>
+                        <pre><code>/setentryfield file=chatLore uid=123 field=key Shadowfang,sword,weapon</code></pre>
+                    </li>
+                </ul>
+            </div>
+        `,
+    }));
+
 }
 
 // World Info Editor
@@ -752,8 +1005,39 @@ function nullWorldInfo() {
     toastr.info('Create or import a new World Info file first.', 'World Info is not set', { timeOut: 10000, preventDuplicates: true });
 }
 
-function displayWorldEntries(name, data, navigation = navigation_option.none) {
-    updateEditor = (navigation) => displayWorldEntries(name, data, navigation);
+/** @type {Select2Option[]} Cache all keys as selectable dropdown option */
+const worldEntryKeyOptionsCache = [];
+
+/**
+ * Update the cache and all select options for the keys with new values to display
+ * @param {string[]|Select2Option[]} keyOptions - An array of options to update
+ * @param {object} options - Optional arguments
+ * @param {boolean?} [options.remove=false] - Whether the option was removed, so the count should be reduced - otherwise it'll be increased
+ * @param {boolean?} [options.reset=false] - Whether the cache should be reset. Reset will also not trigger update of the controls, as we expect them to be redrawn anyway
+ */
+function updateWorldEntryKeyOptionsCache(keyOptions, { remove = false, reset = false } = {}) {
+    if (!keyOptions.length) return;
+    /** @type {Select2Option[]} */
+    const options = keyOptions.map(x => typeof x === 'string' ? { id: getSelect2OptionId(x), text: x } : x);
+    if (reset) worldEntryKeyOptionsCache.length = 0;
+    options.forEach(option => {
+        // Update the cache list
+        let cachedEntry = worldEntryKeyOptionsCache.find(x => x.id == option.id);
+        if (cachedEntry) {
+            cachedEntry.count += !remove ? 1 : -1;
+        } else if (!remove) {
+            worldEntryKeyOptionsCache.push(option);
+            cachedEntry = option;
+            cachedEntry.count = 1;
+        }
+    });
+
+    // Sort by count DESC and then alphabetically
+    worldEntryKeyOptionsCache.sort((a, b) => b.count - a.count || a.text.localeCompare(b.text));
+}
+
+function displayWorldEntries(name, data, navigation = navigation_option.none, flashOnNav = true) {
+    updateEditor = (navigation, flashOnNav = true) => displayWorldEntries(name, data, navigation, flashOnNav);
 
     const worldEntriesList = $('#world_popup_entries_list');
 
@@ -786,7 +1070,11 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
 
         // Apply the filter and do the chosen sorting
         entriesArray = worldInfoFilter.applyFilters(entriesArray);
-        entriesArray = sortEntries(entriesArray)
+        entriesArray = sortEntries(entriesArray);
+
+        // Cache keys
+        const keys = entriesArray.flatMap(entry => [...entry.key, ...entry.keysecondary]);
+        updateWorldEntryKeyOptionsCache(keys, { reset: true });
 
         // Run the callback for printing this
         typeof callback === 'function' && callback(entriesArray);
@@ -804,7 +1092,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     $('#world_info_pagination').pagination({
         dataSource: getDataArray,
         pageSize: Number(localStorage.getItem(storageKey)) || perPageDefault,
-        sizeChangerOptions: [10, 25, 50, 100],
+        sizeChangerOptions: [10, 25, 50, 100, 500, 1000],
         showSizeChanger: true,
         pageRange: 1,
         pageNumber: startPage,
@@ -882,7 +1170,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             const parentOffset = element.parent().offset();
             const scrollOffset = elementOffset.top - parentOffset.top;
             $('#WorldInfo').scrollTop(scrollOffset);
-            flashHighlight(element);
+            if (flashOnNav) flashHighlight(element);
         });
     }
 
@@ -970,9 +1258,10 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     }
 
     worldEntriesList.sortable({
+        items: '.world_entry',
         delay: getSortableDelay(),
         handle: '.drag-handle',
-        stop: async function (event, ui) {
+        stop: async function (_event, _ui) {
             const firstEntryUid = $('#world_popup_entries_list .world_entry').first().data('uid');
             const minDisplayIndex = data?.entries[firstEntryUid]?.displayIndex ?? 0;
             $('#world_popup_entries_list .world_entry').each(function (index) {
@@ -1002,6 +1291,7 @@ const originalDataKeyMap = {
     'displayIndex': 'extensions.display_index',
     'excludeRecursion': 'extensions.exclude_recursion',
     'preventRecursion': 'extensions.prevent_recursion',
+    'delayUntilRecursion': 'extensions.delay_until_recursion',
     'selectiveLogic': 'selectiveLogic',
     'comment': 'comment',
     'constant': 'constant',
@@ -1016,11 +1306,13 @@ const originalDataKeyMap = {
     'keysecondary': 'secondary_keys',
     'selective': 'selective',
     'matchWholeWords': 'extensions.match_whole_words',
+    'useGroupScoring': 'extensions.use_group_scoring',
     'caseSensitive': 'extensions.case_sensitive',
     'scanDepth': 'extensions.scan_depth',
     'automationId': 'extensions.automation_id',
     'vectorized': 'extensions.vectorized',
     'groupOverride': 'extensions.group_override',
+    'groupWeight': 'extensions.group_weight',
 };
 
 /** Checks the state of the current search, and adds/removes the search sorting option accordingly */
@@ -1065,6 +1357,139 @@ function deleteOriginalDataValue(data, uid) {
     }
 }
 
+/** @typedef {import('./utils.js').Select2Option} Select2Option */
+
+/**
+ * Splits a given input string that contains one or more keywords or regexes, separated by commas.
+ *
+ * Each part can be a valid regex following the pattern `/myregex/flags` with optional flags. Commmas inside the regex are allowed, slashes have to be escaped like this: `\/`
+ * If a regex doesn't stand alone, it is not treated as a regex.
+ *
+ * @param {string} input - One or multiple keywords or regexes, separated by commas
+ * @returns {string[]} An array of keywords and regexes
+ */
+function splitKeywordsAndRegexes(input) {
+    /** @type {string[]} */
+    let keywordsAndRegexes = [];
+
+    // We can make this easy. Instead of writing another function to find and parse regexes,
+    // we gonna utilize the custom tokenizer that also handles the input.
+    // No need for validation here
+    const addFindCallback = (/** @type {Select2Option} */ item) => {
+        keywordsAndRegexes.push(item.text);
+    };
+
+    const { term } = customTokenizer({ _type: 'custom_call', term: input }, undefined, addFindCallback);
+    const finalTerm = term.trim();
+    if (finalTerm) {
+        addFindCallback({ id: getSelect2OptionId(finalTerm), text: finalTerm });
+    }
+
+    return keywordsAndRegexes;
+}
+
+/**
+ * Tokenizer parsing input and splitting it into keywords and regexes
+ *
+ * @param {{_type: string, term: string}} input - The typed input
+ * @param {{options: object}} _selection - The selection even object (?)
+ * @param {function(Select2Option):void} callback - The original callback function to call if an item should be inserted
+ * @returns {{term: string}} - The remaining part that is untokenized in the textbox
+ */
+function customTokenizer(input, _selection, callback) {
+    let current = input.term;
+
+    // Go over the input and check the current state, if we can get a token
+    for (let i = 0; i < current.length; i++) {
+        let char = current[i];
+
+        // If a comma is typed, we tokenize the input.
+        // unless we are inside a possible regex, which would allow commas inside
+        if (char === ',') {
+            // We take everything up till now and consider this a token
+            const token = current.slice(0, i).trim();
+
+            // Now how we test if this is a valid regex? And not a finished one, but a half-finished one?
+            // Easy, if someone typed a comma it can't be a delimiter escape.
+            // So we just check if this opening with a slash, and if so, we "close" the regex and try to parse it.
+            // So if we are inside a valid regex, we can't take the token now, we continue processing until the regex is closed,
+            // or this is not a valid regex anymore
+            if (token.startsWith('/') && isValidRegex(token + '/')) {
+                continue;
+            }
+
+            // So now the comma really means the token is done.
+            // We take the token up till now, and insert it. Empty will be skipped.
+            if (token) {
+                const isRegex = isValidRegex(token);
+
+                // Last chance to check for valid regex again. Because it might have been valid while typing, but now is not valid anymore and contains commas we need to split.
+                if (token.startsWith('/') && !isRegex) {
+                    const tokens = token.split(',').map(x => x.trim());
+                    tokens.forEach(x => callback({ id: getSelect2OptionId(x), text: x }));
+                } else {
+                    callback({ id: getSelect2OptionId(token), text: token });
+                }
+            }
+
+            // Now remove the token from the current input, and the comma too
+            current = current.slice(i + 1);
+            i = 0;
+        }
+    }
+
+    // At the end, just return the left-over input
+    return { term: current };
+}
+
+/**
+ * Validates if a string is a valid slash-delimited regex, that can be parsed and executed
+ *
+ * This is a wrapper around `parseRegexFromString`
+ *
+ * @param {string} input - A delimited regex string
+ * @returns {boolean} Whether this would be a valid regex that can be parsed and executed
+ */
+function isValidRegex(input) {
+    return parseRegexFromString(input) !== null;
+}
+
+/**
+ * Gets a real regex object from a slash-delimited regex string
+ *
+ * This function works with `/` as delimiter, and each occurance of it inside the regex has to be escaped.
+ * Flags are optional, but can only be valid flags supported by JavaScript's `RegExp` (`g`, `i`, `m`, `s`, `u`, `y`).
+ *
+ * @param {string} input - A delimited regex string
+ * @returns {RegExp|null} The regex object, or null if not a valid regex
+ */
+function parseRegexFromString(input) {
+    // Extracting the regex pattern and flags
+    let match = input.match(/^\/([\w\W]+?)\/([gimsuy]*)$/);
+    if (!match) {
+        return null; // Not a valid regex format
+    }
+
+    let [, pattern, flags] = match;
+
+    // If we find any unescaped slash delimiter, we also exit out.
+    // JS doesn't care about delimiters inside regex patterns, but for this to be a valid regex outside of our implementation,
+    // we have to make sure that our delimiter is correctly escaped. Or every other engine would fail.
+    if (pattern.match(/(^|[^\\])\//)) {
+        return null;
+    }
+
+    // Now we need to actually unescape the slash delimiters, because JS doesn't care about delimiters
+    pattern = pattern.replace('\\/', '/');
+
+    // Then we return the regex. If it fails, it was invalid syntax.
+    try {
+        return new RegExp(pattern, flags);
+    } catch (e) {
+        return null;
+    }
+}
+
 function getWorldEntry(name, data, entry) {
     if (!data.entries[entry.uid]) {
         return;
@@ -1074,28 +1499,125 @@ function getWorldEntry(name, data, entry) {
     template.data('uid', entry.uid);
     template.attr('uid', entry.uid);
 
+    // Init default state of WI Key toggle (=> true)
+    if (typeof power_user.wi_key_input_plaintext === 'undefined') power_user.wi_key_input_plaintext = true;
+
+    /** Function to build the keys input controls @param {string} entryPropName @param {string} originalDataValueName */
+    function enableKeysInput(entryPropName, originalDataValueName) {
+        const isFancyInput = !isMobile() && !power_user.wi_key_input_plaintext;
+        const input = isFancyInput ? template.find(`select[name="${entryPropName}"]`) : template.find(`textarea[name="${entryPropName}"]`);
+        input.data('uid', entry.uid);
+        input.on('click', function (event) {
+            // Prevent closing the drawer on clicking the input
+            event.stopPropagation();
+        });
+
+        function templateStyling(/** @type {Select2Option} */ item, { searchStyle = false } = {}) {
+            const content = $('<span>').addClass('item').text(item.text).attr('title', `${item.text}\n\nClick to edit`);
+            const isRegex = isValidRegex(item.text);
+            if (isRegex) {
+                content.html(highlightRegex(item.text));
+                content.addClass('regex_item').prepend($('<span>').addClass('regex_icon').text('•*').attr('title', 'Regex'));
+            }
+
+            if (searchStyle && item.count) {
+                // Build a wrapping element
+                const wrapper = $('<span>').addClass('result_block')
+                    .append(content);
+                wrapper.append($('<span>').addClass('item_count').text(item.count).attr('title', `Used as a key ${item.count} ${item.count != 1 ? 'times' : 'time'} in this lorebook`));
+                return wrapper;
+            }
+
+            return content;
+        }
+
+        if (isFancyInput) {
+            input.select2({
+                ajax: dynamicSelect2DataViaAjax(() => worldEntryKeyOptionsCache),
+                tags: true,
+                tokenSeparators: [','],
+                tokenizer: customTokenizer,
+                placeholder: input.attr('placeholder'),
+                templateResult: item => templateStyling(item, { searchStyle: true }),
+                templateSelection: item => templateStyling(item),
+            });
+            input.on('change', function (_, { skipReset, noSave } = {}) {
+                const uid = $(this).data('uid');
+                /** @type {string[]} */
+                const keys = ($(this).select2('data')).map(x => x.text);
+
+                !skipReset && resetScrollHeight(this);
+                if (!noSave) {
+                    data.entries[uid][entryPropName] = keys;
+                    setOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
+                    saveWorldInfo(name, data);
+                }
+            });
+            input.on('select2:select', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data]));
+            input.on('select2:unselect', /** @type {function(*):void} */ event => updateWorldEntryKeyOptionsCache([event.params.data], { remove: true }));
+
+            select2ChoiceClickSubscribe(input, target => {
+                const key = $(target).text();
+                console.debug('Editing WI key', key);
+
+                // Remove the current key from the actual selection
+                const selected = input.val();
+                if (!Array.isArray(selected)) return;
+                var index = selected.indexOf(getSelect2OptionId(key));
+                if (index > -1) selected.splice(index, 1);
+                input.val(selected).trigger('change');
+                // Manually update the cache, that change event is not gonna trigger it
+                updateWorldEntryKeyOptionsCache([key], { remove: true });
+
+                // We need to "hack" the actual text input into the currently open textarea
+                input.next('span.select2-container').find('textarea')
+                    .val(key).trigger('input');
+            }, { openDrawer: true });
+
+            select2ModifyOptions(input, entry[entryPropName], { select: true, changeEventArgs: { skipReset: true, noSave: true } });
+        }
+        else {
+            // Compatibility with mobile devices. On mobile we need a text input field, not a select option control, so we need its own event handlers
+            template.find(`select[name="${entryPropName}"]`).hide();
+            input.show();
+
+            input.on('input', function (_, { skipReset, noSave } = {}) {
+                const uid = $(this).data('uid');
+                const value = String($(this).val());
+                !skipReset && resetScrollHeight(this);
+                if (!noSave) {
+                    data.entries[uid][entryPropName] = splitKeywordsAndRegexes(value);
+                    setOriginalDataValue(data, uid, originalDataValueName, data.entries[uid][entryPropName]);
+                    saveWorldInfo(name, data);
+                }
+            });
+            input.val(entry[entryPropName].join(', ')).trigger('input', { skipReset: true });
+        }
+        return { isFancy: isFancyInput, control: input };
+    }
+
     // key
-    const keyInput = template.find('textarea[name="key"]');
-    keyInput.data('uid', entry.uid);
-    keyInput.on('click', function (event) {
-        // Prevent closing the drawer on clicking the input
-        event.stopPropagation();
-    });
+    const keyInput = enableKeysInput('key', 'keys');
 
-    keyInput.on('input', function (_, { skipReset } = {}) {
-        const uid = $(this).data('uid');
-        const value = String($(this).val());
-        !skipReset && resetScrollHeight(this);
-        data.entries[uid].key = value
-            .split(',')
-            .map((x) => x.trim())
-            .filter((x) => x);
+    // keysecondary
+    const keySecondaryInput = enableKeysInput('keysecondary', 'secondary_keys');
 
-        setOriginalDataValue(data, uid, 'keys', data.entries[uid].key);
-        saveWorldInfo(name, data);
+    // draw key input switch button
+    template.find('.switch_input_type_icon').on('click', function () {
+        power_user.wi_key_input_plaintext = !power_user.wi_key_input_plaintext;
+        saveSettingsDebounced();
+
+        // Just redraw the panel
+        const uid = ($(this).parents('.world_entry')).data('uid');
+        updateEditor(uid, false);
+
+        $(`.world_entry[uid="${uid}"] .inline-drawer-icon`).trigger('click');
+        // setTimeout(() => {
+        // }, debounce_timeout.standard);
+    }).each((_, icon) => {
+        $(icon).attr('title', $(icon).data(power_user.wi_key_input_plaintext ? 'tooltip-on' : 'tooltip-off'));
+        $(icon).text($(icon).data(power_user.wi_key_input_plaintext ? 'icon-on' : 'icon-off'));
     });
-    keyInput.val(entry.key.join(', ')).trigger('input', { skipReset: true });
-    //initScrollHeight(keyInput);
 
     // logic AND/NOT
     const selectiveLogicDropdown = template.find('select[name="entryLogicType"]');
@@ -1224,25 +1746,6 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
 
-    // keysecondary
-    const keySecondaryInput = template.find('textarea[name="keysecondary"]');
-    keySecondaryInput.data('uid', entry.uid);
-    keySecondaryInput.on('input', function (_, { skipReset } = {}) {
-        const uid = $(this).data('uid');
-        const value = String($(this).val());
-        !skipReset && resetScrollHeight(this);
-        data.entries[uid].keysecondary = value
-            .split(',')
-            .map((x) => x.trim())
-            .filter((x) => x);
-
-        setOriginalDataValue(data, uid, 'secondary_keys', data.entries[uid].keysecondary);
-        saveWorldInfo(name, data);
-    });
-
-    keySecondaryInput.val(entry.keysecondary.join(', ')).trigger('input', { skipReset: true });
-    //initScrollHeight(keySecondaryInput);
-
     // comment
     const commentInput = template.find('textarea[name="comment"]');
     const commentToggle = template.find('input[name="addMemo"]');
@@ -1305,8 +1808,8 @@ function getWorldEntry(name, data, entry) {
         if (counter.data('first-run')) {
             counter.data('first-run', false);
             countTokensDebounced(counter, contentInput.val());
-            initScrollHeight(keyInput);
-            initScrollHeight(keySecondaryInput);
+            if (!keyInput.isFancy) initScrollHeight(keyInput.control);
+            if (!keySecondaryInput.isFancy) initScrollHeight(keySecondaryInput.control);
         }
     });
 
@@ -1329,11 +1832,11 @@ function getWorldEntry(name, data, entry) {
             .closest('.world_entry')
             .find('.keysecondarytextpole');
 
-        const keyprimarytextpole = $(this)
+        const keyprimaryselect = $(this)
             .closest('.world_entry')
-            .find('.keyprimarytextpole');
+            .find('.keyprimaryselect');
 
-        const keyprimaryHeight = keyprimarytextpole.outerHeight();
+        const keyprimaryHeight = keyprimaryselect.outerHeight();
         keysecondarytextpole.css('height', keyprimaryHeight + 'px');
 
         value ? keysecondary.show() : keysecondary.hide();
@@ -1385,7 +1888,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     groupInput.val(entry.group ?? '').trigger('input');
-    setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data)), 1);
+    setTimeout(() => createEntryInputAutocomplete(groupInput, getInclusionGroupCallback(data), { allowMultiple: true }), 1);
 
     // inclusion priority
     const groupOverrideInput = template.find('input[name="groupOverride"]');
@@ -1394,10 +1897,34 @@ function getWorldEntry(name, data, entry) {
         const uid = $(this).data('uid');
         const value = $(this).prop('checked');
         data.entries[uid].groupOverride = value;
-        setOriginalDataValue(data, uid, 'extensions.groupOverride', data.entries[uid].groupOverride);
+        setOriginalDataValue(data, uid, 'extensions.group_override', data.entries[uid].groupOverride);
         saveWorldInfo(name, data);
     });
     groupOverrideInput.prop('checked', entry.groupOverride).trigger('input');
+
+    // group weight
+    const groupWeightInput = template.find('input[name="groupWeight"]');
+    groupWeightInput.data('uid', entry.uid);
+    groupWeightInput.on('input', function () {
+        const uid = $(this).data('uid');
+        let value = Number($(this).val());
+        const min = Number($(this).attr('min'));
+        const max = Number($(this).attr('max'));
+
+        // Clamp the value
+        if (value < min) {
+            value = min;
+            $(this).val(min);
+        } else if (value > max) {
+            value = max;
+            $(this).val(max);
+        }
+
+        data.entries[uid].groupWeight = !isNaN(value) ? Math.abs(value) : 1;
+        setOriginalDataValue(data, uid, 'extensions.group_weight', data.entries[uid].groupWeight);
+        saveWorldInfo(name, data);
+    });
+    groupWeightInput.val(entry.groupWeight ?? DEFAULT_WEIGHT).trigger('input');
 
     // probability
     if (entry.probability === undefined) {
@@ -1633,6 +2160,18 @@ function getWorldEntry(name, data, entry) {
     });
     preventRecursionInput.prop('checked', entry.preventRecursion).trigger('input');
 
+    // delay until recursion
+    const delayUntilRecursionInput = template.find('input[name="delay_until_recursion"]');
+    delayUntilRecursionInput.data('uid', entry.uid);
+    delayUntilRecursionInput.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = $(this).prop('checked');
+        data.entries[uid].delayUntilRecursion = value;
+        setOriginalDataValue(data, uid, 'extensions.delay_until_recursion', data.entries[uid].delayUntilRecursion);
+        saveWorldInfo(name, data);
+    });
+    delayUntilRecursionInput.prop('checked', entry.delayUntilRecursion).trigger('input');
+
     // duplicate button
     const duplicateButton = template.find('.duplicate_entry_button');
     duplicateButton.data('uid', entry.uid);
@@ -1709,6 +2248,19 @@ function getWorldEntry(name, data, entry) {
     });
     matchWholeWordsSelect.val((entry.matchWholeWords === null || entry.matchWholeWords === undefined) ? 'null' : entry.matchWholeWords ? 'true' : 'false').trigger('input');
 
+    // use group scoring select
+    const useGroupScoringSelect = template.find('select[name="useGroupScoring"]');
+    useGroupScoringSelect.data('uid', entry.uid);
+    useGroupScoringSelect.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = $(this).val();
+
+        data.entries[uid].useGroupScoring = value === 'null' ? null : value === 'true';
+        setOriginalDataValue(data, uid, 'extensions.use_group_scoring', data.entries[uid].useGroupScoring);
+        saveWorldInfo(name, data);
+    });
+    useGroupScoringSelect.val((entry.useGroupScoring === null || entry.useGroupScoring === undefined) ? 'null' : entry.useGroupScoring ? 'true' : 'false').trigger('input');
+
     // automation id
     const automationIdInput = template.find('input[name="automationId"]');
     automationIdInput.data('uid', entry.uid);
@@ -1758,11 +2310,15 @@ function getWorldEntry(name, data, entry) {
  * @returns {(input: any, output: any) => any} Callback function for the autocomplete
  */
 function getInclusionGroupCallback(data) {
-    return function (input, output) {
+    return function (control, input, output) {
+        const uid = $(control).data('uid');
+        const thisGroups = String($(control).val()).split(/,\s*/).filter(x => x).map(x => x.toLowerCase());
         const groups = new Set();
         for (const entry of Object.values(data.entries)) {
+            // Skip the groups of this entry, because auto-complete should only suggest the ones that are already available on other entries
+            if (entry.uid == uid) continue;
             if (entry.group) {
-                groups.add(String(entry.group));
+                entry.group.split(/,\s*/).filter(x => x).forEach(x => groups.add(x));
             }
         }
 
@@ -1770,20 +2326,19 @@ function getInclusionGroupCallback(data) {
         haystack.sort((a, b) => a.localeCompare(b));
         const needle = input.term.toLowerCase();
         const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
-        const result = haystack.filter(x => x.toLowerCase().includes(needle));
-
-        if (input.term && !hasExactMatch) {
-            result.unshift(input.term);
-        }
+        const result = haystack.filter(x => x.toLowerCase().includes(needle) && (!thisGroups.includes(x) || hasExactMatch && thisGroups.filter(g => g == x).length == 1));
 
         output(result);
     };
 }
 
 function getAutomationIdCallback(data) {
-    return function (input, output) {
+    return function (control, input, output) {
+        const uid = $(control).data('uid');
         const ids = new Set();
         for (const entry of Object.values(data.entries)) {
+            // Skip automation id of this entry, because auto-complete should only suggest the ones that are already available on other entries
+            if (entry.uid == uid) continue;
             if (entry.automationId) {
                 ids.add(String(entry.automationId));
             }
@@ -1799,12 +2354,7 @@ function getAutomationIdCallback(data) {
         const haystack = Array.from(ids);
         haystack.sort((a, b) => a.localeCompare(b));
         const needle = input.term.toLowerCase();
-        const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
         const result = haystack.filter(x => x.toLowerCase().includes(needle));
-
-        if (input.term && !hasExactMatch) {
-            result.unshift(input.term);
-        }
 
         output(result);
     };
@@ -1812,22 +2362,44 @@ function getAutomationIdCallback(data) {
 
 /**
  * Create an autocomplete for the inclusion group.
- * @param {JQuery<HTMLElement>} input Input element to attach the autocomplete to
- * @param {(input: any, output: any) => any} callback Source data callbacks
+ * @param {JQuery<HTMLElement>} input - Input element to attach the autocomplete to
+ * @param {(control: JQuery<HTMLElement>, input: any, output: any) => any} callback - Source data callbacks
+ * @param {object} [options={}] - Optional arguments
+ * @param {boolean} [options.allowMultiple=false] - Whether to allow multiple comma-separated values
  */
-function createEntryInputAutocomplete(input, callback) {
+function createEntryInputAutocomplete(input, callback, { allowMultiple = false } = {}) {
+    const handleSelect = (event, ui) => {
+        // Prevent default autocomplete select, so we can manually set the value
+        event.preventDefault();
+        if (!allowMultiple) {
+            $(input).val(ui.item.value).trigger('input').trigger('blur');
+        } else {
+            var terms = String($(input).val()).split(/,\s*/);
+            terms.pop(); // remove the current input
+            terms.push(ui.item.value); // add the selected item
+            $(input).val(terms.filter(x => x).join(', ')).trigger('input').trigger('blur');
+        }
+    };
+
     $(input).autocomplete({
         minLength: 0,
-        source: callback,
-        select: function (event, ui) {
-            $(input).val(ui.item.value).trigger('input').trigger('blur');
+        source: function (request, response) {
+            if (!allowMultiple) {
+                callback(input, request, response);
+            } else {
+                const term = request.term.split(/,\s*/).pop();
+                request.term = term;
+                callback(input, request, response);
+            }
         },
+        select: handleSelect,
     });
 
     $(input).on('focus click', function () {
-        $(input).autocomplete('search', String($(input).val()));
+        $(input).autocomplete('search', allowMultiple ? String($(input).val()).split(/,\s*/).pop() : $(input).val());
     });
 }
+
 
 /**
  * Duplicated a WI entry by copying all of its properties and assigning a new uid
@@ -1881,19 +2453,23 @@ const newEntryTemplate = {
     position: 0,
     disable: false,
     excludeRecursion: false,
+    preventRecursion: false,
+    delayUntilRecursion: false,
     probability: 100,
     useProbability: true,
     depth: DEFAULT_DEPTH,
     group: '',
     groupOverride: false,
+    groupWeight: DEFAULT_WEIGHT,
     scanDepth: null,
     caseSensitive: null,
     matchWholeWords: null,
+    useGroupScoring: null,
     automationId: '',
     role: 0,
 };
 
-function createWorldInfoEntry(name, data) {
+function createWorldInfoEntry(_name, data) {
     const newUid = getFreeWorldEntryUid(data);
 
     if (!Number.isInteger(newUid)) {
@@ -2164,7 +2740,7 @@ export async function getSortedEntries() {
  * Performs a scan on the chat and returns the world info activated.
  * @param {string[]} chat The chat messages to scan.
  * @param {number} maxContext The maximum context size of the generation.
- * @typedef {{ worldInfoBefore: string, worldInfoAfter: string, WIDepthEntries: any[], allActivatedEntries: Set<any> }} WIActivated
+ * @typedef {{ worldInfoBefore: string, worldInfoAfter: string, EMEntries: any[], WIDepthEntries: any[], allActivatedEntries: Set<any> }} WIActivated
  * @returns {Promise<WIActivated>} The world info activated.
  */
 async function checkWorldInfo(chat, maxContext) {
@@ -2202,7 +2778,7 @@ async function checkWorldInfo(chat, maxContext) {
     const sortedEntries = await getSortedEntries();
 
     if (sortedEntries.length === 0) {
-        return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], allActivatedEntries: new Set() };
+        return { worldInfoBefore: '', worldInfoAfter: '', WIDepthEntries: [], EMEntries: [], allActivatedEntries: new Set() };
     }
 
     while (needsToScan) {
@@ -2246,12 +2822,11 @@ async function checkWorldInfo(chat, maxContext) {
                 continue;
             }
 
-            if (allActivatedEntries.has(entry) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion)) {
+            if (allActivatedEntries.has(entry) || entry.disable == true || (count > 1 && world_info_recursive && entry.excludeRecursion) || (count == 1 && entry.delayUntilRecursion)) {
                 continue;
             }
 
             if (entry.constant || buffer.isExternallyActivated(entry)) {
-                entry.content = substituteParams(entry.content);
                 activatedNow.add(entry);
                 continue;
             }
@@ -2332,19 +2907,21 @@ async function checkWorldInfo(chat, maxContext) {
         const textToScanTokens = await getTokenCountAsync(allActivatedText);
         const probabilityChecksBefore = failedProbabilityChecks.size;
 
-        filterByInclusionGroups(newEntries, allActivatedEntries);
+        filterByInclusionGroups(newEntries, allActivatedEntries, buffer);
 
         console.debug('-- PROBABILITY CHECKS BEGIN --');
         for (const entry of newEntries) {
             const rollValue = Math.random() * 100;
 
-            if (!entry.group && entry.useProbability && rollValue > entry.probability) {
+            if (entry.useProbability && rollValue > entry.probability) {
                 console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
                 failedProbabilityChecks.add(entry);
                 continue;
             } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`); }
 
-            newContent += `${substituteParams(entry.content)}\n`;
+            // Substitute macros inline, for both this checking and also future processing
+            entry.content = substituteParams(entry.content);
+            newContent += `${entry.content}\n`;
 
             if ((textToScanTokens + (await getTokenCountAsync(newContent))) >= budget) {
                 console.debug('WI budget reached, stopping');
@@ -2377,7 +2954,7 @@ async function checkWorldInfo(chat, maxContext) {
             const text = newEntries
                 .filter(x => !failedProbabilityChecks.has(x))
                 .filter(x => !x.preventRecursion)
-                .map(x => substituteParams(x.content)).join('\n');
+                .map(x => x.content).join('\n');
             buffer.addRecurse(text);
             allActivatedText = (text + '\n' + allActivatedText);
         }
@@ -2401,33 +2978,53 @@ async function checkWorldInfo(chat, maxContext) {
     // Forward-sorted list of entries for joining
     const WIBeforeEntries = [];
     const WIAfterEntries = [];
+    const EMEntries = [];
     const ANTopEntries = [];
     const ANBottomEntries = [];
     const WIDepthEntries = [];
 
     // Appends from insertion order 999 to 1. Use unshift for this purpose
+    // TODO (kingbri): Change to use WI Anchor positioning instead of separate top/bottom arrays
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
+        const regexDepth = entry.position === world_info_position.atDepth ? (entry.depth ?? DEFAULT_DEPTH) : null;
+        const content = getRegexedString(entry.content, regex_placement.WORLD_INFO, { depth: regexDepth, isMarkdown: false, isPrompt: true });
+
+        if (!content) {
+            console.debug('Skipping adding WI entry to prompt due to empty content:', entry);
+            return;
+        }
+
         switch (entry.position) {
             case world_info_position.before:
-                WIBeforeEntries.unshift(substituteParams(entry.content));
+                WIBeforeEntries.unshift(substituteParams(content));
                 break;
             case world_info_position.after:
-                WIAfterEntries.unshift(substituteParams(entry.content));
+                WIAfterEntries.unshift(substituteParams(content));
+                break;
+            case world_info_position.EMTop:
+                EMEntries.unshift(
+                    { position: wi_anchor_position.before, content: content },
+                );
+                break;
+            case world_info_position.EMBottom:
+                EMEntries.unshift(
+                    { position: wi_anchor_position.after, content: content },
+                );
                 break;
             case world_info_position.ANTop:
-                ANTopEntries.unshift(entry.content);
+                ANTopEntries.unshift(content);
                 break;
             case world_info_position.ANBottom:
-                ANBottomEntries.unshift(entry.content);
+                ANBottomEntries.unshift(content);
                 break;
             case world_info_position.atDepth: {
                 const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === (entry.depth ?? DEFAULT_DEPTH) && e.role === (entry.role ?? extension_prompt_roles.SYSTEM));
                 if (existingDepthIndex !== -1) {
-                    WIDepthEntries[existingDepthIndex].entries.unshift(entry.content);
+                    WIDepthEntries[existingDepthIndex].entries.unshift(content);
                 } else {
                     WIDepthEntries.push({
                         depth: entry.depth,
-                        entries: [entry.content],
+                        entries: [content],
                         role: entry.role ?? extension_prompt_roles.SYSTEM,
                     });
                 }
@@ -2449,21 +3046,61 @@ async function checkWorldInfo(chat, maxContext) {
 
     buffer.cleanExternalActivations();
 
-    return { worldInfoBefore, worldInfoAfter, WIDepthEntries, allActivatedEntries };
+    return { worldInfoBefore, worldInfoAfter, EMEntries, WIDepthEntries, allActivatedEntries };
+}
+
+/**
+ * Only leaves entries with the highest key matching score in each group.
+ * @param {Record<string, WIScanEntry[]>} groups The groups to filter
+ * @param {WorldInfoBuffer} buffer The buffer to use for scoring
+ * @param {(entry: WIScanEntry) => void} removeEntry The function to remove an entry
+ */
+function filterGroupsByScoring(groups, buffer, removeEntry) {
+    for (const [key, group] of Object.entries(groups)) {
+        // Group scoring is disabled both globally and for the group entries
+        if (!world_info_use_group_scoring && !group.some(x => x.useGroupScoring)) {
+            console.debug(`Skipping group scoring for group '${key}'`);
+            continue;
+        }
+
+        const scores = group.map(entry => buffer.getScore(entry));
+        const maxScore = Math.max(...scores);
+        console.debug(`Group '${key}' max score: ${maxScore}`);
+        //console.table(group.map((entry, i) => ({ uid: entry.uid, key: JSON.stringify(entry.key), score: scores[i] })));
+
+        for (let i = 0; i < group.length; i++) {
+            const isScored = group[i].useGroupScoring ?? world_info_use_group_scoring;
+
+            if (!isScored) {
+                continue;
+            }
+
+            if (scores[i] < maxScore) {
+                console.debug(`Removing score loser from inclusion group '${key}' entry '${group[i].uid}'`, group[i]);
+                removeEntry(group[i]);
+                group.splice(i, 1);
+                scores.splice(i, 1);
+                i--;
+            }
+        }
+    }
 }
 
 /**
  * Filters entries by inclusion groups.
  * @param {object[]} newEntries Entries activated on current recursion level
  * @param {Set<object>} allActivatedEntries Set of all activated entries
+ * @param {WorldInfoBuffer} buffer The buffer to use for scanning
  */
-function filterByInclusionGroups(newEntries, allActivatedEntries) {
+function filterByInclusionGroups(newEntries, allActivatedEntries, buffer) {
     console.debug('-- INCLUSION GROUP CHECKS BEGIN --');
     const grouped = newEntries.filter(x => x.group).reduce((acc, item) => {
-        if (!acc[item.group]) {
-            acc[item.group] = [];
-        }
-        acc[item.group].push(item);
+        item.group.split(/,\s*/).filter(x => x).forEach(group => {
+            if (!acc[group]) {
+                acc[group] = [];
+            }
+            acc[group].push(item);
+        });
         return acc;
     }, {});
 
@@ -2483,6 +3120,8 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
             removeEntry(entry);
         }
     }
+
+    filterGroupsByScoring(grouped, buffer, removeEntry);
 
     for (const [key, group] of Object.entries(grouped)) {
         console.debug(`Checking inclusion group '${key}' with ${group.length} entries`, group);
@@ -2507,14 +3146,14 @@ function filterByInclusionGroups(newEntries, allActivatedEntries) {
             continue;
         }
 
-        // Do weighted random using probability of entry as weight
-        const totalWeight = group.reduce((acc, item) => acc + item.probability, 0);
+        // Do weighted random using entry's weight
+        const totalWeight = group.reduce((acc, item) => acc + (item.groupWeight ?? DEFAULT_WEIGHT), 0);
         const rollValue = Math.random() * totalWeight;
         let currentWeight = 0;
         let winner = null;
 
         for (const entry of group) {
-            currentWeight += entry.probability;
+            currentWeight += (entry.groupWeight ?? DEFAULT_WEIGHT);
 
             if (rollValue <= currentWeight) {
                 console.debug(`Activated inclusion group '${key}' with roll winner entry '${entry.uid}'`, entry);
@@ -2553,14 +3192,17 @@ function convertAgnaiMemoryBook(inputObj) {
             disable: !entry.enabled,
             addMemo: !!entry.name,
             excludeRecursion: false,
+            delayUntilRecursion: false,
             displayIndex: index,
-            probability: null,
-            useProbability: false,
+            probability: 100,
+            useProbability: true,
             group: '',
             groupOverride: false,
+            groupWeight: DEFAULT_WEIGHT,
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
+            useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
         };
@@ -2589,14 +3231,17 @@ function convertRisuLorebook(inputObj) {
             disable: false,
             addMemo: true,
             excludeRecursion: false,
+            delayUntilRecursion: false,
             displayIndex: index,
-            probability: entry.activationPercent ?? null,
-            useProbability: entry.activationPercent ?? false,
+            probability: entry.activationPercent ?? 100,
+            useProbability: entry.activationPercent ?? true,
             group: '',
             groupOverride: false,
+            groupWeight: DEFAULT_WEIGHT,
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
+            useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
         };
@@ -2630,14 +3275,17 @@ function convertNovelLorebook(inputObj) {
             disable: !entry.enabled,
             addMemo: addMemo,
             excludeRecursion: false,
+            delayUntilRecursion: false,
             displayIndex: index,
-            probability: null,
-            useProbability: false,
+            probability: 100,
+            useProbability: true,
             group: '',
             groupOverride: false,
+            groupWeight: DEFAULT_WEIGHT,
             scanDepth: null,
             caseSensitive: null,
             matchWholeWords: null,
+            useGroupScoring: null,
             automationId: '',
             role: extension_prompt_roles.SYSTEM,
         };
@@ -2668,18 +3316,21 @@ function convertCharacterBook(characterBook) {
             position: entry.extensions?.position ?? (entry.position === 'before_char' ? world_info_position.before : world_info_position.after),
             excludeRecursion: entry.extensions?.exclude_recursion ?? false,
             preventRecursion: entry.extensions?.prevent_recursion ?? false,
+            delayUntilRecursion: entry.extensions?.delay_until_recursion ?? false,
             disable: !entry.enabled,
             addMemo: entry.comment ? true : false,
             displayIndex: entry.extensions?.display_index ?? index,
-            probability: entry.extensions?.probability ?? null,
-            useProbability: entry.extensions?.useProbability ?? false,
+            probability: entry.extensions?.probability ?? 100,
+            useProbability: entry.extensions?.useProbability ?? true,
             depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
             selectiveLogic: entry.extensions?.selectiveLogic ?? world_info_logic.AND_ANY,
             group: entry.extensions?.group ?? '',
             groupOverride: entry.extensions?.group_override ?? false,
+            groupWeight: entry.extensions?.group_weight ?? DEFAULT_WEIGHT,
             scanDepth: entry.extensions?.scan_depth ?? null,
             caseSensitive: entry.extensions?.case_sensitive ?? null,
             matchWholeWords: entry.extensions?.match_whole_words ?? null,
+            useGroupScoring: entry.extensions?.use_group_scoring ?? null,
             automationId: entry.extensions?.automation_id ?? '',
             role: entry.extensions?.role ?? extension_prompt_roles.SYSTEM,
             vectorized: entry.extensions?.vectorized ?? false,
@@ -2919,7 +3570,7 @@ export async function importWorldInfo(file) {
                 toastr.info(`World Info "${data.name}" imported successfully!`);
             }
         },
-        error: (jqXHR, exception) => { },
+        error: (_jqXHR, _exception) => { },
     });
 }
 
@@ -2974,6 +3625,10 @@ jQuery(() => {
     });
 
     $('#world_import_file').on('change', async function (e) {
+        if (!(e.target instanceof HTMLInputElement)) {
+            return;
+        }
+
         const file = e.target.files[0];
 
         await importWorldInfo(file);
@@ -3058,6 +3713,11 @@ jQuery(() => {
         saveSettingsDebounced();
     });
 
+    $('#world_info_use_group_scoring').on('change', function () {
+        world_info_use_group_scoring = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
     $('#world_info_budget_cap').on('input', function () {
         world_info_budget_cap = Number($(this).val());
         $('#world_info_budget_cap_counter').val(world_info_budget_cap);
@@ -3117,21 +3777,14 @@ jQuery(() => {
         });
 
         // Subscribe world loading to the select2 multiselect items (We need to target the specific select2 control)
-        $('#world_info + span.select2-container').on('click', function (event) {
-            if ($(event.target).hasClass('select2-selection__choice__display')) {
-                event.preventDefault();
-
-                // select2 still bubbles the event to open the dropdown. So we close it here
-                $('#world_info').select2('close');
-
-                const name = $(event.target).text();
-                const selectedIndex = world_names.indexOf(name);
-                if (selectedIndex !== -1) {
-                    $('#world_editor_select').val(selectedIndex).trigger('change');
-                    console.log('Quick selection of world', name);
-                }
+        select2ChoiceClickSubscribe($('#world_info'), target => {
+            const name = $(target).text();
+            const selectedIndex = world_names.indexOf(name);
+            if (selectedIndex !== -1) {
+                $('#world_editor_select').val(selectedIndex).trigger('change');
+                console.log('Quick selection of world', name);
             }
-        });
+        }, { buttonStyle: true, closeDrawer: true });
     }
 
     $('#WorldInfo').on('scroll', () => {
