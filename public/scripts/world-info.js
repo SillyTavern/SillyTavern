@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, equalsIgnoreCaseAndAccents } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, equalsIgnoreCaseAndAccents, getSanitizedFilename } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { isMobile } from './RossAscends-mods.js';
@@ -2631,19 +2631,9 @@ async function createNewWorldInfo(worldInfoName, { interactive = false } = {}) {
         return false;
     }
 
-    const existingWorld = world_names.find(x => equalsIgnoreCaseAndAccents(x, worldInfoName));
-    if (existingWorld) {
-        const overwrite = interactive ? await callPopup(`<h3>Creating New World Info</h3><p>A world with the same name already exists:<br />${existingWorld}</p>Do you want to overwrite it?`, 'confirm') : false;
-
-        if (!overwrite) {
-            toastr.warning(`World creation cancelled. A world with the same name already exists:<br />${existingWorld}`, 'Creating New World Info', { escapeHtml: false });
-            return false;
-        }
-
-        toastr.info(`Overwriting Existing World Info:<br />${existingWorld}`, 'Creating New World Info', { escapeHtml: false });
-
-        // Manually delete, as we want to overwrite. The name might be slightly different so file name would not be the same.
-        await deleteWorldInfo(existingWorld);
+    const allowed = await checkCanOverwriteWorldInfo(worldInfoName, { interactive: interactive, actionName: 'Create' });
+    if (!allowed) {
+        return false;
     }
 
     await saveWorldInfo(worldInfoName, worldInfoTemplate, true);
@@ -2655,6 +2645,37 @@ async function createNewWorldInfo(worldInfoName, { interactive = false } = {}) {
     } else {
         hideWorldEditor();
     }
+
+    return true;
+}
+
+
+/**
+ * Confirms if the user wants to overwrite an existing world info with the same name.
+ * If no world info with the name exists, this simply returns true
+ *
+ * @param {string} name - The name of the world info to create
+ * @param {Object} options - Optional parameters
+ * @param {boolean} [options.interactive=false] - Whether to show a confirmation dialog when overwriting an existing world
+ * @param {string} [options.actionName='overwrite'] - The action name to display in the confirmation dialog
+ * @returns {Promise<boolean>} True if the user confirmed the overwrite, false otherwise
+ */
+async function checkCanOverwriteWorldInfo(name, { interactive = false, actionName = 'Overwrite' } = {}) {
+    const existingWorld = world_names.find(x => equalsIgnoreCaseAndAccents(x, name));
+    if (!existingWorld) {
+        return true;
+    }
+
+    const overwrite = interactive ? await callPopup(`<h3>World Info ${actionName}</h3><p>A world with the same name already exists:<br />${existingWorld}</p>Do you want to overwrite it?`, 'confirm') : false;
+    if (!overwrite) {
+        toastr.warning(`World ${actionName.toLowerCase()} cancelled. A world with the same name already exists:<br />${existingWorld}`, `World Info ${actionName}`, { escapeHtml: false });
+        return false;
+    }
+
+    toastr.info(`Overwriting Existing World Info:<br />${existingWorld}`, `World Info ${actionName}`, { escapeHtml: false });
+
+    // Manually delete, as we want to overwrite. The name might be slightly different so file name would not be the same.
+    await deleteWorldInfo(existingWorld);
 
     return true;
 }
@@ -3589,6 +3610,13 @@ export async function importWorldInfo(file) {
         return;
     }
 
+    const worldName = file.name.substr(0, file.name.lastIndexOf("."));
+    const sanitizedWorldName = await getSanitizedFilename(worldName);
+    const allowed = await checkCanOverwriteWorldInfo(sanitizedWorldName, { interactive: true, actionName: 'Import' });
+    if (!allowed) {
+        return false;
+    }
+
     jQuery.ajax({
         type: 'POST',
         url: '/api/worldinfo/import',
@@ -3606,7 +3634,7 @@ export async function importWorldInfo(file) {
                     $('#world_editor_select').val(newIndex).trigger('change');
                 }
 
-                toastr.info(`World Info "${data.name}" imported successfully!`);
+                toastr.success(`World Info "${data.name}" imported successfully!`);
             }
         },
         error: (_jqXHR, _exception) => { },

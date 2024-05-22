@@ -1022,6 +1022,36 @@ export function extractDataFromPng(data, identifier = 'chara') {
 }
 
 /**
+ * Sends a request to the server to sanitize a given filename
+ *
+ * @param {string} fileName - The name of the file to sanitize
+ * @returns {Promise<string>} A Promise that resolves to the sanitized filename if successful, or rejects with an error message if unsuccessful
+ */
+export async function getSanitizedFilename(fileName) {
+    try {
+        const result = await fetch('/api/files/sanitize-filename', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                fileName: fileName,
+            }),
+        });
+
+        if (!result.ok) {
+            const error = await result.text();
+            throw new Error(error);
+        }
+
+        const responseData = await result.json();
+        return responseData.fileName;
+    } catch (error) {
+        toastr.error(String(error), 'Could not sanitize fileName');
+        console.error('Could not sanitize fileName', error);
+        throw error;
+    }
+}
+
+/**
  * Sends a base64 encoded image to the backend to be saved as a file.
  *
  * @param {string} base64Data - The base64 encoded image data.
