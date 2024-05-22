@@ -469,7 +469,6 @@ let settingsReady = false;
 let currentVersion = '0.0.0';
 let displayVersion = 'SillyTavern';
 
-export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
 let generation_started = new Date();
 /** @type {import('scripts/char-data.js').v1CharData[]} */
@@ -684,6 +683,8 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             tables: true,
             parseImgDimensions: true,
             simpleLineBreaks: true,
+            strikethrough: true,
+            disableForced4SpacesIndentedSublists: true,
             extensions: [
                 showdownKatex(
                     {
@@ -703,6 +704,8 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             tables: true,
             underline: true,
             simpleLineBreaks: true,
+            strikethrough: true,
+            disableForced4SpacesIndentedSublists: true,
             extensions: [markdownUnderscoreExt()],
         });
     }
@@ -2551,6 +2554,9 @@ function cleanGroupMessage(getMessage) {
 }
 
 function addPersonaDescriptionExtensionPrompt() {
+    const INJECT_TAG = 'PERSONA_DESCRIPTION';
+    setExtensionPrompt(INJECT_TAG, '', extension_prompt_types.IN_PROMPT, 0);
+
     if (!power_user.persona_description) {
         return;
     }
@@ -2564,6 +2570,10 @@ function addPersonaDescriptionExtensionPrompt() {
             : `${originalAN}\n${power_user.persona_description}`;
 
         setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
+    }
+
+    if (power_user.persona_description_position === persona_description_positions.AT_DEPTH) {
+        setExtensionPrompt(INJECT_TAG, power_user.persona_description, extension_prompt_types.IN_CHAT, power_user.persona_description_depth, true, power_user.persona_description_role);
     }
 }
 
@@ -3389,6 +3399,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Extension added strings
     // Set non-WI AN
     setFloatingPrompt();
+    // Add persona description to prompt
+    addPersonaDescriptionExtensionPrompt();
 
     // Add WI to prompt (and also inject WI to AN value via hijack)
     // Make quiet prompt available for WIAN
@@ -3506,8 +3518,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         userAlignmentMessage = formatMessageHistoryItem(alignmentMessage, isInstruct, false);
     }
 
-    // Add persona description to prompt
-    addPersonaDescriptionExtensionPrompt();
     // Call combined AN into Generate
     const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
     const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
@@ -5778,8 +5788,10 @@ async function getChatResult() {
     name2 = characters[this_chid].name;
     if (chat.length === 0) {
         const message = getFirstMessage();
-        chat.push(message);
-        await saveChatConditional();
+        if (message.mes) {
+            chat.push(message);
+            await saveChatConditional();
+        }
     }
     await loadItemizedPrompts(getCurrentChatId());
     await printMessages();
@@ -5795,7 +5807,7 @@ async function getChatResult() {
 }
 
 function getFirstMessage() {
-    const firstMes = characters[this_chid].first_mes || default_ch_mes;
+    const firstMes = characters[this_chid].first_mes || '';
     const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
 
     const message = {
@@ -5809,10 +5821,17 @@ function getFirstMessage() {
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
         const swipes = [message.mes, ...(alternateGreetings.map(greeting => getRegexedString(greeting, regex_placement.AI_OUTPUT)))];
+
+        if (!message.mes) {
+            swipes.shift();
+            message.mes = swipes[0];
+        }
+
         message['swipe_id'] = 0;
         message['swipes'] = swipes;
         message['swipe_info'] = [];
     }
+
     return message;
 }
 
@@ -6374,9 +6393,9 @@ async function messageEditDone(div) {
     appendMediaToMessage(mes, div.closest('.mes'));
     addCopyToCodeBlocks(div.closest('.mes'));
 
+    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
     this_edit_mes_id = undefined;
     await saveChatConditional();
-    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
 }
 
 /**
@@ -7393,8 +7412,8 @@ function openAlternateGreetings() {
     template.find('.add_alternate_greeting').on('click', function () {
         const array = getArray();
         const index = array.length;
-        array.push(default_ch_mes);
-        addAlternateGreeting(template, default_ch_mes, index, getArray);
+        array.push('');
+        addAlternateGreeting(template, '', index, getArray);
         updateAlternateGreetingsHintVisibility(template);
     });
 
@@ -7565,15 +7584,20 @@ async function createOrEditCharacter(e) {
                 eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: this_chid, character: characters[this_chid] } });
 
                 // Recreate the chat if it hasn't been used at least once (i.e. with continue).
-                if (chat.length === 1 && !selected_group && !chat_metadata['tainted']) {
-                    const firstMessage = getFirstMessage();
-                    chat[0] = firstMessage;
+                const message = getFirstMessage();
+                const shouldRegenerateMessage =
+                    message.mes &&
+                    !selected_group &&
+                    !chat_metadata['tainted'] &&
+                    (chat.length === 0 || (chat.length === 1 && !chat[0].is_user && !chat[0].is_system));
 
-                    const chat_id = (chat.length - 1);
-                    await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
+                if (shouldRegenerateMessage) {
+                    chat.splice(0, chat.length, message);
+                    const messageId = (chat.length - 1);
+                    await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
                     await clearChat();
                     await printMessages();
-                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId);
                     await saveChatConditional();
                 }
             },
@@ -9949,6 +9973,7 @@ jQuery(async function () {
             a.setAttribute('download', filename);
             document.body.appendChild(a);
             a.click();
+            URL.revokeObjectURL(a.href);
             document.body.removeChild(a);
         }
 

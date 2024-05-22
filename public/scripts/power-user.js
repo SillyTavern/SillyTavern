@@ -102,6 +102,7 @@ export const persona_description_positions = {
     AFTER_CHAR: 1,
     TOP_AN: 2,
     BOTTOM_AN: 3,
+    AT_DEPTH: 4,
 };
 
 let power_user = {
@@ -244,6 +245,8 @@ let power_user = {
 
     persona_description: '',
     persona_description_position: persona_description_positions.IN_PROMPT,
+    persona_description_role: 0,
+    persona_description_depth: 2,
     persona_show_notifications: true,
     persona_sort_order: 'asc',
 
@@ -1405,7 +1408,7 @@ async function applyMovingUIPreset(name) {
 
     console.log('MovingUI Preset applied: ' + name);
     loadMovingUIState();
-    saveSettingsDebounced()
+    saveSettingsDebounced();
 }
 
 /**
@@ -2997,13 +3000,20 @@ $(document).ready(() => {
     });
 
     const reportZoomLevelDebounced = debounce(() => {
-        const zoomLevel = Number(window.devicePixelRatio).toFixed(2);
+        const zoomLevel = Number(window.devicePixelRatio).toFixed(2) || 1;
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
-        console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}`);
+        const originalWidth = winWidth * zoomLevel;
+        const originalHeight = winHeight * zoomLevel;
+        console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}, original: ${originalWidth}x${originalHeight} `);
+        return zoomLevel;
     });
 
+    var coreTruthWinWidth = window.innerWidth;
+    var coreTruthWinHeight = window.innerHeight;
+
     $(window).on('resize', async () => {
+        console.log(`Window resize: ${coreTruthWinWidth}x${coreTruthWinHeight} -> ${window.innerWidth}x${window.innerHeight}`)
         adjustAutocompleteDebounced();
         setHotswapsDebounced();
 
@@ -3013,9 +3023,54 @@ $(document).ready(() => {
 
         reportZoomLevelDebounced();
 
+        //attempt to scale movingUI elements naturally across window resizing/zooms
+        //this will still break if the zoom level causes mobile styles to come into play.
+        const scaleY = Number(window.innerHeight / coreTruthWinHeight).toFixed(4);
+        const scaleX = Number(window.innerWidth / coreTruthWinWidth).toFixed(4);
+
         if (Object.keys(power_user.movingUIState).length > 0) {
-            resetMovablePanels('resize');
+            for (var elmntName of Object.keys(power_user.movingUIState)) {
+                var elmntState = power_user.movingUIState[elmntName];
+                var oldHeight = elmntState.height;
+                var oldWidth = elmntState.width;
+                var oldLeft = elmntState.left;
+                var oldTop = elmntState.top;
+                var oldBottom = elmntState.bottom;
+                var oldRight = elmntState.right;
+                var newHeight, newWidth, newTop, newBottom, newLeft, newRight;
+
+                newHeight = Number(oldHeight * scaleY).toFixed(0);
+                newWidth = Number(oldWidth * scaleX).toFixed(0);
+                newLeft = Number(oldLeft * scaleX).toFixed(0);
+                newTop = Number(oldTop * scaleY).toFixed(0);
+                newBottom = Number(oldBottom * scaleY).toFixed(0);
+                newRight = Number(oldRight * scaleX).toFixed(0);
+                try {
+                    var elmnt = $('#' + $.escapeSelector(elmntName));
+                    if (elmnt.length) {
+                        console.log(`scaling ${elmntName} by ${scaleX}x${scaleY} to ${newWidth}x${newHeight}`);
+                        elmnt.css('height', newHeight);
+                        elmnt.css('width', newWidth);
+                        elmnt.css('inset', `${newTop}px ${newRight}px ${newBottom}px ${newLeft}px`);
+                        power_user.movingUIState[elmntName].height = newHeight;
+                        power_user.movingUIState[elmntName].width = newWidth;
+                        power_user.movingUIState[elmntName].top = newTop;
+                        power_user.movingUIState[elmntName].bottom = newBottom;
+                        power_user.movingUIState[elmntName].left = newLeft;
+                        power_user.movingUIState[elmntName].right = newRight;
+                    } else {
+                        console.log(`skipping ${elmntName} because it doesn't exist in the DOM`);
+                    }
+                } catch (err) {
+                    console.log(`error occurred while processing ${elmntName}: ${err}`);
+                }
+            }
+        } else {
+            console.log('aborting MUI reset', Object.keys(power_user.movingUIState).length)
         }
+        saveSettingsDebounced();
+        coreTruthWinWidth = window.innerWidth;
+        coreTruthWinHeight = window.innerHeight;
     });
 
     // Settings that go to settings.json

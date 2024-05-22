@@ -31,13 +31,6 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { resolveVariable } from '../../variables.js';
 export { MODULE_NAME };
 
-// Wraps a string into monospace font-face span
-const m = x => `<span class="monospace">${x}</span>`;
-// Joins an array of strings with ' / '
-const j = a => a.join(' / ');
-// Wraps a string into paragraph block
-const p = a => `<p>${a}</p>`;
-
 const MODULE_NAME = 'sd';
 const UPDATE_INTERVAL = 1000;
 // This is a 1x1 transparent PNG
@@ -100,7 +93,7 @@ const triggerWords = {
 };
 
 const messageTrigger = {
-    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.*\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those)?)?(.+)/i,
+    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.{0,10}\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those)?)?(.+)/i,
     specialCases: {
         [generationMode.CHARACTER]: ['you', 'yourself'],
         [generationMode.USER]: ['me', 'myself'],
@@ -150,11 +143,6 @@ const promptTemplates = {
     [generationMode.CHARACTER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
     [generationMode.USER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
 };
-
-const helpString = [
-    `${m('[quiet=false/true] (argument)')} – requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments: ${m(j(Object.values(triggerWords).flat()))}.`,
-    'Anything else would trigger a "free mode" to make generate whatever you prompted. Example: \'/imagine apple tree\' would generate a picture of an apple tree. Returns a link to the generated image.',
-].join(' ');
 
 const defaultPrefix = 'best quality, absurdres, aesthetic,';
 const defaultNegative = 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry';
@@ -476,7 +464,8 @@ function addPromptTemplates() {
     for (const [name, prompt] of Object.entries(extension_settings.sd.prompts)) {
         const label = $('<label></label>')
             .text(modeLabels[name])
-            .attr('for', `sd_prompt_${name}`);
+            .attr('for', `sd_prompt_${name}`)
+			.attr('data-i18n', `sd_prompt_${name}`);
         const textarea = $('<textarea></textarea>')
             .addClass('textarea_compact text_pole')
             .attr('id', `sd_prompt_${name}`)
@@ -488,6 +477,7 @@ function addPromptTemplates() {
         const button = $('<button></button>')
             .addClass('menu_button fa-solid fa-undo')
             .attr('title', 'Restore default')
+			.attr('data-i18n', 'Restore default')
             .on('click', () => {
                 textarea.val(promptTemplates[name]);
                 extension_settings.sd.prompts[name] = promptTemplates[name];
@@ -1897,7 +1887,7 @@ function processReply(str) {
     str = str.replaceAll('“', '');
     str = str.replaceAll('.', ',');
     str = str.replaceAll('\n', ', ');
-    str = str.replace(/[^a-zA-Z0-9,:()\-']+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
+    str = str.replace(/[^a-zA-Z0-9,:_(){}[\]\-']+/g, ' ');
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
 
@@ -2849,18 +2839,20 @@ async function onComfyDeleteWorkflowClick() {
  */
 async function sendMessage(prompt, image, generationType, additionalNegativePrefix) {
     const context = getContext();
-    const messageText = `[${context.name2} sends a picture that contains: ${prompt}]`;
+    const name = context.groupId ? systemUserName : context.name2;
+    const messageText = `[${name} sends a picture that contains: ${prompt}]`;
     const message = {
-        name: context.groupId ? systemUserName : context.name2,
+        name: name,
         is_user: false,
         is_system: true,
         send_date: getMessageTimeStamp(),
-        mes: context.groupId ? p(messageText) : messageText,
+        mes: messageText,
         extra: {
             image: image,
             title: prompt,
             generationType: generationType,
             negative: additionalNegativePrefix,
+            inline_image: false,
         },
     };
     context.chat.push(message);
@@ -3168,7 +3160,9 @@ jQuery(async () => {
     }
 
     eventSource.on(event_types.EXTRAS_CONNECTED, async () => {
-        await loadSettingOptions();
+        if (extension_settings.sd.source === sources.extras) {
+            await loadSettingOptions();
+        }
     });
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);

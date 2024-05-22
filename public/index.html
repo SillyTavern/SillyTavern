@@ -1715,7 +1715,7 @@
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom">
-                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand marginBot10">
+                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
@@ -1724,7 +1724,7 @@
                                                 <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> <span data-i18n="image_inlining_hint_3">menu to attach an image file to the chat.</span>
                                             </div>
                                         </label>
-                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter">
+                                        <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom">
                                             <label for="openai_inline_image_quality">
                                                 Inline Image Quality
                                             </label>
@@ -1760,8 +1760,8 @@
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Merges all system messages up until the first message with a non system role, and sends them through google's system_instruction field instead of with the rest of the prompt contents.">
-                                                Merges all system messages up until the first message with a non system role, and sends them through google's system_instruction field instead of with the rest of the prompt contents.
+                                            <span data-i18n="Merges all system messages up until the first message with a non-system role, and sends them in a system_instruction field.">
+                                                Merges all system messages up until the first message with a non-system role, and sends them in a <code>system_instruction</code> field.
                                             </span>
                                         </div>
                                     </div>
@@ -4412,7 +4412,22 @@
                                         <option value="0" data-i18n="In Story String / Prompt Manager">In Story String / Prompt Manager</option>
                                         <option value="2" data-i18n="Top of Author's Note">Top of Author's Note</option>
                                         <option value="3" data-i18n="Bottom of Author's Note">Bottom of Author's Note</option>
+                                        <option value="4" data-i18n="In-chat @ Depth">In-chat @ Depth</option>
                                     </select>
+                                    <div id="persona_depth_position_settings" class="flex-container">
+                                        <div class="flex1">
+                                            <label for="persona_depth_value" data-i18n="Depth:">Depth:</label>
+                                            <input id="persona_depth_value" class="text_pole" type="number" min="0" max="999" step="1">
+                                        </div>
+                                        <div class="flex1">
+                                            <label for="persona_depth_role" data-i18n="Role:">Role:</label>
+                                            <select id="persona_depth_role" class="text_pole">
+                                                <option data-i18n="System" value="0">System</option>
+                                                <option data-i18n="User" value="1">User</option>
+                                                <option data-i18n="Assistant" value="2">Assistant</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="range-block">
