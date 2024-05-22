@@ -8454,7 +8454,7 @@ function doCloseChat() {
  * @param {string} this_chid - The character ID to be deleted.
  * @param {boolean} delete_chats - Whether to delete chats or not.
  */
-async function handleDeleteCharacter(popup_type, this_chid, delete_chats) {
+export async function handleDeleteCharacter(popup_type, this_chid, delete_chats) {
     if (popup_type !== 'del_ch' ||
         !characters[this_chid]) {
         return;
@@ -8472,7 +8472,7 @@ async function handleDeleteCharacter(popup_type, this_chid, delete_chats) {
  * @return {Promise<void>} - A promise that resolves when the character is successfully deleted
  */
 export async function deleteCharacter(characterKey, { deleteChats = true } = {}) {
-    const character = characters.find(x => x.avatar == characterKey);;
+    const character = characters.find(x => x.avatar == characterKey);
     if (!character) {
         toastr.warning(`Character ${characterKey} not found. Cannot be deleted.`);
         return;
