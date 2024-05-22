@@ -1,0 +1,72 @@
+/* noto-sans-mono-100 - latin */
+@font-face {
+	font-display: swap;
+	font-family: 'Noto Sans Mono';
+	font-style: normal;
+	font-weight: 100;
+	src: url('noto-sans-mono-v30-latin-100.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* noto-sans-mono-200 - latin */
+  @font-face {
+	font-display: swap;
+	font-family: 'Noto Sans Mono';
+	font-style: normal;
+	font-weight: 200;
+	src: url('noto-sans-mono-v30-latin-200.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* noto-sans-mono-300 - latin */
+  @font-face {
+	font-display: swap;
+	font-family: 'Noto Sans Mono';
+	font-style: normal;
+	font-weight: 300;
+	src: url('noto-sans-mono-v30-latin-300.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* noto-sans-mono-regular - latin */
+  @font-face {
+	font-display: swap;
+	font-family: 'Noto Sans Mono';
+	font-style: normal;
+	font-weight: 400;
+	src: url('noto-sans-mono-v30-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* noto-sans-mono-500 - latin */
+  @font-face {
+	font-display: swap;
+	font-family: 'Noto Sans Mono';
+	font-style: normal;
+	font-weight: 500;
+	src: url('noto-sans-mono-v30-latin-500.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* noto-sans-mono-600 - latin */
+  @font-face {
+	font-display: swap;
+	font-family: 'Noto Sans Mono';
+	font-style: normal;
+	font-weight: 600;
+	src: url('noto-sans-mono-v30-latin-600.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* noto-sans-mono-700 - latin */
+  @font-face {
+	font-display: swap;
+	font-family: 'Noto Sans Mono';
+	font-style: normal;
+	font-weight: 700;
+	src: url('noto-sans-mono-v30-latin-700.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* noto-sans-mono-800 - latin */
+  @font-face {
+	font-display: swap;
+	font-family: 'Noto Sans Mono';
+	font-style: normal;
+	font-weight: 800;
+	src: url('noto-sans-mono-v30-latin-800.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
+  /* noto-sans-mono-900 - latin */
+  @font-face {
+	font-display: swap;
+	font-family: 'Noto Sans Mono';
+	font-style: normal;
+	font-weight: 900;
+	src: url('noto-sans-mono-v30-latin-900.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  }
