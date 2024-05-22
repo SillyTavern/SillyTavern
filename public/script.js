@@ -684,6 +684,7 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             parseImgDimensions: true,
             simpleLineBreaks: true,
             strikethrough: true,
+            disableForced4SpacesIndentedSublists: true,
             extensions: [
                 showdownKatex(
                     {
@@ -704,6 +705,7 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             underline: true,
             simpleLineBreaks: true,
             strikethrough: true,
+            disableForced4SpacesIndentedSublists: true,
             extensions: [markdownUnderscoreExt()],
         });
     }
