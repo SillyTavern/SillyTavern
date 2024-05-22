@@ -22,7 +22,7 @@ import {
     parseTabbyLogprobs,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, APHRODITE, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, VLLM, APHRODITE, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
 
 import {
     world_info,
@@ -218,7 +218,7 @@ import {
 import { getBackgrounds, initBackgrounds, loadBackgroundSettings, background_settings } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
 import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
-import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
+import { loadMancerModels, loadOllamaModels, loadTogetherAIModels, loadInfermaticAIModels, loadOpenRouterModels, loadVllmModels, loadAphroditeModels, loadDreamGenModels } from './scripts/textgen-models.js';
 import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, decodeStyleTags, encodeStyleTags, isExternalMediaAllowed, getCurrentEntityId } from './scripts/chats.js';
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
@@ -1073,6 +1073,9 @@ async function getStatusTextgen() {
         } else if (textgen_settings.type === OPENROUTER) {
             loadOpenRouterModels(data?.data);
             online_status = textgen_settings.openrouter_model;
+        } else if (textgen_settings.type === VLLM) {
+            loadVllmModels(data?.data);
+            online_status = textgen_settings.vllm_model;
         } else if (textgen_settings.type === APHRODITE) {
             loadAphroditeModels(data?.data);
             online_status = textgen_settings.aphrodite_model;
@@ -4834,6 +4837,7 @@ function parseAndSaveLogprobs(data, continueFrom) {
                 case textgen_types.LLAMACPP: {
                     logprobs = data?.completion_probabilities?.map(x => parseTextgenLogprobs(x.content, [x])) || null;
                 } break;
+                case textgen_types.VLLM:
                 case textgen_types.APHRODITE:
                 case textgen_types.MANCER:
                 case textgen_types.TABBY: {
@@ -4890,7 +4894,7 @@ function extractMultiSwipes(data, type) {
         return swipes;
     }
 
-    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && [MANCER, APHRODITE].includes(textgen_settings.type))) {
+    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && [MANCER, VLLM, APHRODITE].includes(textgen_settings.type))) {
         if (!Array.isArray(data.choices)) {
             return swipes;
         }
@@ -7924,6 +7928,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_textgenerationwebui',
         type: textgen_types.MANCER,
     },
+    'vllm': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.VLLM,
+    },
     'aphrodite': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -8355,6 +8364,33 @@ function addDebugFunctions() {
     registerDebugFunction('toggleEventTracing', 'Toggle event tracing', 'Useful to see what triggered a certain event.', () => {
         localStorage.setItem('eventTracing', localStorage.getItem('eventTracing') === 'true' ? 'false' : 'true');
         toastr.info('Event tracing is now ' + (localStorage.getItem('eventTracing') === 'true' ? 'enabled' : 'disabled'));
+    });
+
+    registerDebugFunction('copySetup', 'Copy ST setup to clipboard [WIP]', 'Useful data when reporting bugs', async () => {
+        const getContextContents = getContext();
+        const getSettingsContents = settings;
+        //console.log(getSettingsContents);
+        const logMessage = `
+\`\`\`
+API: ${getSettingsContents.main_api}
+API Type: ${getSettingsContents[getSettingsContents.main_api + '_settings'].type}
+API server: ${getSettingsContents.api_server}
+Model: ${getContextContents.onlineStatus}
+Context Preset: ${power_user.context.preset}
+Instruct Preset: ${power_user.instruct.preset}
+API Settings: ${JSON.stringify(getSettingsContents[getSettingsContents.main_api + '_settings'], null, 2)}
+\`\`\`
+    `;
+
+        //console.log(getSettingsContents)
+        //console.log(logMessage);
+
+        try {
+            await navigator.clipboard.writeText(logMessage);
+            toastr.info('Your ST API setup data has been copied to the clipboard.');
+        } catch (error) {
+            toastr.error('Failed to copy ST Setup to clipboard:', error);
+        }
     });
 }
 
@@ -8898,6 +8934,7 @@ jQuery(async function () {
     $('#api_button_textgenerationwebui').on('click', async function (e) {
         const keys = [
             { id: 'api_key_mancer', secret: SECRET_KEYS.MANCER },
+            { id: 'api_key_vllm', secret: SECRET_KEYS.VLLM },
             { id: 'api_key_aphrodite', secret: SECRET_KEYS.APHRODITE },
             { id: 'api_key_tabby', secret: SECRET_KEYS.TABBY },
             { id: 'api_key_togetherai', secret: SECRET_KEYS.TOGETHERAI },

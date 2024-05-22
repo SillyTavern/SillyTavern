@@ -1665,6 +1665,7 @@ function modelCallback(_, model) {
         { id: 'model_infermaticai_select', api: 'textgenerationwebui', type: textgen_types.INFERMATICAI },
         { id: 'model_dreamgen_select', api: 'textgenerationwebui', type: textgen_types.DREAMGEN },
         { id: 'mancer_model', api: 'textgenerationwebui', type: textgen_types.MANCER },
+        { id: 'vllm_model', api: 'textgenerationwebui', type: textgen_types.VLLM },
         { id: 'aphrodite_model', api: 'textgenerationwebui', type: textgen_types.APHRODITE },
         { id: 'ollama_model', api: 'textgenerationwebui', type: textgen_types.OLLAMA },
         { id: 'model_openai_select', api: 'openai', type: chat_completion_sources.OPENAI },

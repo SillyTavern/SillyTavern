@@ -68,6 +68,19 @@ function getOpenRouterHeaders(directories) {
 }
 
 /**
+ * Gets the headers for the vLLM API.
+ * @param {import('./users').UserDirectoryList} directories User directories
+ * @returns {object} Headers for the request
+ */
+function getVllmHeaders(directories) {
+    const apiKey = readSecret(directories, SECRET_KEYS.VLLM);
+
+    return apiKey ? ({
+        'Authorization': `Bearer ${apiKey}`,
+    }) : {};
+}
+
+/**
  * Gets the headers for the Aphrodite API.
  * @param {import('./users').UserDirectoryList} directories User directories
  * @returns {object} Headers for the request
@@ -153,6 +166,7 @@ function getOverrideHeaders(urlHost) {
 function setAdditionalHeaders(request, args, server) {
     const headerGetters = {
         [TEXTGEN_TYPES.MANCER]: getMancerHeaders,
+        [TEXTGEN_TYPES.VLLM]: getVllmHeaders,
         [TEXTGEN_TYPES.APHRODITE]: getAphroditeHeaders,
         [TEXTGEN_TYPES.TABBY]: getTabbyHeaders,
         [TEXTGEN_TYPES.TOGETHERAI]: getTogetherAIHeaders,

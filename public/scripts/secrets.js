@@ -3,6 +3,7 @@ import { callPopup, getRequestHeaders } from '../script.js';
 export const SECRET_KEYS = {
     HORDE: 'api_key_horde',
     MANCER: 'api_key_mancer',
+    VLLM: 'api_key_vllm',
     APHRODITE: 'api_key_aphrodite',
     TABBY: 'api_key_tabby',
     OPENAI: 'api_key_openai',
@@ -38,6 +39,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.AI21]: '#api_key_ai21',
     [SECRET_KEYS.SCALE_COOKIE]: '#scale_cookie',
     [SECRET_KEYS.MAKERSUITE]: '#api_key_makersuite',
+    [SECRET_KEYS.VLLM]: '#api_key_vllm',
     [SECRET_KEYS.APHRODITE]: '#api_key_aphrodite',
     [SECRET_KEYS.TABBY]: '#api_key_tabby',
     [SECRET_KEYS.MISTRALAI]: '#api_key_mistralai',
