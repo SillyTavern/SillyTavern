@@ -2631,7 +2631,9 @@ async function createNewWorldInfo(worldName, { interactive = false } = {}) {
         return false;
     }
 
-    const allowed = await checkOverwriteExistingData('World Info', world_names, worldName, { interactive: interactive, actionName: 'Create', deleteAction: (existingName) => deleteWorldInfo(existingName) });
+    const sanitizedWorldName = await getSanitizedFilename(worldName);
+
+    const allowed = await checkOverwriteExistingData('World Info', world_names, sanitizedWorldName, { interactive: interactive, actionName: 'Create', deleteAction: (existingName) => deleteWorldInfo(existingName) });
     if (!allowed) {
         return false;
     }
