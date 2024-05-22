@@ -678,6 +678,8 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'top_k' ||
         sliderID == 'mirostat_mode_kobold' ||
         sliderID == 'rep_pen_range' ||
+        sliderID == 'dry_allowed_length_textgenerationwebui' ||
+        sliderID == 'dry_penalty_last_n_textgenerationwebui' ||
         sliderID == 'max_tokens_second_textgenerationwebui') {
         decimals = 0;
     }
@@ -685,7 +687,9 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'max_temp_textgenerationwebui' ||
         sliderID == 'dynatemp_exponent_textgenerationwebui' ||
         sliderID == 'smoothing_curve_textgenerationwebui' ||
-        sliderID == 'smoothing_factor_textgenerationwebui') {
+        sliderID == 'smoothing_factor_textgenerationwebui' ||
+        sliderID == 'dry_multiplier_textgenerationwebui' ||
+        sliderID == 'dry_base_textgenerationwebui') {
         decimals = 2;
     }
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
@@ -746,6 +750,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'rep_pen_slope' ||
         sliderID == 'smoothing_factor_textgenerationwebui' ||
         sliderID == 'smoothing_curve_textgenerationwebui' ||
+        sliderID == 'dry_multiplier_textgenerationwebui' ||
         sliderID == 'min_length_textgenerationwebui') {
         offVal = 0;
     }
@@ -1754,11 +1759,21 @@ function loadMaxContextUnlocked() {
 }
 
 function switchMaxContextSize() {
-    const elements = [$('#max_context'), $('#max_context_counter'), $('#rep_pen_range'), $('#rep_pen_range_counter'), $('#rep_pen_range_textgenerationwebui'), $('#rep_pen_range_counter_textgenerationwebui')];
+    const elements = [
+        $('#max_context'),
+        $('#max_context_counter'),
+        $('#rep_pen_range'),
+        $('#rep_pen_range_counter'),
+        $('#rep_pen_range_textgenerationwebui'),
+        $('#rep_pen_range_counter_textgenerationwebui'),
+        $('#dry_penalty_last_n_textgenerationwebui'),
+        $('#dry_penalty_last_n_counter_textgenerationwebui'),
+    ];
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
     const minValue = power_user.max_context_unlocked ? maxContextMin : maxContextMin;
     const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : maxContextStep;
     $('#rep_pen_range_textgenerationwebui_zenslider').remove(); //unsure why, but this is necessary.
+    $('#dry_penalty_last_n_textgenerationwebui_zenslider').remove();
     for (const element of elements) {
         const id = element.attr('id');
         element.attr('max', maxValue);
@@ -1787,6 +1802,8 @@ function switchMaxContextSize() {
         CreateZenSliders($('#max_context'));
         $('#rep_pen_range_textgenerationwebui_zenslider').remove();
         CreateZenSliders($('#rep_pen_range_textgenerationwebui'));
+        $('#dry_penalty_last_n_textgenerationwebui_zenslider').remove();
+        CreateZenSliders($('#dry_penalty_last_n_textgenerationwebui'));
     }
 }
 
