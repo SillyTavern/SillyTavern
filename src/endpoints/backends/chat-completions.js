@@ -16,6 +16,7 @@ const API_MISTRAL = 'https://api.mistral.ai/v1';
 const API_COHERE = 'https://api.cohere.ai/v1';
 const API_PERPLEXITY = 'https://api.perplexity.ai';
 const API_GROQ = 'https://api.groq.com/openai/v1';
+const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 
 /**
  * Applies a post-processing step to the generated messages.
@@ -232,6 +233,7 @@ async function sendScaleRequest(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendMakerSuiteRequest(request, response) {
+    const apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
 
     if (!apiKey) {
@@ -316,7 +318,7 @@ async function sendMakerSuiteRequest(request, response) {
             ? (stream ? 'streamGenerateContent' : 'generateContent')
             : (isText ? 'generateText' : 'generateMessage');
 
-        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
+        const generateResponse = await fetch(`${apiUrl.origin}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
