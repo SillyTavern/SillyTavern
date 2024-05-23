@@ -134,6 +134,7 @@ async function onRegexEditorOpenClick(existingId) {
             editorHtml.find('.find_regex').val(existingScript.findRegex || '');
             editorHtml.find('.regex_replace_string').val(existingScript.replaceString || '');
             editorHtml.find('.regex_trim_strings').val(existingScript.trimStrings?.join('\n') || []);
+            editorHtml.find('.regex_scoped_char_list').val(existingScript.scopedCharList?.join('\n') || []);
             editorHtml.find('input[name="disabled"]').prop('checked', existingScript.disabled ?? false);
             editorHtml.find('input[name="only_format_display"]').prop('checked', existingScript.markdownOnly ?? false);
             editorHtml.find('input[name="only_format_prompt"]').prop('checked', existingScript.promptOnly ?? false);
@@ -177,6 +178,7 @@ async function onRegexEditorOpenClick(existingId) {
             findRegex: editorHtml.find('.find_regex').val(),
             replaceString: editorHtml.find('.regex_replace_string').val(),
             trimStrings: String(editorHtml.find('.regex_trim_strings').val()).split('\n').filter((e) => e.length !== 0) || [],
+            scopedCharList: String(editorHtml.find('.regex_scoped_char_list').val()).split('\n').filter((e) => e.length !== 0) || [],
             substituteRegex: editorHtml.find('input[name="substitute_regex"]').prop('checked'),
         };
         const rawTestString = String(editorHtml.find('#regex_test_input').val());
@@ -193,6 +195,7 @@ async function onRegexEditorOpenClick(existingId) {
             findRegex: editorHtml.find('.find_regex').val(),
             replaceString: editorHtml.find('.regex_replace_string').val(),
             trimStrings: editorHtml.find('.regex_trim_strings').val().split('\n').filter((e) => e.length !== 0) || [],
+            scopedCharList: editorHtml.find('.regex_scoped_char_list').val().split('\n').filter((e) => e.length !== 0) || [],
             placement:
                 editorHtml
                     .find('input[name="replace_position"]')

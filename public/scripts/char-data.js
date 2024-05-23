@@ -83,6 +83,7 @@
 * @property {string} findRegex - The regex to find
 * @property {string} replaceString - The string to replace
 * @property {string[]} trimStrings - The strings to trim
+* @property {string[]} scopedCharList - If not empty, only the characters in this list will trigger the script
 * @property {number[]} placement - The placement of the script
 * @property {boolean} disabled - Whether the script is disabled
 * @property {boolean} markdownOnly - Whether the script only applies to Markdown
