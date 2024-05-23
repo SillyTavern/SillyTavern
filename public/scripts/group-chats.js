@@ -73,7 +73,7 @@ import {
     depth_prompt_role_default,
     shouldAutoContinue,
 } from '../script.js';
-import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
+import { printTagList, createTagMapFromList, applyTagsOnCharacterSelect, tag_map, applyTagsOnGroupSelect } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 import { isExternalMediaAllowed } from './chats.js';
 
@@ -1356,7 +1356,7 @@ function select_group_chats(groupId, skipAnimation) {
     }
 
     // render tags
-    printTagList($('#groupTagList'), { forEntityOrKey: groupId, tagOptions: { removable: true } });
+    applyTagsOnGroupSelect(groupId);
 
     // render characters list
     printGroupCandidates();

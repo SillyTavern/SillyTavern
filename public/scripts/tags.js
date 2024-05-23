@@ -1046,15 +1046,16 @@ function onGroupCreateClick() {
     // Nothing to do here at the moment. Tags in group interface get automatically redrawn.
 }
 
-export function applyTagsOnCharacterSelect() {
+export function applyTagsOnCharacterSelect(chid = null) {
     //clearTagsFilter();
-    const chid = Number(this_chid);
+    chid = chid ?? Number(this_chid);
     printTagList($('#tagList'), { forEntityOrKey: chid, tagOptions: { removable: true } });
 }
 
-function applyTagsOnGroupSelect() {
+export function applyTagsOnGroupSelect(groupId = null) {
     //clearTagsFilter();
-    // Nothing to do here at the moment. Tags in group interface get automatically redrawn.
+    groupId = groupId ?? Number(selected_group);
+    printTagList($('#groupTagList'), { forEntityOrKey: groupId, tagOptions: { removable: true } });
 }
 
 /**
@@ -1596,21 +1597,6 @@ function registerTagsSlashCommands() {
         return tag;
     }
 
-    function updateTagsList() {
-        switch (menu_type) {
-            case 'characters':
-                printTagFilters(tag_filter_types.character);
-                printTagFilters(tag_filter_types.group_member);
-                break;
-            case 'character_edit':
-                applyTagsOnCharacterSelect();
-                break;
-            case 'group_edit':
-                select_group_chats(selected_group, true);
-                break;
-        }
-    }
-
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'tag-add',
         returns: 'true/false - Whether the tag was added or was assigned already',
@@ -1621,7 +1607,6 @@ function registerTagsSlashCommands() {
             const tag = paraGetTag(tagName, { allowCreate: true });
             if (!tag) return 'false';
             const result = addTagToEntity(tag, key);
-            updateTagsList();
             return String(result);
         },
         namedArgumentList: [
@@ -1656,7 +1641,6 @@ function registerTagsSlashCommands() {
             const tag = paraGetTag(tagName);
             if (!tag) return 'false';
             const result = removeTagFromEntity(tag, key);
-            updateTagsList();
             return String(result);
         },
         namedArgumentList: [

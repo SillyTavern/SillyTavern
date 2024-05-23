@@ -178,6 +178,8 @@ import {
     tag_filter_types,
     compareTagsForSort,
     initTags,
+    applyTagsOnCharacterSelect,
+    applyTagsOnGroupSelect,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -1305,6 +1307,10 @@ export async function printCharacters(fullRefresh = false) {
     // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
+
+    // We are also always reprinting the lists on character/group edit window, as these ones doesn't get updated otherwise
+    applyTagsOnCharacterSelect();
+    applyTagsOnGroupSelect();
 
     const entities = getEntitiesList({ doFilter: true });
 
