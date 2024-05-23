@@ -322,6 +322,20 @@
 						display: grid;
 						text-align: left;
 						overflow: hidden;
+						&.qr--noSyntax {
+							> #qr--modal-messageSyntax {
+								display: none;
+							}
+							> #qr--modal-message {
+								background-color: var(--ac-style-color-background);
+								color: var(--ac-style-color-text);
+								&::selection {
+									color: unset;
+									background-color: rgba(108 171 251 / 0.25);
+									background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
+								}
+							}
+						}
 						> #qr--modal-messageSyntax {
 							grid-column: 1;
 							grid-row: 1;
@@ -336,9 +350,11 @@
 							}
 						}
 						> #qr--modal-message {
+							background-color: transparent;
+							color: transparent;
 							grid-column: 1;
 							grid-row: 1;
-							caret-color: white;
+							caret-color: var(--ac-style-color-text);
 							overflow: auto;
 							&::-webkit-scrollbar, &::-webkit-scrollbar-thumb {
 								visibility: hidden;
@@ -346,7 +362,8 @@
 							}
 							&::selection {
 								color: transparent;
-								background: rgb(255 255 0);
+								background-color: rgba(108 171 251 / 0.25);
+								background-color: rgb(from var(--ac-style-color-matchedText) r g b / 0.25);
 							}
 						}
 						#qr--modal-message, #qr--modal-messageSyntaxInner {
