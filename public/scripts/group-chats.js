@@ -40,7 +40,6 @@ import {
     online_status,
     talkativeness_default,
     selectRightMenuWithAnimation,
-    default_ch_mes,
     deleteLastMessage,
     showSwipeButtons,
     hideSwipeButtons,
@@ -204,6 +203,12 @@ export async function getGroupChat(groupId, reload = false) {
                 }
 
                 const mes = await getFirstCharacterMessage(character);
+
+                // No first message
+                if (!(mes?.mes)) {
+                    continue;
+                }
+
                 chat.push(mes);
                 await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                 addOneMessage(mes);
@@ -452,7 +457,7 @@ async function getFirstCharacterMessage(character) {
     mes['extra'] = { 'gen_id': Date.now() * Math.random() * 1000000 };
     mes['mes'] = messageText
         ? substituteParams(messageText.trim(), name1, character.name)
-        : default_ch_mes;
+        : '';
     mes['force_avatar'] =
         character.avatar != 'none'
             ? getThumbnailUrl('avatar', character.avatar)
