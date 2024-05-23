@@ -15,7 +15,7 @@ import {
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, select_group_chats, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
@@ -587,10 +587,10 @@ function removeTagFromMap(tagId, characterId = null) {
 
 function findTag(request, resolve, listSelector) {
     const skipIds = [...($(listSelector).find('.tag').map((_, el) => $(el).attr('id')))];
-    const haystack = tags.filter(t => !skipIds.includes(t.id)).map(t => t.name).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-    const needle = request.term.toLowerCase();
-    const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
-    const result = haystack.filter(x => x.toLowerCase().includes(needle));
+    const haystack = tags.filter(t => !skipIds.includes(t.id)).sort(compareTagsForSort).map(t => t.name);
+    const needle = request.term;
+    const hasExactMatch = haystack.findIndex(x => equalsIgnoreCaseAndAccents(x, needle)) !== -1;
+    const result = haystack.filter(x => includesIgnoreCaseAndAccents(x, needle));
 
     if (request.term && !hasExactMatch) {
         result.unshift(request.term);
@@ -611,7 +611,7 @@ function findTag(request, resolve, listSelector) {
  */
 function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
     let tagName = ui.item.value;
-    let tag = tags.find(t => t.name === tagName);
+    let tag = getTag(tagName);
 
     // create new tag if it doesn't exist
     if (!tag) {
@@ -639,8 +639,8 @@ function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
  */
 function getExistingTags(new_tags) {
     let existing_tags = [];
-    for (let tag of new_tags) {
-        let foundTag = tags.find(t => t.name.toLowerCase() === tag.toLowerCase());
+    for (let tagName of new_tags) {
+        let foundTag = getTag(tagName);
         if (foundTag) {
             existing_tags.push(foundTag.name);
         }
@@ -669,7 +669,7 @@ async function importTags(imported_char) {
         selected_tags = selected_tags.slice(0, 15);
     }
     for (let tagName of selected_tags) {
-        let tag = tags.find(t => t.name === tagName);
+        let tag = getTag(tagName);
 
         if (!tag) {
             tag = createNewTag(tagName);
@@ -691,12 +691,28 @@ async function importTags(imported_char) {
 }
 
 /**
+ * Gets a tag from the tags array based on the provided tag name (insensitive soft matching)
+ *
+ * @param {string} tagName - The name of the tag to search for
+ * @return {Tag?} The tag object that matches the provided tag name, or undefined if no match is found.
+ */
+function getTag(tagName) {
+    return tags.find(t => equalsIgnoreCaseAndAccents(t.name, tagName));
+}
+
+/**
  * Creates a new tag with default properties and a randomly generated id
  *
  * @param {string} tagName - name of the tag
- * @returns {Tag}
+ * @returns {Tag} the newly created tag, or the existing tag if it already exists (with a logged warning)
  */
 function createNewTag(tagName) {
+    const existing = getTag(tagName);
+    if (existing) {
+        toastr.warning(`Cannot create new tag. A tag with the name already exists:<br />${existing}`, 'Creating Tag', { escapeHtml: false });
+        return existing;
+    }
+
     const tag = {
         id: uuidv4(),
         name: tagName,
@@ -1028,7 +1044,7 @@ function onTagRemoveClick(event) {
 // @ts-ignore
 function onTagInput(event) {
     let val = $(this).val();
-    if (tags.find(t => t.name === val)) return;
+    if (getTag(String(val))) return;
     // @ts-ignore
     $(this).autocomplete('search', val);
 }
@@ -1586,7 +1602,7 @@ function registerTagsSlashCommands() {
             toastr.warning('Tag name must be provided.');
             return null;
         }
-        let tag = tags.find(t => t.name === tagName);
+        let tag = getTag(tagName);
         if (allowCreate && !tag) {
             tag = createNewTag(tagName);
         }
