@@ -81,11 +81,19 @@
                 </div>
             </div>
 
-            <div class="flex-container flexFlowColumn" title="How many last messages will be matched for relevance.">
-                <label for="vectors_query">
-                    <span>Query messages</span>
-                </label>
-                <input type="number" id="vectors_query" class="text_pole widthUnset" min="1" max="99" />
+            <div class="flex-container marginTopBot5">
+                <div class="flex-container flex1 flexFlowColumn" title="How many last messages will be matched for relevance.">
+                    <label for="vectors_query">
+                        <span>Query messages</span>
+                    </label>
+                    <input type="number" id="vectors_query" class="text_pole widthUnset" min="1" max="99" />
+                </div>
+                <div class="flex-container flex1 flexFlowColumn" title="Cut-off score for relevance. Helps to filter out irrelevant data.">
+                    <label for="vectors_query">
+                        <span>Score threshold</span>
+                    </label>
+                    <input type="number" id="vectors_score_threshold" class="text_pole widthUnset" min="0" max="1" step="0.05" />
+                </div>
             </div>
 
             <div class="flex-container">
