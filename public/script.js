@@ -154,6 +154,7 @@ import {
     isValidUrl,
     ensureImageFormatSupported,
     flashHighlight,
+    checkOverwriteExistingData,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -467,8 +468,8 @@ let chat_create_date = '';
 let firstRun = false;
 let settingsReady = false;
 let currentVersion = '0.0.0';
+let displayVersion = 'SillyTavern';
 
-export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
 let generation_started = new Date();
 /** @type {import('scripts/char-data.js').v1CharData[]} */
@@ -600,7 +601,7 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplateAsync('welcome'),
+            mes: await renderTemplateAsync('welcome', { displayVersion }),
         },
         group: {
             name: systemUserName,
@@ -661,7 +662,7 @@ async function getClientVersion() {
         const response = await fetch('/version');
         const data = await response.json();
         CLIENT_VERSION = data.agent;
-        let displayVersion = `SillyTavern ${data.pkgVersion}`;
+        displayVersion = `SillyTavern ${data.pkgVersion}`;
         currentVersion = data.pkgVersion;
 
         if (data.gitRevision && data.gitBranch) {
@@ -683,6 +684,8 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             tables: true,
             parseImgDimensions: true,
             simpleLineBreaks: true,
+            strikethrough: true,
+            disableForced4SpacesIndentedSublists: true,
             extensions: [
                 showdownKatex(
                     {
@@ -702,6 +705,8 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             tables: true,
             underline: true,
             simpleLineBreaks: true,
+            strikethrough: true,
+            disableForced4SpacesIndentedSublists: true,
             extensions: [markdownUnderscoreExt()],
         });
     }
@@ -857,12 +862,12 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    await getSystemMessages();
-    sendSystemMessage(system_message_types.WELCOME);
     await getClientVersion();
     await readSecretState();
-    await getSettings();
     initLocales();
+    await getSystemMessages();
+    sendSystemMessage(system_message_types.WELCOME);
+    await getSettings();
     initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
@@ -1545,6 +1550,13 @@ function getCharacterSource(chId = this_chid) {
 
     if (sourceUrl) {
         return sourceUrl;
+    }
+
+    const risuId = characters[chId]?.data?.extensions?.risuai?.source;
+
+    if (Array.isArray(risuId) && risuId.length && typeof risuId[0] === 'string' && risuId[0].startsWith('risurealm:')) {
+        const realmId = risuId[0].split(':')[1];
+        return `https://realm.risuai.net/character/${realmId}`;
     }
 
     return '';
@@ -2543,6 +2555,9 @@ function cleanGroupMessage(getMessage) {
 }
 
 function addPersonaDescriptionExtensionPrompt() {
+    const INJECT_TAG = 'PERSONA_DESCRIPTION';
+    setExtensionPrompt(INJECT_TAG, '', extension_prompt_types.IN_PROMPT, 0);
+
     if (!power_user.persona_description) {
         return;
     }
@@ -2556,6 +2571,10 @@ function addPersonaDescriptionExtensionPrompt() {
             : `${originalAN}\n${power_user.persona_description}`;
 
         setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
+    }
+
+    if (power_user.persona_description_position === persona_description_positions.AT_DEPTH) {
+        setExtensionPrompt(INJECT_TAG, power_user.persona_description, extension_prompt_types.IN_CHAT, power_user.persona_description_depth, true, power_user.persona_description_role);
     }
 }
 
@@ -2889,6 +2908,9 @@ class StreamingProcessor {
         this.onErrorStreaming();
     }
 
+    /**
+     * @returns {Generator<{ text: string, swipes: string[], logprobs: import('./scripts/logprobs.js').TokenLogprobs }, void, void>}
+     */
     *nullStreamingGeneration() {
         throw new Error('Generation function for streaming is not hooked up');
     }
@@ -2916,7 +2938,7 @@ class StreamingProcessor {
                 }
 
                 this.result = text;
-                this.swipes = swipes;
+                this.swipes = Array.from(swipes ?? []);
                 if (logprobs) {
                     this.messageLogprobs.push(...(Array.isArray(logprobs) ? logprobs : [logprobs]));
                 }
@@ -3378,6 +3400,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Extension added strings
     // Set non-WI AN
     setFloatingPrompt();
+    // Add persona description to prompt
+    addPersonaDescriptionExtensionPrompt();
 
     // Add WI to prompt (and also inject WI to AN value via hijack)
     // Make quiet prompt available for WIAN
@@ -3495,8 +3519,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         userAlignmentMessage = formatMessageHistoryItem(alignmentMessage, isInstruct, false);
     }
 
-    // Add persona description to prompt
-    addPersonaDescriptionExtensionPrompt();
     // Call combined AN into Generate
     const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
     const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
@@ -4132,6 +4154,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         let messageChunk = '';
 
         if (data.error) {
+            unblockGeneration(type);
             generatedPromptCache = '';
 
             if (data?.response) {
@@ -5766,8 +5789,10 @@ async function getChatResult() {
     name2 = characters[this_chid].name;
     if (chat.length === 0) {
         const message = getFirstMessage();
-        chat.push(message);
-        await saveChatConditional();
+        if (message.mes) {
+            chat.push(message);
+            await saveChatConditional();
+        }
     }
     await loadItemizedPrompts(getCurrentChatId());
     await printMessages();
@@ -5783,7 +5808,7 @@ async function getChatResult() {
 }
 
 function getFirstMessage() {
-    const firstMes = characters[this_chid].first_mes || default_ch_mes;
+    const firstMes = characters[this_chid].first_mes || '';
     const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
 
     const message = {
@@ -5797,10 +5822,17 @@ function getFirstMessage() {
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
         const swipes = [message.mes, ...(alternateGreetings.map(greeting => getRegexedString(greeting, regex_placement.AI_OUTPUT)))];
+
+        if (!message.mes) {
+            swipes.shift();
+            message.mes = swipes[0];
+        }
+
         message['swipe_id'] = 0;
         message['swipes'] = swipes;
         message['swipe_info'] = [];
     }
+
     return message;
 }
 
@@ -5934,7 +5966,7 @@ export function changeMainAPI() {
         getStatusHorde();
         getHordeModels(true);
     }
-    validateDisabledSamplers()
+    validateDisabledSamplers();
     setupChatCompletionPromptManager(oai_settings);
     forceCharacterEditorTokenize();
 }
@@ -6165,7 +6197,7 @@ export async function getSettings() {
             firstRun = false;
         }
     }
-    await validateDisabledSamplers()
+    await validateDisabledSamplers();
     settingsReady = true;
     eventSource.emit(event_types.SETTINGS_LOADED);
 }
@@ -6362,9 +6394,9 @@ async function messageEditDone(div) {
     appendMediaToMessage(mes, div.closest('.mes'));
     addCopyToCodeBlocks(div.closest('.mes'));
 
+    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
     this_edit_mes_id = undefined;
     await saveChatConditional();
-    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
 }
 
 /**
@@ -6434,7 +6466,8 @@ export async function getChatsFromFiles(data, isGroupChat) {
  * @param {null|number} [characterId=null] - When set, the function will use this character id instead of this_chid.
  *
  * @returns {Promise<Array>} - An array containing metadata of all past chats of the character, sorted
- * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
+ * in descending order by file name. Returns an empty array if the fetch request is unsuccessful or the
+ * response is an object with an `error` property set to `true`.
  */
 export async function getPastCharacterChats(characterId = null) {
     characterId = characterId ?? this_chid;
@@ -6450,10 +6483,13 @@ export async function getPastCharacterChats(characterId = null) {
         return [];
     }
 
-    let data = await response.json();
-    data = Object.values(data);
-    data = data.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
-    return data;
+    const data = await response.json();
+    if (typeof data === 'object' && data.error === true) {
+        return [];
+    }
+
+    const chats = Object.values(data);
+    return chats.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
 }
 
 /**
@@ -7381,8 +7417,8 @@ function openAlternateGreetings() {
     template.find('.add_alternate_greeting').on('click', function () {
         const array = getArray();
         const index = array.length;
-        array.push(default_ch_mes);
-        addAlternateGreeting(template, default_ch_mes, index, getArray);
+        array.push('');
+        addAlternateGreeting(template, '', index, getArray);
         updateAlternateGreetingsHintVisibility(template);
     });
 
@@ -7553,15 +7589,20 @@ async function createOrEditCharacter(e) {
                 eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: this_chid, character: characters[this_chid] } });
 
                 // Recreate the chat if it hasn't been used at least once (i.e. with continue).
-                if (chat.length === 1 && !selected_group && !chat_metadata['tainted']) {
-                    const firstMessage = getFirstMessage();
-                    chat[0] = firstMessage;
+                const message = getFirstMessage();
+                const shouldRegenerateMessage =
+                    message.mes &&
+                    !selected_group &&
+                    !chat_metadata['tainted'] &&
+                    (chat.length === 0 || (chat.length === 1 && !chat[0].is_user && !chat[0].is_system));
 
-                    const chat_id = (chat.length - 1);
-                    await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
+                if (shouldRegenerateMessage) {
+                    chat.splice(0, chat.length, message);
+                    const messageId = (chat.length - 1);
+                    await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
                     await clearChat();
                     await printMessages();
-                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId);
                     await saveChatConditional();
                 }
             },
@@ -8419,11 +8460,28 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
         return;
     }
 
-    const avatar = characters[this_chid].avatar;
-    const name = characters[this_chid].name;
-    const pastChats = await getPastCharacterChats();
+    await deleteCharacter(characters[this_chid].avatar, { deleteChats: delete_chats });
+}
 
-    const msg = { avatar_url: avatar, delete_chats: delete_chats };
+/**
+ * Deletes a character completely, including associated chats if specified
+ *
+ * @param {string} characterKey - The key (avatar) of the character to be deleted
+ * @param {Object} [options] - Optional parameters for the deletion
+ * @param {boolean} [options.deleteChats=true] - Whether to delete associated chats or not
+ * @return {Promise<void>} - A promise that resolves when the character is successfully deleted
+ */
+export async function deleteCharacter(characterKey, { deleteChats = true } = {}) {
+    const character = characters.find(x => x.avatar == characterKey);
+    if (!character) {
+        toastr.warning(`Character ${characterKey} not found. Cannot be deleted.`);
+        return;
+    }
+
+    const chid = characters.indexOf(character);
+    const pastChats = await getPastCharacterChats(chid);
+
+    const msg = { avatar_url: character.avatar, delete_chats: deleteChats };
 
     const response = await fetch('/api/characters/delete', {
         method: 'POST',
@@ -8432,17 +8490,17 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
         cache: 'no-cache',
     });
 
-    if (response.ok) {
-        await deleteCharacter(name, avatar);
+    if (!response.ok) {
+        throw new Error(`Failed to delete character: ${response.status} ${response.statusText}`);
+    }
 
-        if (delete_chats) {
-            for (const chat of pastChats) {
-                const name = chat.file_name.replace('.jsonl', '');
-                await eventSource.emit(event_types.CHAT_DELETED, name);
-            }
+    await removeCharacterFromUI(character.name, character.avatar);
+
+    if (deleteChats) {
+        for (const chat of pastChats) {
+            const name = chat.file_name.replace('.jsonl', '');
+            await eventSource.emit(event_types.CHAT_DELETED, name);
         }
-    } else {
-        console.error('Failed to delete character: ', response.status, response.statusText);
     }
 }
 
@@ -8459,7 +8517,7 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
  * @param {string} avatar - The avatar URL of the character to be deleted.
  * @param {boolean} reloadCharacters - Whether the character list should be refreshed after deletion.
  */
-export async function deleteCharacter(name, avatar, reloadCharacters = true) {
+async function removeCharacterFromUI(name, avatar, reloadCharacters = true) {
     await clearChat();
     $('#character_cross').click();
     this_chid = undefined;
@@ -9937,6 +9995,7 @@ jQuery(async function () {
             a.setAttribute('download', filename);
             document.body.appendChild(a);
             a.click();
+            URL.revokeObjectURL(a.href);
             document.body.removeChild(a);
         }
 
@@ -10236,18 +10295,7 @@ jQuery(async function () {
 
             if (power_user.zoomed_avatar_magnification) {
                 $('.zoomed_avatar_container').izoomify();
-            } else {
-                $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
             }
-
-            $('.zoomed_avatar').on('mouseup', (e) => {
-                if (e.target.closest('.drag-grabber') || e.button !== 0) {
-                    return;
-                }
-                $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
-                    $(`.zoomed_avatar[forChar="${charname}"]`).remove();
-                });
-            });
 
             $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
                 if (e.target.closest('.dragClose')) {
@@ -10446,17 +10494,8 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.external_import_button, #external_import_button', async () => {
-        const html = `<h3>Enter the URL of the content to import</h3>
-        Supported sources:<br>
-        <ul class="justifyLeft">
-            <li>Chub Character (Direct Link or ID)<br>Example: <tt>Anonymous/example-character</tt></li>
-            <li>Chub Lorebook (Direct Link or ID)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
-            <li>JanitorAI Character (Direct Link or UUID)<br>Example: <tt>ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
-            <li>Pygmalion.chat Character (Direct Link or UUID)<br>Example: <tt>a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
-            <li>AICharacterCard.com Character (Direct Link or ID)<br>Example: <tt>AICC/aicharcards/the-game-master</tt></li>
-            <li>Direct PNG Link (refer to <code>config.yaml</code> for allowed hosts)<br>Example: <tt>https://files.catbox.moe/notarealfile.png</tt></li>
-        <ul>`;
-        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: 'Import', rows: 4 });
+        const html = await renderTemplateAsync('importCharacters');
+        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: $('#shadow_popup_template').attr('popup_text_import'), rows: 4 });
 
         if (!input) {
             console.debug('Custom content import cancelled');

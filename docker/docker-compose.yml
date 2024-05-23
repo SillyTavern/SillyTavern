@@ -10,4 +10,5 @@ services:
     volumes:
       - "./config:/home/node/app/config"
       - "./data:/home/node/app/data"
+      - "./plugins:/home/node/app/plugins"
     restart: unless-stopped
