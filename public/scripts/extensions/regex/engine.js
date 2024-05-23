@@ -42,7 +42,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
         return finalString;
     }
 
-    let regex_arr = extension_settings.regex.filter((e) => e.scopedCharList.length == 0 || e.scopedCharList.includes(characterOverride));
+    let regex_arr = extension_settings.regex.filter((e) => !e.scopedCharList?.length || e.scopedCharList.includes(characterOverride));
     regex_arr.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown
