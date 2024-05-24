@@ -7828,6 +7828,7 @@ function swipe_left() {      // when we swipe left..but no generation.
  */
 async function branchChat(mesId) {
     const fileName = await createBranch(mesId);
+    await saveItemizedPrompts(fileName);
 
     if (selected_group) {
         await openGroupChat(selected_group, fileName);
