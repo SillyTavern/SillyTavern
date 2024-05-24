@@ -1432,7 +1432,7 @@ class PromptManager {
 
         const { prefix } = this.configuration;
 
-        let listItem = await renderTemplateAsync('promptManagerListHeader', { prefix });
+        let listItemHtml = await renderTemplateAsync('promptManagerListHeader', { prefix });
 
         this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
             if (!prompt) return;
@@ -1498,7 +1498,7 @@ class PromptManager {
             const isInjectionPrompt = !prompt.marker && prompt.injection_position === INJECTION_POSITION.ABSOLUTE;
             const isOverriddenPrompt = Array.isArray(this.overriddenPrompts) && this.overriddenPrompts.includes(prompt.identifier);
             const importantClass = isImportantPrompt ? `${prefix}prompt_manager_important` : '';
-            listItem += `
+            listItemHtml += `
                 <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass} ${importantClass}" data-pm-identifier="${prompt.identifier}">
                     <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${encodedName}">
                         ${prompt.marker ? '<span class="fa-fw fa-solid fa-thumb-tack" title="Marker"></span>' : ''}
@@ -1523,7 +1523,7 @@ class PromptManager {
             `;
         });
 
-        promptManagerList.insertAdjacentHTML('beforeend', listItem);
+        promptManagerList.insertAdjacentHTML('beforeend', listItemHtml);
 
         // Now that the new elements are in the DOM, you can add the event listeners.
         Array.from(promptManagerList.getElementsByClassName('prompt-manager-detach-action')).forEach(el => {
