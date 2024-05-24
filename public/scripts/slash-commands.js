@@ -1212,9 +1212,16 @@ function injectCallback(args, value) {
     saveMetadataDebounced();
 
     if (ephemeral) {
+        let deleted = false;
         const unsetInject = () => {
+            if (deleted) {
+                return;
+            }
             console.log('Removing ephemeral script injection', id);
             delete chat_metadata.script_injects[id];
+            setExtensionPrompt(prefixedId, '', position, depth, scan, role);
+            saveMetadataDebounced();
+            deleted = true;
         };
         eventSource.once(event_types.GENERATION_ENDED, unsetInject);
         eventSource.once(event_types.GENERATION_STOPPED, unsetInject);
