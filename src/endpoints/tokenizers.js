@@ -557,7 +557,7 @@ router.post('/google/count', jsonParser, async function (req, res) {
         body: JSON.stringify({ contents: convertGooglePrompt(req.body, String(req.query.model)).contents }),
     };
     try {
-        const apiKey = readSecret(req.user.directories, SECRET_KEYS.MAKERSUITE);
+        const apiKey = req.body.reverse_proxy ? req.body.proxy_password : readSecret(req.user.directories, SECRET_KEYS.MAKERSUITE);
         const apiUrl = new URL(req.body.reverse_proxy || API_MAKERSUITE);
         const response = await fetch(`${apiUrl.origin}/v1beta/models/${req.query.model}:countTokens?key=${apiKey}`, options);
         const data = await response.json();

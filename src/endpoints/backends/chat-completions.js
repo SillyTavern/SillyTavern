@@ -234,9 +234,9 @@ async function sendScaleRequest(request, response) {
  */
 async function sendMakerSuiteRequest(request, response) {
     const apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
-    const apiKey = readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
 
-    if (!apiKey) {
+    if (!request.body.reverse_proxy && !apiKey) {
         console.log('MakerSuite API key is missing.');
         return response.status(400).send({ error: true });
     }
