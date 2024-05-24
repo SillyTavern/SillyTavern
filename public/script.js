@@ -1791,7 +1791,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     if (Number(messageId) === 0 && !isSystem && !isUser) {
-        mes = substituteParams(mes);
+        mes = substituteParams(mes, undefined, ch_name);
     }
 
     mesForShowdownParse = mes;
