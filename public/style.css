@@ -3092,6 +3092,7 @@ grammarly-extension {
 
 #dialogue_popup_controls,
 .dialogue_popup_controls {
+    margin-top: 10px;
     display: flex;
     align-self: center;
     gap: 20px;
@@ -3100,7 +3101,8 @@ grammarly-extension {
 #bulk_tag_popup_reset,
 #bulk_tag_popup_remove_mutual,
 #dialogue_popup_ok,
-.dialogue_popup_ok {
+.dialogue_popup_ok,
+.menu_button.dialogue_popup_ok {
     background-color: var(--crimson70a);
     cursor: pointer;
 }
@@ -3108,7 +3110,8 @@ grammarly-extension {
 #bulk_tag_popup_reset:hover,
 #bulk_tag_popup_remove_mutual:hover,
 #dialogue_popup_ok:hover,
-.dialogue_popup_ok:hover {
+.dialogue_popup_ok:hover,
+.menu_button.dialogue_popup_ok:hover {
     background-color: var(--crimson-hover);
 }
 
@@ -3118,7 +3121,7 @@ grammarly-extension {
 
 #dialogue_popup_input,
 .dialogue_popup_input {
-    margin: 10px 0;
+    margin: 10px 0 0 0;
     width: 100%;
 }
 
@@ -3164,6 +3167,16 @@ grammarly-extension {
     align-items: center;
     justify-content: center;
     text-align: center;
+}
+
+.menu_button.menu_button_default {
+    border: 1px ridge var(--white30a);
+    box-shadow: 0 0 5px var(--SmartThemeBorderColor);
+}
+
+.menu_button.menu_button_custom {
+    /** Custom buttons should not scale to smallest size, otherwise they will always break to multiline */
+    width: unset;
 }
 
 .avatar_div .menu_button,
