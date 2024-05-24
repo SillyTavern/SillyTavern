@@ -1432,28 +1432,26 @@ class PromptManager {
 
         const { prefix } = this.configuration;
 
-        const that = this;
-
         let listItem = await renderTemplateAsync('promptManagerListHeader', { prefix });
 
-        this.getPromptsForCharacter(this.activeCharacter).forEach(async function(prompt) {
+        this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
             if (!prompt) return;
 
-            const listEntry = that.getPromptOrderEntry(that.activeCharacter, prompt.identifier);
+            const listEntry = this.getPromptOrderEntry(this.activeCharacter, prompt.identifier);
             const enabledClass = listEntry.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
             const draggableClass = `${prefix}prompt_manager_prompt_draggable`;
             const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
-            const tokens = that.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
+            const tokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
 
             // Warn the user if the chat history goes below certain token thresholds.
             let warningClass = '';
             let warningTitle = '';
 
-            const tokenBudget = that.serviceSettings.openai_max_context - that.serviceSettings.openai_max_tokens;
-            if (that.tokenUsage > tokenBudget * 0.8 &&
+            const tokenBudget = this.serviceSettings.openai_max_context - this.serviceSettings.openai_max_tokens;
+            if (this.tokenUsage > tokenBudget * 0.8 &&
                 'chatHistory' === prompt.identifier) {
-                const warningThreshold = that.configuration.warningTokenThreshold;
-                const dangerThreshold = that.configuration.dangerTokenThreshold;
+                const warningThreshold = this.configuration.warningTokenThreshold;
+                const dangerThreshold = this.configuration.dangerTokenThreshold;
 
                 if (tokens <= dangerThreshold) {
                     warningClass = 'fa-solid tooltip fa-triangle-exclamation text_danger';
@@ -1467,7 +1465,7 @@ class PromptManager {
             const calculatedTokens = tokens ? tokens : '-';
 
             let detachSpanHtml = '';
-            if (that.isPromptDeletionAllowed(prompt)) {
+            if (this.isPromptDeletionAllowed(prompt)) {
                 detachSpanHtml = `
                     <span title="Remove" class="prompt-manager-detach-action caution fa-solid fa-chain-broken"></span>
                 `;
@@ -1476,7 +1474,7 @@ class PromptManager {
             }
 
             let editSpanHtml = '';
-            if (that.isPromptEditAllowed(prompt)) {
+            if (this.isPromptEditAllowed(prompt)) {
                 editSpanHtml = `
                     <span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil"></span>
                 `;
@@ -1485,7 +1483,7 @@ class PromptManager {
             }
 
             let toggleSpanHtml = '';
-            if (that.isPromptToggleAllowed(prompt)) {
+            if (this.isPromptToggleAllowed(prompt)) {
                 toggleSpanHtml = `
                     <span class="prompt-manager-toggle-action ${listEntry.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
                 `;
@@ -1498,7 +1496,7 @@ class PromptManager {
             const isImportantPrompt = !prompt.marker && prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE  && prompt.forbid_overrides;
             const isUserPrompt = !prompt.marker && !prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
             const isInjectionPrompt = !prompt.marker && prompt.injection_position === INJECTION_POSITION.ABSOLUTE;
-            const isOverriddenPrompt = Array.isArray(that.overriddenPrompts) && that.overriddenPrompts.includes(prompt.identifier);
+            const isOverriddenPrompt = Array.isArray(this.overriddenPrompts) && this.overriddenPrompts.includes(prompt.identifier);
             const importantClass = isImportantPrompt ? `${prefix}prompt_manager_important` : '';
             listItem += `
                 <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass} ${importantClass}" data-pm-identifier="${prompt.identifier}">
@@ -1508,7 +1506,7 @@ class PromptManager {
                         ${isImportantPrompt ? '<span class="fa-fw fa-solid fa-star" title="Important Prompt"></span>' : ''}
                         ${isUserPrompt ? '<span class="fa-fw fa-solid fa-user" title="User Prompt"></span>' : ''}
                         ${isInjectionPrompt ? '<span class="fa-fw fa-solid fa-syringe" title="In-Chat Injection"></span>' : ''}
-                        ${that.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${encodedName}</a>` : encodedName}
+                        ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${encodedName}</a>` : encodedName}
                         ${isInjectionPrompt ? `<small class="prompt-manager-injection-depth">@ ${prompt.injection_depth}</small>` : ''}
                         ${isOverriddenPrompt ? '<small class="fa-solid fa-address-card prompt-manager-overridden" title="Pulled from a character card"></small>' : ''}
                     </span>
