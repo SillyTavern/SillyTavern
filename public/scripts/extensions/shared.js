@@ -12,7 +12,13 @@ import { createThumbnail, isValidUrl } from '../utils.js';
  * @returns {Promise<string>} Generated caption
  */
 export async function getMultimodalCaption(base64Img, prompt) {
-    throwIfInvalidModel();
+    const useReverseProxy =
+        (['openai', 'anthropic', 'google'].includes(extension_settings.caption.multimodal_api))
+        && extension_settings.caption.allow_reverse_proxy
+        && oai_settings.reverse_proxy
+        && isValidUrl(oai_settings.reverse_proxy);
+
+    throwIfInvalidModel(useReverseProxy);
 
     const noPrefix = ['google', 'ollama', 'llamacpp'].includes(extension_settings.caption.multimodal_api);
 
@@ -38,12 +44,6 @@ export async function getMultimodalCaption(base64Img, prompt) {
             base64Img = base64Img.split(',')[1];
         }
     }
-
-    const useReverseProxy =
-        (['openai', 'anthropic', 'google'].includes(extension_settings.caption.multimodal_api))
-        && extension_settings.caption.allow_reverse_proxy
-        && oai_settings.reverse_proxy
-        && isValidUrl(oai_settings.reverse_proxy);
 
     const proxyUrl = useReverseProxy ? oai_settings.reverse_proxy : '';
     const proxyPassword = useReverseProxy ? oai_settings.proxy_password : '';
@@ -114,8 +114,8 @@ export async function getMultimodalCaption(base64Img, prompt) {
     return String(caption).trim();
 }
 
-function throwIfInvalidModel() {
-    if (extension_settings.caption.multimodal_api === 'openai' && !secret_state[SECRET_KEYS.OPENAI]) {
+function throwIfInvalidModel(useReverseProxy) {
+    if (extension_settings.caption.multimodal_api === 'openai' && !secret_state[SECRET_KEYS.OPENAI] && !useReverseProxy) {
         throw new Error('OpenAI API key is not set.');
     }
 
@@ -123,7 +123,11 @@ function throwIfInvalidModel() {
         throw new Error('OpenRouter API key is not set.');
     }
 
-    if (extension_settings.caption.multimodal_api === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE]) {
+    if (extension_settings.caption.multimodal_api === 'anthropic' && !secret_state[SECRET_KEYS.CLAUDE] && !useReverseProxy) {
+        throw new Error('Anthropic (Claude) API key is not set.');
+    }
+
+    if (extension_settings.caption.multimodal_api === 'google' && !secret_state[SECRET_KEYS.MAKERSUITE] && !useReverseProxy) {
         throw new Error('MakerSuite API key is not set.');
     }
 
