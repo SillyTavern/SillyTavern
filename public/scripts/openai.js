@@ -3857,6 +3857,9 @@ async function onModelChange() {
         else if (['command-r', 'command-r-plus'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_128k);
         }
+        else if(['c4ai-aya-23'].includes(oai_settings.cohere_model)) {
+            $('#openai_max_context').attr('max', max_8k);
+        }
         else {
             $('#openai_max_context').attr('max', max_4k);
         }
