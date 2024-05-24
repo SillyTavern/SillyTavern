@@ -4038,7 +4038,7 @@ async function onConnectButtonClick(e) {
             await writeSecret(SECRET_KEYS.MAKERSUITE, api_key_makersuite);
         }
 
-        if (!secret_state[SECRET_KEYS.MAKERSUITE]) {
+        if (!secret_state[SECRET_KEYS.MAKERSUITE] && !oai_settings.reverse_proxy) {
             console.log('No secret key saved for MakerSuite');
             return;
         }
