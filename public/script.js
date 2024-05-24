@@ -154,6 +154,7 @@ import {
     isValidUrl,
     ensureImageFormatSupported,
     flashHighlight,
+    checkOverwriteExistingData,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -684,6 +685,7 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             parseImgDimensions: true,
             simpleLineBreaks: true,
             strikethrough: true,
+            disableForced4SpacesIndentedSublists: true,
             extensions: [
                 showdownKatex(
                     {
@@ -704,6 +706,7 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             underline: true,
             simpleLineBreaks: true,
             strikethrough: true,
+            disableForced4SpacesIndentedSublists: true,
             extensions: [markdownUnderscoreExt()],
         });
     }
@@ -6463,7 +6466,8 @@ export async function getChatsFromFiles(data, isGroupChat) {
  * @param {null|number} [characterId=null] - When set, the function will use this character id instead of this_chid.
  *
  * @returns {Promise<Array>} - An array containing metadata of all past chats of the character, sorted
- * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
+ * in descending order by file name. Returns an empty array if the fetch request is unsuccessful or the
+ * response is an object with an `error` property set to `true`.
  */
 export async function getPastCharacterChats(characterId = null) {
     characterId = characterId ?? this_chid;
@@ -6479,10 +6483,13 @@ export async function getPastCharacterChats(characterId = null) {
         return [];
     }
 
-    let data = await response.json();
-    data = Object.values(data);
-    data = data.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
-    return data;
+    const data = await response.json();
+    if (typeof data === 'object' && data.error === true) {
+        return [];
+    }
+
+    const chats = Object.values(data);
+    return chats.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
 }
 
 /**
@@ -8013,12 +8020,14 @@ const swipe_right = () => {
 
 const CONNECT_API_MAP = {
     'kobold': {
+        selected: 'kobold',
         button: '#api_button',
     },
     'horde': {
         selected: 'koboldhorde',
     },
     'novel': {
+        selected: 'novel',
         button: '#api_button_novel',
     },
     'ooba': {
@@ -8056,6 +8065,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_textgenerationwebui',
         type: textgen_types.APHRODITE,
     },
+    'koboldcpp': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.KOBOLDCPP,
+    },
     'kcpp': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -8065,6 +8079,11 @@ const CONNECT_API_MAP = {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
         type: textgen_types.TOGETHERAI,
+    },
+    'openai': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.OPENAI,
     },
     'oai': {
         selected: 'openai',
@@ -8193,7 +8212,29 @@ async function disableInstructCallback() {
  * @param {string} text API name
  */
 async function connectAPISlash(_, text) {
-    if (!text) return;
+    if (!text.trim()) {
+        for (const [key, config] of Object.entries(CONNECT_API_MAP)) {
+            if (config.selected !== main_api) continue;
+
+            if (config.source) {
+                if (oai_settings.chat_completion_source === config.source) {
+                    return key;
+                } else {
+                    continue;
+                }
+            }
+
+            if (config.type) {
+                if (textgen_settings.type === config.type) {
+                    return key;
+                } else {
+                    continue;
+                }
+            }
+
+            return key;
+        }
+    }
 
     const apiConfig = CONNECT_API_MAP[text.toLowerCase()];
     if (!apiConfig) {
@@ -8453,11 +8494,28 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
         return;
     }
 
-    const avatar = characters[this_chid].avatar;
-    const name = characters[this_chid].name;
-    const pastChats = await getPastCharacterChats();
+    await deleteCharacter(characters[this_chid].avatar, { deleteChats: delete_chats });
+}
 
-    const msg = { avatar_url: avatar, delete_chats: delete_chats };
+/**
+ * Deletes a character completely, including associated chats if specified
+ *
+ * @param {string} characterKey - The key (avatar) of the character to be deleted
+ * @param {Object} [options] - Optional parameters for the deletion
+ * @param {boolean} [options.deleteChats=true] - Whether to delete associated chats or not
+ * @return {Promise<void>} - A promise that resolves when the character is successfully deleted
+ */
+export async function deleteCharacter(characterKey, { deleteChats = true } = {}) {
+    const character = characters.find(x => x.avatar == characterKey);
+    if (!character) {
+        toastr.warning(`Character ${characterKey} not found. Cannot be deleted.`);
+        return;
+    }
+
+    const chid = characters.indexOf(character);
+    const pastChats = await getPastCharacterChats(chid);
+
+    const msg = { avatar_url: character.avatar, delete_chats: deleteChats };
 
     const response = await fetch('/api/characters/delete', {
         method: 'POST',
@@ -8466,17 +8524,17 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
         cache: 'no-cache',
     });
 
-    if (response.ok) {
-        await deleteCharacter(name, avatar);
+    if (!response.ok) {
+        throw new Error(`Failed to delete character: ${response.status} ${response.statusText}`);
+    }
 
-        if (delete_chats) {
-            for (const chat of pastChats) {
-                const name = chat.file_name.replace('.jsonl', '');
-                await eventSource.emit(event_types.CHAT_DELETED, name);
-            }
+    await removeCharacterFromUI(character.name, character.avatar);
+
+    if (deleteChats) {
+        for (const chat of pastChats) {
+            const name = chat.file_name.replace('.jsonl', '');
+            await eventSource.emit(event_types.CHAT_DELETED, name);
         }
-    } else {
-        console.error('Failed to delete character: ', response.status, response.statusText);
     }
 }
 
@@ -8493,7 +8551,7 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
  * @param {string} avatar - The avatar URL of the character to be deleted.
  * @param {boolean} reloadCharacters - Whether the character list should be refreshed after deletion.
  */
-export async function deleteCharacter(name, avatar, reloadCharacters = true) {
+async function removeCharacterFromUI(name, avatar, reloadCharacters = true) {
     await clearChat();
     $('#character_cross').click();
     this_chid = undefined;
@@ -8622,7 +8680,7 @@ jQuery(async function () {
         ],
         helpString: `
             <div>
-                Connect to an API.
+                Connect to an API. If no argument is provided, it will return the currently connected API.
             </div>
             <div>
                 <strong>Available APIs:</strong>
@@ -9971,6 +10029,7 @@ jQuery(async function () {
             a.setAttribute('download', filename);
             document.body.appendChild(a);
             a.click();
+            URL.revokeObjectURL(a.href);
             document.body.removeChild(a);
         }
 

@@ -168,14 +168,15 @@ async function deleteVectorItems(directories, collectionId, source, hashes) {
  * @param {Object} sourceSettings - Settings for the source, if it needs any
  * @param {string} searchText - The text to search for
  * @param {number} topK - The number of results to return
+ * @param {number} threshold - The threshold for the search
  * @returns {Promise<{hashes: number[], metadata: object[]}>} - The metadata of the items that match the search text
  */
-async function queryCollection(directories, collectionId, source, sourceSettings, searchText, topK) {
+async function queryCollection(directories, collectionId, source, sourceSettings, searchText, topK, threshold) {
     const store = await getIndex(directories, collectionId, source);
     const vector = await getVector(source, sourceSettings, searchText, true, directories);
 
     const result = await store.queryItems(vector, topK);
-    const metadata = result.map(x => x.item.metadata);
+    const metadata = result.filter(x => x.score >= threshold).map(x => x.item.metadata);
     const hashes = result.map(x => Number(x.item.metadata.hash));
     return { metadata, hashes };
 }
@@ -188,9 +189,11 @@ async function queryCollection(directories, collectionId, source, sourceSettings
  * @param {Object} sourceSettings - Settings for the source, if it needs any
  * @param {string} searchText - The text to search for
  * @param {number} topK - The number of results to return
+ * @param {number} threshold - The threshold for the search
+ *
  * @returns {Promise<Record<string, { hashes: number[], metadata: object[] }>>} - The top K results from each collection
  */
-async function multiQueryCollection(directories, collectionIds, source, sourceSettings, searchText, topK) {
+async function multiQueryCollection(directories, collectionIds, source, sourceSettings, searchText, topK, threshold) {
     const vector = await getVector(source, sourceSettings, searchText, true, directories);
     const results = [];
 
@@ -200,9 +203,10 @@ async function multiQueryCollection(directories, collectionIds, source, sourceSe
         results.push(...result.map(result => ({ collectionId, result })));
     }
 
-    // Sort results by descending similarity
+    // Sort results by descending similarity, apply threshold, and take top K
     const sortedResults = results
         .sort((a, b) => b.result.score - a.result.score)
+        .filter(x => x.result.score >= threshold)
         .slice(0, topK);
 
     /**
@@ -274,10 +278,11 @@ router.post('/query', jsonParser, async (req, res) => {
         const collectionId = String(req.body.collectionId);
         const searchText = String(req.body.searchText);
         const topK = Number(req.body.topK) || 10;
+        const threshold = Number(req.body.threshold) || 0.0;
         const source = String(req.body.source) || 'transformers';
         const sourceSettings = getSourceSettings(source, req);
 
-        const results = await queryCollection(req.user.directories, collectionId, source, sourceSettings, searchText, topK);
+        const results = await queryCollection(req.user.directories, collectionId, source, sourceSettings, searchText, topK, threshold);
         return res.json(results);
     } catch (error) {
         console.error(error);
@@ -294,10 +299,11 @@ router.post('/query-multi', jsonParser, async (req, res) => {
         const collectionIds = req.body.collectionIds.map(x => String(x));
         const searchText = String(req.body.searchText);
         const topK = Number(req.body.topK) || 10;
+        const threshold = Number(req.body.threshold) || 0.0;
         const source = String(req.body.source) || 'transformers';
         const sourceSettings = getSourceSettings(source, req);
 
-        const results = await multiQueryCollection(req.user.directories, collectionIds, source, sourceSettings, searchText, topK);
+        const results = await multiQueryCollection(req.user.directories, collectionIds, source, sourceSettings, searchText, topK, threshold);
         return res.json(results);
     } catch (error) {
         console.error(error);

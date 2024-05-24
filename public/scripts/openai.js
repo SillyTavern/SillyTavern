@@ -1743,8 +1743,8 @@ async function sendOpenAIRequest(type, messages, signal) {
         delete generate_data.stop;
     }
 
-    // Proxy is only supported for Claude, OpenAI and Mistral
-    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI].includes(oai_settings.chat_completion_source)) {
+    // Proxy is only supported for Claude, OpenAI, Mistral, and Google MakerSuite
+    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE].includes(oai_settings.chat_completion_source)) {
         validateReverseProxy();
         generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
         generate_data['proxy_password'] = oai_settings.proxy_password;
@@ -3857,6 +3857,9 @@ async function onModelChange() {
         else if (['command-r', 'command-r-plus'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_128k);
         }
+        else if(['c4ai-aya-23'].includes(oai_settings.cohere_model)) {
+            $('#openai_max_context').attr('max', max_8k);
+        }
         else {
             $('#openai_max_context').attr('max', max_4k);
         }
@@ -4035,7 +4038,7 @@ async function onConnectButtonClick(e) {
             await writeSecret(SECRET_KEYS.MAKERSUITE, api_key_makersuite);
         }
 
-        if (!secret_state[SECRET_KEYS.MAKERSUITE]) {
+        if (!secret_state[SECRET_KEYS.MAKERSUITE] && !oai_settings.reverse_proxy) {
             console.log('No secret key saved for MakerSuite');
             return;
         }
@@ -4087,7 +4090,7 @@ async function onConnectButtonClick(e) {
             await writeSecret(SECRET_KEYS.MISTRALAI, api_key_mistralai);
         }
 
-        if (!secret_state[SECRET_KEYS.MISTRALAI]) {
+        if (!secret_state[SECRET_KEYS.MISTRALAI] && !oai_settings.reverse_proxy) {
             console.log('No secret key saved for MistralAI');
             return;
         }
