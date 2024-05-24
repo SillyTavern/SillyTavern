@@ -4090,7 +4090,7 @@ async function onConnectButtonClick(e) {
             await writeSecret(SECRET_KEYS.MISTRALAI, api_key_mistralai);
         }
 
-        if (!secret_state[SECRET_KEYS.MISTRALAI]) {
+        if (!secret_state[SECRET_KEYS.MISTRALAI] && !oai_settings.reverse_proxy) {
             console.log('No secret key saved for MistralAI');
             return;
         }
