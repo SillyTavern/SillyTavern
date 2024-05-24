@@ -1350,7 +1350,7 @@ class PromptManager {
 
         const errorDiv = `
                 <div class="${this.configuration.prefix}prompt_manager_error">
-                    <span class="fa-solid tooltip fa-triangle-exclamation text_danger"></span> ${this.error}
+                    <span class="fa-solid tooltip fa-triangle-exclamation text_danger"></span> ${DOMPurify.sanitize(this.error)}
                 </div>
         `;
 
