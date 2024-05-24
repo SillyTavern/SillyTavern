@@ -25,8 +25,9 @@ let currentPopupZIndex = POPUP_START_Z_INDEX;
  * @property {string|boolean?} [okButton] - Custom text for the OK button, or `true` to use the default (If set, the button will always be displayed, no matter the type of popup)
  * @property {string|boolean?} [cancelButton] - Custom text for the Cancel button, or `true` to use the default (If set, the button will always be displayed, no matter the type of popup)
  * @property {number?} [rows] - The number of rows for the input field
- * @property {boolean?} [wide] - Whether to display the popup in wide mode
- * @property {boolean?} [large] - Whether to display the popup in large mode
+ * @property {boolean?} [wide] - Whether to display the popup in wide mode (wide screen, 1/1 aspect ratio)
+ * @property {boolean?} [wider] - Whether to display the popup in wider mode (just wider, no height scaling)
+ * @property {boolean?} [large] - Whether to display the popup in large mode (90% of screen)
  * @property {boolean?} [allowHorizontalScrolling] - Whether to allow horizontal scrolling in the popup
  * @property {boolean?} [allowVerticalScrolling] - Whether to allow vertical scrolling in the popup
  * @property {POPUP_RESULT|number?} [defaultResult] - The default result of this popup when Enter is pressed. Can be changed from `POPUP_RESULT.AFFIRMATIVE`.
@@ -68,7 +69,7 @@ export class Popup {
      * @param {string} [inputValue=''] - The initial value of the input field
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
-    constructor(text, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, large = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null } = {}) {
+    constructor(text, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null } = {}) {
         this.type = type;
 
         /**@type {HTMLTemplateElement}*/
@@ -85,6 +86,7 @@ export class Popup {
         this.cancel = this.dom.querySelector('.dialogue_popup_cancel');
 
         if (wide) dlg.classList.add('wide_dialogue_popup');
+        if (wider) dlg.classList.add('wider_dialogue_popup');
         if (large) dlg.classList.add('large_dialogue_popup');
         if (allowHorizontalScrolling) dlg.classList.add('horizontal_scrolling_dialogue_popup');
         if (allowVerticalScrolling) dlg.classList.add('vertical_scrolling_dialogue_popup');
@@ -98,7 +100,7 @@ export class Popup {
         this.customButtonElements = this.customButtons?.map((x, index) => {
             /** @type {CustomPopupButton} */
             const button = typeof x === 'string' ? { text: x, result: index + 2 } : x;
-            const buttonElement = document.createElement('button');
+            const buttonElement = document.createElement('div');
 
             buttonElement.classList.add('menu_button', 'menu_button_custom');
             buttonElement.classList.add(...(button.classes ?? []));

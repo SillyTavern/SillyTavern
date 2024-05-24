@@ -3065,6 +3065,10 @@ grammarly-extension {
     min-width: var(--sheldWidth);
 }
 
+.wider_dialogue_popup {
+    min-width: 750px;
+}
+
 .horizontal_scrolling_dialogue_popup {
     overflow-x: unset !important;
 }
