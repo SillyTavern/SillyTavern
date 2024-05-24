@@ -557,8 +557,10 @@ router.post('/google/count', jsonParser, async function (req, res) {
         body: JSON.stringify({ contents: convertGooglePrompt(req.body, String(req.query.model)).contents }),
     };
     try {
-        const apiKey = req.body.reverse_proxy ? req.body.proxy_password : readSecret(req.user.directories, SECRET_KEYS.MAKERSUITE);
-        const apiUrl = new URL(req.body.reverse_proxy || API_MAKERSUITE);
+        const reverseProxy = req.query.reverse_proxy?.toString() || '';
+        const proxyPassword = req.query.proxy_password?.toString() || '';
+        const apiKey = reverseProxy ? proxyPassword : readSecret(req.user.directories, SECRET_KEYS.MAKERSUITE);
+        const apiUrl = new URL(reverseProxy || API_MAKERSUITE);
         const response = await fetch(`${apiUrl.origin}/v1beta/models/${req.query.model}:countTokens?key=${apiKey}`, options);
         const data = await response.json();
         return res.send({ 'token_count': data?.totalTokens || 0 });
