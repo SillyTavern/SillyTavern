@@ -1559,7 +1559,7 @@ class PromptManager {
             data: data,
         };
 
-        const serializedObject = JSON.stringify(promptExport);
+        const serializedObject = JSON.stringify(promptExport, null, 4);
         const blob = new Blob([serializedObject], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const downloadLink = document.createElement('a');
