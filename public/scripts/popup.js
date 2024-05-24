@@ -69,7 +69,7 @@ export class Popup {
         if (allowVerticalScrolling) dlg.classList.add('vertical_scrolling_dialogue_popup');
 
         this.ok.textContent = okButton ?? 'OK';
-        this.cancel.textContent = cancelButton ?? 'Cancel';
+        this.cancel.textContent = cancelButton ?? template.getAttribute('popup_text_cancel');
 
         switch (type) {
             case POPUP_TYPE.TEXT: {
@@ -79,13 +79,13 @@ export class Popup {
             }
             case POPUP_TYPE.CONFIRM: {
                 this.input.style.display = 'none';
-                this.ok.textContent = okButton ?? 'Yes';
-                this.cancel.textContent = cancelButton ?? 'No';
+                this.ok.textContent = okButton ?? template.getAttribute('popup_text_yes');
+                this.cancel.textContent = cancelButton ?? template.getAttribute('popup_text_no');
                 break;
             }
             case POPUP_TYPE.INPUT: {
                 this.input.style.display = 'block';
-                this.ok.textContent = okButton ?? 'Save';
+                this.ok.textContent = okButton ?? template.getAttribute('popup_text_save');
                 break;
             }
             default: {

@@ -128,16 +128,17 @@ export function applyLocale(root = document) {
 
 
 function addLanguagesToDropdown() {
+    const uiLanguageSelects = $('#ui_language_select, #onboarding_ui_language_select');
     for (const langObj of langs) { // Set the value to the language code
         const option = document.createElement('option');
         option.value = langObj['lang']; // Set the value to the language code
         option.innerText = langObj['display']; // Set the display text to the language name
-        $('#ui_language_select').append(option);
+        uiLanguageSelects.append(option);
     }
 
     const selectedLanguage = localStorage.getItem(storageKey);
     if (selectedLanguage) {
-        $('#ui_language_select').val(selectedLanguage);
+        uiLanguageSelects.val(selectedLanguage);
     }
 }
 
@@ -146,7 +147,7 @@ export function initLocales() {
     addLanguagesToDropdown();
     updateSecretDisplay();
 
-    $('#ui_language_select').on('change', async function () {
+    $('#ui_language_select, #onboarding_ui_language_select').on('change', async function () {
         const language = String($(this).val());
 
         if (language) {

@@ -1112,6 +1112,9 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         new SlashCommandNamedArgument(
             'role', 'role for in-chat injections', [ARGUMENT_TYPE.STRING], false, false, 'system', ['system', 'user', 'assistant'],
         ),
+        new SlashCommandNamedArgument(
+            'ephemeral', 'remove injection after generation', [ARGUMENT_TYPE.BOOLEAN], false, false, 'false', ['true', 'false'],
+        ),
     ],
     unnamedArgumentList: [
         new SlashCommandArgument(
@@ -1173,6 +1176,7 @@ function injectCallback(args, value) {
     };
 
     const id = resolveVariable(args?.id);
+    const ephemeral = isTrueBoolean(args?.ephemeral);
 
     if (!id) {
         console.warn('WARN: No ID provided for /inject command');
@@ -1206,6 +1210,16 @@ function injectCallback(args, value) {
 
     setExtensionPrompt(prefixedId, value, position, depth, scan, role);
     saveMetadataDebounced();
+
+    if (ephemeral) {
+        const unsetInject = () => {
+            console.log('Removing ephemeral script injection', id);
+            delete chat_metadata.script_injects[id];
+        };
+        eventSource.once(event_types.GENERATION_ENDED, unsetInject);
+        eventSource.once(event_types.GENERATION_STOPPED, unsetInject);
+    }
+
     return '';
 }
 

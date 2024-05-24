@@ -52,6 +52,7 @@ const settings = {
     insert: 3,
     query: 2,
     message_chunk_size: 400,
+    score_threshold: 0.25,
 
     // For files
     enabled_files: false,
@@ -760,6 +761,7 @@ async function queryCollection(collectionId, searchText, topK) {
             searchText: searchText,
             topK: topK,
             source: settings.source,
+            threshold: settings.score_threshold,
         }),
     });
 
@@ -788,6 +790,7 @@ async function queryMultipleCollections(collectionIds, searchText, topK) {
             searchText: searchText,
             topK: topK,
             source: settings.source,
+            threshold: settings.score_threshold,
         }),
     });
 
@@ -1306,6 +1309,12 @@ jQuery(async () => {
 
     $('#vectors_max_entries').val(settings.max_entries).on('input', () => {
         settings.max_entries = Number($('#vectors_max_entries').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_score_threshold').val(settings.score_threshold).on('input', () => {
+        settings.score_threshold = Number($('#vectors_score_threshold').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });

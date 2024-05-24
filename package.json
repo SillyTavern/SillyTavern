@@ -15,7 +15,6 @@
         "express": "^4.19.2",
         "form-data": "^4.0.0",
         "google-translate-api-browser": "^3.0.1",
-        "gpt3-tokenizer": "^1.1.5",
         "he": "^1.2.0",
         "helmet": "^7.1.0",
         "ip-matching": "^2.1.2",
@@ -44,6 +43,9 @@
         "yargs": "^17.7.1",
         "yauzl": "^2.10.0"
     },
+    "engines": {
+      "node": ">= 18"
+    },
     "overrides": {
         "parse-bmfont-xml": {
             "xml2js": "^0.5.0"
@@ -59,6 +61,9 @@
         },
         "@zeldafan0225/ai_horde": {
             "esbuild": "npm:dry-uninstall"
+        },
+        "node-fetch": {
+            "whatwg-url": "^14.0.0"
         }
     },
     "name": "sillytavern",
