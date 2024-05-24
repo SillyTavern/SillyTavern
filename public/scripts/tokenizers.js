@@ -560,7 +560,7 @@ export function countTokensOpenAI(messages, full = false) {
     if (shouldTokenizeAI21) {
         tokenizerEndpoint = '/api/tokenizers/ai21/count';
     } else if (shouldTokenizeGoogle) {
-        tokenizerEndpoint = `/api/tokenizers/google/count?model=${getTokenizerModel()}`;
+        tokenizerEndpoint = `/api/tokenizers/google/count?model=${getTokenizerModel()}&reverse_proxy=${oai_settings.reverse_proxy}&proxy_password=${oai_settings.proxy_password}`;
     } else {
         tokenizerEndpoint = `/api/tokenizers/openai/count?model=${getTokenizerModel()}`;
     }
