@@ -8020,12 +8020,14 @@ const swipe_right = () => {
 
 const CONNECT_API_MAP = {
     'kobold': {
+        selected: 'kobold',
         button: '#api_button',
     },
     'horde': {
         selected: 'koboldhorde',
     },
     'novel': {
+        selected: 'novel',
         button: '#api_button_novel',
     },
     'ooba': {
@@ -8063,6 +8065,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_textgenerationwebui',
         type: textgen_types.APHRODITE,
     },
+    'koboldcpp': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.KOBOLDCPP,
+    },
     'kcpp': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -8072,6 +8079,11 @@ const CONNECT_API_MAP = {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
         type: textgen_types.TOGETHERAI,
+    },
+    'openai': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.OPENAI,
     },
     'oai': {
         selected: 'openai',
@@ -8200,7 +8212,29 @@ async function disableInstructCallback() {
  * @param {string} text API name
  */
 async function connectAPISlash(_, text) {
-    if (!text) return;
+    if (!text.trim()) {
+        for (const [key, config] of Object.entries(CONNECT_API_MAP)) {
+            if (config.selected !== main_api) continue;
+
+            if (config.source) {
+                if (oai_settings.chat_completion_source === config.source) {
+                    return key;
+                } else {
+                    continue;
+                }
+            }
+
+            if (config.type) {
+                if (textgen_settings.type === config.type) {
+                    return key;
+                } else {
+                    continue;
+                }
+            }
+
+            return key;
+        }
+    }
 
     const apiConfig = CONNECT_API_MAP[text.toLowerCase()];
     if (!apiConfig) {
@@ -8646,7 +8680,7 @@ jQuery(async function () {
         ],
         helpString: `
             <div>
-                Connect to an API.
+                Connect to an API. If no argument is provided, it will return the currently connected API.
             </div>
             <div>
                 <strong>Available APIs:</strong>
