@@ -40,7 +40,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     }
 
     const useReverseProxy =
-        (extension_settings.caption.multimodal_api === 'openai' || extension_settings.caption.multimodal_api === 'anthropic')
+        (['openai', 'anthropic', 'google'].includes(extension_settings.caption.multimodal_api))
         && extension_settings.caption.allow_reverse_proxy
         && oai_settings.reverse_proxy
         && isValidUrl(oai_settings.reverse_proxy);
@@ -51,14 +51,11 @@ export async function getMultimodalCaption(base64Img, prompt) {
     const requestBody = {
         image: base64Img,
         prompt: prompt,
+        reverse_proxy: proxyUrl,
+        proxy_password: proxyPassword,
+        api: extension_settings.caption.multimodal_api || 'openai',
+        model: extension_settings.caption.multimodal_model || 'gpt-4-turbo',
     };
-
-    if (!isGoogle) {
-        requestBody.api = extension_settings.caption.multimodal_api || 'openai';
-        requestBody.model = extension_settings.caption.multimodal_model || 'gpt-4-turbo';
-        requestBody.reverse_proxy = proxyUrl;
-        requestBody.proxy_password = proxyPassword;
-    }
 
     if (isOllama) {
         if (extension_settings.caption.multimodal_model === 'ollama_current') {
