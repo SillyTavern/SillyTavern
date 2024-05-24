@@ -1390,7 +1390,7 @@ class PromptManager {
             // Add prompt export dialogue and options
 
             const exportForCharacter = await renderTemplateAsync('promptManagerExportForCharacter');
-            let exportPopup = await renderTemplateAsync('promptManagerExportPopup', { isGlobalStrategy: 'global' === this.configuration.promptOrder.strategy, exportForCharacter });
+            const exportPopup = await renderTemplateAsync('promptManagerExportPopup', { isGlobalStrategy: 'global' === this.configuration.promptOrder.strategy, exportForCharacter });
             rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
 
             // Destroy previous popper instance if it exists
