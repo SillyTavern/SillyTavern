@@ -6,7 +6,7 @@ import { Message, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
 import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
 import { debounce_timeout } from './constants.js';
-import { renderTemplateAsync } from './templates.js'
+import { renderTemplateAsync } from './templates.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -251,7 +251,7 @@ class PromptManager {
         this.error = null;
 
         /** Dry-run for generate, must return a promise  */
-        this.tryGenerate = () => { };
+        this.tryGenerate = async () => { };
 
         /** Called to persist the configuration, must return a promise */
         this.saveServiceSettings = () => { };
@@ -696,21 +696,23 @@ class PromptManager {
         if ('character' === this.configuration.promptOrder.strategy && null === this.activeCharacter) return;
         this.error = null;
 
-        waitUntilCondition(() => !is_send_press && !is_group_generating, 1024 * 1024, 100).then(() => {
+        waitUntilCondition(() => !is_send_press && !is_group_generating, 1024 * 1024, 100).then(async () => {
             if (true === afterTryGenerate) {
                 // Executed during dry-run for determining context composition
                 this.profileStart('filling context');
-                this.tryGenerate().finally(() => {
+                this.tryGenerate().finally(async () => {
                     this.profileEnd('filling context');
                     this.profileStart('render');
-                    this.renderPromptManager().then(() => this.renderPromptManagerListItems());
+                    await this.renderPromptManager();
+                    await this.renderPromptManagerListItems();
                     this.makeDraggable();
                     this.profileEnd('render');
                 });
             } else {
                 // Executed during live communication
                 this.profileStart('render');
-                this.renderPromptManager().then(() => this.renderPromptManagerListItems());
+                await this.renderPromptManager();
+                await this.renderPromptManagerListItems();
                 this.makeDraggable();
                 this.profileEnd('render');
             }
@@ -1353,8 +1355,8 @@ class PromptManager {
         `;
 
         const totalActiveTokens = this.tokenUsage;
-        
-        const headerHtml = await renderTemplateAsync('promptManagerHeader', {error: this.error, errorDiv, prefix: this.configuration.prefix, totalActiveTokens});
+
+        const headerHtml = await renderTemplateAsync('promptManagerHeader', { error: this.error, errorDiv, prefix: this.configuration.prefix, totalActiveTokens });
         promptManagerDiv.insertAdjacentHTML('beforeend', headerHtml);
 
         this.listElement = promptManagerDiv.querySelector(`#${this.configuration.prefix}prompt_manager_list`);
@@ -1375,7 +1377,7 @@ class PromptManager {
 
             const rangeBlockDiv = promptManagerDiv.querySelector('.range-block');
             const headerDiv = promptManagerDiv.querySelector('.completion_prompt_manager_header');
-            const footerHtml = await renderTemplateAsync('promptManagerFooter', {promptsHtml, prefix: this.configuration.prefix});
+            const footerHtml = await renderTemplateAsync('promptManagerFooter', { promptsHtml, prefix: this.configuration.prefix });
             headerDiv.insertAdjacentHTML('afterend', footerHtml);
             rangeBlockDiv.querySelector('#prompt-manager-reset-character').addEventListener('click', this.handleCharacterReset);
 
@@ -1386,9 +1388,9 @@ class PromptManager {
             footerDiv.querySelector('select').selectedIndex = selectedPromptIndex;
 
             // Add prompt export dialogue and options
-            
+
             const exportForCharacter = await renderTemplateAsync('promptManagerExportForCharacter');
-            let exportPopup = await renderTemplateAsync('promptManagerExportPopup', {isGlobalStrategy: 'global' === this.configuration.promptOrder.strategy, exportForCharacter});
+            let exportPopup = await renderTemplateAsync('promptManagerExportPopup', { isGlobalStrategy: 'global' === this.configuration.promptOrder.strategy, exportForCharacter });
             rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
 
             // Destroy previous popper instance if it exists
@@ -1429,11 +1431,11 @@ class PromptManager {
         promptManagerList.innerHTML = '';
 
         const { prefix } = this.configuration;
-        
+
         const that = this;
-        
-        let listItem = await renderTemplateAsync('promptManagerListHeader', {prefix});
-        
+
+        let listItem = await renderTemplateAsync('promptManagerListHeader', { prefix });
+
         this.getPromptsForCharacter(this.activeCharacter).forEach(async function(prompt) {
             if (!prompt) return;
 
