@@ -1785,8 +1785,8 @@
                                             </span>
                                         </label>
                                         <div class="toggle-description justifyLeft marginBot5">
-                                            <span data-i18n="Merges_all_system_messages_desc">
-                                                Merges all system messages up until the first message with a non system role, and sends them through google's system_instruction field instead of with the rest of the prompt contents.
+                                            <span data-i18n="Merges_all_system_messages_desc_1">
+                                                Merges all system messages up until the first message with a non-system role, and sends them in a</span> <code>system_instruction</code> <span data-i18n="Merges_all_system_messages_desc_2">field.
                                             </span>
                                         </div>
                                     </div>
@@ -4848,7 +4848,7 @@
         </div>
     </div>
     <!-- various fullscreen popups -->
-        <template id="shadow_popup_template" data-i18n="[popup_text_save]popup_text_save;[popup_text_yes]popup_text_yes;[popup_text_no]popup_text_no;[popup_text_cancel]popup_text_cancel;[popup_text_import]popup_text_import" popup_text_save="Save" popup_text_yes="Yes" popup_text_no="No" popup_text_cancel="Cancel" popup_text_import="Import"> <!-- localization data holder for popups -->
+    <template id="shadow_popup_template" data-i18n="[popup_text_save]popup_text_save;[popup_text_yes]popup_text_yes;[popup_text_no]popup_text_no;[popup_text_cancel]popup_text_cancel;[popup_text_import]popup_text_import" popup_text_save="Save" popup_text_yes="Yes" popup_text_no="No" popup_text_cancel="Cancel" popup_text_import="Import"> <!-- localization data holder for popups -->
         <div class="shadow_popup">
             <div class="dialogue_popup">
                 <div class="dialogue_popup_holder">
@@ -5585,7 +5585,7 @@
                             <div id="completion_prompt_manager_forbid_overrides_block">
                                 <label class="checkbox_label" for="completion_prompt_manager_popup_entry_form_forbid_overrides" title="This prompt cannot be overridden by character cards, even if overrides are preferred." data-i18n="[title]This prompt cannot be overridden by character cards, even if overrides are preferred.">
                                     <input type="checkbox" id="completion_prompt_manager_popup_entry_form_forbid_overrides" name="forbid_overrides" />
-                                    <span>Forbid Overrides</span>
+                                    <span data-i18n="prompt_manager_forbid_overrides">
                                 </label>
                             </div>
                         </div>
