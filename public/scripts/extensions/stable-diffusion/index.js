@@ -2864,7 +2864,7 @@ function addSDGenButtons() {
 
     const buttonHtml = `
     <div id="sd_gen" class="list-group-item flex-container flexGap5">
-        <div class="fa-solid fa-paintbrush extensionsMenuExtensionButton" title="Trigger Stable Diffusion" /></div>
+        <div class="fa-solid fa-paintbrush extensionsMenuExtensionButton" title="Trigger Stable Diffusion"  data-i18n="[title]Trigger Stable Diffusion" /></div>
         Generate Image
     </div>
         `;
@@ -2876,13 +2876,13 @@ function addSDGenButtons() {
     <div id="sd_dropdown">
         <ul class="list-group">
         <span>Send me a picture of:</span>
-            <li class="list-group-item" id="sd_you" data-value="you">Yourself</li>
-            <li class="list-group-item" id="sd_face" data-value="face">Your Face</li>
-            <li class="list-group-item" id="sd_me" data-value="me">Me</li>
-            <li class="list-group-item" id="sd_world" data-value="world">The Whole Story</li>
-            <li class="list-group-item" id="sd_last" data-value="last">The Last Message</li>
-            <li class="list-group-item" id="sd_raw_last" data-value="raw_last">Raw Last Message</li>
-            <li class="list-group-item" id="sd_background" data-value="background">Background</li>
+            <li class="list-group-item" id="sd_you" data-value="you" data-i18n="sd_Yourself">Yourself</li>
+            <li class="list-group-item" id="sd_face" data-value="face" data-i18n="sd_Your_Face">Your Face</li>
+            <li class="list-group-item" id="sd_me" data-value="me" data-i18n="sd_Me">Me</li>
+            <li class="list-group-item" id="sd_world" data-value="world" data-i18n="sd_The_Whole_Story">The Whole Story</li>
+            <li class="list-group-item" id="sd_last" data-value="last" data-i18n="sd_The_Last_Message">The Last Message</li>
+            <li class="list-group-item" id="sd_raw_last" data-value="raw_last" data-i18n="sd_Raw_Last_Message">Raw Last Message</li>
+            <li class="list-group-item" id="sd_background" data-value="background" data-i18n="sd_Background">Background</li>
         </ul>
     </div>`;
 
@@ -3067,10 +3067,10 @@ jQuery(async () => {
         ],
         helpString: `
             <div>
-                Requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments: <code>${Object.values(triggerWords).flat().join(', ')}</code>.
+                <span data-i18n="sd_help_1">Requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments:</span> <code>${Object.values(triggerWords).flat().join(', ')}</code>.
             </div>
             <div>
-                Anything else would trigger a "free mode" to make generate whatever you prompted. Example: <code>/imagine apple tree</code> would generate a picture of an apple tree. Returns a link to the generated image.
+                <span data-i18n="sd_help_2">Anything else would trigger a "free mode" to make generate whatever you prompted. Example:</span> <code>/imagine apple tree</code> <span data-i18n="sd_help_3">would generate a picture of an apple tree. Returns a link to the generated image.</span>
             </div>
         `,
     }));
