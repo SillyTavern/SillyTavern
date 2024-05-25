@@ -3427,45 +3427,6 @@ export function checkEmbeddedWorld(chid) {
     return false;
 }
 
-export function checkEmbeddedRegexScripts(chid) {
-    $('#import_character_info').hide();
-
-    if (chid === undefined) {
-        return false;
-    }
-
-    if (characters[chid]?.data?.extensions?.regex_scripts) {
-        $('#import_character_info').data('chid', chid).show();
-
-        for (const script of characters[chid]?.data?.extensions?.regex_scripts) {
-            // Only show the alert once per character per script
-            const checkKey = `AlertRegex_${characters[chid].avatar}_${script.scriptName}`;
-            if (!localStorage.getItem(checkKey)) {
-                localStorage.setItem(checkKey, 'true');
-                if (power_user.regex_import_dialog) {
-                    const html = `<h3>This character has an embedded regex script.</h3>
-                    <h3>Would you like to import it now?</h3>
-                    <div class="m-b-1">If you want to import it later, select "Import Card Lore" in the "More..." dropdown menu on the character panel.</div>`;
-                    const checkResult = (result) => {
-                        if (result) {
-                            importEmbeddedRegexScripts(true);
-                        }
-                    };
-                    callPopup(html, 'confirm', '', { okButton: 'Yes' }).then(checkResult);
-                }
-                else {
-                    toastr.info(
-                        'To import and use it, select "Import Card Lore" in the "More..." dropdown menu on the character panel.',
-                        `${characters[chid].name} has an embedded regex script`,
-                        { timeOut: 5000, extendedTimeOut: 10000, positionClass: 'toast-top-center' },
-                    )
-                }
-            }
-        }
-        return true;
-    }
-}
-
 export async function importEmbeddedWorldInfo(skipPopup = false) {
     const chid = $('#import_character_info').data('chid');
 
@@ -3501,29 +3462,6 @@ export async function importEmbeddedWorldInfo(skipPopup = false) {
     }
 
     setWorldInfoButtonClass(chid, true);
-}
-
-export function importEmbeddedRegexScripts(skipPopup = false) {
-    const chid = $('#import_character_info').data('chid');
-
-    if (chid === undefined) {
-        return;
-    }
-
-    const confirmationText = `<h3>Are you sure you want to import the regex scripts?</h3>`;
-    if (!skipPopup) {
-        const confirmation = callPopup(confirmationText, 'confirm');
-        if (!confirmation) {
-            return;
-        }
-    }
-
-    for (const script of characters[chid]?.data?.extensions?.regex_scripts) {
-        script.scopedCharList = [characters[chid].name];
-    }
-    extension_settings.regex = [...extension_settings.regex, ...characters[chid].data.extensions.regex_scripts];
-
-    toastr.success(`The regex scripts have been imported and linked to the character successfully.`, 'Regex scripts imported');
 }
 
 function onWorldInfoChange(args, text) {
@@ -3643,7 +3581,7 @@ export async function importWorldInfo(file) {
         return;
     }
 
-    const worldName = file.name.substr(0, file.name.lastIndexOf("."));
+    const worldName = file.name.substr(0, file.name.lastIndexOf('.'));
     const sanitizedWorldName = await getSanitizedFilename(worldName);
     const allowed = await checkOverwriteExistingData('World Info', world_names, sanitizedWorldName, { interactive: true, actionName: 'Import', deleteAction: (existingName) => deleteWorldInfo(existingName) });
     if (!allowed) {

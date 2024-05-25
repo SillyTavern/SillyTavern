@@ -1,4 +1,4 @@
-import { substituteParams } from '../../../script.js';
+import { characters, substituteParams, this_chid } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
 import { regexFromString } from '../../utils.js';
 export {
@@ -22,6 +22,22 @@ const regex_placement = {
     WORLD_INFO: 5,
 };
 
+function getScopedRegex() {
+    const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
+
+    if (!isAllowed) {
+        return [];
+    }
+
+    const scripts = characters[this_chid]?.data?.extensions?.regex_scripts;
+
+    if (!Array.isArray(scripts)) {
+        return [];
+    }
+
+    return scripts;
+}
+
 /**
  * Parent function to fetch a regexed version of a raw string
  * @param {string} rawString The raw string to be regexed
@@ -42,8 +58,8 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
         return finalString;
     }
 
-    let regex_arr = extension_settings.regex.filter((e) => !e.scopedCharList?.length || e.scopedCharList.includes(characterOverride));
-    regex_arr.forEach((script) => {
+    const allRegex = [...(extension_settings.regex ?? []), ...(getScopedRegex() ?? [])];
+    allRegex.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown
             (script.markdownOnly && isMarkdown) ||
