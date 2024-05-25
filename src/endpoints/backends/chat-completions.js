@@ -920,6 +920,11 @@ router.post('/generate', jsonParser, function (request, response) {
         controller.abort();
     });
 
+    if (!isTextCompletion) {
+        bodyParams['tools'] = request.body.tools;
+        bodyParams['tool_choice'] = request.body.tool_choice;
+    }
+
     const requestBody = {
         'messages': isTextCompletion === false ? request.body.messages : undefined,
         'prompt': isTextCompletion === true ? textPrompt : undefined,
