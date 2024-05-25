@@ -1024,7 +1024,7 @@ function parseLlmResponse(emotionResponse, labels) {
 
     try {
         const parsedEmotion = JSON.parse(emotionResponse);
-        const response = parsedEmotion?.emotion;
+        const response = parsedEmotion?.emotion?.trim()?.toLowerCase();
 
         if (!response || !labels.includes(response)) {
             return fallbackExpression;
