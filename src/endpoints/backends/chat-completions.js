@@ -5,7 +5,7 @@ const Readable = require('stream').Readable;
 const { jsonParser } = require('../../express-common');
 const { CHAT_COMPLETION_SOURCES, GEMINI_SAFETY, BISON_SAFETY, OPENROUTER_HEADERS } = require('../../constants');
 const { forwardFetchResponse, getConfigValue, tryParse, uuidv4, mergeObjectWithYaml, excludeKeysByYaml, color } = require('../../util');
-const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages } = require('../../prompt-converters');
+const { convertClaudeMessages, convertGooglePrompt, convertTextCompletionPrompt, convertCohereMessages, convertMistralMessages, convertCohereTools } = require('../../prompt-converters');
 
 const { readSecret, SECRET_KEYS } = require('../secrets');
 const { getTokenizerModel, getSentencepiceTokenizer, getTiktokenTokenizer, sentencepieceTokenizers, TEXT_COMPLETION_MODELS } = require('../tokenizers');
@@ -16,6 +16,7 @@ const API_MISTRAL = 'https://api.mistral.ai/v1';
 const API_COHERE = 'https://api.cohere.ai/v1';
 const API_PERPLEXITY = 'https://api.perplexity.ai';
 const API_GROQ = 'https://api.groq.com/openai/v1';
+const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
 
 /**
  * Applies a post-processing step to the generated messages.
@@ -232,9 +233,10 @@ async function sendScaleRequest(request, response) {
  * @param {express.Response} response Express response
  */
 async function sendMakerSuiteRequest(request, response) {
-    const apiKey = readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+    const apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
+    const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
 
-    if (!apiKey) {
+    if (!request.body.reverse_proxy && !apiKey) {
         console.log('MakerSuite API key is missing.');
         return response.status(400).send({ error: true });
     }
@@ -316,7 +318,7 @@ async function sendMakerSuiteRequest(request, response) {
             ? (stream ? 'streamGenerateContent' : 'generateContent')
             : (isText ? 'generateText' : 'generateMessage');
 
-        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
+        const generateResponse = await fetch(`${apiUrl.origin}/${apiVersion}/models/${model}:${responseType}?key=${apiKey}${stream ? '&alt=sse' : ''}`, {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
@@ -484,6 +486,11 @@ async function sendMistralAIRequest(request, response) {
             'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
         };
 
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            requestBody['tools'] = request.body.tools;
+            requestBody['tool_choice'] = request.body.tool_choice === 'required' ? 'any' : 'auto';
+        }
+
         const config = {
             method: 'POST',
             headers: {
@@ -542,11 +549,18 @@ async function sendCohereRequest(request, response) {
     try {
         const convertedHistory = convertCohereMessages(request.body.messages, request.body.char_name, request.body.user_name);
         const connectors = [];
+        const tools = [];
 
         if (request.body.websearch) {
             connectors.push({
                 id: 'web-search',
             });
+        }
+
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            tools.push(...convertCohereTools(request.body.tools));
+            // Can't have both connectors and tools in the same request
+            connectors.splice(0, connectors.length);
         }
 
         // https://docs.cohere.com/reference/chat
@@ -567,8 +581,7 @@ async function sendCohereRequest(request, response) {
             prompt_truncation: 'AUTO_PRESERVE_ORDER',
             connectors: connectors,
             documents: [],
-            tools: [],
-            tool_results: [],
+            tools: tools,
             search_queries_only: false,
         };
 
@@ -917,6 +930,11 @@ router.post('/generate', jsonParser, function (request, response) {
     request.socket.on('close', function () {
         controller.abort();
     });
+
+    if (!isTextCompletion) {
+        bodyParams['tools'] = request.body.tools;
+        bodyParams['tool_choice'] = request.body.tool_choice;
+    }
 
     const requestBody = {
         'messages': isTextCompletion === false ? request.body.messages : undefined,

@@ -1739,6 +1739,16 @@
                                             </span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="openai,cohere,mistralai,custom">
+                                        <label for="openai_function_calling" class="checkbox_label flexWrap widthFreeExpand">
+                                            <input id="openai_function_calling" type="checkbox" />
+                                            <span data-i18n="Enable function calling">Enable function calling</span>
+                                            <div class="flexBasis100p toggle-description justifyLeft">
+                                                Allows using <a href="https://platform.openai.com/docs/guides/function-calling" target="_blank">function tools</a>.
+                                                Can be utilized by various extensions to provide additional functionality.
+                                            </div>
+                                        </label>
+                                    </div>
                                     <div class="range-block" data-source="openai,openrouter,makersuite,claude,custom">
                                         <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
                                             <input id="openai_image_inlining" type="checkbox" />
@@ -1750,13 +1760,13 @@
                                             </div>
                                         </label>
                                         <div class="flex-container flexFlowColumn wide100p textAlignCenter marginTop10" data-source="openai,custom">
-                                            <label for="openai_inline_image_quality">
+                                            <label for="openai_inline_image_quality" data-i18n="Inline Image Quality">
                                                 Inline Image Quality
                                             </label>
                                             <select id="openai_inline_image_quality">
-                                                <option value="auto">Auto</option>
-                                                <option value="low">Low</option>
-                                                <option value="high">High</option>
+                                                <option data-i18n="openai_inline_image_quality_auto" value="auto">Auto</option>
+                                                <option data-i18n="openai_inline_image_quality_low" value="low">Low</option>
+                                                <option data-i18n="openai_inline_image_quality_high" value="high">High</option>
                                             </select>
                                         </div>
                                     </div>
@@ -2353,7 +2363,7 @@
                                 <option value="windowai">Window AI</option>
                             </optgroup>
                         </select>
-                        <div data-newbie-hidden class="inline-drawer wide100p" data-source="openai,claude,mistralai">
+                        <div data-newbie-hidden class="inline-drawer wide100p" data-source="openai,claude,mistralai,makersuite">
                             <div class="inline-drawer-toggle inline-drawer-header">
                                 <b data-i18n="Reverse Proxy">Reverse Proxy</b>
                                 <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -2821,6 +2831,7 @@
                                 <h4 data-i18n="Cohere Model">Cohere Model</h4>
                                 <select id="model_cohere_select">
                                     <optgroup label="Stable">
+                                        <option value="c4ai-aya-23">c4ai-aya-23</option>
                                         <option value="command-light">command-light</option>
                                         <option value="command">command</option>
                                         <option value="command-r">command-r</option>
@@ -4510,8 +4521,8 @@
                                 </div>
                             </div>
                             <a id="chartokenwarning" class="right_menu_button fa-solid fa-triangle-exclamation" href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank" title="About Token 'Limits'"></a>
-                            <i title="Click for stats!" class="fa-solid fa-ranking-star right_menu_button rm_stats_button"></i>
-                            <i title="Toggle character info panel" id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
+                            <i title="Click for stats!" data-i18n="[title]Click for stats!" class="fa-solid fa-ranking-star right_menu_button rm_stats_button"></i>
+                            <i title="Toggle character info panel" data-i18n="[title]Toggle character info panel" id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
                         </div>
                     </div>
                 </div>

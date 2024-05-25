@@ -427,6 +427,8 @@ export const event_types = {
     FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
     WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
     OPEN_CHARACTER_LIBRARY: 'open_character_library',
+    LLM_FUNCTION_TOOL_REGISTER: 'llm_function_tool_register',
+    LLM_FUNCTION_TOOL_CALL: 'llm_function_tool_call',
 };
 
 export const eventSource = new EventEmitter();
@@ -1791,7 +1793,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     if (Number(messageId) === 0 && !isSystem && !isUser) {
-        mes = substituteParams(mes);
+        mes = substituteParams(mes, undefined, ch_name);
     }
 
     mesForShowdownParse = mes;
@@ -4180,7 +4182,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         const displayIncomplete = type === 'quiet' && !quietToLoud;
         getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
 
-        if (getMessage.length > 0) {
+        if (getMessage.length > 0 || data.allowEmptyResponse) {
             if (isImpersonate) {
                 $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
                 generatedPromptCache = '';
@@ -7828,6 +7830,7 @@ function swipe_left() {      // when we swipe left..but no generation.
  */
 async function branchChat(mesId) {
     const fileName = await createBranch(mesId);
+    await saveItemizedPrompts(fileName);
 
     if (selected_group) {
         await openGroupChat(selected_group, fileName);
@@ -8020,12 +8023,14 @@ const swipe_right = () => {
 
 const CONNECT_API_MAP = {
     'kobold': {
+        selected: 'kobold',
         button: '#api_button',
     },
     'horde': {
         selected: 'koboldhorde',
     },
     'novel': {
+        selected: 'novel',
         button: '#api_button_novel',
     },
     'ooba': {
@@ -8063,6 +8068,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_textgenerationwebui',
         type: textgen_types.APHRODITE,
     },
+    'koboldcpp': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.KOBOLDCPP,
+    },
     'kcpp': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -8072,6 +8082,11 @@ const CONNECT_API_MAP = {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
         type: textgen_types.TOGETHERAI,
+    },
+    'openai': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.OPENAI,
     },
     'oai': {
         selected: 'openai',
@@ -8200,7 +8215,29 @@ async function disableInstructCallback() {
  * @param {string} text API name
  */
 async function connectAPISlash(_, text) {
-    if (!text) return;
+    if (!text.trim()) {
+        for (const [key, config] of Object.entries(CONNECT_API_MAP)) {
+            if (config.selected !== main_api) continue;
+
+            if (config.source) {
+                if (oai_settings.chat_completion_source === config.source) {
+                    return key;
+                } else {
+                    continue;
+                }
+            }
+
+            if (config.type) {
+                if (textgen_settings.type === config.type) {
+                    return key;
+                } else {
+                    continue;
+                }
+            }
+
+            return key;
+        }
+    }
 
     const apiConfig = CONNECT_API_MAP[text.toLowerCase()];
     if (!apiConfig) {
@@ -8646,7 +8683,7 @@ jQuery(async function () {
         ],
         helpString: `
             <div>
-                Connect to an API.
+                Connect to an API. If no argument is provided, it will return the currently connected API.
             </div>
             <div>
                 <strong>Available APIs:</strong>
