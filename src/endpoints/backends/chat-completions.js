@@ -486,6 +486,11 @@ async function sendMistralAIRequest(request, response) {
             'random_seed': request.body.seed === -1 ? undefined : request.body.seed,
         };
 
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            requestBody['tools'] = request.body.tools;
+            requestBody['tool_choice'] = request.body.tool_choice === 'required' ? 'any' : 'auto';
+        }
+
         const config = {
             method: 'POST',
             headers: {
