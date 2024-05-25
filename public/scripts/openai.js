@@ -1968,33 +1968,49 @@ async function registerFunctionTools(type, data) {
 }
 
 async function checkFunctionToolCalls(data) {
-    if (!Array.isArray(data.choices)) {
-        return;
-    }
-
-    // Find a choice with 0-index
-    const choice = data.choices.find(choice => choice.index === 0);
-
-    if (!choice) {
-        return;
-    }
-
-    const toolCalls = choice.message.tool_calls;
-
-    if (!Array.isArray(toolCalls)) {
-        return;
-    }
-
-    for (const toolCall of toolCalls) {
-        if (toolCall.type !== 'function') {
-            continue;
+    if ([chat_completion_sources.OPENAI, chat_completion_sources.CUSTOM].includes(oai_settings.chat_completion_source)) {
+        if (!Array.isArray(data?.choices)) {
+            return;
         }
 
-        /** @type {FunctionToolCall} */
-        const args = toolCall.function;
-        console.log('Function tool call:', toolCall);
-        await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
-        data.allowEmptyResponse = true;
+        // Find a choice with 0-index
+        const choice = data.choices.find(choice => choice.index === 0);
+
+        if (!choice) {
+            return;
+        }
+
+        const toolCalls = choice.message.tool_calls;
+
+        if (!Array.isArray(toolCalls)) {
+            return;
+        }
+
+        for (const toolCall of toolCalls) {
+            if (toolCall.type !== 'function') {
+                continue;
+            }
+
+            /** @type {FunctionToolCall} */
+            const args = toolCall.function;
+            console.log('Function tool call:', toolCall);
+            await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
+            data.allowEmptyResponse = true;
+        }
+    }
+
+    if ([chat_completion_sources.COHERE].includes(oai_settings.chat_completion_source)) {
+        if (!Array.isArray(data?.tool_calls)) {
+            return;
+        }
+
+        for (const toolCall of data.tool_calls) {
+            /** @type {FunctionToolCall} */
+            const args = { name: toolCall.name, arguments: JSON.stringify(toolCall.parameters) };
+            console.log('Function tool call:', toolCall);
+            await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
+            data.allowEmptyResponse = true;
+        }
     }
 }
 
@@ -2009,6 +2025,7 @@ export function isFunctionCallingSupported() {
 
     const supportedSources = [
         chat_completion_sources.OPENAI,
+        chat_completion_sources.COHERE,
         chat_completion_sources.CUSTOM,
     ];
     return supportedSources.includes(oai_settings.chat_completion_source);
@@ -3964,7 +3981,7 @@ async function onModelChange() {
         else if (['command-r', 'command-r-plus'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_128k);
         }
-        else if(['c4ai-aya-23'].includes(oai_settings.cohere_model)) {
+        else if (['c4ai-aya-23'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_8k);
         }
         else {
@@ -4555,7 +4572,8 @@ function runProxyCallback(_, value) {
     return foundName;
 }
 
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'proxy',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'proxy',
     callback: runProxyCallback,
     returns: 'current proxy',
     namedArgumentList: [],

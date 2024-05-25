@@ -1063,6 +1063,7 @@ function onFunctionToolRegister(args) {
                 emotion: {
                     type: 'string',
                     enum: emotions,
+                    description: `One of the following: ${JSON.stringify(emotions)}`,
                 },
             },
             required: [
