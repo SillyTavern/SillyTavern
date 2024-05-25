@@ -325,6 +325,11 @@ function migrateSettings() {
         }
     });
 
+    if (!extension_settings.character_allowed_regex) {
+        extension_settings.character_allowed_regex = [];
+        performSave = true;
+    }
+
     if (performSave) {
         saveSettingsDebounced();
     }
@@ -392,6 +397,18 @@ async function onRegexImportFileChange(file, isScoped) {
         console.log(error);
         toastr.error('Invalid JSON file.');
         return;
+    }
+}
+
+function purgeEmbeddedRegexScripts( { character }){
+    const avatar = character?.avatar;
+
+    if (avatar && extension_settings.character_allowed_regex?.includes(avatar)) {
+        const index = extension_settings.character_allowed_regex.indexOf(avatar);
+        if (index !== -1) {
+            extension_settings.character_allowed_regex.splice(index, 1);
+            saveSettingsDebounced();
+        }
     }
 }
 
@@ -537,4 +554,5 @@ jQuery(async () => {
     }));
 
     eventSource.on(event_types.CHAT_CHANGED, checkEmbeddedRegexScripts);
+    eventSource.on(event_types.CHARACTER_DELETED, purgeEmbeddedRegexScripts);
 });
