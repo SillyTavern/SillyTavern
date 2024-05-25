@@ -1020,14 +1020,13 @@ async function getLlmPrompt(labels) {
  * @returns {string} The parsed emotion or the fallback expression.
  */
 function parseLlmResponse(emotionResponse, labels) {
-    const fallbackExpression = getFallbackExpression();
-
     try {
         const parsedEmotion = JSON.parse(emotionResponse);
         const response = parsedEmotion?.emotion?.trim()?.toLowerCase();
 
         if (!response || !labels.includes(response)) {
-            return fallbackExpression;
+            console.debug(`Parsed emotion response: ${response} not in labels: ${labels}`);
+            throw new Error('Emotion not in labels');
         }
 
         return response;
