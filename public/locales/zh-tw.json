@@ -723,7 +723,8 @@
     "Max Tokens Second": "最大符記/秒",
     "Maximum Temp": "最高溫度",
     "Medium": "中等",
-    "Merges_all_system_messages_desc": "合併所有系統訊息，直到第一條非系統角色的訊息，並通過 google 的 system_instruction 字段發送，而不是與其餘提示詞內容一起發送。",
+    "Merges_all_system_messages_desc_1": "合併所有系統訊息，直到第一條非系統角色的訊息，並通過 google 的",
+	"Merges_all_system_messages_desc_2": "字段發送，而不是與其餘提示詞內容一起發送。"
     "Message Actions": "訊息動作",
     "Message Content": "訊息內容",
     "Message IDs": "訊息 ID",
