@@ -3009,6 +3009,15 @@ export function forceCharacterEditorTokenize() {
     $('#character_popup').trigger('input');
 }
 
+export function initTheme()
+{
+    if (power_user.theme !== undefined)
+    {
+        applyTheme(power_user.theme);
+        saveSettingsDebounced();
+    }
+}
+
 $(document).ready(() => {
     const adjustAutocompleteDebounced = debounce(() => {
         $('.ui-autocomplete-input').each(function () {

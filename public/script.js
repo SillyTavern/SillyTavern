@@ -84,6 +84,7 @@ import {
     context_presets,
     resetMovableStyles,
     forceCharacterEditorTokenize,
+    initTheme,
 } from './scripts/power-user.js';
 
 import {
@@ -870,6 +871,7 @@ async function firstLoadInit() {
     await getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await getSettings();
+    initTheme();
     initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
