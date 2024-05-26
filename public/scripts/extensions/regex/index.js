@@ -506,6 +506,25 @@ jQuery(async () => {
             // TODO: Maybe reload regex scripts after move
         },
     });
+    $('#saved_scoped_scripts').sortable({
+        delay: getSortableDelay(),
+        stop: function () {
+            let newScripts = [];
+            $('#saved_scoped_scripts').children().each(function () {
+                const scriptName = $(this).find('.regex_script_name').text();
+                const existingScript = extension_settings.regex.find((e) => e.scriptName === scriptName);
+                if (existingScript) {
+                    newScripts.push(existingScript);
+                }
+            });
+
+            characters[this_chid].data.extensions.regex_scripts = newScripts;
+            saveSettingsDebounced();
+
+            console.debug('Scoped regex scripts reordered');
+            // TODO: Maybe reload regex scripts after move
+        }
+    });
 
     $('#regex_scoped_toggle').on('input', function () {
         if (this_chid === undefined) {
