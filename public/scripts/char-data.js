@@ -79,6 +79,7 @@
 
 /**
 * @typedef {object} RegexScriptData
+* @property {string} id - UUID of the script
 * @property {string} scriptName - The name of the script
 * @property {string} findRegex - The regex to find
 * @property {string} replaceString - The string to replace
