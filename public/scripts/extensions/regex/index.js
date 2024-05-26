@@ -545,6 +545,7 @@ jQuery(async () => {
         }
 
         saveSettingsDebounced();
+        reloadCurrentChat();
     });
 
     await loadRegexScripts();
