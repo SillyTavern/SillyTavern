@@ -496,7 +496,7 @@ jQuery(async () => {
             selector: '#saved_scoped_scripts',
             setter: x => characters[this_chid].data.extensions.regex_scripts = x,
         },
-    ]
+    ];
     for (const { selector, setter } of sortableDatas) {
         $(selector).sortable({
             delay: getSortableDelay(),
@@ -530,7 +530,7 @@ jQuery(async () => {
             return;
         }
 
-        const isEnable = $(this).prop('checked');
+        const isEnable = !!$(this).prop('checked');
         const avatar = characters[this_chid].avatar;
 
         if (isEnable) {
@@ -543,6 +543,8 @@ jQuery(async () => {
                 extension_settings.character_allowed_regex.splice(index, 1);
             }
         }
+
+        saveSettingsDebounced();
     });
 
     await loadRegexScripts();
