@@ -487,44 +487,37 @@ jQuery(async () => {
         $('#import_regex_file').trigger('click');
     });
 
-    $('#saved_regex_scripts').sortable({
-        delay: getSortableDelay(),
-        stop: function () {
-            let newScripts = [];
-            $('#saved_regex_scripts').children().each(function () {
-                const scriptName = $(this).find('.regex_script_name').text();
-                const existingScript = extension_settings.regex.find((e) => e.scriptName === scriptName);
-                if (existingScript) {
-                    newScripts.push(existingScript);
-                }
-            });
-
-            extension_settings.regex = newScripts;
-            saveSettingsDebounced();
-
-            console.debug('Regex scripts reordered');
-            // TODO: Maybe reload regex scripts after move
+    let sortableDatas = [
+        {
+            selector: '#saved_regex_scripts',
+            setter: x => extension_settings.regex = x,
         },
-    });
-    $('#saved_scoped_scripts').sortable({
-        delay: getSortableDelay(),
-        stop: function () {
-            let newScripts = [];
-            $('#saved_scoped_scripts').children().each(function () {
-                const scriptName = $(this).find('.regex_script_name').text();
-                const existingScript = extension_settings.regex.find((e) => e.scriptName === scriptName);
-                if (existingScript) {
-                    newScripts.push(existingScript);
-                }
-            });
+        {
+            selector: '#saved_scoped_scripts',
+            setter: x => characters[this_chid].data.extensions.regex_scripts = x,
+        },
+    ]
+    for (const { selector, setter } of sortableDatas) {
+        $(selector).sortable({
+            delay: getSortableDelay(),
+            stop: function () {
+                let newScripts = [];
+                $(selector).children().each(function () {
+                    const scriptName = $(this).find('.regex_script_name').text();
+                    const existingScript = extension_settings.regex.find((e) => e.scriptName === scriptName);
+                    if (existingScript) {
+                        newScripts.push(existingScript);
+                    }
+                });
 
-            characters[this_chid].data.extensions.regex_scripts = newScripts;
-            saveSettingsDebounced();
+                setter(newScripts);
+                saveSettingsDebounced();
 
-            console.debug('Scoped regex scripts reordered');
-            // TODO: Maybe reload regex scripts after move
-        }
-    });
+                console.debug(`Regex scripts in ${selector} reordered`);
+                // TODO: Maybe reload regex scripts after move
+            },
+        });
+    }
 
     $('#regex_scoped_toggle').on('input', function () {
         if (this_chid === undefined) {
