@@ -919,6 +919,7 @@
     "prompt_manager_absolute": "Absolute",
     "prompt_manager_depth": "Depth",
     "prompt_manager_edit": "Edit",
+    "prompt_manager_forbid_overrides": "Forbid Overrides",
     "prompt_manager_name": "Name",
     "prompt_manager_position": "Position",
     "prompt_manager_relative": "Relative",
