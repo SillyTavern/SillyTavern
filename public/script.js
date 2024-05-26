@@ -427,6 +427,8 @@ export const event_types = {
     FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
     WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
     OPEN_CHARACTER_LIBRARY: 'open_character_library',
+    LLM_FUNCTION_TOOL_REGISTER: 'llm_function_tool_register',
+    LLM_FUNCTION_TOOL_CALL: 'llm_function_tool_call',
 };
 
 export const eventSource = new EventEmitter();
@@ -4180,7 +4182,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         const displayIncomplete = type === 'quiet' && !quietToLoud;
         getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
 
-        if (getMessage.length > 0) {
+        if (getMessage.length > 0 || data.allowEmptyResponse) {
             if (isImpersonate) {
                 $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
                 generatedPromptCache = '';

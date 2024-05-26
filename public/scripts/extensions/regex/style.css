@@ -14,6 +14,47 @@
     margin-bottom: 10px;
 }
 
+.regex-script-container:empty::after {
+    content: "No scripts found";
+    font-size: 0.95em;
+    opacity: 0.7;
+    display: block;
+    text-align: center;
+}
+
+#scoped_scripts_block {
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+}
+
+#scoped_scripts_block .move_to_scoped {
+    display: none;
+}
+
+#global_scripts_block .move_to_global {
+    display: none;
+}
+
+#scoped_scripts_block:not(:has(#regex_scoped_toggle:checked)) {
+    opacity: 0.5;
+}
+
+.enable_scoped:checked ~ .regex-toggle-on {
+    display: block;
+}
+
+.enable_scoped:checked ~ .regex-toggle-off {
+    display: none;
+}
+
+.enable_scoped:not(:checked) ~ .regex-toggle-on {
+    display: none;
+}
+
+.enable_scoped:not(:checked) ~ .regex-toggle-off {
+    display: block;
+}
+
 .regex-script-label {
     align-items: center;
     border: 1px solid var(--SmartThemeBorderColor);
@@ -23,7 +64,13 @@
     margin-bottom: 1px;
 }
 
-input.disable_regex {
+.regex-script-label:has(.disable_regex:checked) .regex_script_name {
+    text-decoration: line-through;
+    filter: grayscale(0.5);
+}
+
+input.disable_regex,
+input.enable_scoped {
     display: none !important;
 }
 
@@ -31,6 +78,12 @@ input.disable_regex {
     cursor: pointer;
     opacity: 0.5;
     filter: grayscale(0.5);
+    transition: opacity 0.2s ease-in-out;
+}
+
+.regex-toggle-off:hover {
+    opacity: 1;
+    filter: none;
 }
 
 .regex-toggle-on {

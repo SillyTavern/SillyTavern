@@ -308,6 +308,10 @@ function getTokenizerModel(requestModel) {
         return 'yi';
     }
 
+    if (requestModel.includes('gemini')) {
+        return 'gpt-4o';
+    }
+
     // default
     return 'gpt-3.5-turbo';
 }
