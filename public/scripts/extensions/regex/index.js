@@ -491,20 +491,23 @@ jQuery(async () => {
         {
             selector: '#saved_regex_scripts',
             setter: x => extension_settings.regex = x,
+            getter: () => extension_settings.regex ?? [],
         },
         {
             selector: '#saved_scoped_scripts',
             setter: x => characters[this_chid].data.extensions.regex_scripts = x,
+            getter: () => characters[this_chid].data.extensions.regex_scripts ?? [],
         },
     ];
-    for (const { selector, setter } of sortableDatas) {
+    for (const { selector, setter, getter } of sortableDatas) {
         $(selector).sortable({
             delay: getSortableDelay(),
             stop: function () {
-                let newScripts = [];
+                const oldScripts = getter();
+                const newScripts = [];
                 $(selector).children().each(function () {
                     const scriptName = $(this).find('.regex_script_name').text();
-                    const existingScript = extension_settings.regex.find((e) => e.scriptName === scriptName);
+                    const existingScript = oldScripts.find((e) => e.scriptName === scriptName);
                     if (existingScript) {
                         newScripts.push(existingScript);
                     }
