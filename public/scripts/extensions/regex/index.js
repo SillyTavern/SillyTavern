@@ -495,14 +495,14 @@ jQuery(async () => {
         },
         {
             selector: '#saved_scoped_scripts',
-            setter: x => characters[this_chid].data.extensions.regex_scripts = x,
+            setter: x => writeExtensionField(this_chid, 'regex_scripts', x),
             getter: () => characters[this_chid].data.extensions.regex_scripts ?? [],
         },
     ];
     for (const { selector, setter, getter } of sortableDatas) {
         $(selector).sortable({
             delay: getSortableDelay(),
-            stop: function () {
+            stop: async function () {
                 const oldScripts = getter();
                 const newScripts = [];
                 $(selector).children().each(function () {
@@ -513,7 +513,7 @@ jQuery(async () => {
                     }
                 });
 
-                setter(newScripts);
+                await setter(newScripts);
                 saveSettingsDebounced();
 
                 console.debug(`Regex scripts in ${selector} reordered`);
