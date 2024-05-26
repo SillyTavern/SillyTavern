@@ -4,7 +4,6 @@ import {
     this_chid,
     callPopup,
     menu_type,
-    getCharacters,
     entitiesFilter,
     printCharactersDebounced,
     buildAvatarList,
@@ -15,12 +14,13 @@ import {
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, select_group_chats, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { isMobile } from './RossAscends-mods.js';
+import { POPUP_TYPE, callGenericPopup } from './popup.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -44,6 +44,8 @@ export {
     compareTagsForSort,
     removeTagFromMap,
 };
+
+/** @typedef {import('../script.js').Character} Character */
 
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
 const GROUP_FILTER_SELECTOR = '#rm_group_chats_block .rm_tag_filter';
@@ -467,29 +469,34 @@ export function getTagKeyForEntityElement(element) {
 }
 
 /**
- * Adds a tag to a given entity
- * @param {Tag} tag - The tag to add
- * @param {string|string[]} entityId - The entity to add this tag to. Has to be the entity key (e.g. `addTagToEntity`). (Also allows multiple entities to be passed in)
+ * Adds one or more tags to a given entity
+ *
+ * @param {Tag|Tag[]} tag - The tag or tags to add
+ * @param {string|string[]} entityId - The entity or entities to add this tag to. Has to be the entity key (e.g. `addTagToEntity`).
  * @param {object} [options={}] - Optional arguments
  * @param {JQuery<HTMLElement>|string?} [options.tagListSelector=null] - An optional selector if a specific list should be updated with the new tag too (for example because the add was triggered for that function)
  * @param {PrintTagListOptions} [options.tagListOptions] - Optional parameters for printing the tag list. Can be set to be consistent with the expected behavior of tags in the list that was defined before.
  * @returns {boolean} Whether at least one tag was added
  */
-export function addTagToEntity(tag, entityId, { tagListSelector = null, tagListOptions = {} } = {}) {
+export function addTagsToEntity(tag, entityId, { tagListSelector = null, tagListOptions = {} } = {}) {
+    const tags = Array.isArray(tag) ? tag : [tag];
+    const entityIds = Array.isArray(entityId) ? entityId : [entityId];
+
     let result = false;
+
     // Add tags to the map
-    if (Array.isArray(entityId)) {
-        entityId.forEach((id) => result = addTagToMap(tag.id, id) || result);
-    } else {
-        result = addTagToMap(tag.id, entityId);
-    }
+    entityIds.forEach((id) => {
+        tags.forEach((tag) => {
+            result = addTagToMap(tag.id, id) || result;
+        });
+    });
 
     // Save and redraw
     printCharactersDebounced();
     saveSettingsDebounced();
 
     // We should manually add the selected tag to the print tag function, so we cover places where the tag list did not automatically include it
-    tagListOptions.addTag = tag;
+    tagListOptions.addTag = tags;
 
     // add tag to the UI and internal map - we reprint so sorting and new markup is done correctly
     if (tagListSelector) printTagList(tagListSelector, tagListOptions);
@@ -625,7 +632,7 @@ function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
     const characterData = event.target.closest('#bulk_tags_div')?.dataset.characters;
     const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
 
-    addTagToEntity(tag, characterIds, { tagListSelector: listSelector, tagListOptions: tagListOptions });
+    addTagsToEntity(tag, characterIds, { tagListSelector: listSelector, tagListOptions: tagListOptions });
 
     // need to return false to keep the input clear
     return false;
@@ -634,74 +641,172 @@ function selectTag(event, ui, listSelector, { tagListOptions = {} } = {}) {
 /**
  * Get a list of existing tags matching a list of provided new tag names
  *
- * @param {string[]} new_tags - A list of strings representing tag names
- * @returns List of existing tags
+ * @param {string[]} newTags - A list of strings representing tag names
+ * @returns {Tag[]} List of existing tags
  */
-function getExistingTags(new_tags) {
-    let existing_tags = [];
-    for (let tagName of new_tags) {
+function getExistingTags(newTags) {
+    let existingTags = [];
+    for (let tagName of newTags) {
         let foundTag = getTag(tagName);
         if (foundTag) {
-            existing_tags.push(foundTag.name);
+            existingTags.push(foundTag);
         }
     }
-    return existing_tags;
+    return existingTags;
 }
 
-async function importTags(imported_char) {
-    let imported_tags = imported_char.tags.filter(t => t !== 'ROOT' && t !== 'TAVERN');
-    let existingTags = await getExistingTags(imported_tags);
-    //make this case insensitive
-    let newTags = imported_tags.filter(t => !existingTags.some(existingTag => existingTag.toLowerCase() === t.toLowerCase()));
-    let selected_tags = '';
-    const existingTagsString = existingTags.length ? (': ' + existingTags.join(', ')) : '';
-    if (newTags.length === 0) {
-        await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p>`, 'text');
-    } else {
-        selected_tags = await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
-    }
-    // @ts-ignore
-    selected_tags = existingTags.concat(selected_tags.split(','));
-    // @ts-ignore
-    selected_tags = selected_tags.map(t => t.trim()).filter(t => t !== '');
-    //Anti-troll measure
-    if (selected_tags.length > 15) {
-        selected_tags = selected_tags.slice(0, 15);
-    }
-    for (let tagName of selected_tags) {
-        let tag = getTag(tagName);
+const tagImportSettings = {
+    ALWAYS_IMPORT_ALL: 1,
+    ONLY_IMPORT_EXISTING: 2,
+    IMPORT_NONE: 3,
+    ASK: 4
+};
 
-        if (!tag) {
-            tag = createNewTag(tagName);
-        }
+let globalTagImportSetting = tagImportSettings.ASK; // Default setting
 
-        if (!tag_map[imported_char.avatar].includes(tag.id)) {
-            tag_map[imported_char.avatar].push(tag.id);
-            console.debug('added tag to map', tag, imported_char.name);
-        }
+const IMPORT_EXLCUDED_TAGS = ['ROOT', 'TAVERN'];
+const ANTI_TROLL_MAX_TAGS = 15;
+
+/**
+ * Imports tags for a given character
+ *
+ * @param {Character} character - The character
+ * @returns {Promise<boolean>} Boolean indicating whether any tag was imported
+ */
+async function importTags(character) {
+    // Gather the tags to import based on the selected setting
+    const tagNamesToImport = await handleTagImport(character);
+    if (!tagNamesToImport?.length) {
+        toastr.info('No tags imported', 'Importing Tags');
+        return;
     }
 
-    saveSettingsDebounced();
+    const tagsToImport = tagNamesToImport.map(tag => getTag(tag, { createNew: true }));
+    const added = addTagsToEntity(tagsToImport, character.avatar);
 
-    // Await the character list, which will automatically reprint it and all tag filters
-    await getCharacters();
+    toastr.success(`Imported tags:<br />${tagsToImport.map(x => x.name).join(', ')}`, 'Importing Tags', { escapeHtml: false });
 
-    // need to return false to keep the input clear
-    return false;
+    return added;
+}
+
+/**
+ * Handles the import of tags for a given character and returns the resulting list of tags to add
+ *
+ * @param {Character} character - The character
+ * @returns {Promise<string[]>} Array of strings representing the tags to import
+ */
+async function handleTagImport(character) {
+    /** @type {string[]} */
+    const importTags = character.tags.map(t => t.trim()).filter(t => t)
+        .filter(t => !IMPORT_EXLCUDED_TAGS.includes(t))
+        .slice(0, ANTI_TROLL_MAX_TAGS);
+    const existingTags = getExistingTags(importTags);
+    const newTags = importTags.filter(t => !existingTags.some(existingTag => existingTag.name.toLowerCase() === t.toLowerCase()))
+        .map(newTag);
+
+    switch (globalTagImportSetting) {
+        case tagImportSettings.ALWAYS_IMPORT_ALL:
+            return existingTags.concat(newTags).map(t => t.name);
+        case tagImportSettings.ONLY_IMPORT_EXISTING:
+            return existingTags.map(t => t.name);
+        case tagImportSettings.ASK:
+            return await showTagImportPopup(character, existingTags, newTags);
+        case tagImportSettings.IMPORT_NONE:
+        default:
+            return [];
+    }
+}
+
+/**
+ * Shows a popup to import tags for a given character and returns the resulting list of tags to add
+ *
+ * @param {Character} character - The character
+ * @param {Tag[]} existingTags - List of existing tags
+ * @param {Tag[]} newTags - List of new tags
+ * @returns {Promise<string[]>} Array of strings representing the tags to import
+ */
+async function showTagImportPopup(character, existingTags, newTags) {
+    /** @type {{[key: string]: import('./popup.js').CustomPopupButton}} */
+    const importButtons = {
+        EXISTING: { result: 2, text: 'Import Existing' },
+        ALL: { result: 3, text: 'Import All' },
+        NONE: { result: 4, text: 'Import None' },
+    }
+
+    const customButtonsCaptions = Object.values(importButtons).map(button => `&quot;${button.text}&quot;`);
+    const customButtonsString = customButtonsCaptions.slice(0, -1).join(', ') + ' or ' + customButtonsCaptions.slice(-1);
+
+    const popupContent = $(`
+        <h3>Import Tags For ${character.name}</h3>
+        <div class="import_avatar_placeholder"></div>
+        <div class="import_tags_content justifyLeft">
+            <small>
+                Click remove on any tag to remove it from this import.<br />
+                Select one of the import options to finish importing the tags.
+            </small>
+
+            <h4 class="m-t-1">Existing Tags</h4>
+            <div id="import_existing_tags_list" class="tags"></div>
+
+            <h4 class="m-t-1">New Tags</h4>
+            <div id="import_new_tags_list" class="tags"></div>
+
+            <small>
+                <label class="checkbox flex-container alignitemscenter flexNoGap m-t-3" for="import_remember_option">
+                    <input type="checkbox" id="import_remember_option" name="import_remember_option" />
+                    <span data-i18n="Remember my choice">
+                        Remember my choice
+                        <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title]Remember the chosen import option\nIf ${customButtonsString} is selected, this dialog will not show up anymore.\nTo change this, go to the settings and modify &quot;Tag Import Option&quot;.\n\nIf the &quot;Import&quot; option is chosen, the global setting will stay on &quot;Ask&quot;."
+                            title="Remember the chosen import option\nIf ${customButtonsString} is selected, this dialog will not show up anymore.\nTo change this, go to the settings and modify &quot;Tag Import Option&quot;.\n\nIf the &quot;Import&quot; option is chosen, the global setting will stay on &quot;Ask&quot;.">
+                        </div>
+                    </span>
+                </label>
+            </small>
+        </div>`);
+
+    // Print tags after popup is shown, so that events can be added
+    printTagList(popupContent.find('#import_existing_tags_list'), { tags: existingTags, tagOptions: { removable: true, removeAction: tag => removeFromArray(existingTags, tag) } });
+    printTagList(popupContent.find('#import_new_tags_list'), { tags: newTags, tagOptions: { removable: true, removeAction: tag => removeFromArray(newTags, tag) } });
+
+    const result = await callGenericPopup(popupContent, POPUP_TYPE.TEXT, null, { wider: true, okButton: 'Import', cancelButton: true, customButtons: Object.values(importButtons) });
+    if (!result) {
+        return [];
+    }
+
+    switch (result) {
+        case 1:
+        case true:
+        case importButtons.ALL.result: // Default 'Import' option where it imports all selected
+            return existingTags.concat(newTags).map(t => t.name);
+        case importButtons.EXISTING.result:
+            return existingTags.map(t => t.name);
+        case importButtons.NONE.result:
+        default:
+            return [];
+    }
 }
 
 /**
  * Gets a tag from the tags array based on the provided tag name (insensitive soft matching)
+ * Optionally creates the tag if it doesn't exist
  *
  * @param {string} tagName - The name of the tag to search for
- * @return {Tag?} The tag object that matches the provided tag name, or undefined if no match is found.
+ * @param {object} [options={}] - Optional parameters
+ * @param {boolean} [options.createNew=false] - Whether to create the tag if it doesn't exist
+ * @returns {Tag?} The tag object that matches the provided tag name, or undefined if no match is found
  */
-function getTag(tagName) {
-    return tags.find(t => equalsIgnoreCaseAndAccents(t.name, tagName));
+function getTag(tagName, { createNew = false } = {}) {
+    let tag = tags.find(t => equalsIgnoreCaseAndAccents(t.name, tagName));
+    if (!tag && createNew) {
+        tag = createNewTag(tagName);
+    }
+    return tag;
 }
 
 /**
  * Creates a new tag with default properties and a randomly generated id
+ *
+ * Does **not** trigger a save, so it's up to the caller to do that
  *
  * @param {string} tagName - name of the tag
  * @returns {Tag} the newly created tag, or the existing tag if it already exists (with a logged warning)
@@ -713,7 +818,23 @@ function createNewTag(tagName) {
         return existing;
     }
 
-    const tag = {
+    const tag = newTag(tagName);
+    tags.push(tag);
+    console.debug('Created new tag', tag.name, 'with id', tag.id);
+    return tag;
+}
+
+/**
+ * Creates a new tag object with the given tag name and default properties
+ *
+ * Not to be confused with `createNewTag`, which actually creates the tag and adds it to the existing list of tags.
+ * Use this one to create temporary tag objects, for example for drawing.
+ *
+ * @param {string} tagName - The name of the tag
+ * @return {Tag} The newly created tag object
+ */
+function newTag(tagName) {
+    return {
         id: uuidv4(),
         name: tagName,
         folder_type: TAG_FOLDER_DEFAULT_TYPE,
@@ -723,9 +844,6 @@ function createNewTag(tagName) {
         color2: '',
         create_date: Date.now(),
     };
-    tags.push(tag);
-    console.debug('Created new tag', tag.name, 'with id', tag.id);
-    return tag;
 }
 
 /**
@@ -733,6 +851,7 @@ function createNewTag(tagName) {
  * @property {boolean} [removable=false] - Whether tags can be removed.
  * @property {boolean} [selectable=false] - Whether tags can be selected.
  * @property {function} [action=undefined] - Action to perform on tag interaction.
+ * @property {(tag: Tag)=>boolean} [removeAction=undefined] - Action to perform on tag removal instead of the default remove action. If the action returns false, the tag will not be removed.
  * @property {boolean} [isGeneralList=false] - If true, indicates that this is the general list of tags.
  * @property {boolean} [skipExistsCheck=false] - If true, the tag gets added even if a tag with the same id already exists.
  */
@@ -740,7 +859,7 @@ function createNewTag(tagName) {
 /**
  * @typedef {object} PrintTagListOptions - Optional parameters for printing the tag list.
  * @property {Tag[]|function(): Tag[]} [tags=undefined] - Optional override of tags that should be printed. Those will not be sorted. If no supplied, tags for the relevant character are printed. Can also be a function that returns the tags.
- * @property {Tag} [addTag=undefined] - Optionally provide a tag that should be manually added to this print. Either to the overriden tag list or the found tags based on the entity/key. Will respect the tag exists check.
+ * @property {Tag|Tag[]} [addTag=undefined] - Optionally provide one or multiple tags that should be manually added to this print. Either to the overriden tag list or the found tags based on the entity/key. Will respect the tag exists check.
  * @property {object|number|string} [forEntityOrKey=undefined] - Optional override for the chosen entity, otherwise the currently selected is chosen. Can be an entity with id property (character, group, tag), or directly an id or tag key.
  * @property {boolean|string} [empty=true] - Whether the list should be initially empty. If a string string is provided, 'always' will always empty the list, otherwise it'll evaluate to a boolean.
  * @property {boolean} [sort=true] - Whether the tags should be sorted via the sort function, or kept as is.
@@ -764,8 +883,9 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
         $element.empty();
     }
 
-    if (addTag && (tagOptions.skipExistsCheck || !printableTags.some(x => x.id === addTag.id))) {
-        printableTags = [...printableTags, addTag];
+    if (addTag) {
+        const addTags = Array.isArray(addTag) ? addTag : [addTag];
+        printableTags = printableTags.concat(addTags.filter(tag => tagOptions.skipExistsCheck || !printableTags.some(t => t.id === tag.id)));
     }
 
     // one last sort, because we might have modified the tag list or manually retrieved it from a function
@@ -849,7 +969,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
  * @param {TagOptions} [options={}] - Options for tag behavior
  * @returns {void}
  */
-function appendTagToList(listElement, tag, { removable = false, selectable = false, action = undefined, isGeneralList = false, skipExistsCheck = false } = {}) {
+function appendTagToList(listElement, tag, { removable = false, selectable = false, action = undefined, removeAction = undefined, isGeneralList = false, skipExistsCheck = false } = {}) {
     if (!listElement) {
         return;
     }
@@ -867,6 +987,13 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
     tagElement.find('.tag_name').text(tag.name);
     const removeButton = tagElement.find('.tag_remove');
     removable ? removeButton.show() : removeButton.hide();
+    if (removable && removeAction) {
+        tagElement.attr('custom-remove-action', String(true));
+        removeButton.on('click', () => {
+            const result = removeAction(tag);
+            if (result !== false) tagElement.remove();
+        });
+    }
 
     if (tag.class) {
         tagElement.addClass(tag.class);
@@ -1025,6 +1152,12 @@ function onTagRemoveClick(event) {
     const tagElement = $(this).closest('.tag');
     const tagId = tagElement.attr('id');
 
+    // If we have a custom remove action, we are not executing anything here in the default handler
+    if (tagElement.attr('custom-remove-action')) {
+        console.debug('Custom remove action', tagId);
+        return;
+    }
+
     // Check if we are inside the drilldown. If so, we call remove on the bogus folder
     if ($(this).closest('.rm_tag_bogus_drilldown').length > 0) {
         console.debug('Bogus drilldown remove', tagId);
@@ -1135,9 +1268,9 @@ function onViewTagsListClick() {
     const tagContainer = $('<div class="tag_view_list_tags ui-sortable"></div>');
     html.append(tagContainer);
 
-    callPopup(html, 'text', null, { allowVerticalScrolling: true });
+    const result = callGenericPopup(html, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true });
 
-    printViewTagList();
+    printViewTagList(html);
     makeTagListDraggable(tagContainer);
 
     $('#dialogue_popup  .tag-color').on('change', (evt) => onTagColorize(evt));
@@ -1443,15 +1576,19 @@ async function onTagDeleteClick() {
     const id = $(this).closest('.tag_view_item').attr('id');
     const tag = tags.find(x => x.id === id);
     const otherTags = sortTags(tags.filter(x => x.id !== id).map(x => ({ id: x.id, name: x.name })));
-    const popupText = `
+
+    const popupContent = $(`
         <h3>Delete Tag</h3>
-        <p>${`Are you sure you want to delete the tag '${tag.name}'?`}</p>
-        <p>If you want to merge all references to this tag into another tag, select it below:</p>
+        <div>Do you want to delete the tag <div id="tag_to_delete" class="tags_inline inline-flex margin-r2"></div>?</div>
+        <div class="m-t-2 marginBot5">If you want to merge all references to this tag into another tag, select it below:</div>
         <select id="merge_tag_select">
-            <option value=""> - None - </option>
+            <option value="">--- None ---</option>
             ${otherTags.map(x => `<option value="${x.id}">${x.name}</option>`).join('')}
-        </select>`;
-    const result = callPopup(popupText, 'confirm');
+        </select>`);
+
+    appendTagToList(popupContent.find('#tag_to_delete'), tag);
+
+    const result = callGenericPopup(popupContent, POPUP_TYPE.CONFIRM);
 
     // Make the select control more fancy on not mobile
     if (!isMobile()) {
@@ -1484,6 +1621,8 @@ async function onTagDeleteClick() {
     tags.splice(index, 1);
     $(`.tag[id="${id}"]`).remove();
     $(`.tag_view_item[id="${id}"]`).remove();
+
+    toastr.success(`'${tag.name}' deleted${mergeTagId ? ` and merged into '${tags.find(x => x.id === mergeTagId).name}'` : ''}`, 'Delete Tag');
 
     printCharactersDebounced();
     saveSettingsDebounced();
@@ -1562,8 +1701,8 @@ function copyTags(data) {
     tag_map[data.newAvatar] = Array.from(new Set([...prevTagMap, ...newTagMap]));
 }
 
-function printViewTagList(empty = true) {
-    const tagContainer = $('#dialogue_popup .tag_view_list_tags');
+function printViewTagList(html, empty = true) {
+    const tagContainer = html.find('.tag_view_list_tags');
 
     if (empty) tagContainer.empty();
     const everything = Object.values(tag_map).flat();
@@ -1622,7 +1761,7 @@ function registerTagsSlashCommands() {
             if (!key) return 'false';
             const tag = paraGetTag(tagName, { allowCreate: true });
             if (!tag) return 'false';
-            const result = addTagToEntity(tag, key);
+            const result = addTagsToEntity(tag, key);
             return String(result);
         },
         namedArgumentList: [
