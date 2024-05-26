@@ -162,6 +162,7 @@ async function loadRegexScripts() {
             }
 
             await deleteRegexScript({ id: script.id, isScoped });
+            await reloadCurrentChat();
         });
 
         $(container).append(scriptHtml);
@@ -492,7 +493,7 @@ jQuery(async () => {
         {
             selector: '#saved_scoped_scripts',
             setter: x => writeExtensionField(this_chid, 'regex_scripts', x),
-            getter: () => characters[this_chid].data.extensions.regex_scripts ?? [],
+            getter: () => characters[this_chid]?.data?.extensions?.regex_scripts ?? [],
         },
     ];
     for (const { selector, setter, getter } of sortableDatas) {
