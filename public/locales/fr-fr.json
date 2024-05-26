@@ -2,7 +2,7 @@
     "clickslidertips": "Cliquez sur le curseur pour saisir les valeurs manuellement.",
     "kobldpresets": "Préréglages de Kobold",
     "guikoboldaisettings": "Paramètres de l'interface utilisateur de KoboldAI",
-    "novelaipreserts": "Préréglages de NovelAI",
+    "novelaipresets": "Préréglages de NovelAI",
     "openaipresets": "Préréglages d'OpenAI",
     "text gen webio(ooba) presets": "Préréglages de WebUI(ooba)",
     "response legth(tokens)": "Longueur de la réponse (en tokens)",

@@ -2,7 +2,7 @@
     "clickslidertips": "수동으로 값을 입력하려면 클릭하세요.",
     "kobldpresets": "코볼드 사전 설정",
     "guikoboldaisettings": "KoboldAI 인터페이스 설정",
-    "novelaipreserts": "NovelAI 사전 설정",
+    "novelaipresets": "NovelAI 사전 설정",
     "openaipresets": "OpenAI 사전 설정",
     "text gen webio(ooba) presets": "텍스트 생성 WebUI(ooba) 사전 설정",
     "response legth(tokens)": "응답 길이 (토큰)",

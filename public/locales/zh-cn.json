@@ -2,7 +2,7 @@
     "clickslidertips": "单击滑块以手动输入值。",
     "kobldpresets": "Kobold 预设",
     "guikoboldaisettings": "KoboldAI 用户界面设置",
-    "novelaipreserts": "NovelAI 预设",
+    "novelaipresets": "NovelAI 预设",
     "openaipresets": "对话补全预设",
     "text gen webio(ooba) presets": "WebUI(ooba) 预设",
     "response legth(tokens)": "响应长度（以词符数计）",

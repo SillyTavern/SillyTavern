@@ -2,7 +2,7 @@
     "clickslidertips": "Nhấp vào thanh trượt để nhập giá trị bằng tay.",
     "kobldpresets": "Cài đặt trước Kobold",
     "guikoboldaisettings": "Cài đặt giao diện KoboldAI",
-    "novelaipreserts": "Cài đặt trước NovelAI",
+    "novelaipresets": "Cài đặt trước NovelAI",
     "openaipresets": "Cài đặt trước OpenAI",
     "text gen webio(ooba) presets": "Cài đặt trước WebUI(ooba) của máy tạo văn bản",
     "response legth(tokens)": "Độ dài phản hồi (trong các token)",

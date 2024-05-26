@@ -2,7 +2,7 @@
     "clickslidertips": "Clique para inserir valores manualmente.",
     "kobldpresets": "Configurações predefinidas do Kobold",
     "guikoboldaisettings": "Configurações da interface do KoboldAI",
-    "novelaipreserts": "Configurações predefinidas do NovelAI",
+    "novelaipresets": "Configurações predefinidas do NovelAI",
     "openaipresets": "Configurações predefinidas do OpenAI",
     "text gen webio(ooba) presets": "Configurações predefinidas do WebUI(ooba) para geração de texto",
     "response legth(tokens)": "Comprimento da resposta (tokens)",

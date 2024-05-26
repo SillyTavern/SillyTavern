@@ -2,7 +2,7 @@
     "clickslidertips": "انقر  لإدخال القيم يدويًا.",
     "kobldpresets": "الإعدادات المسبقة لـ Kobold",
     "guikoboldaisettings": "إعدادات واجهة KoboldAI",
-    "novelaipreserts": "الإعدادات المسبقة لـ NovelAI",
+    "novelaipresets": "الإعدادات المسبقة لـ NovelAI",
     "openaipresets": "الإعدادات المسبقة لـ OpenAI",
     "text gen webio(ooba) presets": "الإعدادات المسبقة لـ WebUI(ooba)",
     "response legth(tokens)": "طول الاستجابة (بعدد الاحرف او الرموز)",

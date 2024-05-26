@@ -2,7 +2,7 @@
     "clickslidertips": "手動で値を入力するにはクリックしてください。",
     "kobldpresets": "Koboldのプリセット",
     "guikoboldaisettings": "KoboldAIのGUI設定",
-    "novelaipreserts": "NovelAIのプリセット",
+    "novelaipresets": "NovelAIのプリセット",
     "openaipresets": "OpenAIのプリセット",
     "text gen webio(ooba) presets": "WebUI(ooba)のプリセット",
     "response legth(tokens)": "応答の長さ（トークン数）",

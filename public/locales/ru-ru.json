@@ -2,7 +2,7 @@
     "clickslidertips": "Кликайте по цифрам под ползунками, чтобы менять их вручную.",
     "kobldpresets": "Пресеты для Kobold",
     "guikoboldaisettings": "Настройки из интерфейса KoboldAI",
-    "novelaipreserts": "Пресеты для NovelAI",
+    "novelaipresets": "Пресеты для NovelAI",
     "openaipresets": "Пресеты для OpenAI",
     "text gen webio(ooba) presets": "Пресеты для WebUI(ooba)",
     "response legth(tokens)": "Ответ (в токенах)",
