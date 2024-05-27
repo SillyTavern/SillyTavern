@@ -465,42 +465,52 @@ export function decodeStyleTags(text) {
     const styleDecodeRegex = /<custom-style>(.+?)<\/custom-style>/gms;
     const mediaAllowed = isExternalMediaAllowed();
 
+    function sanitizeRule(rule) {
+        if (rule.selectors) {
+            for (let i = 0; i < rule.selectors.length; i++) {
+                let selector = rule.selectors[i];
+                if (selector) {
+                    let selectors = (selector.split(' ') ?? []).map((v) => {
+                        if (v.startsWith('.')) {
+                            return '.custom-' + v.substring(1);
+                        }
+                        return v;
+                    }).join(' ');
+
+                    rule.selectors[i] = '.mes_text ' + selectors;
+                }
+            }
+        }
+        if (!mediaAllowed && Array.isArray(rule.declarations) && rule.declarations.length > 0) {
+            for (const declaration of rule.declarations) {
+                if (declaration.value.includes('://')) {
+                    rule.declarations.splice(rule.declarations.indexOf(declaration), 1);
+                }
+            }
+        }
+    }
+
+    function sanitizeRuleSet(ruleSet) {
+        if (ruleSet.type === 'rule') {
+            sanitizeRule(ruleSet);
+        }
+
+        if (Array.isArray(ruleSet.rules)) {
+            ruleSet.rules = ruleSet.rules.filter(rule => rule.type !== 'import');
+
+            for (const mediaRule of ruleSet.rules) {
+                sanitizeRuleSet(mediaRule);
+            }
+        }
+    }
+
     return text.replaceAll(styleDecodeRegex, (_, style) => {
         try {
             let styleCleaned = unescape(style).replaceAll(/<br\/>/g, '');
             const ast = css.parse(styleCleaned);
-            const rules = ast?.stylesheet?.rules;
-            if (rules) {
-                for (const rule of rules) {
-                    if (rule.type === 'import') {
-                        rules.splice(rules.indexOf(rule), 1);
-                    }
-
-                    if (rule.type === 'rule') {
-                        if (rule.selectors) {
-                            for (let i = 0; i < rule.selectors.length; i++) {
-                                let selector = rule.selectors[i];
-                                if (selector) {
-                                    let selectors = (selector.split(' ') ?? []).map((v) => {
-                                        if (v.startsWith('.')) {
-                                            return '.custom-' + v.substring(1);
-                                        }
-                                        return v;
-                                    }).join(' ');
-
-                                    rule.selectors[i] = '.mes_text ' + selectors;
-                                }
-                            }
-                        }
-                        if (!mediaAllowed && Array.isArray(rule.declarations) && rule.declarations.length > 0) {
-                            for (const declaration of rule.declarations) {
-                                if (declaration.value.includes('://')) {
-                                    rule.declarations.splice(rule.declarations.indexOf(declaration), 1);
-                                }
-                            }
-                        }
-                    }
-                }
+            const sheet = ast?.stylesheet;
+            if (sheet) {
+                sanitizeRuleSet(ast.stylesheet);
             }
             return `<style>${css.stringify(ast)}</style>`;
         } catch (error) {
