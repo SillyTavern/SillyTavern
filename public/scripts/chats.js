@@ -466,11 +466,11 @@ export function decodeStyleTags(text) {
     const mediaAllowed = isExternalMediaAllowed();
 
     function sanitizeRule(rule) {
-        if (rule.selectors) {
+        if (Array.isArray(rule.selectors)) {
             for (let i = 0; i < rule.selectors.length; i++) {
-                let selector = rule.selectors[i];
+                const selector = rule.selectors[i];
                 if (selector) {
-                    let selectors = (selector.split(' ') ?? []).map((v) => {
+                    const selectors = (selector.split(' ') ?? []).map((v) => {
                         if (v.startsWith('.')) {
                             return '.custom-' + v.substring(1);
                         }
@@ -482,16 +482,12 @@ export function decodeStyleTags(text) {
             }
         }
         if (!mediaAllowed && Array.isArray(rule.declarations) && rule.declarations.length > 0) {
-            for (const declaration of rule.declarations) {
-                if (declaration.value.includes('://')) {
-                    rule.declarations.splice(rule.declarations.indexOf(declaration), 1);
-                }
-            }
+            rule.declarations = rule.declarations.filter(declaration => !declaration.value.includes('://'));
         }
     }
 
     function sanitizeRuleSet(ruleSet) {
-        if (ruleSet.type === 'rule') {
+        if (Array.isArray(ruleSet.selectors) || Array.isArray(ruleSet.declarations)) {
             sanitizeRule(ruleSet);
         }
 
