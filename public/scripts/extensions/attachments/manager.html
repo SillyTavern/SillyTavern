@@ -1,4 +1,4 @@
-<div class="wide100p padding5">
+<div class="wide100p padding5 dataBankAttachments">
     <h2 class="marginBot5">
         <span data-i18n="Data Bank">
             Data Bank
@@ -37,7 +37,27 @@
                 Size (Largest First)
             </option>
         </select>
-
+        <label class="margin0 menu_button menu_button_icon attachmentsBulkEditButton">
+            <i class="fa-solid fa-edit"></i>
+            <span data-i18n="Bulk Edit">Bulk Edit</span>
+            <input type="checkbox" class="displayNone attachmentsBulkEditCheckbox" hidden>
+        </label>
+    </div>
+    <div class="attachmentBulkActionsContainer flex-container marginTopBot5 alignItemsBaseline">
+        <div class="flex-container">
+            <div class="menu_button menu_button_icon bulkActionSelectAll" title="Select all *visible* attachments">
+                <i class="fa-solid fa-check-square"></i>
+                <span data-i18n="Select All">Select All</span>
+            </div>
+            <div class="menu_button menu_button_icon bulkActionSelectNone" title="Deselect all *visible* attachments">
+                <i class="fa-solid fa-square"></i>
+                <span data-i18n="Select None">Select None</span>
+            </div>
+            <div class="menu_button menu_button_icon bulkActionDelete" title="Delete selected attachments">
+                <i class="fa-solid fa-trash"></i>
+                <span data-i18n="Delete">Delete</span>
+            </div>
+        </div>
     </div>
     <div class="justifyLeft globalAttachmentsBlock marginBot10">
         <h3 class="globalAttachmentsTitle margin0 title_restorable">
@@ -102,6 +122,7 @@
 
     <div class="attachmentListItemTemplate template_element">
         <div class="attachmentListItem flex-container alignItemsCenter flexGap10">
+            <div class="attachmentListItemCheckboxContainer"><input type="checkbox" class="attachmentListItemCheckbox"></div>
             <div class="attachmentFileIcon fa-solid fa-file-alt"></div>
             <div class="attachmentListItemName flex1"></div>
             <small class="attachmentListItemCreated"></small>
