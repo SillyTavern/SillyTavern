@@ -463,6 +463,7 @@ export function encodeStyleTags(text) {
  */
 export function decodeStyleTags(text) {
     const styleDecodeRegex = /<custom-style>(.+?)<\/custom-style>/gms;
+    const mediaAllowed = isExternalMediaAllowed();
 
     return text.replaceAll(styleDecodeRegex, (_, style) => {
         try {
@@ -488,6 +489,13 @@ export function decodeStyleTags(text) {
                                     }).join(' ');
 
                                     rule.selectors[i] = '.mes_text ' + selectors;
+                                }
+                            }
+                        }
+                        if (!mediaAllowed && Array.isArray(rule.declarations) && rule.declarations.length > 0) {
+                            for (const declaration of rule.declarations) {
+                                if (declaration.value.includes('://')) {
+                                    rule.declarations.splice(rule.declarations.indexOf(declaration), 1);
                                 }
                             }
                         }
