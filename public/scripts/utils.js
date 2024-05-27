@@ -75,6 +75,20 @@ export function onlyUnique(value, index, array) {
 }
 
 /**
+ * Removes the first occurrence of a specified item from an array
+ *
+ * @param {*[]} array - The array from which to remove the item
+ * @param {*} item - The item to remove from the array
+ * @returns {boolean} - Returns true if the item was successfully removed, false otherwise.
+ */
+export function removeFromArray(array, item) {
+    const index = array.indexOf(item);
+    if (index === -1) return false;
+    array.splice(index, 1);
+    return true;
+}
+
+/**
  * Checks if a string only contains digits.
  * @param {string} str The string to check.
  * @returns {boolean} True if the string only contains digits, false otherwise.
@@ -1500,6 +1514,35 @@ export function flashHighlight(element, timespan = 2000) {
 }
 
 /**
+ * Checks if the given control has an animation applied to it
+ *
+ * @param {HTMLElement} control - The control element to check for animation
+ * @returns {boolean} Whether the control has an animation applied
+ */
+export function hasAnimation(control) {
+    const animatioName = getComputedStyle(control, null)["animation-name"];
+    return animatioName != "none";
+}
+
+/**
+ * Run an action once an animation on a control ends. If the control has no animation, the action will be executed immediately.
+ *
+ * @param {HTMLElement} control - The control element to listen for animation end event
+ * @param {(control:*?) => void} callback - The callback function to be executed when the animation ends
+ */
+export function runAfterAnimation(control, callback) {
+    if (hasAnimation(control)) {
+        const onAnimationEnd = () => {
+            control.removeEventListener('animationend', onAnimationEnd);
+            callback(control);
+        };
+        control.addEventListener('animationend', onAnimationEnd);
+    } else {
+        callback(control);
+    }
+}
+
+/**
  * A common base function for case-insensitive and accent-insensitive string comparisons.
  *
  * @param {string} a - The first string to compare.
@@ -1754,4 +1797,23 @@ export async function checkOverwriteExistingData(type, existingNames, name, { in
     }
 
     return true;
+}
+
+/**
+ * Generates a free name by appending a counter to the given name if it already exists in the list
+ *
+ * @param {string} name - The original name to check for existence in the list
+ * @param {string[]} list - The list of names to check for existence
+ * @param {(n: number) => string} [numberFormatter=(n) => ` #${n}`] - The function used to format the counter
+ * @returns {string} The generated free name
+ */
+export function getFreeName(name, list, numberFormatter = (n) => ` #${n}`) {
+    if (!list.includes(name)) {
+        return name;
+    }
+    let counter = 1;
+    while (list.includes(`${name} #${counter}`)) {
+        counter++;
+    }
+    return `${name}${numberFormatter(counter)}`;
 }

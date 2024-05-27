@@ -14,13 +14,13 @@ import {
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, select_group_chats, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { isMobile } from './RossAscends-mods.js';
-import { POPUP_TYPE, callGenericPopup } from './popup.js';
+import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -330,7 +330,7 @@ function filterByFolder(filterHelper) {
     if (!power_user.bogus_folders) {
         $('#bogus_folders').prop('checked', true).trigger('input');
         onViewTagsListClick();
-        flashHighlight($('#dialogue_popup .tag_as_folder, #dialogue_popup .tag_folder_indicator'));
+        flashHighlight($('#tag_view_list .tag_as_folder, #tag_view_list .tag_folder_indicator'));
         return;
     }
 
@@ -814,7 +814,7 @@ function getTag(tagName, { createNew = false } = {}) {
 function createNewTag(tagName) {
     const existing = getTag(tagName);
     if (existing) {
-        toastr.warning(`Cannot create new tag. A tag with the name already exists:<br />${existing}`, 'Creating Tag', { escapeHtml: false });
+        toastr.warning(`Cannot create new tag. A tag with the name already exists:<br />${existing.name}`, 'Creating Tag', { escapeHtml: false });
         return existing;
     }
 
@@ -1225,9 +1225,7 @@ export function createTagInput(inputSelector, listSelector, tagListOptions = {})
         .focus(onTagInputFocus); // <== show tag list on click
 }
 
-function onViewTagsListClick() {
-    const popup = $('#dialogue_popup');
-    popup.addClass('large_dialogue_popup');
+async function onViewTagsListClick() {
     const html = $(document.createElement('div'));
     html.attr('id', 'tag_view_list');
     html.append(`
@@ -1268,13 +1266,10 @@ function onViewTagsListClick() {
     const tagContainer = $('<div class="tag_view_list_tags ui-sortable"></div>');
     html.append(tagContainer);
 
-    const result = callGenericPopup(html, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true });
-
-    printViewTagList(html);
+    printViewTagList(tagContainer);
     makeTagListDraggable(tagContainer);
 
-    $('#dialogue_popup  .tag-color').on('change', (evt) => onTagColorize(evt));
-    $('#dialogue_popup  .tag-color2').on('change', (evt) => onTagColorize2(evt));
+    await callGenericPopup(html, POPUP_TYPE.TEXT, null, { allowVerticalScrolling: true });
 }
 
 /**
@@ -1336,7 +1331,7 @@ function makeTagListDraggable(tagContainer) {
         // If tags were dragged manually, we have to disable auto sorting
         if (power_user.auto_sort_tags) {
             power_user.auto_sort_tags = false;
-            $('#dialogue_popup input[name="auto_sort_tags"]').prop('checked', false);
+            $('#tag_view_list input[name="auto_sort_tags"]').prop('checked', false);
             toastr.info('Automatic sorting of tags deactivated.');
         }
 
@@ -1463,7 +1458,7 @@ async function onTagRestoreFileSelect(e) {
     printCharactersDebounced();
     saveSettingsDebounced();
 
-    onViewTagsListClick();
+    await onViewTagsListClick();
 }
 
 function onBackupRestoreClick() {
@@ -1485,14 +1480,18 @@ function onTagsBackupClick() {
 }
 
 function onTagCreateClick() {
-    const tag = createNewTag('New Tag');
-    printViewTagList();
+    const tagName = getFreeName('New Tag', tags.map(x => x.name));
+    const tag = createNewTag(tagName);
+    printViewTagList($('#tag_view_list .tag_view_list_tags'));
 
-    const tagElement = ($('#dialogue_popup .tag_view_list_tags')).find(`.tag_view_item[id="${tag.id}"]`);
+    const tagElement = ($('#tag_view_list .tag_view_list_tags')).find(`.tag_view_item[id="${tag.id}"]`);
+    tagElement[0]?.scrollIntoView();
     flashHighlight(tagElement);
 
     printCharactersDebounced();
     saveSettingsDebounced();
+
+    toastr.success('Tag created', 'Create Tag', { showDuration: 60000 });
 }
 
 function appendViewTagToList(list, tag, everything) {
@@ -1516,25 +1515,23 @@ function appendViewTagToList(list, tag, everything) {
 
     const primaryColorPicker = $('<toolcool-color-picker></toolcool-color-picker>')
         .addClass('tag-color')
-        .attr({ id: colorPickerId, color: tag.color });
+        .attr({ id: colorPickerId, color: tag.color || 'rgba(0, 0, 0, 0.3)', 'data-default-color': 'rgba(0, 0, 0, 0.3)' });
 
     const secondaryColorPicker = $('<toolcool-color-picker></toolcool-color-picker>')
         .addClass('tag-color2')
-        .attr({ id: colorPicker2Id, color: tag.color2 });
+        .attr({ id: colorPicker2Id, color: tag.color2 || power_user.main_text_color, 'data-default-color': power_user.main_text_color });
 
     template.find('.tagColorPickerHolder').append(primaryColorPicker);
     template.find('.tagColorPicker2Holder').append(secondaryColorPicker);
 
     template.find('.tag_as_folder').attr('id', tagAsFolderId);
 
+    primaryColorPicker.on('change', (evt) => onTagColorize(evt));
+    secondaryColorPicker.on('change', (evt) => onTagColorize2(evt));
+
     list.append(template);
 
     updateDrawTagFolder(template, tag);
-
-    // @ts-ignore
-    $(colorPickerId).color = tag.color;
-    // @ts-ignore
-    $(colorPicker2Id).color = tag.color2;
 }
 
 function onTagAsFolderClick() {
@@ -1588,21 +1585,19 @@ async function onTagDeleteClick() {
 
     appendTagToList(popupContent.find('#tag_to_delete'), tag);
 
-    const result = callGenericPopup(popupContent, POPUP_TYPE.CONFIRM);
-
     // Make the select control more fancy on not mobile
     if (!isMobile()) {
         // Delete the empty option in the dropdown, and make the select2 be empty by default
-        $('#merge_tag_select option[value=""]').remove();
-        $('#merge_tag_select').select2({
+        popupContent.find('#merge_tag_select option[value=""]').remove();
+        popupContent.find('#merge_tag_select').select2({
             width: '50%',
             placeholder: 'Select tag to merge into',
             allowClear: true,
         }).val(null).trigger('change');
     }
 
-    const confirm = await result;
-    if (!confirm) {
+    const result = await callGenericPopup(popupContent, POPUP_TYPE.CONFIRM);
+    if (result !== POPUP_RESULT.AFFIRMATIVE) {
         return;
     }
 
@@ -1633,14 +1628,22 @@ function onTagRenameInput() {
     const newName = $(this).text();
     const tag = tags.find(x => x.id === id);
     tag.name = newName;
+    $(this).attr('dirty', '');
     $(`.tag[id="${id}"] .tag_name`).text(newName);
     saveSettingsDebounced();
 }
 
 function onTagColorize(evt) {
     console.debug(evt);
+    const isDefaultColor = $(evt.target).data('default-color') === evt.detail.rgba;
+
+    if (evt.detail.rgba === evt.detail.color.originalInput)
+        return;
+
     const id = $(evt.target).closest('.tag_view_item').attr('id');
-    const newColor = evt.detail.rgba;
+    let newColor = evt.detail.rgba;
+    if (isDefaultColor) newColor = '';
+
     $(evt.target).parent().parent().find('.tag_view_name').css('background-color', newColor);
     $(`.tag[id="${id}"]`).css('background-color', newColor);
     $(`.bogus_folder_select[tagid="${id}"] .avatar`).css('background-color', newColor);
@@ -1652,8 +1655,17 @@ function onTagColorize(evt) {
 
 function onTagColorize2(evt) {
     console.debug(evt);
+    if (evt.detail.rgba === evt.detail.color.originalInput)
+        return;
+
     const id = $(evt.target).closest('.tag_view_item').attr('id');
-    const newColor = evt.detail.rgba;
+    let newColor = evt.detail.rgba;
+
+    // If new color is same as "data-default-color", we set it to empty string
+    const defaultColor = $(evt.target).data('default-color');
+    if (newColor === defaultColor) newColor = '';
+
+
     $(evt.target).parent().parent().find('.tag_view_name').css('color', newColor);
     $(`.tag[id="${id}"]`).css('color', newColor);
     $(`.bogus_folder_select[tagid="${id}"] .avatar`).css('color', newColor);
@@ -1701,9 +1713,7 @@ function copyTags(data) {
     tag_map[data.newAvatar] = Array.from(new Set([...prevTagMap, ...newTagMap]));
 }
 
-function printViewTagList(html, empty = true) {
-    const tagContainer = html.find('.tag_view_list_tags');
-
+function printViewTagList(tagContainer, empty = true) {
     if (empty) tagContainer.empty();
     const everything = Object.values(tag_map).flat();
     const sortedTags = sortTags(tags);
@@ -1901,22 +1911,31 @@ export function initTags() {
     eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
     eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
 
-    $(document).on('input', '#dialogue_popup input[name="auto_sort_tags"]', (evt) => {
+    $(document).on('input', '#tag_view_list input[name="auto_sort_tags"]', (evt) => {
         const toggle = $(evt.target).is(':checked');
         toggleAutoSortTags(evt.originalEvent, toggle);
-        printViewTagList();
+        printViewTagList($('#tag_view_list .tag_view_list_tags'));
     });
-    $(document).on('focusout', '#dialogue_popup .tag_view_name', (evt) => {
+    $(document).on('focusout', '#tag_view_list .tag_view_name', (evt) => {
+        // Reorder/reprint tags, but only if the name actually has changed, and only if we auto sort tags
+        if (!power_user.auto_sort_tags || !$(evt.target).is('[dirty]')) return;
+
         // Remember the order, so we can flash highlight if it changed after reprinting
-        const tagId = $(evt.target).parent('.tag_view_item').attr('id');
-        const oldOrder = $('#dialogue_popup .tag_view_item').map((_, el) => el.id).get();
+        const tagId = ($(evt.target).closest('.tag_view_item')).attr('id');
+        const oldOrder = $('#tag_view_list .tag_view_item').map((_, el) => el.id).get();
 
-        printViewTagList();
+        printViewTagList($('#tag_view_list .tag_view_list_tags'));
 
-        const newOrder = $('#dialogue_popup .tag_view_item').map((_, el) => el.id).get();
+        // If the new focus would've been inside the now redrawn tag list, we should at least move back the focus to the current name
+        // Otherwise tab-navigation gets a bit weird
+        if (evt.relatedTarget instanceof HTMLElement && $(evt.relatedTarget).closest('#tag_view_list')) {
+            $(`#tag_view_list .tag_view_item[id="${tagId}"] .tag_view_name`)[0]?.focus();
+        }
+
+        const newOrder = $('#tag_view_list .tag_view_item').map((_, el) => el.id).get();
         const orderChanged = !oldOrder.every((id, index) => id === newOrder[index]);
         if (orderChanged) {
-            flashHighlight($(`#dialogue_popup .tag_view_item[id="${tagId}"]`));
+            flashHighlight($(`#tag_view_list .tag_view_item[id="${tagId}"]`));
         }
     });
 
