@@ -14,13 +14,14 @@ import {
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, select_group_chats, selected_group } from './group-chats.js';
-import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName } from './utils.js';
+import { download, onlyUnique, parseJsonFile, uuidv4, getSortableDelay, flashHighlight, equalsIgnoreCaseAndAccents, includesIgnoreCaseAndAccents, removeFromArray, getFreeName, debounce } from './utils.js';
 import { power_user } from './power-user.js';
 import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './slash-commands/SlashCommandArgument.js';
 import { isMobile } from './RossAscends-mods.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
+import { debounce_timeout } from './constants.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -1521,13 +1522,21 @@ function appendViewTagToList(list, tag, everything) {
         .addClass('tag-color2')
         .attr({ id: colorPicker2Id, color: tag.color2 || power_user.main_text_color, 'data-default-color': power_user.main_text_color });
 
-    template.find('.tagColorPickerHolder').append(primaryColorPicker);
-    template.find('.tagColorPicker2Holder').append(secondaryColorPicker);
+    template.find('.tag_view_color_picker[data-value="color"]').append(primaryColorPicker)
+        .append($('<div class="fas fa-link fa-xs link_icon right_menu_button" title="Link to theme color"></div>'));
+    template.find('.tag_view_color_picker[data-value="color2"]').append(secondaryColorPicker)
+        .append($('<div class="fas fa-link fa-xs link_icon right_menu_button" title="Link to theme color"></div>'));
 
     template.find('.tag_as_folder').attr('id', tagAsFolderId);
 
-    primaryColorPicker.on('change', (evt) => onTagColorize(evt));
-    secondaryColorPicker.on('change', (evt) => onTagColorize2(evt));
+    primaryColorPicker.on('change', (evt) => onTagColorize(evt, (tag, color) => tag.color = color, 'background-color'));
+    secondaryColorPicker.on('change', (evt) => onTagColorize(evt, (tag, color) => tag.color2 = color, 'color'));
+    template.find('.tag_view_color_picker .link_icon').on('click', (evt) => {
+        const colorPicker = $(evt.target).closest('.tag_view_color_picker').find('toolcool-color-picker');
+        const defaultColor = colorPicker.attr('data-default-color');
+        // @ts-ignore
+        colorPicker[0].color = defaultColor;
+    });
 
     list.append(template);
 
@@ -1633,47 +1642,36 @@ function onTagRenameInput() {
     saveSettingsDebounced();
 }
 
-function onTagColorize(evt) {
+/**
+ * Handles the colorization of a tag when the user interacts with the color picker
+ *
+ * @param {*} evt - The custom colorize event object
+ * @param {(tag: Tag, val: string) => void} setColor - A function that sets the color of the tag
+ * @param {string} cssProperty - The CSS property to apply the color to
+ */
+function onTagColorize(evt, setColor, cssProperty) {
     console.debug(evt);
     const isDefaultColor = $(evt.target).data('default-color') === evt.detail.rgba;
-
-    if (evt.detail.rgba === evt.detail.color.originalInput)
-        return;
+    $(evt.target).closest('.tag_view_color_picker').find('.link_icon').toggle(!isDefaultColor);
 
     const id = $(evt.target).closest('.tag_view_item').attr('id');
     let newColor = evt.detail.rgba;
     if (isDefaultColor) newColor = '';
 
-    $(evt.target).parent().parent().find('.tag_view_name').css('background-color', newColor);
-    $(`.tag[id="${id}"]`).css('background-color', newColor);
-    $(`.bogus_folder_select[tagid="${id}"] .avatar`).css('background-color', newColor);
+    $(evt.target).closest('.tag_view_item').find('.tag_view_name').css(cssProperty, newColor);
     const tag = tags.find(x => x.id === id);
-    tag.color = newColor;
+    setColor(tag, newColor);
     console.debug(tag);
     saveSettingsDebounced();
+
+    // Debounce redrawing color of the tag in other elements
+    debouncedTagColoring(tag.id, cssProperty, newColor);
 }
 
-function onTagColorize2(evt) {
-    console.debug(evt);
-    if (evt.detail.rgba === evt.detail.color.originalInput)
-        return;
-
-    const id = $(evt.target).closest('.tag_view_item').attr('id');
-    let newColor = evt.detail.rgba;
-
-    // If new color is same as "data-default-color", we set it to empty string
-    const defaultColor = $(evt.target).data('default-color');
-    if (newColor === defaultColor) newColor = '';
-
-
-    $(evt.target).parent().parent().find('.tag_view_name').css('color', newColor);
-    $(`.tag[id="${id}"]`).css('color', newColor);
-    $(`.bogus_folder_select[tagid="${id}"] .avatar`).css('color', newColor);
-    const tag = tags.find(x => x.id === id);
-    tag.color2 = newColor;
-    console.debug(tag);
-    saveSettingsDebounced();
-}
+const debouncedTagColoring = debounce((tagId, cssProperty, newColor) => {
+    $(`.tag[id="${tagId}"]`).css(cssProperty, newColor);
+    $(`.bogus_folder_select[tagid="${tagId}"] .avatar`).css(cssProperty, newColor);
+}, debounce_timeout.quick);
 
 function onTagListHintClick() {
     $(this).toggleClass('selected');

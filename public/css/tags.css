@@ -27,6 +27,17 @@
     flex: 1;
 }
 
+.tag_view_color_picker {
+    position: relative;
+}
+
+.tag_view_color_picker .link_icon {
+    position: absolute;
+    top: 50%;
+    right: 0px;
+    opacity: 0.5;
+}
+
 .tag_delete {
     padding-right: 0;
     color: var(--SmartThemeBodyColor) !important;
