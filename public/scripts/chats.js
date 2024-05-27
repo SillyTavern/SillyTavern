@@ -471,6 +471,9 @@ export function decodeStyleTags(text) {
             const rules = ast?.stylesheet?.rules;
             if (rules) {
                 for (const rule of rules) {
+                    if (rule.type === 'import') {
+                        rules.splice(rules.indexOf(rule), 1);
+                    }
 
                     if (rule.type === 'rule') {
                         if (rule.selectors) {
