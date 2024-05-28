@@ -25,6 +25,7 @@ import { getDataBankAttachments, getFileAttachment } from '../../chats.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
+import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
 
 const MODULE_NAME = 'vectors';
 
@@ -38,6 +39,8 @@ const settings = {
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
     cohere_model: 'embed-english-v3.0',
+    ollama_model: 'mxbai-embed-large',
+    ollama_keep: false,
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -272,6 +275,10 @@ async function synchronizeChat(batchSize = 5) {
             switch (cause) {
                 case 'api_key_missing':
                     return 'API key missing. Save it in the "API Connections" panel.';
+                case 'api_url_missing':
+                    return 'API URL missing. Save it in the "API Connections" panel.';
+                case 'api_model_missing':
+                    return 'Vectorization Source Model is required, but not set.';
                 case 'extras_module_missing':
                     return 'Extras API must provide an "embeddings" module.';
                 default:
@@ -637,6 +644,12 @@ function getVectorHeaders() {
         case 'cohere':
             addCohereHeaders(headers);
             break;
+        case 'ollama':
+            addOllamaHeaders(headers);
+            break;
+        case 'llamacpp':
+            addLlamaCppHeaders(headers);
+            break;
         default:
             break;
     }
@@ -686,24 +699,35 @@ function addCohereHeaders(headers) {
 }
 
 /**
+ * Add headers for the Ollama API source.
+ * @param {object} headers Header object
+ */
+function addOllamaHeaders(headers) {
+    Object.assign(headers, {
+        'X-Ollama-Model': extension_settings.vectors.ollama_model,
+        'X-Ollama-URL': textgenerationwebui_settings.server_urls[textgen_types.OLLAMA],
+        'X-Ollama-Keep': !!extension_settings.vectors.ollama_keep,
+    });
+}
+
+/**
+ * Add headers for the LlamaCpp API source.
+ * @param {object} headers Header object
+ */
+function addLlamaCppHeaders(headers) {
+    Object.assign(headers, {
+        'X-LlamaCpp-URL': textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP],
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
  * @returns {Promise<void>}
  */
 async function insertVectorItems(collectionId, items) {
-    if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
-        settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
-        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
-        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
-        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
-        settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
-        throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
-    }
-
-    if (settings.source === 'extras' && !modules.includes('embeddings')) {
-        throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
-    }
+    throwIfSourceInvalid();
 
     const headers = getVectorHeaders();
 
@@ -719,6 +743,33 @@ async function insertVectorItems(collectionId, items) {
 
     if (!response.ok) {
         throw new Error(`Failed to insert vector items for collection ${collectionId}`);
+    }
+}
+
+/**
+ * Throws an error if the source is invalid (missing API key or URL, or missing module)
+ */
+function throwIfSourceInvalid() {
+    if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
+        settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
+        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
+        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
+        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
+        settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
+        throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
+    }
+
+    if (settings.source === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] ||
+        settings.source === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
+        throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
+    }
+
+    if (settings.source === 'ollama' && !settings.ollama_model) {
+        throw new Error('Vectors: API model missing', { cause: 'api_model_missing' });
+    }
+
+    if (settings.source === 'extras' && !modules.includes('embeddings')) {
+        throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
     }
 }
 
@@ -870,6 +921,8 @@ function toggleSettings() {
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
+    $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
+    $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
 }
 
@@ -1151,6 +1204,17 @@ jQuery(async () => {
     $('#vectors_cohere_model').val(settings.cohere_model).on('change', () => {
         $('#vectors_modelWarning').show();
         settings.cohere_model = String($('#vectors_cohere_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_ollama_model').val(settings.ollama_model).on('input', () => {
+        $('#vectors_modelWarning').show();
+        settings.ollama_model = String($('#vectors_ollama_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_ollama_keep').prop('checked', settings.ollama_keep).on('input', () => {
+        settings.ollama_keep = $('#vectors_ollama_keep').prop('checked');
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
