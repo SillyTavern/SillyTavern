@@ -1152,6 +1152,27 @@ async function getVladRemoteUpscalers() {
     }
 }
 
+async function getDrawthingsRemoteUpscalers() {
+    try {
+        const result = await fetch('/api/sd/drawthings/get-upscaler', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD DrawThings API returned an error.');
+        }
+
+        const data = await result.text();
+
+        return data ? [data] : ['N/A'];
+    } catch (error) {
+        console.error(error);
+        return ['N/A'];
+    }
+}
+
 async function updateAutoRemoteModel() {
     try {
         const result = await fetch('/api/sd/set-model', {
@@ -1585,6 +1606,21 @@ async function loadDrawthingsModels() {
         }
 
         const data = [{ value: currentModel, text: currentModel }];
+
+
+        const upscalers = await getDrawthingsRemoteUpscalers();
+
+        if (Array.isArray(upscalers) && upscalers.length > 0) {
+            $('#sd_hr_upscaler').empty();
+
+            for (const upscaler of upscalers) {
+                const option = document.createElement('option');
+                option.innerText = upscaler;
+                option.value = upscaler;
+                option.selected = upscaler === extension_settings.sd.hr_upscaler;
+                $('#sd_hr_upscaler').append(option);
+            }
+        }
 
         return data;
     } catch (error) {
@@ -2469,6 +2505,7 @@ async function generateDrawthingsImage(prompt, negativePrompt) {
             enable_hr: !!extension_settings.sd.enable_hr,
             denoising_strength: extension_settings.sd.denoising_strength,
             clip_skip: extension_settings.sd.clip_skip,
+            upscaler_scale: extension_settings.sd.hr_scale,
             // TODO: advanced API parameters: hr, upscaler
         }),
     });

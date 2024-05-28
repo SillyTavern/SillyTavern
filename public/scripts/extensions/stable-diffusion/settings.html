@@ -236,11 +236,13 @@
                 <label for="sd_clip_skip">CLIP Skip (<span id="sd_clip_skip_value"></span>)</label>
                 <input type="range" id="sd_clip_skip" min="{{clip_skip_min}}" max="{{clip_skip_max}}" step="{{clip_skip_step}}" value="{{clip_skip}}" />
             </div>
-            <div data-sd-source="auto,vlad">
+            <div data-sd-source="auto,vlad,drawthings">
                 <label for="sd_hr_upscaler" data-i18n="Upscaler">Upscaler</label>
                 <select id="sd_hr_upscaler"></select>
                 <label for="sd_hr_scale"><span data-i18n="Upscale by">Upscale by</span> (<span id="sd_hr_scale_value"></span>)</label>
                 <input id="sd_hr_scale" type="range" min="{{hr_scale_min}}" max="{{hr_scale_max}}" step="{{hr_scale_step}}" value="{{hr_scale}}" />
+            </div>
+            <div data-sd-source="auto,vlad">
                 <label for="sd_denoising_strength"><span data-i18n="Denoising strength">Denoising strength</span> (<span id="sd_denoising_strength_value"></span>)</label>
                 <input id="sd_denoising_strength" type="range" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" />
                 <label for="sd_hr_second_pass_steps"><span data-i18n="Hires steps (2nd pass)">Hires steps (2nd pass)</span> (<span id="sd_hr_second_pass_steps_value"></span>)</label>

@@ -676,6 +676,23 @@ drawthings.post('/get-model', jsonParser, async (request, response) => {
     }
 });
 
+drawthings.post('/get-upscaler', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/';
+
+        const result = await fetch(url, {
+            method: 'GET',
+        });
+        const data = await result.json();
+
+        return response.send(data['upscaler']);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 drawthings.post('/generate', jsonParser, async (request, response) => {
     try {
         console.log('SD DrawThings API request:', request.body);
