@@ -138,6 +138,10 @@ async function sendClaudeRequest(request, response) {
             requestBody.system = converted_prompt.systemPrompt;
         }
         if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            // Claude doesn't do prefills on function calls, and doesn't allow empty messages
+            if (converted_prompt.messages.length && converted_prompt.messages[converted_prompt.messages.length - 1].role === 'assistant') {
+                converted_prompt.messages.push({ role: 'user', content: '.' });
+            }
             additionalHeaders['anthropic-beta'] = 'tools-2024-05-16';
             requestBody.tool_choice = { type: request.body.tool_choice === 'required' ? 'any' : 'auto' };
             requestBody.tools = request.body.tools
