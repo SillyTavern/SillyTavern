@@ -48,6 +48,8 @@ allowKeysExposure: false
 skipContentCheck: false
 # Disable automatic chats backup
 disableChatBackup: false
+# Automatically delete chats backup when main chat deleted
+deleteChatBackupWithMain: false
 # Allowed hosts for card downloads
 whitelistImportDomains:
   - localhost

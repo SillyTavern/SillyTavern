@@ -105,6 +105,7 @@
         "play_sound_unfocused": true,
         "auto_save_msg_edits": false,
         "confirm_message_delete": true,
+        "delete_backup_chats_with_main": false,
         "sort_field": "name",
         "sort_order": "asc",
         "sort_rule": null,
