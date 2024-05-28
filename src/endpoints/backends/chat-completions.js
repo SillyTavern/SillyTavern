@@ -915,6 +915,18 @@ router.post('/generate', jsonParser, function (request, response) {
         apiKey = readSecret(request.user.directories, SECRET_KEYS.GROQ);
         headers = {};
         bodyParams = {};
+
+        // 'required' tool choice is not supported by Groq
+        if (request.body.tool_choice === 'required') {
+            if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+                request.body.tool_choice = request.body.tools.length > 1
+                    ? 'auto' :
+                    { type: 'function', function: { name: request.body.tools[0]?.function?.name } };
+
+            } else {
+                request.body.tool_choice = 'none';
+            }
+        }
     } else {
         console.log('This chat completion source is not supported yet.');
         return response.status(400).send({ error: true });

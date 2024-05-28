@@ -1968,7 +1968,14 @@ async function registerFunctionTools(type, data) {
 }
 
 async function checkFunctionToolCalls(data) {
-    if ([chat_completion_sources.OPENAI, chat_completion_sources.CUSTOM, chat_completion_sources.MISTRALAI, chat_completion_sources.OPENROUTER].includes(oai_settings.chat_completion_source)) {
+    const oaiCompat = [
+        chat_completion_sources.OPENAI,
+        chat_completion_sources.CUSTOM,
+        chat_completion_sources.MISTRALAI,
+        chat_completion_sources.OPENROUTER,
+        chat_completion_sources.GROQ,
+    ];
+    if (oaiCompat.includes(oai_settings.chat_completion_source)) {
         if (!Array.isArray(data?.choices)) {
             return;
         }
@@ -2045,6 +2052,7 @@ export function isFunctionCallingSupported() {
         chat_completion_sources.MISTRALAI,
         chat_completion_sources.CLAUDE,
         chat_completion_sources.OPENROUTER,
+        chat_completion_sources.GROQ,
     ];
     return supportedSources.includes(oai_settings.chat_completion_source);
 }
