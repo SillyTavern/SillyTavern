@@ -232,6 +232,10 @@
                     <span data-i18n="Hires. Fix">Hires. Fix</span>
                 </label>
             </div>
+            <div data-sd-source="auto,vlad,comfy,horde,drawthings">
+                <label for="sd_clip_skip">CLIP Skip (<span id="sd_clip_skip_value"></span>)</label>
+                <input type="range" id="sd_clip_skip" min="{{clip_skip_min}}" max="{{clip_skip_max}}" step="{{clip_skip_step}}" value="{{clip_skip}}" />
+            </div>
             <div data-sd-source="auto,vlad">
                 <label for="sd_hr_upscaler" data-i18n="Upscaler">Upscaler</label>
                 <select id="sd_hr_upscaler"></select>

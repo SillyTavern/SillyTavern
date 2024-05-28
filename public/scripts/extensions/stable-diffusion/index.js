@@ -229,6 +229,12 @@ const defaultSettings = {
     hr_second_pass_steps_max: 150,
     hr_second_pass_steps_step: 1,
 
+    // CLIP skip
+    clip_skip_min: 1,
+    clip_skip_max: 12,
+    clip_skip_step: 1,
+    clip_skip: 1,
+
     // NovelAI settings
     novel_upscale_ratio_min: 1.0,
     novel_upscale_ratio_max: 4.0,
@@ -404,6 +410,8 @@ async function loadSettings() {
     $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
     $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
+    $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
+    $('#sd_clip_skip_value').text(extension_settings.sd.clip_skip);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -465,7 +473,7 @@ function addPromptTemplates() {
         const label = $('<label></label>')
             .text(modeLabels[name])
             .attr('for', `sd_prompt_${name}`)
-			.attr('data-i18n', `sd_prompt_${name}`);
+            .attr('data-i18n', `sd_prompt_${name}`);
         const textarea = $('<textarea></textarea>')
             .addClass('textarea_compact text_pole')
             .attr('id', `sd_prompt_${name}`)
@@ -477,7 +485,7 @@ function addPromptTemplates() {
         const button = $('<button></button>')
             .addClass('menu_button fa-solid fa-undo')
             .attr('title', 'Restore default')
-			.attr('data-i18n', 'Restore default')
+            .attr('data-i18n', 'Restore default')
             .on('click', () => {
                 textarea.val(promptTemplates[name]);
                 extension_settings.sd.prompts[name] = promptTemplates[name];
@@ -688,6 +696,12 @@ function onExpandInput() {
 
 function onRefineModeInput() {
     extension_settings.sd.refine_mode = !!$('#sd_refine_mode').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onClipSkipInput() {
+    extension_settings.sd.clip_skip = Number($('#sd_clip_skip').val());
+    $('#sd_clip_skip_value').text(extension_settings.sd.clip_skip);
     saveSettingsDebounced();
 }
 
@@ -2371,6 +2385,7 @@ async function generateHordeImage(prompt, negativePrompt) {
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
             sanitize: !!extension_settings.sd.horde_sanitize,
+            clip_skip: extension_settings.sd.clip_skip,
         }),
     });
 
@@ -2409,6 +2424,10 @@ async function generateAutoImage(prompt, negativePrompt) {
             hr_scale: extension_settings.sd.hr_scale,
             denoising_strength: extension_settings.sd.denoising_strength,
             hr_second_pass_steps: extension_settings.sd.hr_second_pass_steps,
+            override_settings: {
+                CLIP_stop_at_last_layers: extension_settings.sd.clip_skip,
+            },
+            override_settings_restore_afterwards: true,
             // Ensure generated img is saved to disk
             save_images: true,
             send_images: true,
@@ -2449,6 +2468,7 @@ async function generateDrawthingsImage(prompt, negativePrompt) {
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
             denoising_strength: extension_settings.sd.denoising_strength,
+            clip_skip: extension_settings.sd.clip_skip,
             // TODO: advanced API parameters: hr, upscaler
         }),
     });
@@ -2633,6 +2653,7 @@ async function generateComfyImage(prompt, negativePrompt) {
         'scale',
         'width',
         'height',
+        'clip_skip',
     ];
 
     const workflowResponse = await fetch('/api/sd/comfy/workflow', {
@@ -3144,6 +3165,7 @@ jQuery(async () => {
     $('#sd_openai_quality').on('change', onOpenAiQualitySelect);
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
+    $('#sd_clip_skip').on('input', onClipSkipInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));
