@@ -96,7 +96,7 @@ EventEmitter.prototype.removeListener = function (event, listener) {
 
 EventEmitter.prototype.emit = async function (event) {
     if (localStorage.getItem('eventTracing') === 'true') {
-        console.trace('Event emitted: ' + event);
+        console.trace('Event emitted: ' + event, args);
     } else {
         console.debug('Event emitted: ' + event);
     }
@@ -121,7 +121,7 @@ EventEmitter.prototype.emit = async function (event) {
 
 EventEmitter.prototype.emitAndWait = function (event) {
     if (localStorage.getItem('eventTracing') === 'true') {
-        console.trace('Event emitted: ' + event);
+        console.trace('Event emitted: ' + event, args);
     } else {
         console.debug('Event emitted: ' + event);
     }
