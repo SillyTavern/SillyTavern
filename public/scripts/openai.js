@@ -1853,7 +1853,7 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
-    if (isFunctionCallingSupported()) {
+    if (isFunctionCallingSupported() && !stream) {
         await registerFunctionTools(type, generate_data);
     }
 
