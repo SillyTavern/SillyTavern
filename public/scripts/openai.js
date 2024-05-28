@@ -1968,7 +1968,7 @@ async function registerFunctionTools(type, data) {
 }
 
 async function checkFunctionToolCalls(data) {
-    if ([chat_completion_sources.OPENAI, chat_completion_sources.CUSTOM, chat_completion_sources.MISTRALAI].includes(oai_settings.chat_completion_source)) {
+    if ([chat_completion_sources.OPENAI, chat_completion_sources.CUSTOM, chat_completion_sources.MISTRALAI, chat_completion_sources.OPENROUTER].includes(oai_settings.chat_completion_source)) {
         if (!Array.isArray(data?.choices)) {
             return;
         }
@@ -1996,6 +1996,21 @@ async function checkFunctionToolCalls(data) {
             console.log('Function tool call:', toolCall);
             await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
             data.allowEmptyResponse = true;
+        }
+    }
+
+    if ([chat_completion_sources.CLAUDE].includes(oai_settings.chat_completion_source)) {
+        if (!Array.isArray(data?.content)) {
+            return;
+        }
+
+        for (const content of data.content) {
+            if (content.type === 'tool_use') {
+                /** @type {FunctionToolCall} */
+                const args = { name: content.name, arguments: JSON.stringify(content.input) };
+                await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
+                data.allowEmptyResponse = true;
+            }
         }
     }
 
@@ -2028,6 +2043,8 @@ export function isFunctionCallingSupported() {
         chat_completion_sources.COHERE,
         chat_completion_sources.CUSTOM,
         chat_completion_sources.MISTRALAI,
+        chat_completion_sources.CLAUDE,
+        chat_completion_sources.OPENROUTER,
     ];
     return supportedSources.includes(oai_settings.chat_completion_source);
 }

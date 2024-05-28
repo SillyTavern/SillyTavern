@@ -115,6 +115,7 @@ async function sendClaudeRequest(request, response) {
         request.socket.on('close', function () {
             controller.abort();
         });
+        const additionalHeaders = {};
         let use_system_prompt = (request.body.model.startsWith('claude-2') || request.body.model.startsWith('claude-3')) && request.body.claude_use_sysprompt;
         let converted_prompt = convertClaudeMessages(request.body.messages, request.body.assistant_prefill, use_system_prompt, request.body.human_sysprompt_message, request.body.char_name, request.body.user_name);
         // Add custom stop sequences
@@ -136,6 +137,14 @@ async function sendClaudeRequest(request, response) {
         if (use_system_prompt) {
             requestBody.system = converted_prompt.systemPrompt;
         }
+        if (Array.isArray(request.body.tools) && request.body.tools.length > 0) {
+            additionalHeaders['anthropic-beta'] = 'tools-2024-05-16';
+            requestBody.tool_choice = { type: request.body.tool_choice === 'required' ? 'any' : 'auto' };
+            requestBody.tools = request.body.tools
+                .filter(tool => tool.type === 'function')
+                .map(tool => tool.function)
+                .map(fn => ({ name: fn.name, description: fn.description, input_schema: fn.parameters }));
+        }
         console.log('Claude request:', requestBody);
 
         const generateResponse = await fetch(apiUrl + '/messages', {
@@ -146,6 +155,7 @@ async function sendClaudeRequest(request, response) {
                 'Content-Type': 'application/json',
                 'anthropic-version': '2023-06-01',
                 'x-api-key': apiKey,
+                ...additionalHeaders,
             },
             timeout: 0,
         });
@@ -163,8 +173,8 @@ async function sendClaudeRequest(request, response) {
             const responseText = generateResponseJson.content[0].text;
             console.log('Claude response:', generateResponseJson);
 
-            // Wrap it back to OAI format
-            const reply = { choices: [{ 'message': { 'content': responseText } }] };
+            // Wrap it back to OAI format + save the original content
+            const reply = { choices: [{ 'message': { 'content': responseText } }], content: generateResponseJson.content };
             return response.send(reply);
         }
     } catch (error) {
