@@ -768,7 +768,7 @@ async function moveAttachment(attachment, source, callback) {
  * @param {boolean} [confirm=true] If true, show a confirmation dialog
  * @returns {Promise<void>} A promise that resolves when the attachment is deleted.
  */
-async function deleteAttachment(attachment, source, callback, confirm = true) {
+export async function deleteAttachment(attachment, source, callback, confirm = true) {
     if (confirm) {
         const result = await callGenericPopup('Are you sure you want to delete this attachment?', POPUP_TYPE.CONFIRM);
 
@@ -1179,7 +1179,7 @@ async function runScraper(scraperId, target, callback) {
  * Uploads a file attachment to the server.
  * @param {File} file File to upload
  * @param {string} target Target for the attachment
- * @returns
+ * @returns {Promise<string>} Path to the uploaded file
  */
 export async function uploadFileAttachmentToServer(file, target) {
     const isValid = await validateFile(file);
@@ -1236,6 +1236,8 @@ export async function uploadFileAttachmentToServer(file, target) {
             saveSettingsDebounced();
             break;
     }
+
+    return fileUrl;
 }
 
 function ensureAttachmentsExist() {
@@ -1264,15 +1266,16 @@ function ensureAttachmentsExist() {
 
 /**
  * Gets all currently available attachments. Ignores disabled attachments.
+ * @param {boolean} [includeDisabled=false] If true, include disabled attachments
  * @returns {FileAttachment[]} List of attachments
  */
-export function getDataBankAttachments() {
+export function getDataBankAttachments(includeDisabled = false) {
     ensureAttachmentsExist();
     const globalAttachments = extension_settings.attachments ?? [];
     const chatAttachments = chat_metadata.attachments ?? [];
     const characterAttachments = extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
 
-    return [...globalAttachments, ...chatAttachments, ...characterAttachments].filter(x => !isAttachmentDisabled(x));
+    return [...globalAttachments, ...chatAttachments, ...characterAttachments].filter(x => includeDisabled || !isAttachmentDisabled(x));
 }
 
 /**
