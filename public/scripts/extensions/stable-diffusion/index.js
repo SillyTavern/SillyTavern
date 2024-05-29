@@ -2185,6 +2185,7 @@ async function generateMultimodalPrompt(generationType, quietPrompt) {
     }
 
     try {
+        const toast = toastr.info('Generating multimodal caption...', 'Image Generation');
         const response = await fetch(avatarUrl);
 
         if (!response.ok) {
@@ -2195,6 +2196,7 @@ async function generateMultimodalPrompt(generationType, quietPrompt) {
         const avatarBase64 = await getBase64Async(avatarBlob);
 
         const caption = await getMultimodalCaption(avatarBase64, quietPrompt);
+        toastr.clear(toast);
 
         if (!caption) {
             throw new Error('No caption returned from the API.');
