@@ -185,6 +185,7 @@ const defaultSettings = {
     sampler: 'DDIM',
     model: '',
     vae: '',
+    seed: -1,
 
     // Automatic1111/Horde exclusives
     restore_faces: false,
@@ -414,6 +415,7 @@ async function loadSettings() {
     $('#sd_snap').prop('checked', extension_settings.sd.snap);
     $('#sd_clip_skip').val(extension_settings.sd.clip_skip);
     $('#sd_clip_skip_value').text(extension_settings.sd.clip_skip);
+    $('#sd_seed').val(extension_settings.sd.seed);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -704,6 +706,11 @@ function onRefineModeInput() {
 function onClipSkipInput() {
     extension_settings.sd.clip_skip = Number($('#sd_clip_skip').val());
     $('#sd_clip_skip_value').text(extension_settings.sd.clip_skip);
+    saveSettingsDebounced();
+}
+
+function onSeedInput() {
+    extension_settings.sd.seed = Number($('#sd_seed').val());
     saveSettingsDebounced();
 }
 
@@ -2326,6 +2333,7 @@ async function generateTogetherAIImage(prompt, negativePrompt) {
             steps: extension_settings.sd.steps,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
         }),
     });
 
@@ -2350,6 +2358,7 @@ async function generatePollinationsImage(prompt, negativePrompt) {
             height: extension_settings.sd.height,
             enhance: extension_settings.sd.pollinations_enhance,
             refine: extension_settings.sd.pollinations_refine,
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
         }),
     });
 
@@ -2392,6 +2401,7 @@ async function generateExtrasImage(prompt, negativePrompt) {
             hr_scale: extension_settings.sd.hr_scale,
             denoising_strength: extension_settings.sd.denoising_strength,
             hr_second_pass_steps: extension_settings.sd.hr_second_pass_steps,
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
         }),
     });
 
@@ -2429,6 +2439,7 @@ async function generateHordeImage(prompt, negativePrompt) {
             enable_hr: !!extension_settings.sd.enable_hr,
             sanitize: !!extension_settings.sd.horde_sanitize,
             clip_skip: extension_settings.sd.clip_skip,
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
         }),
     });
 
@@ -2467,6 +2478,7 @@ async function generateAutoImage(prompt, negativePrompt) {
             hr_scale: extension_settings.sd.hr_scale,
             denoising_strength: extension_settings.sd.denoising_strength,
             hr_second_pass_steps: extension_settings.sd.hr_second_pass_steps,
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
             override_settings: {
                 CLIP_stop_at_last_layers: extension_settings.sd.clip_skip,
             },
@@ -2513,6 +2525,7 @@ async function generateDrawthingsImage(prompt, negativePrompt) {
             denoising_strength: extension_settings.sd.denoising_strength,
             clip_skip: extension_settings.sd.clip_skip,
             upscaler_scale: extension_settings.sd.hr_scale,
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
             // TODO: advanced API parameters: hr, upscaler
         }),
     });
@@ -2552,6 +2565,7 @@ async function generateNovelImage(prompt, negativePrompt) {
             decrisper: extension_settings.sd.novel_decrisper,
             sm: sm,
             sm_dyn: sm_dyn,
+            seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
         }),
     });
 
@@ -2714,7 +2728,9 @@ async function generateComfyImage(prompt, negativePrompt) {
     }
     let workflow = (await workflowResponse.json()).replace('"%prompt%"', JSON.stringify(prompt));
     workflow = workflow.replace('"%negative_prompt%"', JSON.stringify(negativePrompt));
-    workflow = workflow.replaceAll('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
+
+    const seed = extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
+    workflow = workflow.replaceAll('"%seed%"', JSON.stringify(seed));
     placeholders.forEach(ph => {
         workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
     });
@@ -3212,6 +3228,7 @@ jQuery(async () => {
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
     $('#sd_snap').on('input', onSnapInput);
     $('#sd_clip_skip').on('input', onClipSkipInput);
+    $('#sd_seed').on('input', onSeedInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($('#sd_prompt_prefix'));

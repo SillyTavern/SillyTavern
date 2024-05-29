@@ -255,7 +255,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
                     height: request.body.height ?? 512,
                     width: request.body.width ?? 512,
                     scale: request.body.scale ?? 9,
-                    seed: Math.floor(Math.random() * 9999999999),
+                    seed: request.body.seed >= 0 ? request.body.seed : Math.floor(Math.random() * 9999999999),
                     sampler: request.body.sampler ?? 'k_dpmpp_2m',
                     steps: request.body.steps ?? 28,
                     n_samples: 1,

@@ -326,6 +326,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
                     height: request.body.height,
                     karras: Boolean(request.body.karras),
                     clip_skip: request.body.clip_skip,
+                    seed: request.body.seed >= 0 ? String(request.body.seed) : undefined,
                     n: 1,
                 },
                 r2: false,
