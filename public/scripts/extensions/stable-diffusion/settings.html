@@ -182,6 +182,14 @@
             </div>
             <label for="sd_scale" data-i18n="CFG Scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
             <input id="sd_scale" type="range" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" />
+            <div data-sd-source="novel" class="marginTopBot5">
+                <label class="checkbox_label" for="sd_novel_decrisper" title="Reduce artifacts caused by high guidance values.">
+                    <input id="sd_novel_decrisper" type="checkbox" />
+                    <span data-i18n="Decrisper">
+                        Decrisper
+                    </span>
+                </label>
+            </div>
             <label for="sd_steps" data-i18n="Sampling steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
             <input id="sd_steps" type="range" min="{{steps_min}}" max="{{steps_max}}" step="{{steps_step}}" value="{{steps}}" />
             <label for="sd_width" data-i18n="Width">Width (<span id="sd_width_value"></span>)</label>
@@ -192,13 +200,13 @@
             <select id="sd_model"></select>
             <label for="sd_sampler" data-i18n="Sampling method">Sampling method</label>
             <select id="sd_sampler"></select>
-            <label data-sd-source="horde" for="sd_horde_karras" class="checkbox_label">
+            <label data-sd-source="horde" for="sd_horde_karras" class="checkbox_label marginTopBot5">
                 <input id="sd_horde_karras" type="checkbox" />
                 <span data-i18n="Karras (not all samplers supported)">
                     Karras (not all samplers supported)
                 </span>
             </label>
-            <div data-sd-source="novel" class="flex-container">
+            <div data-sd-source="novel" class="flex-container marginTopBot5">
                 <label class="flex1 checkbox_label" data-i18n="[title]SMEA versions of samplers are modified to perform better at high resolution." title="SMEA versions of samplers are modified to perform better at high resolution.">
                     <input id="sd_novel_sm" type="checkbox" />
                     <span data-i18n="SMEA">
@@ -222,7 +230,7 @@
                 <label for="sd_vae">VAE</label>
                 <select id="sd_vae"></select>
             </div>
-            <div class="flex-container marginTop10 margin-bot-10px">
+            <div class="flex-container marginTopBot5">
                 <label class="flex1 checkbox_label">
                     <input id="sd_restore_faces" type="checkbox" />
                     <span data-i18n="Restore Faces">Restore Faces</span>
@@ -232,7 +240,7 @@
                     <span data-i18n="Hires. Fix">Hires. Fix</span>
                 </label>
             </div>
-            <div data-sd-source="auto,vlad,comfy,horde,drawthings">
+            <div data-sd-source="auto,vlad,comfy,horde,drawthings" class="marginTopBot5">
                 <label for="sd_clip_skip">CLIP Skip (<span id="sd_clip_skip_value"></span>)</label>
                 <input type="range" id="sd_clip_skip" min="{{clip_skip_min}}" max="{{clip_skip_max}}" step="{{clip_skip_step}}" value="{{clip_skip}}" />
             </div>

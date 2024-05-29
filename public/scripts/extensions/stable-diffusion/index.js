@@ -243,6 +243,7 @@ const defaultSettings = {
     novel_anlas_guard: false,
     novel_sm: false,
     novel_sm_dyn: false,
+    novel_decrisper: false,
 
     // OpenAI settings
     openai_style: 'vivid',
@@ -387,6 +388,7 @@ async function loadSettings() {
     $('#sd_novel_sm').prop('checked', extension_settings.sd.novel_sm);
     $('#sd_novel_sm_dyn').prop('checked', extension_settings.sd.novel_sm_dyn);
     $('#sd_novel_sm_dyn').prop('disabled', !extension_settings.sd.novel_sm);
+    $('#sd_novel_decrisper').prop('checked', extension_settings.sd.novel_decrisper);
     $('#sd_pollinations_enhance').prop('checked', extension_settings.sd.pollinations_enhance);
     $('#sd_pollinations_refine').prop('checked', extension_settings.sd.pollinations_refine);
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
@@ -843,6 +845,11 @@ function onNovelSmInput() {
 
 function onNovelSmDynInput() {
     extension_settings.sd.novel_sm_dyn = !!$('#sd_novel_sm_dyn').prop('checked');
+    saveSettingsDebounced();
+}
+
+function onNovelDecrisperInput() {
+    extension_settings.sd.novel_decrisper = !!$('#sd_novel_decrisper').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -2542,6 +2549,7 @@ async function generateNovelImage(prompt, negativePrompt) {
             height: height,
             negative_prompt: negativePrompt,
             upscale_ratio: extension_settings.sd.novel_upscale_ratio,
+            decrisper: extension_settings.sd.novel_decrisper,
             sm: sm,
             sm_dyn: sm_dyn,
         }),
@@ -3185,6 +3193,7 @@ jQuery(async () => {
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
     $('#sd_novel_sm').on('input', onNovelSmInput);
     $('#sd_novel_sm_dyn').on('input', onNovelSmDynInput);
+    $('#sd_novel_decrisper').on('input', onNovelDecrisperInput);
     $('#sd_pollinations_enhance').on('input', onPollinationsEnhanceInput);
     $('#sd_pollinations_refine').on('input', onPollinationsRefineInput);
     $('#sd_comfy_validate').on('click', validateComfyUrl);

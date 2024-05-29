@@ -264,7 +264,7 @@ router.post('/generate-image', jsonParser, async (request, response) => {
                     qualityToggle: false,
                     add_original_image: false,
                     controlnet_strength: 1,
-                    dynamic_thresholding: false,
+                    dynamic_thresholding: request.body.decrisper ?? false,
                     legacy: false,
                     sm: request.body.sm ?? false,
                     sm_dyn: request.body.sm_dyn ?? false,
