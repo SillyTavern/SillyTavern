@@ -3168,14 +3168,9 @@ grammarly-extension {
 
 .avatar_div .menu_button,
 .form_create_bottom_buttons_block .menu_button {
-    font-weight: bold;
     padding: 5px;
     margin: 0;
     filter: grayscale(0.5);
-    text-align: center;
-    font-size: 17px;
-    aspect-ratio: 1 / 1;
-    flex: 0.05;
 }
 
 .menu_button:hover,
