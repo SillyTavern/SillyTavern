@@ -160,6 +160,31 @@ router.post('/samplers', jsonParser, async (request, response) => {
     }
 });
 
+router.post('/schedulers', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/schedulers';
+
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        const names = data.map(x => x.name);
+        return response.send(names);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 router.post('/models', jsonParser, async (request, response) => {
     try {
         const url = new URL(request.body.url);

@@ -858,6 +858,7 @@ async function onSourceChange() {
     extension_settings.sd.source = $('#sd_source').find(':selected').val();
     extension_settings.sd.model = null;
     extension_settings.sd.sampler = null;
+    extension_settings.sd.scheduler = null;
     toggleSourceControls();
     saveSettingsDebounced();
     await loadSettingOptions();
@@ -1202,6 +1203,26 @@ async function getAutoRemoteUpscalers() {
     } catch (error) {
         console.error(error);
         return [extension_settings.sd.hr_upscaler];
+    }
+}
+
+async function getAutoRemoteSchedulers() {
+    try {
+        const result = await fetch('/api/sd/schedulers', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        return data;
+    } catch (error) {
+        console.error(error);
+        return ['N/A'];
     }
 }
 
@@ -1820,13 +1841,13 @@ async function loadSchedulers() {
             schedulers = ['N/A'];
             break;
         case sources.auto:
-            schedulers = ['N/A'];
+            schedulers = await getAutoRemoteSchedulers();
             break;
         case sources.novel:
             schedulers = ['N/A'];
             break;
         case sources.vlad:
-            schedulers = ['N/A'];
+            schedulers = await getAutoRemoteSchedulers();
             break;
         case sources.drawthings:
             schedulers = ['N/A'];
@@ -1851,6 +1872,11 @@ async function loadSchedulers() {
         option.value = scheduler;
         option.selected = scheduler === extension_settings.sd.scheduler;
         $('#sd_scheduler').append(option);
+    }
+
+    if (!extension_settings.sd.scheduler && schedulers.length > 0 && schedulers[0] !== 'N/A') {
+        extension_settings.sd.scheduler = schedulers[0];
+        $('#sd_scheduler').val(extension_settings.sd.scheduler).trigger('change');
     }
 }
 
@@ -2529,6 +2555,7 @@ async function generateAutoImage(prompt, negativePrompt) {
             prompt: prompt,
             negative_prompt: negativePrompt,
             sampler_name: extension_settings.sd.sampler,
+            scheduler: extension_settings.sd.scheduler,
             steps: extension_settings.sd.steps,
             cfg_scale: extension_settings.sd.scale,
             width: extension_settings.sd.width,

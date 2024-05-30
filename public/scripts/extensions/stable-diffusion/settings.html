@@ -196,6 +196,8 @@
             <input id="sd_width" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{width}}" />
             <label for="sd_height" data-i18n="Height">Height (<span id="sd_height_value"></span>)</label>
             <input id="sd_height" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" />
+            <label for="sd_resolution" data-i18n="Resolution">Resolution</label>
+            <select id="sd_resolution"><!-- Populated in JS --></select>
             <label for="sd_model" data-i18n="Model">Model</label>
             <select id="sd_model"></select>
             <label for="sd_sampler" data-i18n="Sampling method">Sampling method</label>
@@ -220,9 +222,7 @@
                     </span>
                 </label>
             </div>
-            <label for="sd_resolution" data-i18n="Resolution">Resolution</label>
-            <select id="sd_resolution"><!-- Populated in JS --></select>
-            <div data-sd-source="comfy">
+            <div data-sd-source="comfy,auto,vlad">
                 <label for="sd_scheduler" data-i18n="Scheduler">Scheduler</label>
                 <select id="sd_scheduler"></select>
             </div>
@@ -240,7 +240,7 @@
                     <span data-i18n="Hires. Fix">Hires. Fix</span>
                 </label>
             </div>
-            <div data-sd-source="auto,vlad,comfy,horde,drawthings" class="marginTopBot5">
+            <div data-sd-source="auto,vlad,comfy,horde,drawthings,extras" class="marginTopBot5">
                 <label for="sd_clip_skip">CLIP Skip (<span id="sd_clip_skip_value"></span>)</label>
                 <input type="range" id="sd_clip_skip" min="{{clip_skip_min}}" max="{{clip_skip_max}}" step="{{clip_skip_step}}" value="{{clip_skip}}" />
             </div>
@@ -260,7 +260,7 @@
                 <label for="sd_novel_upscale_ratio"><span data-i18n="Upscale by">Upscale by</span> (<span id="sd_novel_upscale_ratio_value"></span>)</label>
                 <input id="sd_novel_upscale_ratio" type="range" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" />
             </div>
-            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde" class="marginTop5">
+            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras" class="marginTop5">
                 <label for="sd_seed">Seed</label>
                 <small>(-1 for random)</small>
                 <input id="sd_seed" type="number" class="text_pole" min="-1" max="9999999999" step="1" />
