@@ -3033,41 +3033,16 @@ async function sendMessage(prompt, image, generationType, additionalNegativePref
     context.saveChat();
 }
 
-function addSDGenButtons() {
-
-    const buttonHtml = `
-    <div id="sd_gen" class="list-group-item flex-container flexGap5">
-        <div class="fa-solid fa-paintbrush extensionsMenuExtensionButton" title="Trigger Stable Diffusion"  data-i18n="[title]Trigger Stable Diffusion" /></div>
-        Generate Image
-    </div>
-        `;
-
-    const waitButtonHtml = `
-        <div id="sd_gen_wait" class="fa-solid fa-hourglass-half" /></div>
-    `;
-    const dropdownHtml = `
-    <div id="sd_dropdown">
-        <ul class="list-group">
-        <span>Send me a picture of:</span>
-            <li class="list-group-item" id="sd_you" data-value="you" data-i18n="sd_Yourself">Yourself</li>
-            <li class="list-group-item" id="sd_face" data-value="face" data-i18n="sd_Your_Face">Your Face</li>
-            <li class="list-group-item" id="sd_me" data-value="me" data-i18n="sd_Me">Me</li>
-            <li class="list-group-item" id="sd_world" data-value="world" data-i18n="sd_The_Whole_Story">The Whole Story</li>
-            <li class="list-group-item" id="sd_last" data-value="last" data-i18n="sd_The_Last_Message">The Last Message</li>
-            <li class="list-group-item" id="sd_raw_last" data-value="raw_last" data-i18n="sd_Raw_Last_Message">Raw Last Message</li>
-            <li class="list-group-item" id="sd_background" data-value="background" data-i18n="sd_Background">Background</li>
-        </ul>
-    </div>`;
+async function addSDGenButtons() {
+    const buttonHtml = await renderExtensionTemplateAsync('stable-diffusion', 'button');
+    const dropdownHtml = await renderExtensionTemplateAsync('stable-diffusion', 'dropdown');
 
     $('#extensionsMenu').prepend(buttonHtml);
-    $('#extensionsMenu').prepend(waitButtonHtml);
     $(document.body).append(dropdownHtml);
 
     const messageButton = $('.sd_message_gen');
     const button = $('#sd_gen');
-    const waitButton = $('#sd_gen_wait');
     const dropdown = $('#sd_dropdown');
-    waitButton.hide();
     dropdown.hide();
     button.hide();
     messageButton.hide();
@@ -3088,6 +3063,26 @@ function addSDGenButtons() {
             popper.update();
         } else {
             dropdown.fadeOut(animation_duration);
+        }
+    });
+
+    $('#sd_dropdown [id]').on('click', function () {
+        const id = $(this).attr('id');
+        const idParamMap = {
+            'sd_you': 'you',
+            'sd_face': 'face',
+            'sd_me': 'me',
+            'sd_world': 'scene',
+            'sd_last': 'last',
+            'sd_raw_last': 'raw_last',
+            'sd_background': 'background',
+        };
+
+        const param = idParamMap[id];
+
+        if (param) {
+            console.log('doing /sd ' + param);
+            generatePicture('sd', param);
         }
     });
 }
@@ -3128,7 +3123,6 @@ async function moduleWorker() {
     }
 }
 
-addSDGenButtons();
 setInterval(moduleWorker, UPDATE_INTERVAL);
 
 async function sdMessageButton(e) {
@@ -3201,26 +3195,6 @@ async function sdMessageButton(e) {
     }
 }
 
-$('#sd_dropdown [id]').on('click', function () {
-    const id = $(this).attr('id');
-    const idParamMap = {
-        'sd_you': 'you',
-        'sd_face': 'face',
-        'sd_me': 'me',
-        'sd_world': 'scene',
-        'sd_last': 'last',
-        'sd_raw_last': 'raw_last',
-        'sd_background': 'background',
-    };
-
-    const param = idParamMap[id];
-
-    if (param) {
-        console.log('doing /sd ' + param);
-        generatePicture('sd', param);
-    }
-});
-
 async function onCharacterPromptShareInput() {
     // Not a valid state to share character prompt
     if (this_chid === undefined || selected_group) {
@@ -3248,6 +3222,8 @@ async function writePromptFields(characterId) {
 }
 
 jQuery(async () => {
+    await addSDGenButtons();
+
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'imagine',
         callback: generatePicture,
