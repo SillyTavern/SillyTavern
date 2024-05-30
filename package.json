@@ -2,7 +2,7 @@
     "dependencies": {
         "@agnai/sentencepiece-js": "^1.1.1",
         "@agnai/web-tokenizers": "^0.1.3",
-        "@zeldafan0225/ai_horde": "^4.0.1",
+        "@zeldafan0225/ai_horde": "^5.1.0",
         "archiver": "^7.0.1",
         "bing-translate-api": "^2.9.1",
         "body-parser": "^1.20.2",
@@ -44,7 +44,7 @@
         "yauzl": "^2.10.0"
     },
     "engines": {
-      "node": ">= 18"
+        "node": ">= 18"
     },
     "overrides": {
         "parse-bmfont-xml": {
@@ -58,9 +58,6 @@
         },
         "axios": {
             "follow-redirects": "^1.15.4"
-        },
-        "@zeldafan0225/ai_horde": {
-            "esbuild": "npm:dry-uninstall"
         },
         "node-fetch": {
             "whatwg-url": "^14.0.0"
