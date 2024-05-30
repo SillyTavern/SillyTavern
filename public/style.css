@@ -105,6 +105,9 @@
     --avatar-base-border-radius: 2px;
     --avatar-base-border-radius-round: 50%;
     --inline-avatar-small-factor: 0.6;
+
+    --animation-duration: 125ms;
+    --animation-duration-slow: calc(var(--animation-duration) * 3);
 }
 
 * {
@@ -3020,8 +3023,7 @@ grammarly-extension {
 /* Focus */
 
 #bulk_tag_popup,
-#dialogue_popup,
-.dialogue_popup {
+#dialogue_popup {
     width: 500px;
     max-width: 90vw;
     max-width: 90svw;
@@ -3045,6 +3047,88 @@ grammarly-extension {
     flex-direction: column;
     overflow-y: hidden;
     overflow-x: hidden;
+}
+
+dialog {
+    color: var(--SmartThemeBodyColor);
+}
+
+/* Closed state of the dialog */
+.dialogue_popup {
+    width: 500px;
+    text-align: center;
+    box-shadow: 0px 0px 14px var(--black70a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    padding: 4px 14px;
+    background-color: var(--SmartThemeBlurTintColor);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: hidden;
+    overflow-x: hidden;
+
+    /* Fix weird animation issue with font-scaling during popup open */
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-font-smoothing: subpixel-antialiased;
+}
+
+/* Open state of the dialog */
+.dialogue_popup[open] {
+    animation: pop-in var(--animation-duration-slow) ease-in-out;
+}
+
+.dialogue_popup[closing] {
+    animation: pop-out var(--animation-duration-slow) ease-in-out;
+}
+
+.dialogue_popup[open]::backdrop {
+    animation: fade-in var(--animation-duration-slow) ease-in-out;
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+    -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+    background-color: var(--black30a);
+}
+
+.dialogue_popup[closing]::backdrop {
+    animation: fade-out var(--animation-duration-slow) ease-in-out;
+}
+
+/* Animation keyframes */
+@keyframes fade-in {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+@keyframes fade-out {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+@keyframes pop-in {
+    0% {
+        opacity: 0;
+        transform: scaleY(0);
+    }
+
+    /** Make the scaling faster on pop-in, otherwise it looks a bit weird **/
+    33% {
+        transform: scaleY(1);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+@keyframes pop-out {
+    0% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scaleY(0);
+    }
 }
 
 .rm_stat_block {
@@ -3078,8 +3162,7 @@ grammarly-extension {
 }
 
 #bulk_tag_popup_holder,
-#dialogue_popup_holder,
-.dialogue_popup_holder {
+#dialogue_popup_holder {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -3174,8 +3257,7 @@ grammarly-extension {
 }
 
 .menu_button.menu_button_default {
-    border: 1px ridge var(--white30a);
-    box-shadow: 0 0 5px var(--SmartThemeBorderColor);
+    box-shadow: 0 0 5px var(--white20a);
 }
 
 .menu_button.menu_button_custom {
@@ -3200,14 +3282,18 @@ grammarly-extension {
     background-color: var(--white30a);
 }
 
-#dialogue_del_mes .menu_button {
+dialog.dialogue_popup .menu_button:focus,
+dialog input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):not(#WI_panel_pin):focus {
+    /** For dialogs, mimic the outline of keyboard navigation for all button focus */
+    outline: 1px solid white;
+}
 
+#dialogue_del_mes .menu_button {
     margin-left: 25px;
     margin-right: 25px;
 }
 
-#shadow_popup,
-.shadow_popup {
+#shadow_popup {
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     background-color: var(--black30a);
@@ -3219,10 +3305,6 @@ grammarly-extension {
     height: 100svh;
     z-index: 9999;
     top: 0;
-
-    &.shadow_popup {
-        z-index: 9998;
-    }
 }
 
 .dialogue_popup.dragover {

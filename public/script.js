@@ -227,7 +227,7 @@ import { appendFileContent, hasPendingFileAttachment, populateFileAttachment, de
 import { initPresetManager } from './scripts/preset-manager.js';
 import { evaluateMacros } from './scripts/macros.js';
 import { currentUser, setUserControls } from './scripts/user.js';
-import { POPUP_TYPE, callGenericPopup } from './scripts/popup.js';
+import { POPUP_TYPE, callGenericPopup, fixToastrForDialogs } from './scripts/popup.js';
 import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
@@ -262,6 +262,19 @@ await new Promise((resolve) => {
 showLoader();
 // Yoink preloader entirely; it only exists to cover up unstyled content while loading JS
 document.getElementById('preloader').remove();
+
+// Configure toast library:
+toastr.options.escapeHtml = true; // Prevent raw HTML inserts
+toastr.options.timeOut = 4000; // How long the toast will display without user interaction
+toastr.options.extendedTimeOut = 10000; // How long the toast will display after a user hovers over it
+toastr.options.progressBar = true; // Visually indicate how long before a toast expires.
+toastr.options.closeButton = true; // enable a close button
+toastr.options.positionClass = "toast-top-center"; // Where to position the toast container
+toastr.options.onHidden = () => {
+    // If we have any dialog still open, the last "hidden" toastr will remove the toastr-container. We need to keep it alive inside the dialog though
+    // so the toasts still show up inside there.
+    fixToastrForDialogs();
+}
 
 // Allow target="_blank" in links
 DOMPurify.addHook('afterSanitizeAttributes', function (node) {
@@ -910,6 +923,8 @@ export function displayOnlineStatus() {
  */
 export function setAnimationDuration(ms = null) {
     animation_duration = ms ?? ANIMATION_DURATION_DEFAULT;
+    // Set CSS variable to document
+    document.documentElement.style.setProperty('--animation-duration', `${animation_duration}ms`);
 }
 
 export function setActiveCharacter(entityOrKey) {
@@ -5431,7 +5446,7 @@ export function setSendButtonState(value) {
 
 async function renameCharacter() {
     const oldAvatar = characters[this_chid].avatar;
-    const newValue = await callPopup('<h3>New name:</h3>', 'input', characters[this_chid].name);
+    const newValue = await callGenericPopup('<h3>New name:</h3>', POPUP_TYPE.INPUT, characters[this_chid].name);
 
     if (newValue && newValue !== characters[this_chid].name) {
         const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });

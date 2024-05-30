@@ -1492,7 +1492,7 @@ function onTagCreateClick() {
     printCharactersDebounced();
     saveSettingsDebounced();
 
-    toastr.success('Tag created', 'Create Tag', { showDuration: 60000 });
+    toastr.success('Tag created', 'Create Tag');
 }
 
 function appendViewTagToList(list, tag, everything) {

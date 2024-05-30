@@ -1,5 +1,5 @@
-import { animation_duration, animation_easing } from '../script.js';
-import { delay } from './utils.js';
+import { debounce_timeout } from './constants.js';
+import { hasAnimation, removeFromArray, runAfterAnimation, uuidv4 } from './utils.js';
 
 /** @readonly */
 /** @enum {Number} */
@@ -17,8 +17,8 @@ export const POPUP_RESULT = {
     'CANCELLED': undefined,
 };
 
-const POPUP_START_Z_INDEX = 9998;
-let currentPopupZIndex = POPUP_START_Z_INDEX;
+/** @type {Popup[]} Remember all popups */
+export const popups = [];
 
 /**
  * @typedef {object} PopupOptions
@@ -44,22 +44,26 @@ let currentPopupZIndex = POPUP_START_Z_INDEX;
  */
 
 export class Popup {
-    /**@type {POPUP_TYPE}*/ type;
+    /** @type {POPUP_TYPE} */ type;
 
-    /**@type {HTMLElement}*/ dom;
-    /**@type {HTMLElement}*/ dlg;
-    /**@type {HTMLElement}*/ text;
-    /**@type {HTMLTextAreaElement}*/ input;
-    /**@type {HTMLElement}*/ ok;
-    /**@type {HTMLElement}*/ cancel;
+    /** @type {string} */ id;
 
-    /**@type {POPUP_RESULT}*/ result;
-    /**@type {any}*/ value;
+    /** @type {HTMLDialogElement} */ dlg;
+    /** @type {HTMLElement} */ text;
+    /** @type {HTMLTextAreaElement} */ input;
+    /** @type {HTMLElement} */ controls;
+    /** @type {HTMLElement} */ ok;
+    /** @type {HTMLElement} */ cancel;
+    /** @type {POPUP_RESULT|number?} */ defaultResult;
+    /** @type {CustomPopupButton[]|string[]?} */ customButtons;
 
-    /**@type {Promise}*/ promise;
-    /**@type {Function}*/ resolver;
+    /** @type {POPUP_RESULT|number} */ result;
+    /** @type {any} */ value;
 
-    /**@type {Function}*/ keyListenerBound;
+    /** @type {HTMLElement} */ lastFocus;
+
+    /** @type {Promise<any>} */ promise;
+    /** @type {(result: any) => any} */ resolver;
 
     /**
      * Constructs a new Popup object with the given text, type, inputValue, and options
@@ -70,26 +74,28 @@ export class Popup {
      * @param {PopupOptions} [options={}] - Additional options for the popup
      */
     constructor(text, type, inputValue = '', { okButton = null, cancelButton = null, rows = 1, wide = false, wider = false, large = false, allowHorizontalScrolling = false, allowVerticalScrolling = false, defaultResult = POPUP_RESULT.AFFIRMATIVE, customButtons = null } = {}) {
+        popups.push(this);
+
+        // Make this popup uniquely identifiable
+        this.id = uuidv4();
         this.type = type;
 
         /**@type {HTMLTemplateElement}*/
         const template = document.querySelector('#shadow_popup_template');
         // @ts-ignore
-        this.dom = template.content.cloneNode(true).querySelector('.shadow_popup');
-        const dlg = this.dom.querySelector('.dialogue_popup');
-        // @ts-ignore
-        this.dlg = dlg;
-        this.text = this.dom.querySelector('.dialogue_popup_text');
-        this.input = this.dom.querySelector('.dialogue_popup_input');
-        this.controls = this.dom.querySelector('.dialogue_popup_controls');
-        this.ok = this.dom.querySelector('.dialogue_popup_ok');
-        this.cancel = this.dom.querySelector('.dialogue_popup_cancel');
+        this.dlg = template.content.cloneNode(true).querySelector('.dialogue_popup');
+        this.text = this.dlg.querySelector('.dialogue_popup_text');
+        this.input = this.dlg.querySelector('.dialogue_popup_input');
+        this.controls = this.dlg.querySelector('.dialogue_popup_controls');
+        this.ok = this.dlg.querySelector('.dialogue_popup_ok');
+        this.cancel = this.dlg.querySelector('.dialogue_popup_cancel');
 
-        if (wide) dlg.classList.add('wide_dialogue_popup');
-        if (wider) dlg.classList.add('wider_dialogue_popup');
-        if (large) dlg.classList.add('large_dialogue_popup');
-        if (allowHorizontalScrolling) dlg.classList.add('horizontal_scrolling_dialogue_popup');
-        if (allowVerticalScrolling) dlg.classList.add('vertical_scrolling_dialogue_popup');
+        this.dlg.setAttribute('data-id', this.id);
+        if (wide) this.dlg.classList.add('wide_dialogue_popup');
+        if (wider) this.dlg.classList.add('wider_dialogue_popup');
+        if (large) this.dlg.classList.add('large_dialogue_popup');
+        if (allowHorizontalScrolling) this.dlg.classList.add('horizontal_scrolling_dialogue_popup');
+        if (allowVerticalScrolling) this.dlg.classList.add('vertical_scrolling_dialogue_popup');
 
         // If custom button captions are provided, we set them beforehand
         this.ok.textContent = typeof okButton === 'string' ? okButton : 'OK';
@@ -97,26 +103,25 @@ export class Popup {
 
         this.defaultResult = defaultResult;
         this.customButtons = customButtons;
-        this.customButtonElements = this.customButtons?.map((x, index) => {
+        this.customButtons?.forEach((x, index) => {
             /** @type {CustomPopupButton} */
             const button = typeof x === 'string' ? { text: x, result: index + 2 } : x;
+
             const buttonElement = document.createElement('div');
-
-            buttonElement.classList.add('menu_button', 'menu_button_custom');
+            buttonElement.classList.add('menu_button', 'menu_button_custom', 'result_control');
             buttonElement.classList.add(...(button.classes ?? []));
-
-            buttonElement.textContent = button.text;
-            if (button.action) buttonElement.addEventListener('click', button.action);
-            if (button.result) buttonElement.addEventListener('click', () => this.completeCustom(button.result));
-
             buttonElement.setAttribute('data-result', String(button.result ?? undefined));
+            buttonElement.textContent = button.text;
+            buttonElement.tabIndex = 0;
+
+            if (button.action) buttonElement.addEventListener('click', button.action);
+            if (button.result) buttonElement.addEventListener('click', () => this.complete(button.result));
 
             if (button.appendAtEnd) {
                 this.controls.appendChild(buttonElement);
             } else {
                 this.controls.insertBefore(buttonElement, this.ok);
             }
-            return buttonElement;
         });
 
         // Set the default button class
@@ -141,7 +146,8 @@ export class Popup {
                 break;
             }
             default: {
-                // illegal argument
+                console.warn('Unknown popup type.', type);
+                break;
             }
         }
 
@@ -156,38 +162,57 @@ export class Popup {
         } else if (typeof text == 'string') {
             this.text.innerHTML = text;
         } else {
-            // illegal argument
+            console.warn('Unknown popup text type. Should be jQuery, HTMLElement or string.', text);
         }
 
-        this.ok.addEventListener('click', () => this.completeAffirmative());
-        this.cancel.addEventListener('click', () => this.completeNegative());
+        // Already prepare the auto-focus control by adding the "autofocus" attribute, this should be respected by showModal()
+        this.setAutoFocus({ applyAutoFocus: true });
+
+        // Set focus event that remembers the focused element
+        this.dlg.addEventListener('focusin', (evt) => { if (evt.target instanceof HTMLElement && evt.target != this.dlg) this.lastFocus = evt.target; });
+
+        this.ok.addEventListener('click', () => this.complete(POPUP_RESULT.AFFIRMATIVE));
+        this.cancel.addEventListener('click', () => this.complete(POPUP_RESULT.NEGATIVE));
         const keyListener = (evt) => {
             switch (evt.key) {
                 case 'Escape': {
-                    // does it really matter where we check?
-                    const topModal = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2)?.closest('.shadow_popup');
-                    if (topModal == this.dom) {
-                        evt.preventDefault();
-                        evt.stopPropagation();
-                        this.completeCancelled();
-                        window.removeEventListener('keydown', keyListenerBound);
-                        break;
-                    }
+                    // Check if we are the currently active popup
+                    if (this.dlg != document.activeElement?.closest('.dialogue_popup'))
+                        return;
+
+                    this.complete(POPUP_RESULT.CANCELLED);
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    window.removeEventListener('keydown', keyListenerBound);
+                    break;
                 }
                 case 'Enter': {
                     // Only count enter if no modifier key is pressed
-                    if (!evt.altKey && !evt.ctrlKey && !evt.shiftKey) {
-                        evt.preventDefault();
-                        evt.stopPropagation();
-                        this.completeCustom(this.defaultResult);
-                        window.removeEventListener('keydown', keyListenerBound);
-                    }
+                    if (evt.altKey || evt.ctrlKey || evt.shiftKey)
+                        return;
+
+                    // Check if we are the currently active popup
+                    if (this.dlg != document.activeElement?.closest('.dialogue_popup'))
+                        return;
+
+                    // Check if the current focus is a result control. Only should we apply the compelete action
+                    const resultControl = document.activeElement?.closest('.result_control');
+                    if (!resultControl)
+                        return;
+
+                    const result = Number(document.activeElement.getAttribute('data-result') ?? this.defaultResult);
+                    this.complete(result);
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    window.removeEventListener('keydown', keyListenerBound);
+
                     break;
                 }
             }
+
         };
         const keyListenerBound = keyListener.bind(this);
-        window.addEventListener('keydown', keyListenerBound);
+        this.dlg.addEventListener('keydown', keyListenerBound);
     }
 
     /**
@@ -197,26 +222,12 @@ export class Popup {
      * @returns {Promise<string|number|boolean?>} A promise that resolves with the value of the popup when it is completed.
      */
     async show() {
-        // Set z-index, so popups can stack "on top" of each other
-        this.dom.style.zIndex = String(++currentPopupZIndex);
+        document.body.append(this.dlg);
 
-        document.body.append(this.dom);
-        this.dom.style.display = 'block';
-        switch (this.type) {
-            case POPUP_TYPE.INPUT: {
-                this.input.focus();
-                break;
-            }
-            default:
-                this.ok.focus();
-                break;
-        }
+        this.dlg.showModal();
 
-        $(this.dom).transition({
-            opacity: 1,
-            duration: animation_duration,
-            easing: animation_easing,
-        });
+        // We need to fix the toastr to be present inside this dialog
+        fixToastrForDialogs();
 
         this.promise = new Promise((resolve) => {
             this.resolver = resolve;
@@ -224,91 +235,94 @@ export class Popup {
         return this.promise;
     }
 
-    completeAffirmative() {
-        switch (this.type) {
-            case POPUP_TYPE.TEXT:
-            case POPUP_TYPE.CONFIRM: {
-                this.value = true;
-                break;
-            }
-            case POPUP_TYPE.INPUT: {
-                this.value = this.input.value;
-                break;
-            }
-        }
-        this.result = POPUP_RESULT.AFFIRMATIVE;
-        this.hide();
-    }
+    setAutoFocus({ applyAutoFocus = false } = {}) {
+        /** @type {HTMLElement} */
+        let control;
 
-    completeNegative() {
-        switch (this.type) {
-            case POPUP_TYPE.TEXT:
-            case POPUP_TYPE.CONFIRM:
-            case POPUP_TYPE.INPUT: {
-                this.value = false;
-                break;
+        // Try to find if we have an autofocus control already present
+        control = this.dlg.querySelector('[autofocus]');
+
+        // If not, find the default control for this popup type
+        if (!control) {
+            switch (this.type) {
+                case POPUP_TYPE.INPUT: {
+                    control = this.input;
+                    break;
+                }
+                default:
+                    // Select default button
+                    control = this.controls.querySelector(`[data-result="${this.defaultResult}"]`);
+                    break;
             }
         }
-        this.result = POPUP_RESULT.NEGATIVE;
-        this.hide();
-    }
 
-    completeCancelled() {
-        switch (this.type) {
-            case POPUP_TYPE.TEXT:
-            case POPUP_TYPE.CONFIRM:
-            case POPUP_TYPE.INPUT: {
-                this.value = null;
-                break;
-            }
+        if (applyAutoFocus) {
+            control.setAttribute('autofocus', '');
+        } else {
+            control.focus();
         }
-        this.result = POPUP_RESULT.CANCELLED;
-        this.hide();
     }
-
-
 
     /**
-     * Completes the popup with a custom result.
-     * Calls into the default three delete states, if a valid `POPUP_RESULT` is provided.
+     * Completes the popup and sets its result and value
      *
-     * @param {POPUP_RESULT|number} result - The result of the custom action
+     * The completion handling will make the popup return the result to the original show promise.
+     *
+     * There will be two different types of result values:
+     * - popup with `POPUP_TYPE.INPUT` will return the input value - or `false` on negative and `null` on cancelled
+     * - All other will return the result value as provided as `POPUP_RESULT` or a custom number value
+     *
+     * @param {POPUP_RESULT|number} result - The result of the popup (either an existing `POPUP_RESULT` or a custom result value)
      */
-    completeCustom(result) {
-        switch (result) {
-            case POPUP_RESULT.AFFIRMATIVE: {
-                this.completeAffirmative();
-                break;
-            }
-            case POPUP_RESULT.NEGATIVE: {
-                this.completeNegative();
-                break;
-            }
-            case POPUP_RESULT.CANCELLED: {
-                this.completeCancelled();
-                break;
-            }
-            default: {
-                this.value = this.type === POPUP_TYPE.INPUT ? this.input.value : result;
-                this.result = result ? POPUP_RESULT.AFFIRMATIVE : POPUP_RESULT.NEGATIVE;
-                this.hide();
-                break;
-            }
+    complete(result) {
+        // In all cases besides INPUT the popup value should be the result
+        /** @type {POPUP_RESULT|number|boolean|string?} */
+        let value = result;
+        // Input type have special results, so the input can be accessed directly without the need to save the popup and access both result and value
+        if (this.type === POPUP_TYPE.INPUT) {
+            if (result >= POPUP_RESULT.AFFIRMATIVE) value = this.input.value;
+            if (result === POPUP_RESULT.NEGATIVE) value = false;
+            if (result === POPUP_RESULT.CANCELLED) value = null;
+            else value = false; // Might a custom negative value?
         }
+
+        this.value = value;
+        this.result = result;
+        this.hide();
     }
 
     /**
      * Hides the popup, using the internal resolver to return the value to the original show promise
+     * @private
      */
     hide() {
-        --currentPopupZIndex;
-        $(this.dom).transition({
-            opacity: 0,
-            duration: animation_duration,
-            easing: animation_easing,
-        });
-        delay(animation_duration).then(() => {
-            this.dom.remove();
+        // We close the dialog, first running the animation
+        this.dlg.setAttribute('closing', '');
+
+        // Once the hiding starts, we need to fix the toastr to the layer below
+        fixToastrForDialogs();
+
+        // After the dialog is actually completely closed, remove it from the DOM
+        runAfterAnimation(this.dlg, () => {
+            // Call the close on the dialog
+            this.dlg.close();
+
+            // Remove it from the dom
+            this.dlg.remove();
+
+            // Remove it from the popup references
+            removeFromArray(popups, this);
+
+            // If there is any popup below this one, see if we can set the focus
+            if (popups.length > 0) {
+                const activeDialog = document.activeElement?.closest('.dialogue_popup');
+                const id = activeDialog?.getAttribute('data-id');
+                const popup = popups.find(x => x.id == id);
+                if (popup) {
+                    if (popup.lastFocus) popup.lastFocus.focus();
+                    else popup.setAutoFocus();
+                }
+            }
         });
 
         this.resolver(this.value);
@@ -331,4 +345,33 @@ export function callGenericPopup(text, type, inputValue = '', popupOptions = {})
         popupOptions,
     );
     return popup.show();
+}
+
+export function fixToastrForDialogs() {
+    // Hacky way of getting toastr to actually display on top of the popup...
+
+    const dlg = Array.from(document.querySelectorAll('dialog[open]:not([closing])')).pop();
+
+    let toastContainer = document.getElementById('toast-container');
+    const isAlreadyPresent = !!toastContainer;
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.setAttribute('id', 'toast-container');
+        if (toastr.options.positionClass) toastContainer.classList.add(toastr.options.positionClass);
+    }
+
+    // Check if toastr is already a child. If not, we need to move it inside this dialog.
+    // This is either the existing toastr container or the newly created one.
+    if (dlg && !dlg.contains(toastContainer)) {
+        dlg?.appendChild(toastContainer);
+        return;
+    }
+
+    // Now another case is if we only have one popup and that is currently closing. In that case the toastr container exists,
+    // but we don't have an open dialog to move it into. It's just inside the existing one that will be gone in milliseconds.
+    // To prevent new toasts from being showing up in there and then vanish in an instant,
+    // we move the toastr back to the main body
+    if (!dlg && isAlreadyPresent) {
+        document.body.appendChild(toastContainer);
+    }
 }

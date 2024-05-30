@@ -4848,20 +4848,18 @@
     </div>
     <!-- various fullscreen popups -->
     <template id="shadow_popup_template" data-i18n="[popup_text_save]popup_text_save;[popup_text_yes]popup_text_yes;[popup_text_no]popup_text_no;[popup_text_cancel]popup_text_cancel;[popup_text_import]popup_text_import" popup_text_save="Save" popup_text_yes="Yes" popup_text_no="No" popup_text_cancel="Cancel" popup_text_import="Import"> <!-- localization data holder for popups -->
-        <div class="shadow_popup">
-            <div class="dialogue_popup">
-                <div class="dialogue_popup_holder">
-                    <div class="dialogue_popup_text">
-                        <h3 class="margin0">text</h3>
-                    </div>
-                    <textarea class="dialogue_popup_input text_pole" rows="1"></textarea>
-                    <div class="dialogue_popup_controls">
-                        <div class="dialogue_popup_ok menu_button" data-i18n="Delete" data-result="1">Delete</div>
-                        <div class="dialogue_popup_cancel menu_button" data-i18n="Cancel" data-result="0">Cancel</div>
-                    </div>
+        <dialog class="dialogue_popup shadow_popup">
+
+                <div class="dialogue_popup_text">
+                    <h3 class="margin0">text</h3>
                 </div>
-            </div>
-        </div>
+                <textarea class="dialogue_popup_input text_pole result_control" rows="1" data-result="1"></textarea>
+                <div class="dialogue_popup_controls">
+                    <div class="dialogue_popup_ok menu_button result_control" data-i18n="Delete" data-result="1" tabindex="0">Delete</div>
+                    <div class="dialogue_popup_cancel menu_button result_control" data-i18n="Cancel" data-result="0" tabindex="0">Cancel</div>
+                </div>
+
+        </dialog>
     </template>
     <div id="shadow_popup">
         <div id="dialogue_popup">
@@ -5198,8 +5196,8 @@
             <div title="Tag as folder" class="tag_as_folder fa-solid fa-folder-open right_menu_button" data-i18n="[title]Use tag as folder">
                 <span class="tag_folder_indicator"></span>
             </div>
-            <div class="tagColorPickerHolder"></div>
-            <div class="tagColorPicker2Holder"></div>
+            <div class="tag_view_color_picker" data-value="color"></div>
+            <div class="tag_view_color_picker" data-value="color2"></div>
             <div class="tag_view_name" contenteditable="true"></div>
             <div class="tag_view_counter"><span class="tag_view_counter_value"></span>&nbsp;entries</div>
             <div title="Delete tag" class="tag_delete fa-solid fa-trash-can right_menu_button" data-i18n="[title]Delete tag"></div>
@@ -6437,15 +6435,6 @@
     <script type="module" src="scripts/setting-search.js"></script>
     <script type="module" src="scripts/server-history.js"></script>
     <script type="module" src="script.js"></script>
-    <script>
-        // Configure toast library:
-        toastr.options.escapeHtml = true; // Prevent raw HTML inserts
-        toastr.options.timeOut = 4000; // How long the toast will display without user interaction
-        toastr.options.extendedTimeOut = 10000; // How long the toast will display after a user hovers over it
-        toastr.options.progressBar = true; // Visually indicate how long before a toast expires.
-        toastr.options.closeButton = true; // enable a close button
-        toastr.options.positionClass = "toast-top-center"; // Where to position the toast container
-    </script>
     <script>
         window.addEventListener('load', (event) => {
             const documentHeight = () => {
