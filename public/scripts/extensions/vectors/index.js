@@ -21,11 +21,14 @@ import {
 } from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
-import { getDataBankAttachments, getFileAttachment } from '../../chats.js';
+import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 
 const MODULE_NAME = 'vectors';
 
@@ -332,28 +335,7 @@ async function processFiles(chat) {
             return;
         }
 
-        const dataBank = getDataBankAttachments();
-        const dataBankCollectionIds = [];
-
-        for (const file of dataBank) {
-            const collectionId = getFileCollectionId(file.url);
-            const hashesInCollection = await getSavedHashes(collectionId);
-            dataBankCollectionIds.push(collectionId);
-
-            // File is already in the collection
-            if (hashesInCollection.length) {
-                continue;
-            }
-
-            // Download and process the file
-            file.text = await getFileAttachment(file.url);
-            console.log(`Vectors: Retrieved file ${file.name} from Data Bank`);
-            // Convert kilobytes to string length
-            const thresholdLength = settings.size_threshold_db * 1024;
-            // Use chunk size from settings if file is larger than threshold
-            const chunkSize = file.size > thresholdLength ? settings.chunk_size_db : -1;
-            await vectorizeFile(file.text, file.name, collectionId, chunkSize);
-        }
+        const dataBankCollectionIds = await ingestDataBankAttachments();
 
         if (dataBankCollectionIds.length) {
             const queryText = await getQueryText(chat);
@@ -401,6 +383,39 @@ async function processFiles(chat) {
 }
 
 /**
+ * Ensures that data bank attachments are ingested and inserted into the vector index.
+ * @param {string} [source] Optional source filter for data bank attachments.
+ * @returns {Promise<string[]>} Collection IDs
+ */
+async function ingestDataBankAttachments(source) {
+    // Exclude disabled files
+    const dataBank = source ? getDataBankAttachmentsForSource(source, false) : getDataBankAttachments(false);
+    const dataBankCollectionIds = [];
+
+    for (const file of dataBank) {
+        const collectionId = getFileCollectionId(file.url);
+        const hashesInCollection = await getSavedHashes(collectionId);
+        dataBankCollectionIds.push(collectionId);
+
+        // File is already in the collection
+        if (hashesInCollection.length) {
+            continue;
+        }
+
+        // Download and process the file
+        file.text = await getFileAttachment(file.url);
+        console.log(`Vectors: Retrieved file ${file.name} from Data Bank`);
+        // Convert kilobytes to string length
+        const thresholdLength = settings.size_threshold_db * 1024;
+        // Use chunk size from settings if file is larger than threshold
+        const chunkSize = file.size > thresholdLength ? settings.chunk_size_db : -1;
+        await vectorizeFile(file.text, file.name, collectionId, chunkSize);
+    }
+
+    return dataBankCollectionIds;
+}
+
+/**
  * Inserts file chunks from the Data Bank into the prompt.
  * @param {string} queryText Text to query
  * @param {string[]} collectionIds File collection IDs
@@ -408,7 +423,7 @@ async function processFiles(chat) {
  */
 async function injectDataBankChunks(queryText, collectionIds) {
     try {
-        const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.chunk_count_db);
+        const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.chunk_count_db, settings.score_threshold);
         console.debug(`Vectors: Retrieved ${collectionIds.length} Data Bank collections`, queryResults);
         let textResult = '';
 
@@ -828,9 +843,10 @@ async function queryCollection(collectionId, searchText, topK) {
  * @param {string[]} collectionIds - Collection IDs to query
  * @param {string} searchText - Text to query
  * @param {number} topK - Number of results to return
+ * @param {number} threshold - Score threshold
  * @returns {Promise<Record<string, { hashes: number[], metadata: object[] }>>} - Results mapped to collection IDs
  */
-async function queryMultipleCollections(collectionIds, searchText, topK) {
+async function queryMultipleCollections(collectionIds, searchText, topK, threshold) {
     const headers = getVectorHeaders();
 
     const response = await fetch('/api/vector/query-multi', {
@@ -841,7 +857,7 @@ async function queryMultipleCollections(collectionIds, searchText, topK) {
             searchText: searchText,
             topK: topK,
             source: settings.source,
-            threshold: settings.score_threshold,
+            threshold: threshold ?? settings.score_threshold,
         }),
     });
 
@@ -1125,7 +1141,7 @@ async function activateWorldInfo(chat) {
         return;
     }
 
-    const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.max_entries);
+    const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.max_entries, settings.score_threshold);
     const activatedHashes = Object.values(queryResults).flatMap(x => x.hashes).filter(onlyUnique);
     const activatedEntries = [];
 
@@ -1396,4 +1412,59 @@ jQuery(async () => {
     eventSource.on(event_types.CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.GROUP_CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.FILE_ATTACHMENT_DELETED, purgeFileVectorIndex);
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-ingest',
+        callback: async () => {
+            await ingestDataBankAttachments();
+            return '';
+        },
+        aliases: ['databank-ingest', 'data-bank-ingest'],
+        helpString: 'Force the ingestion of all Data Bank attachments.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-purge',
+        callback: async () => {
+            const dataBank = getDataBankAttachments();
+
+            for (const file of dataBank) {
+                await purgeFileVectorIndex(file.url);
+            }
+
+            return '';
+        },
+        aliases: ['databank-purge', 'data-bank-purge'],
+        helpString: 'Purge the vector index for all Data Bank attachments.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-search',
+        callback: async (args, query) => {
+            const threshold = Number(args?.threshold ?? settings.score_threshold);
+            const source = String(args?.source ?? '');
+            const attachments = source ? getDataBankAttachmentsForSource(source, false) : getDataBankAttachments(false);
+            const collectionIds = await ingestDataBankAttachments(String(source));
+            const queryResults = await queryMultipleCollections(collectionIds, String(query), settings.chunk_count_db, threshold);
+
+            // Map collection IDs to file URLs
+            const urls = Object
+                .keys(queryResults)
+                .map(x => attachments.find(y => getFileCollectionId(y.url) === x))
+                .filter(x => x)
+                .map(x => x.url);
+
+            return JSON.stringify(urls);
+        },
+        aliases: ['databank-search', 'data-bank-search'],
+        helpString: 'Search the Data Bank for a specific query using vector similarity. Returns a list of file URLs with the most relevant content.',
+        namedArgumentList: [
+            new SlashCommandNamedArgument('threshold', 'Threshold for the similarity score. Uses the global config value if not set.', ARGUMENT_TYPE.NUMBER, false, false, ''),
+            new SlashCommandNamedArgument('source', 'Optional filter for the attachments by source.', ARGUMENT_TYPE.STRING, false, false, '', ['global', 'character', 'chat']),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument('Query to search by.', ARGUMENT_TYPE.STRING, true, false),
+        ],
+        returns: ARGUMENT_TYPE.LIST,
+    }));
 });

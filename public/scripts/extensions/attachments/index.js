@@ -138,7 +138,7 @@ jQuery(async () => {
         name: 'db-list',
         callback: listDataBankAttachments,
         aliases: ['databank-list', 'data-bank-list'],
-        helpString: 'List attachments in the data bank as a JSON-serialized array. Optionally, provide the source of the attachments and the field to list by.',
+        helpString: 'List attachments in the Data Bank as a JSON-serialized array. Optionally, provide the source of the attachments and the field to list by.',
         namedArgumentList: [
             new SlashCommandNamedArgument('source', 'The source of the attachments.', ARGUMENT_TYPE.STRING, false, false, '', TYPES),
             new SlashCommandNamedArgument('field', 'The field to list by.', ARGUMENT_TYPE.STRING, false, false, 'url', FIELDS),
@@ -150,7 +150,7 @@ jQuery(async () => {
         name: 'db-get',
         callback: getDataBankText,
         aliases: ['databank-get', 'data-bank-get'],
-        helpString: 'Get attachment text from the data bank. Either provide the name or URL of the attachment. Optionally, provide the source of the attachment.',
+        helpString: 'Get attachment text from the Data Bank. Either provide the name or URL of the attachment. Optionally, provide the source of the attachment.',
         namedArgumentList: [
             new SlashCommandNamedArgument('source', 'The source of the attachment.', ARGUMENT_TYPE.STRING, false, false, '', TYPES),
         ],
@@ -164,7 +164,7 @@ jQuery(async () => {
         name: 'db-add',
         callback: uploadDataBankAttachment,
         aliases: ['databank-add', 'data-bank-add'],
-        helpString: 'Add an attachment to the data bank. If name is not provided, it will be generated automatically. Returns the URL of the attachment.',
+        helpString: 'Add an attachment to the Data Bank. If name is not provided, it will be generated automatically. Returns the URL of the attachment.',
         namedArgumentList: [
             new SlashCommandNamedArgument('source', 'The source for the attachment.', ARGUMENT_TYPE.STRING, false, false, 'chat', TYPES),
             new SlashCommandNamedArgument('name', 'The name of the attachment.', ARGUMENT_TYPE.STRING, false, false),
@@ -179,7 +179,7 @@ jQuery(async () => {
         name: 'db-update',
         callback: updateDataBankAttachment,
         aliases: ['databank-update', 'data-bank-update'],
-        helpString: 'Update an attachment in the data bank, preserving its name. Returns a new URL of the attachment.',
+        helpString: 'Update an attachment in the Data Bank, preserving its name. Returns a new URL of the attachment.',
         namedArgumentList: [
             new SlashCommandNamedArgument('source', 'The source for the attachment.', ARGUMENT_TYPE.STRING, false, false, 'chat', TYPES),
             new SlashCommandNamedArgument('name', 'The name of the attachment.', ARGUMENT_TYPE.STRING, false, false),
@@ -195,7 +195,7 @@ jQuery(async () => {
         name: 'db-delete',
         callback: deleteDataBankAttachment,
         aliases: ['databank-delete', 'data-bank-delete'],
-        helpString: 'Delete an attachment from the data bank.',
+        helpString: 'Delete an attachment from the Data Bank.',
         namedArgumentList: [
             new SlashCommandNamedArgument('source', 'The source of the attachment.', ARGUMENT_TYPE.STRING, false, false, 'chat', TYPES),
         ],

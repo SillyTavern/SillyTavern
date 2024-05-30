@@ -1279,23 +1279,28 @@ export function getDataBankAttachments(includeDisabled = false) {
 }
 
 /**
- * Gets all attachments for a specific source. Includes disabled attachments.
+ * Gets all attachments for a specific source.
  * @param {string} source Attachment source
+ * @param {boolean} [includeDisabled=true] If true, include disabled attachments
  * @returns {FileAttachment[]} List of attachments
  */
-export function getDataBankAttachmentsForSource(source) {
+export function getDataBankAttachmentsForSource(source, includeDisabled = true) {
     ensureAttachmentsExist();
 
-    switch (source) {
-        case ATTACHMENT_SOURCE.GLOBAL:
-            return extension_settings.attachments ?? [];
-        case ATTACHMENT_SOURCE.CHAT:
-            return chat_metadata.attachments ?? [];
-        case ATTACHMENT_SOURCE.CHARACTER:
-            return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+    function getBySource() {
+        switch (source) {
+            case ATTACHMENT_SOURCE.GLOBAL:
+                return extension_settings.attachments ?? [];
+            case ATTACHMENT_SOURCE.CHAT:
+                return chat_metadata.attachments ?? [];
+            case ATTACHMENT_SOURCE.CHARACTER:
+                return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+        }
+
+        return [];
     }
 
-    return [];
+    return getBySource().filter(x => includeDisabled || !isAttachmentDisabled(x));
 }
 
 /**
