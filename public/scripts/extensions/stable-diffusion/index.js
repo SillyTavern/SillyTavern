@@ -3267,10 +3267,10 @@ jQuery(async () => {
         ],
         helpString: `
             <div>
-                <span data-i18n="sd_help_1">Requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments:</span> <code>${Object.values(triggerWords).flat().join(', ')}</code>.
+                Requests to generate an image and posts it to chat (unless quiet=true argument is specified). Supported arguments: <code>${Object.values(triggerWords).flat().join(', ')}</code>.
             </div>
             <div>
-                <span data-i18n="sd_help_2">Anything else would trigger a "free mode" to make generate whatever you prompted. Example:</span> <code>/imagine apple tree</code> <span data-i18n="sd_help_3">would generate a picture of an apple tree. Returns a link to the generated image.</span>
+                Anything else would trigger a "free mode" to make generate whatever you prompted. Example: <code>/imagine apple tree</code> would generate a picture of an apple tree. Returns a link to the generated image.
             </div>
         `,
     }));
