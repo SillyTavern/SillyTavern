@@ -1265,7 +1265,7 @@ function ensureAttachmentsExist() {
 }
 
 /**
- * Gets all currently available attachments. Ignores disabled attachments.
+ * Gets all currently available attachments. Ignores disabled attachments by default.
  * @param {boolean} [includeDisabled=false] If true, include disabled attachments
  * @returns {FileAttachment[]} List of attachments
  */
@@ -1279,7 +1279,7 @@ export function getDataBankAttachments(includeDisabled = false) {
 }
 
 /**
- * Gets all attachments for a specific source.
+ * Gets all attachments for a specific source. Includes disabled attachments by default.
  * @param {string} source Attachment source
  * @param {boolean} [includeDisabled=true] If true, include disabled attachments
  * @returns {FileAttachment[]} List of attachments

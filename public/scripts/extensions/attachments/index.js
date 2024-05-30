@@ -1,5 +1,5 @@
 import { deleteAttachment, getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment, uploadFileAttachmentToServer } from '../../chats.js';
-import { renderExtensionTemplateAsync } from '../../extensions.js';
+import { extension_settings, renderExtensionTemplateAsync } from '../../extensions.js';
 import { SlashCommand } from '../../slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
@@ -12,7 +12,7 @@ const TYPES = ['global', 'character', 'chat'];
 const FIELDS = ['name', 'url'];
 
 /**
- * Get attachments from the data bank
+ * Get attachments from the data bank. Includes disabled attachments.
  * @param {string} [source] Source for the attachments
  * @returns {import('../../chats').FileAttachment[]} List of attachments
  */
@@ -21,7 +21,37 @@ function getAttachments(source) {
         return getDataBankAttachments(true);
     }
 
-    return getDataBankAttachmentsForSource(source);
+    return getDataBankAttachmentsForSource(source, true);
+}
+
+/**
+ * Get attachment by a single name or URL.
+ * @param {import('../../chats').FileAttachment[]} attachments List of attachments
+ * @param {string} value Name or URL of the attachment
+ * @returns {import('../../chats').FileAttachment} Attachment
+ */
+function getAttachmentByField(attachments, value) {
+    const match = (a) => String(a).trim().toLowerCase() === String(value).trim().toLowerCase();
+    const fullMatchByURL = attachments.find(it => match(it.url));
+    const fullMatchByName = attachments.find(it => match(it.name));
+    return fullMatchByURL || fullMatchByName;
+}
+
+/**
+ * Get attachment by multiple fields.
+ * @param {import('../../chats').FileAttachment[]} attachments List of attachments
+ * @param {string[]} values Name and URL of the attachment to search for
+ * @returns
+ */
+function getAttachmentByFields(attachments, values) {
+    for (const value of values) {
+        const attachment = getAttachmentByField(attachments, value);
+        if (attachment) {
+            return attachment;
+        }
+    }
+
+    return null;
 }
 
 /**
@@ -48,10 +78,7 @@ async function getDataBankText(args, value) {
     }
 
     const attachments = getAttachments(args?.source);
-    const match = (a) => String(a).trim().toLowerCase() === String(value).trim().toLowerCase();
-    const fullMatchByURL = attachments.find(it => match(it.url));
-    const fullMatchByName = attachments.find(it => match(it.name));
-    const attachment = fullMatchByURL || fullMatchByName;
+    const attachment = getAttachmentByField(attachments, value);
 
     if (!attachment) {
         toastr.warning('Attachment not found.');
@@ -85,9 +112,7 @@ async function uploadDataBankAttachment(args, value) {
 async function updateDataBankAttachment(args, value) {
     const source = args?.source && TYPES.includes(args.source) ? args.source : 'chat';
     const attachments = getAttachments(source);
-    const fullMatchByURL = attachments.find(it =>  String(it.url).trim().toLowerCase() === String(args?.url).trim().toLowerCase());
-    const fullMatchByName = attachments.find(it => String(it.name).trim().toLowerCase() === String(args?.name).trim().toLowerCase());
-    const attachment = fullMatchByURL || fullMatchByName;
+    const attachment = getAttachmentByFields(attachments, [args?.url, args?.name]);
 
     if (!attachment) {
         toastr.warning('Attachment not found.');
@@ -109,10 +134,7 @@ async function updateDataBankAttachment(args, value) {
 async function deleteDataBankAttachment(args, value) {
     const source = args?.source && TYPES.includes(args.source) ? args.source : 'chat';
     const attachments = getAttachments(source);
-    const match = (a) => String(a).trim().toLowerCase() === String(value).trim().toLowerCase();
-    const fullMatchByURL = attachments.find(it => match(it.url));
-    const fullMatchByName = attachments.find(it => match(it.name));
-    const attachment = fullMatchByURL || fullMatchByName;
+    const attachment = getAttachmentByField(attachments, value);
 
     if (!attachment) {
         toastr.warning('Attachment not found.');
@@ -120,6 +142,53 @@ async function deleteDataBankAttachment(args, value) {
     }
 
     await deleteAttachment(attachment, source, () => { }, false);
+    return '';
+}
+
+/**
+ * Callback for disabling an attachment in the data bank.
+ * @param {object} args Named arguments
+ * @param {string} value Name or URL of the attachment
+ * @returns {Promise<string>} Empty string
+ */
+async function disableDataBankAttachment(args, value) {
+    const attachments = getAttachments(args?.source);
+    const attachment = getAttachmentByField(attachments, value);
+
+    if (!attachment) {
+        toastr.warning('Attachment not found.');
+        return '';
+    }
+
+    if (extension_settings.disabled_attachments.includes(attachment.url)) {
+        return '';
+    }
+
+    extension_settings.disabled_attachments.push(attachment.url);
+    return '';
+}
+
+/**
+ * Callback for enabling an attachment in the data bank.
+ * @param {object} args Named arguments
+ * @param {string} value Name or URL of the attachment
+ * @returns {Promise<string>} Empty string
+ */
+async function enableDataBankAttachment(args, value) {
+    const attachments = getAttachments(args?.source);
+    const attachment = getAttachmentByField(attachments, value);
+
+    if (!attachment) {
+        toastr.warning('Attachment not found.');
+        return '';
+    }
+
+    const index = extension_settings.disabled_attachments.indexOf(attachment.url);
+    if (index === -1) {
+        return '';
+    }
+
+    extension_settings.disabled_attachments.splice(index, 1);
     return '';
 }
 
@@ -189,6 +258,32 @@ jQuery(async () => {
             new SlashCommandArgument('The content of the file attachment.', ARGUMENT_TYPE.STRING, true, false),
         ],
         returns: ARGUMENT_TYPE.STRING,
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-disable',
+        callback: disableDataBankAttachment,
+        aliases: ['databank-disable', 'data-bank-disable'],
+        helpString: 'Disable an attachment in the Data Bank by its name or URL. Optionally, provide the source of the attachment.',
+        namedArgumentList: [
+            new SlashCommandNamedArgument('source', 'The source of the attachment.', ARGUMENT_TYPE.STRING, false, false, '', TYPES),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument('The name or URL of the attachment.', ARGUMENT_TYPE.STRING, true, false),
+        ],
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-enable',
+        callback: enableDataBankAttachment,
+        aliases: ['databank-enable', 'data-bank-enable'],
+        helpString: 'Enable an attachment in the Data Bank by its name or URL. Optionally, provide the source of the attachment.',
+        namedArgumentList: [
+            new SlashCommandNamedArgument('source', 'The source of the attachment.', ARGUMENT_TYPE.STRING, false, false, '', TYPES),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument('The name or URL of the attachment.', ARGUMENT_TYPE.STRING, true, false),
+        ],
     }));
 
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
