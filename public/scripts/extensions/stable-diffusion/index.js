@@ -2567,10 +2567,13 @@ async function generateAutoImage(prompt, negativePrompt) {
             denoising_strength: extension_settings.sd.denoising_strength,
             hr_second_pass_steps: extension_settings.sd.hr_second_pass_steps,
             seed: extension_settings.sd.seed >= 0 ? extension_settings.sd.seed : undefined,
+            // For AUTO1111
             override_settings: {
                 CLIP_stop_at_last_layers: extension_settings.sd.clip_skip,
             },
             override_settings_restore_afterwards: true,
+            // For SD.Next
+            clip_skip: extension_settings.sd.clip_skip,
             // Ensure generated img is saved to disk
             save_images: true,
             send_images: true,
