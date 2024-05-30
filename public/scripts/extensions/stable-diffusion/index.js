@@ -1847,7 +1847,7 @@ async function loadSchedulers() {
             schedulers = ['N/A'];
             break;
         case sources.vlad:
-            schedulers = await getAutoRemoteSchedulers();
+            schedulers = ['N/A'];
             break;
         case sources.drawthings:
             schedulers = ['N/A'];
