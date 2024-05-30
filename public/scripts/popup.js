@@ -49,6 +49,7 @@ export class Popup {
     /** @type {string} */ id;
 
     /** @type {HTMLDialogElement} */ dlg;
+    /** @type {HTMLElement} */ content;
     /** @type {HTMLElement} */ text;
     /** @type {HTMLTextAreaElement} */ input;
     /** @type {HTMLElement} */ controls;
@@ -84,6 +85,7 @@ export class Popup {
         const template = document.querySelector('#shadow_popup_template');
         // @ts-ignore
         this.dlg = template.content.cloneNode(true).querySelector('.dialogue_popup');
+        this.content = this.dlg.querySelector('.popup_content');
         this.text = this.dlg.querySelector('.dialogue_popup_text');
         this.input = this.dlg.querySelector('.dialogue_popup_input');
         this.controls = this.dlg.querySelector('.dialogue_popup_controls');

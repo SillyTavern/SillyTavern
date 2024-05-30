@@ -3064,13 +3064,33 @@ dialog {
     border-radius: 10px;
     display: flex;
     flex-direction: column;
-    overflow-y: hidden;
-    overflow-x: hidden;
+
+    /* Overflow visible so elements (like toasts) can appear outside of the dialog. '.popup_content' is hiding overflow for the real content. */
+    overflow: visible;
 
     /* Fix weird animation issue with font-scaling during popup open */
     backface-visibility: hidden;
     transform: translateZ(0);
     -webkit-font-smoothing: subpixel-antialiased;
+}
+
+.dialogue_popup .popup_content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dialogue_popup .dialogue_popup_text {
+    padding: 0 8px;
+    overflow: hidden;
+}
+
+.dialogue_popup.vertical_scrolling_dialogue_popup .dialogue_popup_text {
+    overflow-y: auto;
+}
+
+.dialogue_popup.horizontal_scrolling_dialogue_popup .dialogue_popup_text {
+    overflow-x: auto;
 }
 
 /* Open state of the dialog */
@@ -3108,7 +3128,7 @@ dialog {
         transform: scaleY(0);
     }
 
-    /** Make the scaling faster on pop-in, otherwise it looks a bit weird **/
+    /* Make the scaling faster on pop-in, otherwise it looks a bit weird */
     33% {
         transform: scaleY(1);
     }
@@ -3129,6 +3149,14 @@ dialog {
         opacity: 0;
         transform: scaleY(0);
     }
+}
+
+/* Fix toastr in dialogs by actually placing it at the top of the screen via transform */
+.dialogue_popup #toast-container {
+    height: 100svh;
+    top: calc(50% + var(--topBarBlockSize));
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .rm_stat_block {
@@ -3153,11 +3181,11 @@ dialog {
     min-width: 750px;
 }
 
-.horizontal_scrolling_dialogue_popup {
+#dialogue_popup .horizontal_scrolling_dialogue_popup {
     overflow-x: unset !important;
 }
 
-.vertical_scrolling_dialogue_popup {
+#dialogue_popup .vertical_scrolling_dialogue_popup {
     overflow-y: unset !important;
 }
 
@@ -3170,8 +3198,7 @@ dialog {
     padding: 0 10px;
 }
 
-#dialogue_popup_text,
-.dialogue_popup_text {
+#dialogue_popup_text {
     flex-grow: 1;
     overflow-y: auto;
     height: 100%;
