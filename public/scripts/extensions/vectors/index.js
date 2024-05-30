@@ -969,8 +969,8 @@ async function onViewStatsClick() {
     toastr.info(`Total hashes: <b>${totalHashes}</b><br>
     Unique hashes: <b>${uniqueHashes}</b><br><br>
     I'll mark collected messages with a green circle.`,
-    `Stats for chat ${chatId}`,
-    { timeOut: 10000, escapeHtml: false });
+        `Stats for chat ${chatId}`,
+        { timeOut: 10000, escapeHtml: false });
 
     const chat = getContext().chat;
     for (const message of chat) {
@@ -1441,7 +1441,8 @@ jQuery(async () => {
     SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         name: 'db-search',
         callback: async (args, query) => {
-            const threshold = Number(args?.threshold ?? settings.score_threshold);
+            const clamp = (v) => Number.isNaN(v) ? null : Math.min(1, Math.max(0, v));
+            const threshold = clamp(Number(args?.threshold ?? settings.score_threshold));
             const source = String(args?.source ?? '');
             const attachments = source ? getDataBankAttachmentsForSource(source, false) : getDataBankAttachments(false);
             const collectionIds = await ingestDataBankAttachments(String(source));
@@ -1459,7 +1460,7 @@ jQuery(async () => {
         aliases: ['databank-search', 'data-bank-search'],
         helpString: 'Search the Data Bank for a specific query using vector similarity. Returns a list of file URLs with the most relevant content.',
         namedArgumentList: [
-            new SlashCommandNamedArgument('threshold', 'Threshold for the similarity score. Uses the global config value if not set.', ARGUMENT_TYPE.NUMBER, false, false, ''),
+            new SlashCommandNamedArgument('threshold', 'Threshold for the similarity score in the [0, 1] range. Uses the global config value if not set.', ARGUMENT_TYPE.NUMBER, false, false, ''),
             new SlashCommandNamedArgument('source', 'Optional filter for the attachments by source.', ARGUMENT_TYPE.STRING, false, false, '', ['global', 'character', 'chat']),
         ],
         unnamedArgumentList: [
