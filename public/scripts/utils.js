@@ -477,7 +477,7 @@ export function sortByCssOrder(a, b) {
  * trimToEndSentence('Hello, world! I am from'); // 'Hello, world!'
  */
 export function trimToEndSentence(input, include_newline = false) {
-    const punctuation = new Set(['.', '!', '?', '*', '"', ')', '}', '`', ']', '$', '。', '！', '？', '”', '）', '】', '’', '」']); // extend this as you see fit
+    const punctuation = new Set(['.', '!', '?', '*', '"', ')', '}', '`', ']', '$', '。', '！', '？', '”', '）', '】', '’', '」', '_']); // extend this as you see fit
     let last = -1;
 
     for (let i = input.length - 1; i >= 0; i--) {

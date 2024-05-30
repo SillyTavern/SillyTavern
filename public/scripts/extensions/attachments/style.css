@@ -37,3 +37,27 @@
 .attachmentListItemCreated {
     text-align: right;
 }
+
+.attachmentListItemCheckboxContainer,
+.attachmentBulkActionsContainer,
+.attachmentsBulkEditCheckbox {
+    display: none;
+}
+
+@supports selector(:has(*)) {
+    .dataBankAttachments:has(.attachmentsBulkEditCheckbox:checked) .attachmentsBulkEditButton {
+        color: var(--golden);
+    }
+
+    .dataBankAttachments:has(.attachmentsBulkEditCheckbox:checked) .attachmentBulkActionsContainer {
+        display: flex;
+    }
+
+    .dataBankAttachments:has(.attachmentsBulkEditCheckbox:checked) .attachmentListItemCheckboxContainer {
+        display: inline-flex;
+    }
+
+    .dataBankAttachments:has(.attachmentsBulkEditCheckbox:checked) .attachmentFileIcon {
+        display: none;
+    }
+}

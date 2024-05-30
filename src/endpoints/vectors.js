@@ -5,7 +5,18 @@ const sanitize = require('sanitize-filename');
 const { jsonParser } = require('../express-common');
 
 // Don't forget to add new sources to the SOURCES array
-const SOURCES = ['transformers', 'mistral', 'openai', 'extras', 'palm', 'togetherai', 'nomicai', 'cohere'];
+const SOURCES = [
+    'transformers',
+    'mistral',
+    'openai',
+    'extras',
+    'palm',
+    'togetherai',
+    'nomicai',
+    'cohere',
+    'ollama',
+    'llamacpp',
+];
 
 /**
  * Gets the vector for the given text from the given source.
@@ -32,6 +43,10 @@ async function getVector(source, sourceSettings, text, isQuery, directories) {
             return require('../vectors/makersuite-vectors').getMakerSuiteVector(text, directories);
         case 'cohere':
             return require('../vectors/cohere-vectors').getCohereVector(text, isQuery, directories, sourceSettings.model);
+        case 'llamacpp':
+            return require('../vectors/llamacpp-vectors').getLlamaCppVector(text, sourceSettings.apiUrl, directories);
+        case 'ollama':
+            return require('../vectors/ollama-vectors').getOllamaVector(text, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories);
     }
 
     throw new Error(`Unknown vector source ${source}`);
@@ -72,6 +87,12 @@ async function getBatchVector(source, sourceSettings, texts, isQuery, directorie
                 break;
             case 'cohere':
                 results.push(...await require('../vectors/cohere-vectors').getCohereBatchVector(batch, isQuery, directories, sourceSettings.model));
+                break;
+            case 'llamacpp':
+                results.push(...await require('../vectors/llamacpp-vectors').getLlamaCppBatchVector(batch, sourceSettings.apiUrl, directories));
+                break;
+            case 'ollama':
+                results.push(...await require('../vectors/ollama-vectors').getOllamaBatchVector(batch, sourceSettings.apiUrl, sourceSettings.model, sourceSettings.keep, directories));
                 break;
             default:
                 throw new Error(`Unknown vector source ${source}`);
@@ -251,7 +272,23 @@ function getSourceSettings(source, request) {
         return {
             model: model,
         };
-    }else {
+    } else if (source === 'llamacpp') {
+        const apiUrl = String(request.headers['x-llamacpp-url']);
+
+        return {
+            apiUrl: apiUrl,
+        };
+    } else if (source === 'ollama') {
+        const apiUrl = String(request.headers['x-ollama-url']);
+        const model = String(request.headers['x-ollama-model']);
+        const keep = Boolean(request.headers['x-ollama-keep']);
+
+        return {
+            apiUrl: apiUrl,
+            model: model,
+            keep: keep,
+        };
+    } else {
         // Extras API settings to connect to the Extras embeddings provider
         let extrasUrl = '';
         let extrasKey = '';
@@ -265,6 +302,35 @@ function getSourceSettings(source, request) {
             extrasKey: extrasKey,
         };
     }
+}
+
+/**
+ * Performs a request to regenerate the index if it is corrupted.
+ * @param {import('express').Request} req Express request object
+ * @param {import('express').Response} res Express response object
+ * @param {Error} error Error object
+ * @returns {Promise<any>} Promise
+ */
+async function regenerateCorruptedIndexErrorHandler(req, res, error) {
+    if (error instanceof SyntaxError && !req.query.regenerated) {
+        const collectionId = String(req.body.collectionId);
+        const source = String(req.body.source) || 'transformers';
+
+        if (collectionId && source) {
+            const index = await getIndex(req.user.directories, collectionId, source, false);
+            const exists = await index.isIndexCreated();
+
+            if (exists) {
+                const path = index.folderPath;
+                console.error(`Corrupted index detected at ${path}, regenerating...`);
+                await index.deleteIndex();
+                return res.redirect(307, req.originalUrl + '?regenerated=true');
+            }
+        }
+    }
+
+    console.error(error);
+    return res.sendStatus(500);
 }
 
 const router = express.Router();
@@ -285,8 +351,7 @@ router.post('/query', jsonParser, async (req, res) => {
         const results = await queryCollection(req.user.directories, collectionId, source, sourceSettings, searchText, topK, threshold);
         return res.json(results);
     } catch (error) {
-        console.error(error);
-        return res.sendStatus(500);
+        return regenerateCorruptedIndexErrorHandler(req, res, error);
     }
 });
 
@@ -306,8 +371,7 @@ router.post('/query-multi', jsonParser, async (req, res) => {
         const results = await multiQueryCollection(req.user.directories, collectionIds, source, sourceSettings, searchText, topK, threshold);
         return res.json(results);
     } catch (error) {
-        console.error(error);
-        return res.sendStatus(500);
+        return regenerateCorruptedIndexErrorHandler(req, res, error);
     }
 });
 
@@ -325,8 +389,7 @@ router.post('/insert', jsonParser, async (req, res) => {
         await insertVectorItems(req.user.directories, collectionId, source, sourceSettings, items);
         return res.sendStatus(200);
     } catch (error) {
-        console.error(error);
-        return res.sendStatus(500);
+        return regenerateCorruptedIndexErrorHandler(req, res, error);
     }
 });
 
@@ -342,8 +405,7 @@ router.post('/list', jsonParser, async (req, res) => {
         const hashes = await getSavedHashes(req.user.directories, collectionId, source);
         return res.json(hashes);
     } catch (error) {
-        console.error(error);
-        return res.sendStatus(500);
+        return regenerateCorruptedIndexErrorHandler(req, res, error);
     }
 });
 
@@ -360,8 +422,7 @@ router.post('/delete', jsonParser, async (req, res) => {
         await deleteVectorItems(req.user.directories, collectionId, source, hashes);
         return res.sendStatus(200);
     } catch (error) {
-        console.error(error);
-        return res.sendStatus(500);
+        return regenerateCorruptedIndexErrorHandler(req, res, error);
     }
 });
 

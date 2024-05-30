@@ -1348,11 +1348,11 @@ class PromptManager {
         const promptManagerDiv = this.containerElement;
         promptManagerDiv.innerHTML = '';
 
-        const errorDiv = `
+        const errorDiv = this.error ? `
                 <div class="${this.configuration.prefix}prompt_manager_error">
                     <span class="fa-solid tooltip fa-triangle-exclamation text_danger"></span> ${DOMPurify.sanitize(this.error)}
                 </div>
-        `;
+        ` : '';
 
         const totalActiveTokens = this.tokenUsage;
 

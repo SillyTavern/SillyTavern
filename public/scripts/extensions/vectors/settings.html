@@ -12,13 +12,36 @@
                 <select id="vectors_source" class="text_pole">
                     <option value="cohere">Cohere</option>
                     <option value="extras">Extras</option>
-                    <option value="palm">Google MakerSuite (PaLM)</option>
+                    <option value="palm">Google MakerSuite</option>
+                    <option value="llamacpp">llama.cpp</option>
                     <option value="transformers">Local (Transformers)</option>
                     <option value="mistral">MistralAI</option>
                     <option value="nomicai">NomicAI</option>
+                    <option value="ollama">Ollama</option>
                     <option value="openai">OpenAI</option>
                     <option value="togetherai">TogetherAI</option>
                 </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="ollama_vectorsModel">
+                <label for="vectors_ollama_model">
+                    Vectorization Model
+                </label>
+                <input id="vectors_ollama_model" class="text_pole" type="text" placeholder="Model tag, e.g. llama3" />
+                <label for="vectors_ollama_keep" class="checkbox_label" title="When checked, the model will not be unloaded after use.">
+                    <input id="vectors_ollama_keep" type="checkbox" />
+                    <span>Keep model in memory</span>
+                </label>
+                <i>
+                    Hint: Download models and set the URL in the API connection settings.
+                </i>
+            </div>
+            <div class="flex-container flexFlowColumn" id="llamacpp_vectorsModel">
+                <span>
+                    The server MUST be started with the <code>--embedding</code> flag to use this feature!
+                </span>
+                <i>
+                    Hint: Set the URL in the API connection settings.
+                </i>
             </div>
             <div class="flex-container flexFlowColumn" id="openai_vectorsModel">
                 <label for="vectors_openai_model">

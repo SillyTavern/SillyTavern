@@ -1143,6 +1143,10 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         delete params.dynatemp_high;
     }
 
+    if (settings.type === TABBY) {
+        params.n = canMultiSwipe ? settings.n : 1;
+    }
+
     switch (settings.type) {
         case VLLM:
             params = Object.assign(params, vllmParams);
