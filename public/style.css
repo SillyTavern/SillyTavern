@@ -690,8 +690,13 @@ body .panelControlBar {
 
 
 #form_sheld.isExecutingCommandsFromChatInput {
-    #send_but {
+
+    #send_but,
+    #mes_continue {
         visibility: hidden;
+        width: 0;
+        height: 0;
+        opacity: 0;
     }
 
     #rightSendForm>div:not(.mes_send).stscript_btn {
