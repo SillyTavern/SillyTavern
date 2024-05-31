@@ -117,7 +117,8 @@
         max-width: unset;
     }
 
-    #wiActivationSettings {
+    #wiActivationSettings,
+    #wiTopBlock {
         flex-direction: column;
     }
 
