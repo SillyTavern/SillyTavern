@@ -3,7 +3,7 @@ dialog {
 }
 
 /* Closed state of the dialog */
-.dialogue_popup {
+.popup {
     width: 500px;
     text-align: center;
     box-shadow: 0px 0px 14px var(--black70a);
@@ -23,58 +23,58 @@ dialog {
     -webkit-font-smoothing: subpixel-antialiased;
 }
 
-.dialogue_popup .popup_content {
+.popup .popup_content {
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
-.dialogue_popup .dialogue_popup_text {
+.popup .popup_text {
     padding: 0 8px;
     overflow: hidden;
 }
 
-.dialogue_popup.vertical_scrolling_dialogue_popup .dialogue_popup_text {
+.popup.vertical_scrolling_dialogue_popup .popup_text {
     overflow-y: auto;
 }
 
-.dialogue_popup.horizontal_scrolling_dialogue_popup .dialogue_popup_text {
+.popup.horizontal_scrolling_dialogue_popup .popup_text {
     overflow-x: auto;
 }
 
 /* Open state of the dialog */
-.dialogue_popup[open] {
+.popup[open] {
     animation: pop-in var(--animation-duration-slow) ease-in-out;
 }
 
-.dialogue_popup[closing] {
+.popup[closing] {
     animation: pop-out var(--animation-duration-slow) ease-in-out;
 }
 
-.dialogue_popup[open]::backdrop {
+.popup[open]::backdrop {
     animation: fade-in var(--animation-duration-slow) ease-in-out;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     background-color: var(--black30a);
 }
 
-.dialogue_popup[closing]::backdrop {
+.popup[closing]::backdrop {
     animation: fade-out var(--animation-duration-slow) ease-in-out;
 }
 
 /* Fix toastr in dialogs by actually placing it at the top of the screen via transform */
-.dialogue_popup #toast-container {
+.popup #toast-container {
     height: 100svh;
     top: calc(50% + var(--topBarBlockSize));
     left: 50%;
     transform: translate(-50%, -50%);
 }
 
-.dialogue_popup_input {
+.popup_input {
     margin-top: 10px;
 }
 
-.dialogue_popup_controls {
+.popup_controls {
     margin-top: 10px;
     display: flex;
     align-self: center;
@@ -85,7 +85,7 @@ dialog {
     box-shadow: 0 0 5px var(--white20a);
 }
 
-.menu_button.dialogue_popup_ok {
+.menu_button.popup_ok {
     background-color: var(--crimson70a);
     cursor: pointer;
 }
@@ -93,4 +93,10 @@ dialog {
 .menu_button.menu_button_custom {
     /** Custom buttons should not scale to smallest size, otherwise they will always break to multiline */
     width: unset;
+}
+
+dialog.popup .menu_button:focus,
+dialog input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):not(#WI_panel_pin):focus {
+    /** For dialogs, mimic the outline of keyboard navigation for all button focus */
+    outline: 1px solid white;
 }

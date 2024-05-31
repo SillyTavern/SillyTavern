@@ -963,22 +963,22 @@ async function openAttachmentManager() {
     }
 
     function addDragAndDrop() {
-        $(document.body).on('dragover', '.dialogue_popup', (event) => {
+        $(document.body).on('dragover', '.popup', (event) => {
             event.preventDefault();
             event.stopPropagation();
-            $(event.target).closest('.dialogue_popup').addClass('dragover');
+            $(event.target).closest('.popup').addClass('dragover');
         });
 
-        $(document.body).on('dragleave', '.dialogue_popup', (event) => {
+        $(document.body).on('dragleave', '.popup', (event) => {
             event.preventDefault();
             event.stopPropagation();
-            $(event.target).closest('.dialogue_popup').removeClass('dragover');
+            $(event.target).closest('.popup').removeClass('dragover');
         });
 
-        $(document.body).on('drop', '.dialogue_popup', async (event) => {
+        $(document.body).on('drop', '.popup', async (event) => {
             event.preventDefault();
             event.stopPropagation();
-            $(event.target).closest('.dialogue_popup').removeClass('dragover');
+            $(event.target).closest('.popup').removeClass('dragover');
 
             const files = Array.from(event.originalEvent.dataTransfer.files);
             let selectedTarget = ATTACHMENT_SOURCE.GLOBAL;
@@ -1001,9 +1001,9 @@ async function openAttachmentManager() {
     }
 
     function removeDragAndDrop() {
-        $(document.body).off('dragover', '.shadow_popup');
-        $(document.body).off('dragleave', '.shadow_popup');
-        $(document.body).off('drop', '.shadow_popup');
+        $(document.body).off('dragover', '.popup');
+        $(document.body).off('dragleave', '.popup');
+        $(document.body).off('drop', '.popup');
     }
 
     let sortField = localStorage.getItem('DataBank_sortField') || 'created';

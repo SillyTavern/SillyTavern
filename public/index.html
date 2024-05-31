@@ -4849,16 +4849,16 @@
         </div>
     </div>
     <!-- various fullscreen popups -->
-    <template id="shadow_popup_template" data-i18n="[popup_text_save]popup_text_save;[popup_text_yes]popup_text_yes;[popup_text_no]popup_text_no;[popup_text_cancel]popup_text_cancel;[popup_text_import]popup_text_import" popup_text_save="Save" popup_text_yes="Yes" popup_text_no="No" popup_text_cancel="Cancel" popup_text_import="Import"> <!-- localization data holder for popups -->
-        <dialog class="dialogue_popup shadow_popup">
+    <template id="popup_template" data-i18n="[popup_text_save]popup_text_save;[popup_text_yes]popup_text_yes;[popup_text_no]popup_text_no;[popup_text_cancel]popup_text_cancel;[popup_text_import]popup_text_import" popup_text_save="Save" popup_text_yes="Yes" popup_text_no="No" popup_text_cancel="Cancel" popup_text_import="Import"> <!-- localization data holder for popups -->
+        <dialog class="popup">
             <div class="popup_content">
-                <div class="dialogue_popup_text">
+                <div class="popup_text">
                     <h3 class="margin0">text</h3>
                 </div>
-                <textarea class="dialogue_popup_input text_pole result_control" rows="1" data-result="1"></textarea>
-                <div class="dialogue_popup_controls">
-                    <div class="dialogue_popup_ok menu_button result_control" data-i18n="Delete" data-result="1" tabindex="0">Delete</div>
-                    <div class="dialogue_popup_cancel menu_button result_control" data-i18n="Cancel" data-result="0" tabindex="0">Cancel</div>
+                <textarea class="popup_input text_pole result_control" rows="1" data-result="1"></textarea>
+                <div class="popup_controls">
+                    <div class="popup_ok menu_button result_control" data-i18n="Delete" data-result="1" tabindex="0">Delete</div>
+                    <div class="popup_cancel menu_button result_control" data-i18n="Cancel" data-result="0" tabindex="0">Cancel</div>
                 </div>
             </div>
         </dialog>

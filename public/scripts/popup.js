@@ -82,15 +82,15 @@ export class Popup {
         this.type = type;
 
         /**@type {HTMLTemplateElement}*/
-        const template = document.querySelector('#shadow_popup_template');
+        const template = document.querySelector('#popup_template');
         // @ts-ignore
-        this.dlg = template.content.cloneNode(true).querySelector('.dialogue_popup');
+        this.dlg = template.content.cloneNode(true).querySelector('.popup');
         this.content = this.dlg.querySelector('.popup_content');
-        this.text = this.dlg.querySelector('.dialogue_popup_text');
-        this.input = this.dlg.querySelector('.dialogue_popup_input');
-        this.controls = this.dlg.querySelector('.dialogue_popup_controls');
-        this.ok = this.dlg.querySelector('.dialogue_popup_ok');
-        this.cancel = this.dlg.querySelector('.dialogue_popup_cancel');
+        this.text = this.dlg.querySelector('.popup_text');
+        this.input = this.dlg.querySelector('.popup_input');
+        this.controls = this.dlg.querySelector('.popup_controls');
+        this.ok = this.dlg.querySelector('.popup_ok');
+        this.cancel = this.dlg.querySelector('.popup_cancel');
 
         this.dlg.setAttribute('data-id', this.id);
         if (wide) this.dlg.classList.add('wide_dialogue_popup');
@@ -179,7 +179,7 @@ export class Popup {
             switch (evt.key) {
                 case 'Escape': {
                     // Check if we are the currently active popup
-                    if (this.dlg != document.activeElement?.closest('.dialogue_popup'))
+                    if (this.dlg != document.activeElement?.closest('.popup'))
                         return;
 
                     this.complete(POPUP_RESULT.CANCELLED);
@@ -194,7 +194,7 @@ export class Popup {
                         return;
 
                     // Check if we are the currently active popup
-                    if (this.dlg != document.activeElement?.closest('.dialogue_popup'))
+                    if (this.dlg != document.activeElement?.closest('.popup'))
                         return;
 
                     // Check if the current focus is a result control. Only should we apply the compelete action
@@ -317,7 +317,7 @@ export class Popup {
 
             // If there is any popup below this one, see if we can set the focus
             if (popups.length > 0) {
-                const activeDialog = document.activeElement?.closest('.dialogue_popup');
+                const activeDialog = document.activeElement?.closest('.popup');
                 const id = activeDialog?.getAttribute('data-id');
                 const popup = popups.find(x => x.id == id);
                 if (popup) {

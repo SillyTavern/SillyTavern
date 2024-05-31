@@ -776,7 +776,7 @@ body .panelControlBar {
 
 #options,
 #extensionsMenu,
-.shadow_popup .popper-modal {
+.popup .popper-modal {
     display: flex;
     z-index: 29999;
     background-color: var(--SmartThemeBlurTintColor);
@@ -3154,12 +3154,6 @@ grammarly-extension {
 .menu_button:hover,
 .menu_button.active {
     background-color: var(--white30a);
-}
-
-dialog.dialogue_popup .menu_button:focus,
-dialog input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):not(#WI_panel_pin):focus {
-    /** For dialogs, mimic the outline of keyboard navigation for all button focus */
-    outline: 1px solid white;
 }
 
 #dialogue_del_mes .menu_button {
