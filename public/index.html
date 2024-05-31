@@ -3415,97 +3415,62 @@
                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                         </div>
                         <div class="inline-drawer-content">
-                            <div class="justifyContentSpaceAround wi-settings flex-container gap10px alignitemscenter">
-                                <div class="flex2 flex-container flexFlowColumn">
-                                    <div data-newbie-hidden class="flex range-block">
-                                        <div class="range-block-title justifyLeft">
-                                            <label for="world_info_character_strategy">
-                                                <span data-i18n="Character Lore Insertion Strategy"><small>Character Lore Insertion Strategy</small></span>
-                                            </label>
-                                        </div>
-                                        <div class="range-block-range">
-                                            <select id="world_info_character_strategy" class="flexGrow margin0">
-                                                <option value="0" data-i18n="Sorted Evenly">Sorted Evenly</option>
-                                                <option value="1" data-i18n="Character Lore First">Character Lore First</option>
-                                                <option value="2" data-i18n="Global Lore First">Global Lore First</option>
-                                            </select>
-                                        </div>
+                            <div id="wiActivationSettings" class="flex-container">
+                                <div id="wiSliders" class="flex2 flex-container">
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                                        <small>
+                                            <span data-i18n="Scan Depth">Scan Depth</span>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="world_info_depth" name="world_info_depth" min="0" max="100" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_depth" id="world_info_depth_counter">
                                     </div>
-                                    <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
-                                        <div data-newbie-hidden class="flex1 gap5px range-block">
-                                            <div class="wide10pMinFit">
-                                                <small data-i18n="Scan Depth">Scan Depth</small>
-                                            </div>
-                                            <div class="range-block-range-and-counter">
-                                                <div class="range-block-range paddingLeftRight5">
-                                                    <input class="neo-range-slider" type="range" id="world_info_depth" name="volume" min="0" max="100" step="1">
-                                                </div>
-                                                <div class="range-block-counter margin0">
-                                                    <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_depth" id="world_info_depth_counter">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="flex1 gap5px range-block">
-                                            <div class="wide10pMinFit">
-                                                <small data-i18n="Context %">Context %</small>
-                                            </div>
-                                            <div class="range-block-range-and-counter ">
-                                                <div class="range-block-range paddingLeftRight5">
-                                                    <input class="neo-range-slider" type="range" id="world_info_budget" name="volume" min="1" max="100" step="1">
-                                                </div>
-                                                <div class="range-block-counter margin0">
-                                                    <input class="neo-range-input" type="number" min="1" max="100" step="1" data-for="world_info_budget" id="world_info_budget_counter">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div data-newbie-hidden class="flex1 gap5px range-block">
-                                            <div class="wide10pMinFit">
-                                                <small data-i18n="Budget Cap">Budget Cap</small>
-                                            </div>
-                                            <div class="range-block-range-and-counter ">
-                                                <div class="range-block-range paddingLeftRight5">
-                                                    <input class="neo-range-slider" type="range" id="world_info_budget_cap" name="volume" min="0" max="8192" step="1">
-                                                </div>
-                                                <div class="range-block-counter margin0">
-                                                    <input class="neo-range-input" type="number" min="0" max="8192" step="1" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
-                                                </div>
-                                            </div>
-                                            <div class="budget_cap_note">
-                                                <small data-i18n="(0 = disabled)">(0 = disabled)</small>
-                                            </div>
-                                        </div>
-                                        <div data-newbie-hidden class="flex1 gap5px range-block" title="Scan chronologically until reached min entries or token budget." data-i18n="[title]Scan chronologically until reached min entries or token budget.">
-                                            <div class="wide10pMinFit">
-                                                <small data-i18n="Min Activations">Min Activations</small>
-                                            </div>
-                                            <div class="range-block-range-and-counter">
-                                                <div class="range-block-range paddingLeftRight5">
-                                                    <input class="neo-range-slider" type="range" id="world_info_min_activations" name="volume" min="0" max="100" step="1">
-                                                </div>
-                                                <div class="range-block-counter margin0">
-                                                    <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations" id="world_info_min_activations_counter">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div data-newbie-hidden class="flex1 gap5px range-block">
-                                            <div class="wide10pMinFit">
-                                                <small data-i18n="Max Depth">Max Depth</small>
-                                            </div>
-                                            <div class="range-block-range-and-counter">
-                                                <div class="range-block-range paddingLeftRight5">
-                                                    <input class="neo-range-slider" type="range" id="world_info_min_activations_depth_max" name="volume" min="0" max="100" step="1">
-                                                </div>
-                                                <div class="range-block-counter margin0">
-                                                    <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations_depth_max" id="world_info_min_activations_depth_max_counter">
-                                                </div>
-                                            </div>
-                                            <div class="budget_cap_note">
-                                                <small data-i18n="(0 = unlimited, use budget)">(0 = unlimited, use budget)</small>
-                                            </div>
-                                        </div>
+
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                                        <small>
+                                            <span data-i18n="Context %">Context %</span>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="world_info_budget" name="world_info_budget" min="1" max="100" step="1">
+                                        <input class="neo-range-input" type="number" min="1" max="100" step="1" data-for="world_info_budget" id="world_info_budget_counter">
+                                    </div>
+
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p">
+                                        <small>
+                                            <span data-i18n="Budget Cap">Budget Cap</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title](0 = disabled)" title="(0 = disabled)"></div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="world_info_budget_cap" name="world_info_budget_cap" min="0" max="8192" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="8192" step="1" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
+                                    </div>
+
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" title="Scan chronologically until reached min entries or token budget." data-i18n="[title]Scan chronologically until reached min entries or token budget.">
+                                        <small>
+                                            <span data-i18n="Min Activations">Min Activations</span>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="world_info_min_activations" name="world_info_min_activations" min="0" max="100" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations" id="world_info_min_activations_counter">
+                                    </div>
+
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink gap0 flexBasis48p" title="Scan chronologically until reached min entries or token budget." data-i18n="[title]Scan chronologically until reached min entries or token budget.">
+                                        <small>
+                                            <span data-i18n="Max Depth">Max Depth</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" data-i18n="[title](0 = unlimited, use budget)" title="(0 = unlimited, use budget)"></div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="world_info_min_activations_depth_max" name="volume" min="0" max="100" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="100" step="1" data-for="world_info_min_activations_depth_max" id="world_info_min_activations_depth_max_counter">
+                                    </div>
+
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexGrow flexShrink flexBasis48p">
+                                        <small data-i18n="Insertion Strategy">
+                                            Insertion Strategy
+                                        </small>
+                                        <select id="world_info_character_strategy" class="flexGrow margin0">
+                                            <option value="0" data-i18n="Sorted Evenly">Sorted Evenly</option>
+                                            <option value="1" data-i18n="Character Lore First">Character Lore First</option>
+                                            <option value="2" data-i18n="Global Lore First">Global Lore First</option>
+                                        </select>
                                     </div>
                                 </div>
-                                <div id="worldInfoScanningCheckboxes" data-newbie-hidden class="alignitemsflexstart flex1 flex-container flexFlowColumn">
+                                <div id="wiCheckboxes" class="flex1 flex-container flexFlowColumn">
                                     <label title="Entries can activate other entries by mentioning their keywords" data-i18n="[title]Entries can activate other entries by mentioning their keywords" class="checkbox_label flex1">
                                         <input id="world_info_recursive" type="checkbox" />
                                         <small data-i18n="Recursive Scan" class="whitespacenowrap flex1">

@@ -117,6 +117,10 @@
         max-width: unset;
     }
 
+    #wiActivationSettings {
+        flex-direction: column;
+    }
+
     #top-settings-holder,
     #top-bar {
         position: fixed;

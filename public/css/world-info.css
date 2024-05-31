@@ -257,3 +257,8 @@ select.keyselect+span.select2-container .select2-selection--multiple {
 .switch_input_type_icon:hover {
     opacity: 1;
 }
+
+#wiCheckboxes {
+    align-self: center;
+    width: 100%;
+}
