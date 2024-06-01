@@ -633,6 +633,9 @@ function parseTimestamp(timestamp) {
 
     // Unix time (legacy TAI / tags)
     if (typeof timestamp === 'number') {
+        if (isNaN(timestamp) || !isFinite(timestamp) || timestamp < 0) {
+            return moment.invalid();
+        }
         return moment(timestamp);
     }
 

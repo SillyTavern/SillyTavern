@@ -296,6 +296,7 @@ export function evaluateMacros(content, env) {
     // Legacy non-macro substitutions
     content = content.replace(/<USER>/gi, typeof env.user === 'function' ? env.user() : env.user);
     content = content.replace(/<BOT>/gi, typeof env.char === 'function' ? env.char() : env.char);
+    content = content.replace(/<CHAR>/gi, typeof env.char === 'function' ? env.char() : env.char);
     content = content.replace(/<CHARIFNOTGROUP>/gi, typeof env.group === 'function' ? env.group() : env.group);
     content = content.replace(/<GROUP>/gi, typeof env.group === 'function' ? env.group() : env.group);
 

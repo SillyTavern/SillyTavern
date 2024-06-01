@@ -424,6 +424,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
             insertion_order: entry.order,
             enabled: !entry.disable,
             position: entry.position == 0 ? 'before_char' : 'after_char',
+            use_regex: true, // ST keys are always regex
             extensions: {
                 position: entry.position,
                 exclude_recursion: entry.excludeRecursion,
@@ -498,7 +499,7 @@ async function importFromJson(uploadPath, { request }) {
     let jsonData = JSON.parse(data);
 
     if (jsonData.spec !== undefined) {
-        console.log('Importing from v2 json');
+        console.log(`Importing from ${jsonData.spec} json`);
         importRisuSprites(request.user.directories, jsonData);
         unsetFavFlag(jsonData);
         jsonData = readFromV2(jsonData);
@@ -581,7 +582,7 @@ async function importFromPng(uploadPath, { request }, preservedFileName) {
     const pngName = preservedFileName || getPngName(jsonData.name, request.user.directories);
 
     if (jsonData.spec !== undefined) {
-        console.log('Found a v2 character file.');
+        console.log(`Found a ${jsonData.spec} character file.`);
         importRisuSprites(request.user.directories, jsonData);
         unsetFavFlag(jsonData);
         jsonData = readFromV2(jsonData);
