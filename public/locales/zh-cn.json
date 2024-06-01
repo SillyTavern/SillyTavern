@@ -790,7 +790,7 @@
     "Can help with bad responses by queueing only the approved workers. May slowdown the response time.": "可以通过仅排队批准的工作单元来帮助处理不良回复。这可能会减慢回复速度。",
     "Clear your API key": "清除您的API密钥",
     "Refresh models": "刷新模型",
-    "Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai": "使用OAuth流程获取您的OpenRouter API词符。您将被重定向到openrouter.ai",
+    "Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai": "使用OAuth流程获取您的OpenRouter API令牌。您将被重定向到openrouter.ai",
     "Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!": "通过发送简短的测试消息验证您的API连接。请注意，您将因此而消耗额度！",
     "Create New": "新建",
     "Edit": "编辑",
