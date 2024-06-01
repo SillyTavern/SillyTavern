@@ -51,6 +51,11 @@ def update_json(json_file, i18n_dict):
     except Exception as e:
         print(f"Error processing '{json_file}': {e}")
 
+    for key in list(data.keys()):
+        if key not in i18n_dict:
+            print(f"Key '{key}' not found in '{json_file}'.")
+            del data[key]
+
     with open(json_file, 'w', encoding='utf-8', newline='\n') as file:
         json.dump(data, file, ensure_ascii=False, indent=4)
         file.write('\n')
