@@ -13,7 +13,7 @@ const jimp = require('jimp');
 
 const { UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { deepMerge, humanizedISO8601DateTime, tryParse } = require('../util');
+const { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer } = require('../util');
 const { TavernCardValidator } = require('../validator/TavernCardValidator');
 const characterCardParser = require('../character-card-parser.js');
 const { readWorldInfoFile } = require('./worldinfo');
@@ -483,6 +483,37 @@ async function importFromYaml(uploadPath, context) {
         'tags': '',
     }, context.request.user.directories);
     const result = await writeCharacterData(defaultAvatarPath, JSON.stringify(char), fileName, context.request);
+    return result ? fileName : '';
+}
+
+/**
+ * Imports a character card from CharX (ZIP) file.
+ * @param {string} uploadPath
+ * @param {object} params
+ * @param {import('express').Request} params.request
+ * @returns {Promise<string>} Internal name of the character
+ */
+async function importFromCharX(uploadPath, { request }) {
+    const data = fs.readFileSync(uploadPath);
+    fs.rmSync(uploadPath);
+    console.log('Importing from CharX');
+    const cardBuffer = await extractFileFromZipBuffer(data, 'card.json');
+
+    if (!cardBuffer) {
+        throw new Error('Failed to extract card.json from CharX file');
+    }
+
+    const card = readFromV2(JSON.parse(cardBuffer.toString()));
+
+    if (card.spec === undefined) {
+        throw new Error('Invalid CharX card file: missing spec field');
+    }
+
+    unsetFavFlag(card);
+    card['create_date'] = humanizedISO8601DateTime();
+    card.name = sanitize(card.name);
+    const fileName = getPngName(card.name, request.user.directories);
+    const result = await writeCharacterData(defaultAvatarPath, JSON.stringify(card), fileName, request);
     return result ? fileName : '';
 }
 
@@ -1016,6 +1047,7 @@ router.post('/import', urlencodedParser, async function (request, response) {
         'yml': importFromYaml,
         'json': importFromJson,
         'png': importFromPng,
+        'charx': importFromCharX,
     };
 
     try {

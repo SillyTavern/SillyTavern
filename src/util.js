@@ -149,7 +149,7 @@ async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
 
         zipfile.readEntry();
         zipfile.on('entry', (entry) => {
-            if (entry.fileName.endsWith(fileExtension)) {
+            if (entry.fileName.endsWith(fileExtension) && !entry.fileName.startsWith('__MACOSX')) {
                 console.log(`Extracting ${entry.fileName}`);
                 zipfile.openReadStream(entry, (err, readStream) => {
                     if (err) {
