@@ -283,8 +283,8 @@ export class Popup {
         // Input type have special results, so the input can be accessed directly without the need to save the popup and access both result and value
         if (this.type === POPUP_TYPE.INPUT) {
             if (result >= POPUP_RESULT.AFFIRMATIVE) value = this.input.value;
-            if (result === POPUP_RESULT.NEGATIVE) value = false;
-            if (result === POPUP_RESULT.CANCELLED) value = null;
+            else if (result === POPUP_RESULT.NEGATIVE) value = false;
+            else if (result === POPUP_RESULT.CANCELLED) value = null;
             else value = false; // Might a custom negative value?
         }
 

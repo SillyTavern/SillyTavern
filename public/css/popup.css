@@ -27,11 +27,20 @@ dialog {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    width: 100%;
+    height: 100%;
 }
 
 .popup .popup_text {
+    margin-top: 10px;
     padding: 0 8px;
     overflow: hidden;
+    flex-grow: 1;
+}
+
+.popup .popup_text h3:first-child {
+    /* No double spacing for the first heading needed, the .popup_text already has margin */
+    margin-top: 0px;
 }
 
 .popup.vertical_scrolling_dialogue_popup .popup_text {
@@ -62,6 +71,11 @@ dialog {
     animation: fade-out var(--animation-duration-slow) ease-in-out;
 }
 
+.popup.dragover {
+    filter: brightness(1.1) saturate(1.1);
+    outline: 3px dashed var(--SmartThemeBorderColor);
+}
+
 /* Fix toastr in dialogs by actually placing it at the top of the screen via transform */
 .popup #toast-container {
     height: 100svh;
@@ -88,6 +102,10 @@ dialog {
 .menu_button.popup_ok {
     background-color: var(--crimson70a);
     cursor: pointer;
+}
+
+.menu_button.popup_ok:hover {
+    background-color: var(--crimson-hover);
 }
 
 .menu_button.menu_button_custom {
