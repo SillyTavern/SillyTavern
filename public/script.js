@@ -235,6 +235,7 @@ import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
 import { ARGUMENT_TYPE, SlashCommandArgument } from './scripts/slash-commands/SlashCommandArgument.js';
 import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
+import { DragAndDropHandler } from './scripts/dragdrop.js';
 
 //exporting functions and vars for mods
 export {
@@ -518,6 +519,7 @@ let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
 export let abortStatusCheck = new AbortController();
+let charDragDropHandler = null;
 
 /** @type {number} The debounce timeout used for chat/settings save. debounce_timeout.long: 1.000 ms */
 const durationSaveEdit = debounce_timeout.relaxed;
@@ -10568,32 +10570,12 @@ jQuery(async function () {
         }
     });
 
-    const $dropzone = $(document.body);
-
-    $dropzone.on('dragover', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        $dropzone.addClass('dragover');
-    });
-
-    $dropzone.on('dragleave', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        $dropzone.removeClass('dragover');
-    });
-
-    $dropzone.on('drop', async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        $dropzone.removeClass('dragover');
-
-        const files = Array.from(event.originalEvent.dataTransfer.files);
+    charDragDropHandler = new DragAndDropHandler('body', async (files, event) => {
         if (!files.length) {
             await importFromURL(event.originalEvent.dataTransfer.items, files);
         }
         await processDroppedFiles(files);
-    });
-
+    }, { noAnimation: true });
 
     $('#charListGridToggle').on('click', async () => {
         doCharListDisplaySwitch();

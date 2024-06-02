@@ -226,10 +226,17 @@ export class Popup {
     async show() {
         document.body.append(this.dlg);
 
+        // Run opening animation
+        this.dlg.setAttribute('opening', '');
+
         this.dlg.showModal();
 
         // We need to fix the toastr to be present inside this dialog
         fixToastrForDialogs();
+
+        runAfterAnimation(this.dlg, () => {
+            this.dlg.removeAttribute('opening');
+        })
 
         this.promise = new Promise((resolve) => {
             this.resolver = resolve;

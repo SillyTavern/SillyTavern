@@ -51,29 +51,33 @@ dialog {
     overflow-x: auto;
 }
 
-/* Open state of the dialog */
-.popup[open] {
+/* Opening animation */
+.popup[opening] {
     animation: pop-in var(--animation-duration-slow) ease-in-out;
 }
 
-.popup[closing] {
-    animation: pop-out var(--animation-duration-slow) ease-in-out;
+.popup[opening]::backdrop {
+    animation: fade-in var(--animation-duration-slow) ease-in-out;
+}
+
+/* Open state of the dialog */
+.popup[open] {
+    color: var(--SmartThemeBodyColor);
 }
 
 .popup[open]::backdrop {
-    animation: fade-in var(--animation-duration-slow) ease-in-out;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     background-color: var(--black30a);
 }
 
-.popup[closing]::backdrop {
-    animation: fade-out var(--animation-duration-slow) ease-in-out;
+/* Closing animation */
+.popup[closing] {
+    animation: pop-out var(--animation-duration-slow) ease-in-out;
 }
 
-.popup.dragover {
-    filter: brightness(1.1) saturate(1.1);
-    outline: 3px dashed var(--SmartThemeBorderColor);
+.popup[closing]::backdrop {
+    animation: fade-out var(--animation-duration-slow) ease-in-out;
 }
 
 /* Fix toastr in dialogs by actually placing it at the top of the screen via transform */

@@ -37,6 +37,7 @@ import {
 import { extension_settings, renderExtensionTemplateAsync, saveMetadataDebounced } from './extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { ScraperManager } from './scrapers.js';
+import { DragAndDropHandler } from './dragdrop.js';
 
 /**
  * @typedef {Object} FileAttachment
@@ -962,49 +963,24 @@ async function openAttachmentManager() {
         template.find('.chatAttachmentsName').text(chatName);
     }
 
-    function addDragAndDrop() {
-        $(document.body).on('dragover', '.popup', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            $(event.target).closest('.popup').addClass('dragover');
+    const dragDropHandler = new DragAndDropHandler('.popup', async (files, event) => {
+        let selectedTarget = ATTACHMENT_SOURCE.GLOBAL;
+        const targets = getAvailableTargets();
+
+        const targetSelectTemplate = $(await renderExtensionTemplateAsync('attachments', 'files-dropped', { count: files.length, targets: targets }));
+        targetSelectTemplate.find('.droppedFilesTarget').on('input', function () {
+            selectedTarget = String($(this).val());
         });
-
-        $(document.body).on('dragleave', '.popup', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            $(event.target).closest('.popup').removeClass('dragover');
-        });
-
-        $(document.body).on('drop', '.popup', async (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            $(event.target).closest('.popup').removeClass('dragover');
-
-            const files = Array.from(event.originalEvent.dataTransfer.files);
-            let selectedTarget = ATTACHMENT_SOURCE.GLOBAL;
-            const targets = getAvailableTargets();
-
-            const targetSelectTemplate = $(await renderExtensionTemplateAsync('attachments', 'files-dropped', { count: files.length, targets: targets }));
-            targetSelectTemplate.find('.droppedFilesTarget').on('input', function () {
-                selectedTarget = String($(this).val());
-            });
-            const result = await callGenericPopup(targetSelectTemplate, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Upload', cancelButton: 'Cancel' });
-            if (result !== POPUP_RESULT.AFFIRMATIVE) {
-                console.log('File upload cancelled');
-                return;
-            }
-            for (const file of files) {
-                await uploadFileAttachmentToServer(file, selectedTarget);
-            }
-            renderAttachments();
-        });
-    }
-
-    function removeDragAndDrop() {
-        $(document.body).off('dragover', '.popup');
-        $(document.body).off('dragleave', '.popup');
-        $(document.body).off('drop', '.popup');
-    }
+        const result = await callGenericPopup(targetSelectTemplate, POPUP_TYPE.CONFIRM, '', { wide: false, large: false, okButton: 'Upload', cancelButton: 'Cancel' });
+        if (result !== POPUP_RESULT.AFFIRMATIVE) {
+            console.log('File upload cancelled');
+            return;
+        }
+        for (const file of files) {
+            await uploadFileAttachmentToServer(file, selectedTarget);
+        }
+        renderAttachments();
+    });
 
     let sortField = localStorage.getItem('DataBank_sortField') || 'created';
     let sortOrder = localStorage.getItem('DataBank_sortOrder') || 'desc';
@@ -1031,11 +1007,10 @@ async function openAttachmentManager() {
     const cleanupFn = await renderButtons();
     await verifyAttachments();
     await renderAttachments();
-    addDragAndDrop();
     await callGenericPopup(template, POPUP_TYPE.TEXT, '', { wide: true, large: true, okButton: 'Close' });
 
     cleanupFn();
-    removeDragAndDrop();
+    dragDropHandler.destroy();
 }
 
 /**
