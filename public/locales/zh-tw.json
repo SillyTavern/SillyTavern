@@ -1409,7 +1409,9 @@
     "Wraps activated World Info entries before inserting into the prompt.": "在插入提示詞前包裝已啟用的世界資訊條目。",
     "write short replies, write replies using past tense": "撰寫簡短回覆，使用過去式撰寫回覆",
     "Yes": "是",
-    "You can browse a list of bundled characters in the Download Extensions & Assets menu within": "您可以在「下載擴充套件和資產」選單中瀏覽內建角色人物列表",
+    "You can browse a list of bundled characters in the": "您可以在",
+    "Download Extensions & Assets": "下載擴充套件和資產",
+    "menu within": "選單中瀏覽內建角色人物列表",
     "Your Persona": "您的玩家角色人物",
     "Z-A": "Z-A",
     "Zen Sliders": "Zen 滑桿"
