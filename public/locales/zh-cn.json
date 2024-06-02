@@ -1286,7 +1286,7 @@
     "Find Regex": "查找正则表达式",
     "Replace With": "替换为",
     "ext_regex_replace_string_placeholder": "使用 {{match}} 包含来自“查找正则表达式”或“$1”、“$2”等的匹配文本作为捕获组。",
-    "Trim Out": "修剪出",
+    "Trim Out": "修剪掉",
     "ext_regex_trim_placeholder": "在替换之前全局修剪正则表达式匹配中任何不需要的部分。用回车键分隔每个元素。",
     "ext_regex_affects": "影响",
     "ext_regex_user_input": "用户输入",
