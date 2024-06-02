@@ -1190,7 +1190,7 @@
     "Don't include the page name!": "不要包含页面名称！",
     "Enter web URLs to scrape (one per line):": "输入要抓取的网址（每行一个）：",
     "Enter a video URL to download its transcript.": "输入视频 URL 或 ID 即可下载其文本。",
-    "Expression API": "本地\n附加\n法学硕士",
+    "Expression API": "本地\n附加\nLLM",
     "Fallback Expression": "回落表达式",
     "ext_sum_with": "总结如下：",
     "ext_sum_main_api": "主要 API",
