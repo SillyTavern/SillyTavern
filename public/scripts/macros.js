@@ -197,7 +197,8 @@ function randomReplace(input, emptyListPlaceholder = '') {
         // Split on either double colons or comma. If comma is the separator, we are also trimming all items.
         const list = listString.includes('::')
             ? listString.split('::')
-            : listString.split(',').map(item => item.trim());
+            // Replaced escaped commas with a placeholder to avoid splitting on them
+            : listString.replace(/\\,/g, '##�COMMA�##').split(',').map(item => item.trim().replace(/##�COMMA�##/g, ','));
 
         if (list.length === 0) {
             return emptyListPlaceholder;
@@ -221,7 +222,8 @@ function pickReplace(input, rawContent, emptyListPlaceholder = '') {
         // Split on either double colons or comma. If comma is the separator, we are also trimming all items.
         const list = listString.includes('::')
             ? listString.split('::')
-            : listString.split(',').map(item => item.trim());
+            // Replaced escaped commas with a placeholder to avoid splitting on them
+            : listString.replace(/\\,/g, '##�COMMA�##').split(',').map(item => item.trim().replace(/##�COMMA�##/g, ','));
 
         if (list.length === 0) {
             return emptyListPlaceholder;
