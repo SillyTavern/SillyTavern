@@ -655,12 +655,11 @@ body .panelControlBar {
     outline: none;
     border: none;
     cursor: pointer;
-    transition: 0.3s;
     opacity: 0.7;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 300ms;
+    transition: opacity 300ms;
 }
 
 #rightSendForm>div:hover,
@@ -689,8 +688,13 @@ body .panelControlBar {
 
 
 #form_sheld.isExecutingCommandsFromChatInput {
-    #send_but {
+
+    #send_but,
+    #mes_continue {
         visibility: hidden;
+        width: 0;
+        height: 0;
+        opacity: 0;
     }
 
     #rightSendForm>div:not(.mes_send).stscript_btn {
@@ -3152,14 +3156,9 @@ grammarly-extension {
 
 .avatar_div .menu_button,
 .form_create_bottom_buttons_block .menu_button {
-    font-weight: bold;
     padding: 5px;
     margin: 0;
     filter: grayscale(0.5);
-    text-align: center;
-    font-size: 17px;
-    aspect-ratio: 1 / 1;
-    flex: 0.05;
 }
 
 .menu_button:hover,
@@ -4427,6 +4426,18 @@ a {
     transition: all 250ms;
 }
 
+.standoutHeader.inline-drawer-header {
+    padding: 5px;
+    margin-bottom: 0;
+}
+
+.standoutHeader~.inline-drawer-content {
+    border: 1px solid var(--SmartThemeBorderColor);
+    padding: 5px;
+    border-radius: 10px;
+    background-color: var(--black30a);
+}
+
 #user-settings-block [name="MiscellaneousToggles"],
 #CustomCSS-block,
 #CustomCSS-textAreaBlock {
@@ -4442,7 +4453,8 @@ a {
 }
 
 #extensions_settings .inline-drawer-toggle.inline-drawer-header:hover,
-#extensions_settings2 .inline-drawer-toggle.inline-drawer-header:hover {
+#extensions_settings2 .inline-drawer-toggle.inline-drawer-header:hover,
+.standoutHeader.inline-drawer-header:hover {
     filter: brightness(150%);
 }
 

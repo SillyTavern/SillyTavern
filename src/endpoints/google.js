@@ -4,14 +4,18 @@ const express = require('express');
 const { jsonParser } = require('../express-common');
 const { GEMINI_SAFETY } = require('../constants');
 
+const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
+
 const router = express.Router();
 
 router.post('/caption-image', jsonParser, async (request, response) => {
     try {
         const mimeType = request.body.image.split(';')[0].split(':')[1];
         const base64Data = request.body.image.split(',')[1];
-        const key = readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${key}`;
+        const apiKey = request.body.reverse_proxy ? request.body.proxy_password : readSecret(request.user.directories, SECRET_KEYS.MAKERSUITE);
+        const apiUrl = new URL(request.body.reverse_proxy || API_MAKERSUITE);
+        const model = request.body.model || 'gemini-pro-vision';
+        const url = `${apiUrl.origin}/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const body = {
             contents: [{
                 parts: [
@@ -27,7 +31,7 @@ router.post('/caption-image', jsonParser, async (request, response) => {
             generationConfig: { maxOutputTokens: 1000 },
         };
 
-        console.log('Multimodal captioning request', body);
+        console.log('Multimodal captioning request', model, body);
 
         const result = await fetch(url, {
             body: JSON.stringify(body),

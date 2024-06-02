@@ -199,6 +199,8 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
     transition: background-color 0.3s;
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
+    white-space: break-spaces;
+    word-break: break-all;
 }
 
 .select2_choice_clickable_buttonstyle+span.select2-container .select2-selection__choice__display:hover {
@@ -218,6 +220,14 @@ span.select2.select2-container .select2-selection__choice__remove:hover {
     /* Fix weird styling choice or huge margin around selected options */
     margin-block-start: 2px;
     margin-block-end: 2px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    row-gap: 5px;
+}
+
+.select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-selection__choice {
+    margin-top: 0px;
 }
 
 .select2_multi_sameline+span.select2-container .select2-selection--multiple .select2-search__field {

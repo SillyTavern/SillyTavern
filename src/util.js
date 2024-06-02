@@ -9,8 +9,6 @@ const yaml = require('yaml');
 const { default: simpleGit } = require('simple-git');
 const { Readable } = require('stream');
 
-const { PUBLIC_DIRECTORIES } = require('./constants');
-
 /**
  * Parsed config object.
  */
@@ -151,7 +149,7 @@ async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
 
         zipfile.readEntry();
         zipfile.on('entry', (entry) => {
-            if (entry.fileName.endsWith(fileExtension)) {
+            if (entry.fileName.endsWith(fileExtension) && !entry.fileName.startsWith('__MACOSX')) {
                 console.log(`Extracting ${entry.fileName}`);
                 zipfile.openReadStream(entry, (err, readStream) => {
                     if (err) {
@@ -360,14 +358,16 @@ function generateTimestamp() {
 }
 
 /**
- * @param {string} prefix
+ * Remove old backups with the given prefix from a specified directory.
+ * @param {string} directory The root directory to remove backups from.
+ * @param {string} prefix File prefix to filter backups by.
  */
-function removeOldBackups(prefix) {
+function removeOldBackups(directory, prefix) {
     const MAX_BACKUPS = 50;
 
-    let files = fs.readdirSync(PUBLIC_DIRECTORIES.backups).filter(f => f.startsWith(prefix));
+    let files = fs.readdirSync(directory).filter(f => f.startsWith(prefix));
     if (files.length > MAX_BACKUPS) {
-        files = files.map(f => path.join(PUBLIC_DIRECTORIES.backups, f));
+        files = files.map(f => path.join(directory, f));
         files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
 
         fs.rmSync(files[0]);

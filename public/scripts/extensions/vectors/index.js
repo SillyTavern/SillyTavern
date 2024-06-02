@@ -21,10 +21,14 @@ import {
 } from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
-import { getDataBankAttachments, getFileAttachment } from '../../chats.js';
+import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
+import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 
 const MODULE_NAME = 'vectors';
 
@@ -38,6 +42,8 @@ const settings = {
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
     cohere_model: 'embed-english-v3.0',
+    ollama_model: 'mxbai-embed-large',
+    ollama_keep: false,
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -52,6 +58,7 @@ const settings = {
     insert: 3,
     query: 2,
     message_chunk_size: 400,
+    score_threshold: 0.25,
 
     // For files
     enabled_files: false,
@@ -271,6 +278,10 @@ async function synchronizeChat(batchSize = 5) {
             switch (cause) {
                 case 'api_key_missing':
                     return 'API key missing. Save it in the "API Connections" panel.';
+                case 'api_url_missing':
+                    return 'API URL missing. Save it in the "API Connections" panel.';
+                case 'api_model_missing':
+                    return 'Vectorization Source Model is required, but not set.';
                 case 'extras_module_missing':
                     return 'Extras API must provide an "embeddings" module.';
                 default:
@@ -324,28 +335,7 @@ async function processFiles(chat) {
             return;
         }
 
-        const dataBank = getDataBankAttachments();
-        const dataBankCollectionIds = [];
-
-        for (const file of dataBank) {
-            const collectionId = getFileCollectionId(file.url);
-            const hashesInCollection = await getSavedHashes(collectionId);
-            dataBankCollectionIds.push(collectionId);
-
-            // File is already in the collection
-            if (hashesInCollection.length) {
-                continue;
-            }
-
-            // Download and process the file
-            file.text = await getFileAttachment(file.url);
-            console.log(`Vectors: Retrieved file ${file.name} from Data Bank`);
-            // Convert kilobytes to string length
-            const thresholdLength = settings.size_threshold_db * 1024;
-            // Use chunk size from settings if file is larger than threshold
-            const chunkSize = file.size > thresholdLength ? settings.chunk_size_db : -1;
-            await vectorizeFile(file.text, file.name, collectionId, chunkSize);
-        }
+        const dataBankCollectionIds = await ingestDataBankAttachments();
 
         if (dataBankCollectionIds.length) {
             const queryText = await getQueryText(chat);
@@ -393,6 +383,39 @@ async function processFiles(chat) {
 }
 
 /**
+ * Ensures that data bank attachments are ingested and inserted into the vector index.
+ * @param {string} [source] Optional source filter for data bank attachments.
+ * @returns {Promise<string[]>} Collection IDs
+ */
+async function ingestDataBankAttachments(source) {
+    // Exclude disabled files
+    const dataBank = source ? getDataBankAttachmentsForSource(source, false) : getDataBankAttachments(false);
+    const dataBankCollectionIds = [];
+
+    for (const file of dataBank) {
+        const collectionId = getFileCollectionId(file.url);
+        const hashesInCollection = await getSavedHashes(collectionId);
+        dataBankCollectionIds.push(collectionId);
+
+        // File is already in the collection
+        if (hashesInCollection.length) {
+            continue;
+        }
+
+        // Download and process the file
+        file.text = await getFileAttachment(file.url);
+        console.log(`Vectors: Retrieved file ${file.name} from Data Bank`);
+        // Convert kilobytes to string length
+        const thresholdLength = settings.size_threshold_db * 1024;
+        // Use chunk size from settings if file is larger than threshold
+        const chunkSize = file.size > thresholdLength ? settings.chunk_size_db : -1;
+        await vectorizeFile(file.text, file.name, collectionId, chunkSize);
+    }
+
+    return dataBankCollectionIds;
+}
+
+/**
  * Inserts file chunks from the Data Bank into the prompt.
  * @param {string} queryText Text to query
  * @param {string[]} collectionIds File collection IDs
@@ -400,7 +423,7 @@ async function processFiles(chat) {
  */
 async function injectDataBankChunks(queryText, collectionIds) {
     try {
-        const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.chunk_count_db);
+        const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.chunk_count_db, settings.score_threshold);
         console.debug(`Vectors: Retrieved ${collectionIds.length} Data Bank collections`, queryResults);
         let textResult = '';
 
@@ -636,6 +659,12 @@ function getVectorHeaders() {
         case 'cohere':
             addCohereHeaders(headers);
             break;
+        case 'ollama':
+            addOllamaHeaders(headers);
+            break;
+        case 'llamacpp':
+            addLlamaCppHeaders(headers);
+            break;
         default:
             break;
     }
@@ -685,24 +714,35 @@ function addCohereHeaders(headers) {
 }
 
 /**
+ * Add headers for the Ollama API source.
+ * @param {object} headers Header object
+ */
+function addOllamaHeaders(headers) {
+    Object.assign(headers, {
+        'X-Ollama-Model': extension_settings.vectors.ollama_model,
+        'X-Ollama-URL': textgenerationwebui_settings.server_urls[textgen_types.OLLAMA],
+        'X-Ollama-Keep': !!extension_settings.vectors.ollama_keep,
+    });
+}
+
+/**
+ * Add headers for the LlamaCpp API source.
+ * @param {object} headers Header object
+ */
+function addLlamaCppHeaders(headers) {
+    Object.assign(headers, {
+        'X-LlamaCpp-URL': textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP],
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
  * @returns {Promise<void>}
  */
 async function insertVectorItems(collectionId, items) {
-    if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
-        settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
-        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
-        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
-        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
-        settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
-        throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
-    }
-
-    if (settings.source === 'extras' && !modules.includes('embeddings')) {
-        throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
-    }
+    throwIfSourceInvalid();
 
     const headers = getVectorHeaders();
 
@@ -718,6 +758,33 @@ async function insertVectorItems(collectionId, items) {
 
     if (!response.ok) {
         throw new Error(`Failed to insert vector items for collection ${collectionId}`);
+    }
+}
+
+/**
+ * Throws an error if the source is invalid (missing API key or URL, or missing module)
+ */
+function throwIfSourceInvalid() {
+    if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
+        settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
+        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
+        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
+        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
+        settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
+        throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
+    }
+
+    if (settings.source === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] ||
+        settings.source === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
+        throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
+    }
+
+    if (settings.source === 'ollama' && !settings.ollama_model) {
+        throw new Error('Vectors: API model missing', { cause: 'api_model_missing' });
+    }
+
+    if (settings.source === 'extras' && !modules.includes('embeddings')) {
+        throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
     }
 }
 
@@ -760,6 +827,7 @@ async function queryCollection(collectionId, searchText, topK) {
             searchText: searchText,
             topK: topK,
             source: settings.source,
+            threshold: settings.score_threshold,
         }),
     });
 
@@ -775,9 +843,10 @@ async function queryCollection(collectionId, searchText, topK) {
  * @param {string[]} collectionIds - Collection IDs to query
  * @param {string} searchText - Text to query
  * @param {number} topK - Number of results to return
+ * @param {number} threshold - Score threshold
  * @returns {Promise<Record<string, { hashes: number[], metadata: object[] }>>} - Results mapped to collection IDs
  */
-async function queryMultipleCollections(collectionIds, searchText, topK) {
+async function queryMultipleCollections(collectionIds, searchText, topK, threshold) {
     const headers = getVectorHeaders();
 
     const response = await fetch('/api/vector/query-multi', {
@@ -788,6 +857,7 @@ async function queryMultipleCollections(collectionIds, searchText, topK) {
             searchText: searchText,
             topK: topK,
             source: settings.source,
+            threshold: threshold ?? settings.score_threshold,
         }),
     });
 
@@ -867,6 +937,8 @@ function toggleSettings() {
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
+    $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
+    $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
 }
 
@@ -897,8 +969,8 @@ async function onViewStatsClick() {
     toastr.info(`Total hashes: <b>${totalHashes}</b><br>
     Unique hashes: <b>${uniqueHashes}</b><br><br>
     I'll mark collected messages with a green circle.`,
-    `Stats for chat ${chatId}`,
-    { timeOut: 10000, escapeHtml: false });
+        `Stats for chat ${chatId}`,
+        { timeOut: 10000, escapeHtml: false });
 
     const chat = getContext().chat;
     for (const message of chat) {
@@ -1069,7 +1141,7 @@ async function activateWorldInfo(chat) {
         return;
     }
 
-    const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.max_entries);
+    const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.max_entries, settings.score_threshold);
     const activatedHashes = Object.values(queryResults).flatMap(x => x.hashes).filter(onlyUnique);
     const activatedEntries = [];
 
@@ -1148,6 +1220,17 @@ jQuery(async () => {
     $('#vectors_cohere_model').val(settings.cohere_model).on('change', () => {
         $('#vectors_modelWarning').show();
         settings.cohere_model = String($('#vectors_cohere_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_ollama_model').val(settings.ollama_model).on('input', () => {
+        $('#vectors_modelWarning').show();
+        settings.ollama_model = String($('#vectors_ollama_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_ollama_keep').prop('checked', settings.ollama_keep).on('input', () => {
+        settings.ollama_keep = $('#vectors_ollama_keep').prop('checked');
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
@@ -1310,6 +1393,12 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    $('#vectors_score_threshold').val(settings.score_threshold).on('input', () => {
+        settings.score_threshold = Number($('#vectors_score_threshold').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
     const validSecret = !!secret_state[SECRET_KEYS.NOMICAI];
     const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key';
     $('#api_key_nomicai').attr('placeholder', placeholder);
@@ -1323,4 +1412,60 @@ jQuery(async () => {
     eventSource.on(event_types.CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.GROUP_CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.FILE_ATTACHMENT_DELETED, purgeFileVectorIndex);
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-ingest',
+        callback: async () => {
+            await ingestDataBankAttachments();
+            return '';
+        },
+        aliases: ['databank-ingest', 'data-bank-ingest'],
+        helpString: 'Force the ingestion of all Data Bank attachments.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-purge',
+        callback: async () => {
+            const dataBank = getDataBankAttachments();
+
+            for (const file of dataBank) {
+                await purgeFileVectorIndex(file.url);
+            }
+
+            return '';
+        },
+        aliases: ['databank-purge', 'data-bank-purge'],
+        helpString: 'Purge the vector index for all Data Bank attachments.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-search',
+        callback: async (args, query) => {
+            const clamp = (v) => Number.isNaN(v) ? null : Math.min(1, Math.max(0, v));
+            const threshold = clamp(Number(args?.threshold ?? settings.score_threshold));
+            const source = String(args?.source ?? '');
+            const attachments = source ? getDataBankAttachmentsForSource(source, false) : getDataBankAttachments(false);
+            const collectionIds = await ingestDataBankAttachments(String(source));
+            const queryResults = await queryMultipleCollections(collectionIds, String(query), settings.chunk_count_db, threshold);
+
+            // Map collection IDs to file URLs
+            const urls = Object
+                .keys(queryResults)
+                .map(x => attachments.find(y => getFileCollectionId(y.url) === x))
+                .filter(x => x)
+                .map(x => x.url);
+
+            return JSON.stringify(urls);
+        },
+        aliases: ['databank-search', 'data-bank-search'],
+        helpString: 'Search the Data Bank for a specific query using vector similarity. Returns a list of file URLs with the most relevant content.',
+        namedArgumentList: [
+            new SlashCommandNamedArgument('threshold', 'Threshold for the similarity score in the [0, 1] range. Uses the global config value if not set.', ARGUMENT_TYPE.NUMBER, false, false, ''),
+            new SlashCommandNamedArgument('source', 'Optional filter for the attachments by source.', ARGUMENT_TYPE.STRING, false, false, '', ['global', 'character', 'chat']),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument('Query to search by.', ARGUMENT_TYPE.STRING, true, false),
+        ],
+        returns: ARGUMENT_TYPE.LIST,
+    }));
 });

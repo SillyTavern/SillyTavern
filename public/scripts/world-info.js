@@ -3071,7 +3071,7 @@ async function checkWorldInfo(chat, maxContext) {
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
-        const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`;
+        const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`.replace(/(^\n)|(\n$)/g, '');
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
@@ -3581,7 +3581,7 @@ export async function importWorldInfo(file) {
         return;
     }
 
-    const worldName = file.name.substr(0, file.name.lastIndexOf("."));
+    const worldName = file.name.substr(0, file.name.lastIndexOf('.'));
     const sanitizedWorldName = await getSanitizedFilename(worldName);
     const allowed = await checkOverwriteExistingData('World Info', world_names, sanitizedWorldName, { interactive: true, actionName: 'Import', deleteAction: (existingName) => deleteWorldInfo(existingName) });
     if (!allowed) {

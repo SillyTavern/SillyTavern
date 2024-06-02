@@ -21,7 +21,7 @@ export const ARGUMENT_TYPE = {
 
 export class SlashCommandArgument {
     /**
-     * Creates an unnamed argument from a poperties object.
+     * Creates an unnamed argument from a properties object.
      * @param {Object} props
      * @param {string} props.description description of the argument
      * @param {ARGUMENT_TYPE|ARGUMENT_TYPE[]} props.typeList default: ARGUMENT_TYPE.STRING - list of accepted types (from ARGUMENT_TYPE)
@@ -75,7 +75,7 @@ export class SlashCommandArgument {
 
 export class SlashCommandNamedArgument extends SlashCommandArgument {
     /**
-     * Creates an unnamed argument from a poperties object.
+     * Creates an unnamed argument from a properties object.
      * @param {Object} props
      * @param {string} props.name the argument's name
      * @param {string[]} [props.aliasList] list of aliases

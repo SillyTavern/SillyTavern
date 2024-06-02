@@ -1,0 +1,12 @@
+<div class="range-block">
+    {{#if error}}
+        {{{errorDiv}}}
+    {{/if}}
+    <div class="{{prefix}}prompt_manager_header">
+        <div class="{{prefix}}prompt_manager_header_advanced">
+            <span data-i18n="Prompts">Prompts</span>
+        </div>
+        <div><span data-i18n="Total Tokens:">Total Tokens:</span> {{totalActiveTokens}} </div>
+    </div>
+    <ul id="{{prefix}}prompt_manager_list" class="text_pole"></ul>
+</div>

@@ -110,10 +110,6 @@ function readPresetsFromDirectory(directoryPath, options = {}) {
 
 async function backupSettings() {
     try {
-        if (!fs.existsSync(PUBLIC_DIRECTORIES.backups)) {
-            fs.mkdirSync(PUBLIC_DIRECTORIES.backups);
-        }
-
         const userHandles = await getAllUserHandles();
 
         for (const handle of userHandles) {
@@ -131,7 +127,7 @@ async function backupSettings() {
  */
 function backupUserSettings(handle) {
     const userDirectories = getUserDirectories(handle);
-    const backupFile = path.join(PUBLIC_DIRECTORIES.backups, `${getFilePrefix(handle)}${generateTimestamp()}.json`);
+    const backupFile = path.join(userDirectories.backups, `${getFilePrefix(handle)}${generateTimestamp()}.json`);
     const sourceFile = path.join(userDirectories.root, SETTINGS_FILE);
 
     if (!fs.existsSync(sourceFile)) {
@@ -139,7 +135,7 @@ function backupUserSettings(handle) {
     }
 
     fs.copyFileSync(sourceFile, backupFile);
-    removeOldBackups(`settings_${handle}`);
+    removeOldBackups(userDirectories.backups, `settings_${handle}`);
 }
 
 const router = express.Router();
@@ -227,12 +223,12 @@ router.post('/get', jsonParser, (request, response) => {
 
 router.post('/get-snapshots', jsonParser, async (request, response) => {
     try {
-        const snapshots = fs.readdirSync(PUBLIC_DIRECTORIES.backups);
+        const snapshots = fs.readdirSync(request.user.directories.backups);
         const userFilesPattern = getFilePrefix(request.user.profile.handle);
         const userSnapshots = snapshots.filter(x => x.startsWith(userFilesPattern));
 
         const result = userSnapshots.map(x => {
-            const stat = fs.statSync(path.join(PUBLIC_DIRECTORIES.backups, x));
+            const stat = fs.statSync(path.join(request.user.directories.backups, x));
             return { date: stat.ctimeMs, name: x, size: stat.size };
         });
 
@@ -252,7 +248,7 @@ router.post('/load-snapshot', jsonParser, async (request, response) => {
         }
 
         const snapshotName = request.body.name;
-        const snapshotPath = path.join(PUBLIC_DIRECTORIES.backups, snapshotName);
+        const snapshotPath = path.join(request.user.directories.backups, snapshotName);
 
         if (!fs.existsSync(snapshotPath)) {
             return response.sendStatus(404);
@@ -286,7 +282,7 @@ router.post('/restore-snapshot', jsonParser, async (request, response) => {
         }
 
         const snapshotName = request.body.name;
-        const snapshotPath = path.join(PUBLIC_DIRECTORIES.backups, snapshotName);
+        const snapshotPath = path.join(request.user.directories.backups, snapshotName);
 
         if (!fs.existsSync(snapshotPath)) {
             return response.sendStatus(404);

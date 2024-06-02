@@ -197,7 +197,8 @@ function randomReplace(input, emptyListPlaceholder = '') {
         // Split on either double colons or comma. If comma is the separator, we are also trimming all items.
         const list = listString.includes('::')
             ? listString.split('::')
-            : listString.split(',').map(item => item.trim());
+            // Replaced escaped commas with a placeholder to avoid splitting on them
+            : listString.replace(/\\,/g, '##�COMMA�##').split(',').map(item => item.trim().replace(/##�COMMA�##/g, ','));
 
         if (list.length === 0) {
             return emptyListPlaceholder;
@@ -221,7 +222,8 @@ function pickReplace(input, rawContent, emptyListPlaceholder = '') {
         // Split on either double colons or comma. If comma is the separator, we are also trimming all items.
         const list = listString.includes('::')
             ? listString.split('::')
-            : listString.split(',').map(item => item.trim());
+            // Replaced escaped commas with a placeholder to avoid splitting on them
+            : listString.replace(/\\,/g, '##�COMMA�##').split(',').map(item => item.trim().replace(/##�COMMA�##/g, ','));
 
         if (list.length === 0) {
             return emptyListPlaceholder;
@@ -296,6 +298,7 @@ export function evaluateMacros(content, env) {
     // Legacy non-macro substitutions
     content = content.replace(/<USER>/gi, typeof env.user === 'function' ? env.user() : env.user);
     content = content.replace(/<BOT>/gi, typeof env.char === 'function' ? env.char() : env.char);
+    content = content.replace(/<CHAR>/gi, typeof env.char === 'function' ? env.char() : env.char);
     content = content.replace(/<CHARIFNOTGROUP>/gi, typeof env.group === 'function' ? env.group() : env.group);
     content = content.replace(/<GROUP>/gi, typeof env.group === 'function' ? env.group() : env.group);
 

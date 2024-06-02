@@ -41,6 +41,7 @@ const USER_DIRECTORY_TEMPLATE = Object.freeze({
     comfyWorkflows: 'user/workflows',
     files: 'user/files',
     vectors: 'vectors',
+    backups: 'backups',
 });
 
 /**
