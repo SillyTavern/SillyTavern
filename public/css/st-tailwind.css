@@ -572,3 +572,23 @@ textarea:disabled {
     text-align: center;
     padding: 5px;
 }
+
+ul.li-padding-b-1 li {
+    padding-bottom: 1em;
+}
+
+ul.li-padding-b-2 li {
+    padding-bottom: 2em;
+}
+
+ul.li-padding-b-5 li {
+    padding-bottom: 5em;
+}
+
+ul.li-padding-bot5 li {
+    padding-bottom: 5px;
+}
+
+ul.li-padding-bot10 li {
+    padding-bottom: 10px;
+}
