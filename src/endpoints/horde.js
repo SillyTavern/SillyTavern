@@ -65,7 +65,7 @@ router.post('/text-workers', jsonParser, async (request, response) => {
         }
 
         const agent = await getClientAgent();
-        const fetchResult = await fetch('https://horde.koboldai.net/api/v2/workers?type=text', {
+        const fetchResult = await fetch('https://aihorde.net/api/v2/workers?type=text', {
             headers: {
                 'Client-Agent': agent,
             },
@@ -88,7 +88,7 @@ router.post('/text-models', jsonParser, async (request, response) => {
         }
 
         const agent = await getClientAgent();
-        const fetchResult = await fetch('https://horde.koboldai.net/api/v2/status/models?type=text', {
+        const fetchResult = await fetch('https://aihorde.net/api/v2/status/models?type=text', {
             headers: {
                 'Client-Agent': agent,
             },
@@ -106,7 +106,7 @@ router.post('/text-models', jsonParser, async (request, response) => {
 router.post('/status', jsonParser, async (_, response) => {
     try {
         const agent = await getClientAgent();
-        const fetchResult = await fetch('https://horde.koboldai.net/api/v2/status/heartbeat', {
+        const fetchResult = await fetch('https://aihorde.net/api/v2/status/heartbeat', {
             headers: {
                 'Client-Agent': agent,
             },
@@ -123,7 +123,7 @@ router.post('/cancel-task', jsonParser, async (request, response) => {
     try {
         const taskId = request.body.taskId;
         const agent = await getClientAgent();
-        const fetchResult = await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${taskId}`, {
+        const fetchResult = await fetch(`https://aihorde.net/api/v2/generate/text/status/${taskId}`, {
             method: 'DELETE',
             headers: {
                 'Client-Agent': agent,
@@ -143,7 +143,7 @@ router.post('/task-status', jsonParser, async (request, response) => {
     try {
         const taskId = request.body.taskId;
         const agent = await getClientAgent();
-        const fetchResult = await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${taskId}`, {
+        const fetchResult = await fetch(`https://aihorde.net/api/v2/generate/text/status/${taskId}`, {
             headers: {
                 'Client-Agent': agent,
             },
@@ -160,7 +160,7 @@ router.post('/task-status', jsonParser, async (request, response) => {
 
 router.post('/generate-text', jsonParser, async (request, response) => {
     const apiKey = readSecret(request.user.directories, SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
-    const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
+    const url = 'https://aihorde.net/api/v2/generate/text/async';
     const agent = await getClientAgent();
 
     console.log(request.body);
