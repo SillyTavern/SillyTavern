@@ -1,7 +1,8 @@
 /* All selectors that should act as keyboard buttons by default */
-const buttonSelectors = ['.menu_button', '.right_menu_button', '.clickable'];
+const buttonSelectors = ['.menu_button', '.right_menu_button', '.custom_selectable_button', '.selectable_button'];
 
-const CUSTOM_CLICKABLE_BUTTON_CLASS = 'clickable';
+const SELECTABLE_BUTTON_CLASS = 'selectable_button';
+const CUSTOM_SELECTABE_BUTTON_CLASS = 'custom_selectable_button';
 
 const NOT_FOCUSABLE_CLASS = 'not_focusable';
 const DISABLED_CLASS = 'disabled';
@@ -80,7 +81,12 @@ export function enableKeyboardButton(...buttons) {
     buttons.forEach(button => {
         // If this button doesn't have any of the classes, lets say the caller knows this and wants this to be a custom-enabled keyboard button.
         if (!isKeyboardButton(button)) {
-            button.classList.add(CUSTOM_CLICKABLE_BUTTON_CLASS);
+            button.classList.add(CUSTOM_SELECTABE_BUTTON_CLASS);
+        }
+
+        // Just for CSS styling and future reference, every keyboard selectable control should have a common class
+        if (!button.classList.contains(SELECTABLE_BUTTON_CLASS)) {
+            button.classList.add(SELECTABLE_BUTTON_CLASS);
         }
 
         // Set/remove the tabindex accordingly to the classes. Remembering if it had a custom value.

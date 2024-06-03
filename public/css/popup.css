@@ -29,6 +29,7 @@ dialog {
     overflow: hidden;
     width: 100%;
     height: 100%;
+    padding: 1px;
 }
 
 .popup .popup_text {
@@ -113,12 +114,6 @@ dialog {
 }
 
 .menu_button.menu_button_custom {
-    /** Custom buttons should not scale to smallest size, otherwise they will always break to multiline */
+    /* Custom buttons should not scale to smallest size, otherwise they will always break to multiline */
     width: unset;
-}
-
-dialog.popup .menu_button:focus,
-dialog input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):not(#WI_panel_pin):focus {
-    /** For dialogs, mimic the outline of keyboard navigation for all button focus */
-    outline: 1px solid white;
 }

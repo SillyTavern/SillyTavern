@@ -14,7 +14,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     margin-bottom: 5px;
 }
 
@@ -39,7 +39,7 @@
 }
 
 .tag_delete {
-    padding-right: 0;
+    padding: 2px 4px;
     color: var(--SmartThemeBodyColor) !important;
 }
 
@@ -162,7 +162,8 @@
     transition: opacity 200ms;
 }
 
-.rm_tag_filter .tag:hover {
+.rm_tag_filter .tag:hover,
+.rm_tag_filter .tag:focus {
     opacity: 1;
     filter: brightness(1);
 }
@@ -206,6 +207,7 @@
 }
 
 .tag_as_folder:hover,
+.tag_as_folder:focus,
 .tag_as_folder.flash {
     filter: brightness(150%) saturate(0.6) !important;
 }
