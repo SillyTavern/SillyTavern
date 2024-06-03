@@ -1,0 +1,32 @@
+name: Update i18n data
+
+on:
+  push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:                # Job-level permissions configuration starts here
+      contents: write           # 'write' access to repository contents
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref }}
+        fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+    - name: Create local changes
+      run: |
+        aria2c https://raw.githubusercontent.com/SillyTavern/SillyTavern-i18n/main/generate.py
+        aria2c https://raw.githubusercontent.com/SillyTavern/SillyTavern-i18n/main/requirements.txt
+        pip install -r ./requirements.txt
+        python ./generate.py "" --sort-keys
+        rm -f ./generate.py ./requirements.txt
+    - name: Commit files
+      run: |
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git commit -a -m "i18n changes"
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
