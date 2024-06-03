@@ -189,8 +189,8 @@ export class Popup {
                     break;
                 }
                 case 'Enter': {
-                    // Only count enter if no modifier key is pressed
-                    if (evt.altKey || evt.ctrlKey || evt.shiftKey)
+                    // CTRL+Enter counts as a closing action, but all other modifiers (ALT, SHIFT) should not trigger this
+                    if (evt.altKey || evt.shiftKey)
                         return;
 
                     // Check if we are the currently active popup
