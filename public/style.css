@@ -213,11 +213,11 @@ table.responsiveTable {
 
 /* Keyboard/focus navigation styling */
 /** Mimic the outline of keyboard navigation for most most focusable controls */
-.selectable_button {
+.interactable {
     border-radius: 5px;
 }
 
-.selectable_button:focus {
+.interactable:focus {
     outline: 1px solid var(--white100);
 }
 

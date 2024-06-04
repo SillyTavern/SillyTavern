@@ -22,7 +22,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { isMobile } from './RossAscends-mods.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
-import { registerKeyboardButtonClass } from './keyboard.js';
+import { registerInteractableType } from './keyboard.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -1910,7 +1910,7 @@ export function initTags() {
     eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
     eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
 
-    registerKeyboardButtonClass('.tag.actionable');
+    registerInteractableType('.tag.actionable');
 
     $(document).on('input', '#tag_view_list input[name="auto_sort_tags"]', (evt) => {
         const toggle = $(evt.target).is(':checked');
