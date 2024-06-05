@@ -1284,10 +1284,11 @@ export async function prepareOpenAIMessages({
     }
 
     const chat = chatCompletion.getChat();
-    openai_messages_count = chat.filter(x => x?.role === 'user' || x?.role === 'assistant')?.length || 0;
 
     const eventData = { chat, dryRun };
     await eventSource.emit(event_types.CHAT_COMPLETION_PROMPT_READY, eventData);
+
+    openai_messages_count = chat.filter(x => x?.role === 'user' || x?.role === 'assistant')?.length || 0;
 
     return [chat, promptManager.tokenHandler.counts];
 }
