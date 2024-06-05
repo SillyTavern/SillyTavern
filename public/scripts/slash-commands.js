@@ -328,7 +328,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'rename-char',
     /** @param {{silent: string, renameChats: string}} options @param {string} name */
     callback: async ({ silent = 'true', renameChats = null }, name) => {
-        const renamed = await renameCharacter(name, { silent: silent === 'true', renameChats: renameChats !== null ? renameChats === 'true' : null });
+        const renamed = await renameCharacter(name, { silent: isTrueBoolean(silent), renameChats: renameChats !== null ? isTrueBoolean(renameChats) : null });
         return String(renamed);
     },
     returns: 'true/false - Whether the rename was successful',
@@ -337,7 +337,7 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             'silent', 'Hide any blocking popups. (if false, the name is optional. If not supplied, a popup asking for it will appear)', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true'
         ),
         new SlashCommandNamedArgument(
-            'renameChats', 'Rename char in all previous chats', [ARGUMENT_TYPE.BOOLEAN], false, false, '<null>'
+            'chats', 'Rename char in all previous chats', [ARGUMENT_TYPE.BOOLEAN], false, false, '<null>'
         ),
     ],
     unnamedArgumentList: [

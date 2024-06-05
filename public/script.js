@@ -5436,6 +5436,10 @@ export async function renameCharacter(name = null, { silent = false, renameChats
         toastr.warning('No character name provided.', 'Rename Character');
         return false;
     }
+    if (this_chid === undefined) {
+        toastr.warning('No character selected.', 'Rename Character');
+        return false;
+    }
 
     const oldAvatar = characters[this_chid].avatar;
     const newValue = name || await callPopup('<h3>New name:</h3>', 'input', characters[this_chid].name);
