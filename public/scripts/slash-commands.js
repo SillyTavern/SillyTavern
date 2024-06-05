@@ -1129,9 +1129,15 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     helpString: 'Lists all script injections for the current chat.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-    name: 'flushinjects',
+    name: 'flushinject',
+    aliases: ['flushinjects'],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'injection ID or a variable name pointing to ID', [ARGUMENT_TYPE.STRING, ARGUMENT_TYPE.VARIABLE_NAME], false, false, '',
+        ),
+    ],
     callback: flushInjectsCallback,
-    helpString: 'Removes all script injections for the current chat.',
+    helpString: 'Removes a script injection for the current chat. If no ID is provided, removes all script injections.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'tokens',
@@ -1231,7 +1237,7 @@ function injectCallback(args, value) {
 }
 
 function listInjectsCallback() {
-    if (!chat_metadata.script_injects) {
+    if (!chat_metadata.script_injects || !Object.keys(chat_metadata.script_injects).length) {
         toastr.info('No script injections for the current chat');
         return '';
     }
@@ -1251,17 +1257,29 @@ function listInjectsCallback() {
     sendSystemMessage(system_message_types.GENERIC, htmlMessage);
 }
 
-function flushInjectsCallback() {
+/**
+ * Flushes script injections for the current chat.
+ * @param {import('./slash-commands/SlashCommand.js').NamedArguments} args Named arguments
+ * @param {string} value Unnamed argument
+ * @returns {string} Empty string
+ */
+function flushInjectsCallback(args, value) {
     if (!chat_metadata.script_injects) {
         return '';
     }
 
+    const idArgument = resolveVariable(value, args._scope);
+
     for (const [id, inject] of Object.entries(chat_metadata.script_injects)) {
+        if (idArgument && id !== idArgument) {
+            continue;
+        }
+
         const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
         setExtensionPrompt(prefixedId, '', inject.position, inject.depth, inject.scan, inject.role);
+        delete chat_metadata.script_injects[id];
     }
 
-    chat_metadata.script_injects = {};
     saveMetadataDebounced();
     return '';
 }
