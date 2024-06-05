@@ -23,6 +23,7 @@ import {
     name2,
     reloadCurrentChat,
     removeMacros,
+    renameCharacter,
     saveChatConditional,
     sendMessageAsUser,
     sendSystemMessage,
@@ -322,6 +323,29 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     ],
     helpString: 'Opens up a chat with the character or group by its name',
     aliases: ['char'],
+}));
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'rename-char',
+    /** @param {{silent: string, renameChats: string}} options @param {string} name */
+    callback: async ({ silent = 'true', renameChats = null }, name) => {
+        const renamed = await renameCharacter(name, { silent: silent === 'true', renameChats: renameChats !== null ? renameChats === 'true' : null });
+        return String(renamed);
+    },
+    returns: 'true/false - Whether the rename was successful',
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'silent', 'Hide any blocking popups. (if false, the name is optional. If not supplied, a popup asking for it will appear)', [ARGUMENT_TYPE.BOOLEAN], false, false, 'true'
+        ),
+        new SlashCommandNamedArgument(
+            'renameChats', 'Rename char in all previous chats', [ARGUMENT_TYPE.BOOLEAN], false, false, '<null>'
+        ),
+    ],
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'new char name', [ARGUMENT_TYPE.STRING], true,
+        ),
+    ],
+    helpString: 'Renames the current character.'
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'sysgen',
