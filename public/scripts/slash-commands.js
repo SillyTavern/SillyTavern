@@ -336,15 +336,17 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'ask',
     callback: askCharacter,
-    unnamedArgumentList: [
-        new SlashCommandArgument(
-            'character name', [ARGUMENT_TYPE.STRING], true,
-        ),
-        new SlashCommandArgument(
-            'prompt', [ARGUMENT_TYPE.STRING], true,
+    namedArgumentList: [
+        new SlashCommandNamedArgument(
+            'name', 'character name', [ARGUMENT_TYPE.STRING], true, false, '',
         ),
     ],
-    helpString: 'Asks a specified character card a prompt. Character name and prompt have to be separated by a new line.',
+    unnamedArgumentList: [
+        new SlashCommandArgument(
+            'prompt', [ARGUMENT_TYPE.STRING], true, false,
+        ),
+    ],
+    helpString: 'Asks a specified character card a prompt. Character name must be provided in a named argument.',
 }));
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
     name: 'delname',
@@ -1815,7 +1817,7 @@ async function deleteSwipeCallback(_, arg) {
     await reloadCurrentChat();
 }
 
-async function askCharacter(_, text) {
+async function askCharacter(args, text) {
     // Prevent generate recursion
     $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
 
@@ -1828,17 +1830,25 @@ async function askCharacter(_, text) {
 
     if (!text) {
         console.warn('WARN: No text provided for /ask command');
-    }
-
-    const parts = text.split('\n');
-    if (parts.length <= 1) {
-        toastr.warning('Both character name and message are required. Separate them with a new line.');
+        toastr.warning('No text provided for /ask command');
         return;
     }
 
-    // Grabbing the message
-    const name = parts.shift().trim();
-    let mesText = parts.join('\n').trim();
+    let name = '';
+    let mesText = '';
+
+    if (args?.name) {
+        name = args.name.trim();
+        mesText = text.trim();
+
+        if (!name && !mesText) {
+            toastr.warning('You must specify a name and text to ask.');
+            return;
+        }
+    }
+
+    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND);
+
     const prevChId = this_chid;
 
     // Find the character
@@ -1849,7 +1859,7 @@ async function askCharacter(_, text) {
     }
 
     // Override character and send a user message
-    setCharacterId(chId);
+    setCharacterId(String(chId));
 
     // TODO: Maybe look up by filename instead of name
     const character = characters[chId];
