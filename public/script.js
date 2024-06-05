@@ -417,10 +417,12 @@ export const event_types = {
     CHAT_DELETED: 'chat_deleted',
     GROUP_CHAT_DELETED: 'group_chat_deleted',
     GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
+    GENERATE_AFTER_COMBINE_PROMPTS: 'generate_after_combine_prompts',
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
     CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',
+    CHAT_COMPLETION_PROMPT_READY: 'chat_completion_prompt_ready',
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
@@ -3989,6 +3991,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     }
 
     let finalPrompt = getCombinedPrompt(false);
+
+    const eventData = { prompt: finalPrompt, dryRun: dryRun };
+    await eventSource.emit(event_types.GENERATE_AFTER_COMBINE_PROMPTS, eventData);
+    finalPrompt = eventData.prompt;
 
     let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
     let thisPromptBits = [];
