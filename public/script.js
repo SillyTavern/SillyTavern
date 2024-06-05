@@ -7684,6 +7684,8 @@ window['SillyTavern'].getContext = function () {
         setExtensionPrompt: setExtensionPrompt,
         updateChatMetadata: updateChatMetadata,
         saveChat: saveChatConditional,
+        openCharacterChat: openCharacterChat,
+        openGroupChat: openGroupChat,
         saveMetadata: saveMetadata,
         sendSystemMessage: sendSystemMessage,
         activateSendButtons,

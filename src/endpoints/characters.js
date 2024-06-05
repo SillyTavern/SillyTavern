@@ -956,6 +956,10 @@ router.post('/chats', jsonParser, async function (request, response) {
             return;
         }
 
+        if (request.body.simple) {
+            return response.send(jsonFiles.map(file => ({ file_name: file })));
+        }
+
         const jsonFilesPromise = jsonFiles.map((file) => {
             return new Promise(async (res) => {
                 const pathToFile = path.join(request.user.directories.chats, characterDirectory, file);
