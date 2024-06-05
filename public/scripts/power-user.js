@@ -771,6 +771,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'max_temp_textgenerationwebui' ||
         sliderID == 'dynatemp_exponent_textgenerationwebui' ||
         sliderID == 'guidance_scale_textgenerationwebui' ||
+        sliderID == 'rep_pen_slope_textgenerationwebui' ||
         sliderID == 'guidance_scale') {
         offVal = 1;
     }
