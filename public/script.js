@@ -5431,70 +5431,95 @@ export function setSendButtonState(value) {
     is_send_press = value;
 }
 
-async function renameCharacter() {
+export async function renameCharacter(name = null, { silent = false, renameChats = null } = {}) {
+    if (!name && silent) {
+        toastr.warning('No character name provided.', 'Rename Character');
+        return false;
+    }
+    if (this_chid === undefined) {
+        toastr.warning('No character selected.', 'Rename Character');
+        return false;
+    }
+
     const oldAvatar = characters[this_chid].avatar;
-    const newValue = await callPopup('<h3>New name:</h3>', 'input', characters[this_chid].name);
+    const newValue = name || await callPopup('<h3>New name:</h3>', 'input', characters[this_chid].name);
 
-    if (newValue && newValue !== characters[this_chid].name) {
-        const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });
-        const response = await fetch('/api/characters/rename', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body,
-        });
+    if (!newValue) {
+        toastr.warning('No character name provided.', 'Rename Character');
+        return false;
+    }
+    if (newValue === characters[this_chid].name) {
+        toastr.info('Same character name provided, so name did not change.', 'Rename Character');
+        return false;
+    }
 
-        try {
-            if (response.ok) {
-                const data = await response.json();
-                const newAvatar = data.avatar;
+    const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });
+    const response = await fetch('/api/characters/rename', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body,
+    });
 
-                // Replace tags list
-                renameTagKey(oldAvatar, newAvatar);
+    try {
+        if (response.ok) {
+            const data = await response.json();
+            const newAvatar = data.avatar;
 
-                // Reload characters list
-                await getCharacters();
+            // Replace tags list
+            renameTagKey(oldAvatar, newAvatar);
 
-                // Find newly renamed character
-                const newChId = characters.findIndex(c => c.avatar == data.avatar);
+            // Reload characters list
+            await getCharacters();
 
-                if (newChId !== -1) {
-                    // Select the character after the renaming
-                    this_chid = -1;
-                    await selectCharacterById(String(newChId));
+            // Find newly renamed character
+            const newChId = characters.findIndex(c => c.avatar == data.avatar);
 
-                    // Async delay to update UI
-                    await delay(1);
+            if (newChId !== -1) {
+                // Select the character after the renaming
+                this_chid = -1;
+                await selectCharacterById(String(newChId));
 
-                    if (this_chid === -1) {
-                        throw new Error('New character not selected');
-                    }
+                // Async delay to update UI
+                await delay(1);
 
-                    // Also rename as a group member
-                    await renameGroupMember(oldAvatar, newAvatar, newValue);
-                    const renamePastChatsConfirm = await callPopup(`<h3>Character renamed!</h3>
-                    <p>Past chats will still contain the old character name. Would you like to update the character name in previous chats as well?</p>
-                    <i><b>Sprites folder (if any) should be renamed manually.</b></i>`, 'confirm');
-
-                    if (renamePastChatsConfirm) {
-                        await renamePastChats(newAvatar, newValue);
-                        await reloadCurrentChat();
-                        toastr.success('Character renamed and past chats updated!');
-                    }
+                if (this_chid === -1) {
+                    throw new Error('New character not selected');
                 }
-                else {
-                    throw new Error('Newly renamed character was lost?');
+
+                // Also rename as a group member
+                await renameGroupMember(oldAvatar, newAvatar, newValue);
+                const renamePastChatsConfirm = renameChats !== null ? renameChats
+                    : silent ? false : await callPopup(`<h3>Character renamed!</h3>
+                <p>Past chats will still contain the old character name. Would you like to update the character name in previous chats as well?</p>
+                <i><b>Sprites folder (if any) should be renamed manually.</b></i>`, 'confirm');
+
+                if (renamePastChatsConfirm) {
+                    await renamePastChats(newAvatar, newValue);
+                    await reloadCurrentChat();
+                    toastr.success('Character renamed and past chats updated!', 'Rename Character');
+                } else {
+                    toastr.success('Character renamed!', 'Rename Character');
                 }
             }
             else {
-                throw new Error('Could not rename the character');
+                throw new Error('Newly renamed character was lost?');
             }
         }
-        catch {
-            // Reloading to prevent data corruption
-            await callPopup('Something went wrong. The page will be reloaded.', 'text');
-            location.reload();
+        else {
+            throw new Error('Could not rename the character');
         }
     }
+    catch (error) {
+    // Reloading to prevent data corruption
+        if (!silent) await callPopup('Something went wrong. The page will be reloaded.', 'text');
+        else toastr.error('Something went wrong. The page will be reloaded.', 'Rename Character');
+
+        console.log('Renaming character error:', error);
+        location.reload();
+        return false;
+    }
+
+    return true;
 }
 
 async function renamePastChats(newAvatar, newValue) {
