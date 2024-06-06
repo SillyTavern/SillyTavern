@@ -119,6 +119,16 @@
     opacity: 0.6;
 }
 
+#tagList .tag:has(.tag_remove:hover),
+#tagList .tag:has(.tag_remove:focus) {
+    opacity: 1;
+}
+
+#tagList .tag:has(.tag_remove:hover) .tag_name,
+#tagList .tag:has(.tag_remove:focus) .tag_name {
+    opacity: 0.6;
+}
+
 .tags.tags_inline {
     opacity: 0.6;
     column-gap: 0.2rem;
@@ -176,6 +186,7 @@
 .tag.selected {
     opacity: 1 !important;
     filter: none !important;
+    border: 1px solid lightgreen;
 }
 
 .tag.excluded {

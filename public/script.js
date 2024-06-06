@@ -236,7 +236,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument } from './scripts/slash-commands/Sl
 import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
 import { DragAndDropHandler } from './scripts/dragdrop.js';
-import { initKeyboard } from './scripts/keyboard.js';
+import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js';
 
 //exporting functions and vars for mods
 export {
@@ -524,10 +524,13 @@ let scrollLock = false;
 export let abortStatusCheck = new AbortController();
 let charDragDropHandler = null;
 
-/** @type {number} The debounce timeout used for chat/settings save. debounce_timeout.long: 1.000 ms */
-const durationSaveEdit = debounce_timeout.relaxed;
-export const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
-export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), durationSaveEdit);
+/** @type {debounce_timeout} The debounce timeout used for chat/settings save. debounce_timeout.long: 1.000 ms */
+export const DEFAULT_SAVE_EDIT_TIMEOUT = debounce_timeout.relaxed;
+/** @type {debounce_timeout} The debounce timeout used for printing. debounce_timeout.quick: 100 ms */
+export const DEFAULT_PRINT_TIMEOUT = debounce_timeout.quick;
+
+export const saveSettingsDebounced = debounce(() => saveSettings(), DEFAULT_SAVE_EDIT_TIMEOUT);
+export const saveCharacterDebounced = debounce(() => $('#create_button').trigger('click'), DEFAULT_SAVE_EDIT_TIMEOUT);
 
 /**
  * Prints the character list in a debounced fashion without blocking, with a delay of 100 milliseconds.
@@ -535,7 +538,7 @@ export const saveCharacterDebounced = debounce(() => $('#create_button').trigger
  *
  * The printing will also always reprint all filter options of the global list, to keep them up to date.
  */
-export const printCharactersDebounced = debounce(() => { printCharacters(false); }, debounce_timeout.quick);
+export const printCharactersDebounced = debounce(() => { printCharacters(false); }, DEFAULT_PRINT_TIMEOUT);
 
 /**
  * @enum {string} System message types
@@ -5684,7 +5687,7 @@ async function read_avatar_load(input) {
         }
 
         await createOrEditCharacter();
-        await delay(durationSaveEdit);
+        await delay(DEFAULT_SAVE_EDIT_TIMEOUT);
 
         const formData = new FormData($('#form_create').get(0));
         await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
@@ -5728,7 +5731,7 @@ export function getThumbnailUrl(type, file) {
     return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
 }
 
-export function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, selectable = false, highlightFavs = true } = {}) {
+export function buildAvatarList(block, entities, { templateId = 'inline_avatar_template', empty = true, interactable = false, highlightFavs = true } = {}) {
     if (empty) {
         block.empty();
     }
@@ -5763,8 +5766,8 @@ export function buildAvatarList(block, entities, { templateId = 'inline_avatar_t
             avatarTemplate.attr('title', `[Group] ${entity.item.name}`);
         }
 
-        if (selectable) {
-            avatarTemplate.addClass('selectable');
+        if (interactable) {
+            avatarTemplate.addClass(INTERACTABLE_CONTROL_CLASS);
             avatarTemplate.toggleClass('character_select', entity.type === 'character');
             avatarTemplate.toggleClass('group_select', entity.type === 'group');
         }
@@ -7170,7 +7173,7 @@ export async function saveMetadata() {
 
 export async function saveChatConditional() {
     try {
-        await waitUntilCondition(() => !isChatSaving, durationSaveEdit, 100);
+        await waitUntilCondition(() => !isChatSaving, DEFAULT_SAVE_EDIT_TIMEOUT, 100);
     } catch {
         console.warn('Timeout waiting for chat to save');
         return;
@@ -8850,7 +8853,7 @@ jQuery(async function () {
     $('#send_textarea').on('focusin focus click', () => {
         S_TAPreviouslyFocused = true;
     });
-    $('#options_button, #send_but, #option_regenerate, #option_continue, #mes_continue').on('click', () => {
+    $('#send_but, #option_regenerate, #option_continue, #mes_continue').on('click', () => {
         if (S_TAPreviouslyFocused) {
             $('#send_textarea').focus();
         }
@@ -9360,7 +9363,7 @@ jQuery(async function () {
     }
 
     function isMouseOverButtonOrMenu() {
-        return menu.is(':hover') || button.is(':hover');
+        return menu.is(':hover, :focus-within') || button.is(':hover, :focus');
     }
 
     button.on('click', function () {

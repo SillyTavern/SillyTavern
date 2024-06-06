@@ -9,6 +9,7 @@ import {
     buildAvatarList,
     eventSource,
     event_types,
+    DEFAULT_PRINT_TIMEOUT,
 } from '../script.js';
 // eslint-disable-next-line no-unused-vars
 import { FILTER_TYPES, FILTER_STATES, DEFAULT_FILTER_STATE, isFilterState, FilterHelper } from './filters.js';
@@ -22,7 +23,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { isMobile } from './RossAscends-mods.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
-import { registerInteractableType } from './keyboard.js';
+import { INTERACTABLE_CONTROL_CLASS, registerInteractableType } from './keyboard.js';
 
 export {
     TAG_FOLDER_TYPES,
@@ -851,7 +852,7 @@ function newTag(tagName) {
 /**
  * @typedef {object} TagOptions - Options for tag behavior. (Same object will be passed into "appendTagToList")
  * @property {boolean} [removable=false] - Whether tags can be removed.
- * @property {boolean} [selectable=false] - Whether tags can be selected.
+ * @property {boolean} [isFilter=false] - Whether tags can be selected as a filter.
  * @property {function} [action=undefined] - Action to perform on tag interaction.
  * @property {(tag: Tag)=>boolean} [removeAction=undefined] - Action to perform on tag removal instead of the default remove action. If the action returns false, the tag will not be removed.
  * @property {boolean} [isGeneralList=false] - If true, indicates that this is the general list of tags.
@@ -971,7 +972,7 @@ function printTagList(element, { tags = undefined, addTag = undefined, forEntity
  * @param {TagOptions} [options={}] - Options for tag behavior
  * @returns {void}
  */
-function appendTagToList(listElement, tag, { removable = false, selectable = false, action = undefined, removeAction = undefined, isGeneralList = false, skipExistsCheck = false } = {}) {
+function appendTagToList(listElement, tag, { removable = false, isFilter = false, action = undefined, removeAction = undefined, isGeneralList = false, skipExistsCheck = false } = {}) {
     if (!listElement) {
         return;
     }
@@ -1011,19 +1012,20 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
     // We could have multiple ways of actions passed in. The manual arguments have precendence in front of a specified tag action
     const clickableAction = action ?? tag.action;
 
-    // If this is a tag for a general list and its either selectable or actionable, lets mark its current state
-    if ((selectable || clickableAction) && isGeneralList) {
+    // If this is a tag for a general list and its either a filter or actionable, lets mark its current state
+    if ((isFilter || clickableAction) && isGeneralList) {
         toggleTagThreeState(tagElement, { stateOverride: tag.filter_state ?? DEFAULT_FILTER_STATE });
     }
 
-    if (selectable) {
+    if (isFilter) {
         tagElement.on('click', () => onTagFilterClick.bind(tagElement)(listElement));
+        tagElement.addClass(INTERACTABLE_CONTROL_CLASS);
     }
 
     if (clickableAction) {
         const filter = getFilterHelper($(listElement));
         tagElement.on('click', (e) => clickableAction.bind(tagElement)(filter, e));
-        tagElement.addClass('clickable-action');
+        tagElement.addClass('clickable-action').addClass(INTERACTABLE_CONTROL_CLASS);
     }
 
     $(listElement).append(tagElement);
@@ -1032,6 +1034,7 @@ function appendTagToList(listElement, tag, { removable = false, selectable = fal
 function onTagFilterClick(listElement) {
     const tagId = $(this).attr('id');
     const existingTag = tags.find((tag) => tag.id === tagId);
+    const parent = $(this).parents('.tags');
 
     let state = toggleTagThreeState($(this));
 
@@ -1042,6 +1045,9 @@ function onTagFilterClick(listElement) {
 
     // We don't print anything manually, updating the filter will automatically trigger a redraw of all relevant stuff
     runTagFilters(listElement);
+
+    // Focus the tag again we were at, if possible. To improve keyboard navigation
+    setTimeout(() => parent.find(`.tag[id="${tagId}"]`).trigger('focus'), DEFAULT_PRINT_TIMEOUT + 1);
 }
 
 /**
@@ -1119,7 +1125,7 @@ function printTagFilters(type = tag_filter_types.character) {
 
     const characterTagIds = Object.values(tag_map).flat();
     const tagsToDisplay = tags.filter(x => characterTagIds.includes(x.id)).sort(compareTagsForSort);
-    printTagList($(FILTER_SELECTOR), { empty: false, tags: tagsToDisplay, tagOptions: { selectable: true, isGeneralList: true } });
+    printTagList($(FILTER_SELECTOR), { empty: false, tags: tagsToDisplay, tagOptions: { isFilter: true, isGeneralList: true } });
 
     // Print bogus folder navigation
     const bogusDrilldown = $(FILTER_SELECTOR).siblings('.rm_tag_bogus_drilldown');
@@ -1909,8 +1915,6 @@ export function initTags() {
     $(document).on('click', '.tag_view_restore', onBackupRestoreClick);
     eventSource.on(event_types.CHARACTER_DUPLICATED, copyTags);
     eventSource.makeFirst(event_types.CHAT_CHANGED, () => selected_group ? applyTagsOnGroupSelect() : applyTagsOnCharacterSelect());
-
-    registerInteractableType('.tag.actionable');
 
     $(document).on('input', '#tag_view_list input[name="auto_sort_tags"]', (evt) => {
         const toggle = $(evt.target).is(':checked');

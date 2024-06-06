@@ -688,9 +688,16 @@ body .panelControlBar {
 }
 
 #rightSendForm>div:hover,
-#leftSendForm>div:hover {
+#rightSendForm>div:focus,
+#leftSendForm>div:hover,
+#leftSendForm>div:focus {
     opacity: 1;
     filter: brightness(1.2);
+}
+
+#rightSendForm>div:focus,
+#leftSendForm>div:focus {
+    outline: 1px solid var(--white100);
 }
 
 #send_but {
@@ -825,6 +832,12 @@ body .panelControlBar {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     flex-flow: column;
     border-radius: 10px;
+    padding: 2px;
+}
+
+#extensionsMenu,
+.options-content {
+    padding: 2px;
 }
 
 .options-content,
@@ -858,11 +871,6 @@ body .panelControlBar {
 #extensionsMenuButton {
     order: 4;
     padding: 1px;
-}
-
-#extensionsMenuButton:hover {
-    opacity: 1;
-    filter: brightness(1.2);
 }
 
 .options-content a,
@@ -1033,11 +1041,11 @@ body .panelControlBar {
     justify-content: space-evenly;
 }
 
-.avatar.selectable {
+.avatar.interactable {
     opacity: 0.6;
 }
 
-.avatar.selectable:hover {
+.avatar.interactable:hover {
     opacity: 1;
     background-color: transparent !important;
     cursor: pointer;
@@ -2250,6 +2258,7 @@ input[type="file"] {
     flex: 1;
     overflow: hidden;
     opacity: 0.5;
+    padding: 1px;
 }
 
 #rm_button_selected_ch:hover {
@@ -2315,6 +2324,7 @@ input[type="file"] {
     flex-grow: 1;
     display: flex;
     height: 100%;
+    padding: 1px;
 }
 
 #rm_ch_create_block {
@@ -2688,8 +2698,11 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .bogus_folder_select:hover,
+.bogus_folder_select:focus-within,
 .character_select:hover,
-.avatar-container:hover {
+.character_select:focus-within,
+.avatar-container:hover,
+.avatar-container:focus-within {
     background-color: var(--white30a);
 }
 
@@ -2920,6 +2933,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-direction: row;
     align-items: flex-start;
     gap: 5px;
+    margin: 1px;
     padding: 5px;
     border-radius: 10px;
     cursor: pointer;
@@ -3019,7 +3033,7 @@ grammarly-extension {
     font-size: calc(var(--mainFontSize) * 0.9);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     padding: 1px 3px;
 }
 
@@ -3030,8 +3044,8 @@ grammarly-extension {
     text-align: right;
 }
 
-.rm_stats_button {
-    cursor: pointer;
+#result_info .right_menu_button {
+    padding: 4px;
 }
 
 /* Focus */
@@ -3406,6 +3420,7 @@ input[type='checkbox'].del_checkbox {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-around;
+    padding: 1px;
 }
 
 .avatar-container .avatar {
@@ -3521,6 +3536,18 @@ input[type='checkbox'].del_checkbox {
     box-shadow: inset 0 0 2px var(--black50a) !important;
     cursor: ew-resize !important;
     z-index: 1;
+}
+
+.neo-range-slider:hover,
+.neo-range-slider:focus,
+input[type="range"]:hover,
+input[type="range"]:focus {
+    filter: brightness(1.25);
+}
+
+.neo-range-slider:focus,
+input[type="range"]:focus {
+    outline: 1px solid var(--white100);
 }
 
 .range-block-range {
@@ -3722,35 +3749,29 @@ input[type="range"]::-webkit-slider-thumb {
     /* height: 20px; */
     position: relative;
     display: flex;
-    gap: 10px;
+    gap: 4px;
     flex-wrap: nowrap;
     justify-content: flex-end;
     transition: all 200ms;
     overflow-x: hidden;
+    padding: 1px;
 }
 
 .extraMesButtons {
     display: none;
 }
 
-.mes_buttons .mes_edit,
-.mes_buttons .mes_bookmark,
-.mes_buttons .mes_create_bookmark,
-.extraMesButtonsHint,
-.tagListHint,
-.extraMesButtons div {
+.mes_button,
+.extraMesButtons>div {
     cursor: pointer;
     transition: 0.3s ease-in-out;
     filter: drop-shadow(0px 0px 2px black);
     opacity: 0.3;
+    padding: 1px 3px;
 }
 
-.mes_buttons .mes_edit:hover,
-.mes_buttons .mes_bookmark:hover,
-.mes_buttons .mes_create_bookmark:hover,
-.extraMesButtonsHint:hover,
-.tagListHint:hover,
-.extraMesButtons div:hover {
+.mes_button:hover,
+.extraMesButtons>div:hover {
     opacity: 1;
 }
 
@@ -4523,6 +4544,7 @@ body:has(#character_popup.open) #top-settings-holder:has(.drawer-content.openDra
     display: inline-block;
     cursor: pointer;
     font-size: var(--topBarIconSize);
+    padding: 1px 3px;
 }
 
 .drawer-icon.openIcon {

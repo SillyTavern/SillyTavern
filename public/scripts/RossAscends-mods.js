@@ -303,7 +303,7 @@ export async function favsToHotswap() {
         return;
     }
 
-    buildAvatarList(container, favs, { selectable: true, highlightFavs: false });
+    buildAvatarList(container, favs, { interactable: true, highlightFavs: false });
 }
 
 //changes input bar and send button display depending on connection status

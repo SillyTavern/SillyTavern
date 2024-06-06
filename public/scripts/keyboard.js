@@ -1,5 +1,25 @@
 /* All selectors that should act as interactables / keyboard buttons by default */
-const interactableSelectors = ['.menu_button', '.right_menu_button', '.custom_interactable', '.interactable'];
+const interactableSelectors = [
+    '.custom_interactable',
+    '.interactable',
+    '.menu_button',
+    '.right_menu_button',
+    '.drawer-icon',
+    '.inline-drawer-icon',
+    '.paginationjs-pages li a',
+    '.group_select',
+    '.character_select',
+    '.bogus_folder_select',
+    '.avatar-container',
+    '.tag .tag_remove',
+    '.bg_example',
+    '.bg_example .bg_button',
+    '#options a',
+    '#extensionsMenu div:has(.extensionsMenuExtensionButton)',
+    '.mes_buttons .mes_button',
+    '.extraMesButtons>div:not(.mes_button)',
+    '.stscript_btn'
+];
 
 export const INTERACTABLE_CONTROL_CLASS = 'interactable';
 export const CUSTOM_INTERACTABLE_CONTROL_CLASS = 'custom_interactable';
