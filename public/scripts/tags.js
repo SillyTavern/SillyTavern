@@ -701,7 +701,7 @@ function createNewTag(tagName) {
         name: tagName,
         folder_type: TAG_FOLDER_DEFAULT_TYPE,
         filter_state: DEFAULT_FILTER_STATE,
-        sort_order: tags.length,
+        sort_order: Math.max(0, ...tags.map(t => t.sort_order)) + 1,
         color: '',
         color2: '',
         create_date: Date.now(),
@@ -1046,14 +1046,29 @@ function onGroupCreateClick() {
 }
 
 export function applyTagsOnCharacterSelect() {
-    //clearTagsFilter();
-    const chid = Number(this_chid);
+    // If we are in create window, we cannot simply redraw, as there are no real persisted tags. Grab them, and pass them in
+    if (menu_type === 'create') {
+        const currentTagIds = $('#tagList').find('.tag').map((_, el) => $(el).attr('id')).get();
+        const currentTags = tags.filter(x => currentTagIds.includes(x.id));
+        printTagList($('#tagList'), { forEntityOrKey: null, tags: currentTags, tagOptions: { removable: true } });
+        return;
+    }
+
+    const chid = this_chid ? Number(this_chid) : null;
     printTagList($('#tagList'), { forEntityOrKey: chid, tagOptions: { removable: true } });
 }
 
-function applyTagsOnGroupSelect() {
-    //clearTagsFilter();
-    // Nothing to do here at the moment. Tags in group interface get automatically redrawn.
+export function applyTagsOnGroupSelect() {
+    // If we are in create window, we explicitly have to tell the system to print for the new group, not the one selected in the background
+    if (menu_type === 'group_create') {
+        const currentTagIds = $('#groupTagList').find('.tag').map((_, el) => $(el).attr('id')).get();
+        const currentTags = tags.filter(x => currentTagIds.includes(x.id));
+        printTagList($('#groupTagList'), { forEntityOrKey: null, tags: currentTags, tagOptions: { removable: true } });
+        return;
+    }
+
+    const groupId = selected_group;
+    printTagList($('#groupTagList'), { forEntityOrKey: groupId, tagOptions: { removable: true } });
 }
 
 /**

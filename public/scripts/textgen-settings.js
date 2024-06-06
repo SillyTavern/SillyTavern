@@ -101,6 +101,7 @@ const settings = {
     rep_pen: 1.2,
     rep_pen_range: 0,
     rep_pen_decay: 0,
+    rep_pen_slope: 1,
     no_repeat_ngram_size: 0,
     penalty_alpha: 0,
     num_beams: 1,
@@ -180,6 +181,7 @@ export const setting_names = [
     'rep_pen',
     'rep_pen_range',
     'rep_pen_decay',
+    'rep_pen_slope',
     'no_repeat_ngram_size',
     'top_k',
     'top_p',
@@ -1105,6 +1107,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'mirostat': settings.mirostat_mode,
         'ignore_eos': settings.ban_eos_token,
         'n_probs': power_user.request_token_probabilities ? 10 : undefined,
+        'rep_pen_slope': settings.rep_pen_slope,
     };
     const vllmParams = {
         'n': canMultiSwipe ? settings.n : 1,
