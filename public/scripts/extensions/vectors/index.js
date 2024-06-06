@@ -22,7 +22,7 @@ import {
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
 import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
-import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
+import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
 import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
@@ -66,11 +66,13 @@ const settings = {
     size_threshold: 10,
     chunk_size: 5000,
     chunk_count: 2,
+    overlap_percent: 0,
 
     // For Data Bank
     size_threshold_db: 5,
     chunk_size_db: 2500,
     chunk_count_db: 5,
+    overlap_percent_db: 0,
     file_template_db: 'Related information:\n{{text}}',
     file_position_db: extension_prompt_types.IN_PROMPT,
     file_depth_db: 4,
@@ -369,7 +371,7 @@ async function processFiles(chat) {
 
             // File is already in the collection
             if (!hashesInCollection.length) {
-                await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size);
+                await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size, settings.overlap_percent);
             }
 
             const queryText = await getQueryText(chat);
@@ -409,7 +411,7 @@ async function ingestDataBankAttachments(source) {
         const thresholdLength = settings.size_threshold_db * 1024;
         // Use chunk size from settings if file is larger than threshold
         const chunkSize = file.size > thresholdLength ? settings.chunk_size_db : -1;
-        await vectorizeFile(file.text, file.name, collectionId, chunkSize);
+        await vectorizeFile(file.text, file.name, collectionId, chunkSize, settings.overlap_percent_db);
     }
 
     return dataBankCollectionIds;
@@ -467,9 +469,10 @@ async function retrieveFileChunks(queryText, collectionId) {
  * @param {string} fileName File name
  * @param {string} collectionId File collection ID
  * @param {number} chunkSize Chunk size
+ * @param {number} overlapPercent Overlap size (in %)
  * @returns {Promise<boolean>} True if successful, false if not
  */
-async function vectorizeFile(fileText, fileName, collectionId, chunkSize) {
+async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overlapPercent) {
     try {
         if (settings.translate_files && typeof window['translate'] === 'function') {
             console.log(`Vectors: Translating file ${fileName} to English...`);
@@ -478,8 +481,11 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize) {
         }
 
         const toast = toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
-        const chunks = splitRecursive(fileText, chunkSize);
-        console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks`, chunks);
+        const overlapSize = Math.round(chunkSize * overlapPercent / 100);
+        // Overlap should not be included in chunk size. It will be later compensated by overlapChunks
+        chunkSize = overlapSize > 0 ? (chunkSize - overlapSize) : chunkSize;
+        const chunks = splitRecursive(fileText, chunkSize).map((x, y, z) => overlapSize > 0 ? overlapChunks(x, y, z, overlapSize) : x);
+        console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks with ${overlapPercent}% overlap`, chunks);
 
         const items = chunks.map((chunk, index) => ({ hash: getStringHash(chunk), text: chunk, index: index }));
         await insertVectorItems(collectionId, items);
@@ -586,6 +592,25 @@ function getPromptText(queriedMessages) {
     const queriedText = queriedMessages.map(x => collapseNewlines(`${x.name}: ${x.mes}`).trim()).join('\n\n');
     console.log('Vectors: relevant past messages found.\n', queriedText);
     return substituteParams(settings.template.replace(/{{text}}/i, queriedText));
+}
+
+/**
+ * Modifies text chunks to include overlap with adjacent chunks.
+ * @param {string} chunk Current item
+ * @param {number} index Current index
+ * @param {string[]} chunks List of chunks
+ * @param {number} overlapSize Size of the overlap
+ * @returns {string} Overlapped chunks, with overlap trimmed to sentence boundaries
+ */
+function overlapChunks(chunk, index, chunks, overlapSize) {
+    const nextChunk = chunks[index + 1];
+    const prevChunk = chunks[index - 1];
+
+    const nextOverlap = trimToEndSentence(nextChunk?.substring(0, overlapSize)) || '';
+    const prevOverlap = trimToStartSentence(prevChunk?.substring(prevChunk.length - overlapSize)) || '';
+    const overlappedChunk = [prevOverlap, chunk, nextOverlap].filter(x => x).join(' ');
+
+    return overlappedChunk;
 }
 
 window['vectors_rearrangeChat'] = rearrangeChat;
@@ -969,8 +994,9 @@ async function onViewStatsClick() {
     toastr.info(`Total hashes: <b>${totalHashes}</b><br>
     Unique hashes: <b>${uniqueHashes}</b><br><br>
     I'll mark collected messages with a green circle.`,
-        `Stats for chat ${chatId}`,
-        { timeOut: 10000, escapeHtml: false });
+    `Stats for chat ${chatId}`,
+    { timeOut: 10000, escapeHtml: false },
+    );
 
     const chat = getContext().chat;
     for (const message of chat) {
@@ -1010,6 +1036,23 @@ async function onVectorizeAllFilesClick() {
             return -1;
         }
 
+        /**
+         * Gets the overlap percent for a file attachment.
+         * @param file {import('../../chats.js').FileAttachment} File attachment
+         * @returns {number} Overlap percent for the file
+         */
+        function getOverlapPercent(file) {
+            if (chatAttachments.includes(file)) {
+                return settings.overlap_percent;
+            }
+
+            if (dataBank.includes(file)) {
+                return settings.overlap_percent_db;
+            }
+
+            return 0;
+        }
+
         let allSuccess = true;
 
         for (const file of allFiles) {
@@ -1023,7 +1066,8 @@ async function onVectorizeAllFilesClick() {
             }
 
             const chunkSize = getChunkSize(file);
-            const result = await vectorizeFile(text, file.name, collectionId, chunkSize);
+            const overlapPercent = getOverlapPercent(file);
+            const result = await vectorizeFile(text, file.name, collectionId, chunkSize, overlapPercent);
 
             if (!result) {
                 allSuccess = false;
@@ -1339,6 +1383,18 @@ jQuery(async () => {
 
     $('#vectors_chunk_count_db').val(settings.chunk_count_db).on('input', () => {
         settings.chunk_count_db = Number($('#vectors_chunk_count_db').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_overlap_percent').val(settings.overlap_percent).on('input', () => {
+        settings.overlap_percent = Number($('#vectors_overlap_percent').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_overlap_percent_db').val(settings.overlap_percent_db).on('input', () => {
+        settings.overlap_percent_db = Number($('#vectors_overlap_percent_db').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
