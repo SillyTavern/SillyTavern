@@ -1,7 +1,7 @@
 name: Update i18n data
 
 on:
-  push
+  workflow_dispatch:
 
 jobs:
   build:
