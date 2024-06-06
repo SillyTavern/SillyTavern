@@ -1413,7 +1413,6 @@
     "char_import_8": "RisuRealm 캐릭터 (직접링크)",
     "Supports importing multiple characters.": "여러 문자 가져오기를 지원합니다.",
     "Write each URL or ID into a new line.": "각 URL 또는 ID를 새 줄에 작성합니다.",
-    "(Shift + Enter to start a new line)": "(새 줄을 시작하려면 Shift + Enter)",
     "prompt_manager_tokens": "토큰",
     "Are you sure you want to reset your settings to factory defaults?": "설정을 공장 기본값으로 재설정하시겠습니까?",
     "Don't forget to save a snapshot of your settings before proceeding.": "계속하기 전에 설정의 스냅샷을 저장하는 것을 잊지 마세요.",

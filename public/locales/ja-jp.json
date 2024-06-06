@@ -1413,7 +1413,6 @@
     "char_import_8": "RisuRealm キャラクター (直接リンク)",
     "Supports importing multiple characters.": "複数の文字のインポートをサポートします。",
     "Write each URL or ID into a new line.": "各 URL または ID を新しい行に入力します。",
-    "(Shift + Enter to start a new line)": "(Shift + Enter で新しい行を開始します)",
     "prompt_manager_tokens": "トークン",
     "Are you sure you want to reset your settings to factory defaults?": "設定を工場出荷時のデフォルトにリセットしてもよろしいですか?",
     "Don't forget to save a snapshot of your settings before proceeding.": "続行する前に、設定のスナップショットを保存することを忘れないでください。",

@@ -1413,7 +1413,6 @@
     "char_import_8": "Персонаж RisuRealm (пряме посилання)",
     "Supports importing multiple characters.": "Підтримується імпорт кількох символів.",
     "Write each URL or ID into a new line.": "Напишіть кожну URL-адресу або ідентифікатор у новому рядку.",
-    "(Shift + Enter to start a new line)": "(Shift + Enter, щоб почати новий рядок)",
     "prompt_manager_tokens": "Жетони",
     "Are you sure you want to reset your settings to factory defaults?": "Ви впевнені, що бажаєте скинути налаштування до заводських?",
     "Don't forget to save a snapshot of your settings before proceeding.": "Перш ніж продовжити, не забудьте зберегти знімок ваших налаштувань.",

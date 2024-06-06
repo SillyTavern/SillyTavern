@@ -1410,7 +1410,6 @@
     "char_import_8": "RisuRealm Character (Direct Link)",
     "Supports importing multiple characters.": "Supports importing multiple characters.",
     "Write each URL or ID into a new line.": "Write each URL or ID into a new line.",
-    "(Shift + Enter to start a new line)": "(Shift + Enter to start a new line)",
     "prompt_manager_tokens": "Tokens",
     "Are you sure you want to reset your settings to factory defaults?": "Are you sure you want to reset your settings to factory defaults?",
     "Don't forget to save a snapshot of your settings before proceeding.": "Don't forget to save a snapshot of your settings before proceeding.",

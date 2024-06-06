@@ -1413,7 +1413,6 @@
     "char_import_8": "RisuRealm karakter (beinn hlekkur)",
     "Supports importing multiple characters.": "Styður innflutning á mörgum stöfum.",
     "Write each URL or ID into a new line.": "Skrifaðu hverja vefslóð eða auðkenni í nýja línu.",
-    "(Shift + Enter to start a new line)": "(Shift + Enter til að hefja nýja línu)",
     "prompt_manager_tokens": "Tákn",
     "Are you sure you want to reset your settings to factory defaults?": "Ertu viss um að þú viljir endurstilla stillingarnar þínar á sjálfgefnar verksmiðjustillingar?",
     "Don't forget to save a snapshot of your settings before proceeding.": "Ekki gleyma að vista mynd af stillingunum þínum áður en þú heldur áfram.",

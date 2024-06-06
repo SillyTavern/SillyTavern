@@ -1413,7 +1413,6 @@
     "char_import_8": "شخصية RisuRealm (رابط مباشر)",
     "Supports importing multiple characters.": "يدعم استيراد أحرف متعددة.",
     "Write each URL or ID into a new line.": "اكتب كل عنوان URL أو معرف في سطر جديد.",
-    "(Shift + Enter to start a new line)": "(Shift + Enter لبدء سطر جديد)",
     "prompt_manager_tokens": "الرموز",
     "Are you sure you want to reset your settings to factory defaults?": "هل أنت متأكد أنك تريد إعادة ضبط إعداداتك على إعدادات المصنع الافتراضية؟",
     "Don't forget to save a snapshot of your settings before proceeding.": "لا تنس حفظ لقطة من إعداداتك قبل المتابعة.",

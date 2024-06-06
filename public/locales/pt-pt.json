@@ -1413,7 +1413,6 @@
     "char_import_8": "Personagem RisuRealm (link direto)",
     "Supports importing multiple characters.": "Suporta importação de vários caracteres.",
     "Write each URL or ID into a new line.": "Escreva cada URL ou ID em uma nova linha.",
-    "(Shift + Enter to start a new line)": "(Shift + Enter para iniciar uma nova linha)",
     "prompt_manager_tokens": "Fichas",
     "Are you sure you want to reset your settings to factory defaults?": "Tem certeza de que deseja redefinir as configurações para os padrões de fábrica?",
     "Don't forget to save a snapshot of your settings before proceeding.": "Não se esqueça de salvar um instantâneo de suas configurações antes de continuar.",
