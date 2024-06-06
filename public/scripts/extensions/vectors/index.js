@@ -603,11 +603,12 @@ function getPromptText(queriedMessages) {
  * @returns {string} Overlapped chunks, with overlap trimmed to sentence boundaries
  */
 function overlapChunks(chunk, index, chunks, overlapSize) {
+    const halfOverlap = Math.floor(overlapSize / 2);
     const nextChunk = chunks[index + 1];
     const prevChunk = chunks[index - 1];
 
-    const nextOverlap = trimToEndSentence(nextChunk?.substring(0, overlapSize)) || '';
-    const prevOverlap = trimToStartSentence(prevChunk?.substring(prevChunk.length - overlapSize)) || '';
+    const nextOverlap = trimToEndSentence(nextChunk?.substring(0, halfOverlap)) || '';
+    const prevOverlap = trimToStartSentence(prevChunk?.substring(prevChunk.length - halfOverlap)) || '';
     const overlappedChunk = [prevOverlap, chunk, nextOverlap].filter(x => x).join(' ');
 
     return overlappedChunk;
