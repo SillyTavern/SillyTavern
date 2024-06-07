@@ -1381,7 +1381,7 @@
     "This action is irreversible.": "Þessi aðgerð er óafturkræf.",
     "Type the user's handle below to confirm:": "Sláðu inn handfang notandans hér að neðan til að staðfesta:",
     "Import Characters": "Flytja inn stafi",
-    "Enter the URL of the content to import": "Sláðu inn vefslóð efnisins sem á að flytja inn\n\nStuðlar heimildir:\n\nChub Character (beinn hlekkur eða auðkenni) Dæmi: Nafnlaus/dæmi-karakter\nChub Lorebook (beinn hlekkur eða auðkenni) Dæmi: Lorebooks/bartleby/example-lorebook\nJanitorAI karakter (beinn hlekkur eða UUID) Dæmi: ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess\nPygmalion.chat karakter (beinn hlekkur eða UUID) Dæmi: a7ca95a1-0c88-4e23-91b3-149db1e78ab9\nAICharacterCard.com Karakter (beinn hlekkur eða auðkenni) Dæmi: AICC/aicharcards/the-game-master\nBeinn PNG hlekkur (sjá config.yaml fyrir leyfilega véla) Dæmi: https://files.catbox.moe/notarealfile.png\nRisuRealm karakter (beinn hlekkur) Dæmi: https://realm.risuai.net/character/3ca54c71-6efe-46a2-b9d0-4f62df23d712\n\n\n\n\n        Styður innflutning á mörgum stöfum.\n    \n\n        Skrifaðu hverja vefslóð eða auðkenni í nýja línu.\n    \n\n        (Shift + Enter til að hefja nýja línu)",
+    "Enter the URL of the content to import": "Sláðu inn vefslóð efnisins sem á að flytja inn",
     "Supported sources:": "Stuðlar heimildir:",
     "char_import_1": "Chub Character (beinn hlekkur eða auðkenni)",
     "char_import_example": "Dæmi:",

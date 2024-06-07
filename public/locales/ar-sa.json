@@ -1381,7 +1381,7 @@
     "This action is irreversible.": "هذا الإجراء لا رجعة فيه.",
     "Type the user's handle below to confirm:": "اكتب مقبض المستخدم أدناه للتأكيد:",
     "Import Characters": "استيراد الشخصيات",
-    "Enter the URL of the content to import": "أدخل عنوان URL للمحتوى المراد استيراده\n\nالمصادر المدعومة:\n\nحرف Chub (رابط مباشر أو معرف) مثال: حرف مجهول/مثال\nChub Lorebook (رابط مباشر أو معرف) مثال: lorebooks/bartleby/example-lorebook\nشخصية JanitorAI (رابط مباشر أو UUID) مثال: ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess\nحرف Pygmalion.chat (رابط مباشر أو UUID) مثال: a7ca95a1-0c88-4e23-91b3-149db1e78ab9\nشخصية AICharacterCard.com (رابط مباشر أو معرف)مثال: AICC/aicharcards/the-game-master\nرابط PNG مباشر (ارجع إلى config.yaml لمعرفة المضيفين المسموح بهم)مثال: https://files.catbox.moe/notarealfile.png\nشخصية RisuRealm (رابط مباشر)مثال: https://realm.risuai.net/character/3ca54c71-6efe-46a2-b9d0-4f62df23d712\n\n\n\n\n        يدعم استيراد أحرف متعددة.\n    \n\n        اكتب كل عنوان URL أو معرف في سطر جديد.\n    \n\n        (Shift + Enter لبدء سطر جديد)",
+    "Enter the URL of the content to import": "أدخل عنوان URL للمحتوى المراد استيراده",
     "Supported sources:": "المصادر المدعومة:",
     "char_import_1": "حرف Chub (رابط مباشر أو معرف)",
     "char_import_example": "مثال:",

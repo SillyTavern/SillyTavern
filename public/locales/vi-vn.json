@@ -1381,7 +1381,7 @@
     "This action is irreversible.": "Hành động này là không thể đảo ngược.",
     "Type the user's handle below to confirm:": "Nhập tên người dùng bên dưới để xác nhận:",
     "Import Characters": "Nhập ký tự",
-    "Enter the URL of the content to import": "Nhập URL của nội dung cần nhập\n\nCác nguồn được hỗ trợ:\n\nKý tự Chub (Liên kết trực tiếp hoặc ID)Ví dụ: Ẩn danh/ký tự mẫu\nChub Lorebook (Liên kết trực tiếp hoặc ID)Ví dụ: lorebooks/bartleby/example-lorebook\nNhân vật JanitorAI (Liên kết trực tiếp hoặc UUID)Ví dụ: ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess\nKý tự Pygmalion.chat (Liên kết trực tiếp hoặc UUID)Ví dụ: a7ca95a1-0c88-4e23-91b3-149db1e78ab9\nNhân vật AICharacterCard.com (Liên kết trực tiếp hoặc ID)Ví dụ: AICC/aicharcards/the-game-master\nLiên kết PNG trực tiếp (tham khảo config.yaml để biết các máy chủ được phép)Ví dụ: https://files.catbox.moe/notarealfile.png\nNhân vật RisuRealm (Liên kết trực tiếp)Ví dụ: https://realm.risuai.net/character/3ca54c71-6efe-46a2-b9d0-4f62df23d712\n\n\n\n\n        Hỗ trợ nhập nhiều ký tự.\n    \n\n        Viết mỗi URL hoặc ID vào một dòng mới.\n    \n\n        (Shift + Enter để bắt đầu dòng mới)",
+    "Enter the URL of the content to import": "Nhập URL của nội dung cần nhập",
     "Supported sources:": "Các nguồn được hỗ trợ:",
     "char_import_1": "Nhân vật Chub (Liên kết trực tiếp hoặc ID)",
     "char_import_example": "Ví dụ:",

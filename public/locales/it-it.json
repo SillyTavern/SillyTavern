@@ -1381,7 +1381,7 @@
     "This action is irreversible.": "Questa azione è irreversibile.",
     "Type the user's handle below to confirm:": "Digita l'handle dell'utente qui sotto per confermare:",
     "Import Characters": "Importa caratteri",
-    "Enter the URL of the content to import": "Inserisci l'URL del contenuto da importare\n\nFonti supportate:\n\nPersonaggio Chub (Link diretto o ID) Esempio: anonimo/personaggio di esempio\nChub Lorebook (Link diretto o ID) Esempio: lorebooks/bartleby/example-lorebook\nJanitorCarattere AI (collegamento diretto o UUID)Esempio: ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess\nCarattere Pygmalion.chat (collegamento diretto o UUID) Esempio: a7ca95a1-0c88-4e23-91b3-149db1e78ab9\nCarattere AICharacterCard.com (Link diretto o ID)Esempio: AICC/aicharcards/the-game-master\nCollegamento PNG diretto (fare riferimento a config.yaml per gli host consentiti) Esempio: https://files.catbox.moe/notarealfile.png\nPersonaggio RisuRealm (Link diretto)Esempio: https://realm.risuai.net/character/3ca54c71-6efe-46a2-b9d0-4f62df23d712\n\n\n\n\n        Supporta l'importazione di più caratteri.\n    \n\n        Scrivi ogni URL o ID in una nuova riga.\n    \n\n        (Maiusc+Invio per iniziare una nuova riga)",
+    "Enter the URL of the content to import": "Inserisci l'URL del contenuto da importare",
     "Supported sources:": "Fonti supportate:",
     "char_import_1": "Personaggio Chub (collegamento diretto o ID)",
     "char_import_example": "Esempio:",

@@ -1381,7 +1381,7 @@
     "This action is irreversible.": "Ця дія незворотна.",
     "Type the user's handle below to confirm:": "Введіть дескриптор користувача нижче, щоб підтвердити:",
     "Import Characters": "Імпорт символів",
-    "Enter the URL of the content to import": "Введіть URL-адресу вмісту для імпорту\n\nПідтримувані джерела:\n\nПерсонаж Chub (пряме посилання або ідентифікатор) Приклад: Anonymous/example-character\nChub Lorebook (пряме посилання або ID) Приклад: lorebooks/bartleby/example-lorebook\nПерсонаж JanitorAI (пряме посилання або UUID) Приклад: ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess\nСимвол Pygmalion.chat (пряме посилання або UUID) Приклад: a7ca95a1-0c88-4e23-91b3-149db1e78ab9\nПерсонаж AICharacterCard.com (пряме посилання або ідентифікатор) Приклад: AICC/aicharcards/the-game-master\nПряме посилання на PNG (зверніться до config.yaml для дозволених хостів) Приклад: https://files.catbox.moe/notarealfile.png\nПриклад персонажа RisuRealm (пряме посилання): https://realm.risuai.net/character/3ca54c71-6efe-46a2-b9d0-4f62df23d712\n\n\n\n\n        Підтримується імпорт кількох символів.\n    \n\n        Напишіть кожну URL-адресу або ідентифікатор у новому рядку.\n    \n\n        (Shift + Enter, щоб почати новий рядок)",
+    "Enter the URL of the content to import": "Введіть URL-адресу вмісту для імпорту",
     "Supported sources:": "Підтримувані джерела:",
     "char_import_1": "Головний персонаж (пряме посилання або ідентифікатор)",
     "char_import_example": "приклад:",

@@ -1381,7 +1381,7 @@
     "This action is irreversible.": "이 작업은 되돌릴 수 없습니다.",
     "Type the user's handle below to confirm:": "확인하려면 아래에 사용자 핸들을 입력하세요.",
     "Import Characters": "캐릭터 가져오기",
-    "Enter the URL of the content to import": "가져올 콘텐츠의 URL을 입력하세요.\n\n지원되는 소스:\n\nChub 캐릭터(다이렉트 링크 또는 ID)예: 익명/example-character\nChub Lorebook(직접 링크 또는 ID)예: lorebooks/bartleby/example-lorebook\nJanitorAI 캐릭터(직접 링크 또는 UUID)예: ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess\nPygmalion.chat 문자(직접 링크 또는 UUID)예: a7ca95a1-0c88-4e23-91b3-149db1e78ab9\nAICharacterCard.com 캐릭터(직접 링크 또는 ID)예: AICC/aicharcards/the-game-master\n직접 PNG 링크(허용된 호스트는 config.yaml 참조)예: https://files.catbox.moe/notarealfile.png\nRisuRealm 캐릭터(직접 링크)예: https://realm.risuai.net/character/3ca54c71-6efe-46a2-b9d0-4f62df23d712\n\n\n\n\n        여러 문자 가져오기를 지원합니다.\n    \n\n        각 URL 또는 ID를 새 줄에 작성합니다.\n    \n\n        (새 줄을 시작하려면 Shift + Enter)",
+    "Enter the URL of the content to import": "가져올 콘텐츠의 URL을 입력하세요.",
     "Supported sources:": "지원되는 소스:",
     "char_import_1": "처브 캐릭터 (다이렉트 링크 또는 ID)",
     "char_import_example": "예:",

@@ -1381,7 +1381,7 @@
     "This action is irreversible.": "この操作は元に戻せません。",
     "Type the user's handle below to confirm:": "確認するには、以下のユーザーのハンドルを入力してください。",
     "Import Characters": "文字をインポートする",
-    "Enter the URL of the content to import": "インポートするコンテンツの URL を入力します\n\nサポートされているソース:\n\nChub キャラクター (直接リンクまたは ID) 例: Anonymous/example-character\nChub Lorebook (直接リンクまたは ID) 例: lorebooks/bartleby/example-lorebook\nJanitorAI キャラクター (直接リンクまたは UUID) 例: ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess\nPygmalion.chat キャラクター (直接リンクまたは UUID) 例: a7ca95a1-0c88-4e23-91b3-149db1e78ab9\nAICharacterCard.com キャラクター (直接リンクまたは ID) 例: AICC/aicharcards/the-game-master\n直接 PNG リンク (許可されているホストについては config.yaml を参照してください) 例: https://files.catbox.moe/notarealfile.png\nRisuRealm キャラクター (直接リンク) 例: https://realm.risuai.net/character/3ca54c71-6efe-46a2-b9d0-4f62df23d712\n\n複数のキャラクターのインポートをサポートします。\n\n各 URL または ID を新しい行に入力します。\n\n(Shift + Enter で新しい行を開始)",
+    "Enter the URL of the content to import": "インポートするコンテンツの URL を入力します",
     "Supported sources:": "サポートされているソース:",
     "char_import_1": "チャブキャラクター（直接リンクまたはID）",
     "char_import_example": "例：",

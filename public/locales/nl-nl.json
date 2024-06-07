@@ -1381,7 +1381,7 @@
     "This action is irreversible.": "Deze actie is onomkeerbaar.",
     "Type the user's handle below to confirm:": "Typ hieronder de gebruikersnaam van de gebruiker om te bevestigen:",
     "Import Characters": "Tekens importeren",
-    "Enter the URL of the content to import": "Voer de URL in van de inhoud die u wilt importeren\n\nOndersteunde bronnen:\n\nKopvoorn-teken (directe link of ID) Voorbeeld: anoniem/voorbeeldkarakter\nChub Lorebook (directe link of ID) Voorbeeld: lorebooks/bartleby/example-lorebook\nJanitorAI-personage (directe link of UUID) Voorbeeld: ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess\nPygmalion.chat-teken (directe link of UUID) Voorbeeld: a7ca95a1-0c88-4e23-91b3-149db1e78ab9\nAICharacterCard.com-personage (directe link of ID) Voorbeeld: AICC/aicharcards/the-game-master\nDirecte PNG-link (raadpleeg config.yaml voor toegestane hosts) Voorbeeld: https://files.catbox.moe/notarealfile.png\nRisuRealm-karakter (directe link) Voorbeeld: https://realm.risuai.net/character/3ca54c71-6efe-46a2-b9d0-4f62df23d712\n\n\n\n\n        Ondersteunt het importeren van meerdere karakters.\n    \n\n        Schrijf elke URL of ID op een nieuwe regel.\n    \n\n        (Shift + Enter om een ​​nieuwe regel te beginnen)",
+    "Enter the URL of the content to import": "Voer de URL in van de inhoud die u wilt importeren",
     "Supported sources:": "Ondersteunde bronnen:",
     "char_import_1": "Kopvoorn-karakter (directe link of ID)",
     "char_import_example": "Voorbeeld:",
