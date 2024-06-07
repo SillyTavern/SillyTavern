@@ -77,7 +77,7 @@ router.post('/create', jsonParser, (request, response) => {
         generation_mode_join_suffix: request.body.generation_mode_join_suffix ?? '',
     };
     const pathToFile = path.join(request.user.directories.groups, `${id}.json`);
-    const fileData = JSON.stringify(groupMetadata);
+    const fileData = JSON.stringify(groupMetadata, null, 4);
 
     if (!fs.existsSync(request.user.directories.groups)) {
         fs.mkdirSync(request.user.directories.groups);
@@ -93,7 +93,7 @@ router.post('/edit', jsonParser, (request, response) => {
     }
     const id = request.body.id;
     const pathToFile = path.join(request.user.directories.groups, `${id}.json`);
-    const fileData = JSON.stringify(request.body);
+    const fileData = JSON.stringify(request.body, null, 4);
 
     writeFileAtomicSync(pathToFile, fileData);
     return response.send({ ok: true });
