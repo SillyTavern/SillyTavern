@@ -1,7 +1,7 @@
 name: Feature Request ✨
 description: Suggest an idea for future development of this project
 title: '[FEATURE_REQUEST] <title>'
-labels: ['enhancement']
+labels: ['🦄 Feature Request']
 
 body:
 
@@ -15,7 +15,7 @@ body:
         - 'No'
         - 'Yes'
     validations:
-      required: false
+      required: true
 
   # Field 2 - Is it bug-related
   - type: textarea
@@ -67,16 +67,16 @@ body:
     validations:
       required: true
 
-  # Field 7 - Can the user implement
+  # Field 7 - Can the user user test in staging
   - type: dropdown
-    id: canImplement
+    id: canTestStaging
     attributes:
-      label: Is this something you would be keen to implement?
-      description: Are you raising this ticket in order to get an issue number for your PR?
+      label: Are you willing to test this on staging/unstable branch if this is implemented?
+      description: Otherwise you'll need to wait until the next stable release after the feature is developed.
       options:
         - 'No'
         - 'Maybe'
-        - 'Yes!'
+        - 'Yes'
     validations:
       required: false
 

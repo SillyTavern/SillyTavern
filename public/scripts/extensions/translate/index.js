@@ -12,6 +12,9 @@ import {
 } from '../../../script.js';
 import { extension_settings, getContext } from '../../extensions.js';
 import { findSecret, secret_state, writeSecret } from '../../secrets.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { splitRecursive } from '../../utils.js';
 
 export const autoModeOptions = {
@@ -424,6 +427,24 @@ function createEventHandler(translateFunction, shouldTranslateFunction) {
     };
 }
 
+async function onTranslateInputMessageClick() {
+    const textarea = document.getElementById('send_textarea');
+
+    if (!(textarea instanceof HTMLTextAreaElement)) {
+        return;
+    }
+
+    if (!textarea.value) {
+        toastr.warning('Enter a message first');
+        return;
+    }
+
+    const toast = toastr.info('Input Message is translating', 'Please wait...');
+    const translatedText = await translate(textarea.value, extension_settings.translate.internal_language);
+    textarea.value = translatedText;
+    toastr.clear(toast);
+}
+
 // Prevents the chat from being translated in parallel
 let translateChatExecuting = false;
 
@@ -509,6 +530,8 @@ const handleOutgoingMessage = createEventHandler(translateOutgoingMessage, () =>
 const handleImpersonateReady = createEventHandler(translateImpersonate, () => shouldTranslate(incomingTypes));
 const handleMessageEdit = createEventHandler(translateMessageEdit, () => true);
 
+window['translate'] = translate;
+
 jQuery(() => {
     const html = `
     <div class="translation_settings">
@@ -553,10 +576,16 @@ jQuery(() => {
         <div id="translate_chat" class="list-group-item flex-container flexGap5">
             <div class="fa-solid fa-language extensionsMenuExtensionButton" /></div>
             Translate Chat
-        </div>`;
+        </div>
+        <div id="translate_input_message" class="list-group-item flex-container flexGap5">
+            <div class="fa-solid fa-keyboard extensionsMenuExtensionButton" /></div>
+            Translate Input
+        </div>
+        `;
     $('#extensionsMenu').append(buttonHtml);
     $('#extensions_settings2').append(html);
     $('#translate_chat').on('click', onTranslateChatClick);
+    $('#translate_input_message').on('click', onTranslateInputMessageClick);
     $('#translation_clear').on('click', onTranslationsClearClick);
 
     for (const [key, value] of Object.entries(languageCodes)) {
@@ -616,11 +645,28 @@ jQuery(() => {
 
     loadSettings();
 
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleIncomingMessage);
+    eventSource.makeFirst(event_types.CHARACTER_MESSAGE_RENDERED, handleIncomingMessage);
+    eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
     eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
     eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
-    eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdit);
+    eventSource.on(event_types.MESSAGE_UPDATED, handleMessageEdit);
 
     document.body.classList.add('translate');
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'translate',
+        helpString: 'Translate text to a target language. If target language is not provided, the value from the extension settings will be used.',
+        namedArgumentList: [
+            new SlashCommandNamedArgument('target', 'The target language code to translate to', ARGUMENT_TYPE.STRING, false, false, '', Object.values(languageCodes)),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument('The text to translate', ARGUMENT_TYPE.STRING, true, false, ''),
+        ],
+        callback: async (args, value) => {
+            const target = args?.target && Object.values(languageCodes).includes(String(args.target))
+                ? String(args.target)
+                : extension_settings.translate.target_language;
+            return await translate(String(value), target);
+        },
+    }));
 });

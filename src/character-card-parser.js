@@ -6,6 +6,7 @@ const PNGtext = require('png-chunk-text');
 
 /**
  * Writes Character metadata to a PNG image buffer.
+ * Writes only 'chara', 'ccv3' is not supported and removed not to create a mismatch.
  * @param {Buffer} image PNG image buffer
  * @param {string} data Character data to write
  * @returns {Buffer} PNG image buffer with metadata
@@ -14,10 +15,14 @@ const write = (image, data) => {
     const chunks = extract(image);
     const tEXtChunks = chunks.filter(chunk => chunk.name === 'tEXt');
 
-    // Remove all existing tEXt chunks
-    for (let tEXtChunk of tEXtChunks) {
-        chunks.splice(chunks.indexOf(tEXtChunk), 1);
+    // Remove existing tEXt chunks
+    for (const tEXtChunk of tEXtChunks) {
+        const data = PNGtext.decode(tEXtChunk.data);
+        if (data.keyword.toLowerCase() === 'chara' || data.keyword.toLowerCase() === 'ccv3') {
+            chunks.splice(chunks.indexOf(tEXtChunk), 1);
+        }
     }
+
     // Add new chunks before the IEND chunk
     const base64EncodedData = Buffer.from(data, 'utf8').toString('base64');
     chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
@@ -27,31 +32,34 @@ const write = (image, data) => {
 
 /**
  * Reads Character metadata from a PNG image buffer.
+ * Supports both V2 (chara) and V3 (ccv3). V3 (ccv3) takes precedence.
  * @param {Buffer} image PNG image buffer
  * @returns {string} Character data
  */
 const read = (image) => {
     const chunks = extract(image);
 
-    const textChunks = chunks.filter(function (chunk) {
-        return chunk.name === 'tEXt';
-    }).map(function (chunk) {
-        return PNGtext.decode(chunk.data);
-    });
+    const textChunks = chunks.filter((chunk) => chunk.name === 'tEXt').map((chunk) => PNGtext.decode(chunk.data));
 
     if (textChunks.length === 0) {
         console.error('PNG metadata does not contain any text chunks.');
         throw new Error('No PNG metadata.');
     }
 
-    let index = textChunks.findIndex((chunk) => chunk.keyword.toLowerCase() == 'chara');
+    const ccv3Index = textChunks.findIndex((chunk) => chunk.keyword.toLowerCase() === 'ccv3');
 
-    if (index === -1) {
-        console.error('PNG metadata does not contain any character data.');
-        throw new Error('No PNG metadata.');
+    if (ccv3Index > -1) {
+        return Buffer.from(textChunks[ccv3Index].text, 'base64').toString('utf8');
     }
 
-    return Buffer.from(textChunks[index].text, 'base64').toString('utf8');
+    const charaIndex = textChunks.findIndex((chunk) => chunk.keyword.toLowerCase() === 'chara');
+
+    if (charaIndex > -1) {
+        return Buffer.from(textChunks[charaIndex].text, 'base64').toString('utf8');
+    }
+
+    console.error('PNG metadata does not contain any character data.');
+    throw new Error('No PNG metadata.');
 };
 
 /**

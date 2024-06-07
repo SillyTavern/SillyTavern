@@ -120,10 +120,14 @@ class AllTalkTtsProvider {
             <option value="xttsv2_local">XTTSv2 Local</option>
         </select>
         </div>
+        </div>
+
+        <div class="at-model-endpoint-row">
 
         <div class="at-endpoint-option">
             <label for="at_server">AllTalk Endpoint:</label>
             <input id="at_server" type="text" class="text_pole" maxlength="80" value="${this.settings.provider_endpoint}"/>
+            <i><b>Important:</b> Must match IP address & port in AllTalk settings.</i>
         </div>
    </div>`;
 
@@ -429,8 +433,8 @@ class AllTalkTtsProvider {
     updateLanguageDropdown() {
         const languageSelect = document.getElementById('language_options');
         if (languageSelect) {
-            // Ensure default language is set
-            this.settings.language = this.settings.language;
+            // Ensure default language is set (??? whatever that means)
+            // this.settings.language = this.settings.language;
 
             languageSelect.innerHTML = '';
             for (let language in this.languageLabels) {

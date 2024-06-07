@@ -4,9 +4,6 @@
     padding: 0;
     top: 0;
     left: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 999999;
     width: 100vw;
     height: 100vh;
@@ -20,6 +17,15 @@
 }
 
 #load-spinner {
+    --spinner-size: 2em;
     transition: all 300ms ease-out;
     opacity: 1;
+    top: calc(50% - var(--spinner-size) / 2);
+    left: calc(50% - var(--spinner-size) / 2);
+    position: absolute;
+    width: var(--spinner-size);
+    height: var(--spinner-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

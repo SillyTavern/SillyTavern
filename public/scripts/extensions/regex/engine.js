@@ -1,5 +1,6 @@
-import { substituteParams } from '../../../script.js';
+import { characters, substituteParams, this_chid } from '../../../script.js';
 import { extension_settings } from '../../extensions.js';
+import { regexFromString } from '../../utils.js';
 export {
     regex_placement,
     getRegexedString,
@@ -17,29 +18,24 @@ const regex_placement = {
     USER_INPUT: 1,
     AI_OUTPUT: 2,
     SLASH_COMMAND: 3,
+    // 4 - sendAs (legacy)
+    WORLD_INFO: 5,
 };
 
-/**
- * Instantiates a regular expression from a string.
- * @param {string} input The input string.
- * @returns {RegExp} The regular expression instance.
- * @copyright Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
- */
-function regexFromString(input) {
-    try {
-        // Parse input
-        var m = input.match(/(\/?)(.+)\1([a-z]*)/i);
+function getScopedRegex() {
+    const isAllowed = extension_settings?.character_allowed_regex?.includes(characters?.[this_chid]?.avatar);
 
-        // Invalid flags
-        if (m[3] && !/^(?!.*?(.).*?\1)[gmixXsuUAJ]+$/.test(m[3])) {
-            return RegExp(input);
-        }
-
-        // Create the regular expression
-        return new RegExp(m[2], m[3]);
-    } catch {
-        return;
+    if (!isAllowed) {
+        return [];
     }
+
+    const scripts = characters[this_chid]?.data?.extensions?.regex_scripts;
+
+    if (!Array.isArray(scripts)) {
+        return [];
+    }
+
+    return scripts;
 }
 
 /**
@@ -62,7 +58,8 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown,
         return finalString;
     }
 
-    extension_settings.regex.forEach((script) => {
+    const allRegex = [...(extension_settings.regex ?? []), ...(getScopedRegex() ?? [])];
+    allRegex.forEach((script) => {
         if (
             // Script applies to Markdown and input is Markdown
             (script.markdownOnly && isMarkdown) ||
@@ -115,10 +112,10 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
     }
 
     // Run replacement. Currently does not support the Overlay strategy
-    newString = rawString.replace(findRegex, function(match) {
+    newString = rawString.replace(findRegex, function (match) {
         const args = [...arguments];
         const replaceString = regexScript.replaceString.replace(/{{match}}/gi, '$0');
-        const replaceWithGroups = replaceString.replaceAll(/\$(\d)+/g, (_, num) => {
+        const replaceWithGroups = replaceString.replaceAll(/\$(\d+)/g, (_, num) => {
             // Get a full match or a capture group
             const match = args[Number(num)];
 

@@ -1,0 +1,12 @@
+{
+    "story_string": "{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Circumstances and context of the dialogue: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}",
+    "example_separator": "This is how {{char}} should talk",
+    "chat_start": "\nThen the roleplay chat between {{user}} and {{char}} begins.\n",
+    "use_stop_strings": false,
+    "allow_jailbreak": false,
+    "always_force_name2": true,
+    "trim_sentences": false,
+    "include_newline": false,
+    "single_line": false,
+    "name": "OldDefault"
+}

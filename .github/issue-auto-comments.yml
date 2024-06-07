@@ -1,0 +1,62 @@
+comment:
+  footer: |
+    ---
+    > I am a bot, and this is an automated message 🤖
+labels:
+  - name: ✖️ Invalid
+    labeled:
+      issue:
+        action: close
+        body: >
+          Hello @{{ issue.user.login }} your ticket has been marked as invalid.
+          Please ensure you follow the issue template, provide all requested info,
+          and be sure to check the docs + previous issues prior to raising tickets.
+      pr:
+        body: Thank you @{{ pull_request.user.login }} for suggesting this. Please follow the pull request templates.
+        action: close
+
+  - name: 👩‍💻 Good First Issue
+    labeled:
+      issue:
+        body: >
+          This issue has been marked as a good first issue for first-time contributors to implement!
+          This is a great way to support the project, while also improving your skills, you'll also be credited as a contributor once your PR is merged.
+          If you're new to SillyTavern [here are a collection of resources](https://docs.sillytavern.app/)
+          If you need any support at all, feel free to reach out via [Discord](https://discord.gg/sillytavern).
+
+  - name: ❌ wontfix
+    labeled:
+      issue:
+        action: close
+        body: >
+          This ticked has been marked as 'wontfix', which usually means it is out-of-scope, or not feasible at this time.
+          You can still fork the project and make the changes yourself.
+
+  - name: ✅ Fixed
+    labeled:
+      issue:
+        body: >
+          Hello @{{ issue.user.login }}! It looks like all or part of this issue has now been implemented.
+
+  
+  - name: ‼️ High Priority
+    labeled:
+      issue:
+        body: >
+          This ticket has been marked as high priority, and has been bumped to the top of the priority list.
+          You should expect an implementation to be pushed out soon. Thank you for your patience.
+
+  - name: 💀 Spam
+    labeled:
+      issue:
+        action: close
+        locking: lock
+        lock_reason: spam
+        body: >
+           This issue has been identified as spam, and is now locked.
+           Users who repeatedly raise spam issues may be blocked or reported.
+          
+  - name: ⛔ Don't Merge
+    labeled:
+      pr:
+        body: This PR has been temporarily blocked from merging.

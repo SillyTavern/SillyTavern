@@ -357,6 +357,7 @@ export class SettingsUi {
             a.download = `${this.currentQrSet.name}.json`;
             a.click();
         }
+        URL.revokeObjectURL(url);
     }
 
     selectQrSet(qrs) {

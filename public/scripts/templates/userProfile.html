@@ -1,0 +1,97 @@
+<div class="flex-container flexFlowColumn justifyLeft flexGap10">
+    <div>
+        <h2 class="marginBot10 flex-container">
+            <span data-i18n="Hi,">Hi,</span><span class="userName margin0"></span>
+            <div data-require-accounts class="userChangeNameButton right_menu_button" title="Change display name.">
+                <i class="fa-fw fa-solid fa-pencil fa-xs"></i>
+            </div>
+        </h2>
+        <div class="accountsDisabledHint" style="display: none;">
+            <span data-i18n="To enable multi-account features, restart the SillyTavern server with">To enable multi-account features, restart the SillyTavern server with</span> <code>enableUserAccounts</code> <span data-i18n="set to true in the config.yaml file.">set to true in the config.yaml file.</span>
+        </div>
+    </div>
+    <div>
+        <h3 data-i18n="Account Info">
+            Account Info
+        </h3>
+        <div class="flex-container flexGap10">
+            <div class="flex-container flexFlowColumn alignItemsCenter flexNoGap">
+                <div class="avatar" data-i18n="[title]To change your user avatar, use the buttons below or select a default persona in the Persona Management menu." title="To change your user avatar, use the buttons below or select a default persona in the Persona Management menu.">
+                    <img src="img/ai4.png" alt="avatar">
+                </div>
+                <div class="flex-container alignItemsCenter">
+                    <div class="userAvatarChange right_menu_button" data-i18n="[title]Set your custom avatar." title="Set your custom avatar.">
+                        <i class="fa-fw fa-solid fa-image"></i>
+                    </div>
+                    <div class="userAvatarRemove right_menu_button" data-i18n="[title]Remove your custom avatar." title="Remove your custom avatar.">
+                        <i class="fa-fw fa-solid fa-trash"></i>
+                    </div>
+                </div>
+                <form>
+                    <input type="file" class="avatarUpload" accept="image/*" hidden>
+                </form>
+            </div>
+            <div class="flex1 flex-container flexGap10">
+                <div class="flex-container flexFlowColumn">
+                    <div>
+                        <span data-i18n="Handle:">Handle:</span>
+                        <span class="userHandle"></span>
+                    </div>
+                    <div>
+                        <span data-i18n="Role:">Role:</span>
+                        <span class="userRole"></span>
+                    </div>
+                </div>
+                <div class="flex-container flexFlowColumn">
+                    <div>
+                        <span data-i18n="Created:">Created:</span>
+                        <span class="userCreated"></span>
+                    </div>
+                    <div>
+                        <span data-i18n="Password:">Password:</span>
+                        <i class="hasPassword fa-fw fa-solid fa-lock" data-i18n="[title]This account is password protected." title="This account is password protected."></i>
+                        <i class="noPassword fa-fw fa-solid fa-lock-open" data-i18n="[title]This account is not password protected." title="This account is not password protected."></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div>
+        <h3 data-i18n="Account Actions">
+            Account Actions
+        </h3>
+        <div class="flex-container flexFlowColumn flexNoGap">
+            <div data-require-accounts class="flex-container">
+                <div class="userChangePasswordButton menu_button menu_button_icon" title="Change your password.">
+                    <i class="fa-fw fa-solid fa-key"></i>
+                    <span data-i18n="Change Password">Change Password</span>
+                </div>
+            </div>
+            <div class="flex-container">
+                <div class="userSettingsSnapshotsButton menu_button menu_button_icon" data-i18n="[title]Manage your settings snapshots." title="Manage your settings snapshots.">
+                    <i class="fa-fw fa-solid fa-camera"></i>
+                    <span data-i18n="Settings Snapshots">Settings Snapshots</span>
+                </div>
+                <div class="userBackupButton menu_button menu_button_icon" data-i18n="[title]Download a complete backup of your user data." title="Download a complete backup of your user data.">
+                    <i class="fa-fw fa-solid fa-download"></i>
+                    <span data-i18n="Download Backup">Download Backup</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div>
+        <h3 data-i18n="Danger Zone">
+            Danger Zone
+        </h3>
+        <div class="flex-container">
+            <div class="userResetSettingsButton menu_button menu_button_icon" data-i18n="[title]Reset your settings to factory defaults." title="Reset your settings to factory defaults.">
+                <i class="fa-fw fa-solid fa-cog warning"></i>
+                <span data-i18n="Reset Settings">Reset Settings</span>
+            </div>
+            <div class="userResetAllButton menu_button menu_button_icon" data-i18n="[title]Wipe all user data and reset your account to factory settings." title="Wipe all user data and reset your account to factory settings.">
+                <i class="fa-fw fa-solid fa-skull warning"></i>
+                <span data-i18n="Reset Everything">Reset Everything</span>
+            </div>
+        </div>
+    </div>
+</div>

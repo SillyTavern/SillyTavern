@@ -1,7 +1,8 @@
 import { callPopup, chat_metadata, eventSource, event_types, generateQuietPrompt, getCurrentChatId, getRequestHeaders, getThumbnailUrl, saveSettingsDebounced } from '../script.js';
 import { saveMetadataDebounced } from './extensions.js';
-import { registerSlashCommand } from './slash-commands.js';
-import { stringFormat } from './utils.js';
+import { SlashCommand } from './slash-commands/SlashCommand.js';
+import { SlashCommandParser } from './slash-commands/SlashCommandParser.js';
+import { flashHighlight, stringFormat } from './utils.js';
 
 const BG_METADATA_KEY = 'custom_background';
 const LIST_METADATA_KEY = 'chat_backgrounds';
@@ -453,8 +454,7 @@ function highlightNewBackground(bg) {
     const newBg = $(`.bg_example[bgfile="${bg}"]`);
     const scrollOffset = newBg.offset().top - newBg.parent().offset().top;
     $('#Backgrounds').scrollTop(scrollOffset);
-    newBg.addClass('flash animated');
-    setTimeout(() => newBg.removeClass('flash animated'), 2000);
+    flashHighlight(newBg);
 }
 
 function onBackgroundFilterInput() {
@@ -481,7 +481,20 @@ export function initBackgrounds() {
     $('#auto_background').on('click', autoBackgroundCommand);
     $('#add_bg_button').on('change', onBackgroundUploadSelected);
     $('#bg-filter').on('input', onBackgroundFilterInput);
-    registerSlashCommand('lockbg', onLockBackgroundClick, ['bglock'], '– locks a background for the currently selected chat', true, true);
-    registerSlashCommand('unlockbg', onUnlockBackgroundClick, ['bgunlock'], '– unlocks a background for the currently selected chat', true, true);
-    registerSlashCommand('autobg', autoBackgroundCommand, ['bgauto'], '– automatically changes the background based on the chat context using the AI request prompt', true, true);
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'lockbg',
+        callback: onLockBackgroundClick,
+        aliases: ['bglock'],
+        helpString: 'Locks a background for the currently selected chat',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'unlockbg',
+        callback: onUnlockBackgroundClick,
+        aliases: ['bgunlock'],
+        helpString: 'Unlocks a background for the currently selected chat',
+    }));
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'autobg',
+        callback: autoBackgroundCommand,
+        aliases: ['bgauto'],
+        helpString: 'Automatically changes the background based on the chat context using the AI request prompt',
+    }));
+
 }

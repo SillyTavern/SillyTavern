@@ -28,6 +28,8 @@ class NovelTtsProvider {
     processText(text) {
         // Novel reads tilde as a word. Replace with full stop
         text = text.replace(/~/g, '.');
+        // Novel reads asterisk as a word. Remove it
+        text = text.replace(/\*/g, '');
         return text;
     }
 
@@ -178,6 +180,7 @@ class NovelTtsProvider {
         const url = URL.createObjectURL(audio);
         this.audioElement.src = url;
         this.audioElement.play();
+        URL.revokeObjectURL(url);
     }
 
     async* fetchTtsGeneration(inputText, voiceId) {

@@ -1,0 +1,31 @@
+<div class="padding5">
+    <h3 class="title_restorable">
+        <span data-i18n="Settings Snapshots">Settings Snapshots</span>
+        <div class="makeSnapshotButton menu_button menu_button_icon" data-i18n="[title]Record a snapshot of your current settings." title="Record a snapshot of your current settings.">
+            <i class="fa-fw fa-solid fa-camera"></i>
+            <span data-i18n="Make a Snapshot">Make a Snapshot</span>
+        </div>
+    </h3>
+    <hr>
+    <div class="snapshotList flex-container flexFlowColumn">
+    </div>
+    <div class="template_element snapshotTemplate">
+        <div class="snapshot inline-drawer wide100p">
+            <div class="inline-drawer-toggle inline-drawer-header flexGap10">
+                <div class="flex-container flexFlowColumn flexNoGap justifyLeft">
+                    <span class="snapshotName"></span>
+                    <div class="flex-container flexGap10">
+                        <small class="snapshotDate"></small>
+                        <small>(<span class="snapshotSize"></span>)</small>
+                    </div>
+                </div>
+                <div class="expander"></div>
+                <div class="menu_button fa-solid fa-recycle snapshotRestoreButton" data-i18n="[title]Restore this snapshot" title="Restore this snapshot"></div>
+                <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <textarea class="text_pole textarea_compact fontsize80p snapshotContent" readonly placeholder="Loading..." rows="25"></textarea>
+            </div>
+        </div>
+    </div>
+</div>

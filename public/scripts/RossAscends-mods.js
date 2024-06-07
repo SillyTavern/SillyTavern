@@ -11,7 +11,7 @@ import {
     setActiveGroup,
     setActiveCharacter,
     getEntitiesList,
-    getThumbnailUrl,
+    buildAvatarList,
     selectCharacterById,
     eventSource,
     menu_type,
@@ -26,15 +26,17 @@ import {
 } from './power-user.js';
 
 import { LoadLocal, SaveLocal, LoadLocalBool } from './f-localStorage.js';
-import { selected_group, is_group_generating, getGroupAvatar, groups, openGroupById } from './group-chats.js';
+import { selected_group, is_group_generating, openGroupById } from './group-chats.js';
+import { getTagKeyForEntity, applyTagsOnCharacterSelect } from './tags.js';
 import {
     SECRET_KEYS,
     secret_state,
 } from './secrets.js';
-import { debounce, delay, getStringHash, isValidUrl } from './utils.js';
+import { debounce, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
-import { getTokenCount } from './tokenizers.js';
+import { getTokenCountAsync } from './tokenizers.js';
 import { textgen_types, textgenerationwebui_settings as textgen_settings, getTextGenServer } from './textgen-settings.js';
+import { debounce_timeout } from './constants.js';
 
 import Bowser from '../lib/bowser.min.js';
 
@@ -50,9 +52,10 @@ var SelectedCharacterTab = document.getElementById('rm_button_selected_ch');
 
 var connection_made = false;
 var retry_delay = 500;
+let counterNonce = Date.now();
 
 const observerConfig = { childList: true, subtree: true };
-const countTokensDebounced = debounce(RA_CountCharTokens, 1000);
+const countTokensDebounced = debounce(RA_CountCharTokens, debounce_timeout.relaxed);
 
 const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
@@ -107,13 +110,22 @@ export function humanizeGenTime(total_gen_time) {
     return time_spent;
 }
 
-let parsedUA = null;
-try {
-    parsedUA = Bowser.parse(navigator.userAgent);
-} catch {
-    // In case the user agent is an empty string or Bowser can't parse it for some other reason
-}
+/**
+ * DON'T OPTIMIZE, don't change this to a const or let, it needs to be a var.
+ */
+var parsedUA = null;
 
+function getParsedUA() {
+    if (!parsedUA) {
+        try {
+            parsedUA = Bowser.parse(navigator.userAgent);
+        } catch {
+            // In case the user agent is an empty string or Bowser can't parse it for some other reason
+        }
+    }
+
+    return parsedUA;
+}
 
 /**
  * Checks if the device is a mobile device.
@@ -122,10 +134,10 @@ try {
 export function isMobile() {
     const mobileTypes = ['mobile', 'tablet'];
 
-    return mobileTypes.includes(parsedUA?.platform?.type);
+    return mobileTypes.includes(getParsedUA()?.platform?.type);
 }
 
-function shouldSendOnEnter() {
+export function shouldSendOnEnter() {
     if (!power_user) {
         return false;
     }
@@ -192,24 +204,32 @@ $('#rm_ch_create_block').on('input', function () { countTokensDebounced(); });
 //when any input is made to the advanced editing popup textareas
 $('#character_popup').on('input', function () { countTokensDebounced(); });
 //function:
-export function RA_CountCharTokens() {
+export async function RA_CountCharTokens() {
+    counterNonce = Date.now();
+    const counterNonceLocal = counterNonce;
     let total_tokens = 0;
     let permanent_tokens = 0;
 
-    $('[data-token-counter]').each(function () {
-        const counter = $(this);
+    const tokenCounters = document.querySelectorAll('[data-token-counter]');
+    for (const tokenCounter of tokenCounters) {
+        if (counterNonceLocal !== counterNonce) {
+            return;
+        }
+
+        const counter = $(tokenCounter);
         const input = $(document.getElementById(counter.data('token-counter')));
         const isPermanent = counter.data('token-permanent') === true;
         const value = String(input.val());
 
         if (input.length === 0) {
             counter.text('Invalid input reference');
-            return;
+            continue;
         }
 
         if (!value) {
+            input.data('last-value-hash', '');
             counter.text(0);
-            return;
+            continue;
         }
 
         const valueHash = getStringHash(value);
@@ -220,13 +240,18 @@ export function RA_CountCharTokens() {
         } else {
             // We substitute macro for existing characters, but not for the character being created
             const valueToCount = menu_type === 'create' ? value : substituteParams(value);
-            const tokens = getTokenCount(valueToCount);
+            const tokens = await getTokenCountAsync(valueToCount);
+
+            if (counterNonceLocal !== counterNonce) {
+                return;
+            }
+
             counter.text(tokens);
             total_tokens += tokens;
             permanent_tokens += isPermanent ? tokens : 0;
             input.data('last-value-hash', valueHash);
         }
-    });
+    }
 
     // Warn if total tokens exceeds the limit of half the max context
     const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
@@ -247,13 +272,18 @@ export function RA_CountCharTokens() {
 async function RA_autoloadchat() {
     if (document.querySelector('#rm_print_characters_block .character_select') !== null) {
         // active character is the name, we should look it up in the character list and get the id
-        let active_character_id = Object.keys(characters).find(key => characters[key].avatar === active_character);
+        if (active_character !== null && active_character !== undefined) {
+            const active_character_id = characters.findIndex(x => getTagKeyForEntity(x) === active_character);
+            if (active_character_id !== null) {
+                await selectCharacterById(String(active_character_id));
 
-        if (active_character_id !== null) {
-            await selectCharacterById(String(active_character_id));
+                // Do a little tomfoolery to spoof the tag selector
+                const selectedCharElement = $(`#rm_print_characters_block .character_select[chid="${active_character_id}"]`);
+                applyTagsOnCharacterSelect.call(selectedCharElement);
+            }
         }
 
-        if (active_group != null) {
+        if (active_group !== null && active_group !== undefined) {
             await openGroupById(String(active_group));
         }
 
@@ -264,88 +294,23 @@ async function RA_autoloadchat() {
 export async function favsToHotswap() {
     const entities = getEntitiesList({ doFilter: false });
     const container = $('#right-nav-panel .hotswap');
-    const template = $('#hotswap_template .hotswapAvatar');
-    const DEFAULT_COUNT = 6;
-    const WIDTH_PER_ITEM = 60; // 50px + 5px gap + 5px padding
-    const containerWidth = container.outerWidth();
-    const maxCount = containerWidth > 0 ? Math.floor(containerWidth / WIDTH_PER_ITEM) : DEFAULT_COUNT;
-    let count = 0;
 
-    const promises = [];
-    const newContainer = container.clone();
-    newContainer.empty();
+    const favs = entities.filter(x => x.item.fav || x.item.fav == 'true');
 
-    for (const entity of entities) {
-        if (count >= maxCount) {
-            break;
-        }
-
-        const isFavorite = entity.item.fav || entity.item.fav == 'true';
-
-        if (!isFavorite) {
-            continue;
-        }
-
-        const isCharacter = entity.type === 'character';
-        const isGroup = entity.type === 'group';
-
-        const grid = isGroup ? entity.id : '';
-        const chid = isCharacter ? entity.id : '';
-
-        let slot = template.clone();
-        slot.toggleClass('character_select', isCharacter);
-        slot.toggleClass('group_select', isGroup);
-        slot.attr('grid', isGroup ? grid : '');
-        slot.attr('chid', isCharacter ? chid : '');
-        slot.data('id', isGroup ? grid : chid);
-
-        if (isGroup) {
-            const group = groups.find(x => x.id === grid);
-            const avatar = getGroupAvatar(group);
-            $(slot).find('img').replaceWith(avatar);
-            $(slot).attr('title', group.name);
-        }
-
-        if (isCharacter) {
-            const imgLoadPromise = new Promise((resolve) => {
-                const avatarUrl = getThumbnailUrl('avatar', entity.item.avatar);
-                $(slot).find('img').attr('src', avatarUrl).on('load', resolve);
-                $(slot).attr('title', entity.item.avatar);
-            });
-
-            // if the image doesn't load in 500ms, resolve the promise anyway
-            promises.push(Promise.race([imgLoadPromise, delay(500)]));
-        }
-
-        $(slot).css('cursor', 'pointer');
-        newContainer.append(slot);
-        count++;
-    }
-
-    // don't fill leftover spaces with avatar placeholders
-    // just evenly space the selected avatars instead
-    /*
-   if (count < maxCount) { //if any space is left over
-        let leftOverSlots = maxCount - count;
-        for (let i = 1; i <= leftOverSlots; i++) {
-            newContainer.append(template.clone());
-        }
-    }
-    */
-
-    await Promise.allSettled(promises);
     //helpful instruction message if no characters are favorited
-    if (count === 0) { container.html('<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>'); }
-    //otherwise replace with fav'd characters
-    if (count > 0) {
-        container.replaceWith(newContainer);
+    if (favs.length == 0) {
+        container.html(`<small><span><i class="fa-solid fa-star"></i>${DOMPurify.sanitize(container.attr('no_favs'))}</span></small>`);
+        return;
     }
+
+    buildAvatarList(container, favs, { selectable: true, highlightFavs: false });
 }
 
 //changes input bar and send button display depending on connection status
 function RA_checkOnlineStatus() {
     if (online_status == 'no_connection') {
-        $('#send_textarea').attr('placeholder', 'Not connected to API!'); //Input bar placeholder tells users they are not connected
+        const send_textarea = $('#send_textarea');
+        send_textarea.attr('placeholder', send_textarea.attr('no_connection_text')); //Input bar placeholder tells users they are not connected
         $('#send_form').addClass('no-connection'); //entire input form area is red when not connected
         $('#send_but').addClass('displayNone'); //send button is hidden when not connected;
         $('#mes_continue').addClass('displayNone'); //continue button is hidden when not connected;
@@ -354,7 +319,8 @@ function RA_checkOnlineStatus() {
         connection_made = false;
     } else {
         if (online_status !== undefined && online_status !== 'no_connection') {
-            $('#send_textarea').attr('placeholder', 'Type a message, or /? for help'); //on connect, placeholder tells user to type message
+            const send_textarea = $('#send_textarea');
+            send_textarea.attr('placeholder', send_textarea.attr('connected_text')); //on connect, placeholder tells user to type message
             $('#send_form').removeClass('no-connection');
             $('#API-status-top').removeClass('fa-plug-circle-exclamation redOverlayGlow');
             $('#API-status-top').addClass('fa-plug');
@@ -391,8 +357,9 @@ function RA_autoconnect(PrevApi) {
             case 'textgenerationwebui':
                 if ((textgen_settings.type === textgen_types.MANCER && secret_state[SECRET_KEYS.MANCER])
                     || (textgen_settings.type === textgen_types.TOGETHERAI && secret_state[SECRET_KEYS.TOGETHERAI])
-                    || (textgen_settings.type === textgen_types.INFERMATICAI && secret_state[SECRET_KEYS.INFERMATICAI]
-                    || (textgen_settings.type === textgen_types.OPENROUTER && secret_state[SECRET_KEYS.OPENROUTER]))
+                    || (textgen_settings.type === textgen_types.INFERMATICAI && secret_state[SECRET_KEYS.INFERMATICAI])
+                    || (textgen_settings.type === textgen_types.DREAMGEN && secret_state[SECRET_KEYS.DREAMGEN])
+                    || (textgen_settings.type === textgen_types.OPENROUTER && secret_state[SECRET_KEYS.OPENROUTER])
                 ) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
@@ -409,6 +376,9 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
                     || (secret_state[SECRET_KEYS.MAKERSUITE] && oai_settings.chat_completion_source == chat_completion_sources.MAKERSUITE)
                     || (secret_state[SECRET_KEYS.MISTRALAI] && oai_settings.chat_completion_source == chat_completion_sources.MISTRALAI)
+                    || (secret_state[SECRET_KEYS.COHERE] && oai_settings.chat_completion_source == chat_completion_sources.COHERE)
+                    || (secret_state[SECRET_KEYS.PERPLEXITY] && oai_settings.chat_completion_source == chat_completion_sources.PERPLEXITY)
+                    || (secret_state[SECRET_KEYS.GROQ] && oai_settings.chat_completion_source == chat_completion_sources.GROQ)
                     || (isValidUrl(oai_settings.custom_url) && oai_settings.chat_completion_source == chat_completion_sources.CUSTOM)
                 ) {
                     $('#api_button_openai').trigger('click');
@@ -454,7 +424,7 @@ function restoreUserInput() {
 
     const userInput = LoadLocal('userInput');
     if (userInput) {
-        $('#send_textarea').val(userInput).trigger('input');
+        $('#send_textarea').val(userInput)[0].dispatchEvent(new Event('input', { bubbles: true }));
     }
 }
 
@@ -462,13 +432,12 @@ function saveUserInput() {
     const userInput = String($('#send_textarea').val());
     SaveLocal('userInput', userInput);
 }
+const saveUserInputDebounced = debounce(saveUserInput);
 
 // Make the DIV element draggable:
 
-// THIRD UPDATE, prevent resize window breaks and smartly handle saving
-
 export function dragElement(elmnt) {
-    var hasBeenDraggedByUser = false;
+    var isHeaderBeingDragged = false;
     var isMouseDown = false;
 
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
@@ -479,16 +448,16 @@ export function dragElement(elmnt) {
     var elmntName = elmnt.attr('id');
     console.debug(`dragElement called for ${elmntName}`);
     const elmntNameEscaped = $.escapeSelector(elmntName);
-    console.debug(`dragElement escaped name: ${elmntNameEscaped}`);
     const elmntHeader = $(`#${elmntNameEscaped}header`);
 
     if (elmntHeader.length) {
-        elmntHeader.off('mousedown').on('mousedown', (e) => {
-            hasBeenDraggedByUser = true;
+        elmntHeader.off('mousedown').on('mousedown', (e) => { //listener for drag handle repositioning
+            isHeaderBeingDragged = true;
+            isMouseDown = true;
             observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
             dragMouseDown(e);
         });
-        $(elmnt).off('mousedown').on('mousedown', () => {
+        $(elmnt).off('mousedown').on('mousedown', () => { //listener for resize
             isMouseDown = true;
             observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
         });
@@ -496,20 +465,19 @@ export function dragElement(elmnt) {
 
     const observer = new MutationObserver((mutations) => {
         const target = mutations[0].target;
-        if (!$(target).is(':visible')
-            || $(target).hasClass('resizing')
-            || Number((String(target.height).replace('px', ''))) < 50
-            || Number((String(target.width).replace('px', ''))) < 50
-            || power_user.movingUI === false
-            || isMobile()
+        if (!$(target).is(':visible') //abort if element is invisible
+            || $(target).hasClass('resizing') //being auto-resized by other JS code
+            || Number((String(target.height).replace('px', ''))) < 50 //too short
+            || Number((String(target.width).replace('px', ''))) < 50 //too narrow
+            || power_user.movingUI === false // if MUI is not turned on
+            || isMobile() // if it's a mobile screen
         ) {
-            console.debug('aborting mutator');
             return;
         }
-        //console.debug(left + width, winWidth, hasBeenDraggedByUser, isMouseDown)
-        const style = getComputedStyle(target); //use computed values because not all CSS are set by default
-        height = target.offsetHeight;
-        width = target.offsetWidth;
+
+        const style = getComputedStyle(target);
+        height = parseInt(style.height)
+        width = parseInt(style.width)
         top = parseInt(style.top);
         left = parseInt(style.left);
         right = parseInt(style.right);
@@ -524,53 +492,53 @@ export function dragElement(elmnt) {
         topBarFirstX = parseInt(topbarstyle.marginInline);
         topBarLastY = parseInt(topbarstyle.height);
 
-        /*console.log(`
-        winWidth: ${winWidth}, winHeight: ${winHeight}
-        sheldWidth: ${sheldWidth}
-        X: ${$(elmnt).css('left')}
-        Y: ${$(elmnt).css('top')}
-        MaxX: ${maxX}, MaxY: ${maxY}
-        height: ${height}
-        width: ${width}
-        Topbar 1st X: ${topBarFirstX}
-        TopBar lastX: ${topBarLastX}
-        `);*/
-
-
         //prepare an empty poweruser object for the item being altered if we don't have one already
         if (!power_user.movingUIState[elmntName]) {
             console.debug(`adding config property for ${elmntName}`);
             power_user.movingUIState[elmntName] = {};
         }
 
-        //only record position changes if caused by a user click-drag
-        if (hasBeenDraggedByUser && isMouseDown) {
-            power_user.movingUIState[elmntName].top = top;
-            power_user.movingUIState[elmntName].left = left;
-            power_user.movingUIState[elmntName].right = right;
-            power_user.movingUIState[elmntName].bottom = bottom;
-            power_user.movingUIState[elmntName].margin = 'unset';
-        }
-
         //handle resizing
-        if (!hasBeenDraggedByUser && isMouseDown) {
-            console.debug('saw resize, NOT header drag');
+        if (!isHeaderBeingDragged && isMouseDown) { //if user is dragging the resize handle (not in header)
+            let imgHeight, imgWidth, imageAspectRatio;
+            let containerAspectRatio = height / width;
 
-            //prevent resizing offscreen
-            if (top + elmnt.height() >= winHeight) {
-                console.debug('resizing height to prevent offscreen');
-                elmnt.css('height', winHeight - top - 1 + 'px');
-            }
+            //force aspect ratio for zoomed avatars
+            if ($(elmnt).attr('id').startsWith('zoomFor_')) {
+                let zoomedAvatarImage = $(elmnt).find('.zoomed_avatar_img');
+                imgHeight = zoomedAvatarImage.height();
+                imgWidth = zoomedAvatarImage.width();
+                imageAspectRatio = imgHeight / imgWidth;
 
-            if (left + elmnt.width() >= winWidth) {
-                console.debug('resizing width to prevent offscreen');
-                elmnt.css('width', winWidth - left - 1 + 'px');
+                // Maintain aspect ratio
+                if (containerAspectRatio !== imageAspectRatio) {
+                    elmnt.css('width', elmnt.width());
+                    elmnt.css('height', elmnt.width() * imageAspectRatio);
+                }
+
+                // Prevent resizing offscreen
+                if (top + elmnt.height() >= winHeight) {
+                    elmnt.css('height', winHeight - top - 1 + 'px');
+                    elmnt.css('width', (winHeight - top - 1) / imageAspectRatio + 'px');
+                }
+
+                if (left + elmnt.width() >= winWidth) {
+                    elmnt.css('width', winWidth - left - 1 + 'px');
+                    elmnt.css('height', (winWidth - left - 1) * imageAspectRatio + 'px');
+                }
+            } else { //prevent divs that are not zoomedAvatars from resizing offscreen
+
+                if (top + elmnt.height() >= winHeight) {
+                    elmnt.css('height', winHeight - top - 1 + 'px');
+                }
+
+                if (left + elmnt.width() >= winWidth) {
+                    elmnt.css('width', winWidth - left - 1 + 'px');
+                }
             }
 
             //prevent resizing from top left into the top bar
-            if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX
-            ) {
-                console.debug('prevent topbar underlap resize');
+            if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX) {
                 elmnt.css('width', width - 1 + 'px');
             }
 
@@ -579,11 +547,11 @@ export function dragElement(elmnt) {
             elmnt.css('top', top);
 
             //set a listener for mouseup to save new width/height
-            elmnt.off('mouseup').on('mouseup', () => {
-                console.debug(`Saving ${elmntName} Height/Width`);
+            $(window).off('mouseup').on('mouseup', () => {
+                console.log(`Saving ${elmntName} Height/Width`);
                 // check if the height or width actually changed
-                if (power_user.movingUIState[elmntName].width === width && power_user.movingUIState[elmntName].height === height) {
-                    console.debug('no change detected, aborting save');
+                if (power_user.movingUIState[elmntName].width === elmnt.width() && power_user.movingUIState[elmntName].height === elmnt.height()) {
+                    console.log('no change detected, aborting save');
                     return;
                 }
 
@@ -591,12 +559,27 @@ export function dragElement(elmnt) {
                 power_user.movingUIState[elmntName].height = height;
                 eventSource.emit('resizeUI', elmntName);
                 saveSettingsDebounced();
+                imgHeight = null;
+                imgWidth = null;
+                height = null;
+                width = null;
+
+                containerAspectRatio = null;
+                imageAspectRatio = null;
+                $(window).off('mouseup');
             });
         }
 
-        //handle dragging hit detection
-        if (hasBeenDraggedByUser && isMouseDown) {
-            //prevent dragging offscreen
+        //only record position changes if header is being dragged
+        power_user.movingUIState[elmntName].top = top;
+        power_user.movingUIState[elmntName].left = left;
+        power_user.movingUIState[elmntName].right = right;
+        power_user.movingUIState[elmntName].bottom = bottom;
+        power_user.movingUIState[elmntName].margin = 'unset';
+
+        //handle dragging hit detection to prevent dragging offscreen
+        if (isHeaderBeingDragged && isMouseDown) {
+
             if (top <= 0) {
                 elmnt.css('top', '0px');
             } else if (maxY >= winHeight) {
@@ -608,27 +591,14 @@ export function dragElement(elmnt) {
             } else if (maxX >= winWidth) {
                 elmnt.css('left', winWidth - maxX + left - 1 + 'px');
             }
-
-            //prevent underlap with topbar div
-            /*
-            if (top < topBarLastY
-                && (maxX >= topBarFirstX && left <= topBarFirstX //elmnt is hitting topbar from left side
-                    || left <= topBarLastX && maxX >= topBarLastX //elmnt is hitting topbar from right side
-                    || left >= topBarFirstX && maxX <= topBarLastX) //elmnt hitting topbar in the middle
-            ) {
-                console.debug('topbar hit')
-                elmnt.css('top', top + 1 + "px");
-            }
-            */
         }
 
-        // Check if the element header exists and set the listener on the grabber
+        // Check if the element header exists and set the reposition listener on the grabber in the header
         if (elmntHeader.length) {
             elmntHeader.off('mousedown').on('mousedown', (e) => {
-                console.debug('listener started from header');
                 dragMouseDown(e);
             });
-        } else {
+        } else { //if no header, put the listener on the elmnt itself.
             elmnt.off('mousedown').on('mousedown', dragMouseDown);
         }
     });
@@ -636,7 +606,7 @@ export function dragElement(elmnt) {
     function dragMouseDown(e) {
 
         if (e) {
-            hasBeenDraggedByUser = true;
+            isHeaderBeingDragged = true;
             e.preventDefault();
             pos3 = e.clientX; //mouse X at click
             pos4 = e.clientY; //mouse Y at click
@@ -668,34 +638,20 @@ export function dragElement(elmnt) {
         elmnt.css('margin', 'unset');
         elmnt.css('left', (elmnt.offset().left - pos1) + 'px');
         elmnt.css('top', (elmnt.offset().top - pos2) + 'px');
-        elmnt.css('right', ((winWidth - maxX) + 'px'));
-        elmnt.css('bottom', ((winHeight - maxY) + 'px'));
+        /*         elmnt.css('right', ((winWidth - maxX) + 'px'));
+                elmnt.css('bottom', ((winHeight - maxY) + 'px')); */
 
-        // Height/Width here are for visuals only, and are not saved to settings
-        // required because some divs do hot have a set width/height..
-        // and will defaults to shrink to min value of 100px set in CSS file
+        // Height/Width here are for visuals only, and are not saved to settings.
+        // This is required because some divs do hot have a set width/height
+        // and will default to shrink to min value of 100px set in CSS file
         elmnt.css('height', height);
         elmnt.css('width', width);
-        /*
-                console.log(`
-                             winWidth: ${winWidth}, winHeight: ${winHeight}
-                             sheldWidth: ${sheldWidth}
-                             X: ${$(elmnt).css('left')}
-                             Y: ${$(elmnt).css('top')}
-                             MaxX: ${maxX}, MaxY: ${maxY}
-                             height: ${height}
-                             width: ${width}
-                             Topbar 1st X: ${topBarFirstX}
-                             TopBar lastX: ${topBarLastX}
-                             `);
-                             */
-
         return;
     }
 
     function closeDragElement() {
         console.debug('drag finished');
-        hasBeenDraggedByUser = false;
+        isHeaderBeingDragged = false;
         isMouseDown = false;
         $(document).off('mouseup', closeDragElement);
         $(document).off('mousemove', elementDrag);
@@ -705,6 +661,12 @@ export function dragElement(elmnt) {
         observer.disconnect();
         console.debug(`Saving ${elmntName} UI position`);
         saveSettingsDebounced();
+        top = null;
+        left = null;
+        right = null;
+        bottom = null;
+        maxX = null;
+        maxY = null;
     }
 }
 
@@ -715,11 +677,35 @@ export async function initMovingUI() {
         dragElement($('#left-nav-panel'));
         dragElement($('#right-nav-panel'));
         dragElement($('#WorldInfo'));
-        await delay(1000);
-        console.debug('loading AN draggable function');
         dragElement($('#floatingPrompt'));
+        dragElement($('#logprobsViewer'));
+        dragElement($('#cfgConfig'));
     }
 }
+
+/**@type {HTMLTextAreaElement} */
+const sendTextArea = document.querySelector('#send_textarea');
+const chatBlock = document.getElementById('chat');
+const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
+/**
+ * this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
+ */
+function autoFitSendTextArea() {
+    const originalScrollBottom = chatBlock.scrollHeight - (chatBlock.scrollTop + chatBlock.offsetHeight);
+    if (Math.ceil(sendTextArea.scrollHeight + 3) >= Math.floor(sendTextArea.offsetHeight)) {
+        // Needs to be pulled dynamically because it is affected by font size changes
+        const sendTextAreaMinHeight = window.getComputedStyle(sendTextArea).getPropertyValue('min-height');
+        sendTextArea.style.height = sendTextAreaMinHeight;
+    }
+    sendTextArea.style.height = sendTextArea.scrollHeight + 3 + 'px';
+
+    if (!isFirefox) {
+        const newScrollTop = Math.round(chatBlock.scrollHeight - (chatBlock.offsetHeight + originalScrollBottom));
+        chatBlock.scrollTop = newScrollTop;
+    }
+}
+export const autoFitSendTextAreaDebounced = debounce(autoFitSendTextArea);
 
 // ---------------------------------------------------
 
@@ -870,32 +856,26 @@ export function initRossMods() {
 
     // when a char is selected from the list, save their name as the auto-load character for next page load
     $(document).on('click', '.character_select', function () {
-        const characterId = $(this).find('.avatar').attr('title') || $(this).attr('title');
+        const characterId = $(this).attr('chid') || $(this).data('id');
         setActiveCharacter(characterId);
         setActiveGroup(null);
         saveSettingsDebounced();
     });
 
     $(document).on('click', '.group_select', function () {
-        const groupId = $(this).data('id') || $(this).attr('grid');
+        const groupId = $(this).attr('chid') || $(this).attr('grid') || $(this).data('id');
         setActiveCharacter(null);
         setActiveGroup(groupId);
         saveSettingsDebounced();
     });
 
-    //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
-    $('#send_textarea').on('input', function () {
-        const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-        const chatBlock = $('#chat');
-        const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
-        this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
-        this.style.height = this.scrollHeight + 0.3 + 'px';
-
-        if (!isFirefox) {
-            const newScrollTop = Math.round(chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom));
-            chatBlock.scrollTop(newScrollTop);
+    $(sendTextArea).on('input', () => {
+        if (sendTextArea.scrollHeight > sendTextArea.offsetHeight || sendTextArea.value === '') {
+            autoFitSendTextArea();
+        } else {
+            autoFitSendTextAreaDebounced();
         }
-        saveUserInput();
+        saveUserInputDebounced();
     });
 
     restoreUserInput();
@@ -950,23 +930,30 @@ export function initRossMods() {
         processHotkeys(event.originalEvent);
     });
 
+    const hotkeyTargets = {
+        'send_textarea': sendTextArea,
+        'dialogue_popup_input': document.querySelector('#dialogue_popup_input'),
+    };
+
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
     /**
      * @param {KeyboardEvent} event
      */
     function processHotkeys(event) {
         //Enter to send when send_textarea in focus
-        if ($(':focus').attr('id') === 'send_textarea') {
+        if (document.activeElement == hotkeyTargets['send_textarea']) {
             const sendOnEnter = shouldSendOnEnter();
             if (!event.shiftKey && !event.ctrlKey && !event.altKey && event.key == 'Enter' && sendOnEnter) {
                 event.preventDefault();
                 sendTextareaMessage();
+                return;
             }
         }
-        if ($(':focus').attr('id') === 'dialogue_popup_input' && !isMobile()) {
+        if (document.activeElement == hotkeyTargets['dialogue_popup_input'] && !isMobile()) {
             if (!event.shiftKey && !event.ctrlKey && event.key == 'Enter') {
                 event.preventDefault();
                 $('#dialogue_popup_ok').trigger('click');
+                return;
             }
         }
         //ctrl+shift+up to scroll to context line
@@ -978,6 +965,7 @@ export function initRossMods() {
                     scrollTop: contextLine.offset().top - $('#chat').offset().top + $('#chat').scrollTop(),
                 }, 300);
             } else { toastr.warning('Context line not found, send a message first!'); }
+            return;
         }
         //ctrl+shift+down to scroll to bottom of chat
         if (event.shiftKey && event.ctrlKey && event.key == 'ArrowDown') {
@@ -985,6 +973,7 @@ export function initRossMods() {
             $('#chat').animate({
                 scrollTop: $('#chat').prop('scrollHeight'),
             }, 300);
+            return;
         }
 
         // Alt+Enter or AltGr+Enter to Continue
@@ -992,6 +981,7 @@ export function initRossMods() {
             if (is_send_press == false) {
                 console.debug('Continuing with Alt+Enter');
                 $('#option_continue').trigger('click');
+                return;
             }
         }
 
@@ -1001,6 +991,7 @@ export function initRossMods() {
             if (editMesDone.length > 0) {
                 console.debug('Accepting edits with Ctrl+Enter');
                 editMesDone.trigger('click');
+                return;
             } else if (is_send_press == false) {
                 const skipConfirmKey = 'RegenerateWithCtrlEnter';
                 const skipConfirm = LoadLocalBool(skipConfirmKey);
@@ -1027,6 +1018,7 @@ export function initRossMods() {
                         doRegenerate();
                     });
                 }
+                return;
             } else {
                 console.debug('Ctrl+Enter ignored');
             }
@@ -1035,7 +1027,7 @@ export function initRossMods() {
         // Helper function to check if nanogallery2's lightbox is active
         function isNanogallery2LightboxActive() {
             // Check if the body has the 'nGY2On' class, adjust this based on actual behavior
-            return $('body').hasClass('nGY2_body_scrollbar');
+            return document.body.classList.contains('nGY2_body_scrollbar');
         }
 
         if (event.key == 'ArrowLeft') {        //swipes left
@@ -1048,6 +1040,7 @@ export function initRossMods() {
                 !isInputElementInFocus()
             ) {
                 $('.swipe_left:last').click();
+                return;
             }
         }
         if (event.key == 'ArrowRight') { //swipes right
@@ -1060,13 +1053,14 @@ export function initRossMods() {
                 !isInputElementInFocus()
             ) {
                 $('.swipe_right:last').click();
+                return;
             }
         }
 
 
         if (event.ctrlKey && event.key == 'ArrowUp') { //edits last USER message if chatbar is empty and focused
             if (
-                $('#send_textarea').val() === '' &&
+                hotkeyTargets['send_textarea'].value === '' &&
                 chatbarInFocus === true &&
                 ($('.swipe_right:last').css('display') === 'flex' || $('.last_mes').attr('is_system') === 'true') &&
                 $('#character_popup').css('display') === 'none' &&
@@ -1077,6 +1071,7 @@ export function initRossMods() {
                 const editMes = lastIsUserMes.querySelector('.mes_block .mes_edit');
                 if (editMes !== null) {
                     $(editMes).trigger('click');
+                    return;
                 }
             }
         }
@@ -1084,7 +1079,7 @@ export function initRossMods() {
         if (event.key == 'ArrowUp') { //edits last message if chatbar is empty and focused
             console.log('got uparrow input');
             if (
-                $('#send_textarea').val() === '' &&
+                hotkeyTargets['send_textarea'].value === '' &&
                 chatbarInFocus === true &&
                 //$('.swipe_right:last').css('display') === 'flex' &&
                 $('.last_mes .mes_buttons').is(':visible') &&
@@ -1095,6 +1090,7 @@ export function initRossMods() {
                 const editMes = lastMes.querySelector('.mes_block .mes_edit');
                 if (editMes !== null) {
                     $(editMes).click();
+                    return;
                 }
             }
         }
@@ -1128,6 +1124,11 @@ export function initRossMods() {
                 return;
             }
 
+            if ($('#dialogue_del_mes_cancel').is(':visible')) {
+                $('#dialogue_del_mes_cancel').trigger('click');
+                return;
+            }
+
             if ($('.drawer-content')
                 .not('#WorldInfo')
                 .not('#left-nav-panel')
@@ -1135,6 +1136,7 @@ export function initRossMods() {
                 .not('#floatingPrompt')
                 .not('#cfgConfig')
                 .not('#logprobsViewer')
+                .not('#movingDivs > div')
                 .is(':visible')) {
                 let visibleDrawerContent = $('.drawer-content:visible')
                     .not('#WorldInfo')
@@ -1142,7 +1144,8 @@ export function initRossMods() {
                     .not('#right-nav-panel')
                     .not('#floatingPrompt')
                     .not('#cfgConfig')
-                    .not('#logprobsViewer');
+                    .not('#logprobsViewer')
+                    .not('#movingDivs > div');
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
                 return;
             }
@@ -1167,6 +1170,13 @@ export function initRossMods() {
                 return;
             }
 
+            $('#movingDivs > div').each(function () {
+                if ($(this).is(':visible')) {
+                    $('#movingDivs > div .floating_panel_close').trigger('click');
+                    return;
+                }
+            });
+
             if ($('#left-nav-panel').is(':visible') &&
                 $(LPanelPin).prop('checked') === false) {
                 $('#leftNavDrawerIcon').trigger('click');
@@ -1190,7 +1200,7 @@ export function initRossMods() {
 
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {
             // This will eventually be to trigger quick replies
-            event.preventDefault();
+            // event.preventDefault();
             console.log('Ctrl +' + event.key + ' pressed!');
         }
     }

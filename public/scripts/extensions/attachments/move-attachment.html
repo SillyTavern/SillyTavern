@@ -1,0 +1,8 @@
+<div class="flex-container justifyCenter alignItemsBaseline">
+    <span>Move <strong class="moveAttachmentName">{{name}}</strong> to...</span>
+    <select class="moveAttachmentTarget">
+        {{#each targets}}
+            <option value="{{this}}">{{this}}</option>
+        {{/each}}
+    </select>
+</div>

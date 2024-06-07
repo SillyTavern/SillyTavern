@@ -11,8 +11,8 @@ const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
 const router = express.Router();
 
 router.post('/libre', jsonParser, async (request, response) => {
-    const key = readSecret(SECRET_KEYS.LIBRE);
-    const url = readSecret(SECRET_KEYS.LIBRE_URL);
+    const key = readSecret(request.user.directories, SECRET_KEYS.LIBRE);
+    const url = readSecret(request.user.directories, SECRET_KEYS.LIBRE_URL);
 
     if (!url) {
         console.log('LibreTranslate URL is not configured.');
@@ -104,7 +104,7 @@ router.post('/google', jsonParser, async (request, response) => {
 
 router.post('/lingva', jsonParser, async (request, response) => {
     try {
-        const baseUrl = readSecret(SECRET_KEYS.LINGVA_URL);
+        const baseUrl = readSecret(request.user.directories, SECRET_KEYS.LINGVA_URL);
 
         if (!baseUrl) {
             console.log('Lingva URL is not configured.');
@@ -149,7 +149,7 @@ router.post('/lingva', jsonParser, async (request, response) => {
 });
 
 router.post('/deepl', jsonParser, async (request, response) => {
-    const key = readSecret(SECRET_KEYS.DEEPL);
+    const key = readSecret(request.user.directories, SECRET_KEYS.DEEPL);
 
     if (!key) {
         console.log('DeepL key is not configured.');
@@ -208,7 +208,7 @@ router.post('/deepl', jsonParser, async (request, response) => {
 });
 
 router.post('/onering', jsonParser, async (request, response) => {
-    const secretUrl = readSecret(SECRET_KEYS.ONERING_URL);
+    const secretUrl = readSecret(request.user.directories, SECRET_KEYS.ONERING_URL);
     const url = secretUrl || ONERING_URL_DEFAULT;
 
     if (!url) {
@@ -261,7 +261,7 @@ router.post('/onering', jsonParser, async (request, response) => {
 });
 
 router.post('/deeplx', jsonParser, async (request, response) => {
-    const secretUrl = readSecret(SECRET_KEYS.DEEPLX_URL);
+    const secretUrl = readSecret(request.user.directories, SECRET_KEYS.DEEPLX_URL);
     const url = secretUrl || DEEPLX_URL_DEFAULT;
 
     if (!url) {
