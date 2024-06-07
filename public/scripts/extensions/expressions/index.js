@@ -411,7 +411,7 @@ async function unloadTalkingHead() {
 
     try {
         const url = new URL(getApiUrl());
-        url.pathname = '/api/talkinghead/unload';
+        url.pathname = './api/talkinghead/unload';
         const loadResponse = await doExtrasFetch(url);
         if (!loadResponse.ok) {
             throw new Error(loadResponse.statusText);
@@ -451,7 +451,7 @@ async function loadTalkingHead() {
         formData.append('file', spriteFile);
 
         const url = new URL(getApiUrl());
-        url.pathname = '/api/talkinghead/load';
+        url.pathname = './api/talkinghead/load';
 
         const loadResponse = await doExtrasFetch(url, {
             method: 'POST',
@@ -482,7 +482,7 @@ async function loadTalkingHead() {
         }
         try {
             const url = new URL(getApiUrl());
-            url.pathname = '/api/talkinghead/load_emotion_templates';
+            url.pathname = './api/talkinghead/load_emotion_templates';
             const apiResult = await doExtrasFetch(url, {
                 method: 'POST',
                 headers: {
@@ -514,7 +514,7 @@ async function loadTalkingHead() {
         }
         try {
             const url = new URL(getApiUrl());
-            url.pathname = '/api/talkinghead/load_animator_settings';
+            url.pathname = './api/talkinghead/load_animator_settings';
             const apiResult = await doExtrasFetch(url, {
                 method: 'POST',
                 headers: {
@@ -741,10 +741,10 @@ async function updateTalkingState() {
         let newTalkingState;
         if (context.streamingProcessor && !context.streamingProcessor.isFinished &&
             currentLastMessage.mes.length !== 0 && currentLastMessage.mes !== '...' && lastMessageChanged) {
-            url.pathname = '/api/talkinghead/start_talking';
+            url.pathname = './api/talkinghead/start_talking';
             newTalkingState = true;
         } else {
-            url.pathname = '/api/talkinghead/stop_talking';
+            url.pathname = './api/talkinghead/stop_talking';
             newTalkingState = false;
         }
         try {
@@ -957,7 +957,7 @@ async function getExpressionLabel(text) {
     try {
         if (extension_settings.expressions.local) {
             // Local transformers pipeline
-            const apiResult = await fetch('/api/extra/classify', {
+            const apiResult = await fetch('./api/extra/classify', {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({ text: text }),
@@ -970,7 +970,7 @@ async function getExpressionLabel(text) {
         } else {
             // Extras
             const url = new URL(getApiUrl());
-            url.pathname = '/api/classify';
+            url.pathname = './api/classify';
 
             const apiResult = await doExtrasFetch(url, {
                 method: 'POST',
@@ -1082,7 +1082,7 @@ async function getSpritesList(name) {
     console.debug('getting sprites list');
 
     try {
-        const result = await fetch(`/api/sprites/get?name=${encodeURIComponent(name)}`);
+        const result = await fetch(`./api/sprites/get?name=${encodeURIComponent(name)}`);
         let sprites = result.ok ? (await result.json()) : [];
         return sprites;
     }
@@ -1130,7 +1130,7 @@ async function getExpressionsList() {
 
         try {
             if (extension_settings.expressions.local) {
-                const apiResult = await fetch('/api/extra/classify/labels', {
+                const apiResult = await fetch('./api/extra/classify/labels', {
                     method: 'POST',
                     headers: getRequestHeaders(),
                 });
@@ -1142,7 +1142,7 @@ async function getExpressionsList() {
                 }
             } else {
                 const url = new URL(getApiUrl());
-                url.pathname = '/api/classify/labels';
+                url.pathname = './api/classify/labels';
 
                 const apiResult = await doExtrasFetch(url, {
                     method: 'GET',
@@ -1285,7 +1285,7 @@ async function setExpression(character, expression, force) {
             let result = await isTalkingHeadAvailable();
             if (result) {
                 const url = new URL(getApiUrl());
-                url.pathname = '/api/talkinghead/set_emotion';
+                url.pathname = './api/talkinghead/set_emotion';
                 await doExtrasFetch(url, {
                     method: 'POST',
                     headers: {
@@ -1305,7 +1305,7 @@ async function setExpression(character, expression, force) {
             //console.log("searching");
             if (imgElement && imgElement instanceof HTMLImageElement) {
                 //console.log("setting value");
-                imgElement.src = getApiUrl() + '/api/talkinghead/result_feed';
+                imgElement.src = getApiUrl() + './api/talkinghead/result_feed';
             }
         }
         catch (error) {
@@ -1428,7 +1428,7 @@ async function onClickExpressionUpload(event) {
         formData.append('label', id);
         formData.append('avatar', file);
 
-        await handleFileUpload('/api/sprites/upload', formData);
+        await handleFileUpload('./api/sprites/upload', formData);
 
         // Reset the input
         e.target.form.reset();
@@ -1539,7 +1539,7 @@ async function onClickExpressionUploadPackButton() {
         formData.append('name', name);
         formData.append('avatar', file);
 
-        const { count } = await handleFileUpload('/api/sprites/upload-zip', formData);
+        const { count } = await handleFileUpload('./api/sprites/upload-zip', formData);
         toastr.success(`Uploaded ${count} image(s) for ${name}`);
 
         // Reset the input
@@ -1571,7 +1571,7 @@ async function onClickExpressionDelete(event) {
     const name = $('#image_list').data('name');
 
     try {
-        await fetch('/api/sprites/delete', {
+        await fetch('./api/sprites/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ name, label: id }),

@@ -172,7 +172,7 @@ async function characterStatsHandler(characters, this_chid) {
  * Fetches the character stats from the server.
  */
 async function getStats() {
-    const response = await fetch('/api/stats/get', {
+    const response = await fetch('./api/stats/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
@@ -195,7 +195,7 @@ async function getStats() {
  * @throws {Error} If the request to recreate stats is unsuccessful.
  */
 async function recreateStats() {
-    const response = await fetch('/api/stats/recreate', {
+    const response = await fetch('./api/stats/recreate', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
@@ -232,7 +232,7 @@ function calculateGenTime(gen_started, gen_finished) {
  * Sends a POST request to the server to update the statistics.
  */
 async function updateStats() {
-    const response = await fetch('/api/stats/update', {
+    const response = await fetch('./api/stats/update', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(charStats),

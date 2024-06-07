@@ -1,3 +1,4 @@
+
 import {
     eventSource,
     event_types,
@@ -781,7 +782,7 @@ function setSettingByName(setting, value, trigger) {
 async function generateTextGenWithStreaming(generate_data, signal) {
     generate_data.stream = true;
 
-    const response = await fetch('/api/backends/text-completions/generate', {
+    const response = await fetch('./api/backends/text-completions/generate', {
         headers: {
             ...getRequestHeaders(),
         },

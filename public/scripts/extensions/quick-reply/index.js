@@ -77,7 +77,7 @@ export let quickReplyApi;
 
 
 const loadSets = async () => {
-    const response = await fetch('/api/settings/get', {
+    const response = await fetch('./api/settings/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({}),

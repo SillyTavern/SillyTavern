@@ -180,7 +180,7 @@ async function doExtrasFetch(endpoint, args) {
 
 async function discoverExtensions() {
     try {
-        const response = await fetch('/api/extensions/discover');
+        const response = await fetch('./api/extensions/discover');
 
         if (response.ok) {
             const extensions = await response.json();
@@ -232,7 +232,7 @@ async function getManifests(names) {
 
     for (const name of names) {
         const promise = new Promise((resolve, reject) => {
-            fetch(`/scripts/extensions/${name}/manifest.json`).then(async response => {
+            fetch(`./scripts/extensions/${name}/manifest.json`).then(async response => {
                 if (response.ok) {
                     const json = await response.json();
                     obj[name] = json;
@@ -383,7 +383,7 @@ async function connectToApi(baseUrl) {
     }
 
     const url = new URL(baseUrl);
-    url.pathname = '/api/modules';
+    url.pathname = './api/modules';
 
     try {
         const getExtensionsResult = await doExtrasFetch(url);
@@ -413,7 +413,7 @@ function updateStatus(success) {
 function addExtensionStyle(name, manifest) {
     if (manifest.css) {
         return new Promise((resolve, reject) => {
-            const url = `/scripts/extensions/${name}/${manifest.css}`;
+            const url = `./scripts/extensions/${name}/${manifest.css}`;
 
             if ($(`link[id="${name}"]`).length === 0) {
                 const link = document.createElement('link');
@@ -438,7 +438,7 @@ function addExtensionStyle(name, manifest) {
 function addExtensionScript(name, manifest) {
     if (manifest.js) {
         return new Promise((resolve, reject) => {
-            const url = `/scripts/extensions/${name}/${manifest.js}`;
+            const url = `./scripts/extensions/${name}/${manifest.js}`;
             let ready = false;
 
             if ($(`script[id="${name}"]`).length === 0) {
@@ -640,7 +640,7 @@ async function onUpdateClick() {
  */
 async function updateExtension(extensionName, quiet) {
     try {
-        const response = await fetch('/api/extensions/update', {
+        const response = await fetch('./api/extensions/update', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ extensionName }),
@@ -681,7 +681,7 @@ async function onDeleteClick() {
 
 export async function deleteExtension(extensionName) {
     try {
-        await fetch('/api/extensions/delete', {
+        await fetch('./api/extensions/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ extensionName }),
@@ -706,7 +706,7 @@ export async function deleteExtension(extensionName) {
  */
 async function getExtensionVersion(extensionName) {
     try {
-        const response = await fetch('/api/extensions/version', {
+        const response = await fetch('./api/extensions/version', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ extensionName }),
@@ -729,7 +729,7 @@ export async function installExtension(url) {
 
     toastr.info('Please wait...', 'Installing extension');
 
-    const request = await fetch('/api/extensions/install', {
+    const request = await fetch('./api/extensions/install', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ url }),

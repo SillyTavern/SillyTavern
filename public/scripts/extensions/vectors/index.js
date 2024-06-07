@@ -411,7 +411,7 @@ function getQueryText(chat) {
 * @returns {Promise<number[]>} Saved hashes
 */
 async function getSavedHashes(collectionId) {
-    const response = await fetch('/api/vector/list', {
+    const response = await fetch('./api/vector/list', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -462,7 +462,7 @@ async function insertVectorItems(collectionId, items) {
         addExtrasHeaders(headers);
     }
 
-    const response = await fetch('/api/vector/insert', {
+    const response = await fetch('./api/vector/insert', {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
@@ -484,7 +484,7 @@ async function insertVectorItems(collectionId, items) {
  * @returns {Promise<void>}
  */
 async function deleteVectorItems(collectionId, hashes) {
-    const response = await fetch('/api/vector/delete', {
+    const response = await fetch('./api/vector/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -511,7 +511,7 @@ async function queryCollection(collectionId, searchText, topK) {
         addExtrasHeaders(headers);
     }
 
-    const response = await fetch('/api/vector/query', {
+    const response = await fetch('./api/vector/query', {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
@@ -541,7 +541,7 @@ async function purgeVectorIndex(collectionId) {
             return true;
         }
 
-        const response = await fetch('/api/vector/purge', {
+        const response = await fetch('./api/vector/purge', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({

@@ -54,7 +54,7 @@ export class SettingsUi {
     }
     async render() {
         if (!this.dom) {
-            const response = await fetch('/scripts/extensions/quick-reply/html/settings.html', { cache: 'no-store' });
+            const response = await fetch('./scripts/extensions/quick-reply/html/settings.html', { cache: 'no-store' });
             if (response.ok) {
                 this.template = document.createRange().createContextualFragment(await response.text()).querySelector('#qr--settings');
                 // @ts-ignore

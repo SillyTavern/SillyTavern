@@ -40,47 +40,47 @@ export const TEXTGEN_TOKENIZERS = [OOBA, TABBY, KOBOLDCPP, LLAMACPP, APHRODITE];
 
 const TOKENIZER_URLS = {
     [tokenizers.GPT2]: {
-        encode: '/api/tokenizers/gpt2/encode',
-        decode: '/api/tokenizers/gpt2/decode',
-        count: '/api/tokenizers/gpt2/encode',
+        encode: './api/tokenizers/gpt2/encode',
+        decode: './api/tokenizers/gpt2/decode',
+        count: './api/tokenizers/gpt2/encode',
     },
     [tokenizers.OPENAI]: {
-        encode: '/api/tokenizers/openai/encode',
-        decode: '/api/tokenizers/openai/decode',
-        count: '/api/tokenizers/openai/encode',
+        encode: './api/tokenizers/openai/encode',
+        decode: './api/tokenizers/openai/decode',
+        count: './api/tokenizers/openai/encode',
     },
     [tokenizers.LLAMA]: {
-        encode: '/api/tokenizers/llama/encode',
-        decode: '/api/tokenizers/llama/decode',
-        count: '/api/tokenizers/llama/encode',
+        encode: './api/tokenizers/llama/encode',
+        decode: './api/tokenizers/llama/decode',
+        count: './api/tokenizers/llama/encode',
     },
     [tokenizers.NERD]: {
-        encode: '/api/tokenizers/nerdstash/encode',
-        decode: '/api/tokenizers/nerdstash/decode',
-        count: '/api/tokenizers/nerdstash/encode',
+        encode: './api/tokenizers/nerdstash/encode',
+        decode: './api/tokenizers/nerdstash/decode',
+        count: './api/tokenizers/nerdstash/encode',
     },
     [tokenizers.NERD2]: {
-        encode: '/api/tokenizers/nerdstash_v2/encode',
-        decode: '/api/tokenizers/nerdstash_v2/decode',
-        count: '/api/tokenizers/nerdstash_v2/encode',
+        encode: './api/tokenizers/nerdstash_v2/encode',
+        decode: './api/tokenizers/nerdstash_v2/decode',
+        count: './api/tokenizers/nerdstash_v2/encode',
     },
     [tokenizers.API_KOBOLD]: {
-        count: '/api/tokenizers/remote/kobold/count',
-        encode: '/api/tokenizers/remote/kobold/count',
+        count: './api/tokenizers/remote/kobold/count',
+        encode: './api/tokenizers/remote/kobold/count',
     },
     [tokenizers.MISTRAL]: {
-        encode: '/api/tokenizers/mistral/encode',
-        decode: '/api/tokenizers/mistral/decode',
-        count: '/api/tokenizers/mistral/encode',
+        encode: './api/tokenizers/mistral/encode',
+        decode: './api/tokenizers/mistral/decode',
+        count: './api/tokenizers/mistral/encode',
     },
     [tokenizers.YI]: {
-        encode: '/api/tokenizers/yi/encode',
-        decode: '/api/tokenizers/yi/decode',
-        count: '/api/tokenizers/yi/encode',
+        encode: './api/tokenizers/yi/encode',
+        decode: './api/tokenizers/yi/decode',
+        count: './api/tokenizers/yi/encode',
     },
     [tokenizers.API_TEXTGENERATIONWEBUI]: {
-        encode: '/api/tokenizers/remote/textgenerationwebui/encode',
-        count: '/api/tokenizers/remote/textgenerationwebui/encode',
+        encode: './api/tokenizers/remote/textgenerationwebui/encode',
+        count: './api/tokenizers/remote/textgenerationwebui/encode',
     },
 };
 

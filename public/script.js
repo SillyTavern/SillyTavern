@@ -449,9 +449,9 @@ let characters = [];
 let this_chid;
 let saveCharactersPage = 0;
 let savePersonasPage = 0;
-const default_avatar = 'img/ai4.png';
-export const system_avatar = 'img/five.png';
-export const comment_avatar = 'img/quill.png';
+const default_avatar = './img/ai4.png';
+export const system_avatar = './img/five.png';
+export const comment_avatar = './img/quill.png';
 export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
     placement: 'top-start',
@@ -622,7 +622,7 @@ const templateCache = new Map();
 
 export function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true, fullPath = false) {
     try {
-        const pathToTemplate = fullPath ? templateId : `/scripts/templates/${templateId}.html`;
+        const pathToTemplate = fullPath ? templateId : `./scripts/templates/${templateId}.html`;
         let template = templateCache.get(pathToTemplate);
         if (!template) {
             const templateContent = getUrlSync(pathToTemplate);
@@ -648,7 +648,7 @@ export function renderTemplate(templateId, templateData = {}, sanitize = true, l
 
 async function getClientVersion() {
     try {
-        const response = await fetch('/version');
+        const response = await fetch('./version');
         const data = await response.json();
         CLIENT_VERSION = data.agent;
         let displayVersion = `SillyTavern ${data.pkgVersion}`;
@@ -811,7 +811,7 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 
 async function firstLoadInit() {
     try {
-        const tokenResponse = await fetch('/csrf-token');
+        const tokenResponse = await fetch('./csrf-token');
         const tokenData = await tokenResponse.json();
         token = tokenData.token;
     } catch {
@@ -983,7 +983,7 @@ async function getStatusKobold() {
     }
 
     try {
-        const response = await fetch('/api/backends/kobold/status', {
+        const response = await fetch('./api/backends/kobold/status', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -1020,7 +1020,7 @@ async function getStatusKobold() {
 }
 
 async function getStatusTextgen() {
-    const url = '/api/backends/text-completions/status';
+    const url = './api/backends/text-completions/status';
 
     const endpoint = getTextGenServer();
 
@@ -1351,7 +1351,7 @@ export function getEntitiesList({ doFilter } = {}) {
 }
 
 export async function getOneCharacter(avatarUrl) {
-    const response = await fetch('/api/characters/get', {
+    const response = await fetch('./api/characters/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -1375,7 +1375,7 @@ export async function getOneCharacter(avatarUrl) {
 }
 
 async function getCharacters() {
-    var response = await fetch('/api/characters/all', {
+    var response = await fetch('./api/characters/all', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -1408,7 +1408,7 @@ async function getCharacters() {
 }
 
 async function delChat(chatfile) {
-    const response = await fetch('/api/chats/delete', {
+    const response = await fetch('./api/chats/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -1431,7 +1431,7 @@ async function replaceCurrentChat() {
     await clearChat();
     chat.length = 0;
 
-    const chatsResponse = await fetch('/api/characters/chats', {
+    const chatsResponse = await fetch('./api/characters/chats', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
@@ -4230,7 +4230,7 @@ async function DupeChar() {
     }
 
     const body = { avatar_url: characters[this_chid].avatar };
-    const response = await fetch('/api/characters/duplicate', {
+    const response = await fetch('./api/characters/duplicate', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(body),
@@ -4925,7 +4925,7 @@ export function deactivateSendButtons() {
 }
 
 function resetChatState() {
-    //unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
+    //unsets expected chid before reloading (related to getCharactersw/printCharacters from using old arrays)
     this_chid = 'invalid-safety-id';
     // replaces deleted charcter name with system user since it will be displayed next.
     name2 = systemUserName;
@@ -4972,7 +4972,7 @@ async function renameCharacter() {
 
     if (newValue && newValue !== characters[this_chid].name) {
         const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });
-        const response = await fetch('/api/characters/rename', {
+        const response = await fetch('./api/characters/rename', {
             method: 'POST',
             headers: getRequestHeaders(),
             body,
@@ -5038,7 +5038,7 @@ async function renamePastChats(newAvatar, newValue) {
     for (const { file_name } of pastChats) {
         try {
             const fileNameWithoutExtension = file_name.replace('.jsonl', '');
-            const getChatResponse = await fetch('/api/chats/get', {
+            const getChatResponse = await fetch('./api/chats/get', {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({
@@ -5062,7 +5062,7 @@ async function renamePastChats(newAvatar, newValue) {
                     }
                 }
 
-                const saveChatResponse = await fetch('/api/chats/save', {
+                const saveChatResponse = await fetch('./api/chats/save', {
                     method: 'POST',
                     headers: getRequestHeaders(),
                     body: JSON.stringify({
@@ -5153,7 +5153,7 @@ async function saveChat(chat_name, withMetadata, mesId) {
     ];
     return jQuery.ajax({
         type: 'POST',
-        url: '/api/chats/save',
+        url: './api/chats/save',
         data: JSON.stringify({
             ch_name: characters[this_chid].name,
             file_name: file_name,
@@ -5241,7 +5241,7 @@ export function getCropPopup(src) {
 }
 
 function getThumbnailUrl(type, file) {
-    return `/thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
+    return `./thumbnail?type=${type}&file=${encodeURIComponent(file)}`;
 }
 
 async function getChat() {
@@ -5249,7 +5249,7 @@ async function getChat() {
     try {
         const response = await $.ajax({
             type: 'POST',
-            url: '/api/chats/get',
+            url: './api/chats/get',
             data: JSON.stringify({
                 ch_name: characters[this_chid].name,
                 file_name: characters[this_chid].chat,
@@ -5465,7 +5465,7 @@ function changeMainAPI() {
  * @returns {Promise<string[]>} List of avatar file names
  */
 export async function getUserAvatars(doRender = true, openPageAt = '') {
-    const response = await fetch('/getuseravatars', {
+    const response = await fetch('./getuseravatars', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -5687,7 +5687,7 @@ async function doOnboarding(avatarId) {
 //***************SETTINGS****************//
 ///////////////////////////////////////////
 async function getSettings() {
-    const response = await fetch('/api/settings/get', {
+    const response = await fetch('./api/settings/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
@@ -5880,7 +5880,7 @@ async function saveSettings(type) {
     //console.log('Entering settings with name1 = '+name1);
     return jQuery.ajax({
         type: 'POST',
-        url: '/api/settings/save',
+        url: './api/settings/save',
         data: JSON.stringify({
             firstRun: firstRun,
             currentVersion: currentVersion,
@@ -6076,7 +6076,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
     let chat_promise = chat_list.map(({ file_name }) => {
         return new Promise(async (res, rej) => {
             try {
-                const endpoint = isGroupChat ? '/api/chats/group/get' : '/api/chats/get';
+                const endpoint = isGroupChat ? './api/chats/group/get' : './api/chats/get';
                 const requestBody = isGroupChat
                     ? JSON.stringify({ id: file_name })
                     : JSON.stringify({
@@ -6118,7 +6118,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
 }
 
 /**
- * Fetches the metadata of all past chats related to a specific character based on its avatar URL.
+ * wFetches the metadata of all past chats related to a specific character based on its avatar URL.
  * The function sends a POST request to the server to retrieve all chats for the character. It then
  * processes the received data, sorts it by the file name, and returns the sorted data.
  *
@@ -6131,7 +6131,7 @@ export async function getPastCharacterChats(characterId = null) {
     characterId = characterId ?? this_chid;
     if (!characters[characterId]) return [];
 
-    const response = await fetch('/api/characters/chats', {
+    const response = await fetch('./api/characters/chats', {
         method: 'POST',
         body: JSON.stringify({ avatar_url: characters[characterId].avatar }),
         headers: getRequestHeaders(),
@@ -6769,7 +6769,7 @@ export async function saveChatConditional() {
 async function importCharacterChat(formData) {
     await jQuery.ajax({
         type: 'POST',
-        url: '/api/chats/import',
+        url: './api/chats/import',
         data: formData,
         beforeSend: function () {
         },
@@ -7091,7 +7091,7 @@ async function createOrEditCharacter(e) {
     if ($('#form_create').attr('actiontype') == 'createcharacter') {
         if ($('#character_name_pole').val().length > 0) {
             //if the character name text area isn't empty (only posible when creating a new character)
-            let url = '/api/characters/create';
+            let url = './api/characters/create';
 
             if (crop_data != undefined) {
                 url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
@@ -7173,7 +7173,7 @@ async function createOrEditCharacter(e) {
             toastr.error('Name is required');
         }
     } else {
-        let url = '/api/characters/edit';
+        let url = './api/characters/edit';
 
         if (crop_data != undefined) {
             url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
@@ -7856,7 +7856,7 @@ async function importCharacter(file, preserveFileName = false) {
 
     const data = await jQuery.ajax({
         type: 'POST',
-        url: '/api/characters/import',
+        url: './api/characters/import',
         data: formData,
         async: true,
         cache: false,
@@ -7949,7 +7949,7 @@ function doCloseChat() {
  * If popup type equals "del_ch", it will proceed with deletion otherwise it will exit the function.
  * It fetches the delete character route, sending necessary parameters, and in case of success,
  * it proceeds to delete character from UI and saves settings.
- * In case of error during the fetch request, it logs the error details.
+ * In case of error during the wfetch request, it logs the error details.
  *
  * @param {string} popup_type - The type of popup currently active.
  * @param {string} this_chid - The character ID to be deleted.
@@ -7967,7 +7967,7 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
 
     const msg = { avatar_url: avatar, delete_chats: delete_chats };
 
-    const response = await fetch('/api/characters/delete', {
+    const response = await fetch('./api/characters/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(msg),
@@ -8526,7 +8526,7 @@ jQuery(async function () {
 
         try {
             showLoader();
-            const response = await fetch('/api/chats/rename', {
+            const response = await fetch('./api/chats/rename', {
                 method: 'POST',
                 body: JSON.stringify(body),
                 headers: getRequestHeaders(),
@@ -8584,7 +8584,7 @@ jQuery(async function () {
         };
         console.log(body);
         try {
-            const response = await fetch('/api/chats/export', {
+            const response = await fetch('./api/chats/export', {
                 method: 'POST',
                 body: JSON.stringify(body),
                 headers: getRequestHeaders(),
@@ -9426,7 +9426,7 @@ jQuery(async function () {
         await createOrEditCharacter();
         const body = { format, avatar_url: characters[this_chid].avatar };
 
-        const response = await fetch('/api/characters/export', {
+        const response = await fetch('./api/characters/export', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(body),
@@ -9957,7 +9957,7 @@ jQuery(async function () {
         const url = input.trim();
         console.debug('Custom content import started', url);
 
-        const request = await fetch('/api/content/import', {
+        const request = await fetch('./api/content/import', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ url }),

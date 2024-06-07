@@ -573,7 +573,7 @@ async function loadWorldInfoData(name) {
         return worldInfoCache[name];
     }
 
-    const response = await fetch('/api/worldinfo/get', {
+    const response = await fetch('./api/worldinfo/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: name }),
@@ -590,7 +590,7 @@ async function loadWorldInfoData(name) {
 }
 
 async function updateWorldInfoList() {
-    const result = await fetch('/api/settings/get', {
+    const result = await fetch('./api/settings/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
@@ -1748,7 +1748,7 @@ function createWorldInfoEntry(name, data, fromSlashCommand = false) {
 }
 
 async function _save(name, data) {
-    await fetch('/api/worldinfo/edit', {
+    await fetch('./api/worldinfo/edit', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: name, data: data }),
@@ -1811,7 +1811,7 @@ async function deleteWorldInfo(worldInfoName) {
         return;
     }
 
-    const response = await fetch('/api/worldinfo/delete', {
+    const response = await fetch('./api/worldinfo/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: worldInfoName }),

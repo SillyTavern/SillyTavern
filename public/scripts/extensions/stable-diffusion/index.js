@@ -546,7 +546,7 @@ async function onSaveStyleClick() {
 
 async function expandPrompt(prompt) {
     try {
-        const response = await fetch('/api/sd/expand', {
+        const response = await fetch('./api/sd/expand', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ prompt: prompt }),
@@ -893,7 +893,7 @@ async function validateAutoUrl() {
             throw new Error('URL is not set.');
         }
 
-        const result = await fetch('/api/sd/ping', {
+        const result = await fetch('./api/sd/ping', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(getSdRequestBody()),
@@ -916,7 +916,7 @@ async function validateVladUrl() {
             throw new Error('URL is not set.');
         }
 
-        const result = await fetch('/api/sd/ping', {
+        const result = await fetch('./api/sd/ping', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(getSdRequestBody()),
@@ -939,7 +939,7 @@ async function validateComfyUrl() {
             throw new Error('URL is not set.');
         }
 
-        const result = await fetch('/api/sd/comfy/ping', {
+        const result = await fetch('./api/sd/comfy/ping', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -979,7 +979,7 @@ async function onModelChange() {
 
 async function getAutoRemoteModel() {
     try {
-        const result = await fetch('/api/sd/get-model', {
+        const result = await fetch('./api/sd/get-model', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(getSdRequestBody()),
@@ -1003,7 +1003,7 @@ async function onVaeChange() {
 
 async function getAutoRemoteUpscalers() {
     try {
-        const result = await fetch('/api/sd/upscalers', {
+        const result = await fetch('./api/sd/upscalers', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(getSdRequestBody()),
@@ -1023,7 +1023,7 @@ async function getAutoRemoteUpscalers() {
 
 async function getVladRemoteUpscalers() {
     try {
-        const result = await fetch('/api/sd/sd-next/upscalers', {
+        const result = await fetch('./api/sd/sd-next/upscalers', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(getSdRequestBody()),
@@ -1043,7 +1043,7 @@ async function getVladRemoteUpscalers() {
 
 async function updateAutoRemoteModel() {
     try {
-        const result = await fetch('/api/sd/set-model', {
+        const result = await fetch('./api/sd/set-model', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ ...getSdRequestBody(), model: extension_settings.sd.model }),
@@ -1062,7 +1062,7 @@ async function updateAutoRemoteModel() {
 
 async function updateExtrasRemoteModel() {
     const url = new URL(getApiUrl());
-    url.pathname = '/api/image/model';
+    url.pathname = './api/image/model';
     const getCurrentModelResult = await doExtrasFetch(url, {
         method: 'POST',
         body: JSON.stringify({ model: extension_settings.sd.model }),
@@ -1119,7 +1119,7 @@ async function loadSamplers() {
 }
 
 async function loadHordeSamplers() {
-    const result = await fetch('/api/horde/sd-samplers', {
+    const result = await fetch('./api/horde/sd-samplers', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -1138,7 +1138,7 @@ async function loadExtrasSamplers() {
     }
 
     const url = new URL(getApiUrl());
-    url.pathname = '/api/image/samplers';
+    url.pathname = './api/image/samplers';
     const result = await doExtrasFetch(url);
 
     if (result.ok) {
@@ -1155,7 +1155,7 @@ async function loadAutoSamplers() {
     }
 
     try {
-        const result = await fetch('/api/sd/samplers', {
+        const result = await fetch('./api/sd/samplers', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(getSdRequestBody()),
@@ -1178,7 +1178,7 @@ async function loadVladSamplers() {
     }
 
     try {
-        const result = await fetch('/api/sd/samplers', {
+        const result = await fetch('./api/sd/samplers', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(getSdRequestBody()),
@@ -1218,7 +1218,7 @@ async function loadComfySamplers() {
     }
 
     try {
-        const result = await fetch('/api/sd/comfy/samplers', {
+        const result = await fetch('./api/sd/comfy/samplers', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -1285,7 +1285,7 @@ async function loadTogetherAIModels() {
         return [];
     }
 
-    const result = await fetch('/api/sd/together/models', {
+    const result = await fetch('./api/sd/together/models', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -1299,7 +1299,7 @@ async function loadTogetherAIModels() {
 }
 
 async function loadHordeModels() {
-    const result = await fetch('/api/horde/sd-models', {
+    const result = await fetch('./api/horde/sd-models', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -1353,7 +1353,7 @@ async function loadAutoModels() {
             extension_settings.sd.model = currentModel;
         }
 
-        const result = await fetch('/api/sd/models', {
+        const result = await fetch('./api/sd/models', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(getSdRequestBody()),
@@ -1403,7 +1403,7 @@ async function loadVladModels() {
             extension_settings.sd.model = currentModel;
         }
 
-        const result = await fetch('/api/sd/models', {
+        const result = await fetch('./api/sd/models', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(getSdRequestBody()),
@@ -1470,7 +1470,7 @@ async function loadComfyModels() {
     }
 
     try {
-        const result = await fetch('/api/sd/comfy/models', {
+        const result = await fetch('./api/sd/comfy/models', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -1532,7 +1532,7 @@ async function loadComfySchedulers() {
     }
 
     try {
-        const result = await fetch('/api/sd/comfy/schedulers', {
+        const result = await fetch('./api/sd/comfy/schedulers', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -1594,7 +1594,7 @@ async function loadComfyVaes() {
     }
 
     try {
-        const result = await fetch('/api/sd/comfy/vaes', {
+        const result = await fetch('./api/sd/comfy/vaes', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({

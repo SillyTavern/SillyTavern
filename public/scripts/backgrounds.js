@@ -249,7 +249,7 @@ async function onRenameBackgroundClick(e) {
     }
 
     const data = { old_bg: bgNames.oldBg, new_bg: bgNames.newBg };
-    const response = await fetch('/api/backgrounds/rename', {
+    const response = await fetch('./api/backgrounds/rename', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(data),
@@ -337,7 +337,7 @@ async function autoBackgroundCommand() {
 }
 
 export async function getBackgrounds() {
-    const response = await fetch('/api/backgrounds/all', {
+    const response = await fetch('./api/backgrounds/all', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -398,7 +398,7 @@ async function setBackground(bg, url) {
 }
 
 async function delBackground(bg) {
-    await fetch('/api/backgrounds/delete', {
+    await fetch('./api/backgrounds/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({

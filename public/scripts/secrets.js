@@ -59,7 +59,7 @@ function updateSecretDisplay() {
 }
 
 async function viewSecrets() {
-    const response = await fetch('/api/secrets/view', {
+    const response = await fetch('./api/secrets/view', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -90,7 +90,7 @@ export let secret_state = {};
 
 export async function writeSecret(key, value) {
     try {
-        const response = await fetch('/api/secrets/write', {
+        const response = await fetch('./api/secrets/write', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ key, value }),
@@ -111,7 +111,7 @@ export async function writeSecret(key, value) {
 
 export async function readSecretState() {
     try {
-        const response = await fetch('/api/secrets/read', {
+        const response = await fetch('./api/secrets/read', {
             method: 'POST',
             headers: getRequestHeaders(),
         });
@@ -133,7 +133,7 @@ export async function readSecretState() {
  */
 export async function findSecret(key) {
     try {
-        const response = await fetch('/api/secrets/find', {
+        const response = await fetch('./api/secrets/find', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ key }),
