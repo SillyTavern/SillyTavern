@@ -193,19 +193,25 @@
                         <label for="vectors_size_threshold">
                             <small>Size threshold (KB)</small>
                         </label>
-                        <input id="vectors_size_threshold" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_size_threshold" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                     <div class="flex1" title="Chunk size for file splitting.">
                         <label for="vectors_chunk_size">
                             <small>Chunk size (chars)</small>
                         </label>
-                        <input id="vectors_chunk_size" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_chunk_size" type="number" class="text_pole" min="1" max="99999" />
+                    </div>
+                    <div class="flex1" title="The overlap between adjacent chunks in % from chunk size. The overlap text is trimmed to sentence boundaries. 0 = disabled.">
+                        <label for="vectors_overlap_percent">
+                            <small>Chunk overlap (%)</small>
+                        </label>
+                        <input id="vectors_overlap_percent" type="number" class="text_pole" min="0" max="99" step="1" />
                     </div>
                     <div class="flex1" title="How many chunks to retrieve when querying.">
                         <label for="vectors_chunk_count">
                             <small>Retrieve chunks</small>
                         </label>
-                        <input id="vectors_chunk_count" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_chunk_count" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                 </div>
                 <div class="flex justifyCenter" title="These settings apply to files stored in the Data Bank.">
@@ -216,19 +222,25 @@
                         <label for="vectors_size_threshold_db">
                             <small>Size threshold (KB)</small>
                         </label>
-                        <input id="vectors_size_threshold_db" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_size_threshold_db" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                     <div class="flex1" title="Chunk size for file splitting.">
                         <label for="vectors_chunk_size_db">
                             <small>Chunk size (chars)</small>
                         </label>
-                        <input id="vectors_chunk_size_db" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_chunk_size_db" type="number" class="text_pole" min="1" max="99999" />
+                    </div>
+                    <div class="flex1" title="The overlap between adjacent chunks in % from chunk size. The overlap text is trimmed to sentence boundaries. 0 = disabled.">
+                        <label for="vectors_overlap_percent_db">
+                            <small>Chunk overlap (%)</small>
+                        </label>
+                        <input id="vectors_overlap_percent_db" type="number" class="text_pole" min="0" max="99" step="1" />
                     </div>
                     <div class="flex1" title="How many chunks to retrieve when querying.">
                         <label for="vectors_chunk_count_db">
                             <small>Retrieve chunks</small>
                         </label>
-                        <input id="vectors_chunk_count_db" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_chunk_count_db" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                 </div>
                 <div class="flex-container flexFlowColumn">
