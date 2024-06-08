@@ -1547,6 +1547,22 @@ function appendViewTagToList(list, tag, everything) {
 
     list.append(template);
 
+    // We prevent the popup from auto-close on Escape press on the color pickups. If the user really wants to, he can hit it again
+    // Not the "cleanest" way, that would be actually using and observer, remembering whether the popup was open just before, but eh
+    // Not gonna invest too much time into this small control here
+    let lastHit = 0;
+    template.on('keydown', (evt) => {
+        if (evt.key === 'Escape') {
+            if (evt.target === primaryColorPicker[0] || evt.target === secondaryColorPicker[0]) {
+                if (Date.now() - lastHit < 5000) // If user hits it twice in five seconds
+                    return;
+                lastHit = Date.now();
+                evt.stopPropagation();
+                evt.preventDefault();
+            }
+        }
+    });
+
     updateDrawTagFolder(template, tag);
 }
 

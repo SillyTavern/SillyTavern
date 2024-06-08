@@ -60,7 +60,7 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
                         hoverRules.push({ baseSelector, rule });
                     } else if (selector.includes(':focus')) {
                         // We need to make sure that we both remember existing :focus and :focus-within rules
-                        const baseSelector = selector.replace(':focus-within', PLACEHOLDER).replace(':focus', PLACEHOLDER).trim();
+                        const baseSelector = selector.replace(':focus-within', PLACEHOLDER).replace(':focus-visible', PLACEHOLDER).replace(':focus', PLACEHOLDER).trim();
                         focusRules.add(baseSelector);
                     }
                 });
@@ -92,7 +92,10 @@ function applyDynamicFocusStyles(styleSheet, { fromExtension = false } = {}) {
             // Only initialize the dynamic stylesheet if needed
             targetStyleSheet ??= getDynamicStyleSheet({ fromExtension });
 
-            const focusSelector = rule.selectorText.replace(/:hover/g, ':focus');
+            // The closest keyboard-equivalent to :hover styling is utilizing the :focus-within for keyboards
+            // So we take all :hover rules that don't have a manually defined focus rule yet, and create their
+            // :focus-within counterpart, which will make the styling work the same for keyboard and mouse
+            const focusSelector = rule.selectorText.replace(/:hover/g, ':focus-within');
             const focusRule = `${focusSelector} { ${rule.style.cssText} }`;
 
             try {

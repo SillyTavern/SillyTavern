@@ -212,15 +212,17 @@ table.responsiveTable {
 }
 
 /* Keyboard/focus navigation styling */
-/** Mimic the outline of keyboard navigation for most most focusable controls */
+/* Mimic the outline of keyboard navigation for most most focusable controls */
 .interactable {
     border-radius: 5px;
 }
 
-.interactable:focus {
+/* Outline for "normal" buttons should only be when actual keyboard navigation is used */
+.interactable:focus-visible {
     outline: 1px solid var(--white100);
 }
 
+/* The specific input controls can always have a faint outline, even on mouse interaction, to give a better hint */
 select:focus,
 input:focus,
 textarea:focus {
@@ -266,7 +268,7 @@ input[type='checkbox']:focus {
 
 .fa-lock.right_menu_button,
 .fa-unlock.right_menu_button {
-    padding: 2 4px;
+    padding: 2px 4px;
 }
 
 .text_muted {
@@ -2780,17 +2782,15 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .bg_button {
-    width: 15px;
-    height: 15px;
+    padding: 4px;
     position: absolute;
     top: 5px;
     cursor: pointer;
     opacity: 0.8;
-    border-radius: 50%;
+    border-radius: 3px;
     font-size: 20px;
     color: var(--black70a);
     text-shadow: none;
-    padding: 0;
     margin: 0;
     filter: drop-shadow(0px 0px 3px white);
     transition: opacity 0.2s ease-in-out;
@@ -2806,15 +2806,15 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .bg_example_cross {
-    right: 10px;
+    right: 6px;
 }
 
 .bg_example_edit {
-    left: 10px;
+    left: 6px;
 }
 
 .bg_example_copy {
-    left: 10px;
+    left: 6px;
 }
 
 .bg_example_lock,

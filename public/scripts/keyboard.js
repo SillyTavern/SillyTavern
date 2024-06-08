@@ -109,8 +109,23 @@ export function makeKeyboardInteractable(...interactables) {
             interactable.classList.add(INTERACTABLE_CONTROL_CLASS);
         }
 
+        /**
+         * Check if the element or any parent element has 'disabled' or 'not_focusable' class
+         * @param {Element} el
+         * @returns {boolean}
+         */
+        const hasDisabledOrNotFocusableAncestor = (el) => {
+            while (el) {
+                if (el.classList.contains(NOT_FOCUSABLE_CONTROL_CLASS) || el.classList.contains(DISABLED_CONTROL_CLASS)) {
+                    return true;
+                }
+                el = el.parentElement;
+            }
+            return false;
+        };
+
         // Set/remove the tabindex accordingly to the classes. Remembering if it had a custom value.
-        if (!interactable.classList.contains(NOT_FOCUSABLE_CONTROL_CLASS) && !interactable.classList.contains(DISABLED_CONTROL_CLASS)) {
+        if (!hasDisabledOrNotFocusableAncestor(interactable)) {
             if (!interactable.hasAttribute('tabindex')) {
                 const tabIndex = interactable.getAttribute('data-original-tabindex') ?? '0';
                 interactable.setAttribute('tabindex', tabIndex);
@@ -121,6 +136,7 @@ export function makeKeyboardInteractable(...interactables) {
         }
     });
 }
+
 
 /**
  * Initializes the focusability of controls on the given element or the document
