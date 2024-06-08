@@ -23,7 +23,7 @@ import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '
 import { isMobile } from './RossAscends-mods.js';
 import { POPUP_RESULT, POPUP_TYPE, callGenericPopup } from './popup.js';
 import { debounce_timeout } from './constants.js';
-import { INTERACTABLE_CONTROL_CLASS, registerInteractableType } from './keyboard.js';
+import { INTERACTABLE_CONTROL_CLASS } from './keyboard.js';
 
 export {
     TAG_FOLDER_TYPES,

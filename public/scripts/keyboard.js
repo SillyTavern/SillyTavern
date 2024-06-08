@@ -1,24 +1,25 @@
 /* All selectors that should act as interactables / keyboard buttons by default */
 const interactableSelectors = [
-    '.custom_interactable',
-    '.interactable',
-    '.menu_button',
-    '.right_menu_button',
-    '.drawer-icon',
-    '.inline-drawer-icon',
-    '.paginationjs-pages li a',
-    '.group_select',
-    '.character_select',
-    '.bogus_folder_select',
-    '.avatar-container',
-    '.tag .tag_remove',
-    '.bg_example',
-    '.bg_example .bg_button',
-    '#options a',
-    '#extensionsMenu div:has(.extensionsMenuExtensionButton)',
-    '.mes_buttons .mes_button',
-    '.extraMesButtons>div:not(.mes_button)',
-    '.stscript_btn'
+    '.interactable', // Main interactable class for ALL interactable controls (can also be manually added in code, so that's why its listed here)
+    '.custom_interactable', // Manually made interactable controls via code (see 'makeKeyboardInteractable()')
+    '.menu_button', // General menu button in ST
+    '.right_menu_button', // Button-likes in many menus
+    '.drawer-icon', // Main "menu bar" icons
+    '.inline-drawer-icon', // Buttons/icons inside the drawer menus
+    '.paginationjs-pages li a', // Pagination buttons
+    '.group_select, .character_select, .bogus_folder_select', // Cards to select char, group or folder in character list and other places
+    '.avatar-container', // Persona list blocks
+    '.tag .tag_remove', // Remove button in removable tags
+    '.bg_example', // Background elements in the background menu
+    '.bg_example .bg_button', // The inline buttons on the backgrounds
+    '#options a', // Option entries in the popup options menu
+    '#extensionsMenu div:has(.extensionsMenuExtensionButton)', // Option entries in the extension menu popup that are coming from extensions
+    '.mes_buttons .mes_button', // Small inline buttons on the chat messages
+    '.extraMesButtons>div:not(.mes_button)', // The extra/extension buttons inline on the chat messages
+    '.swipe_left, .swipe_right', // Swipe buttons on the last message
+    '.stscript_btn', // STscript buttons in the chat bar
+    '.select2_choice_clickable+span.select2-container .select2-selection__choice__display', // select2 control elements if they are meant to be clickable
+    '.avatar_load_preview' // Char display avatar selection
 ];
 
 export const INTERACTABLE_CONTROL_CLASS = 'interactable';
