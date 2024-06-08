@@ -230,16 +230,76 @@ router.post('/delete', jsonParser, function (request, response) {
     const dirName = String(request.body.avatar_url).replace('.png', '');
     const fileName = path.join(request.user.directories.chats, dirName, sanitize(String(request.body.chatfile)));
     const chatFileExists = fs.existsSync(fileName);
+    const isDeleteWithMainEnabled = getConfigValue('deleteChatBackupWithMain', false);
 
     if (!chatFileExists) {
         console.log(`Chat file not found '${fileName}'`);
         return response.sendStatus(400);
     } else {
-        fs.rmSync(fileName);
-        console.log('Deleted chat file: ' + fileName);
-    }
+        if(!isDeleteWithMainEnabled) {
+            // Delete the main chat file after the backups have been deleted
+            fs.rmSync(fileName);
+            console.log('Deleted chat file: ' + fileName);
 
-    return response.send('ok');
+            return response.send('ok');
+        } else {
+        const chatContent = fs.readFileSync(fileName, 'utf8');
+        const firstJsonLine = chatContent.split('\n')[0]; // Read only the first JSON object
+
+        let parsedContent;
+        try {
+            parsedContent = JSON.parse(firstJsonLine);
+        } catch (e) {
+            console.error('Error parsing chat file:', e);
+            return response.sendStatus(500);
+        }
+
+        const characterName = parsedContent.character_name ? parsedContent.character_name.toLowerCase() : null;
+        const chatIdHash = parsedContent.chat_metadata ? parsedContent.chat_metadata.chat_id_hash : null;
+
+        if (!characterName || !chatIdHash) {
+            console.error('Missing character_name or chat_id_hash');
+            return response.sendStatus(500);
+        }
+
+        // Search for backup files in the backups folder
+        const backupsFolder = request.user.directories.backups;
+        fs.readdir(backupsFolder, (err, files) => {
+            if (err) {
+                console.error('Error reading backups folder:', err);
+                return response.sendStatus(500);
+            }
+
+            files.forEach(file => {
+                if (file.toLowerCase().includes(characterName)) {
+                    const backupFilePath = path.join(backupsFolder, file);
+                    const backupFileContent = fs.readFileSync(backupFilePath, 'utf8');
+                    const backupJsonObjects = backupFileContent.split('\n');
+
+                    backupJsonObjects.forEach(jsonLine => {
+                        if (jsonLine.trim()) {
+                            try {
+                                const backupJson = JSON.parse(jsonLine);
+                                if (backupJson.chat_metadata && backupJson.chat_metadata.chat_id_hash === chatIdHash) {
+                                    fs.rmSync(backupFilePath);
+                                    console.log('Deleted backup file: ' + backupFilePath);
+                                }
+                            } catch (e) {
+                                console.error('Error parsing backup file:', e);
+                            }
+                        }
+                    });
+                }
+            });
+
+                // Delete the main chat file after the backups have been deleted
+                fs.rmSync(fileName);
+                console.log('Deleted chat file: ' + fileName);
+    
+                return response.send('ok');
+            });
+        }
+    }
 });
 
 router.post('/export', jsonParser, async function (request, response) {

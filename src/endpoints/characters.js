@@ -877,15 +877,53 @@ router.post('/delete', jsonParser, async function (request, response) {
     fs.rmSync(avatarPath);
     invalidateThumbnail(request.user.directories, 'avatar', request.body.avatar_url);
     let dir_name = (request.body.avatar_url.replace('.png', ''));
+    let char_name = dir_name.toLowerCase().replace(/[^a-z0-9]/g, '_'); // Replace non-alphanumeric characters with underscores
 
     if (!dir_name.length) {
         console.error('Malicious dirname prevented');
         return response.sendStatus(403);
     }
+    const { getConfigValue } = require('../util');
+    const isDeleteWithMainEnabled = getConfigValue('deleteChatBackupWithMain', false);
 
-    if (request.body.delete_chats == true) {
+    // Get the backup folder path from the user directories
+    const backupsFolder = request.user.directories.backups;
+
+    if (request.body.delete_chats === true) {
         try {
-            await fs.promises.rm(path.join(request.user.directories.chats, sanitize(dir_name)), { recursive: true, force: true });
+            const chatDirPath = path.join(request.user.directories.chats, sanitize(char_name));
+            await fs.promises.rm(chatDirPath, { recursive: true, force: true });
+
+            if (isDeleteWithMainEnabled) {
+                // MERGE NEW FUNCTION HERE.
+                // Read all files in the backups folder
+                fs.readdir(backupsFolder, (err, files) => {
+                    if (err) {
+                        console.error(`Error reading backup folder: ${err.message}`);
+                        return response.sendStatus(500);
+                    }
+
+                    // Filter for files that match the pattern
+                    const filesToDelete = files.filter(file => {
+                        const regex = new RegExp(`^chat_${char_name}_.*\\.jsonl$`, 'i');
+                        return regex.test(file);
+                    });
+
+                    // Delete each matching file
+                    filesToDelete.forEach(file => {
+                        const filePath = path.join(backupsFolder, file);
+                        fs.unlink(filePath, err => {
+                            if (err) {
+                                console.error(`Error deleting file ${filePath}: ${err.message}`);
+                            } 
+                        });
+                    });
+
+                    if (filesToDelete.length === 0) {
+                        console.log(`No backup chat files found for character ${char_name} in ${backupsFolder}`);
+                    }
+                });
+            }
         } catch (err) {
             console.error(err);
             return response.sendStatus(500);
