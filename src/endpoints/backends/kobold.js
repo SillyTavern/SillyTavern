@@ -1,9 +1,11 @@
 const express = require('express');
 const fetch = require('node-fetch').default;
+const fs = require('fs');
 
-const { jsonParser } = require('../../express-common');
+const { jsonParser, urlencodedParser } = require('../../express-common');
 const { forwardFetchResponse, delay } = require('../../util');
-const { getOverrideHeaders, setAdditionalHeaders } = require('../../additional-headers');
+const { getOverrideHeaders, setAdditionalHeaders, setAdditionalHeadersByType } = require('../../additional-headers');
+const { TEXTGEN_TYPES } = require('../../constants');
 
 const router = express.Router();
 
@@ -183,6 +185,57 @@ router.post('/status', jsonParser, async function (request, response) {
         koboldModelResponse.result;
 
     response.send(result);
+});
+
+router.post('/transcribe-audio', urlencodedParser, async function (request, response) {
+    try {
+        const server = request.body.server;
+
+        if (!server) {
+            console.log('Server is not set');
+            return response.sendStatus(400);
+        }
+
+        if (!request.file) {
+            console.log('No audio file found');
+            return response.sendStatus(400);
+        }
+
+        console.log('Transcribing audio with KoboldCpp', server);
+
+        const fileBase64 = fs.readFileSync(request.file.path).toString('base64');
+        fs.rmSync(request.file.path);
+
+        const headers = {};
+        setAdditionalHeadersByType(headers, TEXTGEN_TYPES.KOBOLDCPP, server, request.user.directories);
+
+        const url = new URL(server);
+        url.pathname = '/api/extra/transcribe';
+
+        const result = await fetch(url, {
+            method: 'POST',
+            headers: {
+                ...headers,
+            },
+            body: JSON.stringify({
+                prompt: '',
+                audio_data: fileBase64,
+            }),
+        });
+
+        if (!result.ok) {
+            const text = await result.text();
+            console.log('KoboldCpp request failed', result.statusText, text);
+            return response.status(500).send(text);
+        }
+
+        const data = await result.json();
+        console.log('KoboldCpp transcription response', data);
+        return response.json(data);
+    } catch (error) {
+        console.error('KoboldCpp transcription failed', error);
+        response.status(500).send('Internal server error');
+    }
 });
 
 module.exports = { router };

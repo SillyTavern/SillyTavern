@@ -433,10 +433,12 @@ export const event_types = {
     CHAT_DELETED: 'chat_deleted',
     GROUP_CHAT_DELETED: 'group_chat_deleted',
     GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
+    GENERATE_AFTER_COMBINE_PROMPTS: 'generate_after_combine_prompts',
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
     CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',
+    CHAT_COMPLETION_PROMPT_READY: 'chat_completion_prompt_ready',
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
@@ -4014,6 +4016,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     let finalPrompt = getCombinedPrompt(false);
 
+    const eventData = { prompt: finalPrompt, dryRun: dryRun };
+    await eventSource.emit(event_types.GENERATE_AFTER_COMBINE_PROMPTS, eventData);
+    finalPrompt = eventData.prompt;
+
     let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
     let thisPromptBits = [];
 
@@ -5455,70 +5461,95 @@ export function setSendButtonState(value) {
     is_send_press = value;
 }
 
-async function renameCharacter() {
+export async function renameCharacter(name = null, { silent = false, renameChats = null } = {}) {
+    if (!name && silent) {
+        toastr.warning('No character name provided.', 'Rename Character');
+        return false;
+    }
+    if (this_chid === undefined) {
+        toastr.warning('No character selected.', 'Rename Character');
+        return false;
+    }
+
     const oldAvatar = characters[this_chid].avatar;
-    const newValue = await callGenericPopup('<h3>New name:</h3>', POPUP_TYPE.INPUT, characters[this_chid].name);
+    const newValue = name || await callGenericPopup('<h3>New name:</h3>', POPUP_TYPE.INPUT, characters[this_chid].name);
 
-    if (newValue && newValue !== characters[this_chid].name) {
-        const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });
-        const response = await fetch('/api/characters/rename', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body,
-        });
+    if (!newValue) {
+        toastr.warning('No character name provided.', 'Rename Character');
+        return false;
+    }
+    if (newValue === characters[this_chid].name) {
+        toastr.info('Same character name provided, so name did not change.', 'Rename Character');
+        return false;
+    }
 
-        try {
-            if (response.ok) {
-                const data = await response.json();
-                const newAvatar = data.avatar;
+    const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });
+    const response = await fetch('/api/characters/rename', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body,
+    });
 
-                // Replace tags list
-                renameTagKey(oldAvatar, newAvatar);
+    try {
+        if (response.ok) {
+            const data = await response.json();
+            const newAvatar = data.avatar;
 
-                // Reload characters list
-                await getCharacters();
+            // Replace tags list
+            renameTagKey(oldAvatar, newAvatar);
 
-                // Find newly renamed character
-                const newChId = characters.findIndex(c => c.avatar == data.avatar);
+            // Reload characters list
+            await getCharacters();
 
-                if (newChId !== -1) {
-                    // Select the character after the renaming
-                    this_chid = -1;
-                    await selectCharacterById(String(newChId));
+            // Find newly renamed character
+            const newChId = characters.findIndex(c => c.avatar == data.avatar);
 
-                    // Async delay to update UI
-                    await delay(1);
+            if (newChId !== -1) {
+                // Select the character after the renaming
+                this_chid = -1;
+                await selectCharacterById(String(newChId));
 
-                    if (this_chid === -1) {
-                        throw new Error('New character not selected');
-                    }
+                // Async delay to update UI
+                await delay(1);
 
-                    // Also rename as a group member
-                    await renameGroupMember(oldAvatar, newAvatar, newValue);
-                    const renamePastChatsConfirm = await callPopup(`<h3>Character renamed!</h3>
-                    <p>Past chats will still contain the old character name. Would you like to update the character name in previous chats as well?</p>
-                    <i><b>Sprites folder (if any) should be renamed manually.</b></i>`, 'confirm');
-
-                    if (renamePastChatsConfirm) {
-                        await renamePastChats(newAvatar, newValue);
-                        await reloadCurrentChat();
-                        toastr.success('Character renamed and past chats updated!');
-                    }
+                if (this_chid === -1) {
+                    throw new Error('New character not selected');
                 }
-                else {
-                    throw new Error('Newly renamed character was lost?');
+
+                // Also rename as a group member
+                await renameGroupMember(oldAvatar, newAvatar, newValue);
+                const renamePastChatsConfirm = renameChats !== null ? renameChats
+                    : silent ? false : await callPopup(`<h3>Character renamed!</h3>
+                <p>Past chats will still contain the old character name. Would you like to update the character name in previous chats as well?</p>
+                <i><b>Sprites folder (if any) should be renamed manually.</b></i>`, 'confirm');
+
+                if (renamePastChatsConfirm) {
+                    await renamePastChats(newAvatar, newValue);
+                    await reloadCurrentChat();
+                    toastr.success('Character renamed and past chats updated!', 'Rename Character');
+                } else {
+                    toastr.success('Character renamed!', 'Rename Character');
                 }
             }
             else {
-                throw new Error('Could not rename the character');
+                throw new Error('Newly renamed character was lost?');
             }
         }
-        catch {
-            // Reloading to prevent data corruption
-            await callPopup('Something went wrong. The page will be reloaded.', 'text');
-            location.reload();
+        else {
+            throw new Error('Could not rename the character');
         }
     }
+    catch (error) {
+    // Reloading to prevent data corruption
+        if (!silent) await callPopup('Something went wrong. The page will be reloaded.', 'text');
+        else toastr.error('Something went wrong. The page will be reloaded.', 'Rename Character');
+
+        console.log('Renaming character error:', error);
+        location.reload();
+        return false;
+    }
+
+    return true;
 }
 
 async function renamePastChats(newAvatar, newValue) {
@@ -7678,6 +7709,8 @@ window['SillyTavern'].getContext = function () {
         setExtensionPrompt: setExtensionPrompt,
         updateChatMetadata: updateChatMetadata,
         saveChat: saveChatConditional,
+        openCharacterChat: openCharacterChat,
+        openGroupChat: openGroupChat,
         saveMetadata: saveMetadata,
         sendSystemMessage: sendSystemMessage,
         activateSendButtons,
@@ -10568,54 +10601,60 @@ jQuery(async function () {
 
     $(document).on('click', '.external_import_button, #external_import_button', async () => {
         const html = await renderTemplateAsync('importCharacters');
-        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: $('#popup_template').attr('popup_text_import'), rows: 4 });
+
+        /** @type {string?} */
+        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { wider: true, okButton: $('#popup_template').attr('popup_text_import'), rows: 4 });
 
         if (!input) {
             console.debug('Custom content import cancelled');
             return;
         }
 
-        const url = input.trim();
-        var request;
+        // break input into one input per line
+        const inputs = input.split('\n').map(x => x.trim()).filter(x => x.length > 0);
 
-        if (isValidUrl(url)) {
-            console.debug('Custom content import started for URL: ', url);
-            request = await fetch('/api/content/importURL', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify({ url }),
-            });
-        } else {
-            console.debug('Custom content import started for Char UUID: ', url);
-            request = await fetch('/api/content/importUUID', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify({ url }),
-            });
-        }
+        for (const url of inputs) {
+            let request;
 
-        if (!request.ok) {
-            toastr.info(request.statusText, 'Custom content import failed');
-            console.error('Custom content import failed', request.status, request.statusText);
-            return;
-        }
+            if (isValidUrl(url)) {
+                console.debug('Custom content import started for URL: ', url);
+                request = await fetch('/api/content/importURL', {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({ url }),
+                });
+            } else {
+                console.debug('Custom content import started for Char UUID: ', url);
+                request = await fetch('/api/content/importUUID', {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({ url }),
+                });
+            }
 
-        const data = await request.blob();
-        const customContentType = request.headers.get('X-Custom-Content-Type');
-        const fileName = request.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
-        const file = new File([data], fileName, { type: data.type });
+            if (!request.ok) {
+                toastr.info(request.statusText, 'Custom content import failed');
+                console.error('Custom content import failed', request.status, request.statusText);
+                return;
+            }
 
-        switch (customContentType) {
-            case 'character':
-                await processDroppedFiles([file]);
-                break;
-            case 'lorebook':
-                await importWorldInfo(file);
-                break;
-            default:
-                toastr.warning('Unknown content type');
-                console.error('Unknown content type', customContentType);
-                break;
+            const data = await request.blob();
+            const customContentType = request.headers.get('X-Custom-Content-Type');
+            const fileName = request.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+            const file = new File([data], fileName, { type: data.type });
+
+            switch (customContentType) {
+                case 'character':
+                    await processDroppedFiles([file]);
+                    break;
+                case 'lorebook':
+                    await importWorldInfo(file);
+                    break;
+                default:
+                    toastr.warning('Unknown content type');
+                    console.error('Unknown content type', customContentType);
+                    break;
+            }
         }
     });
 

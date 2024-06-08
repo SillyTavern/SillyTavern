@@ -1230,6 +1230,11 @@
                                         <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="-1" max="8192" step="1">
                                         <input class="neo-range-input" type="number" min="-1" max="8192" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
                                     </div>
+                                    <div data-tg-type="koboldcpp" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
+                                        <small data-i18n="Rep. Pen. Slope">Rep Pen Slope</small>
+                                        <input class="neo-range-slider" type="range" id="rep_pen_slope_textgenerationwebui" name="volume" min="0" max="10" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope_textgenerationwebui" id="rep_pen_slope_counter_textgenerationwebui">
+                                    </div>
                                     <div data-tg-type="tabby" class="alignitemscenter flex-container flexFlowColumn flexBasis30p flexGrow flexShrink gap0">
                                         <small data-i18n="rep.pen decay">Rep Pen Decay</small>
                                         <input class="neo-range-slider" type="range" id="rep_pen_decay_textgenerationwebui" name="volume" min="-1" max="8192" step="1">
@@ -2764,6 +2769,7 @@
                                         <option value="mistral-small-latest">mistral-small-latest</option>
                                         <option value="mistral-medium-latest">mistral-medium-latest</option>
                                         <option value="mistral-large-latest">mistral-large-latest</option>
+                                        <option value="codestral-latest">codestral-latest</option>
                                     </optgroup>
                                     <optgroup label="Sub-versions">
                                         <option value="open-mixtral-8x22b-2404">open-mixtral-8x22b-2404</option>
@@ -2772,6 +2778,7 @@
                                         <option value="mistral-small-2402">mistral-small-2402</option>
                                         <option value="mistral-medium-2312">mistral-medium-2312</option>
                                         <option value="mistral-large-2402">mistral-large-2402</option>
+                                        <option value="codestral-2405">codestral-2405</option>
                                     </optgroup>
                                 </select>
                             </div>
@@ -2817,10 +2824,8 @@
                                 <optgroup label="Open-Source Models">
                                     <option value="llama-3-8b-instruct">llama-3-8b-instruct</option>
                                     <option value="llama-3-70b-instruct">llama-3-70b-instruct</option>
-                                    <option value="codellama-70b-instruct">codellama-70b-instruct</option>
                                     <option value="mistral-7b-instruct">mistral-7b-instruct (v0.2)</option>
                                     <option value="mixtral-8x7b-instruct">mixtral-8x7b-instruct</option>
-                                    <option value="mixtral-8x22b-instruct">mixtral-8x22b-instruct</option>
                                 </optgroup>
                             </select>
                         </div>
