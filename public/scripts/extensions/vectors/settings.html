@@ -12,13 +12,36 @@
                 <select id="vectors_source" class="text_pole">
                     <option value="cohere">Cohere</option>
                     <option value="extras">Extras</option>
-                    <option value="palm">Google MakerSuite (PaLM)</option>
+                    <option value="palm">Google MakerSuite</option>
+                    <option value="llamacpp">llama.cpp</option>
                     <option value="transformers">Local (Transformers)</option>
                     <option value="mistral">MistralAI</option>
                     <option value="nomicai">NomicAI</option>
+                    <option value="ollama">Ollama</option>
                     <option value="openai">OpenAI</option>
                     <option value="togetherai">TogetherAI</option>
                 </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="ollama_vectorsModel">
+                <label for="vectors_ollama_model">
+                    Vectorization Model
+                </label>
+                <input id="vectors_ollama_model" class="text_pole" type="text" placeholder="Model tag, e.g. llama3" />
+                <label for="vectors_ollama_keep" class="checkbox_label" title="When checked, the model will not be unloaded after use.">
+                    <input id="vectors_ollama_keep" type="checkbox" />
+                    <span>Keep model in memory</span>
+                </label>
+                <i>
+                    Hint: Download models and set the URL in the API connection settings.
+                </i>
+            </div>
+            <div class="flex-container flexFlowColumn" id="llamacpp_vectorsModel">
+                <span>
+                    The server MUST be started with the <code>--embedding</code> flag to use this feature!
+                </span>
+                <i>
+                    Hint: Set the URL in the API connection settings.
+                </i>
             </div>
             <div class="flex-container flexFlowColumn" id="openai_vectorsModel">
                 <label for="vectors_openai_model">
@@ -81,11 +104,19 @@
                 </div>
             </div>
 
-            <div class="flex-container flexFlowColumn" title="How many last messages will be matched for relevance.">
-                <label for="vectors_query">
-                    <span>Query messages</span>
-                </label>
-                <input type="number" id="vectors_query" class="text_pole widthUnset" min="1" max="99" />
+            <div class="flex-container marginTopBot5">
+                <div class="flex-container flex1 flexFlowColumn" title="How many last messages will be matched for relevance.">
+                    <label for="vectors_query">
+                        <span>Query messages</span>
+                    </label>
+                    <input type="number" id="vectors_query" class="text_pole widthUnset" min="1" max="99" />
+                </div>
+                <div class="flex-container flex1 flexFlowColumn" title="Cut-off score for relevance. Helps to filter out irrelevant data.">
+                    <label for="vectors_query">
+                        <span>Score threshold</span>
+                    </label>
+                    <input type="number" id="vectors_score_threshold" class="text_pole widthUnset" min="0" max="1" step="0.05" />
+                </div>
             </div>
 
             <div class="flex-container">
@@ -162,19 +193,25 @@
                         <label for="vectors_size_threshold">
                             <small>Size threshold (KB)</small>
                         </label>
-                        <input id="vectors_size_threshold" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_size_threshold" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                     <div class="flex1" title="Chunk size for file splitting.">
                         <label for="vectors_chunk_size">
                             <small>Chunk size (chars)</small>
                         </label>
-                        <input id="vectors_chunk_size" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_chunk_size" type="number" class="text_pole" min="1" max="99999" />
+                    </div>
+                    <div class="flex1" title="The overlap between adjacent chunks in % from chunk size. The overlap text is trimmed to sentence boundaries. 0 = disabled.">
+                        <label for="vectors_overlap_percent">
+                            <small>Chunk overlap (%)</small>
+                        </label>
+                        <input id="vectors_overlap_percent" type="number" class="text_pole" min="0" max="99" step="1" />
                     </div>
                     <div class="flex1" title="How many chunks to retrieve when querying.">
                         <label for="vectors_chunk_count">
                             <small>Retrieve chunks</small>
                         </label>
-                        <input id="vectors_chunk_count" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_chunk_count" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                 </div>
                 <div class="flex justifyCenter" title="These settings apply to files stored in the Data Bank.">
@@ -185,19 +222,25 @@
                         <label for="vectors_size_threshold_db">
                             <small>Size threshold (KB)</small>
                         </label>
-                        <input id="vectors_size_threshold_db" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_size_threshold_db" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                     <div class="flex1" title="Chunk size for file splitting.">
                         <label for="vectors_chunk_size_db">
                             <small>Chunk size (chars)</small>
                         </label>
-                        <input id="vectors_chunk_size_db" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_chunk_size_db" type="number" class="text_pole" min="1" max="99999" />
+                    </div>
+                    <div class="flex1" title="The overlap between adjacent chunks in % from chunk size. The overlap text is trimmed to sentence boundaries. 0 = disabled.">
+                        <label for="vectors_overlap_percent_db">
+                            <small>Chunk overlap (%)</small>
+                        </label>
+                        <input id="vectors_overlap_percent_db" type="number" class="text_pole" min="0" max="99" step="1" />
                     </div>
                     <div class="flex1" title="How many chunks to retrieve when querying.">
                         <label for="vectors_chunk_count_db">
                             <small>Retrieve chunks</small>
                         </label>
-                        <input id="vectors_chunk_count_db" type="number" class="text_pole widthUnset" min="1" max="99999" />
+                        <input id="vectors_chunk_count_db" type="number" class="text_pole" min="1" max="99999" />
                     </div>
                 </div>
                 <div class="flex-container flexFlowColumn">

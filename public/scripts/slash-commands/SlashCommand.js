@@ -18,6 +18,11 @@ import { SlashCommandScope } from './SlashCommandScope.js';
  */
 
 /**
+ * Alternative object for local JSDocs, where you don't need existing pipe, scope, etc. arguments
+ * @typedef {{[id:string]:string|SlashCommandClosure}} NamedArgumentsCapture
+ */
+
+/**
  * @typedef {string|SlashCommandClosure|(string|SlashCommandClosure)[]} UnnamedArguments
 */
 
@@ -28,7 +33,7 @@ export class SlashCommand {
      * Creates a SlashCommand from a properties object.
      * @param {Object} props
      * @param {string} [props.name]
-     * @param {(namedArguments:NamedArguments, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|void|Promise<string|SlashCommandClosure|void>} [props.callback]
+     * @param {(namedArguments:NamedArguments|NamedArgumentsCapture, unnamedArguments:string|SlashCommandClosure|(string|SlashCommandClosure)[])=>string|SlashCommandClosure|void|Promise<string|SlashCommandClosure|void>} [props.callback]
      * @param {string} [props.helpString]
      * @param {boolean} [props.splitUnnamedArgument]
      * @param {string[]} [props.aliases]

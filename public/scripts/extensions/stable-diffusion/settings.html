@@ -2,35 +2,35 @@
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
             <b>
-                Image Generation
-                <a href="https://docs.sillytavern.app/extras/extensions/stable-diffusion/" class="notes-link" target="_blank">
+                <span data-i18n="Image Generation">Image Generation</span>
+                <a href="https://docs.sillytavern.app/extensions/stable-diffusion/" class="notes-link" target="_blank">
                     <span class="note-link-span">?</span>
                 </a>
             </b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label for="sd_refine_mode" class="checkbox_label" title="Allow to edit prompts manually before sending them to generation API">
+            <label for="sd_refine_mode" class="checkbox_label" data-i18n="[title]sd_refine_mode" title="Allow to edit prompts manually before sending them to generation API">
                 <input id="sd_refine_mode" type="checkbox" />
-                Edit prompts before generation
+                <span data-i18n="sd_refine_mode_txt">Edit prompts before generation</span>
             </label>
-            <label for="sd_interactive_mode" class="checkbox_label" title="Automatically generate images when sending messages like 'send me a picture of cat'.">
+            <label for="sd_interactive_mode" class="checkbox_label" data-i18n="[title]sd_interactive_mode" title="Automatically generate images when sending messages like 'send me a picture of cat'.">
                 <input id="sd_interactive_mode" type="checkbox" />
-                Interactive mode
+                <span data-i18n="sd_interactive_mode_txt">Interactive mode</span>
             </label>
-            <label for="sd_multimodal_captioning" class="checkbox_label" title="Use multimodal captioning to generate prompts for user and character portraits based on their avatars.">
+            <label for="sd_multimodal_captioning" class="checkbox_label" data-i18n="[title]sd_multimodal_captioning" title="Use multimodal captioning to generate prompts for user and character portraits based on their avatars.">
                 <input id="sd_multimodal_captioning" type="checkbox" />
-                Use multimodal captioning for portraits
+                <span data-i18n="sd_multimodal_captioning_txt">Use multimodal captioning for portraits</span>
             </label>
-            <label for="sd_expand" class="checkbox_label" title="Automatically extend prompts using text generation model">
+            <label for="sd_expand" class="checkbox_label" data-i18n="[title]sd_expand" title="Automatically extend prompts using text generation model">
                 <input id="sd_expand" type="checkbox" />
-                Auto-enhance prompts
+                <span data-i18n="sd_expand_txt">Auto-enhance prompts</span>
             </label>
-            <label for="sd_snap" class="checkbox_label" title="Snap generation requests with a forced aspect ratio (portraits, backgrounds) to the nearest known resolution, while trying to preserve the absolute pixel counts (recommended for SDXL).">
+            <label for="sd_snap" class="checkbox_label" data-i18n="[title]sd_snap" title="Snap generation requests with a forced aspect ratio (portraits, backgrounds) to the nearest known resolution, while trying to preserve the absolute pixel counts (recommended for SDXL).">
                 <input id="sd_snap" type="checkbox" />
-                Snap auto-adjusted resolutions
+                <span data-i18n="sd_snap_txt">Snap auto-adjusted resolutions</span>
             </label>
-            <label for="sd_source">Source</label>
+            <label for="sd_source" data-i18n="Source">Source</label>
             <select id="sd_source">
                 <option value="comfy">ComfyUI</option>
                 <option value="drawthings">DrawThings HTTP API</option>
@@ -46,7 +46,7 @@
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
                 <div class="flex-container flexnowrap">
-                    <input id="sd_auto_url" type="text" class="text_pole" placeholder="Example: {{auto_url}}" value="{{auto_url}}" />
+                    <input id="sd_auto_url" type="text" class="text_pole" data-i18n="[placeholder]sd_auto_url" placeholder="Example: {{auto_url}}" value="{{auto_url}}" />
                     <div id="sd_auto_validate" class="menu_button menu_button_icon">
                         <i class="fa-solid fa-check"></i>
                         <span data-i18n="Connect">
@@ -54,14 +54,15 @@
                         </span>
                     </div>
                 </div>
-                <label for="sd_auto_auth">Authentication (optional)</label>
-                <input id="sd_auto_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
-                <i><b>Important:</b> run SD Web UI with the <tt>--api</tt> flag! The server must be accessible from the SillyTavern host machine.</i>
+                <label for="sd_auto_auth" data-i18n="Authentication (optional)">Authentication (optional)</label>
+                <input id="sd_auto_auth" type="text" class="text_pole"  data-i18n="[placeholder]Example: username:password" placeholder="Example: username:password" value="" />
+                <!-- (Original Text)<b>Important:</b> run SD Web UI with the <tt>--api</tt> flag! The server must be accessible from the SillyTavern host machine. -->
+                <i><b data-i18n="Important:">Important:</b></i><i data-i18n="sd_auto_auth_warning_1"> run SD Web UI with the </i><i><tt>--api</tt></i><i data-i18n="sd_auto_auth_warning_2"> flag! The server must be accessible from the SillyTavern host machine.</i>
             </div>
             <div data-sd-source="drawthings">
                 <label for="sd_drawthings_url">DrawThings API URL</label>
                 <div class="flex-container flexnowrap">
-                    <input id="sd_drawthings_url" type="text" class="text_pole" placeholder="Example: {{drawthings_url}}" value="{{drawthings_url}}" />
+                    <input id="sd_drawthings_url" type="text" class="text_pole" data-i18n="[placeholder]sd_drawthings_url" placeholder="Example: {{drawthings_url}}" value="{{drawthings_url}}" />
                     <div id="sd_drawthings_validate" class="menu_button menu_button_icon">
                         <i class="fa-solid fa-check"></i>
                         <span data-i18n="Connect">
@@ -69,14 +70,15 @@
                         </span>
                     </div>
                 </div>
-                <label for="sd_drawthings_auth">Authentication (optional)</label>
-                <input id="sd_drawthings_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
-                <i><b>Important:</b> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine.</i>
+                <label for="sd_drawthings_auth" data-i18n="Authentication (optional)">Authentication (optional)</label>
+                <input id="sd_drawthings_auth" type="text" class="text_pole"  data-i18n="[placeholder]Example: username:password" placeholder="Example: username:password" value="" />
+                <!-- (Original Text)<b>Important:</b> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine. -->
+                <i><b data-i18n="Important:">Important:</b></i><i data-i18n="sd_drawthings_auth_txt"> run DrawThings app with HTTP API switch enabled in the UI! The server must be accessible from the SillyTavern host machine.</i>
             </div>
             <div data-sd-source="vlad">
                 <label for="sd_vlad_url">SD.Next API URL</label>
                 <div class="flex-container flexnowrap">
-                    <input id="sd_vlad_url" type="text" class="text_pole" placeholder="Example: {{vlad_url}}" value="{{vlad_url}}" />
+                    <input id="sd_vlad_url" type="text" class="text_pole" data-i18n="[placeholder]sd_vlad_url" placeholder="Example: {{vlad_url}}" value="{{vlad_url}}" />
                     <div id="sd_vlad_validate" class="menu_button menu_button_icon">
                         <i class="fa-solid fa-check"></i>
                         <span data-i18n="Connect">
@@ -84,12 +86,12 @@
                         </span>
                     </div>
                 </div>
-                <label for="sd_vlad_auth">Authentication (optional)</label>
-                <input id="sd_vlad_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
-                <i>The server must be accessible from the SillyTavern host machine.</i>
+                <label for="sd_vlad_auth" data-i18n="Authentication (optional)">Authentication (optional)</label>
+                <input id="sd_vlad_auth" type="text" class="text_pole"  data-i18n="[placeholder]Example: username:password" placeholder="Example: username:password" value="" />
+                <i data-i18n="The server must be accessible from the SillyTavern host machine.">The server must be accessible from the SillyTavern host machine.</i>
             </div>
             <div data-sd-source="horde">
-                <i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i>
+                <i data-i18n="Hint: Save an API key in Horde KoboldAI API settings to use it here.">Hint: Save an API key in Horde KoboldAI API settings to use it here.</i>
                 <label for="sd_horde_nsfw" class="checkbox_label">
                     <input id="sd_horde_nsfw" type="checkbox" />
                     <span data-i18n="Allow NSFW images from Horde">
@@ -105,38 +107,38 @@
             </div>
             <div data-sd-source="novel">
                 <div class="flex-container flexFlowColumn">
-                    <label for="sd_novel_anlas_guard" class="checkbox_label flex1" title="Automatically adjust generation parameters to ensure free image generations.">
+                    <label for="sd_novel_anlas_guard" class="checkbox_label flex1" data-i18n="[title]Automatically adjust generation parameters to ensure free image generations." title="Automatically adjust generation parameters to ensure free image generations.">
                         <input id="sd_novel_anlas_guard" type="checkbox" />
                         <span data-i18n="Avoid spending Anlas">
                             Avoid spending Anlas
                         </span>
                         <span data-i18n="Opus tier" class="toggle-description">(Opus tier)</span>
                     </label>
-                    <div id="sd_novel_view_anlas" class="menu_button menu_button_icon">
+                    <div id="sd_novel_view_anlas" class="menu_button menu_button_icon" data-i18n="View my Anlas">
                         View my Anlas
                     </div>
                 </div>
                 <i>Hint: Save an API key in the NovelAI API settings to use it here.</i>
             </div>
             <div data-sd-source="openai">
-                <small>These settings only apply to DALL-E 3</small>
+                <small data-i18n="These settings only apply to DALL-E 3">These settings only apply to DALL-E 3</small>
                 <div class="flex-container">
-                    <label for="sd_openai_style">Image Style</label>
+                    <label for="sd_openai_style" data-i18n="Image Style">Image Style</label>
                     <select id="sd_openai_style">
                         <option value="vivid">Vivid</option>
                         <option value="natural">Natural</option>
                     </select>
-                    <label for="sd_openai_quality">Image Quality</label>
+                    <label for="sd_openai_quality" data-i18n="Image Quality">Image Quality</label>
                     <select id="sd_openai_quality">
-                        <option value="standard">Standard</option>
-                        <option value="hd">HD</option>
+                        <option value="standard" data-i18n="Standard">Standard</option>
+                        <option value="hd" data-i18n="HD">HD</option>
                     </select>
                 </div>
             </div>
             <div data-sd-source="comfy">
                 <label for="sd_comfy_url">ComfyUI URL</label>
                 <div class="flex-container flexnowrap">
-                    <input id="sd_comfy_url" type="text" class="text_pole" placeholder="Example: {{comfy_url}}" value="{{comfy_url}}" />
+                    <input id="sd_comfy_url" type="text" class="text_pole" data-i18n="[placeholder]sd_comfy_url" placeholder="Example: {{comfy_url}}" value="{{comfy_url}}" />
                     <div id="sd_comfy_validate" class="menu_button menu_button_icon">
                         <i class="fa-solid fa-check"></i>
                         <span data-i18n="Connect">
@@ -144,17 +146,17 @@
                         </span>
                     </div>
                 </div>
-                <p><i><b>Important:</b> The server must be accessible from the SillyTavern host machine.</i></p>
+                <p><i><b data-i18n="Important:">Important:</b></i><i data-i18n="The server must be accessible from the SillyTavern host machine."> The server must be accessible from the SillyTavern host machine.</i></p>
                 <label for="sd_comfy_workflow">ComfyUI Workflow</label>
                 <div class="flex-container flexnowrap">
                     <select id="sd_comfy_workflow" class="flex1 text_pole"></select>
-                    <div id="sd_comfy_open_workflow_editor" class="menu_button menu_button_icon" title="Open workflow editor">
+                    <div id="sd_comfy_open_workflow_editor" class="menu_button menu_button_icon" data-i18n="[title]Open workflow editor" title="Open workflow editor">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </div>
-                    <div id="sd_comfy_new_workflow" class="menu_button menu_button_icon" title="Create new workflow">
+                    <div id="sd_comfy_new_workflow" class="menu_button menu_button_icon" data-i18n="[title]Create new workflow" title="Create new workflow">
                         <i class="fa-solid fa-plus"></i>
                     </div>
-                    <div id="sd_comfy_delete_workflow" class="menu_button menu_button_icon" title="Delete workflow">
+                    <div id="sd_comfy_delete_workflow" class="menu_button menu_button_icon" data-i18n="[title]Delete workflow" title="Delete workflow">
                         <i class="fa-solid fa-trash-can"></i>
                     </div>
                 </div>
@@ -178,99 +180,130 @@
                     </label>
                 </div>
             </div>
-            <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
+            <label for="sd_scale" data-i18n="CFG Scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
             <input id="sd_scale" type="range" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" />
-            <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
+            <div data-sd-source="novel" class="marginTopBot5">
+                <label class="checkbox_label" for="sd_novel_decrisper" title="Reduce artifacts caused by high guidance values.">
+                    <input id="sd_novel_decrisper" type="checkbox" />
+                    <span data-i18n="Decrisper">
+                        Decrisper
+                    </span>
+                </label>
+            </div>
+            <label for="sd_steps" data-i18n="Sampling steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
             <input id="sd_steps" type="range" min="{{steps_min}}" max="{{steps_max}}" step="{{steps_step}}" value="{{steps}}" />
-            <label for="sd_width">Width (<span id="sd_width_value"></span>)</label>
+            <label for="sd_width" data-i18n="Width">Width (<span id="sd_width_value"></span>)</label>
             <input id="sd_width" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{width}}" />
-            <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
+            <label for="sd_height" data-i18n="Height">Height (<span id="sd_height_value"></span>)</label>
             <input id="sd_height" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" />
-            <label for="sd_model">Model</label>
+            <label for="sd_resolution" data-i18n="Resolution">Resolution</label>
+            <select id="sd_resolution"><!-- Populated in JS --></select>
+            <label for="sd_model" data-i18n="Model">Model</label>
             <select id="sd_model"></select>
-            <label for="sd_sampler">Sampling method</label>
+            <label for="sd_sampler" data-i18n="Sampling method">Sampling method</label>
             <select id="sd_sampler"></select>
-            <label data-sd-source="horde" for="sd_horde_karras" class="checkbox_label">
+            <label data-sd-source="horde" for="sd_horde_karras" class="checkbox_label marginTopBot5">
                 <input id="sd_horde_karras" type="checkbox" />
                 <span data-i18n="Karras (not all samplers supported)">
                     Karras (not all samplers supported)
                 </span>
             </label>
-            <div data-sd-source="novel" class="flex-container">
-                <label class="flex1 checkbox_label" title="SMEA versions of samplers are modified to perform better at high resolution.">
+            <div data-sd-source="novel" class="flex-container marginTopBot5">
+                <label class="flex1 checkbox_label" data-i18n="[title]SMEA versions of samplers are modified to perform better at high resolution." title="SMEA versions of samplers are modified to perform better at high resolution.">
                     <input id="sd_novel_sm" type="checkbox" />
                     <span data-i18n="SMEA">
                         SMEA
                     </span>
                 </label>
-                <label class="flex1 checkbox_label" title="DYN variants of SMEA samplers often lead to more varied output, but may fail at very high resolutions.">
+                <label class="flex1 checkbox_label" data-i18n="[title]DYN variants of SMEA samplers often lead to more varied output, but may fail at very high resolutions." title="DYN variants of SMEA samplers often lead to more varied output, but may fail at very high resolutions.">
                     <input id="sd_novel_sm_dyn" type="checkbox" />
                     <span data-i18n="DYN">
                         DYN
                     </span>
                 </label>
             </div>
-            <label for="sd_resolution">Resolution</label>
-            <select id="sd_resolution"><!-- Populated in JS --></select>
-            <div data-sd-source="comfy">
-                <label for="sd_scheduler">Scheduler</label>
+            <div data-sd-source="comfy,auto">
+                <label for="sd_scheduler" data-i18n="Scheduler">Scheduler</label>
                 <select id="sd_scheduler"></select>
             </div>
             <div data-sd-source="comfy">
                 <label for="sd_vae">VAE</label>
                 <select id="sd_vae"></select>
             </div>
-            <div class="flex-container marginTop10 margin-bot-10px">
+            <div class="flex-container marginTopBot5">
                 <label class="flex1 checkbox_label">
                     <input id="sd_restore_faces" type="checkbox" />
-                    Restore Faces
+                    <span data-i18n="Restore Faces">Restore Faces</span>
                 </label>
                 <label class="flex1 checkbox_label">
                     <input id="sd_enable_hr" type="checkbox" />
-                    Hires. Fix
+                    <span data-i18n="Hires. Fix">Hires. Fix</span>
                 </label>
             </div>
-            <div data-sd-source="auto,vlad">
-                <label for="sd_hr_upscaler">Upscaler</label>
+            <div data-sd-source="auto,vlad,comfy,horde,drawthings,extras" class="marginTopBot5">
+                <label for="sd_clip_skip">CLIP Skip (<span id="sd_clip_skip_value"></span>)</label>
+                <input type="range" id="sd_clip_skip" min="{{clip_skip_min}}" max="{{clip_skip_max}}" step="{{clip_skip_step}}" value="{{clip_skip}}" />
+            </div>
+            <div data-sd-source="auto,vlad,drawthings">
+                <label for="sd_hr_upscaler" data-i18n="Upscaler">Upscaler</label>
                 <select id="sd_hr_upscaler"></select>
-                <label for="sd_hr_scale">Upscale by (<span id="sd_hr_scale_value"></span>)</label>
+                <label for="sd_hr_scale"><span data-i18n="Upscale by">Upscale by</span> (<span id="sd_hr_scale_value"></span>)</label>
                 <input id="sd_hr_scale" type="range" min="{{hr_scale_min}}" max="{{hr_scale_max}}" step="{{hr_scale_step}}" value="{{hr_scale}}" />
-                <label for="sd_denoising_strength">Denoising strength (<span id="sd_denoising_strength_value"></span>)</label>
+            </div>
+            <div data-sd-source="auto,vlad">
+                <label for="sd_denoising_strength"><span data-i18n="Denoising strength">Denoising strength</span> (<span id="sd_denoising_strength_value"></span>)</label>
                 <input id="sd_denoising_strength" type="range" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" />
-                <label for="sd_hr_second_pass_steps">Hires steps (2nd pass) (<span id="sd_hr_second_pass_steps_value"></span>)</label>
+                <label for="sd_hr_second_pass_steps"><span data-i18n="Hires steps (2nd pass)">Hires steps (2nd pass)</span> (<span id="sd_hr_second_pass_steps_value"></span>)</label>
                 <input id="sd_hr_second_pass_steps" type="range" min="{{hr_second_pass_steps_min}}" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_step}}" value="{{hr_second_pass_steps}}" />
             </div>
             <div data-sd-source="novel">
-                <label for="sd_novel_upscale_ratio">Upscale by (<span id="sd_novel_upscale_ratio_value"></span>)</label>
+                <label for="sd_novel_upscale_ratio"><span data-i18n="Upscale by">Upscale by</span> (<span id="sd_novel_upscale_ratio_value"></span>)</label>
                 <input id="sd_novel_upscale_ratio" type="range" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" />
             </div>
+            <div data-sd-source="novel,togetherai,pollinations,comfy,drawthings,vlad,auto,horde,extras" class="marginTop5">
+                <label for="sd_seed">Seed</label>
+                <small>(-1 for random)</small>
+                <input id="sd_seed" type="number" class="text_pole" min="-1" max="9999999999" step="1" />
+            </div>
             <hr>
-            <h4 title="Preset for prompt prefix and negative prompt">
-                Style
+            <h4  data-i18n="[title]Preset for prompt prefix and negative prompt" title="Preset for prompt prefix and negative prompt">
+                <span data-i18n="Style">Style</span>
             </h4>
             <div class="flex-container">
                 <select id="sd_style" class="flex1 text_pole"></select>
-                <div id="sd_save_style" title="Save style" class="menu_button">
+                <div id="sd_save_style" data-i18n="[title]Save style" title="Save style" class="menu_button">
                     <i class="fa-solid fa-save"></i>
                 </div>
+                <div id="sd_delete_style" data-i18n="[title]Delete style" title="Delete style" class="menu_button">
+                    <i class="fa-solid fa-trash-can"></i>
+                </div>
             </div>
-            <label for="sd_prompt_prefix">Common prompt prefix</label>
-            <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="3" placeholder="Use {prompt} to specify where the generated prompt will be inserted"></textarea>
-            <label for="sd_negative_prompt">Negative prompt</label>
+            <label for="sd_prompt_prefix" data-i18n="Common prompt prefix">Common prompt prefix</label>
+            <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="3" data-i18n="[placeholder]sd_prompt_prefix_placeholder" placeholder="Use {prompt} to specify where the generated prompt will be inserted"></textarea>
+            <label for="sd_negative_prompt" data-i18n="Negative common prompt prefix">Negative common prompt prefix</label>
             <textarea id="sd_negative_prompt" class="text_pole textarea_compact" rows="3"></textarea>
             <div id="sd_character_prompt_block">
-                <label for="sd_character_prompt">Character-specific prompt prefix</label>
-                <small>Won't be used in groups.</small>
-                <textarea id="sd_character_prompt" class="text_pole textarea_compact" rows="3" placeholder="Any characteristics that describe the currently selected character. Will be added after a common prefix.&#10;Example: female, green eyes, brown hair, pink shirt"></textarea>
-                <label for="sd_character_negative_prompt">Character-specific negative prompt prefix</label>
-                <small>Won't be used in groups.</small>
-                <textarea id="sd_character_negative_prompt" class="text_pole textarea_compact" rows="3" placeholder="Any characteristics that should not appear for the selected character. Will be added after a negative common prefix.&#10;Example: jewellery, shoes, glasses"></textarea>
+                <label for="sd_character_prompt" data-i18n="Character-specific prompt prefix">Character-specific prompt prefix</label>
+                <small data-i18n="Won't be used in groups.">Won't be used in groups.</small>
+                <textarea id="sd_character_prompt" class="text_pole textarea_compact" rows="3" data-i18n="[placeholder]sd_character_prompt_placeholder" placeholder="Any characteristics that describe the currently selected character. Will be added after a common prompt prefix.&#10;Example: female, green eyes, brown hair, pink shirt"></textarea>
+                <label for="sd_character_negative_prompt" data-i18n="Character-specific negative prompt prefix">Character-specific negative prompt prefix</label>
+                <small data-i18n="Won't be used in groups.">Won't be used in groups.</small>
+                <textarea id="sd_character_negative_prompt" class="text_pole textarea_compact" rows="3" data-i18n="[placeholder]sd_character_negative_prompt_placeholder" placeholder="Any characteristics that should not appear for the selected character. Will be added after a negative common prompt prefix.&#10;Example: jewellery, shoes, glasses"></textarea>
+                <label for="sd_character_prompt_share" class="checkbox_label flexWrap marginTop5">
+                    <input id="sd_character_prompt_share" type="checkbox" />
+                    <span data-i18n="Shareable">
+                        Shareable
+                    </span>
+                    <small class="flexBasis100p">
+                        When checked, character-specific prompts will be saved with the character card data.
+                    </small>
+                </label>
             </div>
         </div>
     </div>
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Image Prompt Templates</b>
+            <b data-i18n="Image Prompt Templates">Image Prompt Templates</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div id="sd_prompt_templates" class="inline-drawer-content">

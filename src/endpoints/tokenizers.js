@@ -10,6 +10,8 @@ const { TEXTGEN_TYPES } = require('../constants');
 const { jsonParser } = require('../express-common');
 const { setAdditionalHeaders } = require('../additional-headers');
 
+const API_MAKERSUITE = 'https://generativelanguage.googleapis.com';
+
 /**
  * @typedef { (req: import('express').Request, res: import('express').Response) => Promise<any> } TokenizationHandler
  */
@@ -306,6 +308,10 @@ function getTokenizerModel(requestModel) {
         return 'yi';
     }
 
+    if (requestModel.includes('gemini')) {
+        return 'gpt-4o';
+    }
+
     // default
     return 'gpt-3.5-turbo';
 }
@@ -555,8 +561,11 @@ router.post('/google/count', jsonParser, async function (req, res) {
         body: JSON.stringify({ contents: convertGooglePrompt(req.body, String(req.query.model)).contents }),
     };
     try {
-        const key = readSecret(req.user.directories, SECRET_KEYS.MAKERSUITE);
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${req.query.model}:countTokens?key=${key}`, options);
+        const reverseProxy = req.query.reverse_proxy?.toString() || '';
+        const proxyPassword = req.query.proxy_password?.toString() || '';
+        const apiKey = reverseProxy ? proxyPassword : readSecret(req.user.directories, SECRET_KEYS.MAKERSUITE);
+        const apiUrl = new URL(reverseProxy || API_MAKERSUITE);
+        const response = await fetch(`${apiUrl.origin}/v1beta/models/${req.query.model}:countTokens?key=${apiKey}`, options);
         const data = await response.json();
         return res.send({ 'token_count': data?.totalTokens || 0 });
     } catch (err) {

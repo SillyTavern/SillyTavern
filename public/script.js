@@ -22,7 +22,7 @@ import {
     parseTabbyLogprobs,
 } from './scripts/textgen-settings.js';
 
-const { MANCER, TOGETHERAI, OOBA, VLLM, APHRODITE, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
+const { MANCER, TOGETHERAI, OOBA, VLLM, APHRODITE, TABBY, OLLAMA, INFERMATICAI, DREAMGEN, OPENROUTER } = textgen_types;
 
 import {
     world_info,
@@ -154,6 +154,7 @@ import {
     isValidUrl,
     ensureImageFormatSupported,
     flashHighlight,
+    checkOverwriteExistingData,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -177,6 +178,8 @@ import {
     tag_filter_types,
     compareTagsForSort,
     initTags,
+    applyTagsOnCharacterSelect,
+    applyTagsOnGroupSelect,
 } from './scripts/tags.js';
 import {
     SECRET_KEYS,
@@ -414,10 +417,12 @@ export const event_types = {
     CHAT_DELETED: 'chat_deleted',
     GROUP_CHAT_DELETED: 'group_chat_deleted',
     GENERATE_BEFORE_COMBINE_PROMPTS: 'generate_before_combine_prompts',
+    GENERATE_AFTER_COMBINE_PROMPTS: 'generate_after_combine_prompts',
     GROUP_MEMBER_DRAFTED: 'group_member_drafted',
     WORLD_INFO_ACTIVATED: 'world_info_activated',
     TEXT_COMPLETION_SETTINGS_READY: 'text_completion_settings_ready',
     CHAT_COMPLETION_SETTINGS_READY: 'chat_completion_settings_ready',
+    CHAT_COMPLETION_PROMPT_READY: 'chat_completion_prompt_ready',
     CHARACTER_FIRST_MESSAGE_SELECTED: 'character_first_message_selected',
     // TODO: Naming convention is inconsistent with other events
     CHARACTER_DELETED: 'characterDeleted',
@@ -426,6 +431,8 @@ export const event_types = {
     FILE_ATTACHMENT_DELETED: 'file_attachment_deleted',
     WORLDINFO_FORCE_ACTIVATE: 'worldinfo_force_activate',
     OPEN_CHARACTER_LIBRARY: 'open_character_library',
+    LLM_FUNCTION_TOOL_REGISTER: 'llm_function_tool_register',
+    LLM_FUNCTION_TOOL_CALL: 'llm_function_tool_call',
 };
 
 export const eventSource = new EventEmitter();
@@ -467,8 +474,8 @@ let chat_create_date = '';
 let firstRun = false;
 let settingsReady = false;
 let currentVersion = '0.0.0';
+let displayVersion = 'SillyTavern';
 
-export const default_ch_mes = 'Hello';
 let generatedPromptCache = '';
 let generation_started = new Date();
 /** @type {import('scripts/char-data.js').v1CharData[]} */
@@ -600,7 +607,7 @@ async function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: await renderTemplateAsync('welcome'),
+            mes: await renderTemplateAsync('welcome', { displayVersion }),
         },
         group: {
             name: systemUserName,
@@ -661,7 +668,7 @@ async function getClientVersion() {
         const response = await fetch('/version');
         const data = await response.json();
         CLIENT_VERSION = data.agent;
-        let displayVersion = `SillyTavern ${data.pkgVersion}`;
+        displayVersion = `SillyTavern ${data.pkgVersion}`;
         currentVersion = data.pkgVersion;
 
         if (data.gitRevision && data.gitBranch) {
@@ -683,6 +690,8 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             tables: true,
             parseImgDimensions: true,
             simpleLineBreaks: true,
+            strikethrough: true,
+            disableForced4SpacesIndentedSublists: true,
             extensions: [
                 showdownKatex(
                     {
@@ -702,6 +711,8 @@ export function reloadMarkdownProcessor(render_formulas = false) {
             tables: true,
             underline: true,
             simpleLineBreaks: true,
+            strikethrough: true,
+            disableForced4SpacesIndentedSublists: true,
             extensions: [markdownUnderscoreExt()],
         });
     }
@@ -857,12 +868,12 @@ async function firstLoadInit() {
         throw new Error('Initialization failed');
     }
 
-    await getSystemMessages();
-    sendSystemMessage(system_message_types.WELCOME);
     await getClientVersion();
     await readSecretState();
-    await getSettings();
     initLocales();
+    await getSystemMessages();
+    sendSystemMessage(system_message_types.WELCOME);
+    await getSettings();
     initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
@@ -1300,6 +1311,10 @@ export async function printCharacters(fullRefresh = false) {
     // We are actually always reprinting filters, as it "doesn't hurt", and this way they are always up to date
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
+
+    // We are also always reprinting the lists on character/group edit window, as these ones doesn't get updated otherwise
+    applyTagsOnCharacterSelect();
+    applyTagsOnGroupSelect();
 
     const entities = getEntitiesList({ doFilter: true });
 
@@ -1786,7 +1801,7 @@ export function messageFormatting(mes, ch_name, isSystem, isUser, messageId) {
     }
 
     if (Number(messageId) === 0 && !isSystem && !isUser) {
-        mes = substituteParams(mes);
+        mes = substituteParams(mes, undefined, ch_name);
     }
 
     mesForShowdownParse = mes;
@@ -2550,6 +2565,9 @@ function cleanGroupMessage(getMessage) {
 }
 
 function addPersonaDescriptionExtensionPrompt() {
+    const INJECT_TAG = 'PERSONA_DESCRIPTION';
+    setExtensionPrompt(INJECT_TAG, '', extension_prompt_types.IN_PROMPT, 0);
+
     if (!power_user.persona_description) {
         return;
     }
@@ -2563,6 +2581,10 @@ function addPersonaDescriptionExtensionPrompt() {
             : `${originalAN}\n${power_user.persona_description}`;
 
         setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
+    }
+
+    if (power_user.persona_description_position === persona_description_positions.AT_DEPTH) {
+        setExtensionPrompt(INJECT_TAG, power_user.persona_description, extension_prompt_types.IN_CHAT, power_user.persona_description_depth, true, power_user.persona_description_role);
     }
 }
 
@@ -3388,6 +3410,8 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
     // Extension added strings
     // Set non-WI AN
     setFloatingPrompt();
+    // Add persona description to prompt
+    addPersonaDescriptionExtensionPrompt();
 
     // Add WI to prompt (and also inject WI to AN value via hijack)
     // Make quiet prompt available for WIAN
@@ -3505,8 +3529,6 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         userAlignmentMessage = formatMessageHistoryItem(alignmentMessage, isInstruct, false);
     }
 
-    // Add persona description to prompt
-    addPersonaDescriptionExtensionPrompt();
     // Call combined AN into Generate
     const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
     const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
@@ -3970,6 +3992,10 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
 
     let finalPrompt = getCombinedPrompt(false);
 
+    const eventData = { prompt: finalPrompt, dryRun: dryRun };
+    await eventSource.emit(event_types.GENERATE_AFTER_COMBINE_PROMPTS, eventData);
+    finalPrompt = eventData.prompt;
+
     let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
     let thisPromptBits = [];
 
@@ -4168,7 +4194,7 @@ export async function Generate(type, { automatic_trigger, force_name2, quiet_pro
         const displayIncomplete = type === 'quiet' && !quietToLoud;
         getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
 
-        if (getMessage.length > 0) {
+        if (getMessage.length > 0 || data.allowEmptyResponse) {
             if (isImpersonate) {
                 $('#send_textarea').val(getMessage)[0].dispatchEvent(new Event('input', { bubbles: true }));
                 generatedPromptCache = '';
@@ -4991,7 +5017,7 @@ function extractMultiSwipes(data, type) {
         return swipes;
     }
 
-    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && [MANCER, VLLM, APHRODITE].includes(textgen_settings.type))) {
+    if (main_api === 'openai' || (main_api === 'textgenerationwebui' && [MANCER, VLLM, APHRODITE, TABBY].includes(textgen_settings.type))) {
         if (!Array.isArray(data.choices)) {
             return swipes;
         }
@@ -5411,70 +5437,95 @@ export function setSendButtonState(value) {
     is_send_press = value;
 }
 
-async function renameCharacter() {
+export async function renameCharacter(name = null, { silent = false, renameChats = null } = {}) {
+    if (!name && silent) {
+        toastr.warning('No character name provided.', 'Rename Character');
+        return false;
+    }
+    if (this_chid === undefined) {
+        toastr.warning('No character selected.', 'Rename Character');
+        return false;
+    }
+
     const oldAvatar = characters[this_chid].avatar;
-    const newValue = await callPopup('<h3>New name:</h3>', 'input', characters[this_chid].name);
+    const newValue = name || await callPopup('<h3>New name:</h3>', 'input', characters[this_chid].name);
 
-    if (newValue && newValue !== characters[this_chid].name) {
-        const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });
-        const response = await fetch('/api/characters/rename', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body,
-        });
+    if (!newValue) {
+        toastr.warning('No character name provided.', 'Rename Character');
+        return false;
+    }
+    if (newValue === characters[this_chid].name) {
+        toastr.info('Same character name provided, so name did not change.', 'Rename Character');
+        return false;
+    }
 
-        try {
-            if (response.ok) {
-                const data = await response.json();
-                const newAvatar = data.avatar;
+    const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });
+    const response = await fetch('/api/characters/rename', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body,
+    });
 
-                // Replace tags list
-                renameTagKey(oldAvatar, newAvatar);
+    try {
+        if (response.ok) {
+            const data = await response.json();
+            const newAvatar = data.avatar;
 
-                // Reload characters list
-                await getCharacters();
+            // Replace tags list
+            renameTagKey(oldAvatar, newAvatar);
 
-                // Find newly renamed character
-                const newChId = characters.findIndex(c => c.avatar == data.avatar);
+            // Reload characters list
+            await getCharacters();
 
-                if (newChId !== -1) {
-                    // Select the character after the renaming
-                    this_chid = -1;
-                    await selectCharacterById(String(newChId));
+            // Find newly renamed character
+            const newChId = characters.findIndex(c => c.avatar == data.avatar);
 
-                    // Async delay to update UI
-                    await delay(1);
+            if (newChId !== -1) {
+                // Select the character after the renaming
+                this_chid = -1;
+                await selectCharacterById(String(newChId));
 
-                    if (this_chid === -1) {
-                        throw new Error('New character not selected');
-                    }
+                // Async delay to update UI
+                await delay(1);
 
-                    // Also rename as a group member
-                    await renameGroupMember(oldAvatar, newAvatar, newValue);
-                    const renamePastChatsConfirm = await callPopup(`<h3>Character renamed!</h3>
-                    <p>Past chats will still contain the old character name. Would you like to update the character name in previous chats as well?</p>
-                    <i><b>Sprites folder (if any) should be renamed manually.</b></i>`, 'confirm');
-
-                    if (renamePastChatsConfirm) {
-                        await renamePastChats(newAvatar, newValue);
-                        await reloadCurrentChat();
-                        toastr.success('Character renamed and past chats updated!');
-                    }
+                if (this_chid === -1) {
+                    throw new Error('New character not selected');
                 }
-                else {
-                    throw new Error('Newly renamed character was lost?');
+
+                // Also rename as a group member
+                await renameGroupMember(oldAvatar, newAvatar, newValue);
+                const renamePastChatsConfirm = renameChats !== null ? renameChats
+                    : silent ? false : await callPopup(`<h3>Character renamed!</h3>
+                <p>Past chats will still contain the old character name. Would you like to update the character name in previous chats as well?</p>
+                <i><b>Sprites folder (if any) should be renamed manually.</b></i>`, 'confirm');
+
+                if (renamePastChatsConfirm) {
+                    await renamePastChats(newAvatar, newValue);
+                    await reloadCurrentChat();
+                    toastr.success('Character renamed and past chats updated!', 'Rename Character');
+                } else {
+                    toastr.success('Character renamed!', 'Rename Character');
                 }
             }
             else {
-                throw new Error('Could not rename the character');
+                throw new Error('Newly renamed character was lost?');
             }
         }
-        catch {
-            // Reloading to prevent data corruption
-            await callPopup('Something went wrong. The page will be reloaded.', 'text');
-            location.reload();
+        else {
+            throw new Error('Could not rename the character');
         }
     }
+    catch (error) {
+    // Reloading to prevent data corruption
+        if (!silent) await callPopup('Something went wrong. The page will be reloaded.', 'text');
+        else toastr.error('Something went wrong. The page will be reloaded.', 'Rename Character');
+
+        console.log('Renaming character error:', error);
+        location.reload();
+        return false;
+    }
+
+    return true;
 }
 
 async function renamePastChats(newAvatar, newValue) {
@@ -5777,8 +5828,10 @@ async function getChatResult() {
     name2 = characters[this_chid].name;
     if (chat.length === 0) {
         const message = getFirstMessage();
-        chat.push(message);
-        await saveChatConditional();
+        if (message.mes) {
+            chat.push(message);
+            await saveChatConditional();
+        }
     }
     await loadItemizedPrompts(getCurrentChatId());
     await printMessages();
@@ -5794,7 +5847,7 @@ async function getChatResult() {
 }
 
 function getFirstMessage() {
-    const firstMes = characters[this_chid].first_mes || default_ch_mes;
+    const firstMes = characters[this_chid].first_mes || '';
     const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
 
     const message = {
@@ -5808,10 +5861,17 @@ function getFirstMessage() {
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
         const swipes = [message.mes, ...(alternateGreetings.map(greeting => getRegexedString(greeting, regex_placement.AI_OUTPUT)))];
+
+        if (!message.mes) {
+            swipes.shift();
+            message.mes = swipes[0];
+        }
+
         message['swipe_id'] = 0;
         message['swipes'] = swipes;
         message['swipe_info'] = [];
     }
+
     return message;
 }
 
@@ -6373,9 +6433,9 @@ async function messageEditDone(div) {
     appendMediaToMessage(mes, div.closest('.mes'));
     addCopyToCodeBlocks(div.closest('.mes'));
 
+    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
     this_edit_mes_id = undefined;
     await saveChatConditional();
-    await eventSource.emit(event_types.MESSAGE_UPDATED, this_edit_mes_id);
 }
 
 /**
@@ -6445,7 +6505,8 @@ export async function getChatsFromFiles(data, isGroupChat) {
  * @param {null|number} [characterId=null] - When set, the function will use this character id instead of this_chid.
  *
  * @returns {Promise<Array>} - An array containing metadata of all past chats of the character, sorted
- * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
+ * in descending order by file name. Returns an empty array if the fetch request is unsuccessful or the
+ * response is an object with an `error` property set to `true`.
  */
 export async function getPastCharacterChats(characterId = null) {
     characterId = characterId ?? this_chid;
@@ -6461,10 +6522,13 @@ export async function getPastCharacterChats(characterId = null) {
         return [];
     }
 
-    let data = await response.json();
-    data = Object.values(data);
-    data = data.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
-    return data;
+    const data = await response.json();
+    if (typeof data === 'object' && data.error === true) {
+        return [];
+    }
+
+    const chats = Object.values(data);
+    return chats.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
 }
 
 /**
@@ -7392,8 +7456,8 @@ function openAlternateGreetings() {
     template.find('.add_alternate_greeting').on('click', function () {
         const array = getArray();
         const index = array.length;
-        array.push(default_ch_mes);
-        addAlternateGreeting(template, default_ch_mes, index, getArray);
+        array.push('');
+        addAlternateGreeting(template, '', index, getArray);
         updateAlternateGreetingsHintVisibility(template);
     });
 
@@ -7564,15 +7628,20 @@ async function createOrEditCharacter(e) {
                 eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: this_chid, character: characters[this_chid] } });
 
                 // Recreate the chat if it hasn't been used at least once (i.e. with continue).
-                if (chat.length === 1 && !selected_group && !chat_metadata['tainted']) {
-                    const firstMessage = getFirstMessage();
-                    chat[0] = firstMessage;
+                const message = getFirstMessage();
+                const shouldRegenerateMessage =
+                    message.mes &&
+                    !selected_group &&
+                    !chat_metadata['tainted'] &&
+                    (chat.length === 0 || (chat.length === 1 && !chat[0].is_user && !chat[0].is_system));
 
-                    const chat_id = (chat.length - 1);
-                    await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
+                if (shouldRegenerateMessage) {
+                    chat.splice(0, chat.length, message);
+                    const messageId = (chat.length - 1);
+                    await eventSource.emit(event_types.MESSAGE_RECEIVED, messageId);
                     await clearChat();
                     await printMessages();
-                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, messageId);
                     await saveChatConditional();
                 }
             },
@@ -7615,6 +7684,8 @@ window['SillyTavern'].getContext = function () {
         setExtensionPrompt: setExtensionPrompt,
         updateChatMetadata: updateChatMetadata,
         saveChat: saveChatConditional,
+        openCharacterChat: openCharacterChat,
+        openGroupChat: openGroupChat,
         saveMetadata: saveMetadata,
         sendSystemMessage: sendSystemMessage,
         activateSendButtons,
@@ -7798,6 +7869,7 @@ function swipe_left() {      // when we swipe left..but no generation.
  */
 async function branchChat(mesId) {
     const fileName = await createBranch(mesId);
+    await saveItemizedPrompts(fileName);
 
     if (selected_group) {
         await openGroupChat(selected_group, fileName);
@@ -7990,12 +8062,14 @@ const swipe_right = () => {
 
 const CONNECT_API_MAP = {
     'kobold': {
+        selected: 'kobold',
         button: '#api_button',
     },
     'horde': {
         selected: 'koboldhorde',
     },
     'novel': {
+        selected: 'novel',
         button: '#api_button_novel',
     },
     'ooba': {
@@ -8033,6 +8107,11 @@ const CONNECT_API_MAP = {
         button: '#api_button_textgenerationwebui',
         type: textgen_types.APHRODITE,
     },
+    'koboldcpp': {
+        selected: 'textgenerationwebui',
+        button: '#api_button_textgenerationwebui',
+        type: textgen_types.KOBOLDCPP,
+    },
     'kcpp': {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
@@ -8042,6 +8121,11 @@ const CONNECT_API_MAP = {
         selected: 'textgenerationwebui',
         button: '#api_button_textgenerationwebui',
         type: textgen_types.TOGETHERAI,
+    },
+    'openai': {
+        selected: 'openai',
+        button: '#api_button_openai',
+        source: chat_completion_sources.OPENAI,
     },
     'oai': {
         selected: 'openai',
@@ -8170,7 +8254,29 @@ async function disableInstructCallback() {
  * @param {string} text API name
  */
 async function connectAPISlash(_, text) {
-    if (!text) return;
+    if (!text.trim()) {
+        for (const [key, config] of Object.entries(CONNECT_API_MAP)) {
+            if (config.selected !== main_api) continue;
+
+            if (config.source) {
+                if (oai_settings.chat_completion_source === config.source) {
+                    return key;
+                } else {
+                    continue;
+                }
+            }
+
+            if (config.type) {
+                if (textgen_settings.type === config.type) {
+                    return key;
+                } else {
+                    continue;
+                }
+            }
+
+            return key;
+        }
+    }
 
     const apiConfig = CONNECT_API_MAP[text.toLowerCase()];
     if (!apiConfig) {
@@ -8221,8 +8327,13 @@ export async function processDroppedFiles(files, preserveFileNames = false) {
         'text/x-yaml',
     ];
 
+    const allowedExtensions = [
+        'charx',
+    ];
+
     for (const file of files) {
-        if (allowedMimeTypes.includes(file.type)) {
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (allowedMimeTypes.includes(file.type) || allowedExtensions.includes(extension)) {
             await importCharacter(file, preserveFileNames);
         } else {
             toastr.warning('Unsupported file type: ' + file.name);
@@ -8243,7 +8354,7 @@ async function importCharacter(file, preserveFileName = false) {
     }
 
     const ext = file.name.match(/\.(\w+)$/);
-    if (!ext || !(['json', 'png', 'yaml', 'yml'].includes(ext[1].toLowerCase()))) {
+    if (!ext || !(['json', 'png', 'yaml', 'yml', 'charx'].includes(ext[1].toLowerCase()))) {
         return;
     }
 
@@ -8430,11 +8541,28 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
         return;
     }
 
-    const avatar = characters[this_chid].avatar;
-    const name = characters[this_chid].name;
-    const pastChats = await getPastCharacterChats();
+    await deleteCharacter(characters[this_chid].avatar, { deleteChats: delete_chats });
+}
 
-    const msg = { avatar_url: avatar, delete_chats: delete_chats };
+/**
+ * Deletes a character completely, including associated chats if specified
+ *
+ * @param {string} characterKey - The key (avatar) of the character to be deleted
+ * @param {Object} [options] - Optional parameters for the deletion
+ * @param {boolean} [options.deleteChats=true] - Whether to delete associated chats or not
+ * @return {Promise<void>} - A promise that resolves when the character is successfully deleted
+ */
+export async function deleteCharacter(characterKey, { deleteChats = true } = {}) {
+    const character = characters.find(x => x.avatar == characterKey);
+    if (!character) {
+        toastr.warning(`Character ${characterKey} not found. Cannot be deleted.`);
+        return;
+    }
+
+    const chid = characters.indexOf(character);
+    const pastChats = await getPastCharacterChats(chid);
+
+    const msg = { avatar_url: character.avatar, delete_chats: deleteChats };
 
     const response = await fetch('/api/characters/delete', {
         method: 'POST',
@@ -8443,17 +8571,17 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
         cache: 'no-cache',
     });
 
-    if (response.ok) {
-        await deleteCharacter(name, avatar);
+    if (!response.ok) {
+        throw new Error(`Failed to delete character: ${response.status} ${response.statusText}`);
+    }
 
-        if (delete_chats) {
-            for (const chat of pastChats) {
-                const name = chat.file_name.replace('.jsonl', '');
-                await eventSource.emit(event_types.CHAT_DELETED, name);
-            }
+    await removeCharacterFromUI(character.name, character.avatar);
+
+    if (deleteChats) {
+        for (const chat of pastChats) {
+            const name = chat.file_name.replace('.jsonl', '');
+            await eventSource.emit(event_types.CHAT_DELETED, name);
         }
-    } else {
-        console.error('Failed to delete character: ', response.status, response.statusText);
     }
 }
 
@@ -8470,7 +8598,7 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
  * @param {string} avatar - The avatar URL of the character to be deleted.
  * @param {boolean} reloadCharacters - Whether the character list should be refreshed after deletion.
  */
-export async function deleteCharacter(name, avatar, reloadCharacters = true) {
+async function removeCharacterFromUI(name, avatar, reloadCharacters = true) {
     await clearChat();
     $('#character_cross').click();
     this_chid = undefined;
@@ -8599,7 +8727,7 @@ jQuery(async function () {
         ],
         helpString: `
             <div>
-                Connect to an API.
+                Connect to an API. If no argument is provided, it will return the currently connected API.
             </div>
             <div>
                 <strong>Available APIs:</strong>
@@ -9948,6 +10076,7 @@ jQuery(async function () {
             a.setAttribute('download', filename);
             document.body.appendChild(a);
             a.click();
+            URL.revokeObjectURL(a.href);
             document.body.removeChild(a);
         }
 
@@ -10247,18 +10376,7 @@ jQuery(async function () {
 
             if (power_user.zoomed_avatar_magnification) {
                 $('.zoomed_avatar_container').izoomify();
-            } else {
-                $(`.zoomed_avatar[forChar="${charname}"] .dragClose`).hide();
             }
-
-            $('.zoomed_avatar').on('mouseup', (e) => {
-                if (e.target.closest('.drag-grabber') || e.button !== 0) {
-                    return;
-                }
-                $(`.zoomed_avatar[forChar="${charname}"]`).fadeOut(animation_duration, () => {
-                    $(`.zoomed_avatar[forChar="${charname}"]`).remove();
-                });
-            });
 
             $('.zoomed_avatar, .zoomed_avatar .dragClose').on('click touchend', (e) => {
                 if (e.target.closest('.dragClose')) {
@@ -10457,64 +10575,61 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.external_import_button, #external_import_button', async () => {
-        const html = `<h3>Enter the URL of the content to import</h3>
-        Supported sources:<br>
-        <ul class="justifyLeft">
-            <li>Chub Character (Direct Link or ID)<br>Example: <tt>Anonymous/example-character</tt></li>
-            <li>Chub Lorebook (Direct Link or ID)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
-            <li>JanitorAI Character (Direct Link or UUID)<br>Example: <tt>ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
-            <li>Pygmalion.chat Character (Direct Link or UUID)<br>Example: <tt>a7ca95a1-0c88-4e23-91b3-149db1e78ab9</tt></li>
-            <li>AICharacterCard.com Character (Direct Link or ID)<br>Example: <tt>AICC/aicharcards/the-game-master</tt></li>
-            <li>Direct PNG Link (refer to <code>config.yaml</code> for allowed hosts)<br>Example: <tt>https://files.catbox.moe/notarealfile.png</tt></li>
-        <ul>`;
-        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { okButton: 'Import', rows: 4 });
+        const html = await renderTemplateAsync('importCharacters');
+
+        /** @type {string?} */
+        const input = await callGenericPopup(html, POPUP_TYPE.INPUT, '', { wider: true, okButton: $('#shadow_popup_template').attr('popup_text_import'), rows: 4 });
 
         if (!input) {
             console.debug('Custom content import cancelled');
             return;
         }
 
-        const url = input.trim();
-        var request;
+        // break input into one input per line
+        const inputs = input.split('\n').map(x => x.trim()).filter(x => x.length > 0);
 
-        if (isValidUrl(url)) {
-            console.debug('Custom content import started for URL: ', url);
-            request = await fetch('/api/content/importURL', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify({ url }),
-            });
-        } else {
-            console.debug('Custom content import started for Char UUID: ', url);
-            request = await fetch('/api/content/importUUID', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify({ url }),
-            });
-        }
+        for (const url of inputs) {
+            let request;
 
-        if (!request.ok) {
-            toastr.info(request.statusText, 'Custom content import failed');
-            console.error('Custom content import failed', request.status, request.statusText);
-            return;
-        }
+            if (isValidUrl(url)) {
+                console.debug('Custom content import started for URL: ', url);
+                request = await fetch('/api/content/importURL', {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({ url }),
+                });
+            } else {
+                console.debug('Custom content import started for Char UUID: ', url);
+                request = await fetch('/api/content/importUUID', {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({ url }),
+                });
+            }
 
-        const data = await request.blob();
-        const customContentType = request.headers.get('X-Custom-Content-Type');
-        const fileName = request.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
-        const file = new File([data], fileName, { type: data.type });
+            if (!request.ok) {
+                toastr.info(request.statusText, 'Custom content import failed');
+                console.error('Custom content import failed', request.status, request.statusText);
+                return;
+            }
 
-        switch (customContentType) {
-            case 'character':
-                await processDroppedFiles([file]);
-                break;
-            case 'lorebook':
-                await importWorldInfo(file);
-                break;
-            default:
-                toastr.warning('Unknown content type');
-                console.error('Unknown content type', customContentType);
-                break;
+            const data = await request.blob();
+            const customContentType = request.headers.get('X-Custom-Content-Type');
+            const fileName = request.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+            const file = new File([data], fileName, { type: data.type });
+
+            switch (customContentType) {
+                case 'character':
+                    await processDroppedFiles([file]);
+                    break;
+                case 'lorebook':
+                    await importWorldInfo(file);
+                    break;
+                default:
+                    toastr.warning('Unknown content type');
+                    console.error('Unknown content type', customContentType);
+                    break;
+            }
         }
     });
 

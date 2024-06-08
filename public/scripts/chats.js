@@ -768,7 +768,7 @@ async function moveAttachment(attachment, source, callback) {
  * @param {boolean} [confirm=true] If true, show a confirmation dialog
  * @returns {Promise<void>} A promise that resolves when the attachment is deleted.
  */
-async function deleteAttachment(attachment, source, callback, confirm = true) {
+export async function deleteAttachment(attachment, source, callback, confirm = true) {
     if (confirm) {
         const result = await callGenericPopup('Are you sure you want to delete this attachment?', POPUP_TYPE.CONFIRM);
 
@@ -855,6 +855,12 @@ async function openAttachmentManager() {
             [ATTACHMENT_SOURCE.CHAT]: '.chatAttachmentsList',
         };
 
+        const selected = template
+            .find(sources[source])
+            .find('.attachmentListItemCheckbox:checked')
+            .map((_, el) => $(el).closest('.attachmentListItem').attr('data-attachment-url'))
+            .get();
+
         template.find(sources[source]).empty();
 
         // Sort attachments by sortField and sortOrder, and apply filter
@@ -864,6 +870,8 @@ async function openAttachmentManager() {
             const isDisabled = isAttachmentDisabled(attachment);
             const attachmentTemplate = template.find('.attachmentListItemTemplate .attachmentListItem').clone();
             attachmentTemplate.toggleClass('disabled', isDisabled);
+            attachmentTemplate.attr('data-attachment-url', attachment.url);
+            attachmentTemplate.attr('data-attachment-source', source);
             attachmentTemplate.find('.attachmentFileIcon').attr('title', attachment.url);
             attachmentTemplate.find('.attachmentListItemName').text(attachment.name);
             attachmentTemplate.find('.attachmentListItemSize').text(humanFileSize(attachment.size));
@@ -876,6 +884,10 @@ async function openAttachmentManager() {
             attachmentTemplate.find('.enableAttachmentButton').toggle(isDisabled).on('click', () => enableAttachment(attachment, renderAttachments));
             attachmentTemplate.find('.disableAttachmentButton').toggle(!isDisabled).on('click', () => disableAttachment(attachment, renderAttachments));
             template.find(sources[source]).append(attachmentTemplate);
+
+            if (selected.includes(attachment.url)) {
+                attachmentTemplate.find('.attachmentListItemCheckbox').prop('checked', true);
+            }
         }
     }
 
@@ -1044,6 +1056,57 @@ async function openAttachmentManager() {
         localStorage.setItem('DataBank_sortOrder', sortOrder);
         renderAttachments();
     });
+    template.find('.bulkActionDelete').on('click', async () => {
+        const selectedAttachments =  document.querySelectorAll('.attachmentListItemCheckboxContainer .attachmentListItemCheckbox:checked');
+
+        if (selectedAttachments.length === 0) {
+            toastr.info('No attachments selected.', 'Data Bank');
+            return;
+        }
+
+        const confirm = await callGenericPopup('Are you sure you want to delete the selected attachments?', POPUP_TYPE.CONFIRM);
+
+        if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
+            return;
+        }
+
+        const attachments = getDataBankAttachments();
+        selectedAttachments.forEach(async (checkbox) => {
+            const listItem = checkbox.closest('.attachmentListItem');
+            if (!(listItem instanceof HTMLElement)) {
+                return;
+            }
+            const url = listItem.dataset.attachmentUrl;
+            const source = listItem.dataset.attachmentSource;
+            const attachment = attachments.find(a => a.url === url);
+            if (!attachment) {
+                return;
+            }
+            await deleteAttachment(attachment, source, () => {}, false);
+        });
+
+        document.querySelectorAll('.attachmentListItemCheckbox, .attachmentsBulkEditCheckbox').forEach(checkbox => {
+            if (checkbox instanceof HTMLInputElement) {
+                checkbox.checked = false;
+            }
+        });
+
+        await renderAttachments();
+    });
+    template.find('.bulkActionSelectAll').on('click', () => {
+        $('.attachmentListItemCheckbox:visible').each((_, checkbox) => {
+            if (checkbox instanceof HTMLInputElement) {
+                checkbox.checked = true;
+            }
+        });
+    });
+    template.find('.bulkActionSelectNone').on('click', () => {
+        $('.attachmentListItemCheckbox:visible').each((_, checkbox) => {
+            if (checkbox instanceof HTMLInputElement) {
+                checkbox.checked = false;
+            }
+        });
+    });
 
     const cleanupFn = await renderButtons();
     await verifyAttachments();
@@ -1116,7 +1179,7 @@ async function runScraper(scraperId, target, callback) {
  * Uploads a file attachment to the server.
  * @param {File} file File to upload
  * @param {string} target Target for the attachment
- * @returns
+ * @returns {Promise<string>} Path to the uploaded file
  */
 export async function uploadFileAttachmentToServer(file, target) {
     const isValid = await validateFile(file);
@@ -1173,6 +1236,8 @@ export async function uploadFileAttachmentToServer(file, target) {
             saveSettingsDebounced();
             break;
     }
+
+    return fileUrl;
 }
 
 function ensureAttachmentsExist() {
@@ -1200,36 +1265,42 @@ function ensureAttachmentsExist() {
 }
 
 /**
- * Gets all currently available attachments. Ignores disabled attachments.
+ * Gets all currently available attachments. Ignores disabled attachments by default.
+ * @param {boolean} [includeDisabled=false] If true, include disabled attachments
  * @returns {FileAttachment[]} List of attachments
  */
-export function getDataBankAttachments() {
+export function getDataBankAttachments(includeDisabled = false) {
     ensureAttachmentsExist();
     const globalAttachments = extension_settings.attachments ?? [];
     const chatAttachments = chat_metadata.attachments ?? [];
     const characterAttachments = extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
 
-    return [...globalAttachments, ...chatAttachments, ...characterAttachments].filter(x => !isAttachmentDisabled(x));
+    return [...globalAttachments, ...chatAttachments, ...characterAttachments].filter(x => includeDisabled || !isAttachmentDisabled(x));
 }
 
 /**
- * Gets all attachments for a specific source. Includes disabled attachments.
+ * Gets all attachments for a specific source. Includes disabled attachments by default.
  * @param {string} source Attachment source
+ * @param {boolean} [includeDisabled=true] If true, include disabled attachments
  * @returns {FileAttachment[]} List of attachments
  */
-export function getDataBankAttachmentsForSource(source) {
+export function getDataBankAttachmentsForSource(source, includeDisabled = true) {
     ensureAttachmentsExist();
 
-    switch (source) {
-        case ATTACHMENT_SOURCE.GLOBAL:
-            return extension_settings.attachments ?? [];
-        case ATTACHMENT_SOURCE.CHAT:
-            return chat_metadata.attachments ?? [];
-        case ATTACHMENT_SOURCE.CHARACTER:
-            return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+    function getBySource() {
+        switch (source) {
+            case ATTACHMENT_SOURCE.GLOBAL:
+                return extension_settings.attachments ?? [];
+            case ATTACHMENT_SOURCE.CHAT:
+                return chat_metadata.attachments ?? [];
+            case ATTACHMENT_SOURCE.CHARACTER:
+                return extension_settings.character_attachments?.[characters[this_chid]?.avatar] ?? [];
+        }
+
+        return [];
     }
 
-    return [];
+    return getBySource().filter(x => includeDisabled || !isAttachmentDisabled(x));
 }
 
 /**
@@ -1391,6 +1462,7 @@ jQuery(function () {
     });
 
     $(document).on('click', 'body.documentstyle .mes .mes_text', function () {
+        if (window.getSelection().toString()) return;
         if ($('.edit_textarea').length) return;
         $(this).closest('.mes').find('.mes_edit').trigger('click');
     });

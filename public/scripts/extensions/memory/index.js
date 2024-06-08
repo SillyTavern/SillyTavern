@@ -926,5 +926,6 @@ jQuery(async function () {
             new SlashCommandArgument('text to summarize', [ARGUMENT_TYPE.STRING], false, false, ''),
         ],
         helpString: 'Summarizes the given text. If no text is provided, the current chat will be summarized. Can specify the source and the prompt to use.',
+        returns: ARGUMENT_TYPE.STRING,
     }));
 });

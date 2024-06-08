@@ -27,6 +27,7 @@ export const SECRET_KEYS = {
     COHERE: 'api_key_cohere',
     PERPLEXITY: 'api_key_perplexity',
     GROQ: 'api_key_groq',
+    AZURE_TTS: 'api_key_azure_tts',
 };
 
 const INPUT_MAP = {

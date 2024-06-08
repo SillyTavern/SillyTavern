@@ -795,27 +795,26 @@ function letCallback(args, value) {
 
 /**
  * Set or retrieve a variable in the current scope or nearest ancestor scope.
- * @param {{_scope:SlashCommandScope, key?:string, index?:String|Number}} args Named arguments.
- * @param {String|[String, SlashCommandClosure]} value Name and optional value for the variable.
+ * @param {{_scope:SlashCommandScope, key?:string, index?:string|number}} args Named arguments.
+ * @param {string|SlashCommandClosure|(string|SlashCommandClosure)[]} value Name and optional value for the variable.
  * @returns The variable's value
  */
 function varCallback(args, value) {
-    if (Array.isArray(value)) {
-        args._scope.setVariable(value[0], typeof value[1] == 'string' ? value.slice(1).join(' ') : value[1], args.index);
-        return value[1];
-    }
+    if (!Array.isArray(value)) value = [value];
     if (args.key !== undefined) {
         const key = args.key;
-        const val = value;
-        args._scope.setVariable(key, val, args.index);
-        return val;
-    } else if (value.includes(' ')) {
-        const key = value.split(' ')[0];
-        const val = value.split(' ').slice(1).join(' ');
+        const val = value.join(' ');
         args._scope.setVariable(key, val, args.index);
         return val;
     }
-    return args._scope.getVariable(args.key ?? value, args.index);
+    const key = value.shift();
+    if (value.length > 0) {
+        const val = value.join(' ');
+        args._scope.setVariable(key, val, args.index);
+        return val;
+    } else {
+        return args._scope.getVariable(key, args.index);
+    }
 }
 
 export function registerVariableCommands() {
@@ -1733,7 +1732,7 @@ export function registerVariableCommands() {
         returns: 'the variable value',
         namedArgumentList: [
             new SlashCommandNamedArgument(
-                'key', 'variable name', [ARGUMENT_TYPE.VARIABLE_NAME], false,
+                'key', 'variable name; forces setting the variable, even if no value is provided', [ARGUMENT_TYPE.VARIABLE_NAME], false,
             ),
             new SlashCommandNamedArgument(
                 'index',
@@ -1769,7 +1768,7 @@ export function registerVariableCommands() {
                         <pre><code class="language-stscript">/let x foo | /var x foo bar | /var x | /echo</code></pre>
                     </li>
                     <li>
-                        <pre><code class="language-stscript">/let x foo | /var key=x foo bar | /var key=x | /echo</code></pre>
+                        <pre><code class="language-stscript">/let x foo | /var key=x foo bar | /var x | /echo</code></pre>
                     </li>
                 </ul>
             </div>

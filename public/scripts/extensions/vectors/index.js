@@ -21,10 +21,14 @@ import {
 } from '../../extensions.js';
 import { collapseNewlines } from '../../power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from '../../secrets.js';
-import { getDataBankAttachments, getFileAttachment } from '../../chats.js';
-import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
+import { getDataBankAttachments, getDataBankAttachmentsForSource, getFileAttachment } from '../../chats.js';
+import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive, trimToStartSentence, trimToEndSentence } from '../../utils.js';
 import { debounce_timeout } from '../../constants.js';
 import { getSortedEntries } from '../../world-info.js';
+import { textgen_types, textgenerationwebui_settings } from '../../textgen-settings.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
 
 const MODULE_NAME = 'vectors';
 
@@ -38,6 +42,8 @@ const settings = {
     togetherai_model: 'togethercomputer/m2-bert-80M-32k-retrieval',
     openai_model: 'text-embedding-ada-002',
     cohere_model: 'embed-english-v3.0',
+    ollama_model: 'mxbai-embed-large',
+    ollama_keep: false,
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -52,6 +58,7 @@ const settings = {
     insert: 3,
     query: 2,
     message_chunk_size: 400,
+    score_threshold: 0.25,
 
     // For files
     enabled_files: false,
@@ -59,11 +66,13 @@ const settings = {
     size_threshold: 10,
     chunk_size: 5000,
     chunk_count: 2,
+    overlap_percent: 0,
 
     // For Data Bank
     size_threshold_db: 5,
     chunk_size_db: 2500,
     chunk_count_db: 5,
+    overlap_percent_db: 0,
     file_template_db: 'Related information:\n{{text}}',
     file_position_db: extension_prompt_types.IN_PROMPT,
     file_depth_db: 4,
@@ -271,6 +280,10 @@ async function synchronizeChat(batchSize = 5) {
             switch (cause) {
                 case 'api_key_missing':
                     return 'API key missing. Save it in the "API Connections" panel.';
+                case 'api_url_missing':
+                    return 'API URL missing. Save it in the "API Connections" panel.';
+                case 'api_model_missing':
+                    return 'Vectorization Source Model is required, but not set.';
                 case 'extras_module_missing':
                     return 'Extras API must provide an "embeddings" module.';
                 default:
@@ -324,28 +337,7 @@ async function processFiles(chat) {
             return;
         }
 
-        const dataBank = getDataBankAttachments();
-        const dataBankCollectionIds = [];
-
-        for (const file of dataBank) {
-            const collectionId = getFileCollectionId(file.url);
-            const hashesInCollection = await getSavedHashes(collectionId);
-            dataBankCollectionIds.push(collectionId);
-
-            // File is already in the collection
-            if (hashesInCollection.length) {
-                continue;
-            }
-
-            // Download and process the file
-            file.text = await getFileAttachment(file.url);
-            console.log(`Vectors: Retrieved file ${file.name} from Data Bank`);
-            // Convert kilobytes to string length
-            const thresholdLength = settings.size_threshold_db * 1024;
-            // Use chunk size from settings if file is larger than threshold
-            const chunkSize = file.size > thresholdLength ? settings.chunk_size_db : -1;
-            await vectorizeFile(file.text, file.name, collectionId, chunkSize);
-        }
+        const dataBankCollectionIds = await ingestDataBankAttachments();
 
         if (dataBankCollectionIds.length) {
             const queryText = await getQueryText(chat);
@@ -379,7 +371,7 @@ async function processFiles(chat) {
 
             // File is already in the collection
             if (!hashesInCollection.length) {
-                await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size);
+                await vectorizeFile(fileText, fileName, collectionId, settings.chunk_size, settings.overlap_percent);
             }
 
             const queryText = await getQueryText(chat);
@@ -393,6 +385,39 @@ async function processFiles(chat) {
 }
 
 /**
+ * Ensures that data bank attachments are ingested and inserted into the vector index.
+ * @param {string} [source] Optional source filter for data bank attachments.
+ * @returns {Promise<string[]>} Collection IDs
+ */
+async function ingestDataBankAttachments(source) {
+    // Exclude disabled files
+    const dataBank = source ? getDataBankAttachmentsForSource(source, false) : getDataBankAttachments(false);
+    const dataBankCollectionIds = [];
+
+    for (const file of dataBank) {
+        const collectionId = getFileCollectionId(file.url);
+        const hashesInCollection = await getSavedHashes(collectionId);
+        dataBankCollectionIds.push(collectionId);
+
+        // File is already in the collection
+        if (hashesInCollection.length) {
+            continue;
+        }
+
+        // Download and process the file
+        file.text = await getFileAttachment(file.url);
+        console.log(`Vectors: Retrieved file ${file.name} from Data Bank`);
+        // Convert kilobytes to string length
+        const thresholdLength = settings.size_threshold_db * 1024;
+        // Use chunk size from settings if file is larger than threshold
+        const chunkSize = file.size > thresholdLength ? settings.chunk_size_db : -1;
+        await vectorizeFile(file.text, file.name, collectionId, chunkSize, settings.overlap_percent_db);
+    }
+
+    return dataBankCollectionIds;
+}
+
+/**
  * Inserts file chunks from the Data Bank into the prompt.
  * @param {string} queryText Text to query
  * @param {string[]} collectionIds File collection IDs
@@ -400,7 +425,7 @@ async function processFiles(chat) {
  */
 async function injectDataBankChunks(queryText, collectionIds) {
     try {
-        const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.chunk_count_db);
+        const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.chunk_count_db, settings.score_threshold);
         console.debug(`Vectors: Retrieved ${collectionIds.length} Data Bank collections`, queryResults);
         let textResult = '';
 
@@ -444,9 +469,10 @@ async function retrieveFileChunks(queryText, collectionId) {
  * @param {string} fileName File name
  * @param {string} collectionId File collection ID
  * @param {number} chunkSize Chunk size
+ * @param {number} overlapPercent Overlap size (in %)
  * @returns {Promise<boolean>} True if successful, false if not
  */
-async function vectorizeFile(fileText, fileName, collectionId, chunkSize) {
+async function vectorizeFile(fileText, fileName, collectionId, chunkSize, overlapPercent) {
     try {
         if (settings.translate_files && typeof window['translate'] === 'function') {
             console.log(`Vectors: Translating file ${fileName} to English...`);
@@ -455,8 +481,11 @@ async function vectorizeFile(fileText, fileName, collectionId, chunkSize) {
         }
 
         const toast = toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
-        const chunks = splitRecursive(fileText, chunkSize);
-        console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks`, chunks);
+        const overlapSize = Math.round(chunkSize * overlapPercent / 100);
+        // Overlap should not be included in chunk size. It will be later compensated by overlapChunks
+        chunkSize = overlapSize > 0 ? (chunkSize - overlapSize) : chunkSize;
+        const chunks = splitRecursive(fileText, chunkSize).map((x, y, z) => overlapSize > 0 ? overlapChunks(x, y, z, overlapSize) : x);
+        console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks with ${overlapPercent}% overlap`, chunks);
 
         const items = chunks.map((chunk, index) => ({ hash: getStringHash(chunk), text: chunk, index: index }));
         await insertVectorItems(collectionId, items);
@@ -565,6 +594,26 @@ function getPromptText(queriedMessages) {
     return substituteParams(settings.template.replace(/{{text}}/i, queriedText));
 }
 
+/**
+ * Modifies text chunks to include overlap with adjacent chunks.
+ * @param {string} chunk Current item
+ * @param {number} index Current index
+ * @param {string[]} chunks List of chunks
+ * @param {number} overlapSize Size of the overlap
+ * @returns {string} Overlapped chunks, with overlap trimmed to sentence boundaries
+ */
+function overlapChunks(chunk, index, chunks, overlapSize) {
+    const halfOverlap = Math.floor(overlapSize / 2);
+    const nextChunk = chunks[index + 1];
+    const prevChunk = chunks[index - 1];
+
+    const nextOverlap = trimToEndSentence(nextChunk?.substring(0, halfOverlap)) || '';
+    const prevOverlap = trimToStartSentence(prevChunk?.substring(prevChunk.length - halfOverlap)) || '';
+    const overlappedChunk = [prevOverlap, chunk, nextOverlap].filter(x => x).join(' ');
+
+    return overlappedChunk;
+}
+
 window['vectors_rearrangeChat'] = rearrangeChat;
 
 const onChatEvent = debounce(async () => await moduleWorker.update(), debounce_timeout.relaxed);
@@ -636,6 +685,12 @@ function getVectorHeaders() {
         case 'cohere':
             addCohereHeaders(headers);
             break;
+        case 'ollama':
+            addOllamaHeaders(headers);
+            break;
+        case 'llamacpp':
+            addLlamaCppHeaders(headers);
+            break;
         default:
             break;
     }
@@ -685,24 +740,35 @@ function addCohereHeaders(headers) {
 }
 
 /**
+ * Add headers for the Ollama API source.
+ * @param {object} headers Header object
+ */
+function addOllamaHeaders(headers) {
+    Object.assign(headers, {
+        'X-Ollama-Model': extension_settings.vectors.ollama_model,
+        'X-Ollama-URL': textgenerationwebui_settings.server_urls[textgen_types.OLLAMA],
+        'X-Ollama-Keep': !!extension_settings.vectors.ollama_keep,
+    });
+}
+
+/**
+ * Add headers for the LlamaCpp API source.
+ * @param {object} headers Header object
+ */
+function addLlamaCppHeaders(headers) {
+    Object.assign(headers, {
+        'X-LlamaCpp-URL': textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP],
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
  * @returns {Promise<void>}
  */
 async function insertVectorItems(collectionId, items) {
-    if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
-        settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
-        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
-        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
-        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
-        settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
-        throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
-    }
-
-    if (settings.source === 'extras' && !modules.includes('embeddings')) {
-        throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
-    }
+    throwIfSourceInvalid();
 
     const headers = getVectorHeaders();
 
@@ -718,6 +784,33 @@ async function insertVectorItems(collectionId, items) {
 
     if (!response.ok) {
         throw new Error(`Failed to insert vector items for collection ${collectionId}`);
+    }
+}
+
+/**
+ * Throws an error if the source is invalid (missing API key or URL, or missing module)
+ */
+function throwIfSourceInvalid() {
+    if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
+        settings.source === 'palm' && !secret_state[SECRET_KEYS.MAKERSUITE] ||
+        settings.source === 'mistral' && !secret_state[SECRET_KEYS.MISTRALAI] ||
+        settings.source === 'togetherai' && !secret_state[SECRET_KEYS.TOGETHERAI] ||
+        settings.source === 'nomicai' && !secret_state[SECRET_KEYS.NOMICAI] ||
+        settings.source === 'cohere' && !secret_state[SECRET_KEYS.COHERE]) {
+        throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
+    }
+
+    if (settings.source === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] ||
+        settings.source === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
+        throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
+    }
+
+    if (settings.source === 'ollama' && !settings.ollama_model) {
+        throw new Error('Vectors: API model missing', { cause: 'api_model_missing' });
+    }
+
+    if (settings.source === 'extras' && !modules.includes('embeddings')) {
+        throw new Error('Vectors: Embeddings module missing', { cause: 'extras_module_missing' });
     }
 }
 
@@ -760,6 +853,7 @@ async function queryCollection(collectionId, searchText, topK) {
             searchText: searchText,
             topK: topK,
             source: settings.source,
+            threshold: settings.score_threshold,
         }),
     });
 
@@ -775,9 +869,10 @@ async function queryCollection(collectionId, searchText, topK) {
  * @param {string[]} collectionIds - Collection IDs to query
  * @param {string} searchText - Text to query
  * @param {number} topK - Number of results to return
+ * @param {number} threshold - Score threshold
  * @returns {Promise<Record<string, { hashes: number[], metadata: object[] }>>} - Results mapped to collection IDs
  */
-async function queryMultipleCollections(collectionIds, searchText, topK) {
+async function queryMultipleCollections(collectionIds, searchText, topK, threshold) {
     const headers = getVectorHeaders();
 
     const response = await fetch('/api/vector/query-multi', {
@@ -788,6 +883,7 @@ async function queryMultipleCollections(collectionIds, searchText, topK) {
             searchText: searchText,
             topK: topK,
             source: settings.source,
+            threshold: threshold ?? settings.score_threshold,
         }),
     });
 
@@ -867,6 +963,8 @@ function toggleSettings() {
     $('#together_vectorsModel').toggle(settings.source === 'togetherai');
     $('#openai_vectorsModel').toggle(settings.source === 'openai');
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
+    $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
+    $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
 }
 
@@ -898,7 +996,8 @@ async function onViewStatsClick() {
     Unique hashes: <b>${uniqueHashes}</b><br><br>
     I'll mark collected messages with a green circle.`,
     `Stats for chat ${chatId}`,
-    { timeOut: 10000, escapeHtml: false });
+    { timeOut: 10000, escapeHtml: false },
+    );
 
     const chat = getContext().chat;
     for (const message of chat) {
@@ -938,6 +1037,23 @@ async function onVectorizeAllFilesClick() {
             return -1;
         }
 
+        /**
+         * Gets the overlap percent for a file attachment.
+         * @param file {import('../../chats.js').FileAttachment} File attachment
+         * @returns {number} Overlap percent for the file
+         */
+        function getOverlapPercent(file) {
+            if (chatAttachments.includes(file)) {
+                return settings.overlap_percent;
+            }
+
+            if (dataBank.includes(file)) {
+                return settings.overlap_percent_db;
+            }
+
+            return 0;
+        }
+
         let allSuccess = true;
 
         for (const file of allFiles) {
@@ -951,7 +1067,8 @@ async function onVectorizeAllFilesClick() {
             }
 
             const chunkSize = getChunkSize(file);
-            const result = await vectorizeFile(text, file.name, collectionId, chunkSize);
+            const overlapPercent = getOverlapPercent(file);
+            const result = await vectorizeFile(text, file.name, collectionId, chunkSize, overlapPercent);
 
             if (!result) {
                 allSuccess = false;
@@ -1069,7 +1186,7 @@ async function activateWorldInfo(chat) {
         return;
     }
 
-    const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.max_entries);
+    const queryResults = await queryMultipleCollections(collectionIds, queryText, settings.max_entries, settings.score_threshold);
     const activatedHashes = Object.values(queryResults).flatMap(x => x.hashes).filter(onlyUnique);
     const activatedEntries = [];
 
@@ -1148,6 +1265,17 @@ jQuery(async () => {
     $('#vectors_cohere_model').val(settings.cohere_model).on('change', () => {
         $('#vectors_modelWarning').show();
         settings.cohere_model = String($('#vectors_cohere_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_ollama_model').val(settings.ollama_model).on('input', () => {
+        $('#vectors_modelWarning').show();
+        settings.ollama_model = String($('#vectors_ollama_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_ollama_keep').prop('checked', settings.ollama_keep).on('input', () => {
+        settings.ollama_keep = $('#vectors_ollama_keep').prop('checked');
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
@@ -1260,6 +1388,18 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    $('#vectors_overlap_percent').val(settings.overlap_percent).on('input', () => {
+        settings.overlap_percent = Number($('#vectors_overlap_percent').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
+    $('#vectors_overlap_percent_db').val(settings.overlap_percent_db).on('input', () => {
+        settings.overlap_percent_db = Number($('#vectors_overlap_percent_db').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
     $('#vectors_file_template_db').val(settings.file_template_db).on('input', () => {
         settings.file_template_db = String($('#vectors_file_template_db').val());
         Object.assign(extension_settings.vectors, settings);
@@ -1310,6 +1450,12 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    $('#vectors_score_threshold').val(settings.score_threshold).on('input', () => {
+        settings.score_threshold = Number($('#vectors_score_threshold').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+
     const validSecret = !!secret_state[SECRET_KEYS.NOMICAI];
     const placeholder = validSecret ? '✔️ Key saved' : '❌ Missing key';
     $('#api_key_nomicai').attr('placeholder', placeholder);
@@ -1323,4 +1469,60 @@ jQuery(async () => {
     eventSource.on(event_types.CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.GROUP_CHAT_DELETED, purgeVectorIndex);
     eventSource.on(event_types.FILE_ATTACHMENT_DELETED, purgeFileVectorIndex);
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-ingest',
+        callback: async () => {
+            await ingestDataBankAttachments();
+            return '';
+        },
+        aliases: ['databank-ingest', 'data-bank-ingest'],
+        helpString: 'Force the ingestion of all Data Bank attachments.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-purge',
+        callback: async () => {
+            const dataBank = getDataBankAttachments();
+
+            for (const file of dataBank) {
+                await purgeFileVectorIndex(file.url);
+            }
+
+            return '';
+        },
+        aliases: ['databank-purge', 'data-bank-purge'],
+        helpString: 'Purge the vector index for all Data Bank attachments.',
+    }));
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'db-search',
+        callback: async (args, query) => {
+            const clamp = (v) => Number.isNaN(v) ? null : Math.min(1, Math.max(0, v));
+            const threshold = clamp(Number(args?.threshold ?? settings.score_threshold));
+            const source = String(args?.source ?? '');
+            const attachments = source ? getDataBankAttachmentsForSource(source, false) : getDataBankAttachments(false);
+            const collectionIds = await ingestDataBankAttachments(String(source));
+            const queryResults = await queryMultipleCollections(collectionIds, String(query), settings.chunk_count_db, threshold);
+
+            // Map collection IDs to file URLs
+            const urls = Object
+                .keys(queryResults)
+                .map(x => attachments.find(y => getFileCollectionId(y.url) === x))
+                .filter(x => x)
+                .map(x => x.url);
+
+            return JSON.stringify(urls);
+        },
+        aliases: ['databank-search', 'data-bank-search'],
+        helpString: 'Search the Data Bank for a specific query using vector similarity. Returns a list of file URLs with the most relevant content.',
+        namedArgumentList: [
+            new SlashCommandNamedArgument('threshold', 'Threshold for the similarity score in the [0, 1] range. Uses the global config value if not set.', ARGUMENT_TYPE.NUMBER, false, false, ''),
+            new SlashCommandNamedArgument('source', 'Optional filter for the attachments by source.', ARGUMENT_TYPE.STRING, false, false, '', ['global', 'character', 'chat']),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument('Query to search by.', ARGUMENT_TYPE.STRING, true, false),
+        ],
+        returns: ARGUMENT_TYPE.LIST,
+    }));
 });

@@ -6,15 +6,16 @@ const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { PUBLIC_DIRECTORIES, UPLOADS_PATH } = require('../constants');
+const { UPLOADS_PATH } = require('../constants');
 const { getConfigValue, humanizedISO8601DateTime, tryParse, generateTimestamp, removeOldBackups } = require('../util');
 
 /**
  * Saves a chat to the backups directory.
+ * @param {string} directory The user's backups directory.
  * @param {string} name The name of the chat.
  * @param {string} chat The serialized chat to save.
  */
-function backupChat(name, chat) {
+function backupChat(directory, name, chat) {
     try {
         const isBackupDisabled = getConfigValue('disableChatBackup', false);
 
@@ -22,17 +23,13 @@ function backupChat(name, chat) {
             return;
         }
 
-        if (!fs.existsSync(PUBLIC_DIRECTORIES.backups)) {
-            fs.mkdirSync(PUBLIC_DIRECTORIES.backups);
-        }
-
         // replace non-alphanumeric characters with underscores
         name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-        const backupFile = path.join(PUBLIC_DIRECTORIES.backups, `chat_${name}_${generateTimestamp()}.jsonl`);
+        const backupFile = path.join(directory, `chat_${name}_${generateTimestamp()}.jsonl`);
         writeFileAtomicSync(backupFile, chat, 'utf-8');
 
-        removeOldBackups(`chat_${name}_`);
+        removeOldBackups(directory, `chat_${name}_`);
     } catch (err) {
         console.log(`Could not backup chat for ${name}`, err);
     }
@@ -151,7 +148,7 @@ router.post('/save', jsonParser, function (request, response) {
         const fileName = `${sanitize(String(request.body.file_name))}.jsonl`;
         const filePath = path.join(request.user.directories.chats, directoryName, fileName);
         writeFileAtomicSync(filePath, jsonlData, 'utf8');
-        backupChat(directoryName, jsonlData);
+        backupChat(request.user.directories.backups, directoryName, jsonlData);
         return response.send({ result: 'ok' });
     } catch (error) {
         response.send(error);
@@ -455,7 +452,7 @@ router.post('/group/save', jsonParser, (request, response) => {
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
     writeFileAtomicSync(pathToFile, jsonlData, 'utf8');
-    backupChat(String(id), jsonlData);
+    backupChat(request.user.directories.backups, String(id), jsonlData);
     return response.send({ ok: true });
 });
 

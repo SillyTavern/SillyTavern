@@ -27,6 +27,8 @@ import { selected_group } from './group-chats.js';
 
 let savePersonasPage = 0;
 const GRID_STORAGE_KEY = 'Personas_GridView';
+const DEFAULT_DEPTH = 2;
+const DEFAULT_ROLE = 0;
 export let user_avatar = '';
 export const personasFilter = new FilterHelper(debounce(getUserAvatars, debounce_timeout.quick));
 
@@ -119,7 +121,7 @@ function verifyPersonaSearchSortRule() {
         flashHighlight(selector);
     }
     // If search got cleared, we make sure to hide the option and go back to the one before
-    if (!searchTerm && !isHidden) {
+    if (!searchTerm) {
         searchOption.attr('hidden', '');
         selector.val(power_user.persona_sort_order);
     }
@@ -371,6 +373,8 @@ export function initPersona(avatarId, personaName, personaDescription) {
     power_user.persona_descriptions[avatarId] = {
         description: personaDescription || '',
         position: persona_description_positions.IN_PROMPT,
+        depth: DEFAULT_DEPTH,
+        role: DEFAULT_ROLE,
     };
 
     saveSettingsDebounced();
@@ -415,6 +419,8 @@ export async function convertCharacterToPersona(characterId = null) {
     power_user.persona_descriptions[overwriteName] = {
         description: description,
         position: persona_description_positions.IN_PROMPT,
+        depth: DEFAULT_DEPTH,
+        role: DEFAULT_ROLE,
     };
 
     // If the user is currently using this persona, update the description
@@ -447,11 +453,17 @@ export function setPersonaDescription() {
         power_user.persona_description_position = persona_description_positions.IN_PROMPT;
     }
 
+    $('#persona_depth_position_settings').toggle(power_user.persona_description_position === persona_description_positions.AT_DEPTH);
     $('#persona_description').val(power_user.persona_description);
+    $('#persona_depth_value').val(power_user.persona_description_depth ?? DEFAULT_DEPTH);
     $('#persona_description_position')
         .val(power_user.persona_description_position)
-        .find(`option[value='${power_user.persona_description_position}']`)
+        .find(`option[value="${power_user.persona_description_position}"]`)
         .attr('selected', String(true));
+    $('#persona_depth_role')
+        .val(power_user.persona_description_role)
+        .find(`option[value="${power_user.persona_description_role}"]`)
+        .prop('selected', String(true));
     countPersonaDescriptionTokens();
 }
 
@@ -473,12 +485,20 @@ export function autoSelectPersona(name) {
 async function updatePersonaNameIfExists(avatarId, newName) {
     if (avatarId in power_user.personas) {
         power_user.personas[avatarId] = newName;
-        await getUserAvatars(true, avatarId);
-        saveSettingsDebounced();
         console.log(`Updated persona name for ${avatarId} to ${newName}`);
     } else {
-        console.log(`Persona name ${avatarId} was not updated because it does not exist`);
+        power_user.personas[avatarId] = newName;
+        power_user.persona_descriptions[avatarId] = {
+            description: '',
+            position: persona_description_positions.IN_PROMPT,
+            depth: DEFAULT_DEPTH,
+            role: DEFAULT_ROLE,
+        };
+        console.log(`Created persona name for ${avatarId} as ${newName}`);
     }
+
+    await getUserAvatars(true, avatarId);
+    saveSettingsDebounced();
 }
 
 async function bindUserNameToPersona(e) {
@@ -511,6 +531,8 @@ async function bindUserNameToPersona(e) {
             power_user.persona_descriptions[avatarId] = {
                 description: isCurrentPersona ? power_user.persona_description : '',
                 position: isCurrentPersona ? power_user.persona_description_position : persona_description_positions.IN_PROMPT,
+                depth: isCurrentPersona ? power_user.persona_description_depth : DEFAULT_DEPTH,
+                role: isCurrentPersona ? power_user.persona_description_role : DEFAULT_ROLE,
             };
         }
 
@@ -551,12 +573,16 @@ function selectCurrentPersona() {
         const descriptor = power_user.persona_descriptions[user_avatar];
 
         if (descriptor) {
-            power_user.persona_description = descriptor.description;
-            power_user.persona_description_position = descriptor.position;
+            power_user.persona_description = descriptor.description ?? '';
+            power_user.persona_description_position = descriptor.position ?? persona_description_positions.IN_PROMPT;
+            power_user.persona_description_depth = descriptor.depth ?? DEFAULT_DEPTH;
+            power_user.persona_description_role = descriptor.role ?? DEFAULT_ROLE;
         } else {
             power_user.persona_description = '';
             power_user.persona_description_position = persona_description_positions.IN_PROMPT;
-            power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.IN_PROMPT };
+            power_user.persona_description_depth = DEFAULT_DEPTH;
+            power_user.persona_description_role = DEFAULT_ROLE;
+            power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.IN_PROMPT, depth: DEFAULT_DEPTH, role: DEFAULT_ROLE };
         }
 
         setPersonaDescription();
@@ -661,6 +687,8 @@ function onPersonaDescriptionInput() {
             object = {
                 description: power_user.persona_description,
                 position: Number($('#persona_description_position').find(':selected').val()),
+                depth: Number($('#persona_depth_value').val()),
+                role: Number($('#persona_depth_role').find(':selected').val()),
             };
             power_user.persona_descriptions[user_avatar] = object;
         }
@@ -674,26 +702,55 @@ function onPersonaDescriptionInput() {
     saveSettingsDebounced();
 }
 
+function onPersonaDescriptionDepthValueInput() {
+    power_user.persona_description_depth = Number($('#persona_depth_value').val());
+
+    if (power_user.personas[user_avatar]) {
+        const object = getOrCreatePersonaDescriptor();
+        object.depth = power_user.persona_description_depth;
+    }
+
+    saveSettingsDebounced();
+}
+
+function onPersonaDescriptionDepthRoleInput() {
+    power_user.persona_description_role = Number($('#persona_depth_role').find(':selected').val());
+
+    if (power_user.personas[user_avatar]) {
+        const object = getOrCreatePersonaDescriptor();
+        object.role = power_user.persona_description_role;
+    }
+
+    saveSettingsDebounced();
+}
+
 function onPersonaDescriptionPositionInput() {
     power_user.persona_description_position = Number(
         $('#persona_description_position').find(':selected').val(),
     );
 
     if (power_user.personas[user_avatar]) {
-        let object = power_user.persona_descriptions[user_avatar];
-
-        if (!object) {
-            object = {
-                description: power_user.persona_description,
-                position: power_user.persona_description_position,
-            };
-            power_user.persona_descriptions[user_avatar] = object;
-        }
-
+        const object = getOrCreatePersonaDescriptor();
         object.position = power_user.persona_description_position;
     }
 
     saveSettingsDebounced();
+    $('#persona_depth_position_settings').toggle(power_user.persona_description_position === persona_description_positions.AT_DEPTH);
+}
+
+function getOrCreatePersonaDescriptor() {
+    let object = power_user.persona_descriptions[user_avatar];
+
+    if (!object) {
+        object = {
+            description: power_user.persona_description,
+            position: power_user.persona_description_position,
+            depth: power_user.persona_description_depth,
+            role: power_user.persona_description_role,
+        };
+        power_user.persona_descriptions[user_avatar] = object;
+    }
+    return object;
 }
 
 async function setDefaultPersona(e) {
@@ -919,6 +976,8 @@ export function initPersonas() {
     $('#create_dummy_persona').on('click', createDummyPersona);
     $('#persona_description').on('input', onPersonaDescriptionInput);
     $('#persona_description_position').on('input', onPersonaDescriptionPositionInput);
+    $('#persona_depth_value').on('input', onPersonaDescriptionDepthValueInput);
+    $('#persona_depth_role').on('input', onPersonaDescriptionDepthRoleInput);
     $('#personas_backup').on('click', onBackupPersonas);
     $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
     $('#personas_restore_input').on('change', onPersonasRestoreInput);

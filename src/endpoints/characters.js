@@ -13,7 +13,7 @@ const jimp = require('jimp');
 
 const { UPLOADS_PATH, AVATAR_WIDTH, AVATAR_HEIGHT } = require('../constants');
 const { jsonParser, urlencodedParser } = require('../express-common');
-const { deepMerge, humanizedISO8601DateTime, tryParse } = require('../util');
+const { deepMerge, humanizedISO8601DateTime, tryParse, extractFileFromZipBuffer } = require('../util');
 const { TavernCardValidator } = require('../validator/TavernCardValidator');
 const characterCardParser = require('../character-card-parser.js');
 const { readWorldInfoFile } = require('./worldinfo');
@@ -424,6 +424,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
             insertion_order: entry.order,
             enabled: !entry.disable,
             position: entry.position == 0 ? 'before_char' : 'after_char',
+            use_regex: true, // ST keys are always regex
             extensions: {
                 position: entry.position,
                 exclude_recursion: entry.excludeRecursion,
@@ -486,6 +487,37 @@ async function importFromYaml(uploadPath, context) {
 }
 
 /**
+ * Imports a character card from CharX (ZIP) file.
+ * @param {string} uploadPath
+ * @param {object} params
+ * @param {import('express').Request} params.request
+ * @returns {Promise<string>} Internal name of the character
+ */
+async function importFromCharX(uploadPath, { request }) {
+    const data = fs.readFileSync(uploadPath);
+    fs.rmSync(uploadPath);
+    console.log('Importing from CharX');
+    const cardBuffer = await extractFileFromZipBuffer(data, 'card.json');
+
+    if (!cardBuffer) {
+        throw new Error('Failed to extract card.json from CharX file');
+    }
+
+    const card = readFromV2(JSON.parse(cardBuffer.toString()));
+
+    if (card.spec === undefined) {
+        throw new Error('Invalid CharX card file: missing spec field');
+    }
+
+    unsetFavFlag(card);
+    card['create_date'] = humanizedISO8601DateTime();
+    card.name = sanitize(card.name);
+    const fileName = getPngName(card.name, request.user.directories);
+    const result = await writeCharacterData(defaultAvatarPath, JSON.stringify(card), fileName, request);
+    return result ? fileName : '';
+}
+
+/**
  * Import a character from a JSON file.
  * @param {string} uploadPath Path to the uploaded file
  * @param {{ request: import('express').Request, response: import('express').Response }} context Express request and response objects
@@ -498,7 +530,7 @@ async function importFromJson(uploadPath, { request }) {
     let jsonData = JSON.parse(data);
 
     if (jsonData.spec !== undefined) {
-        console.log('Importing from v2 json');
+        console.log(`Importing from ${jsonData.spec} json`);
         importRisuSprites(request.user.directories, jsonData);
         unsetFavFlag(jsonData);
         jsonData = readFromV2(jsonData);
@@ -581,7 +613,7 @@ async function importFromPng(uploadPath, { request }, preservedFileName) {
     const pngName = preservedFileName || getPngName(jsonData.name, request.user.directories);
 
     if (jsonData.spec !== undefined) {
-        console.log('Found a v2 character file.');
+        console.log(`Found a ${jsonData.spec} character file.`);
         importRisuSprites(request.user.directories, jsonData);
         unsetFavFlag(jsonData);
         jsonData = readFromV2(jsonData);
@@ -924,6 +956,10 @@ router.post('/chats', jsonParser, async function (request, response) {
             return;
         }
 
+        if (request.body.simple) {
+            return response.send(jsonFiles.map(file => ({ file_name: file })));
+        }
+
         const jsonFilesPromise = jsonFiles.map((file) => {
             return new Promise(async (res) => {
                 const pathToFile = path.join(request.user.directories.chats, characterDirectory, file);
@@ -1015,6 +1051,7 @@ router.post('/import', urlencodedParser, async function (request, response) {
         'yml': importFromYaml,
         'json': importFromJson,
         'png': importFromPng,
+        'charx': importFromCharX,
     };
 
     try {

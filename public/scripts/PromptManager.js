@@ -6,6 +6,7 @@ import { Message, TokenHandler } from './openai.js';
 import { power_user } from './power-user.js';
 import { debounce, waitUntilCondition, escapeHtml } from './utils.js';
 import { debounce_timeout } from './constants.js';
+import { renderTemplateAsync } from './templates.js';
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -250,7 +251,7 @@ class PromptManager {
         this.error = null;
 
         /** Dry-run for generate, must return a promise  */
-        this.tryGenerate = () => { };
+        this.tryGenerate = async () => { };
 
         /** Called to persist the configuration, must return a promise */
         this.saveServiceSettings = () => { };
@@ -695,23 +696,23 @@ class PromptManager {
         if ('character' === this.configuration.promptOrder.strategy && null === this.activeCharacter) return;
         this.error = null;
 
-        waitUntilCondition(() => !is_send_press && !is_group_generating, 1024 * 1024, 100).then(() => {
+        waitUntilCondition(() => !is_send_press && !is_group_generating, 1024 * 1024, 100).then(async () => {
             if (true === afterTryGenerate) {
                 // Executed during dry-run for determining context composition
                 this.profileStart('filling context');
-                this.tryGenerate().finally(() => {
+                this.tryGenerate().finally(async () => {
                     this.profileEnd('filling context');
                     this.profileStart('render');
-                    this.renderPromptManager();
-                    this.renderPromptManagerListItems();
+                    await this.renderPromptManager();
+                    await this.renderPromptManagerListItems();
                     this.makeDraggable();
                     this.profileEnd('render');
                 });
             } else {
                 // Executed during live communication
                 this.profileStart('render');
-                this.renderPromptManager();
-                this.renderPromptManagerListItems();
+                await this.renderPromptManager();
+                await this.renderPromptManagerListItems();
                 this.makeDraggable();
                 this.profileEnd('render');
             }
@@ -1338,7 +1339,7 @@ class PromptManager {
     /**
      * Empties, then re-assembles the container containing the prompt list.
      */
-    renderPromptManager() {
+    async renderPromptManager() {
         let selectedPromptIndex = 0;
         const existingAppendSelect = document.getElementById(`${this.configuration.prefix}prompt_manager_footer_append_prompt`);
         if (existingAppendSelect instanceof HTMLSelectElement) {
@@ -1347,26 +1348,16 @@ class PromptManager {
         const promptManagerDiv = this.containerElement;
         promptManagerDiv.innerHTML = '';
 
-        const errorDiv = `
+        const errorDiv = this.error ? `
                 <div class="${this.configuration.prefix}prompt_manager_error">
-                    <span class="fa-solid tooltip fa-triangle-exclamation text_danger"></span> ${this.error}
+                    <span class="fa-solid tooltip fa-triangle-exclamation text_danger"></span> ${DOMPurify.sanitize(this.error)}
                 </div>
-        `;
+        ` : '';
 
         const totalActiveTokens = this.tokenUsage;
 
-        promptManagerDiv.insertAdjacentHTML('beforeend', `
-            <div class="range-block">
-                ${this.error ? errorDiv : ''}
-                <div class="${this.configuration.prefix}prompt_manager_header">
-                    <div class="${this.configuration.prefix}prompt_manager_header_advanced">
-                        <span data-i18n="Prompts">Prompts</span>
-                    </div>
-                    <div>Total Tokens: ${totalActiveTokens} </div>
-                </div>
-                <ul id="${this.configuration.prefix}prompt_manager_list" class="text_pole"></ul>
-            </div>
-        `);
+        const headerHtml = await renderTemplateAsync('promptManagerHeader', { error: this.error, errorDiv, prefix: this.configuration.prefix, totalActiveTokens });
+        promptManagerDiv.insertAdjacentHTML('beforeend', headerHtml);
 
         this.listElement = promptManagerDiv.querySelector(`#${this.configuration.prefix}prompt_manager_list`);
 
@@ -1384,22 +1375,9 @@ class PromptManager {
                 selectedPromptIndex = 0;
             }
 
-            const footerHtml = `
-                <div class="${this.configuration.prefix}prompt_manager_footer">
-                    <select id="${this.configuration.prefix}prompt_manager_footer_append_prompt" class="text_pole" name="append-prompt">
-                        ${promptsHtml}
-                    </select>
-                    <a class="menu_button fa-chain fa-solid" title="Insert prompt" data-i18n="[title]Insert prompt"></a>
-                    <a class="caution menu_button fa-x fa-solid" title="Delete prompt" data-i18n="[title]Delete prompt"></a>
-                    <a class="menu_button fa-file-import fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="[title]Import a prompt list"></a>
-                    <a class="menu_button fa-file-export fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="[title]Export this prompt list"></a>
-                    <a class="menu_button fa-undo fa-solid" id="prompt-manager-reset-character" title="Reset current character" data-i18n="[title]Reset current character"></a>
-                    <a class="menu_button fa-plus-square fa-solid" title="New prompt" data-i18n="[title]New prompt"></a>
-                </div>
-            `;
-
             const rangeBlockDiv = promptManagerDiv.querySelector('.range-block');
             const headerDiv = promptManagerDiv.querySelector('.completion_prompt_manager_header');
+            const footerHtml = await renderTemplateAsync('promptManagerFooter', { promptsHtml, prefix: this.configuration.prefix });
             headerDiv.insertAdjacentHTML('afterend', footerHtml);
             rangeBlockDiv.querySelector('#prompt-manager-reset-character').addEventListener('click', this.handleCharacterReset);
 
@@ -1410,23 +1388,9 @@ class PromptManager {
             footerDiv.querySelector('select').selectedIndex = selectedPromptIndex;
 
             // Add prompt export dialogue and options
-            const exportForCharacter = `
-            <div class="row">
-                <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
-                <span class="tooltip fa-solid fa-info-circle" title="Export prompts for this character, including their order."></span>
-            </div>`;
-            const exportPopup = `
-                    <div id="prompt-manager-export-format-popup" class="list-group">
-                        <div class="prompt-manager-export-format-popup-flex">
-                            <div class="row">
-                                <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
-                                <span class="tooltip fa-solid fa-info-circle" title="Export all your prompts to a file"></span>
-                            </div>
-                            ${'global' === this.configuration.promptOrder.strategy ? '' : exportForCharacter}
-                        </div>
-                </div>
-                `;
 
+            const exportForCharacter = await renderTemplateAsync('promptManagerExportForCharacter');
+            const exportPopup = await renderTemplateAsync('promptManagerExportPopup', { isGlobalStrategy: 'global' === this.configuration.promptOrder.strategy, exportForCharacter });
             rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
 
             // Destroy previous popper instance if it exists
@@ -1460,7 +1424,7 @@ class PromptManager {
     /**
      * Empties, then re-assembles the prompt list
      */
-    renderPromptManagerListItems() {
+    async renderPromptManagerListItems() {
         if (!this.serviceSettings.prompts) return;
 
         const promptManagerList = this.listElement;
@@ -1468,16 +1432,7 @@ class PromptManager {
 
         const { prefix } = this.configuration;
 
-        let listItemHtml = `
-            <li class="${prefix}prompt_manager_list_head">
-                <span data-i18n="Name">Name</span>
-                <span></span>
-                <span class="prompt_manager_prompt_tokens" data-i18n="Tokens">Tokens</span>
-            </li>
-            <li class="${prefix}prompt_manager_list_separator">
-                <hr>
-            </li>
-        `;
+        let listItemHtml = await renderTemplateAsync('promptManagerListHeader', { prefix });
 
         this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
             if (!prompt) return;
@@ -1551,7 +1506,7 @@ class PromptManager {
                         ${isImportantPrompt ? '<span class="fa-fw fa-solid fa-star" title="Important Prompt"></span>' : ''}
                         ${isUserPrompt ? '<span class="fa-fw fa-solid fa-user" title="User Prompt"></span>' : ''}
                         ${isInjectionPrompt ? '<span class="fa-fw fa-solid fa-syringe" title="In-Chat Injection"></span>' : ''}
-                        ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${encodedName}</a>` : encodedName}
+                        ${this.isPromptInspectionAllowed(prompt) ? `<a title="${encodedName}" class="prompt-manager-inspect-action">${encodedName}</a>` : `<span title="${encodedName}">${encodedName}</span>`}
                         ${isInjectionPrompt ? `<small class="prompt-manager-injection-depth">@ ${prompt.injection_depth}</small>` : ''}
                         ${isOverriddenPrompt ? '<small class="fa-solid fa-address-card prompt-manager-overridden" title="Pulled from a character card"></small>' : ''}
                     </span>
@@ -1602,7 +1557,7 @@ class PromptManager {
             data: data,
         };
 
-        const serializedObject = JSON.stringify(promptExport);
+        const serializedObject = JSON.stringify(promptExport, null, 4);
         const blob = new Blob([serializedObject], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const downloadLink = document.createElement('a');

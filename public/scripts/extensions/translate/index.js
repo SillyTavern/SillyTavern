@@ -12,6 +12,9 @@ import {
 } from '../../../script.js';
 import { extension_settings, getContext } from '../../extensions.js';
 import { findSecret, secret_state, writeSecret } from '../../secrets.js';
+import { SlashCommand } from '../../slash-commands/SlashCommand.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from '../../slash-commands/SlashCommandArgument.js';
+import { SlashCommandParser } from '../../slash-commands/SlashCommandParser.js';
 import { splitRecursive } from '../../utils.js';
 
 export const autoModeOptions = {
@@ -646,7 +649,24 @@ jQuery(() => {
     eventSource.makeFirst(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
     eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
     eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
-    eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdit);
+    eventSource.on(event_types.MESSAGE_UPDATED, handleMessageEdit);
 
     document.body.classList.add('translate');
+
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'translate',
+        helpString: 'Translate text to a target language. If target language is not provided, the value from the extension settings will be used.',
+        namedArgumentList: [
+            new SlashCommandNamedArgument('target', 'The target language code to translate to', ARGUMENT_TYPE.STRING, false, false, '', Object.values(languageCodes)),
+        ],
+        unnamedArgumentList: [
+            new SlashCommandArgument('The text to translate', ARGUMENT_TYPE.STRING, true, false, ''),
+        ],
+        callback: async (args, value) => {
+            const target = args?.target && Object.values(languageCodes).includes(String(args.target))
+                ? String(args.target)
+                : extension_settings.translate.target_language;
+            return await translate(String(value), target);
+        },
+    }));
 });

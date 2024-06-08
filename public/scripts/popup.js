@@ -48,7 +48,7 @@ export class Popup {
      * @param {string} inputValue - Value to set the input to.
      * @param {PopupOptions} options - Options for the popup.
      */
-    constructor(text, type, inputValue = '', { okButton, cancelButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
+    constructor(text, type, inputValue = '', { okButton, cancelButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
         this.type = type;
 
         /**@type {HTMLTemplateElement}*/
@@ -64,12 +64,13 @@ export class Popup {
         this.cancel = this.dom.querySelector('.dialogue_popup_cancel');
 
         if (wide) dlg.classList.add('wide_dialogue_popup');
+        if (wider) dlg.classList.add('wider_dialogue_popup');
         if (large) dlg.classList.add('large_dialogue_popup');
         if (allowHorizontalScrolling) dlg.classList.add('horizontal_scrolling_dialogue_popup');
         if (allowVerticalScrolling) dlg.classList.add('vertical_scrolling_dialogue_popup');
 
         this.ok.textContent = okButton ?? 'OK';
-        this.cancel.textContent = cancelButton ?? 'Cancel';
+        this.cancel.textContent = cancelButton ?? template.getAttribute('popup_text_cancel');
 
         switch (type) {
             case POPUP_TYPE.TEXT: {
@@ -79,13 +80,13 @@ export class Popup {
             }
             case POPUP_TYPE.CONFIRM: {
                 this.input.style.display = 'none';
-                this.ok.textContent = okButton ?? 'Yes';
-                this.cancel.textContent = cancelButton ?? 'No';
+                this.ok.textContent = okButton ?? template.getAttribute('popup_text_yes');
+                this.cancel.textContent = cancelButton ?? template.getAttribute('popup_text_no');
                 break;
             }
             case POPUP_TYPE.INPUT: {
                 this.input.style.display = 'block';
-                this.ok.textContent = okButton ?? 'Save';
+                this.ok.textContent = okButton ?? template.getAttribute('popup_text_save');
                 break;
             }
             default: {
@@ -225,12 +226,12 @@ export class Popup {
  * @param {PopupOptions} options - Options for the popup.
  * @returns
  */
-export function callGenericPopup(text, type, inputValue = '', { okButton, cancelButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
+export function callGenericPopup(text, type, inputValue = '', { okButton, cancelButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling } = {}) {
     const popup = new Popup(
         text,
         type,
         inputValue,
-        { okButton, cancelButton, rows, wide, large, allowHorizontalScrolling, allowVerticalScrolling },
+        { okButton, cancelButton, rows, wide, wider, large, allowHorizontalScrolling, allowVerticalScrolling },
     );
     return popup.show();
 }

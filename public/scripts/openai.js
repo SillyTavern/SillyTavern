@@ -278,6 +278,7 @@ const default_settings = {
     inline_image_quality: 'low',
     bypass_status_check: false,
     continue_prefill: false,
+    function_calling: false,
     names_behavior: character_names_behavior.NONE,
     continue_postfix: continue_postfix_types.SPACE,
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
@@ -355,6 +356,7 @@ const oai_settings = {
     inline_image_quality: 'low',
     bypass_status_check: false,
     continue_prefill: false,
+    function_calling: false,
     names_behavior: character_names_behavior.NONE,
     continue_postfix: continue_postfix_types.SPACE,
     custom_prompt_post_processing: custom_prompt_post_processing_types.NONE,
@@ -1282,6 +1284,10 @@ export async function prepareOpenAIMessages({
     }
 
     const chat = chatCompletion.getChat();
+
+    const eventData = { chat, dryRun };
+    await eventSource.emit(event_types.CHAT_COMPLETION_PROMPT_READY, eventData);
+
     openai_messages_count = chat.filter(x => x?.role === 'user' || x?.role === 'assistant')?.length || 0;
 
     return [chat, promptManager.tokenHandler.counts];
@@ -1743,8 +1749,8 @@ async function sendOpenAIRequest(type, messages, signal) {
         delete generate_data.stop;
     }
 
-    // Proxy is only supported for Claude, OpenAI and Mistral
-    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI].includes(oai_settings.chat_completion_source)) {
+    // Proxy is only supported for Claude, OpenAI, Mistral, and Google MakerSuite
+    if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI, chat_completion_sources.MISTRALAI, chat_completion_sources.MAKERSUITE].includes(oai_settings.chat_completion_source)) {
         validateReverseProxy();
         generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
         generate_data['proxy_password'] = oai_settings.proxy_password;
@@ -1851,6 +1857,10 @@ async function sendOpenAIRequest(type, messages, signal) {
 
     await eventSource.emit(event_types.CHAT_COMPLETION_SETTINGS_READY, generate_data);
 
+    if (isFunctionCallingSupported() && !stream) {
+        await registerFunctionTools(type, generate_data);
+    }
+
     const generate_url = '/api/backends/chat-completions/generate';
     const response = await fetch(generate_url, {
         method: 'POST',
@@ -1907,8 +1917,148 @@ async function sendOpenAIRequest(type, messages, signal) {
             delay(1).then(() => saveLogprobsForActiveMessage(logprobs, null));
         }
 
+        if (isFunctionCallingSupported()) {
+            await checkFunctionToolCalls(data);
+        }
+
         return data;
     }
+}
+
+/**
+ * Register function tools for the next chat completion request.
+ * @param {string} type Generation type
+ * @param {object} data Generation data
+ */
+async function registerFunctionTools(type, data) {
+    let toolChoice = 'auto';
+    const tools = [];
+
+    /**
+     * @type {registerFunctionTool}
+     */
+    const registerFunctionTool = (name, description, parameters, required) => {
+        tools.push({
+            type: 'function',
+            function: {
+                name,
+                description,
+                parameters,
+            },
+        });
+
+        if (required) {
+            toolChoice = 'required';
+        }
+    };
+
+    /**
+     * @type {FunctionToolRegister}
+     */
+    const args = {
+        type,
+        data,
+        registerFunctionTool,
+    };
+
+    await eventSource.emit(event_types.LLM_FUNCTION_TOOL_REGISTER, args);
+
+    if (tools.length) {
+        console.log('Registered function tools:', tools);
+
+        data['tools'] = tools;
+        data['tool_choice'] = toolChoice;
+    }
+}
+
+async function checkFunctionToolCalls(data) {
+    const oaiCompat = [
+        chat_completion_sources.OPENAI,
+        chat_completion_sources.CUSTOM,
+        chat_completion_sources.MISTRALAI,
+        chat_completion_sources.OPENROUTER,
+        chat_completion_sources.GROQ,
+    ];
+    if (oaiCompat.includes(oai_settings.chat_completion_source)) {
+        if (!Array.isArray(data?.choices)) {
+            return;
+        }
+
+        // Find a choice with 0-index
+        const choice = data.choices.find(choice => choice.index === 0);
+
+        if (!choice) {
+            return;
+        }
+
+        const toolCalls = choice.message.tool_calls;
+
+        if (!Array.isArray(toolCalls)) {
+            return;
+        }
+
+        for (const toolCall of toolCalls) {
+            if (typeof toolCall.function !== 'object') {
+                continue;
+            }
+
+            /** @type {FunctionToolCall} */
+            const args = toolCall.function;
+            console.log('Function tool call:', toolCall);
+            await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
+            data.allowEmptyResponse = true;
+        }
+    }
+
+    if ([chat_completion_sources.CLAUDE].includes(oai_settings.chat_completion_source)) {
+        if (!Array.isArray(data?.content)) {
+            return;
+        }
+
+        for (const content of data.content) {
+            if (content.type === 'tool_use') {
+                /** @type {FunctionToolCall} */
+                const args = { name: content.name, arguments: JSON.stringify(content.input) };
+                await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
+                data.allowEmptyResponse = true;
+            }
+        }
+    }
+
+    if ([chat_completion_sources.COHERE].includes(oai_settings.chat_completion_source)) {
+        if (!Array.isArray(data?.tool_calls)) {
+            return;
+        }
+
+        for (const toolCall of data.tool_calls) {
+            /** @type {FunctionToolCall} */
+            const args = { name: toolCall.name, arguments: JSON.stringify(toolCall.parameters) };
+            console.log('Function tool call:', toolCall);
+            await eventSource.emit(event_types.LLM_FUNCTION_TOOL_CALL, args);
+            data.allowEmptyResponse = true;
+        }
+    }
+}
+
+export function isFunctionCallingSupported() {
+    if (main_api !== 'openai') {
+        return false;
+    }
+
+    if (!oai_settings.function_calling) {
+        return false;
+    }
+
+    const supportedSources = [
+        chat_completion_sources.OPENAI,
+        chat_completion_sources.COHERE,
+        chat_completion_sources.CUSTOM,
+        chat_completion_sources.MISTRALAI,
+        chat_completion_sources.CLAUDE,
+        chat_completion_sources.OPENROUTER,
+        chat_completion_sources.GROQ,
+    ];
+    return supportedSources.includes(oai_settings.chat_completion_source);
 }
 
 function getStreamingReply(data) {
@@ -2781,6 +2931,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.continue_prefill = settings.continue_prefill ?? default_settings.continue_prefill;
     oai_settings.names_behavior = settings.names_behavior ?? default_settings.names_behavior;
     oai_settings.continue_postfix = settings.continue_postfix ?? default_settings.continue_postfix;
+    oai_settings.function_calling = settings.function_calling ?? default_settings.function_calling;
 
     // Migrate from old settings
     if (settings.names_in_completion === true) {
@@ -2849,6 +3000,7 @@ function loadOpenAISettings(data, settings) {
     $('#openrouter_providers_chat').val(oai_settings.openrouter_providers).trigger('change');
     $('#squash_system_messages').prop('checked', oai_settings.squash_system_messages);
     $('#continue_prefill').prop('checked', oai_settings.continue_prefill);
+    $('#openai_function_calling').prop('checked', oai_settings.function_calling);
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
 
     $('#impersonation_prompt_textarea').val(oai_settings.impersonation_prompt);
@@ -3132,6 +3284,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         bypass_status_check: settings.bypass_status_check,
         continue_prefill: settings.continue_prefill,
         continue_postfix: settings.continue_postfix,
+        function_calling: settings.function_calling,
         seed: settings.seed,
         n: settings.n,
     };
@@ -3518,6 +3671,7 @@ function onSettingsPresetChange() {
         inline_image_quality: ['#openai_inline_image_quality', 'inline_image_quality', false],
         continue_prefill: ['#continue_prefill', 'continue_prefill', true],
         continue_postfix: ['#continue_postfix', 'continue_postfix', false],
+        function_calling: ['#openai_function_calling', 'function_calling', true],
         seed: ['#seed_openai', 'seed', false],
         n: ['#n_openai', 'n', false],
     };
@@ -3857,6 +4011,9 @@ async function onModelChange() {
         else if (['command-r', 'command-r-plus'].includes(oai_settings.cohere_model)) {
             $('#openai_max_context').attr('max', max_128k);
         }
+        else if (['c4ai-aya-23'].includes(oai_settings.cohere_model)) {
+            $('#openai_max_context').attr('max', max_8k);
+        }
         else {
             $('#openai_max_context').attr('max', max_4k);
         }
@@ -4035,7 +4192,7 @@ async function onConnectButtonClick(e) {
             await writeSecret(SECRET_KEYS.MAKERSUITE, api_key_makersuite);
         }
 
-        if (!secret_state[SECRET_KEYS.MAKERSUITE]) {
+        if (!secret_state[SECRET_KEYS.MAKERSUITE] && !oai_settings.reverse_proxy) {
             console.log('No secret key saved for MakerSuite');
             return;
         }
@@ -4087,7 +4244,7 @@ async function onConnectButtonClick(e) {
             await writeSecret(SECRET_KEYS.MISTRALAI, api_key_mistralai);
         }
 
-        if (!secret_state[SECRET_KEYS.MISTRALAI]) {
+        if (!secret_state[SECRET_KEYS.MISTRALAI] && !oai_settings.reverse_proxy) {
             console.log('No secret key saved for MistralAI');
             return;
         }
@@ -4445,7 +4602,8 @@ function runProxyCallback(_, value) {
     return foundName;
 }
 
-SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'proxy',
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: 'proxy',
     callback: runProxyCallback,
     returns: 'current proxy',
     namedArgumentList: [],
@@ -4779,6 +4937,11 @@ $(document).ready(async function () {
 
     $('#continue_prefill').on('input', function () {
         oai_settings.continue_prefill = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#openai_function_calling').on('input', function () {
+        oai_settings.function_calling = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

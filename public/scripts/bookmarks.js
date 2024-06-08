@@ -12,6 +12,7 @@ import {
     getCharacters,
     chat,
     saveChatConditional,
+    saveItemizedPrompts,
 } from '../script.js';
 import { humanizedDateTime } from './RossAscends-mods.js';
 import {
@@ -199,6 +200,7 @@ async function createNewBookmark(mesId) {
 
     const mainChat = selected_group ? groups?.find(x => x.id == selected_group)?.chat_id : characters[this_chid].chat;
     const newMetadata = { main_chat: mainChat };
+    await saveItemizedPrompts(name);
 
     if (selected_group) {
         await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);

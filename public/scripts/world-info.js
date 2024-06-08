@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId, extension_prompt_roles } from '../script.js';
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean } from './utils.js';
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean, setValueByPath, flashHighlight, select2ModifyOptions, getSelect2OptionId, dynamicSelect2DataViaAjax, highlightRegex, select2ChoiceClickSubscribe, isFalseBoolean, equalsIgnoreCaseAndAccents, getSanitizedFilename, checkOverwriteExistingData } from './utils.js';
 import { extension_settings, getContext } from './extensions.js';
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from './authors-note.js';
 import { isMobile } from './RossAscends-mods.js';
@@ -50,6 +50,7 @@ const WI_ENTRY_EDIT_TEMPLATE = $('#entry_edit_template .world_entry');
 
 let world_info = {};
 let selected_world_info = [];
+/** @type {string[]} */
 let world_names;
 let world_info_depth = 2;
 let world_info_min_activations = 0; // if > 0, will continue seeking chat until minimum world infos are activated
@@ -186,7 +187,7 @@ class WorldInfoBuffer {
             result += '\n' + this.#recurseBuffer.join('\n');
         }
 
-        return this.#transformString(result, entry);
+        return result;
     }
 
     /**
@@ -204,6 +205,7 @@ class WorldInfoBuffer {
         }
 
         // Otherwise we do normal matching of plaintext with the chosen entry settings
+        haystack = this.#transformString(haystack, entry);
         const transformedString = this.#transformString(needle, entry);
         const matchWholeWords = entry.matchWholeWords ?? world_info_match_whole_words;
 
@@ -1056,6 +1058,34 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
         return;
     }
 
+    // Regardless of whether success is displayed or not. Make sure the delete button is available.
+    // Do not put this code behind.
+    $('#world_popup_delete').off('click').on('click', async () => {
+        const confirmation = await callPopup(`<h3>Delete the World/Lorebook: "${name}"?</h3>This action is irreversible!`, 'confirm');
+
+        if (!confirmation) {
+            return;
+        }
+
+        if (world_info.charLore) {
+            world_info.charLore.forEach((charLore, index) => {
+                if (charLore.extraBooks?.includes(name)) {
+                    const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
+                    if (tempCharLore.length === 0) {
+                        world_info.charLore.splice(index, 1);
+                    } else {
+                        charLore.extraBooks = tempCharLore;
+                    }
+                }
+            });
+
+            saveSettingsDebounced();
+        }
+
+        // Selected world_info automatically refreshes
+        await deleteWorldInfo(name);
+    });
+
     // Before printing the WI, we check if we should enable/disable search sorting
     verifyWorldInfoSearchSortRule();
 
@@ -1222,32 +1252,6 @@ function displayWorldEntries(name, data, navigation = navigation_option.none, fl
                 hideWorldEditor();
             }
         }
-    });
-
-    $('#world_popup_delete').off('click').on('click', async () => {
-        const confirmation = await callPopup(`<h3>Delete the World/Lorebook: "${name}"?</h3>This action is irreversible!`, 'confirm');
-
-        if (!confirmation) {
-            return;
-        }
-
-        if (world_info.charLore) {
-            world_info.charLore.forEach((charLore, index) => {
-                if (charLore.extraBooks?.includes(name)) {
-                    const tempCharLore = charLore.extraBooks.filter((e) => e !== name);
-                    if (tempCharLore.length === 0) {
-                        world_info.charLore.splice(index, 1);
-                    } else {
-                        charLore.extraBooks = tempCharLore;
-                    }
-                }
-            });
-
-            saveSettingsDebounced();
-        }
-
-        // Selected world_info automatically refreshes
-        await deleteWorldInfo(name);
     });
 
     // Check if a sortable instance exists
@@ -2541,9 +2545,15 @@ async function renameWorldInfo(name, data) {
     }
 }
 
+/**
+ * Deletes a world info with the given name
+ *
+ * @param {string} worldInfoName - The name of the world info to delete
+ * @returns {Promise<boolean>} A promise that resolves to true if the world info was successfully deleted, false otherwise
+ */
 async function deleteWorldInfo(worldInfoName) {
     if (!world_names.includes(worldInfoName)) {
-        return;
+        return false;
     }
 
     const response = await fetch('/api/worldinfo/delete', {
@@ -2552,24 +2562,28 @@ async function deleteWorldInfo(worldInfoName) {
         body: JSON.stringify({ name: worldInfoName }),
     });
 
-    if (response.ok) {
-        const existingWorldIndex = selected_world_info.findIndex((e) => e === worldInfoName);
-        if (existingWorldIndex !== -1) {
-            selected_world_info.splice(existingWorldIndex, 1);
-            saveSettingsDebounced();
-        }
+    if (!response.ok) {
+        return false;
+    }
 
-        await updateWorldInfoList();
-        $('#world_editor_select').trigger('change');
+    const existingWorldIndex = selected_world_info.findIndex((e) => e === worldInfoName);
+    if (existingWorldIndex !== -1) {
+        selected_world_info.splice(existingWorldIndex, 1);
+        saveSettingsDebounced();
+    }
 
-        if ($('#character_world').val() === worldInfoName) {
-            $('#character_world').val('').trigger('change');
-            setWorldInfoButtonClass(undefined, false);
-            if (menu_type != 'create') {
-                saveCharacterDebounced();
-            }
+    await updateWorldInfoList();
+    $('#world_editor_select').trigger('change');
+
+    if ($('#character_world').val() === worldInfoName) {
+        $('#character_world').val('').trigger('change');
+        setWorldInfoButtonClass(undefined, false);
+        if (menu_type != 'create') {
+            saveCharacterDebounced();
         }
     }
+
+    return true;
 }
 
 function getFreeWorldEntryUid(data) {
@@ -2601,22 +2615,40 @@ function getFreeWorldName() {
     return undefined;
 }
 
-async function createNewWorldInfo(worldInfoName) {
+/**
+ * Creates a new world info/lorebook with the given name.
+ * Checks if a world with the same name already exists, providing a warning or optionally a user confirmation dialog.
+ *
+ * @param {string} worldName - The name of the new world info
+ * @param {Object} options - Optional parameters
+ * @param {boolean} [options.interactive=false] - Whether to show a confirmation dialog when overwriting an existing world
+ * @returns {Promise<boolean>} - True if the world info was successfully created, false otherwise
+ */
+async function createNewWorldInfo(worldName, { interactive = false } = {}) {
     const worldInfoTemplate = { entries: {} };
 
-    if (!worldInfoName) {
-        return;
+    if (!worldName) {
+        return false;
     }
 
-    await saveWorldInfo(worldInfoName, worldInfoTemplate, true);
+    const sanitizedWorldName = await getSanitizedFilename(worldName);
+
+    const allowed = await checkOverwriteExistingData('World Info', world_names, sanitizedWorldName, { interactive: interactive, actionName: 'Create', deleteAction: (existingName) => deleteWorldInfo(existingName) });
+    if (!allowed) {
+        return false;
+    }
+
+    await saveWorldInfo(worldName, worldInfoTemplate, true);
     await updateWorldInfoList();
 
-    const selectedIndex = world_names.indexOf(worldInfoName);
+    const selectedIndex = world_names.indexOf(worldName);
     if (selectedIndex !== -1) {
         $('#world_editor_select').val(selectedIndex).trigger('change');
     } else {
         hideWorldEditor();
     }
+
+    return true;
 }
 
 async function getCharacterLore() {
@@ -3039,7 +3071,7 @@ async function checkWorldInfo(chat, maxContext) {
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
-        const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`;
+        const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`.replace(/(^\n)|(\n$)/g, '');
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth], extension_settings.note.allowWIScan, chat_metadata[metadata_keys.role]);
     }
 
@@ -3549,6 +3581,13 @@ export async function importWorldInfo(file) {
         return;
     }
 
+    const worldName = file.name.substr(0, file.name.lastIndexOf('.'));
+    const sanitizedWorldName = await getSanitizedFilename(worldName);
+    const allowed = await checkOverwriteExistingData('World Info', world_names, sanitizedWorldName, { interactive: true, actionName: 'Import', deleteAction: (existingName) => deleteWorldInfo(existingName) });
+    if (!allowed) {
+        return false;
+    }
+
     jQuery.ajax({
         type: 'POST',
         url: '/api/worldinfo/import',
@@ -3566,7 +3605,7 @@ export async function importWorldInfo(file) {
                     $('#world_editor_select').val(newIndex).trigger('change');
                 }
 
-                toastr.info(`World Info "${data.name}" imported successfully!`);
+                toastr.success(`World Info "${data.name}" imported successfully!`);
             }
         },
         error: (_jqXHR, _exception) => { },
@@ -3641,7 +3680,7 @@ jQuery(() => {
         const finalName = await callPopup('<h3>Create a new World Info?</h3>Enter a name for the new file:', 'input', tempName);
 
         if (finalName) {
-            await createNewWorldInfo(finalName);
+            await createNewWorldInfo(finalName, { interactive: true });
         }
     });
 

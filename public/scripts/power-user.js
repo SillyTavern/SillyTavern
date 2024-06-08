@@ -102,6 +102,7 @@ export const persona_description_positions = {
     AFTER_CHAR: 1,
     TOP_AN: 2,
     BOTTOM_AN: 3,
+    AT_DEPTH: 4,
 };
 
 let power_user = {
@@ -244,6 +245,8 @@ let power_user = {
 
     persona_description: '',
     persona_description_position: persona_description_positions.IN_PROMPT,
+    persona_description_role: 0,
+    persona_description_depth: 2,
     persona_show_notifications: true,
     persona_sort_order: 'asc',
 
@@ -675,6 +678,9 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'top_k' ||
         sliderID == 'mirostat_mode_kobold' ||
         sliderID == 'rep_pen_range' ||
+        sliderID == 'dry_allowed_length_textgenerationwebui' ||
+        sliderID == 'rep_pen_decay_textgenerationwebui' ||
+        sliderID == 'dry_penalty_last_n_textgenerationwebui' ||
         sliderID == 'max_tokens_second_textgenerationwebui') {
         decimals = 0;
     }
@@ -682,7 +688,9 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'max_temp_textgenerationwebui' ||
         sliderID == 'dynatemp_exponent_textgenerationwebui' ||
         sliderID == 'smoothing_curve_textgenerationwebui' ||
-        sliderID == 'smoothing_factor_textgenerationwebui') {
+        sliderID == 'smoothing_factor_textgenerationwebui' ||
+        sliderID == 'dry_multiplier_textgenerationwebui' ||
+        sliderID == 'dry_base_textgenerationwebui') {
         decimals = 2;
     }
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
@@ -743,6 +751,8 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'rep_pen_slope' ||
         sliderID == 'smoothing_factor_textgenerationwebui' ||
         sliderID == 'smoothing_curve_textgenerationwebui' ||
+        sliderID == 'skew_textgenerationwebui' ||
+        sliderID == 'dry_multiplier_textgenerationwebui' ||
         sliderID == 'min_length_textgenerationwebui') {
         offVal = 0;
     }
@@ -761,6 +771,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'max_temp_textgenerationwebui' ||
         sliderID == 'dynatemp_exponent_textgenerationwebui' ||
         sliderID == 'guidance_scale_textgenerationwebui' ||
+        sliderID == 'rep_pen_slope_textgenerationwebui' ||
         sliderID == 'guidance_scale') {
         offVal = 1;
     }
@@ -1389,7 +1400,7 @@ async function applyTheme(name) {
 }
 
 async function applyMovingUIPreset(name) {
-    resetMovablePanels('quiet');
+    await resetMovablePanels('quiet');
     const movingUIPreset = movingUIPresets.find(x => x.name == name);
 
     if (!movingUIPreset) {
@@ -1401,6 +1412,7 @@ async function applyMovingUIPreset(name) {
 
     console.log('MovingUI Preset applied: ' + name);
     loadMovingUIState();
+    saveSettingsDebounced();
 }
 
 /**
@@ -1629,9 +1641,9 @@ function loadPowerUserSettings(settings, data) {
     $('#stscript_autocomplete_font_scale_counter').val(power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale);
     document.body.style.setProperty('--ac-font-scale', power_user.stscript.autocomplete.font.scale ?? defaultStscript.autocomplete.font.scale.toString());
     $('#stscript_autocomplete_width_left').val(power_user.stscript.autocomplete.width.left ?? AUTOCOMPLETE_WIDTH.CHAT);
-    document.querySelector('#stscript_autocomplete_width_left').dispatchEvent(new Event('input', { bubbles:true }));
+    document.querySelector('#stscript_autocomplete_width_left').dispatchEvent(new Event('input', { bubbles: true }));
     $('#stscript_autocomplete_width_right').val(power_user.stscript.autocomplete.width.right ?? AUTOCOMPLETE_WIDTH.CHAT);
-    document.querySelector('#stscript_autocomplete_width_right').dispatchEvent(new Event('input', { bubbles:true }));
+    document.querySelector('#stscript_autocomplete_width_right').dispatchEvent(new Event('input', { bubbles: true }));
 
     $('#restore_user_input').prop('checked', power_user.restore_user_input);
 
@@ -1750,11 +1762,24 @@ function loadMaxContextUnlocked() {
 }
 
 function switchMaxContextSize() {
-    const elements = [$('#max_context'), $('#max_context_counter'), $('#rep_pen_range'), $('#rep_pen_range_counter'), $('#rep_pen_range_textgenerationwebui'), $('#rep_pen_range_counter_textgenerationwebui')];
+    const elements = [
+        $('#max_context'),
+        $('#max_context_counter'),
+        $('#rep_pen_range'),
+        $('#rep_pen_range_counter'),
+        $('#rep_pen_range_textgenerationwebui'),
+        $('#rep_pen_range_counter_textgenerationwebui'),
+        $('#dry_penalty_last_n_textgenerationwebui'),
+        $('#dry_penalty_last_n_counter_textgenerationwebui'),
+        $('#rep_pen_decay_textgenerationwebui'),
+        $('#rep_pen_decay_counter_textgenerationwebui'),
+    ];
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
     const minValue = power_user.max_context_unlocked ? maxContextMin : maxContextMin;
     const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : maxContextStep;
     $('#rep_pen_range_textgenerationwebui_zenslider').remove(); //unsure why, but this is necessary.
+    $('#dry_penalty_last_n_textgenerationwebui_zenslider').remove();
+    $('#rep_pen_decay_textgenerationwebui_zenslider').remove();
     for (const element of elements) {
         const id = element.attr('id');
         element.attr('max', maxValue);
@@ -1783,6 +1808,10 @@ function switchMaxContextSize() {
         CreateZenSliders($('#max_context'));
         $('#rep_pen_range_textgenerationwebui_zenslider').remove();
         CreateZenSliders($('#rep_pen_range_textgenerationwebui'));
+        $('#dry_penalty_last_n_textgenerationwebui_zenslider').remove();
+        CreateZenSliders($('#dry_penalty_last_n_textgenerationwebui'));
+        $('#rep_pen_decay_textgenerationwebui_zenslider').remove();
+        CreateZenSliders($('#rep_pen_decay_textgenerationwebui'));
     }
 }
 
@@ -2992,13 +3021,20 @@ $(document).ready(() => {
     });
 
     const reportZoomLevelDebounced = debounce(() => {
-        const zoomLevel = Number(window.devicePixelRatio).toFixed(2);
+        const zoomLevel = Number(window.devicePixelRatio).toFixed(2) || 1;
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
-        console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}`);
+        const originalWidth = winWidth * zoomLevel;
+        const originalHeight = winHeight * zoomLevel;
+        console.debug(`Zoom: ${zoomLevel}, X:${winWidth}, Y:${winHeight}, original: ${originalWidth}x${originalHeight} `);
+        return zoomLevel;
     });
 
+    var coreTruthWinWidth = window.innerWidth;
+    var coreTruthWinHeight = window.innerHeight;
+
     $(window).on('resize', async () => {
+        console.log(`Window resize: ${coreTruthWinWidth}x${coreTruthWinHeight} -> ${window.innerWidth}x${window.innerHeight}`);
         adjustAutocompleteDebounced();
         setHotswapsDebounced();
 
@@ -3008,9 +3044,54 @@ $(document).ready(() => {
 
         reportZoomLevelDebounced();
 
+        //attempt to scale movingUI elements naturally across window resizing/zooms
+        //this will still break if the zoom level causes mobile styles to come into play.
+        const scaleY = Number(window.innerHeight / coreTruthWinHeight).toFixed(4);
+        const scaleX = Number(window.innerWidth / coreTruthWinWidth).toFixed(4);
+
         if (Object.keys(power_user.movingUIState).length > 0) {
-            resetMovablePanels('resize');
+            for (var elmntName of Object.keys(power_user.movingUIState)) {
+                var elmntState = power_user.movingUIState[elmntName];
+                var oldHeight = elmntState.height;
+                var oldWidth = elmntState.width;
+                var oldLeft = elmntState.left;
+                var oldTop = elmntState.top;
+                var oldBottom = elmntState.bottom;
+                var oldRight = elmntState.right;
+                var newHeight, newWidth, newTop, newBottom, newLeft, newRight;
+
+                newHeight = Number(oldHeight * scaleY).toFixed(0);
+                newWidth = Number(oldWidth * scaleX).toFixed(0);
+                newLeft = Number(oldLeft * scaleX).toFixed(0);
+                newTop = Number(oldTop * scaleY).toFixed(0);
+                newBottom = Number(oldBottom * scaleY).toFixed(0);
+                newRight = Number(oldRight * scaleX).toFixed(0);
+                try {
+                    var elmnt = $('#' + $.escapeSelector(elmntName));
+                    if (elmnt.length) {
+                        console.log(`scaling ${elmntName} by ${scaleX}x${scaleY} to ${newWidth}x${newHeight}`);
+                        elmnt.css('height', newHeight);
+                        elmnt.css('width', newWidth);
+                        elmnt.css('inset', `${newTop}px ${newRight}px ${newBottom}px ${newLeft}px`);
+                        power_user.movingUIState[elmntName].height = newHeight;
+                        power_user.movingUIState[elmntName].width = newWidth;
+                        power_user.movingUIState[elmntName].top = newTop;
+                        power_user.movingUIState[elmntName].bottom = newBottom;
+                        power_user.movingUIState[elmntName].left = newLeft;
+                        power_user.movingUIState[elmntName].right = newRight;
+                    } else {
+                        console.log(`skipping ${elmntName} because it doesn't exist in the DOM`);
+                    }
+                } catch (err) {
+                    console.log(`error occurred while processing ${elmntName}: ${err}`);
+                }
+            }
+        } else {
+            console.log('aborting MUI reset', Object.keys(power_user.movingUIState).length);
         }
+        saveSettingsDebounced();
+        coreTruthWinWidth = window.innerWidth;
+        coreTruthWinHeight = window.innerHeight;
     });
 
     // Settings that go to settings.json
@@ -3671,7 +3752,7 @@ $(document).ready(() => {
         $('#stscript_autocomplete_font_scale_counter').val(value);
         power_user.stscript.autocomplete.font.scale = Number(value);
         document.body.style.setProperty('--ac-font-scale', value.toString());
-        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        window.dispatchEvent(new Event('resize', { bubbles: true }));
         saveSettingsDebounced();
     });
     $('#stscript_autocomplete_font_scale_counter').on('input', function () {
@@ -3679,7 +3760,7 @@ $(document).ready(() => {
         $('#stscript_autocomplete_font_scale').val(value);
         power_user.stscript.autocomplete.font.scale = Number(value);
         document.body.style.setProperty('--ac-font-scale', value.toString());
-        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        window.dispatchEvent(new Event('resize', { bubbles: true }));
         saveSettingsDebounced();
     });
 
@@ -3687,7 +3768,7 @@ $(document).ready(() => {
         const value = $(this).val();
         power_user.stscript.autocomplete.width.left = Number(value);
         /**@type {HTMLElement}*/(this.closest('.doubleRangeInputContainer')).style.setProperty('--value', value.toString());
-        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        window.dispatchEvent(new Event('resize', { bubbles: true }));
         saveSettingsDebounced();
     });
 
@@ -3695,7 +3776,7 @@ $(document).ready(() => {
         const value = $(this).val();
         power_user.stscript.autocomplete.width.right = Number(value);
         /**@type {HTMLElement}*/(this.closest('.doubleRangeInputContainer')).style.setProperty('--value', value.toString());
-        window.dispatchEvent(new Event('resize', { bubbles:true }));
+        window.dispatchEvent(new Event('resize', { bubbles: true }));
         saveSettingsDebounced();
     });
 
@@ -3789,15 +3870,18 @@ $(document).ready(() => {
         browser_has_focus = false;
     });
 
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'vn',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'vn',
         callback: toggleWaifu,
         helpString: 'Swaps Visual Novel Mode On/Off',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'newchat',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'newchat',
         callback: doNewChat,
         helpString: 'Start a new chat with the current character',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'random',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'random',
         callback: doRandomChat,
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -3806,7 +3890,8 @@ $(document).ready(() => {
         ],
         helpString: 'Start a new chat with a random character. If an argument is provided, only considers characters that have the specified tag.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'delmode',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'delmode',
         callback: doDelMode,
         aliases: ['del'],
         unnamedArgumentList: [
@@ -3816,7 +3901,8 @@ $(document).ready(() => {
         ],
         helpString: 'Enter message deletion mode, and auto-deletes last N messages if numeric argument is provided.',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'cut',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'cut',
         callback: doMesCut,
         returns: 'the text of cut messages separated by a newline',
         unnamedArgumentList: [
@@ -3842,16 +3928,19 @@ $(document).ready(() => {
         `,
         aliases: [],
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'resetpanels',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'resetpanels',
         callback: doResetPanels,
         helpString: 'resets UI panels to original state',
         aliases: ['resetui'],
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'bgcol',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'bgcol',
         callback: setAvgBG,
         helpString: '– WIP test of auto-bg avg coloring',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'theme',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'theme',
         callback: setThemeCallback,
         unnamedArgumentList: [
             new SlashCommandArgument(
@@ -3860,7 +3949,8 @@ $(document).ready(() => {
         ],
         helpString: 'sets a UI theme by name',
     }));
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({ name: 'movingui',
+    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+        name: 'movingui',
         callback: setmovingUIPreset,
         unnamedArgumentList: [
             new SlashCommandArgument(
