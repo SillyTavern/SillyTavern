@@ -237,6 +237,7 @@ import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowse
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
 import { DragAndDropHandler } from './scripts/dragdrop.js';
 import { INTERACTABLE_CONTROL_CLASS, initKeyboard } from './scripts/keyboard.js';
+import { initDynamicStyles } from './scripts/dynamic-styles.js';
 
 //exporting functions and vars for mods
 export {
@@ -892,6 +893,7 @@ async function firstLoadInit() {
     sendSystemMessage(system_message_types.WELCOME);
     await getSettings();
     initKeyboard();
+    initDynamicStyles();
     initTags();
     await getUserAvatars(true, user_avatar);
     await getCharacters();
