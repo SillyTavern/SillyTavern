@@ -20,6 +20,7 @@
                     <option value="ollama">Ollama</option>
                     <option value="openai">OpenAI</option>
                     <option value="togetherai">TogetherAI</option>
+                    <option value="vllm">vLLM</option>
                 </select>
             </div>
             <div class="flex-container flexFlowColumn" id="ollama_vectorsModel">
@@ -81,6 +82,15 @@
                     <option value="sentence-transformers/msmarco-bert-base-dot-v5">Sentence-BERT</option>
                     <option value="bert-base-uncased">Bert Base Uncased</option>
                 </select>
+            </div>
+            <div class="flex-container flexFlowColumn" id="vllm_vectorsModel">
+                <label for="vectors_vllm_model">
+                    Vectorization Model
+                </label>
+                <input id="vectors_vllm_model" class="text_pole" type="text" placeholder="Model name, e.g. intfloat/e5-mistral-7b-instruct" />
+                <i>
+                    Hint: Set the URL in the API connection settings.
+                </i>
             </div>
 
             <small id="vectors_modelWarning">
