@@ -101,6 +101,10 @@ class SBVits2TtsProvider {
 
         <label for="sbvits_reference_audio_path">reference_audio_path:</label>
         <input id="sbvits_reference_audio_path" type="text" class="text_pole" maxlength="512" value="${this.defaultSettings.reference_audio_path}"/>
+        <p>
+            For more information, visit the
+            <a href="https://github.com/litagin02/Style-Bert-VITS2" target="_blank">Style-Bert-VITS2 project page</a>.
+        </p>
         `;
 
         return html;
