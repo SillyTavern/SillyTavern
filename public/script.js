@@ -154,7 +154,7 @@ import {
     isValidUrl,
     ensureImageFormatSupported,
     flashHighlight,
-    checkOverwriteExistingData,
+    isTrueBoolean,
 } from './scripts/utils.js';
 import { debounce_timeout } from './scripts/constants.js';
 
@@ -232,7 +232,7 @@ import { renderTemplate, renderTemplateAsync } from './scripts/templates.js';
 import { ScraperManager } from './scripts/scrapers.js';
 import { SlashCommandParser } from './scripts/slash-commands/SlashCommandParser.js';
 import { SlashCommand } from './scripts/slash-commands/SlashCommand.js';
-import { ARGUMENT_TYPE, SlashCommandArgument } from './scripts/slash-commands/SlashCommandArgument.js';
+import { ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument } from './scripts/slash-commands/SlashCommandArgument.js';
 import { SlashCommandBrowser } from './scripts/slash-commands/SlashCommandBrowser.js';
 import { initCustomSelectedSamplers, validateDisabledSamplers } from './scripts/samplerSelect.js';
 import { DragAndDropHandler } from './scripts/dragdrop.js';
@@ -8446,9 +8446,30 @@ async function importFromURL(items, files) {
     }
 }
 
-async function doImpersonate(_, prompt) {
-    $('#send_textarea').val('');
-    $('#option_impersonate').trigger('click', { fromSlashCommand: true, additionalPrompt: prompt });
+async function doImpersonate(args, prompt) {
+    const options = prompt?.trim() ? { quiet_prompt: prompt.trim(), quietToLoud: true } : {};
+    const shouldAwait = isTrueBoolean(args?.await);
+    const outerPromise = new Promise((outerResolve) => setTimeout(async () => {
+        try {
+            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+        } catch {
+            console.warn('Timeout waiting for generation unlock');
+            toastr.warning('Cannot run /impersonate command while the reply is being generated.');
+            return '';
+        }
+
+        // Prevent generate recursion
+        $('#send_textarea').val('')[0].dispatchEvent(new Event('input', { bubbles: true }));
+
+        outerResolve(new Promise(innerResolve => setTimeout(() => innerResolve(Generate('impersonate', options)), 1)));
+    }, 1));
+
+    if (shouldAwait) {
+        const innerPromise = await outerPromise;
+        await innerPromise;
+    }
+
+    return '';
 }
 
 async function doDeleteChat() {
@@ -8764,6 +8785,16 @@ jQuery(async function () {
         name: 'impersonate',
         callback: doImpersonate,
         aliases: ['imp'],
+        namedArgumentList: [
+            new SlashCommandNamedArgument(
+                'await',
+                'Whether to await for the triggered generation before continuing',
+                [ARGUMENT_TYPE.BOOLEAN],
+                false,
+                false,
+                'false',
+            ),
+        ],
         unnamedArgumentList: [
             new SlashCommandArgument(
                 'prompt', [ARGUMENT_TYPE.STRING], false,
@@ -8772,6 +8803,9 @@ jQuery(async function () {
         helpString: `
             <div>
                 Calls an impersonation response, with an optional additional prompt.
+            </div>
+            <div>
+                If <code>await=true</code> named argument is passed, the command will wait for the impersonation to end before continuing.
             </div>
             <div>
                 <strong>Example:</strong>

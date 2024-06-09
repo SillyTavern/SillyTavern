@@ -1032,43 +1032,61 @@ async function openAttachmentManager() {
         localStorage.setItem('DataBank_sortOrder', sortOrder);
         renderAttachments();
     });
-    template.find('.bulkActionDelete').on('click', async () => {
-        const selectedAttachments =  document.querySelectorAll('.attachmentListItemCheckboxContainer .attachmentListItemCheckbox:checked');
+    function handleBulkAction(action) {
+        return async () => {
+            const selectedAttachments = document.querySelectorAll('.attachmentListItemCheckboxContainer .attachmentListItemCheckbox:checked');
 
-        if (selectedAttachments.length === 0) {
-            toastr.info('No attachments selected.', 'Data Bank');
-            return;
-        }
-
-        const confirm = await callGenericPopup('Are you sure you want to delete the selected attachments?', POPUP_TYPE.CONFIRM);
-
-        if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
-            return;
-        }
-
-        const attachments = getDataBankAttachments();
-        selectedAttachments.forEach(async (checkbox) => {
-            const listItem = checkbox.closest('.attachmentListItem');
-            if (!(listItem instanceof HTMLElement)) {
+            if (selectedAttachments.length === 0) {
+                toastr.info('No attachments selected.', 'Data Bank');
                 return;
             }
-            const url = listItem.dataset.attachmentUrl;
-            const source = listItem.dataset.attachmentSource;
-            const attachment = attachments.find(a => a.url === url);
-            if (!attachment) {
-                return;
-            }
-            await deleteAttachment(attachment, source, () => {}, false);
-        });
 
-        document.querySelectorAll('.attachmentListItemCheckbox, .attachmentsBulkEditCheckbox').forEach(checkbox => {
-            if (checkbox instanceof HTMLInputElement) {
-                checkbox.checked = false;
+            if (action.confirmMessage) {
+                const confirm = await callGenericPopup(action.confirmMessage, POPUP_TYPE.CONFIRM);
+                if (confirm !== POPUP_RESULT.AFFIRMATIVE) {
+                    return;
+                }
             }
-        });
 
-        await renderAttachments();
-    });
+            const includeDisabled = true;
+            const attachments = getDataBankAttachments(includeDisabled);
+            selectedAttachments.forEach(async (checkbox) => {
+                const listItem = checkbox.closest('.attachmentListItem');
+                if (!(listItem instanceof HTMLElement)) {
+                    return;
+                }
+                const url = listItem.dataset.attachmentUrl;
+                const source = listItem.dataset.attachmentSource;
+                const attachment = attachments.find(a => a.url === url);
+                if (!attachment) {
+                    return;
+                }
+                await action.perform(attachment, source);
+            });
+
+            document.querySelectorAll('.attachmentListItemCheckbox, .attachmentsBulkEditCheckbox').forEach(checkbox => {
+                if (checkbox instanceof HTMLInputElement) {
+                    checkbox.checked = false;
+                }
+            });
+
+            await renderAttachments();
+        };
+    }
+
+    template.find('.bulkActionDisable').on('click', handleBulkAction({
+        perform: (attachment) => disableAttachment(attachment, () => { }),
+    }));
+
+    template.find('.bulkActionEnable').on('click', handleBulkAction({
+        perform: (attachment) => enableAttachment(attachment, () => { }),
+    }));
+
+    template.find('.bulkActionDelete').on('click', handleBulkAction({
+        confirmMessage: 'Are you sure you want to delete the selected attachments?',
+        perform: async (attachment, source) => await deleteAttachment(attachment, source, () => { }, false),
+    }));
+
     template.find('.bulkActionSelectAll').on('click', () => {
         $('.attachmentListItemCheckbox:visible').each((_, checkbox) => {
             if (checkbox instanceof HTMLInputElement) {

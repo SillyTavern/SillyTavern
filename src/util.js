@@ -139,7 +139,7 @@ function getHexString(length) {
  * Extracts a file with given extension from an ArrayBuffer containing a ZIP archive.
  * @param {ArrayBuffer} archiveBuffer Buffer containing a ZIP archive
  * @param {string} fileExtension File extension to look for
- * @returns {Promise<Buffer>} Buffer containing the extracted file
+ * @returns {Promise<Buffer|null>} Buffer containing the extracted file. Null if the file was not found.
  */
 async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
     return await new Promise((resolve, reject) => yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
@@ -171,6 +171,7 @@ async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
                 zipfile.readEntry();
             }
         });
+        zipfile.on('end', () => resolve(null));
     }));
 }
 

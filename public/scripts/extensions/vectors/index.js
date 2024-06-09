@@ -44,6 +44,7 @@ const settings = {
     cohere_model: 'embed-english-v3.0',
     ollama_model: 'mxbai-embed-large',
     ollama_keep: false,
+    vllm_model: '',
     summarize: false,
     summarize_sent: false,
     summary_source: 'main',
@@ -691,6 +692,9 @@ function getVectorHeaders() {
         case 'llamacpp':
             addLlamaCppHeaders(headers);
             break;
+        case 'vllm':
+            addVllmHeaders(headers);
+            break;
         default:
             break;
     }
@@ -762,6 +766,17 @@ function addLlamaCppHeaders(headers) {
 }
 
 /**
+ * Add headers for the VLLM API source.
+ * @param {object} headers Header object
+ */
+function addVllmHeaders(headers) {
+    Object.assign(headers, {
+        'X-Vllm-URL': textgenerationwebui_settings.server_urls[textgen_types.VLLM],
+        'X-Vllm-Model': extension_settings.vectors.vllm_model,
+    });
+}
+
+/**
  * Inserts vector items into a collection
  * @param {string} collectionId - The collection to insert into
  * @param {{ hash: number, text: string }[]} items - The items to insert
@@ -801,11 +816,12 @@ function throwIfSourceInvalid() {
     }
 
     if (settings.source === 'ollama' && !textgenerationwebui_settings.server_urls[textgen_types.OLLAMA] ||
+        settings.source === 'vllm' && !textgenerationwebui_settings.server_urls[textgen_types.VLLM] ||
         settings.source === 'llamacpp' && !textgenerationwebui_settings.server_urls[textgen_types.LLAMACPP]) {
         throw new Error('Vectors: API URL missing', { cause: 'api_url_missing' });
     }
 
-    if (settings.source === 'ollama' && !settings.ollama_model) {
+    if (settings.source === 'ollama' && !settings.ollama_model || settings.source === 'vllm' && !settings.vllm_model) {
         throw new Error('Vectors: API model missing', { cause: 'api_model_missing' });
     }
 
@@ -965,6 +981,7 @@ function toggleSettings() {
     $('#cohere_vectorsModel').toggle(settings.source === 'cohere');
     $('#ollama_vectorsModel').toggle(settings.source === 'ollama');
     $('#llamacpp_vectorsModel').toggle(settings.source === 'llamacpp');
+    $('#vllm_vectorsModel').toggle(settings.source === 'vllm');
     $('#nomicai_apiKey').toggle(settings.source === 'nomicai');
 }
 
@@ -1271,6 +1288,12 @@ jQuery(async () => {
     $('#vectors_ollama_model').val(settings.ollama_model).on('input', () => {
         $('#vectors_modelWarning').show();
         settings.ollama_model = String($('#vectors_ollama_model').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_vllm_model').val(settings.vllm_model).on('input', () => {
+        $('#vectors_modelWarning').show();
+        settings.vllm_model = String($('#vectors_vllm_model').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
